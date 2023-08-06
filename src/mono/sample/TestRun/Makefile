@@ -8,7 +8,7 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/samples/csharp/api/datetime.parse/bin/Debug/net8.0/datetime.parse.dll
+ANY_PATH= /home/wuxinlong/workspace/samples/csharp/serialization/bin/Debug/net8.0/serialization.dll
 
 GitHubKey=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
 
@@ -16,8 +16,8 @@ GitHubKey=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
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_DEBUG_OPTIONS = "-v --trace=all"
-MONO_ENV_RUN_OPTIONS = "-v --trace=all"
+MONO_ENV_DEBUG_OPTIONS = "-v"
+MONO_ENV_RUN_OPTIONS = "-v"
 
 build: TestRun.cs
 	@mcs TestRun.cs
@@ -98,7 +98,8 @@ debug-any:
 clean:
 	rm -f *.exe *.exe.mdb
 
-# System.DateTimeParse:ParseTimeZone (System.__DTString&,System.TimeSpan&) 1548
+# System.Math:DivRem (uint,uint) 514
+# 1163
 
 # COMPlus_DebugWriteToStdErr="1" MONO_LOG_LEVEL="debug" MONO_LOG_MASK="all" COREHOST_TRACE="1" COREHOST_TRACE_VERBOSITY="4" MONO_ENV_OPTIONS="--compile-all --trace=all" qemu-riscv64 -L ../../../..//.tools/rootfs/riscv64/ -g 12345 ../../../../artifacts/bin/testhost/net8.0-Linux-Debug-riscv64/dotnet TestRun.exe
 
@@ -125,4 +126,52 @@ mixins-with-interfaces:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)tutorials/mixins-with-interfaces/bin/Debug/net8.0/mixins-with-interfaces.dll
 
-test: customer-relationship exploration toll-calculator mixins-with-interfaces
+datetime-parse:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)api/datetime.parse/bin/Debug/net8.0/datetime.parse.dll
+
+delegates-and-events:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)delegates-and-events/bin/Debug/net8.0/delegates-and-events.dll
+
+branches-quickstart:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)branches-quickstart/bin/Debug/net8.0/BranchesAndLoops.dll
+
+events:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)events/bin/Debug/net8.0/events.dll
+
+expression-trees:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)expression-trees/bin/Debug/net8.0/expression-trees.dll
+
+indexers:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)indexers/bin/Debug/net8.0/indexers.dll
+
+iterators:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)iterators/bin/Debug/net8.0/iterators.dll
+
+list-quickstart:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)list-quickstart/bin/Debug/net8.0/list-quickstart.dll
+
+NullableIntroduction:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)NullableIntroduction/NullableIntroduction/bin/Debug/net8.0/NullableIntroduction.dll
+
+numbers-quickstart:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/numbers-quickstart/bin/Debug/net8.0/NumbersInCSharp.dll
+
+PatternMatching:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)PatternMatching/bin/Debug/net8.0/PatternMatching.dll
+
+ref-tutorial:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/ref-tutorial/IntruderAlert-finished/bin/Debug/net8.0/IntruderAlert.dll
+
+test: customer-relationship exploration toll-calculator mixins-with-interfaces delegates-and-events branches-quickstart events expression-trees indexers list-quickstart NullableIntroduction numbers-quickstart PatternMatching
