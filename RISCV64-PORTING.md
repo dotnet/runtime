@@ -19,6 +19,18 @@
  - [iterators](https://github.com/dotnet/samples/tree/main/csharp/iterators)
  - [list-quickstart](https://github.com/dotnet/samples/tree/main/csharp/list-quickstart)
  - [NullableIntroduction](https://github.com/dotnet/samples/tree/main/csharp/NullableIntroduction)
+ - [numbers-quickstart](https://github.com/dotnet/samples/tree/main/csharp/numbers-quickstart)
+ - [PatternMatching](https://github.com/dotnet/samples/tree/main/csharp/PatternMatching)
+ - [ref-tutorial](https://github.com/dotnet/samples/tree/main/csharp/ref-tutorial)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
 
 ## Got Error:
  - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/getting-started/console-webapiclient): Crashed because Multi Thread
