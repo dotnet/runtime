@@ -1531,6 +1531,14 @@ typedef struct _XMM_SAVE_AREA32 {
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
+    _CONTEXT() = default;
+    _CONTEXT(const _CONTEXT& ctx)
+    {
+        *this = ctx;
+    }
+
+    _CONTEXT& operator=(const _CONTEXT& ctx);
+
     //
     // Register parameter home addresses.
     //
