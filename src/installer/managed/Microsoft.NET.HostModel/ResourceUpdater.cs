@@ -129,55 +129,6 @@ namespace Microsoft.NET.HostModel
             return this;
         }
 
-        // see https://learn.microsoft.com/windows/win32/debug/pe-format
-        private static class Offsets
-        {
-            private const int PESignatureSize = sizeof(int);
-            private const int CoffHeaderSize = 20;
-            public const int PEHeaderSize = PESignatureSize + CoffHeaderSize;
-            public const int OneSectionHeaderSize = 40;
-            public const int DataDirectoryEntrySize = 8;
-
-            public const int ResourceTableDataDirectoryIndex = 2;
-
-            public static class DosStub
-            {
-                public const int PESignatureOffset = 0x3c;
-            }
-
-            /// offsets relative to Lfanew, which is pointer to first byte in header
-            public static class PEHeader
-            {
-                public const int NumberOfSections = PESignatureSize + 2;
-
-                private const int OptionalHeaderBase = PESignatureSize + CoffHeaderSize;
-                public const int InitializedDataSize = OptionalHeaderBase + 8;
-                public const int SizeOfImage = OptionalHeaderBase + 56;
-                public const int PE64DataDirectories = OptionalHeaderBase + 112;
-                public const int PE32DataDirectories = OptionalHeaderBase + 96;
-            }
-
-            /// offsets relative to each section header
-            public static class SectionHeader
-            {
-                public const int VirtualSize = 8;
-                public const int VirtualAddress = 12;
-                public const int RawSize = 16;
-                public const int RawPointer = 20;
-                public const int RelocationsPointer = 24;
-                public const int LineNumbersPointer = 28;
-                public const int NumberOfRelocations = 32;
-                public const int NumberOfLineNumbers = 34;
-                public const int SectionCharacteristics = 36;
-            }
-
-            public static class DataDirectoryEntry
-            {
-                public const int VirtualAddressOffset = 0;
-                public const int SizeOffset = 4;
-            }
-        }
-
         /// <summary>
         /// Write the pending resource updates to the target PE
         /// file. After this, the ResourceUpdater no longer maintains
@@ -251,19 +202,19 @@ namespace Microsoft.NET.HostModel
             using (var mmap = MemoryMappedFile.CreateFromFile(stream, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
             using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite))
             {
-                int peSignatureOffset = ReadI32(accessor, Offsets.DosStub.PESignatureOffset);
-                int sectionBase = peSignatureOffset + Offsets.PEHeaderSize +
+                int peSignatureOffset = ReadI32(accessor, PEOffsets.DosStub.PESignatureOffset);
+                int sectionBase = peSignatureOffset + PEOffsets.PEHeaderSize +
                                   (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
 
                 if (needsAddSection)
                 {
-                    int resourceSectionBase = sectionBase + Offsets.OneSectionHeaderSize * resourceSectionIndex;
+                    int resourceSectionBase = sectionBase + PEOffsets.OneSectionHeaderSize * resourceSectionIndex;
                     // ensure we have space for new section header
-                    if (resourceSectionBase + Offsets.OneSectionHeaderSize >
+                    if (resourceSectionBase + PEOffsets.OneSectionHeaderSize >
                         _reader.PEHeaders.SectionHeaders[0].PointerToRawData)
                         throw new InvalidOperationException("Cannot add section header");
 
-                    WriteI32(accessor, peSignatureOffset + Offsets.PEHeader.NumberOfSections, resourceSectionIndex + 1);
+                    WriteI32(accessor, peSignatureOffset + PEOffsets.PEHeader.NumberOfSections, resourceSectionIndex + 1);
 
                     // section name ".rsrc\0\0\0" = 2E 72 73 72 63 00 00 00
                     accessor.Write(resourceSectionBase + 0, (byte)0x2E);
@@ -274,15 +225,15 @@ namespace Microsoft.NET.HostModel
                     accessor.Write(resourceSectionBase + 5, (byte)0x00);
                     accessor.Write(resourceSectionBase + 6, (byte)0x00);
                     accessor.Write(resourceSectionBase + 7, (byte)0x00);
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.VirtualAddress, rsrcVirtualAddress);
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.RawSize, newSectionSize);
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.RawPointer, rsrcPointerToRawData);
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.RelocationsPointer, 0);
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.LineNumbersPointer, 0);
-                    WriteI16(accessor, resourceSectionBase + Offsets.SectionHeader.NumberOfRelocations, 0);
-                    WriteI16(accessor, resourceSectionBase + Offsets.SectionHeader.NumberOfLineNumbers, 0);
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.SectionCharacteristics,
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.VirtualAddress, rsrcVirtualAddress);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.RawSize, newSectionSize);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.RawPointer, rsrcPointerToRawData);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.RelocationsPointer, 0);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.LineNumbersPointer, 0);
+                    WriteI16(accessor, resourceSectionBase + PEOffsets.SectionHeader.NumberOfRelocations, 0);
+                    WriteI16(accessor, resourceSectionBase + PEOffsets.SectionHeader.NumberOfLineNumbers, 0);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.SectionCharacteristics,
                         (int)(SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
                 }
 
@@ -294,11 +245,11 @@ namespace Microsoft.NET.HostModel
 
                     for (int i = resourceSectionIndex + 1; i < _reader.PEHeaders.SectionHeaders.Length; i++)
                     {
-                        int currentSectionBase = sectionBase + Offsets.OneSectionHeaderSize * i;
+                        int currentSectionBase = sectionBase + PEOffsets.OneSectionHeaderSize * i;
 
-                        ModifyI32(accessor, currentSectionBase + Offsets.SectionHeader.VirtualAddress,
+                        ModifyI32(accessor, currentSectionBase + PEOffsets.SectionHeader.VirtualAddress,
                             pointer => pointer + virtualDelta);
-                        ModifyI32(accessor, currentSectionBase + Offsets.SectionHeader.RawPointer,
+                        ModifyI32(accessor, currentSectionBase + PEOffsets.SectionHeader.RawPointer,
                             pointer => pointer + delta);
                     }
                 }
@@ -306,9 +257,9 @@ namespace Microsoft.NET.HostModel
                 if (rsrcSectionDataSize != rsrcOriginalVirtualSize)
                 {
                     // update size of .rsrc section
-                    int resourceSectionBase = sectionBase + Offsets.OneSectionHeaderSize * resourceSectionIndex;
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
-                    WriteI32(accessor, resourceSectionBase + Offsets.SectionHeader.RawSize, newSectionSize);
+                    int resourceSectionBase = sectionBase + PEOffsets.OneSectionHeaderSize * resourceSectionIndex;
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.RawSize, newSectionSize);
 
                     void PatchRVA(int offset)
                     {
@@ -317,27 +268,27 @@ namespace Microsoft.NET.HostModel
                     }
 
                     int dataDirectoriesOffset = _reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus
-                        ? peSignatureOffset + Offsets.PEHeader.PE64DataDirectories
-                        : peSignatureOffset + Offsets.PEHeader.PE32DataDirectories;
+                        ? peSignatureOffset + PEOffsets.PEHeader.PE64DataDirectories
+                        : peSignatureOffset + PEOffsets.PEHeader.PE32DataDirectories;
 
                     // fix header
-                    ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.InitializedDataSize,
+                    ModifyI32(accessor, peSignatureOffset + PEOffsets.PEHeader.InitializedDataSize,
                         size => size + delta);
-                    ModifyI32(accessor, peSignatureOffset + Offsets.PEHeader.SizeOfImage,
+                    ModifyI32(accessor, peSignatureOffset + PEOffsets.PEHeader.SizeOfImage,
                         size => size + virtualDelta);
 
                     if (needsMoveTrailingSections)
                     {
                         // fix RVA in DataDirectory
                         for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
-                            PatchRVA(dataDirectoriesOffset + i * Offsets.DataDirectoryEntrySize +
-                                     Offsets.DataDirectoryEntry.VirtualAddressOffset);
+                            PatchRVA(dataDirectoriesOffset + i * PEOffsets.DataDirectoryEntrySize +
+                                     PEOffsets.DataDirectoryEntry.VirtualAddressOffset);
                     }
 
                     // update the ResourceTable in DataDirectories
-                    int resourceTableOffset = dataDirectoriesOffset + Offsets.ResourceTableDataDirectoryIndex * Offsets.DataDirectoryEntrySize;
-                    WriteI32(accessor, resourceTableOffset + Offsets.DataDirectoryEntry.VirtualAddressOffset, rsrcVirtualAddress);
-                    WriteI32(accessor, resourceTableOffset + Offsets.DataDirectoryEntry.SizeOffset, rsrcSectionDataSize);
+                    int resourceTableOffset = dataDirectoriesOffset + PEOffsets.ResourceTableDataDirectoryIndex * PEOffsets.DataDirectoryEntrySize;
+                    WriteI32(accessor, resourceTableOffset + PEOffsets.DataDirectoryEntry.VirtualAddressOffset, rsrcVirtualAddress);
+                    WriteI32(accessor, resourceTableOffset + PEOffsets.DataDirectoryEntry.SizeOffset, rsrcSectionDataSize);
                 }
 
                 accessor.WriteArray(rsrcPointerToRawData, rsrcSectionData, 0, rsrcSectionDataSize);
