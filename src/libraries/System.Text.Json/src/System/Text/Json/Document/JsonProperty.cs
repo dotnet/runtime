@@ -120,7 +120,11 @@ namespace System.Text.Json
             if (_name is null)
             {
                 ReadOnlySpan<byte> rawName = Value.GetRawPropertyNameAsUtf8Span();
+#if NET462_OR_GREATER || NETSTANDARD2_0
                 if (rawName.IndexOf(JsonConstants.BackSlash) >= 0)
+#else
+                if (rawName.Contains(JsonConstants.BackSlash))
+#endif
                 {
                     rawName = JsonReaderHelper.GetUnescapedSpan(rawName);
                 }
