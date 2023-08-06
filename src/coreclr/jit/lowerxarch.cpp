@@ -1205,7 +1205,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // We have `CompareEqual(x, Zero)` where a given element
                     // equaling zero returns 1. We can therefore use `vptestnm(x, x)`
-                    // since it does `~(x & x)` and setting 1 if the result is zero.
+                    // since it does `(x & x) == 0`, thus giving us `1` if zero and `0`
+                    // if non-zero
 
                     testIntrinsicId = NI_AVX512F_PTESTNM;
                 }
@@ -1213,7 +1214,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // We have `CompareNotEqual(x, Zero)` where a given element
                     // equaling zero returns 0. We can therefore use `vptestm(x, x)`
-                    // since it does `x & x` and setting 0 if the result is zero.
+                    // since it does `(x & x) != 0`, thus giving us `1` if non-zero and `0`
+                    // if zero
 
                     assert(intrinsicId == NI_AVX512F_CompareNotEqualMask);
                     testIntrinsicId = NI_AVX512F_PTESTM;
@@ -2113,14 +2115,23 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                     case NI_AVX512F_And:
                     case NI_AVX512DQ_And:
                     {
-                        // We can optimize since `vptestm` does `(x & y) != 0`
-                        // and `vptestnm` does `(x & y) == 0`.
+                        // We have `(x & y) == 0` with GenCondition::EQ (jz, setz, cmovz)
+                        // or `(x & y) != 0`with GenCondition::NE (jnz, setnz, cmovnz)
+                        //
+                        // `vptestnm(x, y)` does the equivalent of `(x & y) == 0`,
+                        // thus giving us `1` if zero and `0` if non-zero
+                        //
+                        // `vptestm(x, y)` does the equivalent of `(x & y) != 0`,
+                        // thus giving us `1` if non-zero and `0` if zero
+                        //
+                        // Given the mask produced `m`, we then do `zf: (m == Zero)`, `cf: (m == AllBitsSet)`
+                        //
+                        // Thus, for either we can first emit `vptestm(x, y)`. This gives us a mask where
+                        // `0` means the corresponding elements compared to zero. The subsequent `kortest`
+                        // will then set `ZF: 1` if all elements were 0 and `ZF: 0` if any elements were
+                        // non-zero. The default GenCondition then remain correct
 
-                        if (cmpOp == GT_EQ)
-                        {
-                            testIntrinsicId = NI_AVX512F_PTESTNM;
-                            cmpCnd          = GenCondition::NE;
-                        }
+                        assert(testIntrinsicId == NI_AVX512F_PTESTM);
 
                         node->Op(1) = op1Intrinsic->Op(1);
                         node->Op(2) = op1Intrinsic->Op(2);
@@ -4589,9 +4600,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     {
         // Now that we have finalized the shape of the tree, lower the insertion node as well.
 
-        assert((node->GetHWIntrinsicId() == NI_Vector512_GetLower128) ||
-               (node->GetHWIntrinsicId() == NI_AVX512F_ExtractVector128) ||
-               (node->GetHWIntrinsicId() == NI_AVX512DQ_ExtractVector128));
+        assert((node->GetHWIntrinsicId() == NI_AVX512F_InsertVector128) ||
+               (node->GetHWIntrinsicId() == NI_AVX512DQ_InsertVector128));
         assert(node != result);
 
         nextNode = LowerNode(node);
