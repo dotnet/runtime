@@ -1096,9 +1096,9 @@ namespace Internal.JitInterface
             return helper;
         }
 
-        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref bool pHasSideEffects)
+        private CorInfoHelpFunc getNewHelper(CORINFO_CLASS_STRUCT_* classHandle, ref bool pHasSideEffects)
         {
-            TypeDesc type = HandleToObject(pResolvedToken.hClass);
+            TypeDesc type = HandleToObject(classHandle);
 
             Debug.Assert(!type.IsString && !type.IsArray && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
 
