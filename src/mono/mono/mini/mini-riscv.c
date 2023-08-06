@@ -1821,6 +1821,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_FCONV_TO_R4:
 	case OP_FCONV_TO_R8:
 	case OP_FCONV_TO_I8:
+	case OP_RCONV_TO_I8:
 #endif
 	case OP_FNEG:
 	case OP_IAND:
