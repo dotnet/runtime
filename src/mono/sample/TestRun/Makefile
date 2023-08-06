@@ -8,7 +8,7 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/samples/csharp/serialization/bin/Debug/net8.0/serialization.dll
+ANY_PATH= /home/wuxinlong/workspace/samples/csharp/versioning/override/bin/Debug/net8.0/override.dll
 
 GitHubKey=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
 
@@ -17,7 +17,7 @@ GitHubKey=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
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
 MONO_ENV_DEBUG_OPTIONS = "-v"
-MONO_ENV_RUN_OPTIONS = "-v"
+MONO_ENV_RUN_OPTIONS = ""
 
 build: TestRun.cs
 	@mcs TestRun.cs
@@ -174,4 +174,13 @@ ref-tutorial:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)/ref-tutorial/IntruderAlert-finished/bin/Debug/net8.0/IntruderAlert.dll
 
-test: customer-relationship exploration toll-calculator mixins-with-interfaces delegates-and-events branches-quickstart events expression-trees indexers list-quickstart NullableIntroduction numbers-quickstart PatternMatching
+versioning-new:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/versioning/new/bin/Debug/net8.0/new.dll
+
+versioning-override:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/versioning/override/bin/Debug/net8.0/override.dll
+
+test: customer-relationship exploration toll-calculator mixins-with-interfaces delegates-and-events branches-quickstart \
+events expression-trees indexers list-quickstart NullableIntroduction numbers-quickstart PatternMatching versioning-new versioning-override
