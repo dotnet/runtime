@@ -57,7 +57,7 @@ namespace System
 #endif // SYSTEM_PRIVATE_CORELIB
             }
             TimeSpan offset = zoneInfo.GetUtcOffset(utcDateTime);
-            if (offset.Ticks is 0) 
+            if (offset.Ticks is 0)
             {
                 return utcDateTime;
             }
