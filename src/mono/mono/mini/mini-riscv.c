@@ -1242,6 +1242,7 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 	case OP_FNEG:
 	case OP_FMOVE:
 	case OP_RMOVE:
+	case OP_RCALL:
 	case OP_FCALL:
 	case OP_FCEQ:
 	case OP_FCLT:
@@ -2147,6 +2148,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_BR_REG:
 		case OP_JUMP_TABLE:
 		case OP_CALL:
+		case OP_RCALL:
 		case OP_FCALL:
 		case OP_LCALL:
 		case OP_VCALL2:
@@ -4618,6 +4620,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* Calls */
 		case OP_VOIDCALL:
 		case OP_CALL:
+		case OP_RCALL:
 		case OP_FCALL:
 		case OP_LCALL:
 		case OP_VCALL2: {
