@@ -3123,7 +3123,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if (RidFromToken(tkType))
         {
             CQuickBytes out;
-            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"const %s ",PrettyPrintClass(&out, tkType, g_pImport));
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"literal %s ",PrettyPrintClass(&out, tkType, g_pImport));
         }
         if (chName)
         {

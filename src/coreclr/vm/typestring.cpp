@@ -779,7 +779,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             PCCOR_SIGNATURE pSig;
             ULONG cSig;
             IfFailThrow(ty.GetModule()->GetMDImport()->GetTypeSpecFromToken(mdType, &pSig, &cSig));
-            SmallStackSString typeName(SString::Utf8, "const ");
+            SmallStackSString typeName(SString::Utf8, "literal ");
             LPCSTR str;
             switch (*pSig++)
             {
@@ -890,7 +890,6 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
     // or a const value
     else if (ty.IsConstValue())
     {
-        tnb.Append(W("const "));
         AppendType(tnb, ty.AsConstValue()->GetConstValueType(), Instantiation(), format & ~FormatAssembly);
         tnb.Append(W("("));
         AppendConstValue(tnb, ty.AsConstValue()->GetConstValueType().GetInternalCorElementType(), ty.AsConstValue()->GetConstValue());
@@ -1231,7 +1230,6 @@ void TypeString::AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD fo
     }
     else if (kind == ELEMENT_TYPE_CTARG)
     {
-        tnb.Append(W("const "));
         TypeHandle valueType = pTypeKey->GetConstValueType();
         AppendType(tnb, valueType, Instantiation(), format & ~FormatAssembly);
         tnb.Append(W("("));

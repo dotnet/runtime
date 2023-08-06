@@ -268,7 +268,6 @@
                 /* Null reference keyword for InitOpt */
     KYWD( "nullref",        NULLREF_,           NO_VALUE )
     KYWD( "type",           TYPE_,              NO_VALUE )
-    KYWD( "const",          CONST_,             NO_VALUE )
     KYWD( ".interfaceimpl", _INTERFACEIMPL,     NO_VALUE )
                 /* Header flags keywords */
     KYWD( ".subsystem",     _SUBSYSTEM,         NO_VALUE )

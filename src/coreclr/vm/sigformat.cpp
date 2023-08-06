@@ -357,7 +357,6 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
 
 void SigFormat::AddConstValueTypeString(CorElementType constValueType, uint64_t constValue)
 {
-    AddString("const ");
     char buffer[42];
     switch (constValueType)
     {

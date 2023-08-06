@@ -142,7 +142,6 @@
 
         /* newly added tokens go here */
 %token  CONSTRAINT_
-%token  CONST_
 
         /* nonTerminals */
 %type <string> dottedName id methodName atOpt slashedName
@@ -504,8 +503,8 @@ conTyparAttribs         : /* EMPTY */                       { $$ = 0; }
                         | conTyparAttrib conTyparAttribs    { $$ = $1 | $2; }
                         ;
 
-typars                  : CONST_ conTyparAttribs type tyBound dottedName typarsRest {$$ = new TyParList($2, $3, $4, $5, $6); }
-                        | CONST_ conTyparAttribs type dottedName typarsRest {$$ = new TyParList($2, $3, NULL, $4, $5); }
+typars                  : LITERAL_ conTyparAttribs type tyBound dottedName typarsRest {$$ = new TyParList($2, $3, $4, $5, $6); }
+                        | LITERAL_ conTyparAttribs type dottedName typarsRest {$$ = new TyParList($2, $3, NULL, $4, $5); }
                         | typarAttribs tyBound dottedName typarsRest {$$ = new TyParList($1, $2, $3, $4);}
                         | typarAttribs dottedName typarsRest   {$$ = new TyParList($1, NULL, $2, $3);}
                         ;
@@ -1727,7 +1726,7 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                         | OBJECT_                             { $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_OBJECT); }
                         | VALUE_ CLASS_ className             { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $3); }
                         | VALUETYPE_ className                { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $2); }
-                        | CONST_ constTypeArg                 { $$ = $2; $$->insertInt8(ELEMENT_TYPE_CTARG); }
+                        | constTypeArg                        { $$ = $1; $$->insertInt8(ELEMENT_TYPE_CTARG); }
                         | type '[' ']'                        { $$ = $1; $$->insertInt8(ELEMENT_TYPE_SZARRAY); }
                         | type '[' bounds1 ']'                { $$ = parser->MakeTypeArray(ELEMENT_TYPE_ARRAY, $1, $3); }
                         | type '&'                            { $$ = $1; $$->insertInt8(ELEMENT_TYPE_BYREF); }

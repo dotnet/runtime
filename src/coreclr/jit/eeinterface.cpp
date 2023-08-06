@@ -104,7 +104,6 @@ void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 //
 void Compiler::eePrintConstValue(StringPrinter* printer, CorInfoType valueType, uint64_t value)
 {
-    printer->Append("const ");
     printer->Append(varTypeName(JitType2PreciseVarType(valueType)));
     printer->Append("(");
     char buffer[64];
