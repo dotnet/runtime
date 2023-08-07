@@ -1003,7 +1003,9 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             break;
 
         case 0xc4: // Vex 3-byte
-            opCodeMap = (OpcodeMap)(int(address[0]) << 8 | (address[1] & 0x1f));
+        {
+            BYTE vex_mmmmm = address[1] & 0x1f;
+            opCodeMap = (OpcodeMap)(int(address[0]) << 8 | vex_mmmmm);
 
             switch (opCodeMap)
             {
@@ -1015,6 +1017,9 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                 break;
             case VexMapC40F3A:
                 LOG((LF_CORDB, LL_INFO10000, "map:Vex0F3A "));
+                break;
+            default:
+                LOG((LF_CORDB, LL_INFO10000, "ILLEGAL vex_mmmmm value! "));
                 break;
             }
 
@@ -1031,6 +1036,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
             pp = address[2] & 0x3;
             address += 3;
             break;
+        }
 
         case 0xc5: // Vex 2-byte
             opCodeMap = VexMapC40F;
