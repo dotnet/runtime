@@ -28,11 +28,12 @@ public class Runtime_78891
         public static S5 s_48;
 
         [Fact]
-        public static void Start()
+        public static int TestEntryPoint()
         {
             var vr2 = new S5();
             var vr3 = new S5();
             Assert.Throws<NullReferenceException>(() => M59(vr2, vr3));
+            return 100;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
