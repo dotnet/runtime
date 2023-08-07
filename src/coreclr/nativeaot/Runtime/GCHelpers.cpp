@@ -128,6 +128,11 @@ COOP_PINVOKE_HELPER(int32_t, RhSetGcLatencyMode, (int32_t newLatencyMode))
     return GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
 }
 
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhIsPromoted, (OBJECTREF obj))
+{
+    FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->IsPromoted(obj));
+}
+
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhIsServerGc, ())
 {
     FC_RETURN_BOOL(GCHeapUtilities::IsServerHeap());

@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 using static System.Runtime.InteropServices.ComWrappers;
 
@@ -23,11 +23,9 @@ namespace System.Runtime.InteropServices
 
         private static unsafe IntPtr CreateHostServices()
         {
-            IntPtr wrapperMem = (IntPtr)NativeMemory.Alloc(
-                (nuint)sizeof(HostServices) + (nuint)sizeof(IntPtr) + (nuint)sizeof(HostServices*));
-
-            *(IntPtr*)(wrapperMem + sizeof(HostServices)) = ComWrappers.DefaultIReferenceTrackerHostVftblPtr;
-            *(IntPtr*)(wrapperMem + sizeof(HostServices) + sizeof(IntPtr)) = wrapperMem;
+            IntPtr wrapperMem = (IntPtr)NativeMemory.Alloc(2 * (nuint)sizeof(IntPtr));
+            *(IntPtr*)(wrapperMem) = ComWrappers.DefaultIReferenceTrackerHostVftblPtr;
+            *(IntPtr*)(wrapperMem + sizeof(IntPtr)) = wrapperMem;
             return wrapperMem;
         }
 
@@ -84,13 +82,14 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException();
             }
 
-            if (Marshal.QueryInterface(punk, in ComWrappers.IID_IUnknown, out nint ppv) != 0)
+            if (Marshal.QueryInterface(punk, in ComWrappers.IID_IUnknown, out IntPtr ppv) != 0)
             {
                 throw new InvalidCastException();
             }
 
-            IntPtr trackerTarget = ComWrappers.GetOrCreateTrackerTarget(ppv);
-            if (Marshal.QueryInterface(trackerTarget, in ComWrappers.IID_IReferenceTrackerTarget, out ppNewReference) != 0)
+            using ComHolder identity = new ComHolder(ppv);
+            using ComHolder trackerTarget = new ComHolder(ComWrappers.GetOrCreateTrackerTarget(identity.Ptr));
+            if (Marshal.QueryInterface(trackerTarget.Ptr, in ComWrappers.IID_IReferenceTrackerTarget, out ppNewReference) != 0)
             {
                 throw new InvalidCastException();
             }
@@ -112,6 +111,9 @@ namespace System.Runtime.InteropServices
         internal static volatile IntPtr s_TrackerManager;
         internal static volatile bool s_HasTrackingStarted;
         internal static volatile bool s_IsGlobalPeggingOn = true;
+
+        internal static List<DependentHandle> s_ReferenceCache = new List<DependentHandle>();
+        
 
         // Indicates if walking the external objects is needed.
         // (i.e. Have any IReferenceTracker instances been found?)
@@ -136,6 +138,10 @@ namespace System.Runtime.InteropServices
             if (Interlocked.CompareExchange(ref s_TrackerManager, referenceTrackerManager, IntPtr.Zero) == IntPtr.Zero)
             {
                 IReferenceTrackerManager.SetReferenceTrackerHost(s_TrackerManager, HostServices.s_globalHostServices);
+
+                // Our GC callbacks are used only for reference walk of tracker objects, so register it here
+                // when we find our first tracker object.
+                RegisterGCCallbacks();
             }
             else
             {
@@ -172,9 +178,8 @@ namespace System.Runtime.InteropServices
         }
 
         // Begin the reference tracking process for external objects.
-        public static void BeginReferenceTracking(/*InteropLibImports::RuntimeCallContext* cxt*/)
+        public static void BeginReferenceTracking()
         {
-            // Debug.Assert(cxt != IntPtr.Zero);
             if (!ShouldWalkExternalObjects())
             {
                 return;
@@ -197,13 +202,7 @@ namespace System.Runtime.InteropServices
             s_IsGlobalPeggingOn = false;
 
             // Time to walk the external objects
-            WalkExternalTrackerObjects(cxt);
-        }
-
-        private static void WalkExternalTrackerObjects()
-        {
-            bool walkFailed = false;
-
+            WalkExternalTrackerObjects();
         }
 
         // End the reference tracking process for external object.
@@ -225,6 +224,58 @@ namespace System.Runtime.InteropServices
             s_IsGlobalPeggingOn = true;
             s_HasTrackingStarted = false;
         }
+
+        public static unsafe void RegisterGCCallbacks()
+        {
+            delegate* unmanaged<int, void> gcStartCallback = &GCStartCollection;
+            delegate* unmanaged<int, void> gcStopCallback = &GCStopCollection;
+            delegate* unmanaged<int, void> gcAfterMarkCallback = &GCAfterMarkPhase;
+
+            if (!RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.StartCollection, (IntPtr)gcStartCallback) ||
+                !RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.EndCollection, (IntPtr)gcStopCallback) ||
+                !RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.AfterMarkPhase, (IntPtr)gcAfterMarkCallback))
+            {
+                throw new OutOfMemoryException();
+            }
+        }
+
+        public static void AddReferencePath(object target, object foundReference)
+        {
+            s_ReferenceCache.Add(new DependentHandle(target, foundReference));
+        }
+
+        [UnmanagedCallersOnly]
+        private static void GCStartCollection(int condemnedGeneration)
+        {
+            if (condemnedGeneration >= 2)
+            {
+                foreach (DependentHandle handle in s_ReferenceCache)
+                {
+                    handle.Dispose();
+                }
+                s_ReferenceCache.Clear();
+
+                BeginReferenceTracking();
+
+                s_ReferenceCache.TrimExcess();
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void GCStopCollection(int condemnedGeneration)
+        {
+            if (condemnedGeneration >= 2)
+            {
+                EndReferenceTracking();
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void GCAfterMarkPhase(int condemnedGeneration)
+        {
+            DetachNonPromotedObjects();
+        }
+
     }
 
     // Wrapper for IReferenceTrackerManager
@@ -291,12 +342,22 @@ namespace System.Runtime.InteropServices
         }
     }
 
-    // Wrapper for IReferenceTracker
-    internal static unsafe class IFindReferenceTargetsCallback
+    internal readonly struct ComHolder : IDisposable
     {
-        public static void FoundTrackerTarget(IntPtr pThis, IntPtr referenceTrackerTarget)
+        private readonly IntPtr _ptr;
+
+        internal readonly IntPtr Ptr => _ptr;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ComHolder(IntPtr ptr)
         {
-            Marshal.ThrowExceptionForHR((*(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int>**)pThis)[3](pThis, referenceTrackerTarget));
+            _ptr = ptr;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly void Dispose()
+        {
+            Marshal.Release(_ptr);
         }
     }
 }

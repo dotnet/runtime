@@ -129,6 +129,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhSetGcLatencyMode")]
         internal static extern int RhSetGcLatencyMode(GCLatencyMode newLatencyMode);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhIsPromoted")]
+        internal static extern bool RhIsPromoted(object obj);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhIsServerGc")]
         internal static extern bool RhIsServerGc();
