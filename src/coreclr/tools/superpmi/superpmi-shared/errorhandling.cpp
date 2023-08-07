@@ -9,28 +9,33 @@
 
 void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode)
 {
+    if (BreakOnException())
+        __debugbreak();
+
     RaiseException(exceptionCode, 0, 0, nullptr);
 }
 
 // Allocating memory here seems moderately dangerous: we'll probably leak like a sieve...
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, va_list args, const char* message)
+void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, va_list args, const char* message)
 {
+    assert(IsSuperPMIException(exceptionCode));
+
     char*      buffer = new char[8192];
-    ULONG_PTR* ptr    = new ULONG_PTR();
-    *ptr              = (ULONG_PTR)buffer;
     _vsnprintf_s(buffer, 8192, 8191, message, args);
 
     if (BreakOnException())
         __debugbreak();
 
-    RaiseException(exceptionCode, 0, 1, ptr);
+    ULONG_PTR exArgs[1];
+    exArgs[0] = (ULONG_PTR)buffer;
+    RaiseException(exceptionCode, 0, ArrLen(exArgs), exArgs);
 }
 
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const char* msg, ...)
+void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, const char* msg, ...)
 {
     va_list ap;
     va_start(ap, msg);
-    ThrowException(exceptionCode, ap, msg);
+    ThrowSpmiException(exceptionCode, ap, msg);
 }
 
 SpmiException::SpmiException(FilterSuperPMIExceptionsParam_CaptureException* e)

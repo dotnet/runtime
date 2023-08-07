@@ -184,6 +184,7 @@ namespace System
 
         public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
         public static bool IsInvokingFinalizersSupported => !IsNativeAot;
+        public static bool IsTypeEquivalenceSupported => !IsNativeAot && !IsMonoRuntime && IsWindows;
 
         public static bool IsMetadataUpdateSupported => !IsNativeAot;
 

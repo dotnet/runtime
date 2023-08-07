@@ -137,7 +137,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetNameInfo)
     DllImportEntry(SystemNative_GetDomainName)
     DllImportEntry(SystemNative_GetHostName)
-    DllImportEntry(SystemNative_GetIPSocketAddressSizes)
+    DllImportEntry(SystemNative_GetSocketAddressSizes)
     DllImportEntry(SystemNative_GetAddressFamily)
     DllImportEntry(SystemNative_SetAddressFamily)
     DllImportEntry(SystemNative_GetPort)

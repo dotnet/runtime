@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -7,8 +8,8 @@
     <NoWarn>$(NoWarn);CS0649;SA1129;IDE0059;IDE0060;CA1822;CA1852</NoWarn>
     <Nullable>annotations</Nullable>
     <IsTrimmable>false</IsTrimmable>
-    <!-- Public API not fully documented. -->
-    <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- Public API not fully documented and System.Speech has a PNSE assembly which isn't yet supported by the repo infrastructure. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -256,4 +257,5 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <EmbeddedResource Include="upstable_jpn.upsmap"
                       LogicalName="upstable_jpn.upsmap" />
   </ItemGroup>
+
 </Project>

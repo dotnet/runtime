@@ -1,6 +1,5 @@
 ﻿<Project>
   <PropertyGroup>
-    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
     <SharedGUID>4aaf81e6-6cdc-44fa-adfd-d7b47b9c998f</SharedGUID>
   </PropertyGroup>

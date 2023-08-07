@@ -720,18 +720,6 @@ ICALL_EXPORT
 int
 ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *pUnk);
 
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_win32_compat_CopyMemory (gpointer dest, gconstpointer source, gsize length);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_win32_compat_FillMemory (gpointer dest, gsize length, guchar fill);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_win32_compat_MoveMemory (gpointer dest, gconstpointer source, gsize length);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_win32_compat_ZeroMemory (gpointer dest, gsize length);
-
 void
 mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask);
 

@@ -236,11 +236,4 @@ static struct InitializeRuntimePointerHelper
         RhSetRuntimeInitializationCallback(&InitializeRuntime);
     }
 } initializeRuntimePointerHelper;
-
-extern "C" void* NativeAOT_StaticInitialization();
-
-void* NativeAOT_StaticInitialization()
-{
-    return &initializeRuntimePointerHelper;
-}
 #endif // NATIVEAOT_DLL

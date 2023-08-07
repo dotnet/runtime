@@ -693,7 +693,7 @@ namespace System.Runtime.InteropServices
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Memory<T> CreateFromPinnedArray<T>(T[]? array, int start, int length) { throw null; }
-        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref T reference, int length) { throw null; }
+        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) { throw null; }
         [System.CLSCompliant(false)]
         public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
         [System.CLSCompliant(false)]
@@ -710,8 +710,8 @@ namespace System.Runtime.InteropServices
         public static bool TryGetMemoryManager<T, TManager>(System.ReadOnlyMemory<T> memory, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TManager? manager, out int start, out int length) where TManager : System.Buffers.MemoryManager<T> { throw null; }
         public static bool TryGetString(System.ReadOnlyMemory<char> memory, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? text, out int start, out int length) { throw null; }
         public static bool TryRead<T>(System.ReadOnlySpan<byte> source, out T value) where T : struct { throw null; }
-        public static bool TryWrite<T>(System.Span<byte> destination, ref T value) where T : struct { throw null; }
-        public static void Write<T>(System.Span<byte> destination, ref T value) where T : struct { }
+        public static bool TryWrite<T>(System.Span<byte> destination, in T value) where T : struct { throw null; }
+        public static void Write<T>(System.Span<byte> destination, in T value) where T : struct { }
     }
 }
 namespace System.Text

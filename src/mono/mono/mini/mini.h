@@ -1239,9 +1239,9 @@ typedef struct {
 	guint            emulate_long_shift_opts : 1;
 	guint            have_objc_get_selector : 1;
 	guint            have_generalized_imt_trampoline : 1;
-	gboolean         have_op_tailcall_membase : 1;
-	gboolean         have_op_tailcall_reg : 1;
-	gboolean         have_volatile_non_param_register : 1;
+	guint         have_op_tailcall_membase : 1;
+	guint         have_op_tailcall_reg : 1;
+	guint         have_volatile_non_param_register : 1;
 	guint            have_init_mrgctx : 1;
 	guint            gshared_supported : 1;
 	guint            ilp32 : 1;

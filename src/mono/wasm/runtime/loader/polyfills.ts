@@ -19,19 +19,25 @@ const URLPolyfill = class URL {
 };
 
 export function verifyEnvironment() {
-    mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version.");
-    mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version.");
+    mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     if (MonoWasmThreads) {
-        mono_assert(!ENVIRONMENT_IS_SHELL && !ENVIRONMENT_IS_NODE, "This build of dotnet is multi-threaded, it doesn't support shell environments like V8 or NodeJS.");
-        mono_assert(globalThis.SharedArrayBuffer !== undefined, "SharedArrayBuffer is not enabled on this page. Please use a modern browser and set Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy http headers. See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements");
-        mono_assert(typeof globalThis.EventTarget === "function", "This browser/engine doesn't support EventTarget API. Please use a modern version.");
+        mono_assert(!ENVIRONMENT_IS_SHELL && !ENVIRONMENT_IS_NODE, "This build of dotnet is multi-threaded, it doesn't support shell environments like V8 or NodeJS. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(globalThis.SharedArrayBuffer !== undefined, "SharedArrayBuffer is not enabled on this page. Please use a modern browser and set Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy http headers. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(typeof globalThis.EventTarget === "function", "This browser/engine doesn't support EventTarget API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
-
-    // TODO detect other (WASM) features that are required for the runtime
-    // See https://github.com/dotnet/runtime/issues/84574
 }
 
 export async function detect_features_and_polyfill(module: DotnetModuleInternal): Promise<void> {
+    if (ENVIRONMENT_IS_NODE) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore:
+        const process = await import(/* webpackIgnore: true */"process");
+        const minNodeVersion = 14;
+        if (process.versions.node.split(".")[0] < minNodeVersion) {
+            throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}', please use at least ${minNodeVersion}. See also https://aka.ms/dotnet-wasm-features`);
+        }
+    }
 
     const scriptUrlQuery =/* webpackIgnore: true */import.meta.url;
     const queryIndex = scriptUrlQuery.indexOf("?");
@@ -48,13 +54,12 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
         if (isPathAbsolute(path)) return path;
         return loaderHelpers.scriptDirectory + path;
     };
-    loaderHelpers.downloadResource = module.downloadResource;
     loaderHelpers.fetch_like = fetch_like;
     // eslint-disable-next-line no-console
     loaderHelpers.out = console.log;
     // eslint-disable-next-line no-console
     loaderHelpers.err = console.error;
-    loaderHelpers.getApplicationEnvironment = module.getApplicationEnvironment;
+    loaderHelpers.onDownloadResourceProgress = module.onDownloadResourceProgress;
 
     if (ENVIRONMENT_IS_WEB && globalThis.navigator) {
         const navigator: any = globalThis.navigator;
@@ -81,9 +86,10 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     }
 }
 
-const hasFetch = typeof (globalThis.fetch) === "function";
 export async function fetch_like(url: string, init?: RequestInit): Promise<Response> {
     try {
+        // this need to be detected only after we import node modules in onConfigLoaded
+        const hasFetch = typeof (globalThis.fetch) === "function";
         if (ENVIRONMENT_IS_NODE) {
             const isFileUrl = url.startsWith("file://");
             if (!isFileUrl && hasFetch) {
@@ -149,6 +155,18 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
         };
     }
     throw new Error("No fetch implementation available");
+}
+
+// context: the loadBootResource extension point can return URL/string which is unqualified. 
+// For example `xxx/a.js` and we have to make it absolute
+// For compatibility reasons, it's based of document.baseURI even for JS modules like `./xxx/a.js`, which normally use script directory of a caller of `import`
+// Script directory in general doesn't match document.baseURI
+export function makeURLAbsoluteWithApplicationBase(url: string) {
+    mono_assert(typeof url === "string", "url must be a string");
+    if (!isPathAbsolute(url) && url.indexOf("./") !== 0 && url.indexOf("../") !== 0 && globalThis.URL && globalThis.document && globalThis.document.baseURI) {
+        url = (new URL(url, globalThis.document.baseURI)).toString();
+    }
+    return url;
 }
 
 function normalizeFileUrl(filename: string) {

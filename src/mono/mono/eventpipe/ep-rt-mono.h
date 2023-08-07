@@ -1090,10 +1090,12 @@ ep_rt_temp_path_get (
 
 	const ep_char8_t *path = g_get_tmp_dir ();
 	int32_t result = snprintf (buffer, buffer_len, "%s", path);
-	if (result <= 0 || GINT32_TO_UINT32(result) > buffer_len)
+	if (result <= 0 || GINT32_TO_UINT32(result) >= buffer_len)
 		ep_raise_error ();
 
 	if (buffer [result - 1] != G_DIR_SEPARATOR) {
+		if (GINT32_TO_UINT32(result) >= buffer_len - 1)
+			ep_raise_error ();
 		buffer [result++] = G_DIR_SEPARATOR;
 		buffer [result] = '\0';
 	}
@@ -1918,6 +1920,7 @@ ep_rt_write_event_contention_stop (
 */
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntime (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -1928,6 +1931,7 @@ EventPipeEtwCallbackDotNETRuntime (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeRundown (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -1938,6 +1942,7 @@ EventPipeEtwCallbackDotNETRuntimeRundown (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimePrivate (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -1948,6 +1953,7 @@ EventPipeEtwCallbackDotNETRuntimePrivate (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeStress (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -1958,6 +1964,7 @@ EventPipeEtwCallbackDotNETRuntimeStress (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
