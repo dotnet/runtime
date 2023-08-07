@@ -1180,8 +1180,7 @@ private:
                 }
                 else if (indir->TypeIs(TYP_SIMD12))
                 {
-                    if ((offset == 0) && (varDsc->TypeGet() == TYP_SIMD16) &&
-                        m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset == 0) && (varDsc->TypeGet() == TYP_SIMD16) && m_compiler->IsBaselineSimdIsaSupported())
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
