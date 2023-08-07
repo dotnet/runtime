@@ -466,20 +466,19 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Increase the capacity of this list to at least the specified <paramref name="capacity"/>.
-        /// This method is specifically for insertion, to avoid 1 extra array copy.
-        /// It also copies data to their after-insertion positions.
-        /// You should only call this method when Count + insertionCount > Capacity
+        /// Enlarge this list so it may contain at least <paramref name="insertionCount"/> more elements
+        /// And copy data to their after-insertion positions.
+        /// This method is specifically for insertion, as it avoids 1 extra array copy.
+        /// You should only call this method when Count + insertionCount > Capacity.
         /// </summary>
-        /// <param name="capacity">The minimum capacity to ensure.</param>
-        /// <param name="indexToInsert">Index where the element will be.</param>
+        /// <param name="indexToInsert">Index of the first insertion.</param>
         /// <param name="insertionCount">How many elements will be inserted.</param>
-        private void GrowForInsertion(int capacity, int indexToInsert, int insertionCount = 1)
+        private void GrowForInsertion(int indexToInsert, int insertionCount = 1)
         {
-            Debug.Assert(_items.Length < capacity);
             Debug.Assert(insertionCount > 0);
-            Debug.Assert((uint)_size + insertionCount <= capacity);
             Debug.Assert((uint)_size + insertionCount <= Array.MaxLength);
+
+            int capacity = checked(_size + insertionCount);
 
             // Follow the same logic from Grow(capacity)
 
@@ -773,7 +772,7 @@ namespace System.Collections.Generic
             }
             if (_size == _items.Length)
             {
-                GrowForInsertion(_size + 1, index);
+                GrowForInsertion(index, 1);
             }
             else if (index < _size)
             {
@@ -822,7 +821,7 @@ namespace System.Collections.Generic
                 {
                     if (_items.Length - _size < count)
                     {
-                        GrowForInsertion(checked(_size + count), index, count);
+                        GrowForInsertion(index, count);
                     }
                     else if (index < _size)
                     {
