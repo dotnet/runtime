@@ -43,8 +43,8 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GetIlasmRoundTripBashScript"
           Returns="$(IlasmRoundTripBashScript);$(BashIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>IL-RT/$(AssemblyName).dasm.il</DisassemblyName>
+      <TargetAssemblyName>IL-RT/$(AssemblyName).asm.dll</TargetAssemblyName>
 
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 # IlasmRoundTrip Script
@@ -62,6 +62,7 @@ export RunningIlasmRoundTrip=
 
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
+  mkdir IL-RT
   echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
   "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
   ERRORLEVEL=$?
@@ -126,8 +127,8 @@ fi
   <Target Name="GetIlasmRoundTripBatchScript"
           Returns="$(IlasmRoundTripBatchScript);$(BatchIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>IL-RT\$(AssemblyName).dasm.il</DisassemblyName>
+      <TargetAssemblyName>IL-RT\$(AssemblyName).asm.dll</TargetAssemblyName>
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 REM IlasmRoundTrip Script
@@ -144,6 +145,7 @@ REM Disable Ilasm round-tripping for Linker tests.
 REM Todo: Ilasm round-trip on linked binaries.
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
+    mkdir IL-RT
     ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
     %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
 
