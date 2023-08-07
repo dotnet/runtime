@@ -5,11 +5,6 @@
 #include <Foundation/Foundation.h>
 #include <objc/runtime.h>
 
-static void noop_release(id self, SEL _cmd)
-{
-    [self release];
-}
-
 void EnsureNSThreadIsMultiThreaded(void)
 {
     if (![NSThread isMultiThreaded])
