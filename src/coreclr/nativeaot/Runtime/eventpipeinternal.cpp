@@ -163,7 +163,7 @@ EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(ui
 {
     int retVal = 0;
     ep_rt_thread_activity_id_handle_t activityIdHandle = ep_thread_get_activity_id_handle ();
-    if (pThread == NULL || pActivityId == NULL)
+    if (activityIdHandle == NULL || pActivityId == NULL)
     {
         retVal = 1;
     }
@@ -175,12 +175,12 @@ EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(ui
         {
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_ID:
 
-            ep_rt_thread_get_activity_id (pThread, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_SET_ID:
 
-            ep_rt_thread_set_activity_id (pThread, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
@@ -190,17 +190,17 @@ EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(ui
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:
 
-            ep_rt_thread_get_activity_id (pThread, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
-            ep_rt_thread_set_activity_id (pThread, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
             *pActivityId = currentActivityId;
 
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_SET_ID:
 
-            ep_rt_thread_get_activity_id (pThread, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
             ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
-            ep_rt_thread_set_activity_id (pThread, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 
         default:
