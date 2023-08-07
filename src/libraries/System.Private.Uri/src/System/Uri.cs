@@ -3618,7 +3618,7 @@ namespace System
             int i = 0;
 
             // skip whitespace
-            while (i < uriString.Length && UriHelper.IsLWS(uriString[i]))
+            while ((uint)i < (uint)uriString.Length && UriHelper.IsLWS(uriString[i]))
             {
                 i++;
             }
@@ -3644,7 +3644,11 @@ namespace System
             }
 
             // NB: A string must have at least 3 characters and at least 1 before ':'
-            if ((uint)(i + 2) >= (uint)uriString.Length || colonIndex == i)
+            if ((uint)(i + 2) >= (uint)uriString.Length ||
+                colonIndex == i ||
+                // Redundant checks to eliminate range checks below
+                (uint)i >= (uint)uriString.Length ||
+                (uint)(i + 1) >= (uint)uriString.Length)
             {
                 err = ParsingError.BadFormat;
                 return 0;
@@ -3652,47 +3656,45 @@ namespace System
 
             // Check for supported special cases like a DOS file path OR a UNC share path
             // NB: A string may not have ':' if this is a UNC path
+            if (uriString[i + 1] is ':' or '|')
             {
-                if (uriString[i + 1] is ':' or '|')
+                // DOS-like path?
+                if (char.IsAsciiLetter(uriString[i]))
                 {
-                    // DOS-like path?
-                    if (char.IsAsciiLetter(uriString[i]))
+                    if (uriString[i + 2] is '\\' or '/')
                     {
-                        if (uriString[i + 2] is '\\' or '/')
-                        {
-                            flags |= (Flags.DosPath | Flags.ImplicitFile | Flags.AuthorityFound);
-                            syntax = UriParser.FileUri;
-                            return i;
-                        }
-
-                        err = ParsingError.MustRootedPath;
-                        return 0;
-                    }
-
-                    err = uriString[i + 1] == ':' ? ParsingError.BadScheme : ParsingError.BadFormat;
-                    return 0;
-                }
-                else if (uriString[i] is '/' or '\\')
-                {
-                    // UNC share?
-                    if (uriString[i + 1] is '\\' or '/')
-                    {
-                        flags |= (Flags.UncPath | Flags.ImplicitFile | Flags.AuthorityFound);
+                        flags |= (Flags.DosPath | Flags.ImplicitFile | Flags.AuthorityFound);
                         syntax = UriParser.FileUri;
-                        i += 2;
-
-                        // V1.1 compat this will simply eat any slashes prepended to a UNC path
-                        while ((uint)i < (uint)uriString.Length && uriString[i] is '/' or '\\')
-                        {
-                            i++;
-                        }
-
                         return i;
                     }
 
-                    err = ParsingError.BadFormat;
+                    err = ParsingError.MustRootedPath;
                     return 0;
                 }
+
+                err = uriString[i + 1] == ':' ? ParsingError.BadScheme : ParsingError.BadFormat;
+                return 0;
+            }
+            else if (uriString[i] is '/' or '\\')
+            {
+                // UNC share?
+                if (uriString[i + 1] is '\\' or '/')
+                {
+                    flags |= (Flags.UncPath | Flags.ImplicitFile | Flags.AuthorityFound);
+                    syntax = UriParser.FileUri;
+                    i += 2;
+
+                    // V1.1 compat this will simply eat any slashes prepended to a UNC path
+                    while ((uint)i < (uint)uriString.Length && uriString[i] is '/' or '\\')
+                    {
+                        i++;
+                    }
+
+                    return i;
+                }
+
+                err = ParsingError.BadFormat;
+                return 0;
             }
 
             if (colonIndex == uriString.Length)
