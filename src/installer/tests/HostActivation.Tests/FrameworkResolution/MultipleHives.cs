@@ -52,7 +52,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithTfm(tfm)
                     .WithFramework(MicrosoftNETCoreApp, requestedVersion),
                 multiLevelLookup)
-                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, resolvedVersion);
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, resolvedVersion)
+                .And.HaveStdErrContaining($"Ignoring FX version [{requestedVersion}] without .deps.json");
         }
 
         [Fact]
@@ -157,7 +158,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 new TestSettings().WithCommandLine("--list-runtimes"),
                 multiLevelLookup,
                 testApp: null)
-                .Should().HaveStdOut(expectedOutput);
+                .Should().HaveStdOut(expectedOutput)
+                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
 
         [Theory]
@@ -180,7 +182,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 new TestSettings().WithCommandLine("--info"),
                 multiLevelLookup,
                 testApp: null)
-                .Should().HaveStdOutContaining(expectedOutput);
+                .Should().HaveStdOutContaining(expectedOutput)
+                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
 
         [Theory]
@@ -210,7 +213,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 multiLevelLookup)
                 .Should().Fail()
                 .And.HaveStdErrContaining(expectedOutput)
-                .And.HaveStdErrContaining("https://aka.ms/dotnet/app-launch-failed");
+                .And.HaveStdErrContaining("https://aka.ms/dotnet/app-launch-failed")
+                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
 
         private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, bool? multiLevelLookup = true)
@@ -253,6 +257,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.1.3")
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("7.1.2")
                     .Build();
+
+                // Empty Microsoft.NETCore.App directory - should not be recognized as a valid framework
+                // Version is the best match for some test cases, but they should be ignored
+                string netCoreAppDir = Path.Combine(DotNetMainHive.BinPath, "shared", Constants.MicrosoftNETCoreApp);
+                Directory.CreateDirectory(Path.Combine(netCoreAppDir, "5.0.0"));
+                Directory.CreateDirectory(Path.Combine(netCoreAppDir, "6.0.0"));
+                Directory.CreateDirectory(Path.Combine(netCoreAppDir, "7.0.0"));
+                Directory.CreateDirectory(Path.Combine(netCoreAppDir, "9999.9.9"));
 
                 DotNetGlobalHive = DotNet("GlobalHive")
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.1.2")

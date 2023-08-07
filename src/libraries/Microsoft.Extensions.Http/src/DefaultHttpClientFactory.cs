@@ -168,6 +168,12 @@ namespace Microsoft.Extensions.Http
                     {
                         options.HttpMessageHandlerBuilderActions[i](b);
                     }
+
+                    // Logging is added separately in the end. But for now it should be still possible to override it via filters...
+                    foreach (Action<HttpMessageHandlerBuilder> action in options.LoggingBuilderActions)
+                    {
+                        action(b);
+                    }
                 }
             }
             catch

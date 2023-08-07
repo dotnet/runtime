@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     [DebuggerDisplay("{DebuggerToString(),nq}")]
     [DebuggerTypeProxy(typeof(ServiceProviderEngineScopeDebugView))]
-    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable, IServiceScopeFactory
+    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IKeyedServiceProvider, IAsyncDisposable, IServiceScopeFactory
     {
         // For testing and debugging only
         internal IList<object> Disposables => _disposables ?? (IList<object>)Array.Empty<object>();
@@ -47,7 +47,27 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return RootProvider.GetService(serviceType, this);
+            return RootProvider.GetService(ServiceIdentifier.FromServiceType(serviceType), this);
+        }
+
+        public object? GetKeyedService(Type serviceType, object? serviceKey)
+        {
+            if (_disposed)
+            {
+                ThrowHelper.ThrowObjectDisposedException();
+            }
+
+            return RootProvider.GetKeyedService(serviceType, serviceKey, this);
+        }
+
+        public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
+        {
+            if (_disposed)
+            {
+                ThrowHelper.ThrowObjectDisposedException();
+            }
+
+            return RootProvider.GetRequiredKeyedService(serviceType, serviceKey, this);
         }
 
         public IServiceProvider ServiceProvider => this;

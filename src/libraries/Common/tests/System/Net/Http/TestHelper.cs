@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Security;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -18,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     public static class TestHelper
     {
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
-        public static int PassingTestTimeoutMilliseconds => 60 * 1000;
+        public const int PassingTestTimeoutMilliseconds = 60 * 1000;
 
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {

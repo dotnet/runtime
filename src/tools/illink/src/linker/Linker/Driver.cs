@@ -83,6 +83,10 @@ namespace Mono.Linker
 				Debug.Assert (context != null);
 				return context;
 			}
+			set {
+				Debug.Assert (context == null);
+				context = value;
+			}
 		}
 
 		private static readonly char[] s_separators = new char[] { ',', ';', ' ' };
@@ -894,7 +898,7 @@ namespace Mono.Linker
 			pipeline.AddStepBefore (typeof (MarkStep), new LinkAttributesStep (File.OpenRead (file), file));
 		}
 
-		static void AddBodySubstituterStep (Pipeline pipeline, string file)
+		protected virtual void AddBodySubstituterStep (Pipeline pipeline, string file)
 		{
 			pipeline.AddStepBefore (typeof (MarkStep), new BodySubstituterStep (File.OpenRead (file), file));
 		}

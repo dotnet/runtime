@@ -170,8 +170,8 @@ namespace System.Threading
         /// <summary>Returns a 64-bit signed value, loaded as an atomic operation.</summary>
         /// <param name="location">The 64-bit value to be loaded.</param>
         /// <returns>The loaded value.</returns>
-        public static long Read(ref long location) =>
-            CompareExchange(ref location, 0, 0);
+        public static long Read(ref readonly long location) =>
+            CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
         #endregion
 
         #region MemoryBarrierProcessWide

@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class NonWasmTemplateBuildTests : BuildTestBase
+public class NonWasmTemplateBuildTests : TestMainJsTestBase
 {
     public NonWasmTemplateBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -98,7 +98,7 @@ public class NonWasmTemplateBuildTests : BuildTestBase
                                      string? directoryBuildTargets = null,
                                      bool shouldRun = true)
     {
-        string id = $"nonwasm_{targetFramework}_{config}_{Path.GetRandomFileName()}";
+        string id = $"nonwasm_{targetFramework}_{config}_{GetRandomId()}";
         InitPaths(id);
         InitProjectDir(_projectDir);
 

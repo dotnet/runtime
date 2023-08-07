@@ -42,8 +42,7 @@
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
-    <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''"
-           Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
+    <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''" Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
 
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
@@ -57,6 +56,9 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export IS_RUNNING_ON_CI=true" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set IS_RUNNING_ON_CI=true" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
@@ -98,8 +100,8 @@
 
     <ItemGroup>
       <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" />
-      <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' != ''"/>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''"/>
+      <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' != ''" />
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet6)" EnvVarName="RUNTIME_PACK_VER6" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
@@ -122,6 +124,7 @@
 
       <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
       <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
+      <RunScriptCommand Condition="'$(XUnitNamespace)' != ''">$(RunScriptCommand) -namespace $(XUnitNamespace)</RunScriptCommand>
 
       <!-- this allows use of test attributes from dotnet.xunitextensions -->
       <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>

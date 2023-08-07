@@ -107,38 +107,37 @@ namespace Microsoft.Interop
 
         public override StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
-            ExpressionSyntax destination = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesSource(info, context));
-
-            // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetManagedValuesSource>), <GetManagedValuesSource>.Length)
-            ExpressionSyntax source = InvocationExpression(
-                MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
-                    IdentifierName("CreateSpan")),
-                ArgumentList(
-                    SeparatedList(new[]
-                    {
-                        Argument(
-                            InvocationExpression(
+            // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetUnmanagedValuesSource>), <GetUnmanagedValuesSource>.Length)
+            ExpressionSyntax destination = CastToManagedIfNecessary(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                        IdentifierName("CreateSpan")),
+                    ArgumentList(
+                        SeparatedList(new[]
+                        {
+                            Argument(
+                                InvocationExpression(
+                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                                        IdentifierName("GetReference")),
+                                    ArgumentList(SingletonSeparatedList(
+                                        Argument(CollectionSource.GetUnmanagedValuesSource(info, context))))))
+                                .WithRefKindKeyword(
+                                    Token(SyntaxKind.RefKeyword)),
+                            Argument(
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
-                                    IdentifierName("GetReference")),
-                                ArgumentList(SingletonSeparatedList(
-                                    Argument(CollectionSource.GetManagedValuesDestination(info, context))))))
-                            .WithRefKindKeyword(
-                                Token(SyntaxKind.RefKeyword)),
-                        Argument(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                CollectionSource.GetManagedValuesDestination(info, context),
-                                IdentifierName("Length")))
-                    })));
+                                    CollectionSource.GetUnmanagedValuesSource(info, context),
+                                    IdentifierName("Length")))
+                        }))));
 
-            // <source>.CopyTo(<destination>);
+            // <GetManagedValuesDestination>.CopyTo(<source>);
             return ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        source,
+                        CollectionSource.GetManagedValuesDestination(info, context),
                         IdentifierName("CopyTo")))
                 .AddArgumentListArguments(
                     Argument(destination)));
@@ -631,8 +630,7 @@ namespace Microsoft.Interop
             {
                 return false;
             }
-            bool usesLastIndexMarshalled = !shouldCleanupAllElements && !onlyUnmarshals;
-            return usesLastIndexMarshalled;
+            return true;
         }
 
         private static bool ShouldCleanUpAllElements(TypePositionInfo info, StubCodeContext context)
@@ -641,7 +639,7 @@ namespace Microsoft.Interop
             _ = context;
             // AdditionalTemporaryStateLivesAcrossStages implies that it is an outer collection
             // Out parameters means that the contents are created by the P/Invoke and assumed to have successfully created all elements
-            return !context.AdditionalTemporaryStateLivesAcrossStages || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out;
+            return !context.AdditionalTemporaryStateLivesAcrossStages || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out || info.IsNativeReturnPosition;
         }
 
         public override StatementSyntax GenerateSetupStatement(TypePositionInfo info, StubCodeContext context)

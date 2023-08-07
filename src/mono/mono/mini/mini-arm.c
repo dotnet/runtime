@@ -827,7 +827,7 @@ mono_arch_init (void)
 #else
 	arm_fpu = MONO_ARM_FPU_VFP;
 
-#if defined(ARM_FPU_NONE) && !defined(TARGET_IOS)
+#if defined(ARM_FPU_NONE) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 	/*
 	 * If we're compiling with a soft float fallback and it
 	 * turns out that no VFP unit is available, we need to
@@ -870,7 +870,7 @@ mono_arch_init (void)
 	v7_supported = TRUE;
 #endif
 
-#if defined(TARGET_IOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 	/* iOS is special-cased here because we don't yet
 	   have a way to properly detect CPU features on it. */
 	thumb_supported = TRUE;

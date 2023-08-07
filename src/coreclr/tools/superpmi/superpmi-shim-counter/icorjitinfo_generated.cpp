@@ -473,12 +473,11 @@ bool interceptor_ICJI::checkMethodModifier(
 }
 
 CorInfoHelpFunc interceptor_ICJI::getNewHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CLASS_HANDLE classHandle,
           bool* pHasSideEffects)
 {
     mcs->AddCall("getNewHelper");
-    return original_ICorJitInfo->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+    return original_ICorJitInfo->getNewHelper(classHandle, pHasSideEffects);
 }
 
 CorInfoHelpFunc interceptor_ICJI::getNewArrHelper(

@@ -131,10 +131,9 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IsCharBitSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
         {
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector256<byte> highNibble = (values.AsInt32() >>> VectorizedIndexShift).AsByte() & Vector256.Create((byte)15);
+            Vector256<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), highNibble);
+            Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector256<byte> index = values & Vector256.Create((byte)VectorizedIndexMask);
             Vector256<byte> bitMaskLower = Avx2.Shuffle(charMapLower, index);
@@ -175,12 +174,9 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IsCharBitSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
         {
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector128<byte> highNibble = Sse2.IsSupported
-                ? (values.AsInt32() >>> VectorizedIndexShift).AsByte() & Vector128.Create((byte)15)
-                : values >>> VectorizedIndexShift;
+            Vector128<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibble);
+            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector128<byte> index = values & Vector128.Create((byte)VectorizedIndexMask);
             Vector128<byte> bitMask;

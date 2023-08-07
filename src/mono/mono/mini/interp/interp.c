@@ -488,7 +488,10 @@ mono_interp_get_imethod (MonoMethod *method)
 
 	sig = mono_method_signature_internal (method);
 
-	imethod = (InterpMethod*)m_method_alloc0 (method, sizeof (InterpMethod));
+	if (method->dynamic)
+		imethod = (InterpMethod*)mono_dyn_method_alloc0 (method, sizeof (InterpMethod));
+	else
+		imethod = (InterpMethod*)m_method_alloc0 (method, sizeof (InterpMethod));
 	imethod->method = method;
 	imethod->param_count = sig->param_count;
 	imethod->hasthis = sig->hasthis;
@@ -504,15 +507,18 @@ mono_interp_get_imethod (MonoMethod *method)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
 		imethod->rtype = mini_get_underlying_type (sig->ret);
-	imethod->param_types = (MonoType**)m_method_alloc0 (method, sizeof (MonoType*) * sig->param_count);
+	if (method->dynamic)
+		imethod->param_types = (MonoType**)mono_dyn_method_alloc0 (method, sizeof (MonoType*) * sig->param_count);
+	else
+		imethod->param_types = (MonoType**)m_method_alloc0 (method, sizeof (MonoType*) * sig->param_count);
 	for (i = 0; i < sig->param_count; ++i)
 		imethod->param_types [i] = mini_get_underlying_type (sig->params [i]);
 
 	jit_mm_lock (jit_mm);
 	InterpMethod *old_imethod;
-	if (!((old_imethod = mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method))))
+	if (!((old_imethod = mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method)))) {
 		mono_internal_hash_table_insert (&jit_mm->interp_code_hash, method, imethod);
-	else {
+	} else {
 		imethod = old_imethod; /* leak the newly allocated InterpMethod to the mempool */
 	}
 	jit_mm_unlock (jit_mm);
@@ -1268,6 +1274,15 @@ compute_arg_offset (MonoMethodSignature *sig, int index)
 	return offset;
 }
 
+static gpointer
+imethod_alloc0 (InterpMethod *imethod, guint size)
+{
+	if (imethod->method->dynamic)
+		return mono_dyn_method_alloc0 (imethod->method, size);
+	else
+		return m_method_alloc0 (imethod->method, size);
+}
+
 static guint32*
 initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 {
@@ -1280,7 +1295,7 @@ initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 	if (!sig)
 		sig = mono_method_signature_internal (imethod->method);
 	int arg_count = sig->hasthis + sig->param_count;
-	guint32 *arg_offsets = (guint32*) g_malloc ((arg_count + 1) * sizeof (int));
+	guint32 *arg_offsets = (guint32*)imethod_alloc0 (imethod, (arg_count + 1) * sizeof (int));
 	int index = 0, offset = 0;
 
 	if (sig->hasthis) {
@@ -1302,8 +1317,8 @@ initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 	arg_offsets [index] = ALIGN_TO (offset, MINT_STACK_SLOT_SIZE);
 
 	mono_memory_write_barrier ();
-	if (mono_atomic_cas_ptr ((gpointer*)&imethod->arg_offsets, arg_offsets, NULL) != NULL)
-		g_free (arg_offsets);
+	/* If this fails, the new one is leaked in the mem manager */
+	mono_atomic_cas_ptr ((gpointer*)&imethod->arg_offsets, arg_offsets, NULL);
 	return imethod->arg_offsets;
 }
 
@@ -3259,8 +3274,7 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 
 	addr = mini_llvmonly_create_ftndesc (method, entry_wrapper, entry_ftndesc);
 
-	// FIXME:
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
 	jit_mm_lock (jit_mm);
 	if (!jit_mm->interp_method_pointer_hash)
 		jit_mm->interp_method_pointer_hash = g_hash_table_new (NULL, NULL);
@@ -3438,12 +3452,24 @@ static void
 interp_free_method (MonoMethod *method)
 {
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
+	InterpMethod *imethod;
+	MonoDynamicMethod *dmethod = (MonoDynamicMethod*)method;
 
 	jit_mm_lock (jit_mm);
-	/* InterpMethod is allocated in the domain mempool. We might haven't
-	 * allocated an InterpMethod for this instance yet */
+	imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
 	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+	if (imethod && jit_mm->interp_method_pointer_hash) {
+		if (imethod->jit_entry)
+			g_hash_table_remove (jit_mm->interp_method_pointer_hash, imethod->jit_entry);
+		if (imethod->llvmonly_unbox_entry)
+			g_hash_table_remove (jit_mm->interp_method_pointer_hash, imethod->llvmonly_unbox_entry);
+	}
 	jit_mm_unlock (jit_mm);
+
+	if (dmethod->mp) {
+		mono_mempool_destroy (dmethod->mp);
+		dmethod->mp = NULL;
+	}
 }
 
 #if COUNT_OPS
@@ -8039,7 +8065,7 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 	imethod = mono_interp_get_imethod (il_state->method);
 	if (!imethod->transformed) {
 		// In case method is in process of being tiered up, make sure it is compiled
-                mono_interp_transform_method (imethod, context, error);
+		mono_interp_transform_method (imethod, context, error);
 		mono_error_assert_ok (error);
 	}
 

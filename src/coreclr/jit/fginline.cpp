@@ -42,13 +42,15 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
         assert(inlineContext->GetCode() != nullptr);
         depth++;
 
-        if (inlineContext->GetCode() == candidateCode)
+        if ((inlineContext->GetCallee() == inlineInfo->fncHandle) &&
+            (inlineContext->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
         {
-            // This inline candidate has the same IL code buffer as an already
-            // inlined method does.
+            // This is a recursive inline
+            //
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
 
             // No need to note CALLSITE_DEPTH we're already rejecting this candidate
+            //
             return depth;
         }
 
@@ -473,7 +475,8 @@ private:
                     // info.
                 }
 
-                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr,
+                CORINFO_CONTEXT_HANDLE contextInput = context;
+                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
                 m_madeChanges = true;
             }
@@ -1630,7 +1633,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
-                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef)
+                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_MOREUSES) && argIsSingleDef)
                 {
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_BLK.

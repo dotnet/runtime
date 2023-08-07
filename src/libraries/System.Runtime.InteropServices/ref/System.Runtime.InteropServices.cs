@@ -1104,7 +1104,7 @@ namespace System.Runtime.InteropServices
         public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors| System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type structureType) { throw null; }
         public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure) { }
-        public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
+        public static int QueryInterface(System.IntPtr pUnk, in System.Guid iid, out System.IntPtr ppv) { throw null; }
         public static byte ReadByte(System.IntPtr ptr) { throw null; }
         public static byte ReadByte(System.IntPtr ptr, int ofs) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
@@ -1331,6 +1331,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Runtime.InteropServices.NFloat CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Runtime.InteropServices.NFloat CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat DegreesToRadians(System.Runtime.InteropServices.NFloat degrees) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -1464,6 +1465,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Pow(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat RadiansToDegrees(System.Runtime.InteropServices.NFloat radians) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalSqrtEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat RootN(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
