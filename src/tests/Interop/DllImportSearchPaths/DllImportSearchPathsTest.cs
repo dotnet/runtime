@@ -39,6 +39,15 @@ public class DllImportSearchPathsTest
         Assert.Equal(3, sum);
     }
 
+    public static bool IsNativeAot => TestLibrary.Utilities.IsNativeAot;
+
+    [ConditionalFact(nameof(IsNativeAot))]
+    public static void AssemblyDirectoryAot_Found()
+    {
+        int sum = NativeLibraryPInvokeAot.Sum(1, 2);
+        Assert.Equal(3, sum);
+    }
+
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void AssemblyDirectory_Fallback_Found()
@@ -68,5 +77,17 @@ public class NativeLibraryPInvoke
 
     [DllImport(NativeLibraryToLoad.Name)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+    static extern int NativeSum(int arg1, int arg2);
+}
+
+public class NativeLibraryPInvokeAot
+{
+    public static int Sum(int a, int b)
+    {
+        return NativeSum(a, b);
+    }
+
+    [DllImport(NativeLibraryToLoad.Name + "-in-native")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
 }

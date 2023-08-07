@@ -24,16 +24,24 @@
 
   <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
     <ItemGroup>
-      <AssembliesToCopy Include="$(OutDir)/libNativeLibrary.*" />
-      <AssembliesToCopy Include="$(OutDir)/NativeLibrary.*" />
+      <AssembliesToCopyNative Include="$(OutDir)/libNativeLibrary.*" />
+      <AssembliesToCopyNative Include="$(OutDir)/NativeLibrary.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
+    <Copy SourceFiles="@(AssembliesToCopyNative)" DestinationFiles="@(AssembliesToCopyNative -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
   </Target>
 
   <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build">
     <ItemGroup>
-      <AssembliesToCopy Include="$(OutDir)/$(TargetName).dll" />
+      <AssembliesToCopyManaged Include="$(OutDir)/$(TargetName).dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
+    <Copy SourceFiles="@(AssembliesToCopyManaged)" DestinationFiles="@(AssembliesToCopyManaged -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
+  </Target>
+
+  <Target Name="SetUpAOTDirectory" Condition="'$(TestBuildMode)' == 'nativeaot'" AfterTargets="Build">
+    <ItemGroup>
+      <AssembliesToCopyAOT Include="$(OutDir)/libNativeLibrary.*" />
+      <AssembliesToCopyAOT Include="$(OutDir)/NativeLibrary.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AssembliesToCopyAOT)" DestinationFiles="@(AssembliesToCopyAOT -> '$(NativeOutputPath)/%(Filename)-in-native%(Extension)')" />
   </Target>
 </Project>
