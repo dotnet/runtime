@@ -1541,6 +1541,12 @@ protected:
             _idEvexbContext = 1;
             assert(_idEvexbContext == 1);
         }
+        void idClearEvexbContext()
+        {
+            assert(_idEvexbContext == 1);
+            _idEvexbContext = 0;
+            assert(_idEvexbContext == 0);
+        }
 #endif
 
 #ifdef TARGET_ARMARCH
@@ -2107,6 +2113,7 @@ protected:
     void emitDispInsAddr(BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
+    void emitDispEmbBroadcastCount(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,

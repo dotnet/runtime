@@ -10722,6 +10722,20 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+// emitDispEmbBroadcastCount: Display the tag where embedded broadcast is activated to show how many elements are broadcasted.
+//
+// Arguments:
+//   id - The instruction descriptor
+//
+void emitter::emitDispEmbBroadcastCount(instrDesc* id)
+{
+    ssize_t baseSize = GetInputSizeInBytes(id);
+    id->idClearEvexbContext();
+    ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id);
+    id->idSetEvexbContext();
+    printf(" {1to%d}", vectorSize / baseSize);
+}
+
 //--------------------------------------------------------------------
 // emitDispIns: Dump the given instruction to jitstdout.
 //
@@ -11123,6 +11137,11 @@ void emitter::emitDispIns(
         {
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
+            if(id->idIsEvexbContext())
+            {
+                // we should have the assumption that we are under embedded broadcast use case.
+                emitDispEmbBroadcastCount(id);
+            }
             break;
         }
 
@@ -11395,6 +11414,11 @@ void emitter::emitDispIns(
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            if(id->idIsEvexbContext())
+            {
+                // we should have the assumption that we are under embedded broadcast use case.
+                emitDispEmbBroadcastCount(id);
+            }
             break;
         }
 
@@ -11899,6 +11923,11 @@ void emitter::emitDispIns(
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            if(id->idIsEvexbContext())
+            {
+                // we should have the assumption that we are under embedded broadcast use case.
+                emitDispEmbBroadcastCount(id);
+            }
             break;
         }
 
