@@ -344,7 +344,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (shiftAmount == 0)
                     {
-                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, reg, /* canSkip */ false);
+                        GetEmitter()->emitIns_R_R_R(INS_mov, emitTypeSize(node), targetReg, reg, reg);
                     }
                     else
                     {
