@@ -465,6 +465,50 @@ namespace System.Collections.Generic
             Capacity = newCapacity;
         }
 
+        /// <summary>
+        /// Increase the capacity of this list to at least the specified <paramref name="capacity"/>.
+        /// This method is specifically for insertion, to avoid 1 extra array copy.
+        /// </summary>
+        /// <param name="capacity">The minimum capacity to ensure.</param>
+        private void GrowForInsert(int capacity, int indexToInsert)
+        {
+            Debug.Assert(_items.Length < capacity);
+
+            // Follow the same logic from Grow(capacity)
+
+            int newCapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
+            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
+            if (newCapacity < capacity) newCapacity = capacity;
+
+            // Inline and adapt logic from set_Capacity
+
+            if (newCapacity < _size)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_SmallCapacity);
+            }
+
+            if (newCapacity == _items.Length)
+            {
+                return;
+            }
+
+            if (newCapacity > 0)
+            {
+                T[] newItems = new T[newCapacity];
+                if (indexToInsert != 0)
+                    Array.Copy(_items, newItems, indexToInsert);
+
+                if (_size != indexToInsert)
+                    Array.Copy(_items, indexToInsert, newItems, indexToInsert + 1, _size - indexToInsert);
+
+                _items = newItems;
+            }
+            else
+            {
+                _items = s_emptyArray;
+            }
+        }
+
         public bool Exists(Predicate<T> match)
             => FindIndex(match) != -1;
 
@@ -737,8 +781,11 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
-            if (_size == _items.Length) Grow(_size + 1);
-            if (index < _size)
+            if (_size == _items.Length)
+            {
+                GrowForInsert(_size + 1, index);
+            }
+            else if (index < _size)
             {
                 Array.Copy(_items, index, _items, index + 1, _size - index);
             }
