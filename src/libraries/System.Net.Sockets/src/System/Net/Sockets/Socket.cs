@@ -200,8 +200,6 @@ namespace System.Net.Sockets
                                             break;
 
                                         case AddressFamily.Unix:
-                                            //socketAddress = new SocketAddress(AddressFamily.Unix, buffer.Slice(0, bufferLength));
-                                            //_remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
                                             _remoteEndPoint = new UnixDomainSocketEndPoint(buffer.Slice(0, bufferLength));
                                             break;
                                     }
@@ -779,7 +777,7 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketPal.Bind(
                 _handle,
                 _protocolType,
-                socketAddress.Buffer.Span);
+                socketAddress.Buffer.Span.Slice(0, socketAddress.Size));
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1285,7 +1283,7 @@ namespace System.Net.Sockets
             SocketAddress socketAddress = Serialize(ref remoteEP);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer.Slice(0, socketAddress.Size), out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1357,7 +1355,7 @@ namespace System.Net.Sockets
             SocketAddress socketAddress = Serialize(ref remoteEP);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer.Slice(0, socketAddress.Size), out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1396,7 +1394,7 @@ namespace System.Net.Sockets
             ValidateBlockingMode();
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer.Slice(0, socketAddress.Size), out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1898,10 +1896,8 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedAddress.Buffer, out int socketAddressSize, out bytesTransferred);
-            if (socketAddressSize > 0)
-            {
-                receivedAddress.Size = socketAddressSize;
-            }
+            receivedAddress.Size = socketAddressSize;
+
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
             if (errorCode != SocketError.Success)
@@ -3167,7 +3163,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             try
             {
-                errorCode = SocketPal.Connect(_handle, socketAddress.Buffer);
+                errorCode = SocketPal.Connect(_handle, socketAddress.Buffer.Slice(0, socketAddress.Size));
             }
             catch (Exception ex)
             {

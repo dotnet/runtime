@@ -451,7 +451,7 @@ namespace System.Net.Sockets
             saea.RemoteEndPoint = null;
             saea._socketAddress = receivedAddress;
             saea.WrapExceptionsForNetworkStream = false;
-            return saea.ReceiveFromSaAsync(this, cancellationToken);
+            return saea.ReceiveFromSocketAddressAsync(this, cancellationToken);
         }
 
         /// <summary>
@@ -688,6 +688,7 @@ namespace System.Net.Sockets
         /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
         public ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, SocketAddress socketAddress, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(socketAddress);
 
             if (cancellationToken.IsCancellationRequested)
@@ -1085,7 +1086,7 @@ namespace System.Net.Sockets
                     ValueTask.FromException<SocketReceiveFromResult>(CreateException(error));
             }
 
-            internal ValueTask<int> ReceiveFromSaAsync(Socket socket, CancellationToken cancellationToken)
+            internal ValueTask<int> ReceiveFromSocketAddressAsync(Socket socket, CancellationToken cancellationToken)
             {
                 if (socket.ReceiveFromAsync(this, cancellationToken))
                 {

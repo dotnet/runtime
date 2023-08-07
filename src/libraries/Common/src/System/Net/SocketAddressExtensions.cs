@@ -22,12 +22,9 @@ namespace System.Net.Sockets
 
         public static bool Equals(this SocketAddress socketAddress, EndPoint? endPoint)
         {
-            if (endPoint is IPEndPoint ipe)
+            if (socketAddress.Family == endPoint?.AddressFamily && endPoint is IPEndPoint ipe)
             {
-                if (socketAddress.Family == endPoint.AddressFamily)
-                {
-                    return ipe.Equals(socketAddress.Buffer.Span);
-                }
+                return ipe.Equals(socketAddress.Buffer.Span);
             }
 
             // We could serialize other EndPoints and compare socket addresses.

@@ -8,7 +8,7 @@ namespace System.Net
 {
     // This class is used when subclassing EndPoint, and provides indication
     // on how to format the memory buffers that the platform uses for network addresses.
-    public class SocketAddress : System.IEquatable<SocketAddress>
+    public class SocketAddress : IEquatable<SocketAddress>
     {
 #pragma warning disable CA1802 // these could be const on Windows but need to be static readonly for Unix
         internal static readonly int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
@@ -40,7 +40,7 @@ namespace System.Net
             set
             {
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _buffer.Length);
-                ArgumentOutOfRangeException.ThrowIfLessThan(value, MinSize);
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
                 _size = value;
             }
         }
@@ -125,13 +125,6 @@ namespace System.Net
             SocketAddressPal.SetPort(_buffer, unchecked((ushort)port));
         }
 
-        internal SocketAddress(AddressFamily addressFamily, ReadOnlySpan<byte> buffer)
-        {
-            _buffer = buffer.ToArray();
-            _size = _buffer.Length;
-            SocketAddressPal.SetAddressFamily(_buffer, addressFamily);
-        }
-
         /// <summary>This represents underlying memory that can be passed to native OS calls.</summary>
         /// <remarks>
         /// Content of the memory can be invalidated if <see cref="Size"/> is changed or if the SocketAddress is used in another receive call.
@@ -140,40 +133,10 @@ namespace System.Net
         {
             get
             {
-                return new Memory<byte>(_buffer, 0, _size);
+                return new Memory<byte>(_buffer);
             }
         }
 
-        internal IPAddress GetIPAddress()
-        {
-            if (Family == AddressFamily.InterNetworkV6)
-            {
-                Debug.Assert(Size >= IPv6AddressSize);
-
-                Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                uint scope;
-                SocketAddressPal.GetIPv6Address(_buffer, address, out scope);
-
-                return new IPAddress(address, (long)scope);
-            }
-            else if (Family == AddressFamily.InterNetwork)
-            {
-                Debug.Assert(Size >= IPv4AddressSize);
-                long address = (long)SocketAddressPal.GetIPv4Address(_buffer) & 0x0FFFFFFFF;
-                return new IPAddress(address);
-            }
-            else
-            {
-                throw new SocketException(SocketError.AddressFamilyNotSupported);
-            }
-        }
-
-        internal int GetPort() => (int)SocketAddressPal.GetPort(_buffer);
-
-        internal IPEndPoint GetIPEndPoint()
-        {
-            return new IPEndPoint(GetIPAddress(), GetPort());
-        }
 
         public override bool Equals(object? comparand) =>
             comparand is SocketAddress other && Equals(other);
