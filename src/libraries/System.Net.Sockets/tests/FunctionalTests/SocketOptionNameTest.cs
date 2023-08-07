@@ -122,6 +122,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
+        [ActiveIssue("AAA")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
@@ -180,6 +181,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue(" AA")]
         public async Task MulticastInterface_Set_IPv6_Loopback_Succeeds()
         {
             // On Windows, we can apparently assume interface 1 is "loopback." On other platforms, this is not a

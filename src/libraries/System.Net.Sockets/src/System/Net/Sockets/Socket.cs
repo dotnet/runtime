@@ -151,7 +151,6 @@ namespace System.Net.Sockets
 
                     // Try to get the local end point.  That will in turn enable the remote
                     // end point to be retrieved on-demand when the property is accessed.
-                    //SocketAddress? socketAddress = null;
                     switch (_addressFamily)
                     {
                         case AddressFamily.InterNetwork:
@@ -169,8 +168,6 @@ namespace System.Net.Sockets
                             break;
 
                         case AddressFamily.Unix:
-                            //socketAddress = new SocketAddress(AddressFamily.Unix, bufferLength);
-                            //buffer.Slice(0, bufferLength).CopyTo(socketAddress.Buffer.Span);
                             _rightEndPoint = new UnixDomainSocketEndPoint(buffer.Slice(0, bufferLength));
                             break;
                     }
@@ -1011,10 +1008,6 @@ namespace System.Net.Sockets
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint}");
 
-            //SocketAddress socketAddress =
-            //    _addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6 ?
-            //        IPEndPointExtensions.Serialize(_rightEndPoint) :
-            //        new SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size.
             SocketAddress socketAddress = new SocketAddress(_addressFamily);
 
             if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStart(socketAddress);
@@ -1582,10 +1575,6 @@ namespace System.Net.Sockets
             EndPoint endPointSnapshot = remoteEP;
             SocketAddress socketAddress = Serialize(ref endPointSnapshot);
 
-            // Save a copy of the original EndPoint.
-            //SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
-            SocketAddress socketAddressOriginal = endPointSnapshot.Serialize();
-
             SetReceivingPacketInformation();
 
             SocketAddress receiveAddress;
@@ -1604,7 +1593,7 @@ namespace System.Net.Sockets
                 if (errorCode == SocketError.Success && SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
-            if (!socketAddressOriginal.Equals(receiveAddress))
+            if (!SocketAddressExtensions.Equals(socketAddress, remoteEP))
             {
                 try
                 {
@@ -1671,10 +1660,6 @@ namespace System.Net.Sockets
             EndPoint endPointSnapshot = remoteEP;
             SocketAddress socketAddress = Serialize(ref endPointSnapshot);
 
-            // Save a copy of the original EndPoint.
-            //SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
-            SocketAddress socketAddressOriginal = endPointSnapshot.Serialize();
-
             SetReceivingPacketInformation();
 
             SocketAddress receiveAddress;
@@ -1693,7 +1678,7 @@ namespace System.Net.Sockets
                 if (errorCode == SocketError.Success && SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
-            if (!socketAddressOriginal.Equals(receiveAddress))
+            if (!SocketAddressExtensions.Equals(socketAddress, remoteEP))
             {
                 try
                 {
@@ -1726,8 +1711,6 @@ namespace System.Net.Sockets
             // with the right address family.
             EndPoint endPointSnapshot = remoteEP;
             SocketAddress socketAddress = Serialize(ref endPointSnapshot);
-            //SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
-            SocketAddress socketAddressOriginal = endPointSnapshot.Serialize();
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, out int socketAddressLength, out bytesTransferred);
@@ -1754,7 +1737,7 @@ namespace System.Net.Sockets
 
             socketAddress.Size = socketAddressLength;
 
-            if (!socketAddressOriginal.Equals(socketAddress))
+            if (!SocketAddressExtensions.Equals(socketAddress, remoteEP))
             {
                 try
                 {
@@ -1836,8 +1819,6 @@ namespace System.Net.Sockets
             // with the right address family.
             EndPoint endPointSnapshot = remoteEP;
             SocketAddress socketAddress = Serialize(ref endPointSnapshot);
-            //SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
-            SocketAddress socketAddressOriginal = endPointSnapshot.Serialize();
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, out int socketAddressLength, out bytesTransferred);
@@ -1863,7 +1844,7 @@ namespace System.Net.Sockets
             }
 
             socketAddress.Size = socketAddressLength;
-            if (!socketAddressOriginal.Equals(socketAddress))
+            if (!SocketAddressExtensions.Equals(socketAddress, remoteEP))
             {
                 try
                 {

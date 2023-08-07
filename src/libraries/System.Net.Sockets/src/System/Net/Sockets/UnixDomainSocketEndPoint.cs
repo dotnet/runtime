@@ -66,17 +66,7 @@ namespace System.Net.Sockets
 
         internal UnixDomainSocketEndPoint(ReadOnlySpan<byte> socketAddress)
         {
-            //ArgumentNullException.ThrowIfNull(socketAddress);
-
             Debug.Assert(AddressFamily.Unix == SocketAddressPal.GetAddressFamily(socketAddress));
-
-            //if (socketAddress.Family != EndPointAddressFamily ||
-            //    socketAddress.Size > s_nativeAddressSize)
-            {
-            //    throw new ArgumentOutOfRangeException(nameof(socketAddress));
-            }
-
-
 
             if (socketAddress.Length > s_nativePathOffset)
             {
