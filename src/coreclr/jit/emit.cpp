@@ -1654,7 +1654,10 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG ||
         (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
     {
-        emitNxtIG(true);
+        if (emitCurIGnonEmpty())
+        {
+            emitNxtIG(true);
+        }
     }
 
     /* Grab the space for the instruction */
@@ -10448,23 +10451,14 @@ void emitter::emitEnableGC()
 
         emitNoGCIG = false;
 
-        // If the current IG does not have instructions, do not force a new IG.
-        // Instead, just use the current one with the flags reset.
-        if (emitCurIGnonEmpty())
-        {
-            // The next time an instruction needs to be generated, force a new instruction group.
-            // It will be an emitAdd group in that case. Note that the next thing we see might be
-            // a label, which will force a non-emitAdd group.
-            //
-            // Note that we can't just create a new instruction group here, because we don't know
-            // if there are going to be any instructions added to it, and we don't support empty
-            // instruction groups.
-            emitForceNewIG = true;
-        }
-        else
-        {
-            emitCurIG->igFlags = (emitCurIG->igFlags & IGF_PROPAGATE_MASK);
-        }
+        // The next time an instruction needs to be generated, force a new instruction group.
+        // It will be an emitAdd group in that case. Note that the next thing we see might be
+        // a label, which will force a non-emitAdd group.
+        //
+        // Note that we can't just create a new instruction group here, because we don't know
+        // if there are going to be any instructions added to it, and we don't support empty
+        // instruction groups.
+        emitForceNewIG = true;
     }
     else
     {
