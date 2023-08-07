@@ -445,14 +445,16 @@ static bool InstructionIsWrite(Amd64InstrDecode::InstrForm form)
     {
     // M1st cases (memory operand comes first)
     case Amd64InstrDecode::InstrForm::M1st_I1B_L_M16B_or_M8B:
-    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_or_M16B_or_M32B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_M16B_M32B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_W_M8B_or_M4B:
     case Amd64InstrDecode::InstrForm::M1st_I1B_WP_M8B_or_M4B_or_M2B:
     case Amd64InstrDecode::InstrForm::M1st_L_M32B_or_M16B:
-    case Amd64InstrDecode::InstrForm::M1st_LL_M16B_or_M32B_or_M64B:
-    case Amd64InstrDecode::InstrForm::M1st_LL_M2B_or_M4B_or_M8B:
-    case Amd64InstrDecode::InstrForm::M1st_LL_M4B_or_M8B_or_M16B:
-    case Amd64InstrDecode::InstrForm::M1st_LL_M8B_or_M16B_or_M32B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M2B_M4B_M8B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M4B_M8B_M16B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M8B_M16B_M32B:
+    case Amd64InstrDecode::InstrForm::M1st_bLL_M4B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::M1st_bLL_M8B_M16B_M32B_M64B:
     case Amd64InstrDecode::InstrForm::M1st_M16B:
     case Amd64InstrDecode::InstrForm::M1st_M16B_I1B:
     case Amd64InstrDecode::InstrForm::M1st_M1B:
@@ -490,7 +492,7 @@ static bool InstructionIsWrite(Amd64InstrDecode::InstrForm form)
     return isWrite;
 }
 
-static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, int LL, bool fPrefix66)
+static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool evex_b, int LL, bool fPrefix66)
 {
     uint8_t opSize = 0;
     bool P = !((pp == 1) || fPrefix66);
@@ -615,55 +617,168 @@ static uint8_t InstructionOperandSize(Amd64InstrDecode::InstrForm form, int pp, 
         opSize = 1;
         break;
 
-    // LL_M8B_or_M16B_or_M32B
-    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_or_M16B_or_M32B:
-    case Amd64InstrDecode::InstrForm::M1st_LL_M8B_or_M16B_or_M32B:
-    case Amd64InstrDecode::InstrForm::MOp_LL_M8B_or_M16B_or_M32B:
+    // LL_M8B_M16B_M32B
+    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_M16B_M32B:
+    case Amd64InstrDecode::InstrForm::M1st_LL_M8B_M16B_M32B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_M8B_M16B_M32B:
         opSize = (LL == 0) ? 8 : (LL == 1) ? 16 : 32;
         break;
 
-    // LL_M2B_or_M4B_or_M8B
-    case Amd64InstrDecode::InstrForm::M1st_LL_M2B_or_M4B_or_M8B:
-    case Amd64InstrDecode::InstrForm::MOp_LL_M2B_or_M4B_or_M8B:
+    // LL_M2B_M4B_M8B
+    case Amd64InstrDecode::InstrForm::M1st_LL_M2B_M4B_M8B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_M2B_M4B_M8B:
         opSize = (LL == 0) ? 2 : (LL == 1) ? 4 : 8;
         break;
 
-    // LL_M4B_or_M8B_or_M16B
-    case Amd64InstrDecode::InstrForm::M1st_LL_M4B_or_M8B_or_M16B:
-    case Amd64InstrDecode::InstrForm::MOp_LL_M4B_or_M8B_or_M16B:
+    // LL_M4B_M8B_M16B
+    case Amd64InstrDecode::InstrForm::M1st_LL_M4B_M8B_M16B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_M4B_M8B_M16B:
         opSize = (LL == 0) ? 4 : (LL == 1) ? 8 : 16;
         break;
 
-    // LL_M8B_or_M32B_or_M64B
-    case Amd64InstrDecode::InstrForm::MOp_LL_M8B_or_M32B_or_M64B:
+    // LL_M8B_M32B_M64B
+    case Amd64InstrDecode::InstrForm::MOp_LL_M8B_M32B_M64B:
         opSize = (LL == 0) ? 8 : (LL == 1) ? 32 : 64;
         break;
 
-    // LL_M16B_or_M32B_or_M64B
-    case Amd64InstrDecode::InstrForm::M1st_LL_M16B_or_M32B_or_M64B:
-    case Amd64InstrDecode::InstrForm::MOp_I1B_LL_M16B_or_M32B_or_M64B:
-    case Amd64InstrDecode::InstrForm::MOp_LL_M16B_or_M32B_or_M64B:
+    // LL_M16B_M32B_M64B
+    case Amd64InstrDecode::InstrForm::M1st_LL_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_LL_M16B_M32B_M64B:
         opSize = (LL == 0) ? 16 : (LL == 1) ? 32 : 64;
         break;
 
-    // LL_None_or_M32B_or_M64B
-    case Amd64InstrDecode::InstrForm::MOp_I1B_LL_None_or_M32B_or_M64B:
-    case Amd64InstrDecode::InstrForm::MOp_LL_None_or_M32B_or_M64B:
-        // We should never see LL == 0.
-        opSize = (LL == 0) ? 0 : (LL == 1) ? 32 : 64;
-        break;
-
-    // WLL_M16B_M32B_M64B_or_M8B_M16B_M32B
-    case Amd64InstrDecode::InstrForm::MOp_WLL_M16B_M32B_M64B_or_M8B_M16B_M32B:
-        if (W)
+    // bLL_M2B_M16B_M32B_M64B
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M2B_M16B_M32B_M64B:
+        if (evex_b)
+        {
+            opSize = 2;
+        }
+        else
         {
             opSize = (LL == 0) ? 16 : (LL == 1) ? 32 : 64;
+        }
+        break;
+
+    // bLL_M4B_M16B_M32B_M64B
+    case Amd64InstrDecode::InstrForm::M1st_bLL_M4B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M4B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_bLL_M4B_M16B_M32B_M64B:
+        if (evex_b)
+        {
+            opSize = 4;
+        }
+        else
+        {
+            opSize = (LL == 0) ? 16 : (LL == 1) ? 32 : 64;
+        }
+        break;
+
+    // bLL_M8B_M16B_M32B_M64B
+    case Amd64InstrDecode::InstrForm::M1st_bLL_M8B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M8B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_bLL_M8B_M16B_M32B_M64B:
+        if (evex_b)
+        {
+            opSize = 8;
+        }
+        else
+        {
+            opSize = (LL == 0) ? 16 : (LL == 1) ? 32 : 64;
+        }
+        break;
+
+    // bLL_M8B_None_M32B_M64B
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M8B_None_M32B_M64B:
+        if (evex_b)
+        {
+            opSize = 8;
+        }
+        else
+        {
+            // We should never see LL == 0.
+            opSize = (LL == 0) ? 0 : (LL == 1) ? 32 : 64;
+        }
+        break;
+
+    // bLL_M4B_M8B_M16B_M32B
+    case Amd64InstrDecode::InstrForm::MOp_bLL_M4B_M8B_M16B_M32B:
+        if (evex_b)
+        {
+            opSize = 4;
         }
         else
         {
             opSize = (LL == 0) ? 8 : (LL == 1) ? 16 : 32;
         }
         break;
+
+    // WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B
+    case Amd64InstrDecode::InstrForm::MOp_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B:
+        if (W)
+        {
+            if (evex_b)
+            {
+                opSize = 8;
+            }
+            else
+            {
+                opSize = (LL == 0) ? 16 : (LL == 1) ? 32 : 64;
+            }
+        }
+        else
+        {
+            if (evex_b)
+            {
+                opSize = 4;
+            }
+            else
+            {
+                opSize = (LL == 0) ? 8 : (LL == 1) ? 16 : 32;
+            }
+        }
+        break;
+
+    // bWLL_M4B_M8B_M16B_M32B_M64B
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_bWLL_M4B_M8B_M16B_M32B_M64B:
+        if (evex_b)
+        {
+            if (W)
+            {
+                opSize = 8;
+            }
+            else
+            {
+                opSize = 4;
+            }
+        }
+        else
+        {
+            opSize = (LL == 0) ? 16 : (LL == 1) ? 32 : 64;
+        }
+        break;
+
+    // bWLL_M4B_M8B_None_M32B_M64B
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bWLL_M4B_M8B_None_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_bWLL_M4B_M8B_None_M32B_M64B:
+        if (evex_b)
+        {
+            if (W)
+            {
+                opSize = 8;
+            }
+            else
+            {
+                opSize = 4;
+            }
+        }
+        else
+        {
+            // We should never see LL == 0.
+            opSize = (LL == 0) ? 0 : (LL == 1) ? 32 : 64;
+        }
+        break;
+
 
     // MUnknown
     case Amd64InstrDecode::InstrForm::M1st_MUnknown:
@@ -702,9 +817,13 @@ static int InstructionImmSize(Amd64InstrDecode::InstrForm form, int pp, bool W, 
     case Amd64InstrDecode::InstrForm::MOp_M8B_I1B:
     case Amd64InstrDecode::InstrForm::MOp_M16B_I1B:
     case Amd64InstrDecode::InstrForm::MOp_M32B_I1B:
-    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_or_M16B_or_M32B:
-    case Amd64InstrDecode::InstrForm::MOp_I1B_LL_M16B_or_M32B_or_M64B:
-    case Amd64InstrDecode::InstrForm::MOp_I1B_LL_None_or_M32B_or_M64B:
+    case Amd64InstrDecode::InstrForm::M1st_I1B_LL_M8B_M16B_M32B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M2B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M4B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M8B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bLL_M8B_None_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B:
+    case Amd64InstrDecode::InstrForm::MOp_I1B_bWLL_M4B_M8B_None_M32B_M64B:
         immSize = 1;
         break;
     case Amd64InstrDecode::InstrForm::I2B:
@@ -753,6 +872,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
 
     bool W       = false;
     bool L       = false;
+    bool evex_b  = false;
     BYTE evex_LL = 0;
 
     int pp = 0;
@@ -954,7 +1074,12 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
                 W = true;
             }
 
-            evex_LL = (address[2] & 0x60) >> 5;
+            if ((address[2] & 0x10) != 0)
+            {
+                evex_b = true;
+            }
+
+            evex_LL = (address[2] >> 5) & 0x3;
 
             pp = address[1] & 0x3;
             address += 4;
@@ -1031,7 +1156,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         _ASSERTE(pInstrAttrib->m_cbInstr <= MAX_INSTRUCTION_LENGTH);
 
         pInstrAttrib->m_fIsWrite = InstructionIsWrite(form);
-        pInstrAttrib->m_cOperandSize = InstructionOperandSize(form, pp, W, L, evex_LL, fPrefix66);
+        pInstrAttrib->m_cOperandSize = InstructionOperandSize(form, pp, W, L, evex_b, evex_LL, fPrefix66);
 
         LOG((LF_CORDB, LL_INFO10000, "cb:%d o2disp:%d write:%s immBytes:%d opSize:%d ",
             pInstrAttrib->m_cbInstr,
@@ -1097,4 +1222,5 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     }
 }
 
-#endif
+#endif // TARGET_AMD64
+

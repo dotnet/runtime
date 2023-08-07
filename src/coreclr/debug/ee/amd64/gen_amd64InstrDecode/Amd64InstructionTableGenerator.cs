@@ -19,23 +19,58 @@ namespace Amd64InstructionTableGenerator
     public enum EncodingFlags : int
     {
         None = 0x0,
+
         P = 0x1, // OpSize (P)refix
         F2 = 0x2,
         F3 = 0x4,
         Rex = 0x8,
 
-        W = 0x10,
-        L = 0x100,
+        W = 0x10, // VEX.W / EVEX.W
+        L = 0x20, // VEX.L (for EVEX, see LL bits below)
+        b = 0x40, // EVEX.b (broadcast/RC/SAE Context)
 
-        // EVEX L'L bits. Mask off using EncodingFlagsLLmask then direct compare (don't bit compare these value).
-        LL00 = 0x000,
+        // EVEX L'L bits. Mask off using Util.LLmask then direct compare (don't bit mask these value).
+        // We want EVEX L'L=00b to have a non-zero representation, so we add 1 to the L'L value to store it.
+        // Note that there is no support for EVEX L'L=11b, so we still only need 2 bits.
+        // Every EVEX encoded instruction will have one of these set, even for the EVEX.LLIG case (LL ignored).
+        LL00 = 0x100,
         LL01 = 0x200,
-        LL10 = 0x400,
-
-        LLshift = 9,
-        LLmask = 0x3 << EncodingFlags.LLshift,
+        LL10 = 0x300
     }
 
+    public class Util
+    {
+        // The number of bits to shift into the `LL` positions in `EncodingFlags`.
+        public static readonly int LLshift = 8;
+
+        // A mask for the `LL` bits in `EncodingFlags`.
+        public static readonly int LLmask = 0x3 << Util.LLshift;
+
+        public static EncodingFlags ConvertEvexLLToEncodingFlags(int LL)
+        {
+            if ((LL < 0) || (LL > 2))
+                throw new ArgumentException($"Illegal LL value: {LL}");
+
+            return (EncodingFlags)((LL + 1) << LLshift);
+        }
+
+        public static bool EncodingFlagsHasEvexLL(EncodingFlags e)
+        {
+            return ((int)e & LLmask) != 0;
+        }
+
+        // There must be non-zero LL values in EncodingFlags. Return the EVEX L'L value. So, LL00 => 00b, LL01 => 01b, LL10 => 10b.
+        public static int ConvertEncodingFlagsToEvexLL(EncodingFlags e)
+        {
+            if (!EncodingFlagsHasEvexLL(e))
+                throw new ArgumentException($"EncodingFlags doesn't have EVEX L'L bits: {e}");
+
+            int LL = (((int)e & LLmask) >> LLshift) - 1;
+            if ((LL < 0) || (LL > 2))
+                throw new Exception($"Unexpected LL value: {LL}");
+            return LL;
+        }
+    }
 
     [Flags]
     internal enum SuffixFlags : int
@@ -88,10 +123,10 @@ namespace Amd64InstructionTableGenerator
         [GeneratedRegex(@"^\s*,?\s*(?<op>[^\(,]*(\([^\)]*\))?)?(?<rest>.+$)?", RegexOptions.ExplicitCapture)]
         private static partial Regex EncOperandSplit();
 
-        [GeneratedRegex(@"\[.*\]$")]
+        [GeneratedRegex(@"\[.*\]({1to[0-9]+})?$")]
         private static partial Regex EncOperandIsMemOp();
 
-        [GeneratedRegex(@"\[rip.*\]$")]
+        [GeneratedRegex(@"\[rip.*\]({1to[0-9]+})?$")]
         private static partial Regex EncOperandIsMOp();
 
         private static readonly HashSet<string> allOperands = new HashSet<string>();
@@ -101,8 +136,18 @@ namespace Amd64InstructionTableGenerator
             ["[rip+0x53525150]"] = SuffixFlags.MUnknown,
             ["BYTE PTR [rip+0x53525150]"] = SuffixFlags.M1B,
             ["WORD PTR [rip+0x53525150]"] = SuffixFlags.M2B,
+            ["WORD PTR [rip+0x53525150]{1to8}"] = SuffixFlags.M2B,
+            ["WORD PTR [rip+0x53525150]{1to16}"] = SuffixFlags.M2B,
+            ["WORD PTR [rip+0x53525150]{1to32}"] = SuffixFlags.M2B,
             ["DWORD PTR [rip+0x53525150]"] = SuffixFlags.M4B,
+            ["DWORD PTR [rip+0x53525150]{1to2}"] = SuffixFlags.M4B,
+            ["DWORD PTR [rip+0x53525150]{1to4}"] = SuffixFlags.M4B,
+            ["DWORD PTR [rip+0x53525150]{1to8}"] = SuffixFlags.M4B,
+            ["DWORD PTR [rip+0x53525150]{1to16}"] = SuffixFlags.M4B,
             ["QWORD PTR [rip+0x53525150]"] = SuffixFlags.M8B,
+            ["QWORD PTR [rip+0x53525150]{1to2}"] = SuffixFlags.M8B,
+            ["QWORD PTR [rip+0x53525150]{1to4}"] = SuffixFlags.M8B,
+            ["QWORD PTR [rip+0x53525150]{1to8}"] = SuffixFlags.M8B,
             ["OWORD PTR [rip+0x53525150]"] = SuffixFlags.M16B,
             ["XMMWORD PTR [rip+0x53525150]"] = SuffixFlags.M16B,
             ["YMMWORD PTR [rip+0x53525150]"] = SuffixFlags.M32B,
@@ -443,10 +488,17 @@ namespace Amd64InstructionTableGenerator
                         }
 
                         byte evex_LprimeL = (byte)((evex_p2 & Evex_ByteLprimeLmask) >> Evex_ByteLprimeLshift);
-                        flags |= (EncodingFlags)(evex_LprimeL << (byte)EncodingFlags.LLshift);
+                        flags |= Util.ConvertEvexLLToEncodingFlags(evex_LprimeL);
                         if (Debug.debug)
                         {
                             Console.WriteLine($"  EVEX.L'L={evex_LprimeL:x1}");
+                        }
+
+                        var evex_b = evex_p2 & 0x10;
+                        if (evex_b != 0)
+                        {
+                            flags |= EncodingFlags.b;
+                            if (Debug.debug) Console.WriteLine($"  EVEX.b");
                         }
 
                         operandIndex += 4;
@@ -526,15 +578,15 @@ namespace Amd64InstructionTableGenerator
                 default:
                     if (suffixBytes < accounted)
                     {
-                        throw new Exception($"Encoding too short m:{map} o:{opIndex} s:{suffixBytes} a:{accounted}?? : {disassembly} ");
+                        throw new Exception($"Encoding too short m:{map} o:{opIndex} s:{suffixBytes} a:{accounted}? : {disassembly}");
                     }
                     else if (suffixBytes - accounted > 8)
                     {
-                        throw new Exception($"Encoding too long m:{map} o:{opIndex} s:{suffixBytes} a:{accounted}???? : {disassembly}");
+                        throw new Exception($"Encoding too long m:{map} o:{opIndex} s:{suffixBytes} a:{accounted}? : {disassembly}");
                     }
                     else
                     {
-                        throw new Exception($"Encoding Immediate too long m:{map} o:{opIndex} s:{suffixBytes} a:{accounted}???? : {disassembly}");
+                        throw new Exception($"Encoding Immediate too long m:{map} o:{opIndex} s:{suffixBytes} a:{accounted}? : {disassembly}");
                     }
             }
 
@@ -773,7 +825,7 @@ namespace Amd64InstructionTableGenerator
                     if (TestHypothesis((e) => Amd64WP(SuffixFlags.M8B, SuffixFlags.M4B, SuffixFlags.M2B, e), sometimesSuffix, map))
                         rules += "_WP_M8B_or_M4B_or_M2B";
                     else if (TestHypothesis((e) => TestLL(SuffixFlags.M2B, SuffixFlags.M4B, SuffixFlags.M8B, e), sometimesSuffix, map))
-                        rules += "_LL_M2B_or_M4B_or_M8B"; // e.g., vpmovusqb
+                        rules += "_LL_M2B_M4B_M8B"; // e.g., vpmovusqb
                     else
                         goto default;
                     break;
@@ -823,37 +875,75 @@ namespace Amd64InstructionTableGenerator
                     break;
                 case SuffixFlags.M16B | SuffixFlags.M32B | SuffixFlags.M64B:
                     if (TestHypothesis((e) => TestLL(SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
-                        rules += "_LL_M16B_or_M32B_or_M64B";
+                        rules += "_LL_M16B_M32B_M64B"; // e.g., vmovups, vmovupd, vmovsldup
                     else
                         goto default;
                     break;
                 case SuffixFlags.M8B | SuffixFlags.M32B | SuffixFlags.M64B:
                     if (TestHypothesis((e) => TestLL(SuffixFlags.M8B, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
-                        rules += "_LL_M8B_or_M32B_or_M64B"; // e.g., vmovddup, vcvtps2pd
+                        rules += "_LL_M8B_M32B_M64B"; // e.g., vmovddup, vcvtps2pd
+                    else if (TestHypothesis((e) => Amd64bLL(SuffixFlags.M8B, SuffixFlags.None, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_bLL_M8B_None_M32B_M64B"; // vpermq
                     else
                         goto default;
                     break;
                 case SuffixFlags.M8B | SuffixFlags.M16B | SuffixFlags.M32B:
                     if (TestHypothesis((e) => TestLL(SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, e), sometimesSuffix, map))
-                        rules += "_LL_M8B_or_M16B_or_M32B"; // e.g., vcvtps2pd, vpmovuswb
+                        rules += "_LL_M8B_M16B_M32B"; // e.g., vcvtps2pd, vpmovuswb
                     else
                         goto default;
                     break;
                 case SuffixFlags.M4B | SuffixFlags.M8B | SuffixFlags.M16B:
                     if (TestHypothesis((e) => TestLL(SuffixFlags.M4B, SuffixFlags.M8B, SuffixFlags.M16B, e), sometimesSuffix, map))
-                        rules += "_LL_M4B_or_M8B_or_M16B"; // e.g., vpmovusdb
+                        rules += "_LL_M4B_M8B_M16B"; // e.g., vpmovusdb
                     else
                         goto default;
                     break;
                 case SuffixFlags.M32B | SuffixFlags.M64B:
                     if (TestHypothesis((e) => TestLL(SuffixFlags.None, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
-                        rules += "_LL_None_or_M32B_or_M64B"; // e.g., vpermpd, vpermps (no EVEX.128 (LL00) form)
+                        rules += "_LL_None_M32B_M64B"; // e.g., vpermpd, vpermps (no EVEX.128 (LL00) form)
                     else
                         goto default;
                     break;
                 case SuffixFlags.M8B | SuffixFlags.M16B | SuffixFlags.M32B | SuffixFlags.M64B:
                     if (TestHypothesis((e) => Amd64WLL(SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, e), sometimesSuffix, map))
                         rules += "_WLL_M16B_M32B_M64B_or_M8B_M16B_M32B"; // e.g., vcvttps2uqq, vcvttpd2uqq
+                    else if (TestHypothesis((e) => Amd64bLL(SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_bLL_M8B_M16B_M32B_M64B"; // e.g., vunpcklpd, vunpckhpd, vmovapd
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M2B | SuffixFlags.M16B | SuffixFlags.M32B | SuffixFlags.M64B:
+                    if (TestHypothesis((e) => Amd64bLL(SuffixFlags.M2B, SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_bLL_M2B_M16B_M32B_M64B"; // e.g., vrndscaleph
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M4B | SuffixFlags.M16B | SuffixFlags.M32B | SuffixFlags.M64B:
+                    if (TestHypothesis((e) => Amd64bLL(SuffixFlags.M4B, SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_bLL_M4B_M16B_M32B_M64B"; // e.g., vunpcklps, vunpckhps, vmovaps
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M4B | SuffixFlags.M8B | SuffixFlags.M16B | SuffixFlags.M32B:
+                    if (TestHypothesis((e) => Amd64bLL(SuffixFlags.M4B, SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, e), sometimesSuffix, map))
+                        rules += "_bLL_M4B_M8B_M16B_M32B"; // e.g., vcvtps2pd
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M4B | SuffixFlags.M8B | SuffixFlags.M32B | SuffixFlags.M64B:
+                    if (TestHypothesis((e) => Amd64bWLL(SuffixFlags.M4B, SuffixFlags.M8B, SuffixFlags.None, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_bWLL_M4B_M8B_None_M32B_M64B"; // e.g., vpermpd, vpermps (no EVEX.128 (LL00) form)
+                    else
+                        goto default;
+                    break;
+                case SuffixFlags.M4B | SuffixFlags.M8B | SuffixFlags.M16B | SuffixFlags.M32B | SuffixFlags.M64B:
+                    // Does EVEX.b only affect broadcast size, with EVEX.W, but L'L vector size for non-broadcast is all the same?
+                    if (TestHypothesis((e) => Amd64bWLL(SuffixFlags.M4B, SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, e), sometimesSuffix, map))
+                        rules += "_bWLL_M4B_M8B_M16B_M32B_M64B"; // e.g., vcvtdq2ps, vcvtqq2ps
+                    // Does EVEX.W affect all L'L sizes, including broadcast size?
+                    else if (TestHypothesis((e) => Amd64WbLL(SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, SuffixFlags.M64B, SuffixFlags.M4B, SuffixFlags.M8B, SuffixFlags.M16B, SuffixFlags.M32B, e), sometimesSuffix, map))
+                        rules += "_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B"; // e.g., vcvttps2uqq, vcvttpd2uqq
                     else
                         goto default;
                     break;
@@ -897,22 +987,36 @@ namespace Amd64InstructionTableGenerator
         public static SuffixFlags Test(EncodingFlags e, SuffixFlags t, SuffixFlags f, EncodingFlags g) => g.HasFlag(e) ? t : f;
         public static SuffixFlags TestLL(SuffixFlags LL00, SuffixFlags LL01, SuffixFlags LL10, EncodingFlags g)
         {
-            EncodingFlags LprimeLflags = (EncodingFlags)(g & EncodingFlags.LLmask);
-            if (LprimeLflags == EncodingFlags.LL00)
+            if (!Util.EncodingFlagsHasEvexLL(g))
+                return SuffixFlags.None;
+
+            int LL = Util.ConvertEncodingFlagsToEvexLL(g);
+            if (LL == 0)
                 return LL00;
-            if (LprimeLflags == EncodingFlags.LL01)
+            else if (LL == 1)
                 return LL01;
-            if (LprimeLflags == EncodingFlags.LL10)
+            else
                 return LL10;
-            return SuffixFlags.None;
         }
 
+        // Tests for a single flag
+
         public static SuffixFlags Amd64L(SuffixFlags t, SuffixFlags f, EncodingFlags g) => Test(EncodingFlags.L, t, f, g);
-        public static SuffixFlags Amd64W(SuffixFlags t, SuffixFlags f, EncodingFlags g) => Test(EncodingFlags.W, t, f, g);
+        public static SuffixFlags Amd64W(SuffixFlags W1, SuffixFlags W0, EncodingFlags g) => Test(EncodingFlags.W, W1, W0, g);
         public static SuffixFlags Amd64P(SuffixFlags t, SuffixFlags f, EncodingFlags g) => Test(EncodingFlags.P, f, t, g);
+        public static SuffixFlags Amd64b(SuffixFlags b1, SuffixFlags b0, EncodingFlags g) => Test(EncodingFlags.b, b1, b0, g);
+
+        // Tests for multiple flags
+
         public static SuffixFlags Amd64WP(SuffixFlags tx, SuffixFlags ft, SuffixFlags ff, EncodingFlags g) => Amd64W(tx, Amd64P(ft, ff, g), g);
-        public static SuffixFlags Amd64WLL(SuffixFlags twll00, SuffixFlags twll01, SuffixFlags twll10, SuffixFlags fwll00, SuffixFlags fwll01, SuffixFlags fwll10, EncodingFlags g) =>
-            Amd64W(TestLL(twll00, twll01, twll10, g), TestLL(fwll00, fwll01, fwll10, g), g);
+        public static SuffixFlags Amd64WLL(SuffixFlags W1LL00, SuffixFlags W1LL01, SuffixFlags W1LL10, SuffixFlags W0LL00, SuffixFlags W0LL01, SuffixFlags W0LL10, EncodingFlags g) =>
+            Amd64W(TestLL(W1LL00, W1LL01, W1LL10, g), TestLL(W0LL00, W0LL01, W0LL10, g), g);
+        public static SuffixFlags Amd64bLL(SuffixFlags b1, SuffixFlags b0LL00, SuffixFlags b0LL01, SuffixFlags b0LL10, EncodingFlags g) =>
+            Amd64b(b1, TestLL(b0LL00, b0LL01, b0LL10, g), g);
+        public static SuffixFlags Amd64bWLL(SuffixFlags b1W0, SuffixFlags b1W1, SuffixFlags b0LL00, SuffixFlags b0LL01, SuffixFlags b0LL10, EncodingFlags g) =>
+            Amd64b(Amd64W(b1W1, b1W0, g), TestLL(b0LL00, b0LL01, b0LL10, g), g);
+        public static SuffixFlags Amd64WbLL(SuffixFlags W1b1, SuffixFlags W1b0LL00, SuffixFlags W1b0LL01, SuffixFlags W1b0LL10, SuffixFlags W0b1, SuffixFlags W0b0LL00, SuffixFlags W0b0LL01, SuffixFlags W0b0LL10, EncodingFlags g) =>
+            Amd64W(Amd64b(W1b1, TestLL(W1b0LL00, W1b0LL01, W1b0LL10, g), g), Amd64b(W0b1, TestLL(W0b0LL00, W0b0LL01, W0b0LL10, g), g), g);
 
         private void AddOpCode(Map map, int opCodeExt, bool reg, int modrmReg, string rule, HashSet<string> mnemonics)
         {
@@ -987,13 +1091,20 @@ namespace Amd64InstructionTableGenerator
             Console.WriteLine("    //      I8B      // Instruction includes 8  bytes of immediates");
             Console.WriteLine("    //      Unknown  // Instruction samples did not include a modrm configured to produce RIP addressing");
             Console.WriteLine("    //      L        // Flags depend on L bit in encoding.  L_<flagsLTrue>_or_<flagsLFalse>");
-            Console.WriteLine("    //      LL       // Flags depend on L'L bits in EVEX encoding.  LL_<flagsLL00>_or_<flagsLL01>_or_<flagsLL10>");
+            Console.WriteLine("    //      LL       // Flags depend on L'L bits in EVEX encoding.  LL_<flagsLL00>_<flagsLL01>_<flagsLL10>");
             Console.WriteLine("    //                  LL00 = 128-bit vector; LL01 = 256-bit vector; LL10 = 512-bit vector");
             Console.WriteLine("    //      W        // Flags depend on W bit in encoding.  W_<flagsWTrue>_or_<flagsWFalse>");
             Console.WriteLine("    //      P        // Flags depend on OpSize prefix for encoding.  P_<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>");
             Console.WriteLine("    //      WP       // Flags depend on W bit in encoding and OpSize prefix.  WP_<flagsWTrue>_or_<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>");
-            Console.WriteLine("    //      WLL      // Flags depend on W and L'L bits.  WL_<flagsWTrueL00>_<flagsWTrueL01>_<flagsWTrueL10>_or_<flagsWFalseL00>_<flagsWFalseL01>_<flagsWFalseL10>");
-            Console.WriteLine("    //      or       // Flag option separator used in W, L, P, WP, and WLL above");
+            Console.WriteLine("    //      WLL      // Flags depend on W and L'L bits.");
+            Console.WriteLine("    //               //     WLL_<W=1 LL=00>_<W=1 LL=01>_<W=1 LL=10>_or_<W=0 LL=00>_<W=0 LL=01>_<W=0 LL=10>");
+            Console.WriteLine("    //      bLL      // Flags depend on EVEX.b and L'L bits.");
+            Console.WriteLine("    //               //     bLL_<b=1>_<b=0 LL=00>_<b=0 LL=01>_<b=0 LL=10>");
+            Console.WriteLine("    //      bWLL     // Flags depend on EVEX.b, EVEX.W, and L'L bits, but EVEX.W only affects the EVEX.b case, not the L'L case.");
+            Console.WriteLine("    //               //     bWLL_<b=1 W=0>_<b=1 W=1>_<b=0 LL=00>_<b=0 LL=01>_<b=0 LL=10>");
+            Console.WriteLine("    //      WbLL     // Flags depend on EVEX.W, EVEX.b, and L'L bits.");
+            Console.WriteLine("    //               //     WbLL_<W=1 b=1>_<W=1 b=0 LL=00>_<W=1 b=0 LL=01>_<W=1 b=0 LL=10>_or_<W=0 b=1>_<W=0 b=0 LL=00>_<W=0 b=0 LL=01>_<W=0 b=0 LL=10>");
+            Console.WriteLine("    //      or       // Flag option separator to help readability in some cases");
             Console.WriteLine("    enum InstrForm : uint8_t");
             Console.WriteLine("    {");
             Console.WriteLine($"       None,");

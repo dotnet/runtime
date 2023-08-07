@@ -214,6 +214,8 @@ int main(int argc, char* argv[])
     //      EVEX.V'=1 (inverted)
     //      EVEX.b=0 // no broadcast (REVIEW: need to handle broadcast as it changes the size of the memory operand)
     //      EVEX.z=0 // always merge
+    //
+    // REVIEW: do we need to handle disp8*N mode?
 
     const int evex_p0_base = 0xf0;
     const int evex_p1_base = 0x04;
@@ -241,7 +243,14 @@ int main(int argc, char* argv[])
     };
     const size_t evex_LprimeL_cases_size = ARRAYSIZE(evex_LprimeL_cases);
 
-    const size_t total_evex_cases = evex_w_cases_size * evex_vvvv_cases_size * evex_LprimeL_cases_size;
+    const int evex_b_cases[] = // EVEX.b in P2
+    {
+        0,       // 0b = no broadcast
+        0x1 << 4 // 1b = embedded broadcast
+    };
+    const size_t evex_b_cases_size = ARRAYSIZE(evex_b_cases);
+
+    const size_t total_evex_cases = evex_w_cases_size * evex_vvvv_cases_size * evex_LprimeL_cases_size * evex_b_cases_size;
 
     struct EvexBytes
     {
@@ -256,10 +265,13 @@ int main(int argc, char* argv[])
         {
             for (size_t k = 0; k < evex_LprimeL_cases_size; k++)
             {
-                EvexCases[evex_case].p0 = evex_p0_base;
-                EvexCases[evex_case].p1 = evex_p1_base | evex_w_cases[i] | evex_vvvv_cases[j];
-                EvexCases[evex_case].p2 = evex_p2_base | evex_LprimeL_cases[k];
-                ++evex_case;
+                for (size_t l = 0; l < evex_b_cases_size; l++)
+                {
+                    EvexCases[evex_case].p0 = evex_p0_base;
+                    EvexCases[evex_case].p1 = evex_p1_base | evex_w_cases[i] | evex_vvvv_cases[j];
+                    EvexCases[evex_case].p2 = evex_p2_base | evex_b_cases[l] | evex_LprimeL_cases[k];
+                    ++evex_case;
+                }
             }
         }
     }
