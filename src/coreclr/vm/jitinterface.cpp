@@ -3944,6 +3944,9 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         if (pMT->HasVariance())
             ret |= CORINFO_FLG_VARIANCE;
 
+        if (pMT->HasTypeEquivalence())
+            ret |= CORINFO_FLG_TYPE_EQUIVALENCE;
+
         if (pMT->ContainsPointers() || pMT == g_TypedReferenceMT)
             ret |= CORINFO_FLG_CONTAINS_GC_PTR;
 

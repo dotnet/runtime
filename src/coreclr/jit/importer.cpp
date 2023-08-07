@@ -13612,7 +13612,7 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
 bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
 {
     DWORD flags     = info.compCompHnd->getClassAttribs(classHnd);
-    DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY;
+    DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_VARIANCE | CORINFO_FLG_TYPE_EQUIVALENCE | CORINFO_FLG_ARRAY;
 
     if ((flags & flagsMask) == CORINFO_FLG_FINAL)
     {

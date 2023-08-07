@@ -183,6 +183,7 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_ARRAY);
     AddFlag(CORINFO_FLG_OVERLAPPING_FIELDS);
     AddFlag(CORINFO_FLG_INTERFACE);
+    AddFlag(CORINFO_FLG_TYPE_EQUIVALENCE);
     AddFlag(CORINFO_FLG_CONTAINS_GC_PTR);
     AddFlag(CORINFO_FLG_DELEGATE);
     AddFlag(CORINFO_FLG_BYREF_LIKE);

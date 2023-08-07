@@ -593,12 +593,13 @@ namespace Internal.JitInterface
 
         // These are internal flags that can only be on Classes
         CORINFO_FLG_VALUECLASS = 0x00010000, // is the class a value class
-        //  This flag is define din the Methods section, but is also valid on classes.
+        //  This flag is defined in the Methods section, but is also valid on classes.
         //  CORINFO_FLG_SHAREDINST            = 0x00020000, // This class is satisfies TypeHandle::IsCanonicalSubtype
         CORINFO_FLG_VAROBJSIZE = 0x00040000, // the object size varies depending of constructor args
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
+        CORINFO_FLG_TYPE_EQUIVALENCE = 0x00400000, // this type participates in type equivalence
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
         CORINFO_FLG_INDEXABLE_FIELDS = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)

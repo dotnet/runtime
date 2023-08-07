@@ -2034,6 +2034,9 @@ namespace Internal.JitInterface
             if (type.HasVariance)
                 result |= CorInfoFlag.CORINFO_FLG_VARIANCE;
 
+            if (type.HasTypeEquivalence)
+                result |= CorInfoFlag.CORINFO_FLG_TYPE_EQUIVALENCE;
+
             if (type.IsDelegate)
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
 
