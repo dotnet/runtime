@@ -434,7 +434,7 @@ Affected public APIs:
 - DateTimeFormatInfo.AMDesignator
 - DateTimeFormatInfo.CalendarWeekRule
 - DateTimeFormatInfo.DayNames
-- DateTimeFormatInfo.GetDayName
+- DateTimeFormatInfo.GetDayName()
 - DateTimeFormatInfo.GetEraName()
 - DateTimeFormatInfo.FirstDayOfWeek
 - DateTimeFormatInfo.FullDateTimePattern
