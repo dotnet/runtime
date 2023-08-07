@@ -21,26 +21,28 @@ public class IcuTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
+    [InlineData("Debug", null)]
     [InlineData("Release", false)]
     [InlineData("Release", true)]
-    public void HybridWithInvariant(string config, bool invariant)
+    [InlineData("Release", null)]
+    public void HybridWithInvariant(string config, bool? invariant)
     {
         string id = $"blz_hybrid_{config}_{GetRandomNameWithoutDots()}";
         string projectFile = CreateProjectWithNativeReference(id);
-        AddItemsPropertiesToProject(
-            projectFile,
-            extraProperties: 
-                $"<HybridGlobalization>true</HybridGlobalization><InvariantGlobalization>{invariant}</InvariantGlobalization>");
+        string extraProperties = "<HybridGlobalization>true</HybridGlobalization>";
+        if (invariant != null)
+            extraProperties += $"<InvariantGlobalization>{invariant}</InvariantGlobalization>";
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         (CommandResult res, string logPath) = BlazorBuild(
             new BlazorBuildOptions(
                 id,
                 config,
                 WarnAsError: false,
-                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Hybrid,
+                GlobalizationMode: invariant == true ? GlobalizationMode.Invariant : GlobalizationMode.Hybrid,
                 ExpectedFileType: NativeFilesType.Relinked
             ));
-        if (invariant)
+        if (invariant == true)
             Assert.Contains("$(HybridGlobalization) has no effect when $(InvariantGlobalization) is set to true.", res.Output);
     }
 
@@ -72,25 +74,29 @@ public class IcuTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
+    [InlineData("Debug", null)]
     [InlineData("Release", false)]
     [InlineData("Release", true)]
-    public void FullIcuFromRuntimePackWithInvariant(string config, bool invariant)
+    [InlineData("Release", null)]
+    public void FullIcuFromRuntimePackWithInvariant(string config, bool? invariant)
     {
         string id = $"blz_hybrid_{config}_{GetRandomNameWithoutDots()}";
-        string projectFile = CreateProjectWithNativeReference(id);
-        AddItemsPropertiesToProject(projectFile, extraProperties: 
-            $"<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData><InvariantGlobalization>{invariant}</InvariantGlobalization>");
+        string projectFile = CreateProjectWithNativeReference(id);        
+        string extraProperties = "<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>";
+        if (invariant != null)
+            extraProperties += $"<InvariantGlobalization>{invariant}</InvariantGlobalization>";
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         (CommandResult res, string logPath) = BlazorBuild(
             new BlazorBuildOptions(
                 id,
                 config,
                 WarnAsError: false,
-                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.FullIcu,
+                GlobalizationMode: invariant == true ? GlobalizationMode.Invariant : GlobalizationMode.FullIcu,
                 ExpectedFileType: NativeFilesType.Relinked
             ));
         
-        if (invariant)
+        if (invariant == true)
              Assert.Contains("$(BlazorWebAssemblyLoadAllGlobalizationData) has no effect when $(InvariantGlobalization) is set to true.", res.Output);
     }
 }
