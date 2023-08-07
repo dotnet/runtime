@@ -5,58 +5,55 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
+public class C0
+{
+    public long F1;
+}
+
+public struct S5
+{
+    public bool F1;
+    public int F2;
+    public C0 F4;
+    public short F5;
+    public ulong F6;
+    public uint F7;
+}
+
 // This test is to ensure that an assertion does not occur in the JIT.
 public class Runtime_78891
 {
-    public class C0
+    public static S5 s_48;
+
+    [Fact]
+    public static int TestEntryPoint()
     {
-        public long F1;
+        var vr2 = new S5();
+        var vr3 = new S5();
+        Assert.Throws<NullReferenceException>(() => M59(vr2, vr3));
+        return 100;
     }
 
-    public struct S5
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Consume(short x)
     {
-        public bool F1;
-        public int F2;
-        public C0 F4;
-        public short F5;
-        public ulong F6;
-        public uint F7;
+
     }
 
-    public class Program
+    public static void M59(S5 arg0, S5 arg1)
     {
-        public static S5 s_48;
-
-        [Fact]
-        public static int TestEntryPoint()
+        try
         {
-            var vr2 = new S5();
-            var vr3 = new S5();
-            Assert.Throws<NullReferenceException>(() => M59(vr2, vr3));
-            return 100;
+            arg0 = arg1;
+            arg0 = arg1;
+            short var3 = arg1.F5;
+            Consume(var3);
         }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void Consume(short x)
+        finally
         {
-
-        }
-
-        public static void M59(S5 arg0, S5 arg1)
-        {
-            try
+            if (s_48.F4.F1 > arg0.F7)
             {
-                arg0 = arg1;
-                arg0 = arg1;
-                short var3 = arg1.F5;
-                Consume(var3);
-            }
-            finally
-            {
-                if (s_48.F4.F1 > arg0.F7)
-                {
-                    arg0.F1 |= false;
-                }
+                arg0.F1 |= false;
             }
         }
     }
