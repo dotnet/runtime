@@ -135,10 +135,9 @@ public class BuildPublishTests : BlazorWasmTestBase
 
         void AssertResourcesDlls(string basePath)
         {
-            string dllExtension = UseWebcil ? ProjectProviderBase.WebcilInWasmExtension : ".dll";
             foreach (string culture in cultures)
             {
-                string jaJPResources = Path.Combine(basePath, culture, $"{id}.resources{dllExtension}");
+                string jaJPResources = Path.Combine(basePath, culture, $"{id}.resources{ProjectProviderBase.WasmAssemblyExtension}");
                 Assert.True(File.Exists(jaJPResources), $"Expects to have a resource assembly at {jaJPResources}");
             }
         }
