@@ -395,7 +395,7 @@ jobs:
         projectFile: crossgen_perf.proj
         runKind: crossgen_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perftiger'
+        logicalmachine: 'perftiger_crossgen'
 
   # build mono runtime packs
   - template: /eng/pipelines/common/platform-matrix.yml

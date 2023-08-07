@@ -6539,7 +6539,7 @@ HRESULT Debugger::LaunchDebuggerForUser(Thread * pThread, EXCEPTION_POINTERS * p
 // once and leave them set without the risk of clobbering something we care about.
 JIT_DEBUG_INFO   Debugger::s_DebuggerLaunchJitInfo = {0};
 EXCEPTION_RECORD Debugger::s_DebuggerLaunchJitInfoExceptionRecord = {0};
-CONTEXT          Debugger::s_DebuggerLaunchJitInfoContext = {0};
+CONTEXT          Debugger::s_DebuggerLaunchJitInfoContext = {};
 
 //----------------------------------------------------------------------------
 //

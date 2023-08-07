@@ -1880,3 +1880,29 @@ DBG_FlushInstructionCache(
 #endif
     return TRUE;
 }
+
+#ifdef HOST_AMD64
+CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
+{
+    size_t copySize;
+    if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
+    {
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
+        {
+            copySize = sizeof(CONTEXT);
+        }
+        else
+        {
+            copySize = offsetof(CONTEXT, KMask0);
+        }
+    }
+    else
+    {
+        copySize = offsetof(CONTEXT, XStateFeaturesMask);
+    }
+
+    memcpy(this, &ctx, copySize);
+
+    return *this;
+}
+#endif // HOST_AMD64
