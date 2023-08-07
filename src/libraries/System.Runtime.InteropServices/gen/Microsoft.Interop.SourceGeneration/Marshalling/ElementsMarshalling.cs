@@ -463,7 +463,7 @@ namespace Microsoft.Interop
                     VariableDeclarator(
                         Identifier(nativeSpanIdentifier))
                     .WithInitializer(EqualsValueClause(
-                            context.Direction == MarshalDirection.ManagedToUnmanaged
+                            MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.ManagedToUnmanaged
                                 ? CollectionSource.GetUnmanagedValuesDestination(info, context)
                                 : CollectionSource.GetUnmanagedValuesSource(info, context)))))),
                 contentsCleanupStatements);

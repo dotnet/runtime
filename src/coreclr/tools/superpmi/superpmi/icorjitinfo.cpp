@@ -553,7 +553,7 @@ CorInfoHelpFunc MyICJI::getNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHa
     DWORD exceptionCode = 0;
     CorInfoHelpFunc result = jitInstance->mc->repGetNewHelper(classHandle, pHasSideEffects, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowException(exceptionCode);
+        ThrowRecordedException(exceptionCode);
     return result;
 }
 
