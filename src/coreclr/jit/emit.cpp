@@ -10449,7 +10449,7 @@ void emitter::emitEnableGC()
         emitNoGCIG = false;
 
         // If the current IG does not have instructions, do not force a new IG.
-        // Instead, just use the current one without NOGCINTERRUPT.
+        // Instead, just use the current one without NOGCINTERRUPT and EXTEND.
         if (emitCurIGnonEmpty())
         {
             // The next time an instruction needs to be generated, force a new instruction group.
@@ -10464,6 +10464,7 @@ void emitter::emitEnableGC()
         else
         {
             emitCurIG->igFlags &= ~IGF_NOGCINTERRUPT;
+            emitCurIG->igFlags &= ~IGF_EXTEND;
         }
     }
     else
