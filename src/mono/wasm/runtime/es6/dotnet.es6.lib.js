@@ -122,6 +122,10 @@ let linked_functions = [
     "mono_wasm_starts_with",
     "mono_wasm_ends_with",
     "mono_wasm_index_of",
+    "mono_wasm_get_calendar_info",
+    "mono_wasm_get_culture_info",
+    "mono_wasm_get_first_day_of_week",
+    "mono_wasm_get_first_week_of_year",
 
     "icudt68_dat",
 ];

@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
             unchecked
             {
-                return ((ServiceType?.GetHashCode() ?? 23) * 397) ^ ServiceKey.GetHashCode();
+                return (ServiceType.GetHashCode() * 397) ^ ServiceKey.GetHashCode();
             }
         }
 

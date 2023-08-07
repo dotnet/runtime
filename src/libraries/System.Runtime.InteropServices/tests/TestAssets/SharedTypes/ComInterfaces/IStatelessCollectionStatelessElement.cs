@@ -123,11 +123,6 @@ namespace SharedTypes.ComInterfaces
             {
                 throw new NotImplementedException();
             }
-            // Should be removed: https://github.com/dotnet/runtime/issues/89885
-            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(NativeCollection<T> unmanaged, int numElements)
-            {
-                throw new NotImplementedException();
-            }
 
             public static Span<T> GetManagedValuesDestination(StatelessCollection<T> managed)
             {
@@ -135,7 +130,6 @@ namespace SharedTypes.ComInterfaces
             }
 
             public static void Free(NativeCollection<T> unmanaged) => throw new NotImplementedException();
-
         }
     }
 }
