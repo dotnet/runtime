@@ -70,7 +70,7 @@ public class IcuTests : IcuTestsBase
         buildArgs = buildArgs with { ProjectName = projectName };
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{s_customIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
-        string testedLocales = fullIcu ? s_fullIcuTestedLocales : CustomIcuTestedLocales;
+        string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         string programText = GetProgramText(testedLocales);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
         (_, string output) = BuildProject(buildArgs,
