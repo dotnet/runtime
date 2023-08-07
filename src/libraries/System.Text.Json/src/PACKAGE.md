@@ -223,8 +223,6 @@ while (reader.Read())
 // EndObject
 ```
 
-TODO
-
 ## Main Types
 
 <!-- The main types provided in this library -->
