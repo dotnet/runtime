@@ -40,7 +40,6 @@ namespace SharedTypes.ComInterfaces
 
     internal struct StatelessCollectionPinnableReferenceNative
     {
-        nint ptr;
     }
 
     [ContiguousCollectionMarshaller]
@@ -59,16 +58,12 @@ namespace SharedTypes.ComInterfaces
         {
             public static ref StatelessCollectionPinnableReferenceNative GetPinnableReference(StatelessCollectionPinnableReference<T> managed) => throw new NotImplementedException();
             public static StatelessCollectionPinnableReferenceNative AllocateContainerForUnmanagedElements(StatelessCollectionPinnableReference<T> managed, out int numElements) => throw new NotImplementedException();
-
             public static StatelessCollectionPinnableReference<T> AllocateContainerForManagedElements(StatelessCollectionPinnableReferenceNative unmanaged, int numElements) => throw new NotImplementedException();
-
             public static ReadOnlySpan<T> GetManagedValuesSource(StatelessCollectionPinnableReference<T> managed) => throw new NotImplementedException();
-
             public static Span<TUnmanaged> GetUnmanagedValuesDestination(StatelessCollectionPinnableReferenceNative unmanaged, int numElements) => throw new NotImplementedException();
-
             public static ReadOnlySpan<TUnmanaged> GetUnmanagedValuesSource(StatelessCollectionPinnableReferenceNative unmanaged, int numElements) => throw new NotImplementedException();
-
             public static Span<T> GetManagedValuesDestination(StatelessCollectionPinnableReference<T> managed) => throw new NotImplementedException();
+            public static void Free(StatelessCollectionPinnableReferenceNative native) { }
         }
 
         public static class UnmanagedToManaged
@@ -76,6 +71,7 @@ namespace SharedTypes.ComInterfaces
             public static StatelessCollectionPinnableReference<T> AllocateContainerForManagedElements(StatelessCollectionPinnableReferenceNative unmanaged, int numElements) => throw new NotImplementedException();
             public static ReadOnlySpan<TUnmanaged> GetUnmanagedValuesSource(StatelessCollectionPinnableReferenceNative unmanaged, int numElements) => throw new NotImplementedException();
             public static Span<T> GetManagedValuesDestination(StatelessCollectionPinnableReference<T> managed) => throw new NotImplementedException();
+            public static void Free(StatelessCollectionPinnableReferenceNative native) { }
         }
 
         public static class ManagedToUnmanaged
@@ -84,6 +80,7 @@ namespace SharedTypes.ComInterfaces
             public static StatelessCollectionPinnableReferenceNative AllocateContainerForUnmanagedElements(StatelessCollectionPinnableReference<T> managed, out int numElements) => throw new NotImplementedException();
             public static ReadOnlySpan<T> GetManagedValuesSource(StatelessCollectionPinnableReference<T> managed) => throw new NotImplementedException();
             public static Span<TUnmanaged> GetUnmanagedValuesDestination(StatelessCollectionPinnableReferenceNative unmanaged, int numElements) => throw new NotImplementedException();
+            public static void Free(StatelessCollectionPinnableReferenceNative native) { }
         }
     }
 }
