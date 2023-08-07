@@ -8,7 +8,6 @@
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <ItemGroup>
-    <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNames" Value="STRESS_FOLD" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitDoVNBasedDeadStoreRemoval" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitEnableEarlyLivenessRange" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitEnablePhysicalPromotion" Value="0" />
