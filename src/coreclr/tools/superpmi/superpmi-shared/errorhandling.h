@@ -8,7 +8,6 @@
 #define _ErrorHandling
 
 #include "logging.h"
-#include "corexcep.h"
 
 // EXCEPTIONCODE_DebugBreakorAV is just the base exception number; calls to DebugBreakorAV()
 // pass a unique number to add to this. EXCEPTIONCODE_DebugBreakorAV_MAX is the maximum number
@@ -20,12 +19,15 @@
 #define EXCEPTIONCODE_LWM 0xe0423000
 #define EXCEPTIONCODE_CALLUTILS 0xe0426000
 #define EXCEPTIONCODE_TYPEUTILS 0xe0427000
+// Special exception code for rethrowing a recorded exception. This is NOT
+// considered an SPMI exception (see IsSuperPMIException), but it also does not
+// result in a replay failure (see JitInstance::CompileMethod).
+#define EXCEPTIONCODE_RECORDED_EXCEPTION 0xe0428000
 #define EXCEPTIONCODE_ASSERT 0xe0440000
-#define EXCEPTIONCODE_COMPLUS EXCEPTION_COMPLUS
 
 // RaiseException wrappers
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode);
 void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, const char* message, ...);
+void MSC_ONLY(__declspec(noreturn)) ThrowRecordedException(DWORD innerExceptionCode);
 
 // Assert stuff
 #define AssertCodeMsg(expr, exCode, msg, ...)                                                                          \
