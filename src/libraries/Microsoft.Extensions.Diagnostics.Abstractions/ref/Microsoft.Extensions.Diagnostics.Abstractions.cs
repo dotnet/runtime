@@ -60,12 +60,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName) => throw null!;
         public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName = null, string? listenerName = null, MeterScope scopes = MeterScope.Global | MeterScope.Local) => throw null!;
-        public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName = null) => throw null!;
+        public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName) => throw null!;
         public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName, string? instrumentName = null, string? listenerName = null, MeterScope scopes = MeterScope.Global | MeterScope.Local) => throw null!;
 
-        public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName = null) => throw null!;
+        public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName) => throw null!;
         public static IMetricsBuilder DisableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName = null, string? listenerName = null, MeterScope scopes = MeterScope.Global | MeterScope.Local) => throw null!;
-        public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName = null) => throw null!;
+        public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName) => throw null!;
         public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName, string? instrumentName = null, string? listenerName = null, MeterScope scopes = MeterScope.Global | MeterScope.Local) => throw null!;
     }
     public class MetricsOptions
