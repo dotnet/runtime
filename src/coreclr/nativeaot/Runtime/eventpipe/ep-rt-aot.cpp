@@ -846,11 +846,6 @@ ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
     return thread_handle->GetPalThreadIdForLogging();
 }
 
-bool ep_rt_aot_thread_has_started (ep_rt_thread_handle_t thread_handle)
-{
-    return thread_handle != NULL;
-}
-
 #ifdef EP_CHECKED_BUILD
 
 void ep_rt_aot_lock_requires_lock_held (const ep_rt_lock_handle_t *lock)

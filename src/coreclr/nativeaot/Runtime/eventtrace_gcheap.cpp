@@ -34,13 +34,15 @@
 
 BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw()
 {
-    // @TODO:
+    // @TODO: until the below issue is fixed correctly
+    // https://github.com/dotnet/runtime/issues/88491
     return FALSE;
 }
 
 BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw()
 {
-    // @TODO:
+    // @TODO: until the below issue is fixed correctly
+    // https://github.com/dotnet/runtime/issues/88491
     return FALSE;
 }
 

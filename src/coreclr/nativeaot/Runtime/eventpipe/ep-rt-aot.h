@@ -1579,8 +1579,7 @@ bool
 ep_rt_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
     STATIC_CONTRACT_NOTHROW;
-    extern bool ep_rt_aot_thread_has_started (ep_rt_thread_handle_t thread_handle);
-    return ep_rt_aot_thread_has_started(thread_handle);
+    return thread_handle != NULL;
 }
 
 static

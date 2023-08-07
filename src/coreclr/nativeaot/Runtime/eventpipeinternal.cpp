@@ -148,6 +148,8 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t 
     }
 }
 
+// All the runtime redefine this enum, should move to commmon code.
+// https://github.com/dotnet/runtime/issues/87069
 enum class ActivityControlCode
 {
     EVENT_ACTIVITY_CONTROL_GET_ID = 1,
