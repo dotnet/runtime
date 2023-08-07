@@ -16,7 +16,8 @@ parameters:
   timeoutInMinutes: 320           # optional -- timeout for the job
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
-  pgoRunType: ''                  # optional -- Flag for running with no pgo, dynamic pgo, or full pgo
+  pgoRunType: ''                  # optional -- different PGO configurations
+  physicalPromotionRunType: ''    # optional -- different physical promotion configurations
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   projectFile: 'microbenchmarks.proj'   # optional -- project file to build helix workitems
@@ -68,7 +69,7 @@ jobs:
           npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g &&
           $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8 &&
           find ~/.jsvu -ls &&
-          ~/.jsvu/v8 -e "console.log(`V8 version: ${this.version()}`)"
+          ~/.jsvu/engines/v8/v8 -e 'console.log(`V8 version: ${this.version()}`)'
     - ${{ if ne(parameters.runtimeType, 'wasm') }}:
       - HelixPreCommandsWasmOnLinux: echo
     - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install urllib3==1.26.15;py -3 -m pip install azure.storage.blob==12.0.0;py -3 -m pip install azure.storage.queue==12.0.0;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'
@@ -153,11 +154,11 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} -UseLocalCommitTime ${{ parameters.extraSetupParameters }}
+    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} -UseLocalCommitTime ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} --uselocalcommittime ${{ parameters.extraSetupParameters }}
+    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} --uselocalcommittime ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
@@ -182,6 +183,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}'
       continueOnError: true
       condition: always()

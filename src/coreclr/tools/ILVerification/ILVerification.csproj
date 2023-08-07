@@ -10,6 +10,7 @@
     <SignAssembly>true</SignAssembly>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <RunAnalyzers>false</RunAnalyzers>
+    <DefineConstants>NETSTANDARD2_0</DefineConstants>
   </PropertyGroup>
 
   <Import Project="ILVerification.projitems" />

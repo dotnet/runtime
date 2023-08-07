@@ -2152,3 +2152,7 @@ public class TestEvaluateDontPauseOnBreakpoint
         }
     }
 }
+public struct EvaluateStaticGetterInValueType
+{
+    public static int A => 5;
+}

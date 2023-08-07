@@ -24,7 +24,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, RunHost.All, true /* simd */ })]
-        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, RunHost.All, false /* simd */ })]
         public void Build_NoAOT_ShouldNotRelink(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_with_workload_no_aot";
@@ -108,7 +107,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release", /*aot*/false, /*publish*/true)]
         public void BuildWithSIMDNeedsWorkload(string config, bool aot, bool publish)
         {
-            string id = Path.GetRandomFileName();
+            string id = GetRandomId();
             string projectName = $"simd_no_workload_{config}_aot_{aot}";
             BuildArgs buildArgs = new
             (

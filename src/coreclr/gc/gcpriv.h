@@ -108,8 +108,17 @@
 #pragma warning(disable:4477)
 #endif //_MSC_VER
 
+//#define TRACE_GC
+//#define SIMPLE_DPRINTF
+
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
+void flush_gc_log (bool);
+#endif //TRACE_GC && SIMPLE_DPRINTF
 inline void FATAL_GC_ERROR()
 {
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
+    flush_gc_log (true);
+#endif //TRACE_GC && SIMPLE_DPRINTF
     GCToOSInterface::DebugBreak();
     _ASSERTE(!"Fatal Error in GC.");
     GCToEEInterface::HandleFatalError((unsigned int)COR_E_EXECUTIONENGINE);
@@ -233,9 +242,6 @@ inline void FATAL_GC_ERROR()
 #ifndef MAX_LONGPATH
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
-
-//#define TRACE_GC
-//#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
 
@@ -913,8 +919,8 @@ public:
     void unlink_item_no_undo_added (unsigned int bn, uint8_t* item, uint8_t* previous_item);
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
     void count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* fl_items_for_oh_count);
-    void rethread_items (size_t* num_total_fl_items, 
-                         size_t* num_total_fl_items_rethread, 
+    void rethread_items (size_t* num_total_fl_items,
+                         size_t* num_total_fl_items_rethread,
                          gc_heap* current_heap,
                          min_fl_list_info* min_fl_list,
                          size_t* free_list_space_per_heap,
@@ -1609,6 +1615,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void fire_pevents();
 
+    PER_HEAP_ISOLATED_METHOD void fire_committed_usage_event();
+
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
 #endif
@@ -2214,6 +2222,8 @@ private:
                               int alloc_generation_number);
 
     PER_HEAP_METHOD bool should_move_heap (GCSpinLock* msl);
+
+    PER_HEAP_METHOD enter_msl_status enter_spin_lock_msl_helper (GCSpinLock* msl);
 
     PER_HEAP_METHOD enter_msl_status enter_spin_lock_msl (GCSpinLock* msl);
 
@@ -3160,7 +3170,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void grow_mark_list();
 
 #ifdef USE_REGIONS
-    PER_HEAP_METHOD uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
+    PER_HEAP_METHOD uint8_t** get_region_mark_list (BOOL& use_mark_list, uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -3369,6 +3379,12 @@ private:
 
     PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
         size_t new_current_total_committed);
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
+                                  size_t* new_committed_by_oh);
+#endif
 
     PER_HEAP_METHOD void update_collection_counts ();
 
@@ -4195,8 +4211,8 @@ private:
     // in the very next GC done with garbage_collect_pm_full_gc.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED bool pm_trigger_full_gc;
 
-    // This is smoothed "desired_per_heap", ie, smoothed budget. Only used in a join.
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_per_heap[total_generation_count];
+    // This is the smoothed *total* budget, i.e. across *all* heaps. Only used in a join.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_total[total_generation_count];
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t gc_last_ephemeral_decommit_time;
 
@@ -4244,13 +4260,22 @@ private:
         {
             uint64_t    elapsed_between_gcs;    // time between gcs in microseconds
             uint64_t    gc_elapsed_time;        // time the gc took
-            uint64_t    msl_wait_time;          // time the allocator spent waiting for the msl lock
+            uint64_t    soh_msl_wait_time;      // time the allocator spent waiting for the soh msl lock
+            uint64_t    uoh_msl_wait_time;      // time the allocator spent waiting for the uoh msl lock
             size_t      allocating_thread_count;// number of allocating threads
             size_t      heap_size;
         };
 
         unsigned        sample_index;
         sample          samples[sample_size];
+
+        float median_percent_overhead;          // estimated overhead of allocator + gc
+        float smoothed_median_percent_overhead; // exponentially smoothed version
+        float percent_heap_space_cost_per_heap; // percent space cost of adding a heap
+        float overhead_reduction_per_step_up;   // percentage effect on overhead of increasing heap count
+        float overhead_increase_per_step_down;  // percentage effect on overhead of decreasing heap count
+        float space_cost_increase_per_step_up;  // percentage effect on space of increasing heap count
+        float space_cost_decrease_per_step_down;// percentage effect on space of decreasing heap count
 
         int             new_n_heaps;
 #ifdef STRESS_DYNAMIC_HEAP_COUNT

@@ -17,13 +17,14 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System
 {
     /// <summary>Specifies the behavior for a forced garbage collection.</summary>
     public enum GCCollectionMode
     {
-        /// <summary>The default setting for this enumeration, which is currently <see cref="GCCollectionMode.Forced" />.</summary>
+        /// <summary>The default setting for this enumeration, which is currently <see cref="Forced" />.</summary>
         Default = 0,
 
         /// <summary>Forces the garbage collection to occur immediately.</summary>
@@ -352,8 +353,8 @@ namespace System
             float diff;
             do
             {
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
+                WaitForPendingFinalizers();
+                Collect();
                 size = newSize;
                 newSize = GetTotalMemory();
                 diff = ((float)(newSize - size)) / size;
@@ -637,20 +638,21 @@ namespace System
         }
 
         /// <summary>
-        /// Register a callback to be invoked when we allocated a certain amount of memory in the no GC region.
-        /// <param name="totalSize">The total size of the no GC region. Must be a number > 0 or an ArgumentOutOfRangeException will be thrown.</param>
-        /// <param name="callback">The callback to be executed when we allocated a certain amount of memory in the no GC region..</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="totalSize"/> argument is less than or equal to 0.</exception>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="callback"/> argument is null.</exception>
-        /// <exception cref="InvalidOperationException"><para>The GC is not currently under a NoGC region.</para>
+        /// Registers a callback to be invoked when a certain amount of memory is allocated in the no GC region.
+        /// </summary>
+        /// <param name="totalSize">The total size of the no GC region.</param>
+        /// <param name="callback">The callback to be executed.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="totalSize"/> is less than or equal to 0.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="callback"/> argument is null.</exception>
+        /// <exception cref="InvalidOperationException"><para>The GC is not currently under a no GC region.</para>
         /// <para>-or-</para>
         /// <para>Another callback is already registered.</para>
         /// <para>-or-</para>
-        /// <para>The <paramref name="totalSize"/> exceeds the size of the No GC region.</para>
+        /// <para><paramref name="totalSize"/> exceeds the size of the no GC region.</para>
         /// <para>-or-</para>
-        /// <para>We failed to withheld memory for the callback before of already made allocation.</para>
+        /// <para>The operation to withold memory for the callback failed.</para>
         /// </exception>
-        /// </summary>
         public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSize);
@@ -704,6 +706,14 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnableNoGCRegionCallback")]
         private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize);
+
+        internal static long GetGenerationBudget(int generation)
+        {
+            return _GetGenerationBudget(generation);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGenerationBudget")]
+        internal static partial long _GetGenerationBudget(int generation);
 
         internal static void UnregisterMemoryLoadChangeNotification(Action notification)
         {
@@ -903,11 +913,11 @@ namespace System
         ///
         /// As of now, this API is feature preview only and subject to changes as necessary.
         ///
-        /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>"
-        /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>"
+        /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>
+        /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>
         ///
         /// </summary>
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        [RequiresPreviewFeatures("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;

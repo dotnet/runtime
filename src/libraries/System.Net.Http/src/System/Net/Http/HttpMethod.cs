@@ -146,6 +146,19 @@ namespace System.Net.Http
             return !(left == right);
         }
 
+        /// <summary>Parses the provided <paramref name="method"/> into an <see cref="HttpMethod"/> instance.</summary>
+        /// <param name="method">The method to parse.</param>
+        /// <returns>An <see cref="HttpMethod"/> instance for the provided <paramref name="method"/>.</returns>
+        /// <remarks>
+        /// This method may return a singleton instance for known methods; for example, it may return <see cref="Get"/>
+        /// if "GET" is specified. The parsing is performed in a case-insensitive manner, so it may also return <see cref="Get"/>
+        /// if "get" is specified. For unknown methods, a new <see cref="HttpMethod"/> instance is returned, with the
+        /// same validation being performed as by the <see cref="HttpMethod(string)"/> constructor.
+        /// </remarks>
+        public static HttpMethod Parse(ReadOnlySpan<char> method) =>
+            GetKnownMethod(method) ??
+            new HttpMethod(method.ToString());
+
         /// <summary>
         /// Returns a singleton method instance with a capitalized method name for the supplied method
         /// if it's known; otherwise, returns the original.
@@ -158,17 +171,23 @@ namespace System.Net.Http
             // _http3Index is only set for the singleton instances, so if it's not null,
             // we can avoid the lookup.  Otherwise, look up the method instance and return the
             // normalized instance if it's found.
+            return method._http3Index is null && GetKnownMethod(method._method) is HttpMethod match ?
+                match :
+                method;
+        }
 
-            if (method._http3Index is null && method._method.Length >= 3) // 3 == smallest known method
+        internal static HttpMethod? GetKnownMethod(ReadOnlySpan<char> method)
+        {
+            if (method.Length >= 3) // 3 == smallest known method
             {
-                HttpMethod? match = (method._method[0] | 0x20) switch
+                HttpMethod? match = (method[0] | 0x20) switch
                 {
                     'c' => s_connectMethod,
                     'd' => s_deleteMethod,
                     'g' => s_getMethod,
                     'h' => s_headMethod,
                     'o' => s_optionsMethod,
-                    'p' => method._method.Length switch
+                    'p' => method.Length switch
                     {
                         3 => s_putMethod,
                         4 => s_postMethod,
@@ -178,13 +197,14 @@ namespace System.Net.Http
                     _ => null,
                 };
 
-                if (match is not null && string.Equals(method._method, match._method, StringComparison.OrdinalIgnoreCase))
+                if (match is not null &&
+                    method.Equals(match._method, StringComparison.OrdinalIgnoreCase))
                 {
                     return match;
                 }
             }
 
-            return method;
+            return null;
         }
 
         internal bool MustHaveRequestBody

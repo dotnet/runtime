@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CoreFXTestLibrary;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
@@ -166,11 +167,67 @@ public static class B282745
         }
     }
 
+    unsafe struct StructWithNonGCValuesAtZeroOffset<T>
+    {
+        // Generic structs cannot have explicit layout. We make do with a non-generic one.
+        public StructWithNonGCValuesAtZeroOffsetImpl v;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    struct StructWithNonGCValuesAtZeroOffsetImpl
+    {
+        [FieldOffset(0)]
+        public int i;
+        [FieldOffset(8)]
+        public object o;
+        [FieldOffset(16)]
+        public long l;
+    }
+
+    public class GenericTypeForStructWithNonGCValuesAtZeroOffset<T>
+    {
+        public static void test()
+        {
+            int[] lengths = { 1, 2, 3 };
+            StructWithNonGCValuesAtZeroOffset<T>[,,] array = (StructWithNonGCValuesAtZeroOffset<T>[,,])Array.CreateInstance(typeof(StructWithNonGCValuesAtZeroOffset<T>), lengths);
+
+            array[0, 0, 0].v.o = null;
+            array[0, 0, 0].v.i = GetIntPtrOnHeapAsInt();
+            array[0, 0, 0].v.l = GetIntPtrOnHeapAsLong();
+
+            array[0, 1, 2].v.o = null;
+            array[0, 1, 2].v.i = GetIntPtrOnHeapAsInt();
+            array[0, 1, 2].v.l = GetIntPtrOnHeapAsLong();
+
+            array[0, 1, 1].v.o = null;
+            array[0, 1, 1].v.i = GetIntPtrOnHeapAsInt();
+            array[0, 1, 1].v.l = GetIntPtrOnHeapAsLong();
+
+            GC.Collect();
+
+            GC.KeepAlive(array);
+
+            RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
+#if INTERNAL_CONTRACTS
+            Assert.IsTrue(RuntimeAugments.IsDynamicType(arrayTypeHandle));
+#endif
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     [TestMethod]
     public static void testMDArrayWithPointerLikeValuesOfKnownStructTypeLargerType()
     {
         GenericType1<object>.test();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    [TestMethod]
+    public static void testMDArrayWithPointerLikeValuesOfUnknownStructTypeWithNonGCValuesAtZeroOffset()
+    {
+        Type genType = typeof(GenericTypeForStructWithNonGCValuesAtZeroOffset<>).MakeGenericType(TypeOf.String);
+        MethodInfo m = genType.GetTypeInfo().GetDeclaredMethod("test");
+        m.Invoke(null, new object[] { });
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

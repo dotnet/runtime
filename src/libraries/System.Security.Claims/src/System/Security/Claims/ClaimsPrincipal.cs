@@ -580,19 +580,19 @@ namespace System.Security.Claims
                 identitiesCount++;
             }
 
+            // Return debug string optimized for the case of one identity.
+            if (identitiesCount == 1 && Identity is ClaimsIdentity claimsIdentity)
+            {
+                return claimsIdentity.DebuggerToString();
+            }
+
             int claimsCount = 0;
             foreach (Claim item in Claims)
             {
                 claimsCount++;
             }
 
-            // Return debug string optimized for the case of one identity.
-            if (identitiesCount == 1 && Identity is ClaimsIdentity claimsIdentity)
-            {
-                return $"Principal {claimsIdentity.DebuggerToString()}";
-            }
-
-            return $"Principal Identities Count: {identitiesCount}, Claims Count: {claimsCount}";
+            return $"Identities = {identitiesCount}, Claims = {claimsCount}";
         }
 
         private sealed class ClaimsPrincipalDebugProxy

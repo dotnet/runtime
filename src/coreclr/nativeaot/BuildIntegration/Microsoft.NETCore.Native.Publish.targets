@@ -49,7 +49,7 @@
     <Error Condition="'$(RuntimeIdentifier)' == ''"
       Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
     <Error Condition="'$(GeneratePackageOnBuild)' == 'true'" Text="GeneratePackageOnBuild is not supported for native compilation." />
-    <Error Condition="'$(OutputType)' != 'Library' and '$(NativeLib)' != ''" Text="NativeLib requires OutputType=Library." />
+    <Error Condition="'$(OutputType)' != 'Library' and '$(NativeLib)' != '' and '$(CustomNativeMain)' != 'true'" Text="NativeLib requires OutputType=Library." />
 
     <Error Condition="'$(PublishTrimmed)' == 'false'" Text="PublishTrimmed is implied by native compilation and cannot be disabled." />
 
@@ -72,8 +72,8 @@
       Text="Add a PackageReference for '$(_hostPackageName)' to allow cross-compilation for $(_targetArchitecture)" />
 
     <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
-    <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(PrivateSdkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(FrameworkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
     <ComputeManagedAssembliesToCompileToNative
       Assemblies="@(_ResolvedCopyLocalPublishAssets)"
@@ -106,7 +106,7 @@
     <!-- replace native symbol file if it exists -->
     <Delete Files="$(PublishDir)\$(TargetName)$(_symbolExt)" />
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(_symbolExt)" DestinationFolder="$(PublishDir)"
-      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)')" />
+      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)') and '$(CopyOutputSymbolsToPublishDirectory)' == 'true'" />
   </Target>
 
 </Project>

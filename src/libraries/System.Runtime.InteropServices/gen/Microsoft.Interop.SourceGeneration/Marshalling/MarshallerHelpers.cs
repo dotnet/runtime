@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -45,11 +44,21 @@ namespace Microsoft.Interop
                         IdentifierName(indexerIdentifier))));
         }
 
+        /// <summary>
+        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/> = default;</code>
+        /// or
+        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/>;</code>
+        /// </summary>
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
             return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
         }
 
+        /// <summary>
+        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/> = <paramref name="identifier"/>;</code>
+        /// or
+        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/>;</code>
+        /// </summary>
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, ExpressionSyntax? initializer)
         {
             VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
@@ -145,6 +154,11 @@ namespace Microsoft.Interop
         public static string GetNumElementsIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "numElements");
+        }
+
+        public static string GetLastIndexMarshalledIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "lastIndexMarshalled");
         }
 
         internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
@@ -390,5 +404,46 @@ namespace Microsoft.Interop
             }
             throw new UnreachableException("An element is either a return value or passed by value or by ref.");
         }
+
+        /// <summary>
+        /// Ensure that the count of a collection is available at call time if the parameter is not an out parameter.
+        /// It only looks at an indirection level of 0 (the size of the outer array), so there are some holes in
+        /// analysis if the parameter is a multidimensional array, but that case seems very unlikely to be hit.
+        /// </summary>
+        public static void ValidateCountInfoAvailableAtCall(MarshalDirection stubDirection, TypePositionInfo info, GeneratorDiagnosticsBag generatorDiagnostics, IMethodSymbol symbol, DiagnosticDescriptor outParamDescriptor, DiagnosticDescriptor returnValueDescriptor)
+        {
+            // In managed to unmanaged stubs, we can always just get the length of managed object
+            // We only really need to be concerned about unmanaged to managed stubs
+            if (stubDirection is MarshalDirection.ManagedToUnmanaged)
+                return;
+
+            if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
+                && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo
+                && !(info.RefKind is RefKind.Out
+                    || info.ManagedIndex is TypePositionInfo.ReturnIndex))
+            {
+                if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
+                {
+                    Location location = TypePositionInfo.GetLocation(info, symbol);
+                    generatorDiagnostics.ReportDiagnostic(
+                        DiagnosticInfo.Create(
+                            outParamDescriptor,
+                            location,
+                            info.InstanceIdentifier,
+                            countInfo.ElementInfo.InstanceIdentifier));
+                }
+                else if (countInfo.ElementInfo.ManagedIndex is TypePositionInfo.ReturnIndex)
+                {
+                    Location location = TypePositionInfo.GetLocation(info, symbol);
+                    generatorDiagnostics.ReportDiagnostic(
+                        DiagnosticInfo.Create(
+                            returnValueDescriptor,
+                            location,
+                            info.InstanceIdentifier));
+                }
+                // If the parameter is multidimensional and a higher indirection level parameter is ByValue [Out], then we should warn.
+            }
+        }
+
     }
 }

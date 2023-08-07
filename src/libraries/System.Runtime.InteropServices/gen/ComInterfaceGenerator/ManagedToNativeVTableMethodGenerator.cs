@@ -47,7 +47,7 @@ namespace Microsoft.Interop
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             bool implicitThis,
-            Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
+            GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorFactory generatorFactory)
         {
             _setLastError = setLastError;
@@ -76,10 +76,7 @@ namespace Microsoft.Interop
             _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
 
-            foreach (var failure in bindingFailures)
-            {
-                marshallingNotSupportedCallback(failure.Info, failure.Exception);
-            }
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
@@ -137,7 +134,6 @@ namespace Microsoft.Interop
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
-
             if (_setLastError)
             {
                 // Declare variable for last error
@@ -175,6 +171,8 @@ namespace Microsoft.Interop
             }
             tryStatements.Add(statements.Pin.CastArray<FixedStatementSyntax>().NestFixedStatements(fixedBlock));
 
+            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
             // <invokeSucceeded> = true;
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
@@ -182,8 +180,6 @@ namespace Microsoft.Interop
                     IdentifierName(InvokeSucceededIdentifier),
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
-
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
 
             // Keep the this object alive across the native call, similar to how we handle marshalling managed delegates.
             // We do this right after the NotifyForSuccessfulInvoke phase as that phase is where the delegate objects are kept alive.
@@ -228,7 +224,7 @@ namespace Microsoft.Interop
             if (!_marshallers.IsManagedVoidReturn)
                 allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.ManagedReturnMarshaller.TypeInfo).managed)));
 
-            return Block(allStatements);
+            return Block(allStatements.Where(s => s is not EmptyStatementSyntax));
         }
 
         private ParenthesizedExpressionSyntax CreateFunctionPointerExpression(

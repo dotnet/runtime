@@ -1359,6 +1359,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		return ji1->data.jit_icall_id == ji2->data.jit_icall_id;
 	case MONO_PATCH_INFO_VIRT_METHOD:
 		return ji1->data.virt_method->klass == ji2->data.virt_method->klass && ji1->data.virt_method->method == ji2->data.virt_method->method;
+	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig);
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
@@ -2648,6 +2649,22 @@ compile_special (MonoMethod *method, MonoError *error)
 		}
 	}
 
+	gboolean has_header = mono_method_metadata_has_header (method);
+	if (G_UNLIKELY (!has_header)) {
+		char *member_name = NULL;
+		int accessor_kind = -1;
+		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+			MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+			gpointer compiled_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+			return_val_if_nok (error, NULL);
+			code = mono_get_addr_from_ftnptr (compiled_wrapper);
+			jinfo = mini_jit_info_table_find (code);
+			if (jinfo)
+				MONO_PROFILER_RAISE (jit_done, (method, jinfo));
+			return code;
+		}
+	}
+
 	return NULL;
 }
 
@@ -2933,6 +2950,21 @@ invalidated_delegate_trampoline (char *desc)
 }
 #endif
 
+void *
+mono_dyn_method_alloc0 (MonoMethod *method, guint size)
+{
+	MonoDynamicMethod *dmethod = (MonoDynamicMethod*)method;
+
+	g_assert (method->dynamic);
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	jit_mm_lock (jit_mm);
+	if (!dmethod->mp)
+		dmethod->mp = mono_mempool_new_size (128);
+	gpointer ret = mono_mempool_alloc0 (dmethod->mp, size);
+	jit_mm_unlock (jit_mm);
+	return ret;
+}
+
 /*
  * mono_jit_free_method:
  *
@@ -2951,6 +2983,21 @@ mono_jit_free_method (MonoMethod *method)
 
 	if (mono_use_interpreter)
 		mini_get_interp_callbacks ()->free_method (method);
+
+	jit_mm = jit_mm_for_method (method);
+
+	jit_mm_lock (jit_mm);
+	if (jit_mm->dyn_delegate_info_hash) {
+		GSList *pairs = g_hash_table_lookup (jit_mm->dyn_delegate_info_hash, method);
+		for (GSList *l = pairs; l; l = l->next) {
+			MonoDelegateClassMethodPair *dpair = (MonoDelegateClassMethodPair *)l->data;
+			g_assert (dpair->method == method);
+			g_hash_table_remove (jit_mm->delegate_info_hash, dpair);
+		}
+		g_slist_free (pairs);
+		g_hash_table_remove (jit_mm->dyn_delegate_info_hash, method);
+	}
+	jit_mm_unlock (jit_mm);
 
 	ji = mono_dynamic_code_hash_lookup (method);
 	if (!ji)
@@ -4012,6 +4059,7 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	MonoDelegateTrampInfo *info = NULL;
 
 	if (mono_use_interpreter) {
+		g_assert (method || del->interp_method);
 		mini_get_interp_callbacks ()->init_delegate (del, &info, error);
 		return_if_nok (error);
 	}
@@ -4381,6 +4429,8 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
 	g_hash_table_destroy (info->delegate_info_hash);
+	if (info->dyn_delegate_info_hash)
+		g_hash_table_destroy (info->dyn_delegate_info_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
 	g_hash_table_destroy (info->interp_method_pointer_hash);
@@ -5075,6 +5125,8 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_vtable_slot, mono_icall_sig_ptr_ptr_int, FALSE);
 	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_throw_index_out_of_range_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_throw_invalid_cast_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mini_llvmonly_interp_entry_gsharedvt, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
@@ -5095,7 +5147,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_monitor_enter_fast, mono_icall_sig_int_obj);
 	register_icall_no_wrapper (mono_monitor_enter_v4_fast, mono_icall_sig_int_obj_ptr);
 
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 	register_icall (pthread_getspecific, mono_icall_sig_ptr_ptr, TRUE);
 #endif
 	/* Register tls icalls */

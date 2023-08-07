@@ -5,13 +5,11 @@ import { mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
-import { mono_wasm_new_root } from "./roots";
 import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16 } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 
 export const interned_js_string_table = new Map<string, MonoString>();
 export const mono_wasm_empty_string = "";
-let mono_wasm_string_root: any;
 let mono_wasm_string_decoder_buffer: NativePointer | undefined;
 export const interned_string_table = new Map<MonoString, string>();
 let _empty_string_ptr: MonoString = <any>0;
@@ -31,7 +29,6 @@ export function strings_init(): void {
             _text_decoder_utf8_validating = new TextDecoder("utf-8");
             _text_encoder_utf8 = new TextEncoder();
         }
-        mono_wasm_string_root = mono_wasm_new_root();
         mono_wasm_string_decoder_buffer = Module._malloc(12);
     }
 }
@@ -98,17 +95,6 @@ export function stringToUTF16(dstPtr: number, endPtr: number, text: string) {
         dstPtr += 2;
         if (dstPtr >= endPtr) break;
     }
-}
-
-/* @deprecated not GC safe, use monoStringToString */
-export function monoStringToStringUnsafe(mono_string: MonoString): string | null {
-    if (mono_string === MonoStringNull)
-        return null;
-
-    mono_wasm_string_root.value = mono_string;
-    const result = monoStringToString(mono_wasm_string_root);
-    mono_wasm_string_root.value = MonoStringNull;
-    return result;
 }
 
 export function monoStringToString(root: WasmRoot<MonoString>): string | null {

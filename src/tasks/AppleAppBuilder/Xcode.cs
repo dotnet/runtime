@@ -256,7 +256,7 @@ internal sealed class Xcode
         bool useNativeAOTRuntime = false)
     {
         // bundle everything as resources excluding native files
-        var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "icudt_*" };
+        var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "icudt*" };
         predefinedExcludes = predefinedExcludes.Concat(excludes).ToList();
         if (!preferDylibs)
         {
@@ -268,7 +268,8 @@ internal sealed class Xcode
         }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
-            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase))))
+            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
+            !(hybridGlobalization ? Path.GetFileName(f) == "icudt_hybrid.dat" : Path.GetFileName(f) == "icudt.dat"))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))
@@ -411,16 +412,12 @@ internal sealed class Xcode
             frameworks = "\"-framework GSS\"";
         }
 
-        string appLinkerArgs = "";
-        foreach(string linkerArg in extraLinkerArgs)
-        {
-            appLinkerArgs += $"    \"{linkerArg}\"{Environment.NewLine}";
-        }
-
-        appLinkerArgs += $"    {frameworks}{Environment.NewLine}";
+        string appLinkLibraries = $"    {frameworks}{Environment.NewLine}";
+        string extraLinkerArgsConcat = $"\"{string.Join('\n', extraLinkerArgs)}\"";
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
-        cmakeLists = cmakeLists.Replace("%APP_LINKER_ARGS%", appLinkerArgs);
+        cmakeLists = cmakeLists.Replace("%APP_LINK_LIBRARIES%", appLinkLibraries);
+        cmakeLists = cmakeLists.Replace("%EXTRA_LINKER_ARGS%", extraLinkerArgsConcat);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
@@ -489,23 +486,23 @@ internal sealed class Xcode
             File.WriteAllText(Path.Combine(binDir, "runtime.h"),
                 Utils.GetEmbeddedResource("runtime.h"));
 
-            // forward pinvokes to "__Internal"
-            var dllMap = new StringBuilder();
+            // lookup statically linked libraries via dlsym(), see handle_pinvoke_override() in runtime.m
+            var pinvokeOverrides = new StringBuilder();
             foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
             {
                 string aFileName = Path.GetFileNameWithoutExtension(aFile);
-                dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+                pinvokeOverrides.AppendLine($"        \"{aFileName}\",");
 
                 // also register with or without "lib" prefix
                 aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
-                dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+                pinvokeOverrides.AppendLine($"        \"{aFileName}\",");
             }
 
-            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"System.Globalization.Native\", NULL, \"__Internal\", NULL);");
+            pinvokeOverrides.AppendLine($"        \"System.Globalization.Native\",");
 
             File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                 Utils.GetEmbeddedResource("runtime.m")
-                    .Replace("//%DllMap%", dllMap.ToString())
+                    .Replace("//%PInvokeOverrideLibraries%", pinvokeOverrides.ToString())
                     .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                     .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
         }

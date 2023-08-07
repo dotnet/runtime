@@ -3,12 +3,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Microsoft.Extensions.Logging
 {
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(LoggerDebugView))]
     internal sealed class Logger : ILogger
     {
-        public Logger(LoggerInformation[] loggers) => Loggers = loggers;
+        private readonly string _categoryName;
+
+        public Logger(string categoryName, LoggerInformation[] loggers)
+        {
+            _categoryName = categoryName;
+            Loggers = loggers;
+        }
 
         public LoggerInformation[] Loggers { get; set; }
         public MessageLogger[]? MessageLoggers { get; set; }
@@ -146,6 +156,99 @@ namespace Microsoft.Extensions.Logging
         {
             throw new AggregateException(
                 message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
+        }
+
+        internal string DebuggerToString()
+        {
+            return DebuggerDisplayFormatting.DebuggerToString(_categoryName, this);
+        }
+
+        private sealed class LoggerDebugView(Logger logger)
+        {
+            public string Name => logger._categoryName;
+
+            // The list of providers includes the full list of configured providers from the logger factory.
+            // It then mentions the min level and enable status of each provider for this logger.
+            public List<LoggerProviderDebugView> Providers
+            {
+                get
+                {
+                    List<LoggerProviderDebugView> providers = new List<LoggerProviderDebugView>();
+                    for (int i = 0; i < logger.Loggers.Length; i++)
+                    {
+                        LoggerInformation loggerInfo = logger.Loggers[i];
+                        string providerName = ProviderAliasUtilities.GetAlias(loggerInfo.ProviderType) ?? loggerInfo.ProviderType.Name;
+                        MessageLogger? messageLogger = logger.MessageLoggers?.FirstOrDefault(messageLogger => messageLogger.Logger == loggerInfo.Logger);
+
+                        providers.Add(new LoggerProviderDebugView(providerName, messageLogger));
+                    }
+
+                    return providers;
+                }
+            }
+
+            public List<object?>? Scopes
+            {
+                get
+                {
+                    var scopeProvider = logger.ScopeLoggers?.FirstOrDefault().ExternalScopeProvider;
+                    if (scopeProvider == null)
+                    {
+                        return null;
+                    }
+
+                    List<object?> scopes = new List<object?>();
+                    scopeProvider.ForEachScope((scope, scopes) => scopes!.Add(scope), scopes);
+                    return scopes;
+                }
+            }
+            public LogLevel? MinLevel => DebuggerDisplayFormatting.CalculateEnabledLogLevel(logger);
+            public bool Enabled => DebuggerDisplayFormatting.CalculateEnabledLogLevel(logger) != null;
+        }
+
+        [DebuggerDisplay("{DebuggerToString(),nq}")]
+        private sealed class LoggerProviderDebugView(string providerName, MessageLogger? messageLogger)
+        {
+            public string Name => providerName;
+            public LogLevel LogLevel => CalculateEnabledLogLevel(messageLogger) ?? LogLevel.None;
+
+            private static LogLevel? CalculateEnabledLogLevel(MessageLogger? logger)
+            {
+                if (logger == null)
+                {
+                    return null;
+                }
+
+                ReadOnlySpan<LogLevel> logLevels = stackalloc LogLevel[]
+                {
+                    LogLevel.Critical,
+                    LogLevel.Error,
+                    LogLevel.Warning,
+                    LogLevel.Information,
+                    LogLevel.Debug,
+                    LogLevel.Trace,
+                };
+
+                LogLevel? minimumLevel = null;
+
+                // Check log level from highest to lowest. Report the lowest log level.
+                foreach (LogLevel logLevel in logLevels)
+                {
+                    if (!logger.Value.IsEnabled(logLevel))
+                    {
+                        break;
+                    }
+
+                    minimumLevel = logLevel;
+                }
+
+                return minimumLevel;
+            }
+
+            private string DebuggerToString()
+            {
+                return $@"Name = ""{providerName}"", LogLevel = {LogLevel}";
+            }
         }
 
         private sealed class Scope : IDisposable

@@ -51,6 +51,60 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
+        public const string IntMarshaller = """
+            [CustomMarshaller(typeof(int), MarshalMode.Default, typeof(IntMarshaller))]
+            internal static class IntMarshaller
+            {
+                public struct IntNative
+                {
+                    public int i;
+                }
+                public static IntNative ConvertToUnmanaged(int managed) => new IntNative() { i = managed };
+                public static int ConvertToManaged(IntNative unmanaged) => unmanaged.i;
+            }
+            """;
+        public const string IntClassAndMarshaller = """
+            [NativeMarshalling(typeof(IntClassMarshaller))]
+            internal class IntClass
+            {
+                public int Field;
+            }
+            [CustomMarshaller(typeof(IntClass), MarshalMode.Default, typeof(IntClassMarshaller))]
+            internal static class IntClassMarshaller
+            {
+                public static IntClass ConvertToManaged(nint unmanaged) => default;
+
+                public static nint ConvertToUnmanaged(IntClass managed) => (nint)0;
+            }
+            """;
+
+        public const string IntStructAndMarshaller = IntStructDefinition + IntStructMarshallerDefinition;
+        public const string IntStructDefinition = """
+            internal struct IntStruct
+            {
+                public int Field;
+            }
+            """;
+        public const string IntStructMarshallerDefinition = """
+            [CustomMarshaller(typeof(IntStruct), MarshalMode.Default, typeof(IntStructMarshaller))]
+            internal static class IntStructMarshaller
+            {
+                public static nint ConvertToUnmanaged(IntStruct managed) => (nint)0;
+                public static IntStruct ConvertToManaged(nint unmanaged) => default;
+            }
+            """;
+
+        public string ByValueMarshallingOfType(string preTypeModifierOrAttribute, string parameterType, string parameterName, (StringMarshalling? StringMarshalling, Type? StringMarshallingCustomType)? stringMarshalling = null) => $$"""
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface(stringMarshalling?.StringMarshalling, stringMarshalling?.StringMarshallingCustomType)}}
+            partial interface INativeAPI
+            {
+                {{VirtualMethodIndex(0)}}
+                void Method({{preTypeModifierOrAttribute}} {{parameterType}} {{parameterName}});
+            }
+            """;
 
         public string SpecifiedMethodIndexNoExplicitParameters => $$"""
             using System.Runtime.InteropServices;
@@ -205,14 +259,61 @@ namespace ComInterfaceGenerator.Unit.Tests
                     int pSize,
                     [MarshalUsing(CountElementName = "pInSize")] in {{collectionType}} pIn,
                     in int pInSize,
-                    int pRefSize,
                     [MarshalUsing(CountElementName = "pRefSize")] ref {{collectionType}} pRef,
+                    int pRefSize,
                     [MarshalUsing(CountElementName = "pOutSize")] out {{collectionType}} pOut,
                     out int pOutSize);
             }
 
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
+
+        public string CollectionMarshallingWithCountRefKinds(
+            (string parameterType, string parameterModifiers, string[] countNames) returnType,
+            params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
+        {
+            List<string> parameterSources = new();
+            int i = 1;
+            foreach (var (parameterType, parameterModifiers, parameterName, countNames) in parameters)
+            {
+                List<string> marshalUsings = new();
+                int j = 0;
+                foreach (var countName in countNames)
+                {
+                    marshalUsings.Add($"[MarshalUsing(CountElementName = {countName}, ElementIndirectionDepth = {j})]");
+                    j++;
+                }
+                parameterSources.Add($$"""
+                    {{string.Join(' ', marshalUsings)}} {{parameterModifiers}} {{parameterType}} {|#{{i}}:{{parameterName}}|}
+                    """);
+                i++;
+            }
+            string returnTypeSource;
+            {
+                List<string> marshalUsings = new();
+                var (parameterType, parameterModifiers, countNames) = returnType;
+                foreach (var countName in countNames)
+                {
+                    marshalUsings.Add($"[return: MarshalUsing(CountElementName = nameof({countName}))]");
+                }
+                returnTypeSource = $"{string.Join(' ', marshalUsings)} {parameterModifiers} {parameterType}";
+            }
+            var parametersSource = string.Join(',', parameterSources);
+            return $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+
+                {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+                {{GeneratedComInterface()}}
+                partial interface INativeAPI
+                {
+                    {{VirtualMethodIndex(0)}}
+                    {{returnTypeSource}} {|#0:Method|}({{parametersSource}});
+                }
+            """;
+        }
 
         public string BasicReturnTypeComExceptionHandling(string typeName, string preDeclaration = "") => $$"""
             using System.Runtime.CompilerServices;
@@ -285,6 +386,33 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
+        public string DerivedWithParametersDeclaredInOtherNamespace => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+            using OtherNS;
+
+            namespace OtherNS
+            {
+                public struct NewType;
+            }
+
+            namespace Test
+            {
+                {{GeneratedComInterface()}}
+                partial interface IComInterface
+                {
+                     NewType Method(NewType p);
+                }
+
+                {{GeneratedComInterface()}}
+                partial interface IComInterface2 : IComInterface
+                {
+                    NewType Method2(NewType p);
+                }
+            }
+            """;
+
         public string DerivedWithStringMarshalling(params
             (StringMarshalling StringMarshalling, Type? StringMarshallingCustomType)[] attributeArguments)
         {
@@ -322,12 +450,45 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
+        public string InterfaceWithPropertiesAndEvents => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int {|#0:Property|} { get; set; }
+
+                public static int StaticProperty { get; set; }
+
+                event EventHandler {|#1:Event|};
+
+                public static event EventHandler StaticEvent;
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+
+            interface IOtherInterface
+            {
+                int Property { get; set; }
+
+                public static int StaticProperty { get; set; }
+
+                event EventHandler Event;
+
+                public static event EventHandler StaticEvent;
+            }
+            """;
+
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider
         {
             public MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
-
             public bool ImplicitThisParameter => true;
-
             public ManagedToUnmanaged(IComInterfaceAttributeProvider attributeProvider)
             {
                 AttributeProvider = attributeProvider;

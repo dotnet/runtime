@@ -221,19 +221,8 @@ namespace System.Text.Json.Reflection
             return propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true;
         }
 
-        public static bool IsKeyValuePair(this Type type, Type? keyValuePairType = null)
-        {
-            if (!type.IsGenericType)
-            {
-                return false;
-            }
-
-            // Work around not being able to use typeof(KeyValuePair<,>) directly during compile-time src gen type analysis.
-            keyValuePairType ??= typeof(KeyValuePair<,>);
-
-            Type generic = type.GetGenericTypeDefinition();
-            return generic == keyValuePairType;
-        }
+        public static bool IsKeyValuePair(this Type type)
+            => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
 
         public static bool TryGetDeserializationConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -270,21 +259,18 @@ namespace System.Text.Json.Reflection
                 }
             }
 
-            // For correctness, throw if multiple ctors have [JsonConstructor], even if one or more are non-public.
-            ConstructorInfo? dummyCtorWithAttribute = ctorWithAttribute;
-
-            constructors = type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
-            foreach (ConstructorInfo constructor in constructors)
+            // Search for non-public ctors with [JsonConstructor].
+            foreach (ConstructorInfo constructor in type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance))
             {
                 if (HasJsonConstructorAttribute(constructor))
                 {
-                    if (dummyCtorWithAttribute != null)
+                    if (ctorWithAttribute != null)
                     {
                         deserializationCtor = null;
                         return false;
                     }
 
-                    dummyCtorWithAttribute = constructor;
+                    ctorWithAttribute = constructor;
                 }
             }
 

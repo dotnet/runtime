@@ -461,13 +461,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__PtrArray__m_NumComponents
 ASMCONSTANTS_C_ASSERT(OFFSETOF__PtrArray__m_Array
                     == offsetof(PtrArray, m_Array));
 
-
-#define MethodDescClassification__mdcClassification 0x7
-ASMCONSTANTS_C_ASSERT(MethodDescClassification__mdcClassification == mdcClassification);
-
-#define MethodDescClassification__mcInstantiated 0x5
-ASMCONSTANTS_C_ASSERT(MethodDescClassification__mcInstantiated == mcInstantiated);
-
 #ifndef TARGET_UNIX
 #define OFFSET__TEB__ThreadLocalStoragePointer 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, ThreadLocalStoragePointer));

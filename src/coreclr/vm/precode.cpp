@@ -403,23 +403,39 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 #endif
     {
         MethodDesc *pMD = pChunk->GetFirstMethodDesc();
+        bool chunkContainsEligibleMethods = pMD->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk();
+
+#ifdef _DEBUG
+        // Validate every MethodDesc has the same result for DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk
+        MethodDesc *pMDDebug = pChunk->GetFirstMethodDesc();
         for (int i = 0; i < count; ++i)
         {
-            if (pMD->DetermineAndSetIsEligibleForTieredCompilation())
+            _ASSERTE(chunkContainsEligibleMethods == pMDDebug->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk());
+            pMDDebug = (MethodDesc *)(dac_cast<TADDR>(pMDDebug) + pMDDebug->SizeOf());
+        }
+#endif
+#ifndef HAS_COMPACT_ENTRYPOINTS
+        if (chunkContainsEligibleMethods)
+#endif
+        {
+            for (int i = 0; i < count; ++i)
             {
-                _ASSERTE(pMD->IsEligibleForTieredCompilation());
-                _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
-            }
+                if (chunkContainsEligibleMethods && pMD->DetermineAndSetIsEligibleForTieredCompilation())
+                {
+                    _ASSERTE(pMD->IsEligibleForTieredCompilation());
+                    _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
+                }
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
-            if (pMD->IsVersionableWithPrecode())
-            {
-                _ASSERTE(pMD->RequiresStableEntryPoint());
-                hasMethodDescVersionableWithPrecode = true;
-            }
+                if (pMD->IsVersionableWithPrecode())
+                {
+                    _ASSERTE(pMD->RequiresStableEntryPoint());
+                    hasMethodDescVersionableWithPrecode = true;
+                }
 #endif
 
-            pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
+                pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
+            }
         }
     }
 
@@ -646,7 +662,15 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
             *(WORD*)(pInstr + 5) == *(WORD*)((BYTE*)StubPrecodeCode + 5) &&
             *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(StubPrecodeData, Target));
 #else // TARGET_X86
-    return memcmp(pInstr, (void*)PCODEToPINSTR((PCODE)StubPrecodeCode), (BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) == 0;
+    BYTE *pTemplateInstr = (BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode);
+    BYTE *pTemplateInstrEnd = (BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode_End);
+    while ((pTemplateInstr < pTemplateInstrEnd) && (*pInstr == *pTemplateInstr))
+    {
+        pInstr++;
+        pTemplateInstr++;
+    }
+
+    return pTemplateInstr == pTemplateInstrEnd;
 #endif // TARGET_X86
 }
 
@@ -763,7 +787,15 @@ BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
         *(WORD*)(pInstr + 11) == *(WORD*)((BYTE*)FixupPrecodeCode + 11) &&
         *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(FixupPrecodeData, PrecodeFixupThunk));
 #else // TARGET_X86
-    return memcmp(pInstr, (void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), (BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) == 0;
+    BYTE *pTemplateInstr = (BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode);
+    BYTE *pTemplateInstrEnd = (BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode_End);
+    while ((pTemplateInstr < pTemplateInstrEnd) && (*pInstr == *pTemplateInstr))
+    {
+        pInstr++;
+        pTemplateInstr++;
+    }
+
+    return pTemplateInstr == pTemplateInstrEnd;
 #endif // TARGET_X86
 }
 

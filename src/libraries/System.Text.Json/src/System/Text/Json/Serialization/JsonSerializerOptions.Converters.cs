@@ -45,11 +45,14 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
             }
 
-            if (JsonSerializer.IsReflectionEnabledByDefault && _typeInfoResolver is null)
+            if (JsonSerializer.IsReflectionEnabledByDefault)
             {
                 // Backward compatibility -- root & query the default reflection converters
                 // but do not populate the TypeInfoResolver setting.
-                return DefaultJsonTypeInfoResolver.GetConverterForType(typeToConvert, this);
+                if (_typeInfoResolver is null)
+                {
+                    return DefaultJsonTypeInfoResolver.GetConverterForType(typeToConvert, this);
+                }
             }
 
             return GetConverterInternal(typeToConvert);
@@ -102,7 +105,7 @@ namespace System.Text.Json
             // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
             // which would cause an InvalidProgramException when the generated IL is invoked.
             if (propertyType.IsValueType && converter.IsValueType &&
-                (propertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
+                (propertyType.IsNullableOfT() ^ converter.Type!.IsNullableOfT()))
             {
                 ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(propertyType, converter);
             }

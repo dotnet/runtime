@@ -1157,30 +1157,6 @@ FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) 
     return newMemValue;
 }
 
-extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
-{
-    enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    status = GCInterface::EnableNoGCRegionCallback(callback, totalSize);
-    END_QCALL;
-    return status;
-}
-
-enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
-}
-
 FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend) {
     WRAPPER_NO_CONTRACT;
 
@@ -1263,6 +1239,55 @@ int GCInterface::RefreshMemoryLimit()
     CONTRACTL_END;
 
     return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
+}
+
+extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
+{
+    enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    status = GCInterface::EnableNoGCRegionCallback(callback, totalSize);
+    END_QCALL;
+    return status;
+}
+
+enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
+}
+
+extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation)
+{
+    uint64_t result = 0;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    result = GCInterface::GetGenerationBudget(generation);
+    END_QCALL;
+
+    return result;
+}
+
+uint64_t GCInterface::GetGenerationBudget(int generation)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
 
 #ifdef HOST_64BIT
@@ -1520,59 +1545,6 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
     }
 
     return InterlockedCompareExchange64((INT64*)location, value, comparand);
-}
-FCIMPLEND
-
-FCIMPL2_IV(float,COMInterlocked::ExchangeFloat, float *location, float value)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    LONG ret = InterlockedExchange((LONG *) location, *(LONG*)&value);
-    return *(float*)&ret;
-}
-FCIMPLEND
-
-FCIMPL2_IV(double,COMInterlocked::ExchangeDouble, double *location, double value)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-
-    INT64 ret = InterlockedExchange64((INT64 *) location, *(INT64*)&value);
-    return *(double*)&ret;
-}
-FCIMPLEND
-
-FCIMPL3_IVV(float,COMInterlocked::CompareExchangeFloat, float *location, float value, float comparand)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    LONG ret = (LONG)InterlockedCompareExchange((LONG*) location, *(LONG*)&value, *(LONG*)&comparand);
-    return *(float*)&ret;
-}
-FCIMPLEND
-
-FCIMPL3_IVV(double,COMInterlocked::CompareExchangeDouble, double *location, double value, double comparand)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    INT64 ret = (INT64)InterlockedCompareExchange64((INT64*) location, *(INT64*)&value, *(INT64*)&comparand);
-    return *(double*)&ret;
 }
 FCIMPLEND
 

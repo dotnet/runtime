@@ -169,7 +169,6 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Same(e, Assert.Throws<OperationCanceledException>(() => mrvts.GetResult(0)));
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -193,7 +192,6 @@ namespace System.Threading.Tasks.Sources.Tests
             await tcs.Task;
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

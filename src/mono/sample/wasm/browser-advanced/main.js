@@ -31,7 +31,7 @@ try {
         // here we show how emscripten could be further configured
         // It is preferred to use specific 'with***' methods instead in all other cases.
         .withModuleConfig({
-            configSrc: "./_framework/blazor.boot.json",
+            configSrc: "./blazor.boot.json",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
@@ -51,6 +51,10 @@ try {
                 console.log('user code Module.onDotnetReady');
             },
             postRun: () => { console.log('user code Module.postRun'); },
+        })
+        .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
+            return name;
         })
         .create();
 

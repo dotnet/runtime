@@ -17,6 +17,7 @@ parameters:
   additionalSetupParameters: ''
   logicalMachine: ''
   pgoRunType: ''
+  physicalPromotionRunType: ''
   javascriptEngine: 'NoJS'
   iOSLlvmBuild: 'False'
   iOSStripSymbols: 'False'
@@ -38,8 +39,8 @@ jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}_{12}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.physicalPromotionRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.physicalPromotionRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -55,6 +56,7 @@ jobs:
     container: ${{ parameters.container }}
     logicalmachine: ${{ parameters.logicalmachine }}
     pgoRunType: ${{ parameters.pgoRunType }}
+    physicalPromotionRunType: ${{ parameters.physicalPromotionRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
     iosStripSymbols: ${{ parameters.iosStripSymbols }}
@@ -177,24 +179,24 @@ jobs:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(librariesDownloadDir)/BrowserWasm
-            artifactFileName: BrowserWasm.zip
+            artifactFileName: BrowserWasm.tar.gz
             artifactName: BrowserWasm
             displayName: BrowserWasm
       - ${{ if ne(parameters.downloadSpecificBuild.buildId, '') }}:
         - template: /eng/pipelines/common/download-specific-artifact-step.yml
           parameters:
             unpackFolder: $(librariesDownloadDir)/BrowserWasm
-            artifactFileName: BrowserWasm.zip
+            artifactFileName: BrowserWasm.tar.gz
             artifactName: BrowserWasm
             displayName: BrowserWasm
             ${{ insert }}: ${{ parameters.downloadSpecificBuild }}
 
-      # Using test-main-7.0.js, since we are building with tfm:net7.0
       - script: >-
           mkdir -p $(librariesDownloadDir)/bin/wasm/wasm-data &&
           mkdir -p $(librariesDownloadDir)/bin/wasm/dotnet &&
           cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-latest/* $(librariesDownloadDir)/bin/wasm/dotnet &&
-          cp src/mono/wasm/Wasm.Build.Tests/data/test-main-7.0.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
+          cp -r $(librariesDownloadDir)/BrowserWasm/staging/built-nugets $(librariesDownloadDir)/bin/wasm &&
+          cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
           find $(librariesDownloadDir)/bin/wasm -type d &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Linux)"
@@ -228,118 +230,56 @@ jobs:
           artifactName: 'AndroidBDNApk'
           displayName: 'Mono Android BDN Apk'
       
-    # Download iOSMono tests
-    - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
-      - ${{ if and(eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'False')) }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nollvmsymbols
-            cleanUnpackFolder: false
+    # Download iOSMono and Native AOT tests
+    - ${{ if or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT')) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld
+          cleanUnpackFolder: false
+          ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'False')) }}:
+            artifactName: 'iOSSampleAppNoLLVMSymbols'
             artifactFileName: 'iOSSampleAppNoLLVMSymbols.zip'
-            artifactName: 'iOSSampleAppNoLLVMSymbols'
-            displayName: 'iOS Sample App NoLLVM Symbols'
-        # same artifact as above but don't extract .zip
-        - task: DownloadBuildArtifacts@0
-          displayName: 'Download iOS Sample App NoLLVM Symbols'
-          inputs:
-            buildType: current
-            downloadType: single
-            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nollvmsymbolszip'
-            artifactName: 'iOSSampleAppNoLLVMSymbols'
-            checkDownloadedFiles: true
-      - ${{ if and(eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'False')) }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/llvmsymbols
-            cleanUnpackFolder: false
-            artifactFileName: 'iOSSampleAppLLVMSymbols.zip'
-            artifactName: 'iOSSampleAppLLVMSymbols'
-            displayName: 'iOS Sample App LLVM Symbols'
-        # same artifact as above but don't extract .zip
-        - task: DownloadBuildArtifacts@0
-          displayName: 'Download iOS Sample App LLVM Symbols'
-          inputs:
-            buildType: current
-            downloadType: single
-            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/llvmsymbolszip'
-            artifactName: 'iOSSampleAppLLVMSymbols'
-            checkDownloadedFiles: true
-      - ${{ if and(eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'True')) }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nollvmnosymbols
-            cleanUnpackFolder: false
+          ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'True')) }}:
+            artifactName: 'iOSSampleAppNoLLVMNoSymbols'
             artifactFileName: 'iOSSampleAppNoLLVMNoSymbols.zip'
-            artifactName: 'iOSSampleAppNoLLVMNoSymbols'
-            displayName: 'iOS Sample App NoLLVM NoSymbols'
-        # same artifact as above but don't extract .zip
-        - task: DownloadBuildArtifacts@0
-          displayName: 'Download iOS Sample App NoLLVM NoSymbols'
-          inputs:
-            buildType: current
-            downloadType: single
-            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nollvmnosymbolszip'
-            artifactName: 'iOSSampleAppNoLLVMNoSymbols'
-            checkDownloadedFiles: true
-      - ${{ if and(eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'True')) }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/llvmnosymbols
-            cleanUnpackFolder: false
+          ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'False')) }}:
+            artifactName: 'iOSSampleAppLLVMSymbols'
+            artifactFileName: 'iOSSampleAppLLVMSymbols.zip'
+          ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'True')) }}:
+            artifactName: 'iOSSampleAppLLVMNoSymbols'
             artifactFileName: 'iOSSampleAppLLVMNoSymbols.zip'
-            artifactName: 'iOSSampleAppLLVMNoSymbols'
-            displayName: 'iOS Sample App LLVM NoSymbols'
-        # same artifact as above but don't extract .zip
-        - task: DownloadBuildArtifacts@0
-          displayName: 'Download iOS Sample App LLVM NoSymbols'
-          inputs:
-            buildType: current
-            downloadType: single
-            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/llvmnosymbolszip'
-            artifactName: 'iOSSampleAppLLVMNoSymbols'
-            checkDownloadedFiles: true
-
-    # Download iOSNativeAOT tests
-    - ${{ if eq(parameters.runtimeType, 'iOSNativeAOT') }}:
-      - ${{ if eq(parameters.iOSStripSymbols, 'False') }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/symbols
-            cleanUnpackFolder: false
-            artifactFileName: 'iOSSampleAppSymbols.zip'
+          ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'False')) }}:
             artifactName: 'iOSSampleAppSymbols'
-            displayName: 'iOS Sample App Symbols'
+            artifactFileName: 'iOSSampleAppSymbols.zip'
+          ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'True')) }}:
+            artifactName: 'iOSSampleAppNoSymbols'
+            artifactFileName: 'iOSSampleAppNoSymbols.zip'
+          displayName: 'iOS Sample App'
       # same artifact as above but don't extract .zip
       - task: DownloadBuildArtifacts@0
-        displayName: 'Download iOS Sample App Symbols'
+        displayName: 'Download iOS Sample App'
         inputs:
           buildType: current
           downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/symbols'
-          artifactName: 'iOSSampleAppSymbols'
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip'
+          ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'False')) }}:
+            artifactName: 'iOSSampleAppNoLLVMSymbols'
+          ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'False'), eq(parameters.iOSStripSymbols, 'True')) }}:
+            artifactName: 'iOSSampleAppNoLLVMNoSymbols'
+          ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'False')) }}:
+            artifactName: 'iOSSampleAppLLVMSymbols'
+          ${{ if and(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.iOSLlvmBuild, 'True'), eq(parameters.iOSStripSymbols, 'True')) }}:
+            artifactName: 'iOSSampleAppLLVMNoSymbols'
+          ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'False')) }}:
+            artifactName: 'iOSSampleAppSymbols'
+          ${{ if and(eq(parameters.runtimeType, 'iOSNativeAOT'), eq(parameters.iOSStripSymbols, 'True')) }}:
+            artifactName: 'iOSSampleAppNoSymbols'
           checkDownloadedFiles: true
-      - ${{ if eq(parameters.iOSStripSymbols, 'True') }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nosymbols
-            cleanUnpackFolder: false
-            artifactFileName: 'iOSSampleAppNoSymbols.zip'
-            artifactName: 'iOSSampleAppNoSymbols'
-            displayName: 'iOS Sample App NoSymbols'
-        # same artifact as above but don't extract .zip
-        - task: DownloadBuildArtifacts@0
-          displayName: 'Download iOS Sample App NoSymbols'
-          inputs:
-            buildType: current
-            downloadType: single
-            downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nosymbols'
-            artifactName: 'iOSSampleAppNoSymbols'
-            checkDownloadedFiles: true
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) $(_crossBuildPropertyArg)
       displayName: Create Core_Root
-      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), ne('${{ parameters.runtimeType }}', 'wasm'))
+      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), ne('${{ parameters.runtimeType }}', 'wasm'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
 
     # Copy the runtime directory into the testhost folder to include OOBs.
     - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\$(productVersion) /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\$(productVersion)\\corerun.exe"

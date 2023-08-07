@@ -116,9 +116,14 @@ initDistroRidGlobal()
     if [ -z "${__PortableTargetOS:-}" ]; then
         __PortableTargetOS="$targetOs"
 
+        STRINGS="$(command -v strings || true)"
+        if [ -z "$STRINGS" ]; then
+            STRINGS="$(command -v llvm-strings || true)"
+        fi
+
         # Check for musl-based distros (e.g Alpine Linux, Void Linux).
         if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl ||
-                strings "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl; then
+                ( [ -n "$STRINGS" ] && "$STRINGS" "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl ); then
             __PortableTargetOS="linux-musl"
         fi
     fi

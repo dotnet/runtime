@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
-        <target state="new">Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</target>
+        <target state="translated">A lógica de associação não foi gerada para uma chamada de associador. Os padrões de entrada sem suporte incluem chamadas genéricas e passagem de objetos em caixa.</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
         <source>The target type for a binder call could not be determined</source>
-        <target state="new">The target type for a binder call could not be determined</target>
+        <target state="translated">Não foi possível determinar o tipo de destino de uma chamada de associador</target>
         <note />
       </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
@@ -79,12 +79,12 @@
       </trans-unit>
       <trans-unit id="ValueTypesInvalidForBindMessageFormat">
         <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
-        <target state="new">Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</target>
+        <target state="translated">A lógica de associação não foi gerada para uma chamada de associador com o tipo de destino "{0}". Tipos de valor são entradas inválidas para métodos de configuração 'Bind'.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueTypesInvalidForBindTitle">
         <source>Value types are invalid inputs to configuration 'Bind' methods</source>
-        <target state="new">Value types are invalid inputs to configuration 'Bind' methods</target>
+        <target state="translated">Tipos de valor são entradas inválidas para métodos de configuração "Associar"</target>
         <note />
       </trans-unit>
     </body>

@@ -1966,7 +1966,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         }
         else // store into register (i.e move into register)
         {
-            if (dataReg != targetReg)
+            if (data->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                assert(data->AsIntCon()->IconValue() == 0);
+                emitAttr attr = emitActualTypeSize(targetType);
+                // need to load the address from $tp.
+                emit->emitIns_R_R_I(INS_ori, attr, targetReg, REG_TP, 0);
+            }
+            else if (dataReg != targetReg)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
                 inst_Mov(targetType, targetReg, dataReg, true, emitActualTypeSize(targetType));
@@ -6499,15 +6506,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     genCallInstruction(call);
 
-    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
-    // a label. In case it is indirect with CFG enabled make sure we do not get
-    // the address after the validation but only after the actual call that
-    // comes after.
-    if (genPendingCallLabel && !call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
-    {
-        genDefineInlineTempLabel(genPendingCallLabel);
-        genPendingCallLabel = nullptr;
-    }
+    genDefinePendingCallLabel(call);
 
 #ifdef DEBUG
     // We should not have GC pointers in killed registers live around the call.
@@ -8503,7 +8502,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
                 assert(tmpArg <= REG_ARG_LAST);
                 assert(nextReg < MAX_REG_ARG);
-                assert(nextReg != i);
+                assert(nextReg != (unsigned)i);
 
                 regArg[i] = 0;
                 int count = 0;
@@ -8525,7 +8524,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     count++;
                 }
 
-                if (nextReg == i)
+                if (nextReg == (unsigned)i)
                 {
                     GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, (regNumber)tmpArg, 0);
                     regArgMaskLive &= ~genRegMask((regNumber)tmpArg);
@@ -8533,7 +8532,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 }
                 else if (count == 0)
                 {
-                    tmpRegs[0] = i;
+                    tmpRegs[0] = (unsigned)i;
                     regArg[i]  = tmpArg;
                 }
                 else
@@ -8556,14 +8555,14 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     assert(regArgNum >= 0);
                 } while (count >= 0);
 
-                if (nextReg == i)
+                if (nextReg == (unsigned)i)
                 {
                     instruction ins = (regArgMaskIsInt & (1 << regArg[i])) != 0 ? INS_slli_w : INS_ori;
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
                     regArgNum--;
                     assert(regArgNum >= 0);
                 }
-                else if (tmpRegs[0] != i)
+                else if (tmpRegs[0] != (unsigned)i)
                 {
                     instruction ins = (regArgMaskIsInt & (1 << (i + REG_ARG_FIRST))) != 0 ? INS_slli_w : INS_ori;
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i],

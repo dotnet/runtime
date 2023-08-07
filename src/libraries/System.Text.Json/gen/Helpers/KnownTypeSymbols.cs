@@ -135,11 +135,32 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? TimeOnlyType => GetOrResolveType("System.TimeOnly", ref _TimeOnlyType);
         private Option<INamedTypeSymbol?> _TimeOnlyType;
 
+        public INamedTypeSymbol? Int128Type => GetOrResolveType("System.Int128", ref _Int128Type);
+        private Option<INamedTypeSymbol?> _Int128Type;
+
+        public INamedTypeSymbol? UInt128Type => GetOrResolveType("System.UInt128", ref _UInt128Type);
+        private Option<INamedTypeSymbol?> _UInt128Type;
+
+        public INamedTypeSymbol? HalfType => GetOrResolveType("System.Half", ref _HalfType);
+        private Option<INamedTypeSymbol?> _HalfType;
+
         public IArrayTypeSymbol? ByteArrayType => _ByteArrayType.HasValue
             ? _ByteArrayType.Value
             : (_ByteArrayType = new(Compilation.CreateArrayTypeSymbol(Compilation.GetSpecialType(SpecialType.System_Byte), rank: 1))).Value;
 
         private Option<IArrayTypeSymbol?> _ByteArrayType;
+
+        public INamedTypeSymbol? MemoryByteType => _MemoryByteType.HasValue
+            ? _MemoryByteType.Value
+            : (_MemoryByteType = new(MemoryType?.Construct(Compilation.GetSpecialType(SpecialType.System_Byte)))).Value;
+
+        private Option<INamedTypeSymbol?> _MemoryByteType;
+
+        public INamedTypeSymbol? ReadOnlyMemoryByteType => _ReadOnlyMemoryByteType.HasValue
+            ? _ReadOnlyMemoryByteType.Value
+            : (_ReadOnlyMemoryByteType = new(ReadOnlyMemoryType?.Construct(Compilation.GetSpecialType(SpecialType.System_Byte)))).Value;
+
+        private Option<INamedTypeSymbol?> _ReadOnlyMemoryByteType;
 
         public INamedTypeSymbol? GuidType => GetOrResolveType(typeof(Guid), ref _GuidType);
         private Option<INamedTypeSymbol?> _GuidType;
@@ -196,6 +217,24 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? JsonUnmappedMemberHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute", ref _JsonUnmappedMemberHandlingAttributeType);
         private Option<INamedTypeSymbol?> _JsonUnmappedMemberHandlingAttributeType;
+
+        public INamedTypeSymbol? JsonConstructorAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonConstructorAttribute", ref _JsonConstructorAttributeType);
+        private Option<INamedTypeSymbol?> _JsonConstructorAttributeType;
+
+        public INamedTypeSymbol? SetsRequiredMembersAttributeType => GetOrResolveType("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", ref _SetsRequiredMembersAttributeType);
+        private Option<INamedTypeSymbol?> _SetsRequiredMembersAttributeType;
+
+        public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
+        private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
+
+        public INamedTypeSymbol? JsonStringEnumConverterOfTType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter`1", ref _JsonStringEnumConverterOfTType);
+        private Option<INamedTypeSymbol?> _JsonStringEnumConverterOfTType;
+
+        public INamedTypeSymbol? IJsonOnSerializingType => GetOrResolveType(JsonConstants.IJsonOnSerializingFullName, ref _IJsonOnSerializingType);
+        private Option<INamedTypeSymbol?> _IJsonOnSerializingType;
+
+        public INamedTypeSymbol? IJsonOnSerializedType => GetOrResolveType(JsonConstants.IJsonOnSerializedFullName, ref _IJsonOnSerializedType);
+        private Option<INamedTypeSymbol?> _IJsonOnSerializedType;
 
         // Unsupported types
         public INamedTypeSymbol? DelegateType => _DelegateType ??= Compilation.GetSpecialType(SpecialType.System_Delegate);

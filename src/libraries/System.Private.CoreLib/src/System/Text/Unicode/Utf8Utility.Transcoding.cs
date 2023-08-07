@@ -284,7 +284,7 @@ namespace System.Text.Unicode
                             goto ProcessRemainingBytesSlow; // running out of output buffer
                         }
 
-                        Unsafe.WriteUnaligned<uint>(pOutputBuffer, ExtractTwoCharsPackedFromTwoAdjacentTwoByteSequences(thisDWord));
+                        Unsafe.WriteUnaligned(pOutputBuffer, ExtractTwoCharsPackedFromTwoAdjacentTwoByteSequences(thisDWord));
 
                         pInputBuffer += 4;
                         pOutputBuffer += 2;
@@ -624,7 +624,7 @@ namespace System.Text.Unicode
                         goto OutputBufferTooSmall;
                     }
 
-                    Unsafe.WriteUnaligned<uint>(pOutputBuffer, ExtractCharsFromFourByteSequence(thisDWord));
+                    Unsafe.WriteUnaligned(pOutputBuffer, ExtractCharsFromFourByteSequence(thisDWord));
 
                     pInputBuffer += 4;
                     pOutputBuffer += 2;
@@ -926,7 +926,7 @@ namespace System.Text.Unicode
                     // (Same logic works regardless of endianness.)
                     uint valueToWrite = thisDWord | (thisDWord >> 8);
 
-                    Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)valueToWrite);
+                    Unsafe.WriteUnaligned(pOutputBuffer, (ushort)valueToWrite);
 
                     pInputBuffer += 2;
                     pOutputBuffer += 2;
@@ -1002,7 +1002,7 @@ namespace System.Text.Unicode
                             }
                             else
                             {
-                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                                Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
                             }
 
                             pInputBuffer += 4;
@@ -1040,7 +1040,7 @@ namespace System.Text.Unicode
                             }
                             else
                             {
-                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                                Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
                             }
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
@@ -1056,7 +1056,7 @@ namespace System.Text.Unicode
                         if (Utf16Utility.AllCharsInUInt32AreAscii(thisDWord))
                         {
                             // [ 00000000 0bbbbbbb | 00000000 0aaaaaaa ] -> [ 00000000 0bbbbbbb | 0bbbbbbb 0aaaaaaa ]
-                            Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
+                            Unsafe.WriteUnaligned(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
                             pInputBuffer += 2;
                             pOutputBuffer += 2;
                             outputBytesRemaining -= 2;
@@ -1083,8 +1083,8 @@ namespace System.Text.Unicode
 
                             // [ 00000000 0bbbbbbb | 00000000 0aaaaaaa ] -> [ 00000000 0bbbbbbb | 0bbbbbbb 0aaaaaaa ]
                             // (Same logic works regardless of endianness.)
-                            Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
-                            Unsafe.WriteUnaligned<ushort>(pOutputBuffer + 2, (ushort)(secondDWord | (secondDWord >> 8)));
+                            Unsafe.WriteUnaligned(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
+                            Unsafe.WriteUnaligned(pOutputBuffer + 2, (ushort)(secondDWord | (secondDWord >> 8)));
 
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
@@ -1104,7 +1104,7 @@ namespace System.Text.Unicode
                         {
                             // [ 00000000 0bbbbbbb | 00000000 0aaaaaaa ] -> [ 00000000 0bbbbbbb | 0bbbbbbb 0aaaaaaa ]
                             // (Same logic works regardless of endianness.)
-                            Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
+                            Unsafe.WriteUnaligned(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
                             pInputBuffer += 2;
                             pOutputBuffer += 2;
                             outputBytesRemaining -= 2;
@@ -1172,7 +1172,7 @@ namespace System.Text.Unicode
                             goto ProcessOneCharFromCurrentDWordAndFinish; // running out of output buffer
                         }
 
-                        Unsafe.WriteUnaligned<uint>(pOutputBuffer, ExtractTwoUtf8TwoByteSequencesFromTwoPackedUtf16Chars(thisDWord));
+                        Unsafe.WriteUnaligned(pOutputBuffer, ExtractTwoUtf8TwoByteSequencesFromTwoPackedUtf16Chars(thisDWord));
 
                         pInputBuffer += 2;
                         pOutputBuffer += 4;
@@ -1206,7 +1206,7 @@ namespace System.Text.Unicode
                         goto OutputBufferTooSmall;
                     }
 
-                    Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)ExtractUtf8TwoByteSequenceFromFirstUtf16Char(thisDWord));
+                    Unsafe.WriteUnaligned(pOutputBuffer, (ushort)ExtractUtf8TwoByteSequenceFromFirstUtf16Char(thisDWord));
 
                     // The buffer contains a 2-byte sequence followed by 2 bytes that aren't a 2-byte sequence.
                     // Unlikely that a 3-byte sequence would follow a 2-byte sequence, so perhaps remaining
@@ -1378,7 +1378,7 @@ namespace System.Text.Unicode
                         goto OutputBufferTooSmall;
                     }
 
-                    Unsafe.WriteUnaligned<uint>(pOutputBuffer, ExtractFourUtf8BytesFromSurrogatePair(thisDWord));
+                    Unsafe.WriteUnaligned(pOutputBuffer, ExtractFourUtf8BytesFromSurrogatePair(thisDWord));
 
                     pInputBuffer += 2;
                     pOutputBuffer += 4;

@@ -530,6 +530,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowInvalidOperationException_InvalidUtf8()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_InvalidUtf8);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowFormatException_BadFormatSpecifier()
         {
             throw new FormatException(SR.Argument_BadFormatSpecifier);
@@ -692,7 +698,7 @@ namespace System
         {
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             if (!(default(T) == null) && value == null)
-                ThrowHelper.ThrowArgumentNullException(argName);
+                ThrowArgumentNullException(argName);
         }
 
         // Throws if 'T' is disallowed in Vector<T> in the Numerics namespace.
@@ -700,7 +706,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedNumericsVectorBaseType<T>()
-            where T : struct
         {
             if (!Vector<T>.IsSupported)
             {
@@ -713,7 +718,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>()
-            where T : struct
         {
             if (!Vector64<T>.IsSupported)
             {
@@ -726,7 +730,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>()
-            where T : struct
         {
             if (!Vector128<T>.IsSupported)
             {
@@ -739,7 +742,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>()
-            where T : struct
         {
             if (!Vector256<T>.IsSupported)
             {
@@ -752,7 +754,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector512BaseType<T>()
-            where T : struct
         {
             if (!Vector512<T>.IsSupported)
             {

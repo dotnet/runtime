@@ -103,8 +103,9 @@ namespace Microsoft.Interop
 
         private MethodDeclarationSyntax CreateUnreachableExceptionStub()
         {
-            // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException("This method should not be reached");
+            // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException();
             return MethodInfo.Syntax
+                .WithReturnType(GenerationContext.SignatureContext.StubReturnType)
                 .WithModifiers(TokenList())
                 .WithAttributeLists(List<AttributeListSyntax>())
                 .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(

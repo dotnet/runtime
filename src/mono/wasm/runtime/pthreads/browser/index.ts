@@ -5,7 +5,7 @@ import { isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApp
 import { pthreadPtr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import Internals from "../shared/emscripten-internals";
-import { createPromiseController, runtimeHelpers } from "../../globals";
+import { createPromiseController, mono_assert, runtimeHelpers } from "../../globals";
 import { PromiseController } from "../../types/internal";
 import { MonoConfig } from "../../types";
 import { mono_log_debug } from "../../logging";
@@ -117,7 +117,7 @@ export function afterLoadWasmModuleToWorker(worker: Worker): void {
 export function preAllocatePThreadWorkerPool(defaultPthreadPoolSize: number, config: MonoConfig): void {
     const poolSizeSpec = config?.pthreadPoolSize;
     let n: number;
-    if (poolSizeSpec === undefined) {
+    if (poolSizeSpec === undefined || poolSizeSpec === null) {
         n = defaultPthreadPoolSize;
     } else {
         mono_assert(typeof poolSizeSpec === "number", "pthreadPoolSize must be a number");

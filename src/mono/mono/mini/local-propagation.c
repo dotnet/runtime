@@ -741,7 +741,8 @@ mono_local_cprop (MonoCompile *cfg)
 				} else if (srcindex == 0 && ins->opcode == OP_COMPARE && defs [ins->sreg1]->opcode == OP_PCONST && defs [ins->sreg2] && defs [ins->sreg2]->opcode == OP_PCONST) {
 					/* typeof(T) == typeof(..) */
 					mono_constant_fold_ins (cfg, ins, defs [ins->sreg1], defs [ins->sreg2], TRUE);
-				} else if (ins->opcode == OP_MOVE && def->opcode == OP_LDADDR) {
+				} else if (ins->opcode == OP_MOVE && def->opcode == OP_LDADDR && !(G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_klass (def->klass))) {
+					/* Can't copyprop ldaddr for gsharedvt vars because the copy is missing the uses added by handle_gsharedvt_ldaddr () */
 					ins->opcode = OP_LDADDR;
 					ins->sreg1 = -1;
 					ins->inst_p0 = def->inst_p0;

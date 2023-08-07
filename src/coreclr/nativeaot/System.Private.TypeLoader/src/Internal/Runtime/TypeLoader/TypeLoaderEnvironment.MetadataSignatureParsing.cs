@@ -353,7 +353,7 @@ namespace Internal.Runtime.TypeLoader
                         switch (typeHandle.HandleType)
                         {
                             case HandleType.TypeDefinition:
-                                if (!TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(
+                                if (!TypeLoaderEnvironment.TryGetNamedTypeForMetadata(
                                     new QTypeDefinition(_metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader)), out type2))
                                 {
                                     return false;

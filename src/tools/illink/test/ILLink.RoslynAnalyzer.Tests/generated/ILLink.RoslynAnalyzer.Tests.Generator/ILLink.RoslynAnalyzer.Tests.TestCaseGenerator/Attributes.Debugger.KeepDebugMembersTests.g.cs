@@ -64,6 +64,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Attributes.Debugger
 		}
 
 		[Fact]
+		public Task DebuggerDisplayAttributeOnTypeWithNonExistentMethod ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task DebuggerDisplayOnTypeWithCallToExtensionMethodOnFieldType ()
 		{
 			return RunTest (allowMissingWarnings: true);
