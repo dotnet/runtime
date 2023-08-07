@@ -162,7 +162,7 @@ enum class ActivityControlCode
 EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(uint32_t controlCode, GUID *pActivityId)
 {
     int retVal = 0;
-    EventPipeThread *pThread = ep_rt_thread_get_or_create();
+    ep_rt_thread_activity_id_handle_t activityIdHandle = ep_thread_get_activity_id_handle ();
     if (pThread == NULL || pActivityId == NULL)
     {
         retVal = 1;
