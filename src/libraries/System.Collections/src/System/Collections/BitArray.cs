@@ -335,7 +335,6 @@ namespace System.Collections
 
             ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-            
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
                 for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
@@ -409,7 +408,6 @@ namespace System.Collections
 
             ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-            
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
                 for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
@@ -549,7 +547,6 @@ namespace System.Collections
             uint i = 0;
 
             ref int value = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-            
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
                 for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
