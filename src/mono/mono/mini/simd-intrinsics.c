@@ -2358,7 +2358,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!is_primitive_element_type)
 		return NULL;
 
-	gboolean supported = TRUE;
 	int size = mono_class_value_size (klass, NULL);
 	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 	g_assert (size > 0);
@@ -2374,7 +2373,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg))
-		supported = FALSE;
+		return NULL;
 #endif
 
 // FIXME: Support Vector64 for mini JIT on arm64
@@ -2385,14 +2384,11 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #ifdef TARGET_AMD64
 	if (!COMPILE_LLVM (cfg) && (size != 16))
-		supported = FALSE;
-#ifdef TARGET_WIN32
-		supported = FALSE;
-#endif
-#endif
-
-	if (!supported)
 		return NULL;
+#ifdef TARGET_WIN32
+	return NULL;
+#endif
+#endif
 
 	switch (id) {
 	case SN_get_Count: {
