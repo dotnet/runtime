@@ -43,8 +43,8 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GetIlasmRoundTripBashScript"
           Returns="$(IlasmRoundTripBashScript);$(BashIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <DisassemblyName>IL-RT/$(AssemblyName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>IL-RT/$(AssemblyName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
+      <TargetAssemblyName>IL-RT/$(AssemblyName).dll</TargetAssemblyName>
 
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 # IlasmRoundTrip Script
@@ -127,8 +127,8 @@ fi
   <Target Name="GetIlasmRoundTripBatchScript"
           Returns="$(IlasmRoundTripBatchScript);$(BatchIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <DisassemblyName>IL-RT\$(AssemblyName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>IL-RT\$(AssemblyName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>IL-RT\$(AssemblyName).il</DisassemblyName>
+      <TargetAssemblyName>IL-RT\$(AssemblyName).dll</TargetAssemblyName>
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 REM IlasmRoundTrip Script
