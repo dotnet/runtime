@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -296,6 +297,20 @@ namespace System.Reflection.Tests
             // Ensure we can invoke with an arg type that is duplicated in another assembly but having [TypeIdentifier].
             args = new object[1] { Activator.CreateInstance(otherEquivalentValueType) };
             Assert.Equal(42, mi.Invoke(null, args));
+
+            // ensure that an instance of otherEquivalentValueType can cast to EquivalentValueType
+            object otherEquivalentValueTypeInstance = Activator.CreateInstance(otherEquivalentValueType);
+            Assert.True(otherEquivalentValueTypeInstance is EquivalentValueType);
+            EquivalentValueType inst = (EquivalentValueType)otherEquivalentValueTypeInstance;
+
+            OptimizedMethod(otherEquivalentValueTypeInstance);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        private void OptimizedMethod(object otherEquivalentValueTypeInstance)
+        {
+            Assert.True(otherEquivalentValueTypeInstance is EquivalentValueType);
+            EquivalentValueType inst = (EquivalentValueType)otherEquivalentValueTypeInstance;
         }
     }
 
