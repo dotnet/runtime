@@ -15,11 +15,8 @@
 #include <stdio.h>
 #include <objc/runtime.h>
 #include <objc/message.h>
-#include <mono/metadata/metadata.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-publib.h>
-#include <mono/utils/mono-rand.h>
 
 /*
  * We cannot include mono-threads.h as this includes io-layer internal types
@@ -30,8 +27,6 @@ void mono_threads_init_dead_letter (void);
 void mono_threads_install_dead_letter (void);
 MONO_API void
 mono_thread_info_detach (void);
-
-static char* generate_partial_unique_classname (void);
 
 static Class nsobject, nsthread, mono_dead_letter_class;
 static SEL dealloc, release, currentThread, threadDictionary, init, alloc, objectForKey, setObjectForKey;
@@ -127,12 +122,7 @@ mono_threads_init_dead_letter (void)
 	setObjectForKey = sel_registerName ("setObject:forKey:");
 	objectForKey = sel_registerName ("objectForKey:");
 
-	
-	char *partial_class_name;
-	partial_class_name = generate_partial_unique_classname ();
-
-	char *class_name = g_strconcat ("MonoDeadLetter", partial_class_name, (const char *)NULL);
-	g_free(partial_class_name);
+	char *class_name = g_strdup_printf ("MonoDeadLetter%p", &"MonoDeadLetter");
 
 	// Define the dead letter class
 	// The class name needs to be unique in the event different runtimes are loaded into the same process.
@@ -152,24 +142,6 @@ mono_threads_init_dead_letter (void)
 
 	id_objc_msgSend (mono_dead_letter_key, retain);
 	id_objc_msgSend (pool, release);
-}
-
-static char *
-generate_partial_unique_classname ()
-{
-	guint8 partial_class_name [16];
-	gpointer rand_handle;
-	ERROR_DECL (error);
-
-	mono_rand_open ();
-	rand_handle = mono_rand_init (NULL, 0);
-
-	mono_rand_try_get_bytes (&rand_handle, (guint8*) partial_class_name, 16, error);
-	mono_error_assert_ok (error);
-
-	mono_rand_close (rand_handle);
-
-	return mono_guid_to_string_minimal ((guint8*) partial_class_name);
 }
 
 #else
