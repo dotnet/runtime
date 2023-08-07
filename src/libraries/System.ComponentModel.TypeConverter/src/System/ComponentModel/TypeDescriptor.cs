@@ -8,7 +8,6 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -291,8 +290,7 @@ namespace System.ComponentModel
                         ResetEventContext contextForAdd = new ResetEventContext(resetEventForAdd, Environment.CurrentManagedThreadId);
                         s_processedTypes.Add(type, contextForAdd);
 
-                        var providerAttr = type.GetCustomAttributes<TypeDescriptionProviderAttribute>(false)
-                            .SingleOrDefault();
+                        var providerAttr = type.GetCustomAttribute<TypeDescriptionProviderAttribute>(false);
                         bool providerAdded = false;
 
                         if (providerAttr != null)
