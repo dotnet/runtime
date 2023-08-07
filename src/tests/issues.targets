@@ -778,9 +778,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/FunctionPointer/FunctionPtrTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/164</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>

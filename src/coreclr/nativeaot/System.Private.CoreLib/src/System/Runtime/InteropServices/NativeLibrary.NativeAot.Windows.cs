@@ -13,19 +13,22 @@ namespace System.Runtime.InteropServices
         {
             IntPtr hmod;
 
+            // Disable the OS dialogs when failing to load. This matches CoreCLR.
+            uint prev;
+            bool set = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS | Interop.Kernel32.SEM_NOOPENFILEERRORBOX, out prev);
             if (((uint)flags & 0xFFFFFF00) != 0)
             {
                 hmod = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, (int)((uint)flags & 0xFFFFFF00));
                 if (hmod != IntPtr.Zero)
                 {
-                    return hmod;
+                    goto exit;
                 }
 
                 int lastError = Marshal.GetLastWin32Error();
                 if (lastError != Interop.Errors.ERROR_INVALID_PARAMETER)
                 {
                     errorTracker.TrackErrorCode(lastError);
-                    return hmod;
+                    goto exit;
                 }
             }
 
@@ -33,6 +36,12 @@ namespace System.Runtime.InteropServices
             if (hmod == IntPtr.Zero)
             {
                 errorTracker.TrackErrorCode(Marshal.GetLastWin32Error());
+            }
+
+        exit:
+            if (set)
+            {
+                Interop.Kernel32.SetThreadErrorMode(prev, out _);
             }
 
             return hmod;
