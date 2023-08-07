@@ -8582,7 +8582,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //
                         bool            hasSideEffects = false;
                         CorInfoHelpFunc newHelper =
-                            info.compCompHnd->getNewHelper(&resolvedToken, info.compMethodHnd, &hasSideEffects);
+                            info.compCompHnd->getNewHelper(resolvedToken.hClass, &hasSideEffects);
 
                         if (hasSideEffects)
                         {

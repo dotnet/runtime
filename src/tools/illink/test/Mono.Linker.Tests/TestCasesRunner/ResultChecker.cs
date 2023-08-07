@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -110,8 +111,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			try {
 				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
+
+				VerifyExitCode (linkResult, original);
+
 				if (!HasAttribute (original, nameof (NoLinkedOutputAttribute))) {
 					Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
+
 					var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
 					if (ShouldValidateIL (original)) {
@@ -236,6 +241,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					VerifyKeptSymbols (symbolAttr);
 				else
 					throw new NotImplementedException ($"Unknown symbol file assertion of type {symbolAttr.AttributeType}");
+			}
+		}
+
+		void VerifyExitCode (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		{
+			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
+				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
+				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
+			} else {
+				if (linkResult.ExitCode != 0) {
+					Assert.Fail($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
+				}
+			}
+
+			string FormatLinkerOutput ()
+			{
+				var sb = new StringBuilder ();
+				foreach (var message in linkResult.Logger.GetLoggedMessages ())
+					sb.AppendLine (message.ToString ());
+				return sb.ToString ();
 			}
 		}
 

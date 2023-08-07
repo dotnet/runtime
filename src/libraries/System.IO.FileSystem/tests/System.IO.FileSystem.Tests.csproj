@@ -71,6 +71,7 @@
     <Compile Include="Path\Exists_Directory.cs" />
     <Compile Include="Path\Exists_File.cs" />
     <Compile Include="RandomAccess\Base.cs" />
+    <Compile Include="RandomAccess\FlushToDisk.cs" />
     <Compile Include="RandomAccess\GetLength.cs" />
     <Compile Include="RandomAccess\Read.cs" />
     <Compile Include="RandomAccess\ReadAsync.cs" />

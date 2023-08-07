@@ -617,6 +617,14 @@ enum gc_type
     gc_type_max = 3
 };
 
+#ifdef DYNAMIC_HEAP_COUNT
+enum gc_dynamic_adaptation_mode
+{
+    dynamic_adaptation_default = 0,
+    dynamic_adaptation_to_application_sizes = 1,
+};
+#endif //DYNAMIC_HEAP_COUNT
+
 //encapsulates the mechanism for the current gc
 class gc_mechanisms
 {
@@ -4426,6 +4434,10 @@ private:
 #ifdef HOST_64BIT
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t youngest_gen_desired_th;
 #endif //HOST_64BIT
+
+#ifdef DYNAMIC_HEAP_COUNT
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int dynamic_adaptation_mode;
+#endif //DYNAMIC_HEAP_COUNT
 
     /********************************************/
     // PER_HEAP_ISOLATED_FIELD_DIAG_ONLY fields //
