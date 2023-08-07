@@ -335,7 +335,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(hasImmediateOperand);
 
-            auto emitShift = [&](GenTree* op, regNumber reg) {
+            auto emitShift = [&](GenTree* op, regNumber reg)
+            {
                 HWIntrinsicImmOpHelper helper(this, op, node);
 
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
