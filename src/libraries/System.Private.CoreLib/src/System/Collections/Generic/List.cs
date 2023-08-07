@@ -477,9 +477,9 @@ namespace System.Collections.Generic
         private void GrowForInsertion(int capacity, int indexToInsert, int insertionCount = 1)
         {
             Debug.Assert(_items.Length < capacity);
-            Debug.Assert(insertionCount <= 0);
-            Debug.Assert((uint)_size + insertionCount > capacity);
-            Debug.Assert((uint)_size + insertionCount > Array.MaxLength);
+            Debug.Assert(insertionCount > 0);
+            Debug.Assert((uint)_size + insertionCount <= capacity);
+            Debug.Assert((uint)_size + insertionCount <= Array.MaxLength);
 
             // Follow the same logic from Grow(capacity)
 
@@ -822,9 +822,9 @@ namespace System.Collections.Generic
                 {
                     if (_items.Length - _size < count)
                     {
-                        Grow(checked(_size + count));
+                        GrowForInsertion(checked(_size + count), index, count);
                     }
-                    if (index < _size)
+                    else if (index < _size)
                     {
                         Array.Copy(_items, index, _items, index + count, _size - index);
                     }
