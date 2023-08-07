@@ -419,6 +419,7 @@ namespace Microsoft.Interop
             return StubCodeContext.Stage.CleanupCallerAllocated;
         }
 
+        /// <summary>
         /// Ensure that the count of a collection is available at call time if the parameter is not an out parameter.
         /// It only looks at an indirection level of 0 (the size of the outer array), so there are some holes in
         /// analysis if the parameter is a multidimensional array, but that case seems very unlikely to be hit.
@@ -430,10 +431,10 @@ namespace Microsoft.Interop
             if (stubDirection is MarshalDirection.ManagedToUnmanaged)
                 return;
 
-            if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
-                && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo
-                && !(info.RefKind is RefKind.Out
-                    || info.ManagedIndex is TypePositionInfo.ReturnIndex))
+            if (!(info.RefKind is RefKind.Out
+                    || info.ManagedIndex is TypePositionInfo.ReturnIndex)
+                && info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
+                && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo)
             {
                 if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
                 {
