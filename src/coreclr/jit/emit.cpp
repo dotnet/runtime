@@ -10463,8 +10463,7 @@ void emitter::emitEnableGC()
         }
         else
         {
-            emitCurIG->igFlags &= ~IGF_NOGCINTERRUPT;
-            emitCurIG->igFlags &= ~IGF_EXTEND;
+            emitCurIG->igFlags &= ~(IGF_NOGCINTERRUPT | IGF_EXTEND);
         }
     }
     else
