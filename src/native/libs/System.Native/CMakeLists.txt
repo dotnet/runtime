@@ -68,13 +68,14 @@ endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
     list (APPEND NATIVE_SOURCES pal_autoreleasepool.m)
-    set_source_files_properties(pal_autoreleasepool.m PROPERTIES COMPILE_FLAGS -fno-objc-arc)
+    set_source_files_properties(pal_autoreleasepool.m PROPERTIES COMPILE_FLAGS "-fno-objc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
 else()
     list (APPEND NATIVE_SOURCES pal_autoreleasepool.c)
 endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     list (APPEND NATIVE_SOURCES pal_environment.m)
+    set_source_files_properties(pal_environment.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
 else()
     list (APPEND NATIVE_SOURCES pal_environment.c)
 endif()
@@ -82,17 +83,20 @@ endif()
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
         pal_datetime.m)
+    set_source_files_properties(pal_datetime.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
 endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
         pal_log.m
         pal_searchpath.m)
+    set_source_files_properties(pal_log.m pal_searchpath.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
 elseif (CLR_CMAKE_TARGET_OSX)
     list (APPEND NATIVE_SOURCES
         pal_searchpath.m
         pal_console.c
         pal_log.c)
+    set_source_files_properties(pal_searchpath.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
 elseif (CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
         pal_searchpath.c
@@ -108,6 +112,7 @@ endif ()
 if (CLR_CMAKE_TARGET_MACCATALYST)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
         pal_iossupportversion.m)
+    set_source_files_properties(pal_iossupportversion.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
 else ()
     list (APPEND NATIVE_SOURCES
         pal_iossupportversion.c)

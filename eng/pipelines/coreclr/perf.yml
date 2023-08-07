@@ -1,22 +1,22 @@
 
-trigger:
-  batch: true
-  branches:
-    include:
-    #- main # Temporarily disable trigger while the ubuntu queue is backed up
-    - release/*
-  paths:
-    include:
-    - '*'
-    - src/libraries/System.Private.CoreLib/*
-    exclude:
-    - '**.md'
-    - .devcontainer/*
-    - .github/*
-    - docs/*
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
+trigger: none
+  # batch: true
+  # branches:
+  #   include:
+  #   #- main # Temporarily disable trigger while the ubuntu queue is backed up
+  #   - release/*
+  # paths:
+  #   include:
+  #   - '*'
+  #   - src/libraries/System.Private.CoreLib/*
+  #   exclude:
+  #   - '**.md'
+  #   - .devcontainer/*
+  #   - .github/*
+  #   - docs/*
+  #   - LICENSE.TXT
+  #   - PATENTS.TXT
+  #   - THIRD-PARTY-NOTICES.TXT
 
 variables:
   - template: /eng/pipelines/common/variables.yml

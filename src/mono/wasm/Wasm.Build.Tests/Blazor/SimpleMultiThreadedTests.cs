@@ -26,7 +26,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     // [InlineData("Release")]
     // public async Task BlazorBuildRunTest(string config)
     // {
-    //     string id = $"blazor_mt_{config}_{Path.GetRandomFileName()}";
+    //     string id = $"blazor_mt_{config}_{GetRandomId()}";
     //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
     //     AddItemsPropertiesToProject(projectFile, "<WasmEnableThreads>true</WasmEnableThreads>");
@@ -44,7 +44,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     // [InlineData("Release", true)]
     public async Task BlazorPublishRunTest(string config, bool aot)
     {
-        string id = $"blazor_mt_{config}_{Path.GetRandomFileName()}";
+        string id = $"blazor_mt_{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
         AddItemsPropertiesToProject(projectFile, "<WasmEnableThreads>true</WasmEnableThreads>");
         // if (aot)

@@ -6,6 +6,8 @@ using System.IO;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
+#nullable enable
+
 namespace Wasm.Build.Tests;
 
 public abstract class IcuTestsBase : TestMainJsTestBase
@@ -13,7 +15,9 @@ public abstract class IcuTestsBase : TestMainJsTestBase
     public IcuTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
-    protected record SundayNames 
+    private const string _fallbackSundayNameEnUS = "Sunday";
+
+    protected record SundayNames
     {
         public static string English = "Sunday";
         public static string French = "dimanche";
@@ -23,13 +27,10 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         public static string Slovak = "nedeľa";
     }
 
-    protected string GetRandomNameWithoutDots => Path.GetRandomFileName().Replace(".", "");
+    // custom file contains only locales "cy-GB", "is-IS", "bs-BA", "lb-LU" and fallback locale: "en-US":
+    protected static string s_customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
 
-    public static readonly string CustomIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
-
-    private const string _fallbackSundayNameEnUS = "Sunday";
-
-    protected static readonly string CustomIcuTestedLocales = $@"new Locale[] {{
+    protected static readonly string s_customIcuTestedLocales = $@"new Locale[] {{
         new Locale(""cy-GB"",  ""Dydd Sul""), new Locale(""is-IS"",  ""sunnudagur""), new Locale(""bs-BA"",  ""nedjelja""), new Locale(""lb-LU"",  ""Sonndeg""),
         new Locale(""fr-FR"", null), new Locale(""hr-HR"", null), new Locale(""ko-KR"", null)
     }}";

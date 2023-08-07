@@ -51,6 +51,12 @@
 
 #endif // !_MSC_VER
 
+#ifdef TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '/'
+#else // TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '\\'
+#endif // TARGET_UNIX
+
 #ifndef _INC_WINDOWS
 
 // There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
@@ -72,12 +78,6 @@ typedef char TCHAR;
 typedef wchar_t TCHAR;
 #define _T(s) L##s
 #endif
-
-#ifdef TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '/'
-#else // TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '\\'
-#endif // TARGET_UNIX
 
 typedef union _LARGE_INTEGER {
     struct {

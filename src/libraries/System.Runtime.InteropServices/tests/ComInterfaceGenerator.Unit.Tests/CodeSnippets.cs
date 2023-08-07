@@ -89,7 +89,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [CustomMarshaller(typeof(IntStruct), MarshalMode.Default, typeof(IntStructMarshaller))]
             internal static class IntStructMarshaller
             {
-                public static nint ConvertToUnmanaged(int managed) => (nint)0;
+                public static nint ConvertToUnmanaged(IntStruct managed) => (nint)0;
                 public static IntStruct ConvertToManaged(nint unmanaged) => default;
             }
             """;
@@ -268,6 +268,53 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
+        public string CollectionMarshallingWithCountRefKinds(
+            (string parameterType, string parameterModifiers, string[] countNames) returnType,
+            params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
+        {
+            List<string> parameterSources = new();
+            int i = 1;
+            foreach (var (parameterType, parameterModifiers, parameterName, countNames) in parameters)
+            {
+                List<string> marshalUsings = new();
+                int j = 0;
+                foreach (var countName in countNames)
+                {
+                    marshalUsings.Add($"[MarshalUsing(CountElementName = {countName}, ElementIndirectionDepth = {j})]");
+                    j++;
+                }
+                parameterSources.Add($$"""
+                    {{string.Join(' ', marshalUsings)}} {{parameterModifiers}} {{parameterType}} {|#{{i}}:{{parameterName}}|}
+                    """);
+                i++;
+            }
+            string returnTypeSource;
+            {
+                List<string> marshalUsings = new();
+                var (parameterType, parameterModifiers, countNames) = returnType;
+                foreach (var countName in countNames)
+                {
+                    marshalUsings.Add($"[return: MarshalUsing(CountElementName = nameof({countName}))]");
+                }
+                returnTypeSource = $"{string.Join(' ', marshalUsings)} {parameterModifiers} {parameterType}";
+            }
+            var parametersSource = string.Join(',', parameterSources);
+            return $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+
+                {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+                {{GeneratedComInterface()}}
+                partial interface INativeAPI
+                {
+                    {{VirtualMethodIndex(0)}}
+                    {{returnTypeSource}} {|#0:Method|}({{parametersSource}});
+                }
+            """;
+        }
+
         public string BasicReturnTypeComExceptionHandling(string typeName, string preDeclaration = "") => $$"""
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
@@ -423,17 +470,17 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public static event EventHandler StaticEvent;
             }
-            
+
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
 
             interface IOtherInterface
             {
                 int Property { get; set; }
-            
+
                 public static int StaticProperty { get; set; }
-            
+
                 event EventHandler Event;
-            
+
                 public static event EventHandler StaticEvent;
             }
             """;

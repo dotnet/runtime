@@ -133,18 +133,18 @@ struct _InterpBasicBlock {
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
 
-	int reachable : 1;
+	guint reachable : 1;
 	// This block has special semantics and it shouldn't be optimized away
-	int eh_block : 1;
-	int dead: 1;
+	guint eh_block : 1;
+	guint dead: 1;
 	// If patchpoint is set we will store mapping information between native offset and bblock index within
 	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the
 	// optimized method we will map the bb_index to the corresponding native offset.
-	int patchpoint_data: 1;
-	int emit_patchpoint: 1;
+	guint patchpoint_data: 1;
+	guint emit_patchpoint: 1;
 	// used by jiterpreter
-	int backwards_branch_target: 1;
-	int contains_call_instruction: 1;
+	guint backwards_branch_target: 1;
+	guint contains_call_instruction: 1;
 };
 
 struct _InterpCallInfo {
@@ -260,16 +260,16 @@ typedef struct
 	int inline_depth;
 	int patchpoint_data_n;
 	int *patchpoint_data;
-	int has_localloc : 1;
+	guint has_localloc : 1;
 	// If method compilation fails due to certain limits being exceeded, we disable inlining
 	// and retry compilation.
-	int disable_inlining : 1;
+	guint disable_inlining : 1;
 	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
-	int aggressive_inlining : 1;
-	int optimized : 1;
-	int has_invalid_code : 1;
-	int has_inlined_one_call : 1;
+	guint aggressive_inlining : 1;
+	guint optimized : 1;
+	guint has_invalid_code : 1;
+	guint has_inlined_one_call : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

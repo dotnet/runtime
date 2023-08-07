@@ -323,7 +323,7 @@ public sealed partial class WebcilReader : IDisposable
             throw new BadImageFormatException("Invalid PdbChecksum data format");
         }
 
-        return MakePdbChecksumDebugDirectoryData(algorithmName, ImmutableArray.Create(checksum));
+        return MakePdbChecksumDebugDirectoryData(algorithmName!, ImmutableArray.Create(checksum));
     }
 
     private long TranslateRVA(uint rva)

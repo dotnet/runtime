@@ -6,9 +6,11 @@ Wasm.Build.NativeRebuild.Tests.SimpleSourceChangeRebuildTest
 Wasm.Build.Templates.Tests.NativeBuildTests
 Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.Blazor.BuildPublishTests
+Wasm.Build.Tests.Blazor.SimpleRunTests
 Wasm.Build.Tests.Blazor.CleanTests
 Wasm.Build.Tests.Blazor.MiscTests
 Wasm.Build.Tests.Blazor.MiscTests2
+Wasm.Build.Tests.Blazor.MiscTests3
 Wasm.Build.Tests.Blazor.NativeTests
 Wasm.Build.Tests.Blazor.NoopNativeRebuildTest
 Wasm.Build.Tests.Blazor.IcuTests
