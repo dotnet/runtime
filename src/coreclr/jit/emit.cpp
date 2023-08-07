@@ -1663,7 +1663,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         else
         {
             // Reset flags.
-            emitCurIG->igFlags = (emitCurIG->igFlags & IGF_PROPAGATE_MASK);
+            emitCurIG->igFlags = (emitCurIG->igFlags & IGF_PROPAGATE_MASK) | IGF_EXTEND;
         }
     }
 
