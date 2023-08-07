@@ -215,7 +215,8 @@ int main(int argc, char* argv[])
     //      EVEX.b=0 // no broadcast (REVIEW: need to handle broadcast as it changes the size of the memory operand)
     //      EVEX.z=0 // always merge
     //
-    // REVIEW: do we need to handle disp8*N mode?
+    // Note that we don't need to consider disp8*N compressed displacement support since that is not used for
+    // RIP-relative addressing, which is all we care about.
 
     const int evex_p0_base = 0xf0;
     const int evex_p1_base = 0x04;
