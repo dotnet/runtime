@@ -21,6 +21,9 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         public JsonWriterOptions JsonWriterOptions { get; set; }
 
+#pragma warning disable SYSLIB1100
+#pragma warning disable SYSLIB1101
         internal override void Configure(IConfiguration configuration) => configuration.Bind(this);
+#pragma warning restore
     }
 }

@@ -278,6 +278,12 @@ namespace Microsoft.Interop
                         }
                         else
                         {
+                            if ((returnSwappedSignatureElements[i].ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 or SpecialType.System_Enum } or EnumTypeInfo
+                                    && returnSwappedSignatureElements[i].MarshallingAttributeInfo.Equals(NoMarshallingInfo.Instance))
+                                || (returnSwappedSignatureElements[i].ManagedType.FullTypeName.Split('.', ':').LastOrDefault()?.ToLowerInvariant() is "hr" or "hresult"))
+                            {
+                                generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable, symbol.Locations[0]));
+                            }
                             // Convert the current element into an out parameter on the native signature
                             // while keeping it at the return position in the managed signature.
                             var managedSignatureAsNativeOut = returnSwappedSignatureElements[i] with
@@ -304,6 +310,20 @@ namespace Microsoft.Interop
                         })
                 };
             }
+            var direction = GetDirectionFromOptions(generatedComInterfaceAttributeData.Options);
+
+            // Ensure the size of collections are known at marshal / unmarshal in time.
+            // A collection that is marshalled in cannot have a size that is an 'out' parameter.
+            foreach (TypePositionInfo parameter in signatureContext.ManagedParameters)
+            {
+                MarshallerHelpers.ValidateCountInfoAvailableAtCall(
+                    direction,
+                    parameter,
+                    generatorDiagnostics,
+                    symbol,
+                    GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
+                    GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue);
+            }
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
@@ -316,7 +336,7 @@ namespace Microsoft.Interop
 
             var declaringType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
-            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, GetDirectionFromOptions(generatedComInterfaceAttributeData.Options), true, ExceptionMarshalling.Com);
+            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com);
 
             return new IncrementalMethodStubGenerationContext(
                 signatureContext,

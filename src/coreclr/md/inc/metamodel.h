@@ -477,18 +477,6 @@ public:
         return GET_UNALIGNED_VAL32(pVal);
     }
 
-    inline static ULONG getIX_NoLogging(const void *pRec, CMiniColDef &def)
-    {
-        PVOID pVal = (BYTE *)pRec + def.m_oColumn;
-        if (def.m_cbColumn == 2)
-        {
-            ULONG ix = GET_UNALIGNED_VAL16(pVal);
-            return ix;
-        }
-        _ASSERTE(def.m_cbColumn == 4);
-        return GET_UNALIGNED_VAL32(pVal);
-    }
-
     // Pull four bytes out of a record.
     FORCEINLINE static ULONG getI1(const void *pRec, CMiniColDef &def)
     {

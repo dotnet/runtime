@@ -159,7 +159,7 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //   $t0  : trashed
 //   $t3  : trashed
 //   $t4  : trashed
-//   t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   $t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
@@ -305,7 +305,6 @@ WRITE_BARRIER_END JIT_WriteBarrier
 // Begin patchable literal pool
     .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
-wbs_begin:
 wbs_card_table:
     .quad 0
 wbs_card_bundle_table:
@@ -382,8 +381,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  $t4
 NESTED_END ThePreStub, _TEXT
 
-// ------------------------------------------------------------------\
-
+// ------------------------------------------------------------------
 // EXTERN_C int __fastcall HelperMethodFrameRestoreState(
 // INDEBUG_COMMA(HelperMethodFrame *pFrame)
 // MachState *pState

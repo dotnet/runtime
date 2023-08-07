@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Net.Sockets
 {
-    internal static class IPEndPointExtensions
+    internal static partial class IPEndPointExtensions
     {
         public static Internals.SocketAddress Serialize(EndPoint endpoint)
         {

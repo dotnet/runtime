@@ -472,9 +472,8 @@ namespace System.Diagnostics.Metrics
                     }
                 }
 
-                if (!_sharedSessionClientIds.Contains(clientId))
+                if (_sharedSessionClientIds.Add(clientId))
                 {
-                    _sharedSessionClientIds.Add(clientId);
                     Interlocked.Increment(ref _sharedSessionRefCount);
                 }
             }
