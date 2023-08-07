@@ -344,6 +344,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (shiftAmount == 0)
                     {
+                        // TODO: Use emitIns_Mov instead, but it will still elide even if 'canSkip' is false.
                         GetEmitter()->emitIns_R_R_R(INS_mov, emitTypeSize(node), targetReg, reg, reg);
                     }
                     else
