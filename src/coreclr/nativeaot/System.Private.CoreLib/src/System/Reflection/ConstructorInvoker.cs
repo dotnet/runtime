@@ -3,6 +3,7 @@
 
 using Internal.Reflection.Core.Execution;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.MethodInfos;
 using static System.Reflection.DynamicInvokeInfo;
 
@@ -11,11 +12,13 @@ namespace System.Reflection
     public sealed class ConstructorInvoker
     {
         private readonly MethodBaseInvoker _methodBaseInvoker;
+        private readonly int _parameterCount;
         private readonly RuntimeTypeHandle _declaringTypeHandle;
 
         internal ConstructorInvoker(RuntimeConstructorInfo constructor)
         {
             _methodBaseInvoker = constructor.MethodInvoker;
+            _parameterCount = constructor.GetParametersNoCopy().Length;
             _declaringTypeHandle = constructor.DeclaringType.TypeHandle;
         }
 
@@ -40,7 +43,13 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1)
         {
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>(ref arg1));
+            if (_parameterCount > 4)
+            {
+                // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
+                ThrowForArgCountMismatch();
+            }
+
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>(ref arg1, _parameterCount));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -48,10 +57,16 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2)
         {
+            if (_parameterCount > 2)
+            {
+                // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
+                ThrowForArgCountMismatch();
+            }
+
             StackAllocatedArguments argStorage = default;
             argStorage._args.Set(0, arg1);
             argStorage._args.Set(1, arg2);
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(2));
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -59,11 +74,17 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
+            if (_parameterCount > 3)
+            {
+                // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
+                ThrowForArgCountMismatch();
+            }
+
             StackAllocatedArguments argStorage = default;
             argStorage._args.Set(0, arg1);
             argStorage._args.Set(1, arg2);
             argStorage._args.Set(2, arg3);
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(3));
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -71,12 +92,18 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
         {
+            if (_parameterCount > 4)
+            {
+                // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
+                ThrowForArgCountMismatch();
+            }
+
             StackAllocatedArguments argStorage = default;
             argStorage._args.Set(0, arg1);
             argStorage._args.Set(1, arg2);
             argStorage._args.Set(2, arg3);
             argStorage._args.Set(3, arg4);
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(4));
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -87,6 +114,12 @@ namespace System.Reflection
             object result = _methodBaseInvoker.CreateInstance(arguments);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowForArgCountMismatch()
+        {
+            throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
     }
 }
