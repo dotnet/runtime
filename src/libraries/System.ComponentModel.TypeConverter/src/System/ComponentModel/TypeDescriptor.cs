@@ -287,10 +287,8 @@ namespace System.ComponentModel
                 {
                     if (!s_processedTypes.ContainsKey(type))
                     {
-                        ResetEventContext contextForAdd;
-                        ManualResetEvent resetEventForAdd;
-                        resetEventForAdd = new ManualResetEvent(false);
-                        contextForAdd = new ResetEventContext(resetEventForAdd, Environment.CurrentManagedThreadId);
+                        ManualResetEvent resetEventForAdd = new ManualResetEvent(false);
+                        ResetEventContext contextForAdd = new ResetEventContext(resetEventForAdd, Environment.CurrentManagedThreadId);
                         s_processedTypes.Add(type, contextForAdd);
 
                         var providerAttr = type.GetCustomAttributes<TypeDescriptionProviderAttribute>(false)
