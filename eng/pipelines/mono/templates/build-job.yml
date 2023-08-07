@@ -112,7 +112,7 @@ jobs:
         value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
     - ${{ if gt(length(parameters.monoCrossAOTTargetOS),0) }}:
       - name: aotCrossParameter
-        value: /p:MonoCrossAOTTargetOS=${{join('+',parameters.monoCrossAOTTargetOS)}} /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+        value: /p:MonoCrossAOTTargetOS=${{join('+',parameters.monoCrossAOTTargetOS)}} /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true /p:MonoLibClang="/usr/local/lib/libclang.so.16
     - ${{ parameters.variables }}
 
     steps:
