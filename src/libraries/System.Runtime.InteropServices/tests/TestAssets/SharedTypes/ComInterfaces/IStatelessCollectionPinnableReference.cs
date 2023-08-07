@@ -11,27 +11,27 @@ namespace SharedTypes.ComInterfaces
     internal partial interface IStatelessCollectionPinnableReference
     {
         void Method(
-            [MarshalUsing(CountElementName = nameof(size))] StatelessCollectionPinnableReference<StatelessType> p,
+            [MarshalUsing(CountElementName = nameof(size))] StatelessCollectionPinnableReference<int> p,
             int size);
 
         void MethodIn(
-            [MarshalUsing(CountElementName = nameof(size))] in StatelessCollectionPinnableReference<StatelessType> pIn,
+            [MarshalUsing(CountElementName = nameof(size))] in StatelessCollectionPinnableReference<int> pIn,
             in int size);
 
         void MethodRef(
-            [MarshalUsing(CountElementName = nameof(size))] ref StatelessCollectionPinnableReference<StatelessType> pRef,
+            [MarshalUsing(CountElementName = nameof(size))] ref StatelessCollectionPinnableReference<int> pRef,
             int size);
 
         void MethodOut(
-            [MarshalUsing(CountElementName = nameof(size))] out StatelessCollectionPinnableReference<StatelessType> pOut,
+            [MarshalUsing(CountElementName = nameof(size))] out StatelessCollectionPinnableReference<int> pOut,
             out int size);
 
         [return: MarshalUsing(CountElementName = nameof(size))]
-        StatelessCollectionPinnableReference<StatelessType> Return(int size);
+        StatelessCollectionPinnableReference<int> Return(int size);
 
         [PreserveSig]
         [return: MarshalUsing(CountElementName = nameof(size))]
-        StatelessCollectionPinnableReference<StatelessType> ReturnPreserveSig(int size);
+        StatelessCollectionPinnableReference<int> ReturnPreserveSig(int size);
     }
 
     [NativeMarshalling(typeof(StatelessCollectionPinnableReferenceMarshaller<,>))]
@@ -41,6 +41,8 @@ namespace SharedTypes.ComInterfaces
 
     internal struct StatelessCollectionPinnableReferenceNative
     {
+        public static unsafe explicit operator void*(StatelessCollectionPinnableReferenceNative _) => throw new NotImplementedException();
+        public static unsafe explicit operator StatelessCollectionPinnableReferenceNative(void* _) => throw new NotImplementedException();
     }
 
     [ContiguousCollectionMarshaller]
