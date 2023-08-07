@@ -3162,6 +3162,11 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
         public static void NoBackwardTimeZones()
         {
+            if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26))
+            {
+                throw new SkipTestException("This test won't work on API level < 26");
+            }
+
             ReadOnlyCollection<TimeZoneInfo> tzCollection = TimeZoneInfo.GetSystemTimeZones();
             HashSet<String> tzDisplayNames = new HashSet<String>();
 
