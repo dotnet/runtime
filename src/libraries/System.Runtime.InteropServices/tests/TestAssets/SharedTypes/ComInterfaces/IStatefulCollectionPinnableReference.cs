@@ -11,29 +11,30 @@ namespace SharedTypes.ComInterfaces
     internal partial interface IStatefulCollectionPinnableReference
     {
         void Method(
-            [MarshalUsing(CountElementName = nameof(size))] StatefulCollection<StatelessType> p,
+            [MarshalUsing(CountElementName = nameof(size))] StatefulCollectionPinnableReference<StatelessType> p,
             int size);
 
         void MethodIn(
-            [MarshalUsing(CountElementName = nameof(size))] in StatefulCollection<StatelessType> pIn,
+            [MarshalUsing(CountElementName = nameof(size))] in StatefulCollectionPinnableReference<StatelessType> pIn,
             in int size);
 
         void MethodRef(
-            [MarshalUsing(CountElementName = nameof(size))] ref StatefulCollection<StatelessType> pRef,
+            [MarshalUsing(CountElementName = nameof(size))] ref StatefulCollectionPinnableReference<StatelessType> pRef,
             int size);
 
         void MethodOut(
-            [MarshalUsing(CountElementName = nameof(size))] out StatefulCollection<StatelessType> pOut,
+            [MarshalUsing(CountElementName = nameof(size))] out StatefulCollectionPinnableReference<StatelessType> pOut,
             out int size);
 
         [return: MarshalUsing(CountElementName = nameof(size))]
-        StatefulCollection<StatelessType> Return(int size);
+        StatefulCollectionPinnableReference<StatelessType> Return(int size);
 
         [PreserveSig]
         [return: MarshalUsing(CountElementName = nameof(size))]
-        StatefulCollection<StatelessType> ReturnPreserveSig(int size);
+        StatefulCollectionPinnableReference<StatelessType> ReturnPreserveSig(int size);
     }
 
+    [NativeMarshalling(typeof(StatefulCollectionPinnableReferenceMarshaller<,>))]
     internal class StatefulCollectionPinnableReference<T>
     {
     }
