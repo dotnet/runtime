@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* eslint-disable no-inner-declarations */
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, stringToUTF16 } from "../strings";
@@ -15,14 +14,13 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
     try {
         const cultureName = monoStringToString(cultureRoot);
-        const locale = cultureName ? cultureName : undefined;
         const cultureInfo = {
             AmDesignator: "",
             PmDesignator: "",
             LongTimePattern: "",
             ShortTimePattern: ""
         };
-        const canonicalLocale = normalizeLocale(locale);
+        const canonicalLocale = normalizeLocale(cultureName);
         const designators = getAmPmDesignators(canonicalLocale);
         cultureInfo.AmDesignator = designators.am;
         cultureInfo.PmDesignator = designators.pm;
@@ -57,20 +55,20 @@ function getAmPmDesignators(locale: any)
         am: amDesignator,
         pm: pmDesignator
     };
+}
 
-    function getDesignator(time: Date, locale: string)
-    {
-        const withDesignator = time.toLocaleTimeString(locale, { hourCycle: "h12"});
-        const withoutDesignator = time.toLocaleTimeString(locale, { hourCycle: "h24"});
-        const designator = withDesignator.replace(withoutDesignator, "").trim();
-        if (new RegExp("[0-9]$").test(designator)){
-            const designatorParts = withDesignator.split(" ").filter(part => new RegExp("^((?![0-9]).)*$").test(part));
-            if (!designatorParts || designatorParts.length == 0)
-                return "";
-            return designatorParts.join(" ");
-        }
-        return designator;
+function getDesignator(time: Date, locale: string)
+{
+    const withDesignator = time.toLocaleTimeString(locale, { hourCycle: "h12"});
+    const withoutDesignator = time.toLocaleTimeString(locale, { hourCycle: "h24"});
+    const designator = withDesignator.replace(withoutDesignator, "").trim();
+    if (new RegExp("[0-9]$").test(designator)){
+        const designatorParts = withDesignator.split(" ").filter(part => new RegExp("^((?![0-9]).)*$").test(part));
+        if (!designatorParts || designatorParts.length == 0)
+            return "";
+        return designatorParts.join(" ");
     }
+    return designator;
 }
 
 function getLongTimePattern(locale: string | undefined, designators: any) : string
@@ -108,32 +106,25 @@ function getLongTimePattern(locale: string | undefined, designators: any) : stri
     return pattern;
 }
 
-function getShortTimePattern(longTimePattern: string) : string
+function getShortTimePattern(pattern: string) : string
 {
-    const shortPattern = removeSeconds(longTimePattern); // h:mm tt
-
-    return shortPattern;
-
-    function removeSeconds(shortPattern: string)
+    // remove seconds:
+    // short dotnet pattern does not contain seconds while JS's pattern always contains them
+    const secondsIdx = pattern.indexOf("ss");
+    if (secondsIdx > 0)
     {
-        // short dotnet pattern does not contain seconds while JS always contains them
-        const secondsIdx = shortPattern.indexOf("ss");
-        if (secondsIdx > 0)
+        const secondsWithSeparator = `${pattern[secondsIdx - 1]}ss`;
+        // en-US: 12:mm:ss tt -> 12:mm tt;
+        // fr-CA: 12 h mm min ss s -> 12 h mm min s
+        const shortPatternNoSecondsDigits = pattern.replace(secondsWithSeparator, "");
+        if (shortPatternNoSecondsDigits.length > secondsIdx && shortPatternNoSecondsDigits[shortPatternNoSecondsDigits.length - 1] != "t")
         {
-            const secondsWithSeparator = `${shortPattern[secondsIdx - 1]}ss`;
-            // en-US: 12:mm:ss tt -> 12:mm tt;
-            // fr-CA: 12 h mm min ss s -> 12 h mm min s
-            const shortPatternNoSecondsDigits = shortPattern.replace(secondsWithSeparator, "");
-            if (shortPatternNoSecondsDigits.length > secondsIdx && shortPatternNoSecondsDigits[shortPatternNoSecondsDigits.length - 1] != "t")
-            {
-                shortPattern = shortPattern.split(secondsWithSeparator)[0];
-            }
-            else
-            {
-                shortPattern = shortPatternNoSecondsDigits;
-            }
+            pattern = pattern.split(secondsWithSeparator)[0];
         }
-        return shortPattern;
+        else
+        {
+            pattern = shortPatternNoSecondsDigits;
+        }
     }
+    return pattern;
 }
-

@@ -1901,45 +1901,37 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
             if (order == ORDER_MDY || order == ORDER_YMD)
             {
-                if (SetYMD(ref result, raw.year, n1, n2))
-                    return true;
+                if (SetDateYMD(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // MD + Year
+                }
 #if TARGET_BROWSER
                 // if we are parsing the datetime string with custom format then the CultureInfo format `order`
                 // does not matter and DM + Year is also possible for NNY
-                if (GlobalizationMode.Hybrid && SetYDM(ref result, raw.year, n1, n2))
-                    return true;
+                if (GlobalizationMode.Hybrid && SetDateYDM(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // DM + Year
+                }
 #endif
             }
             else
             {
-                if (SetYDM(ref result, raw.year, n1, n2))
-                    return true;
+                if (SetDateYDM(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // DM + Year
+                }
 #if TARGET_BROWSER
-                if (GlobalizationMode.Hybrid && SetYMD(ref result, raw.year, n1, n2))
-                    return true;
+                if (GlobalizationMode.Hybrid && SetDateYMD(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // MD + Year
+                }
 #endif
             }
             result.SetBadDateTimeFailure();
-            return false;
-        }
-
-        private static bool SetYMD(ref DateTimeResult result, int year, int month, int day)
-        {
-            if (SetDateYMD(ref result, year, month, day))
-            {
-                result.flags |= ParseFlags.HaveDate;
-                return true; // MD + Year
-            }
-            return false;
-        }
-
-        private static bool SetYDM(ref DateTimeResult result, int year, int month, int day)
-        {
-            if (SetDateYMD(ref result, year, day, month))
-            {
-                result.flags |= ParseFlags.HaveDate;
-                return true; // DM + Year
-            }
             return false;
         }
 

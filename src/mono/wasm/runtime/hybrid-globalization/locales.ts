@@ -14,8 +14,7 @@ export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isExcept
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
     try {
         const cultureName = monoStringToString(cultureRoot);
-        const locale : any = cultureName ? cultureName : undefined;
-        const canonicalLocale = normalizeLocale(locale);
+        const canonicalLocale = normalizeLocale(cultureName);
         return getFirstDayOfWeek(canonicalLocale);
     }
     catch (ex: any) {
@@ -34,8 +33,7 @@ export function mono_wasm_get_first_week_of_year(culture: MonoStringRef, isExcep
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
     try {
         const cultureName = monoStringToString(cultureRoot);
-        const locale : any = cultureName ? cultureName : undefined;
-        const canonicalLocale = normalizeLocale(locale);
+        const canonicalLocale = normalizeLocale(cultureName);
         return getFirstWeekOfYear(canonicalLocale);
     }
     catch (ex: any) {

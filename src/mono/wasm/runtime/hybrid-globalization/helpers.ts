@@ -4,7 +4,7 @@
 export const OUTER_SEPARATOR = "##";
 export const INNER_SEPARATOR = "||";
 
-export function normalizeLocale(locale: string | undefined)
+export function normalizeLocale(locale: string | null)
 {
     if (!locale)
         return undefined;
