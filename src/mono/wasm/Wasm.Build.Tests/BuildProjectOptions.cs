@@ -12,7 +12,7 @@ public record BuildProjectOptions
 (
     Action?             InitProject               = null,
     bool?               DotnetWasmFromRuntimePack = null,
-    GlobalizationMode   GlobalizationMode         = GlobalizationMode.Default,
+    GlobalizationMode   GlobalizationMode         = GlobalizationMode.Sharded,
     string?             PredefinedIcudt           = null,
     bool                UseCache                  = true,
     bool                ExpectSuccess             = true,

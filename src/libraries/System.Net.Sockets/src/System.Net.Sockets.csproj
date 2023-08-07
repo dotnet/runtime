@@ -59,6 +59,8 @@
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandleMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugSafeHandleMinusOneIsInvalid.cs" />
     <!-- System.Net common -->
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+             Link="Common\System\Net\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs"
              Link="Common\System\Net\IPEndPointStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"

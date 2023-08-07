@@ -407,16 +407,6 @@ PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback); 
 
-// Must be the same as the copy in excep.h and the WriteDumpFlags enum in the diagnostics repo
-enum
-{
-    GenerateDumpFlagsNone = 0x00,
-    GenerateDumpFlagsLoggingEnabled = 0x01,
-    GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
-    GenerateDumpFlagsCrashReportEnabled = 0x04,
-    GenerateDumpFlagsCrashReportOnlyEnabled = 0x08
-};
-
 PALIMPORT
 BOOL
 PALAPI
@@ -1541,6 +1531,14 @@ typedef struct _XMM_SAVE_AREA32 {
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
+    _CONTEXT() = default;
+    _CONTEXT(const _CONTEXT& ctx)
+    {
+        *this = ctx;
+    }
+
+    _CONTEXT& operator=(const _CONTEXT& ctx);
+
     //
     // Register parameter home addresses.
     //
@@ -2175,6 +2173,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // TODO-LoongArch64: support the SIMD.
     ULONGLONG F[32];
+    DWORD64 Fcc;
     DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 

@@ -175,9 +175,14 @@ typedef int64_t ep_system_timestamp_t;
 /*
  * EventPipe Callbacks.
  */
+#if defined(_WIN32) && defined(_M_IX86)
+#define EP_CALLBACK_CALLTYPE __stdcall
+#else
+#define EP_CALLBACK_CALLTYPE
+#endif
 
 // Define the event pipe callback to match the ETW callback signature.
-typedef void (*EventPipeCallback)(
+typedef void (EP_CALLBACK_CALLTYPE *EventPipeCallback)(
 	const uint8_t *source_id,
 	unsigned long is_enabled,
 	uint8_t level,
@@ -186,7 +191,7 @@ typedef void (*EventPipeCallback)(
 	EventFilterDescriptor *filter_data,
 	void *callback_data);
 
-typedef void (*EventPipeSessionSynchronousCallback)(
+typedef void (EP_CALLBACK_CALLTYPE *EventPipeSessionSynchronousCallback)(
 	EventPipeProvider *provider,
 	uint32_t event_id,
 	uint32_t event_version,
@@ -201,7 +206,7 @@ typedef void (*EventPipeSessionSynchronousCallback)(
 	uintptr_t *stack_frames,
 	void *additional_data);
 
-typedef bool (*EventPipeIpcStreamFactorySuspendedPortsCallback)(void);
+typedef bool (EP_CALLBACK_CALLTYPE *EventPipeIpcStreamFactorySuspendedPortsCallback)(void);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_TYPES_FORWARD_H__ */

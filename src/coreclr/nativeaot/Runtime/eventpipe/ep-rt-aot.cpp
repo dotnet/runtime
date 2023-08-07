@@ -20,14 +20,10 @@
 #include <minipal/random.h>
 
 #include "gcenv.h"
-
-#ifndef DIRECTORY_SEPARATOR_CHAR
-#ifdef TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '/'
-#else // TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '\\'
-#endif // TARGET_UNIX
-#endif
+#include "thread.h"
+#include "threadstore.h"
+#include "threadstore.inl"
+#include "eventtrace_context.h"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
@@ -44,30 +40,20 @@ uint32_t *_ep_rt_aot_proc_group_offsets;
  */
 
 
-static
-void
-walk_managed_stack_for_threads (
-    ep_rt_thread_handle_t sampling_thread,
-    EventPipeEvent *sampling_event);
-
-
 bool
 ep_rt_aot_walk_managed_stack_for_thread (
     ep_rt_thread_handle_t thread,
     EventPipeStackContents *stack_contents)
 {
-    PalDebugBreak();
+    // NativeAOT does not support getting the call stack
     return false;
 }
 
-// The thread store lock must already be held by the thread before this function
-// is called.  ThreadSuspend::SuspendEE acquires the thread store lock.
-static
-void
-walk_managed_stack_for_threads (
-    ep_rt_thread_handle_t sampling_thread,
-    EventPipeEvent *sampling_event)
+bool
+ep_rt_aot_providers_validate_all_disabled (void)
 {
+    return !MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled
+        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled;
 }
 
 void
@@ -78,7 +64,7 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 }
 
 const ep_char8_t *
-ep_rt_aot_entrypoint_assembly_name_get_utf8 (void) 
+ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
 {
     // We are (intentionally for now) using the module name rather than entry assembly
     // Cannot use __cpp_threadsafe_static_init feature since it will bring in the C++ runtime and need to use threadsafe way to initialize entrypoint_assembly_name
@@ -249,7 +235,7 @@ ep_rt_aot_atomic_inc_int64_t (volatile int64_t *value)
 }
 
 int64_t
-ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value) { 
+ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value) {
     STATIC_CONTRACT_NOTHROW;
 
     int64_t currentValue;
@@ -272,7 +258,7 @@ ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expect
 }
 
 ep_char8_t *
-ep_rt_aot_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) { 
+ep_rt_aot_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) {
     STATIC_CONTRACT_NOTHROW;
     return static_cast<ep_char8_t *>(PalInterlockedCompareExchangePointer ((void *volatile *)target, value, expected));
 }
@@ -312,8 +298,8 @@ ep_rt_aot_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 }
 
 bool
-ep_rt_aot_wait_event_set (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_aot_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
@@ -324,8 +310,8 @@ int32_t
 ep_rt_aot_wait_event_wait (
     ep_rt_wait_event_handle_t *wait_event,
     uint32_t timeout,
-    bool alertable) 
-{ 
+    bool alertable)
+{
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
@@ -333,8 +319,8 @@ ep_rt_aot_wait_event_wait (
 }
 
 bool
-ep_rt_aot_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_aot_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
 
     if (wait_event == NULL || wait_event->event == NULL)
@@ -728,7 +714,7 @@ bool ep_rt_aot_lock_release (ep_rt_lock_handle_t *lock)
 
 bool ep_rt_aot_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
-    // In NativeAOT, we use a lock, instead of a SpinLock. 
+    // In NativeAOT, we use a lock, instead of a SpinLock.
     // The method signature matches the EventPipe library expectation of a SpinLock
     if (spin_lock) {
         spin_lock->lock->Enter();
@@ -739,7 +725,7 @@ bool ep_rt_aot_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 
 bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
 {
-    // In NativeAOT, we use a lock, instead of a SpinLock. 
+    // In NativeAOT, we use a lock, instead of a SpinLock.
     // The method signature matches the EventPipe library expectation of a SpinLock
     if (spin_lock) {
         spin_lock->lock->Leave();
@@ -826,6 +812,15 @@ void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_le
 #endif
 }
 
+ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void)
+{
+    return ThreadStore::GetCurrentThreadIfAvailable();
+}
+
+ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
+{
+    return thread_handle->GetPalThreadIdForLogging();
+}
 
 #ifdef EP_CHECKED_BUILD
 

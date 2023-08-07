@@ -44,14 +44,13 @@ namespace System.Net.NetworkInformation
         private static unsafe int GetBestInterfaceForAddress(IPAddress addr)
         {
             int index;
-            Internals.SocketAddress address = new Internals.SocketAddress(addr);
-            fixed (byte* buffer = address.Buffer)
+            Span<byte> buffer= stackalloc byte[SocketAddressPal.IPv6AddressSize];
+            IPEndPointExtensions.SetIPAddress(buffer, addr);
+
+            int error = (int)Interop.IpHlpApi.GetBestInterfaceEx(buffer, &index);
+            if (error != 0)
             {
-                int error = (int)Interop.IpHlpApi.GetBestInterfaceEx(buffer, &index);
-                if (error != 0)
-                {
-                    throw new NetworkInformationException(error);
-                }
+                throw new NetworkInformationException(error);
             }
 
             return index;

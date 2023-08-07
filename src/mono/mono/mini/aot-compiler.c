@@ -5541,12 +5541,18 @@ is_vt_inst (MonoGenericInst *inst)
 }
 
 static gboolean
-is_vt_inst_no_enum (MonoGenericInst *inst)
+is_vt_inst_no_enum_not_empty (MonoGenericInst *inst)
 {
 	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
-		if (MONO_TYPE_ISSTRUCT (t))
-			return TRUE;
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			MonoClass *k = mono_class_from_mono_type_internal (t);
+			/*
+			 * Empty vtypes with static virtual methods are used for templating in corlib.
+			 */
+			if (mono_class_get_field_count (k) > 0)
+				return TRUE;
+		}
 	}
 	return FALSE;
 }
@@ -5682,7 +5688,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	 * WASM only since other platforms depend on the
 	 * previous behavior.
 	 */
-	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst_no_enum (mono_class_get_generic_class (klass)->context.class_inst)) {
+	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst_no_enum_not_empty (mono_class_get_generic_class (klass)->context.class_inst)) {
 		use_gsharedvt = TRUE;
 		use_gsharedvt_for_array = TRUE;
 	}
