@@ -468,12 +468,18 @@ namespace System.Collections.Generic
         /// <summary>
         /// Increase the capacity of this list to at least the specified <paramref name="capacity"/>.
         /// This method is specifically for insertion, to avoid 1 extra array copy.
+        /// It also copies data to their after-insertion positions.
+        /// You should only call this method when Count + insertionCount > Capacity
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
         /// <param name="indexToInsert">Index where the element will be.</param>
-        private void GrowForInsertion(int capacity, int indexToInsert)
+        /// <param name="insertionCount">How many elements will be inserted.</param>
+        private void GrowForInsertion(int capacity, int indexToInsert, int insertionCount = 1)
         {
             Debug.Assert(_items.Length < capacity);
+            Debug.Assert(insertionCount <= 0)
+            Debug.Assert((uint)_size + insertionCount > capacity);
+            Debug.Assert((uint)_size + insertionCount > Array.MaxLength);
 
             // Follow the same logic from Grow(capacity)
 
@@ -483,31 +489,14 @@ namespace System.Collections.Generic
 
             // Inline and adapt logic from set_Capacity
 
-            if (newCapacity < _size)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_SmallCapacity);
-            }
+            T[] newItems = new T[newCapacity];
+            if (indexToInsert != 0)
+                Array.Copy(_items, newItems, indexToInsert);
 
-            if (newCapacity == _items.Length)
-            {
-                return;
-            }
+            if (_size != indexToInsert)
+                Array.Copy(_items, indexToInsert, newItems, indexToInsert + insertionCount, _size - indexToInsert);
 
-            if (newCapacity > 0)
-            {
-                T[] newItems = new T[newCapacity];
-                if (indexToInsert != 0)
-                    Array.Copy(_items, newItems, indexToInsert);
-
-                if (_size != indexToInsert)
-                    Array.Copy(_items, indexToInsert, newItems, indexToInsert + 1, _size - indexToInsert);
-
-                _items = newItems;
-            }
-            else
-            {
-                _items = s_emptyArray;
-            }
+            _items = newItems;
         }
 
         public bool Exists(Predicate<T> match)
