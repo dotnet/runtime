@@ -16,6 +16,10 @@
     <SkipArchivesBuild>true</SkipArchivesBuild>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <ReferencePath Include="@(LibrariesRefAssemblies)" />

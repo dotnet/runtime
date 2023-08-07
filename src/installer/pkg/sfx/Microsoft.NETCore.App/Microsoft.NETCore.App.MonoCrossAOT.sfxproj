@@ -22,6 +22,10 @@
     <NativeRuntimeAsset Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="$(IntermediateOutputPath)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" TargetPath="data/UnixFilePermissions.xml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
   <Target Name="WriteTemplateFiles" BeforeTargets="ValidateProperties">
     <PropertyGroup>
       <AotCompilerPath Condition="'$(TestingWorkloads)' == 'true'">$(MonoAotCrossDir)</AotCompilerPath>
