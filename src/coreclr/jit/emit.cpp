@@ -10448,14 +10448,23 @@ void emitter::emitEnableGC()
 
         emitNoGCIG = false;
 
-        // The next time an instruction needs to be generated, force a new instruction group.
-        // It will be an emitAdd group in that case. Note that the next thing we see might be
-        // a label, which will force a non-emitAdd group.
-        //
-        // Note that we can't just create a new instruction group here, because we don't know
-        // if there are going to be any instructions added to it, and we don't support empty
-        // instruction groups.
-        emitForceNewIG = true;
+        // If the current IG does not have instructions, do not force a new IG.
+        // Instead, just use the current one without NOGCINTERRUPT.
+        if (emitCurIGnonEmpty())
+        {
+            // The next time an instruction needs to be generated, force a new instruction group.
+            // It will be an emitAdd group in that case. Note that the next thing we see might be
+            // a label, which will force a non-emitAdd group.
+            //
+            // Note that we can't just create a new instruction group here, because we don't know
+            // if there are going to be any instructions added to it, and we don't support empty
+            // instruction groups.
+            emitForceNewIG = true;
+        }
+        else
+        {
+            emitCurIG->igFlags &= ~IGF_NOGCINTERRUPT;
+        }
     }
     else
     {
