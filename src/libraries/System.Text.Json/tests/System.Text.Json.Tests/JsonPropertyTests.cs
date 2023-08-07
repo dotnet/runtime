@@ -79,6 +79,25 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void WriteEscapedNames()
+        {
+            var buffer = new ArrayBufferWriter<byte>(1024);
+            const string json = """{"q\t\\mm\t":1,"":2}""";
+            using (JsonDocument doc = JsonDocument.Parse(json))
+            {
+                using var writer = new Utf8JsonWriter(buffer);
+                writer.WriteStartObject();
+                foreach (JsonProperty prop in doc.RootElement.EnumerateObject())
+                {
+                    prop.WriteTo(writer);
+                }
+                writer.WriteEndObject();
+                writer.Flush();
+
+                AssertContents(json, buffer);
+            }
+        }
         private static void AssertContents(string expectedValue, ArrayBufferWriter<byte> buffer)
         {
             Assert.Equal(

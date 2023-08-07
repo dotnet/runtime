@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1163,11 +1164,16 @@ namespace System.Text.Json
             return _parent.GetNameOfPropertyValue(_idx);
         }
 
-        internal ReadOnlySpan<byte> GetRawPropertyNameAsUtf8Span()
+        /// <summary>
+        ///  Gets the property name exactly as it is in the underlying <see cref="JsonDocument"/>.
+        /// </summary>
+        internal ReadOnlySpan<byte> GetRawPropertyName()
         {
+            // TODO: Related to issue #77666 "Add JsonElement.ValueSpan" (https://github.com/dotnet/runtime/issues/77666)
+
             CheckValidInstance();
 
-            return _parent.GetRawNameOfPropertyValueAsUtf8Span(_idx);
+            return _parent.GetRawNameOfPropertyValue(_idx);
         }
 
         /// <summary>
@@ -1321,6 +1327,55 @@ namespace System.Text.Json
             CheckValidInstance();
 
             _parent.WriteElementTo(_idx, writer);
+        }
+
+        /// <summary>
+        /// Write the property name of this <see cref="JsonElement"/> to a <see cref="Utf8JsonWriter"/>
+        /// in an allocation-less way, if the name is shorter than <see cref="JsonConstants.StackallocByteThreshold"/>
+        /// or it doesn't require unescaping, and the underlying buffer is long enough.
+        /// </summary>
+        /// <param name="writer">Utf8JsonWriter to write</param>
+        internal void WritePropertyNameTo(Utf8JsonWriter writer)
+        {
+            ReadOnlySpan<byte> rawName = GetRawPropertyName();
+            int firstBackSlashIndex = rawName.IndexOf(JsonConstants.BackSlash);
+
+            if (firstBackSlashIndex >= 0)
+            {
+                // If the name needs unescaping
+
+                // Equivalent to writer.WritePropertyName(JsonReaderHelper.GetUnescapedSpan(rawName))
+                // Method is inlined here to avoid .ToArray() allocation for short names.
+
+                int length = rawName.Length;
+                byte[]? pooledName = null;
+
+                Span<byte> utf8Unescaped = length <= JsonConstants.StackallocByteThreshold ?
+                    stackalloc byte[JsonConstants.StackallocByteThreshold] :
+                    (pooledName = ArrayPool<byte>.Shared.Rent(length));
+
+                JsonReaderHelper.Unescape(rawName, utf8Unescaped, firstBackSlashIndex, out int written);
+                Debug.Assert(written > 0);
+
+                ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written);
+                Debug.Assert(!propertyName.IsEmpty);
+
+                writer.WritePropertyName(propertyName);
+
+                if (pooledName != null)
+                {
+                    new Span<byte>(pooledName, 0, written).Clear();
+                    ArrayPool<byte>.Shared.Return(pooledName);
+                }
+            }
+            else
+            {
+                // Note we cannot just write it out by WriteStringByOptionsPropertyName.
+                // Because there might be plain Unicode chars in the original JsonDocument,
+                // which should be escaped if it is written out.
+
+                writer.WritePropertyName(rawName);
+            }
         }
 
         /// <summary>

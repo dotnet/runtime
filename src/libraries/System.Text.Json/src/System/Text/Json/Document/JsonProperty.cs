@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 
 namespace System.Text.Json
@@ -120,38 +119,7 @@ namespace System.Text.Json
 
             if (_name is null)
             {
-                ReadOnlySpan<byte> rawName = Value.GetRawPropertyNameAsUtf8Span();
-                int firstBackSlashIndex = rawName.IndexOf(JsonConstants.BackSlash);
-                if (firstBackSlashIndex >= 0)
-                {
-                    // Code is adapted from JsonReaderHelper.GetUnescapedSpan to avoid allocations further.
-                    // writer.WritePropertyName(JsonReaderHelper.GetUnescapedSpan(rawName));
-
-                    int length = rawName.Length;
-                    byte[]? pooledName = null;
-
-                    Span<byte> utf8Unescaped = length <= JsonConstants.StackallocByteThreshold ?
-                        stackalloc byte[JsonConstants.StackallocByteThreshold] :
-                        (pooledName = ArrayPool<byte>.Shared.Rent(length));
-
-                    JsonReaderHelper.Unescape(rawName, utf8Unescaped, firstBackSlashIndex, out int written);
-                    Debug.Assert(written > 0);
-
-                    ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written);
-                    Debug.Assert(!propertyName.IsEmpty);
-
-                    writer.WritePropertyName(propertyName);
-
-                    if (pooledName != null)
-                    {
-                        new Span<byte>(pooledName, 0, written).Clear();
-                        ArrayPool<byte>.Shared.Return(pooledName);
-                    }
-                }
-                else
-                {
-                    writer.WritePropertyName(rawName);
-                }
+                Value.WritePropertyNameTo(writer);
             }
             else
             {
