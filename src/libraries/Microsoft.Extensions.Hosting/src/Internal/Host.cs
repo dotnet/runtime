@@ -463,8 +463,8 @@ namespace Microsoft.Extensions.Hosting.Internal
             public IHostEnvironment Environment => host._hostEnvironment;
             public IHostApplicationLifetime ApplicationLifetime => host._applicationLifetime;
             public HostOptions Options => host._options;
-            // _hostedServices is null until the host is started. Resolve services directly from DI if host has started yet.
-            // This is ok because IHostedServices are registered with singleton lifetime so the same objects are returned.
+            // _hostedServices is null until the host is started. Resolve services directly from DI if host hasn't started yet.
+            // Want to resolve hosted services once because it's possible they might have been registered with a transient lifetime.
             public List<IHostedService> HostedServices => new List<IHostedService>(host._hostedServices ??= host.Services.GetRequiredService<IEnumerable<IHostedService>>());
             public bool IsRunning => host.IsRunning;
         }
