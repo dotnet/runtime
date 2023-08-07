@@ -784,7 +784,7 @@ namespace System.Collections.Generic
             }
             if (_size == _items.Length)
             {
-                GrowForInsert(_size + 1, index);
+                GrowForInsertion(_size + 1, index);
             }
             else if (index < _size)
             {
