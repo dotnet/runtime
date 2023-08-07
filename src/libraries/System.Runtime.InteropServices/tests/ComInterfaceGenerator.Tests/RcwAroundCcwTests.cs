@@ -145,6 +145,25 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
+        public void StatefulMarshalling()
+        {
+            var obj = CreateWrapper<StatefulMarshalling, IStatefulMarshalling>();
+            var data = new StatefulType() { i = 42 };
+
+            obj.Method(data);
+            Assert.Equal(42, data.i);
+            obj.MethodIn(in data);
+            Assert.Equal(42, data.i);
+            var oldData = data;
+            obj.MethodRef(ref data);
+            Assert.True(oldData == data); // We want reference equality here
+            obj.MethodOut(out data);
+            Assert.Equal(1, data.i);
+            Assert.Equal(1, obj.Return().i);
+            Assert.Equal(1, obj.ReturnPreserveSig().i);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89747")]
         public void ICollectionMarshallingFails()
         {
