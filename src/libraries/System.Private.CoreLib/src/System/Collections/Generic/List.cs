@@ -470,7 +470,8 @@ namespace System.Collections.Generic
         /// This method is specifically for insertion, to avoid 1 extra array copy.
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
-        private void GrowForInsert(int capacity, int indexToInsert)
+        /// <param name="indexToInsert">Index where the element will be.</param>
+        private void GrowForInsertion(int capacity, int indexToInsert)
         {
             Debug.Assert(_items.Length < capacity);
 
