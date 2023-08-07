@@ -1013,10 +1013,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             lock (TypeToLdapPropListMap)
             {
-                if (!TypeToLdapPropListMap[this.MappingTableIndex].ContainsKey(principalType))
-                {
-                    TypeToLdapPropListMap[this.MappingTableIndex].Add(principalType, propertySet);
-                }
+                TypeToLdapPropListMap[MappingTableIndex].TryAdd(principalType, propertySet);
             }
         }
     }
