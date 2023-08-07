@@ -86,6 +86,7 @@
                                               - AppBundle/_framework contains generated files (dlls, runtime scripts, icu)
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
       - $(WASMStripIL)                      - Set to true to enable trimming away AOT compiled methods body (IL code)
+                                              Defaults to false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
