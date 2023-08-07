@@ -923,9 +923,7 @@ namespace System.Net.Sockets
                 case SocketAsyncOperation.ReceiveFrom:
                     // Deal with incoming address.
                     UpdateReceivedSocketAddress(_socketAddress!);
-                    //SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
-                    SocketAddress socketAddressOriginal = _remoteEndPoint!.Serialize();
-                    if (!socketAddressOriginal.Equals(_socketAddress))
+                    if (_remoteEndPoint != null && !SocketAddressExtensions.Equals(_socketAddress!, _remoteEndPoint))
                     {
                         try
                         {
@@ -947,9 +945,7 @@ namespace System.Net.Sockets
                 case SocketAsyncOperation.ReceiveMessageFrom:
                     // Deal with incoming address.
                     UpdateReceivedSocketAddress(_socketAddress!);
-                    //socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
-                    socketAddressOriginal = _remoteEndPoint!.Serialize();
-                    if (!socketAddressOriginal.Equals(_socketAddress))
+                    if (!SocketAddressExtensions.Equals(_socketAddress!, _remoteEndPoint))
                     {
                         try
                         {

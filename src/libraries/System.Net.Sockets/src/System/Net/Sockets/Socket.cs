@@ -1898,27 +1898,28 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
         /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
-        /// <param name="receivedSocketAddress">An <see cref="SocketAddress"/>, that will be updated with value of the remote peer.</param>
+        /// <param name="receivedAddress">An <see cref="SocketAddress"/>, that will be updated with value of the remote peer.</param>
         /// <returns>The number of bytes received.</returns>
         /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
-        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress receivedSocketAddress)
+        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress receivedAddress)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(receivedAddress, nameof(receivedAddress));
 
-            if (receivedSocketAddress.Size < SocketAddress.GetMaximumAddressSize(AddressFamily))
+            if (receivedAddress.Size < SocketAddress.GetMaximumAddressSize(AddressFamily))
             {
-                throw new ArgumentOutOfRangeException(nameof(receivedSocketAddress), SR.net_sockets_address_small);
+                throw new ArgumentOutOfRangeException(nameof(receivedAddress), SR.net_sockets_address_small);
             }
 
             ValidateBlockingMode();
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedSocketAddress.Buffer, out int socketAddressSize, out bytesTransferred);
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedAddress.Buffer, out int socketAddressSize, out bytesTransferred);
             if (socketAddressSize > 0)
             {
-                receivedSocketAddress.Size = socketAddressSize;
+                receivedAddress.Size = socketAddressSize;
             }
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
@@ -2940,20 +2941,23 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(e);
-            if (e.RemoteEndPoint == null)
+            EndPoint? endPointSnapshot = e.RemoteEndPoint;
+            if (e._socketAddress == null)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
-            }
-            if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
-            {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), nameof(e));
-            }
+                if (endPointSnapshot == null)
+                {
+                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
+                }
+                if (!CanTryAddressFamily(endPointSnapshot.AddressFamily))
+                {
+                    throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, endPointSnapshot.AddressFamily, _addressFamily), nameof(e));
+                }
 
-            // We don't do a CAS demand here because the contents of remoteEP aren't used by
-            // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
-            // with the right address family.
-            EndPoint endPointSnapshot = e.RemoteEndPoint;
-            e._socketAddress = Serialize(ref endPointSnapshot);
+                // We don't do a CAS demand here because the contents of remoteEP aren't used by
+                // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
+                // with the right address family.
+                e._socketAddress = Serialize(ref endPointSnapshot);
+            }
 
             // DualMode sockets may have updated the endPointSnapshot, and it has to have the same AddressFamily as
             // e.m_SocketAddres for Create to work later.
@@ -3089,14 +3093,18 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(e);
-            if (e.RemoteEndPoint == null)
-            {
-                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
-            }
 
-            // Prepare SocketAddress
-            EndPoint endPointSnapshot = e.RemoteEndPoint;
-            e._socketAddress = Serialize(ref endPointSnapshot);
+            EndPoint? endPointSnapshot = e.RemoteEndPoint;
+            if (e._socketAddress == null)
+            {
+                if (endPointSnapshot == null)
+                {
+                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
+                }
+
+                // Prepare SocketAddress
+                e._socketAddress = Serialize(ref endPointSnapshot);
+            }
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
@@ -3169,7 +3177,6 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.Format(SR.net_sockets_invalid_dnsendpoint, nameof(remoteEP)), nameof(remoteEP));
             }
 
-            //return IPEndPointExtensions.Serialize(remoteEP);
             return remoteEP.Serialize();
         }
 
