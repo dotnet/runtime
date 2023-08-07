@@ -440,6 +440,16 @@ namespace Microsoft.Interop
                 or MarshalMode.UnmanagedToManagedRef
                 or MarshalMode.ElementRef;
 
+        // These modes can be used with either shape,
+        // but we don't want to require that all marshallers implement both shapes.
+        // The CustomMarshallerAttributeAnalyzer will provide any enforcement we would like
+        // on these marshaller shapes.
+        private static bool ModeOptionallyMatchesShape(MarshalMode mode)
+            => mode is MarshalMode.Default
+                or MarshalMode.ElementIn
+                or MarshalMode.ElementRef
+                or MarshalMode.ElementOut;
+
         private static CustomTypeMarshallerData? GetStatelessMarshallerDataForType(ITypeSymbol marshallerType, MarshalMode mode, ITypeSymbol managedType, bool isLinearCollectionMarshaller, Compilation compilation, Func<ITypeSymbol, MarshallingInfo>? getMarshallingInfo)
         {
             (MarshallerShape shape, StatelessMarshallerShapeHelper.MarshallerMethods methods) = StatelessMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, isLinearCollectionMarshaller, compilation);
@@ -448,7 +458,7 @@ namespace Microsoft.Interop
             ITypeSymbol? nativeType = null;
             if (ModeUsesManagedToUnmanagedShape(mode))
             {
-                if (mode != MarshalMode.Default && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
+                if (!ModeOptionallyMatchesShape(mode) && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
                     return null;
 
                 if (isLinearCollectionMarshaller && methods.ManagedValuesSource is not null)
@@ -471,7 +481,7 @@ namespace Microsoft.Interop
             if (ModeUsesUnmanagedToManagedShape(mode))
             {
                 // Unmanaged to managed requires ToManaged either with or without guaranteed unmarshal
-                if (mode != MarshalMode.Default && !shape.HasFlag(MarshallerShape.GuaranteedUnmarshal) && !shape.HasFlag(MarshallerShape.ToManaged))
+                if (!ModeOptionallyMatchesShape(mode) && !shape.HasFlag(MarshallerShape.GuaranteedUnmarshal) && !shape.HasFlag(MarshallerShape.ToManaged))
                     return null;
 
                 if (isLinearCollectionMarshaller)
@@ -503,7 +513,7 @@ namespace Microsoft.Interop
             }
 
             // Bidirectional requires ToUnmanaged without the caller-allocated buffer
-            if (mode != MarshalMode.Default && ModeUsesManagedToUnmanagedShape(mode) && ModeUsesUnmanagedToManagedShape(mode) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
+            if (!ModeOptionallyMatchesShape(mode) && ModeUsesManagedToUnmanagedShape(mode) && ModeUsesUnmanagedToManagedShape(mode) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
                 return null;
 
             if (nativeType is null)
