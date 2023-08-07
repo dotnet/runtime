@@ -642,6 +642,10 @@ namespace DebuggerTests
                     ("f.indexedByBool[true]", TString("TRUE")),
                     ("f.indexedByBool[false]", TString("FALSE"))
                 );
+                var (_, res) = await EvaluateOnCallFrame(id,"f.indexedByStr[\"invalid\"]", expect_ok: false);
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(f.indexedByStr[\"invalid\"]", StringComparison.Ordinal)); 
+                (_, res) = await EvaluateOnCallFrame(id,"f.indexedByStr[null]", expect_ok: false);
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(f.indexedByStr[null]", StringComparison.Ordinal)); 
             });
 
         [Fact]
