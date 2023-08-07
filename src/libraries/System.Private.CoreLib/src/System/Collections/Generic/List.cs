@@ -476,7 +476,6 @@ namespace System.Collections.Generic
         private void GrowForInsertion(int indexToInsert, int insertionCount = 1)
         {
             Debug.Assert(insertionCount > 0);
-            Debug.Assert((uint)_size + insertionCount <= Array.MaxLength);
 
             int capacity = checked(_size + insertionCount);
 
