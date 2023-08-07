@@ -5,42 +5,33 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class C0
-{
-    public long F1;
-}
-
-public struct S5
-{
-    public bool F1;
-    public int F2;
-    public C0 F4;
-    public short F5;
-    public ulong F6;
-    public uint F7;
-}
-
 // This test is to ensure that an assertion does not occur in the JIT.
 public class Runtime_78891
 {
-    public static S5 s_48;
-
-    [Fact]
-    public static int TestEntryPoint()
+    class C0
     {
-        var vr2 = new S5();
-        var vr3 = new S5();
-        Assert.Throws<NullReferenceException>(() => M59(vr2, vr3));
-        return 100;
+        public long F1;
     }
+
+    struct S5
+    {
+        public bool F1;
+        public int F2;
+        public C0 F4;
+        public short F5;
+        public ulong F6;
+        public uint F7;
+    }
+
+    static S5 s_48;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Consume(short x)
+    static void Consume(short x)
     {
 
     }
 
-    public static void M59(S5 arg0, S5 arg1)
+    static void M59(S5 arg0, S5 arg1)
     {
         try
         {
@@ -56,5 +47,13 @@ public class Runtime_78891
                 arg0.F1 |= false;
             }
         }
+    }
+
+    [Fact]
+    public static void TestEntryPoint()
+    {
+        var vr2 = new S5();
+        var vr3 = new S5();
+        Assert.Throws<NullReferenceException>(() => M59(vr2, vr3));
     }
 }
