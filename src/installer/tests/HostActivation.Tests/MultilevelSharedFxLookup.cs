@@ -106,6 +106,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             _builtSharedUberFxDir = Path.Combine(_builtDotnet, "shared", "Microsoft.UberFramework", _sharedFxVersion);
             SharedFramework.CreateUberFrameworkArtifacts(_builtSharedFxDir, _builtSharedUberFxDir, SystemCollectionsImmutableAssemblyVersion, SystemCollectionsImmutableFileVersion);
 
+            // Empty Microsoft.NETCore.App directory - should not be recognized as a valid framework
+            Directory.CreateDirectory(Path.Combine(_exeSharedFxBaseDir, "9999.9.9"));
+
             // Trace messages used to identify from which folder the framework was picked
             _hostPolicyDllName = Path.GetFileName(fixture.TestProject.HostPolicyDll);
             _exeSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_exeSharedFxBaseDir}";
@@ -237,7 +240,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0");
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0")
+                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
 
         [Fact]
@@ -341,7 +345,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy2")
                 .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.2")
                 .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.3")
-                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy3");
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy3")
+                .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
     }
 }

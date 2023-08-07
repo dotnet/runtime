@@ -4,6 +4,7 @@
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -27,7 +28,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             RunTest(
                 runtimeConfig => runtimeConfig
                     .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
-                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2");
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2")
+                .And.HaveStdErrContaining($"Ignoring FX version [5.0.0] without .deps.json");
         }
 
         [Fact]
@@ -37,7 +39,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             RunTest(
                 runtimeConfig => runtimeConfig
                     .WithFramework(MicrosoftNETCoreApp, "6.0.0"))
-                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "6.1.2");
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "6.1.2")
+                .And.HaveStdErrContaining($"Ignoring FX version [6.0.0] without .deps.json");
         }
 
         [Fact]
@@ -51,7 +54,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
                     .WithWorkingDirectory(SharedState.DotNetCurrentHive.BinPath))
-                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.2.0");
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.2.0")
+                .And.HaveStdErrContaining($"Ignoring FX version [5.0.0] without .deps.json");
         }
 
         private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig)
@@ -88,6 +92,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.2.0")
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.1.2")
                     .Build();
+
+                // Empty Microsoft.NETCore.App directory - should not be recognized as a valid framework
+                // Version is the best match for some test cases, but they should be ignored
+                string netCoreAppDir = Path.Combine(DotNetMainHive.BinPath, "shared", Constants.MicrosoftNETCoreApp);
+                Directory.CreateDirectory(Path.Combine(netCoreAppDir, "5.0.0"));
+                Directory.CreateDirectory(Path.Combine(netCoreAppDir, "6.0.0"));
 
                 DotNetGlobalHive = DotNet("GlobalHive")
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.1.2")
