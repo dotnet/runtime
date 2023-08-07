@@ -1180,7 +1180,8 @@ private:
                 }
                 else if (indir->TypeIs(TYP_SIMD12))
                 {
-                    if ((offset == 0) && (varDsc->TypeGet() == TYP_SIMD16) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset == 0) && (varDsc->TypeGet() == TYP_SIMD16) &&
+                        m_compiler->IsBaselineSimdIsaSupported())
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -1188,7 +1189,8 @@ private:
 #ifdef TARGET_ARM64
                 else if (indir->TypeIs(TYP_SIMD8))
                 {
-                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0))
+                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0) &&
+                        m_compiler->IsBaselineSimdIsaSupported())
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -1196,7 +1198,7 @@ private:
 #endif
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                 else if (indir->TypeIs(TYP_SIMD16, TYP_SIMD32) && (genTypeSize(indir) * 2 == genTypeSize(varDsc)) &&
-                         ((offset % genTypeSize(indir)) == 0))
+                         ((offset % genTypeSize(indir)) == 0) && m_compiler->IsBaselineSimdIsaSupported())
                 {
                     return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                 }
