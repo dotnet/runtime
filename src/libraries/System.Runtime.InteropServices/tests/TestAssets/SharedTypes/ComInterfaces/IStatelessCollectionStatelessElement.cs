@@ -89,6 +89,26 @@ namespace SharedTypes.ComInterfaces
             }
 
             public static void Free(NativeCollection<T> unmanaged) { }
+
+            public static nint AllocateContainerForUnmanagedElements(StatelessCollectionCallerAllocatedBuffer<T> managed, out int numElements)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static StatelessCollectionCallerAllocatedBuffer<T> AllocateContainerForManagedElements(nint unmanaged, int numElements)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static ReadOnlySpan<nint> GetManagedValuesSource(StatelessCollectionCallerAllocatedBuffer<T> managed)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static Span<nint> GetManagedValuesDestination(StatelessCollectionCallerAllocatedBuffer<T> managed)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         internal static class ManagedToUnmanaged
@@ -110,6 +130,15 @@ namespace SharedTypes.ComInterfaces
 
             public static void Free(NativeCollection<T> unmanaged) => throw new NotImplementedException();
 
+            public static nint AllocateContainerForUnmanagedElements(StatelessCollectionCallerAllocatedBuffer<T> managed, out int numElements)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static ReadOnlySpan<nint> GetManagedValuesSource(StatelessCollectionCallerAllocatedBuffer<T> managed)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         internal static class UnmanagedToManaged
@@ -136,6 +165,15 @@ namespace SharedTypes.ComInterfaces
 
             public static void Free(NativeCollection<T> unmanaged) => throw new NotImplementedException();
 
+            public static StatelessCollectionCallerAllocatedBuffer<T> AllocateContainerForManagedElements(nint unmanaged, int numElements)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static Span<nint> GetManagedValuesDestination(StatelessCollectionCallerAllocatedBuffer<T> managed)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
