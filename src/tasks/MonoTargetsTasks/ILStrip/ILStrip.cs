@@ -117,6 +117,11 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     private bool TrimMethods(ITaskItem assemblyItem)
     {
         string methodTokenFile = assemblyItem.GetMetadata("MethodTokenFile");
+
+        // FIXME: temporary workaround for Android apps
+        if (assemblyFilePathArg.Contains("Mono.Android.dll"))
+            return true;
+
         if (string.IsNullOrEmpty(methodTokenFile))
         {
             Log.LogError($"Metadata MethodTokenFile of {assemblyItem.ItemSpec} is empty");
