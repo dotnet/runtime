@@ -464,7 +464,7 @@ jobs:
         projectFile: crossgen_perf.proj
         runKind: crossgen_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perftiger'
+        logicalmachine: 'perftiger_crossgen'
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
