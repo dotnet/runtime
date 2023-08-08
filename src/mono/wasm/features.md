@@ -40,10 +40,14 @@ It can be enabled with `<WasmEnableSIMD>true</WasmEnableSIMD>` and disabled with
 
 For more information on this feature, see [SIMD.md](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md).
 
+Older versions of NodeJS hosts may need `--experimental-wasm-simd` command line option.
+
 ### EH - Exception handling
 WebAssembly exception handling provides higher performance for code containing `try` blocks by allowing exceptions to be caught and thrown natively without the use of JavaScript. It is currently enabled by default and can be disabled via `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>`.
 
 For more information on this feature, see [Exceptions.md](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
+
+Older versions of NodeJS hosts may need `--experimental-wasm-eh` command line option.
 
 ### BigInt
 Passing Int64 and UInt64 values between JavaScript and C# requires support for the JavaScript `BigInt` type. See [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration) for more information on this API.
