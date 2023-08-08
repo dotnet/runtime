@@ -154,7 +154,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             InstrumentRule? best = null;
             foreach (var rule in _rules)
             {
-                if (RuleMatches(rule, instrument, _metricsListener.Name) && IsMoreSpecific(rule, best))
+                if (RuleMatches(rule, instrument, _metricsListener.Name)
+                    && IsMoreSpecific(rule, best, isLocalScope: instrument.Meter.Scope != null))
                 {
                     best = rule;
                 }
@@ -224,9 +225,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         }
 
         // Everything must already match the Instrument and listener, or be blank.
-        // Which rule has more non-blank fields? Or longer Meter name?
         // internal for testing
-        internal static bool IsMoreSpecific(InstrumentRule rule, InstrumentRule? best)
+        internal static bool IsMoreSpecific(InstrumentRule rule, InstrumentRule? best, bool isLocalScope)
         {
             if (best == null)
             {
@@ -272,9 +272,37 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 return false;
             }
 
-            // Scopes TODO: Local is more specific than global (or local & global).
+            // Scope
 
-            return false;
+            // Already matched as local
+            if (isLocalScope)
+            {
+                // Local is more specific than Local+Global
+                if (!rule.Scopes.HasFlag(MeterScope.Global) && best.Scopes.HasFlag(MeterScope.Global))
+                {
+                    return true;
+                }
+                else if (rule.Scopes.HasFlag(MeterScope.Global) && !best.Scopes.HasFlag(MeterScope.Global))
+                {
+                    return false;
+                }
+            }
+            // Already matched as global
+            else
+            {
+                // Global is more specific than Local+Global
+                if (!rule.Scopes.HasFlag(MeterScope.Local) && best.Scopes.HasFlag(MeterScope.Local))
+                {
+                    return true;
+                }
+                else if (rule.Scopes.HasFlag(MeterScope.Local) && !best.Scopes.HasFlag(MeterScope.Local))
+                {
+                    return false;
+                }
+            }
+
+            // All things being equal, take the last one.
+            return true;
         }
 
         public void RecordObservableInstruments() => _meterListener.RecordObservableInstruments();

@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SubscriptionReceivesNewGlobalMetersAndInstruments()
         {
-            // RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var publishedTcs = new TaskCompletionSource<Instrument>();
                 var completedTcs = new TaskCompletionSource<Instrument>();
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
                 Assert.True(completedTcs.Task.IsCompleted);
 
-            }//).Dispose();
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -263,73 +263,86 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
         [Theory]
         [MemberData(nameof(IsMoreSpecificTestData))]
-        public void IsMoreSpecificTest(InstrumentRule rule, InstrumentRule? best)
+        public void IsMoreSpecificTest(InstrumentRule rule, InstrumentRule? best, bool isLocalScope)
         {
-            Assert.True(ListenerSubscription.IsMoreSpecific(rule, best));
+            Assert.True(ListenerSubscription.IsMoreSpecific(rule, best, isLocalScope));
 
             if (best != null)
             {
-                Assert.False(ListenerSubscription.IsMoreSpecific(best, rule));
+                Assert.False(ListenerSubscription.IsMoreSpecific(best, rule, isLocalScope));
             }
         }
 
         public static IEnumerable<object[]> IsMoreSpecificTestData() => new object[][]
         {
             // Anything is better than null
-            new object[] { new InstrumentRule(null, null, null, MeterScope.Global, true), null },
+            new object[] { new InstrumentRule(null, null, null, MeterScope.Global, true), null, false },
 
             // Any field is better than empty
             new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentRule(null, null, null, MeterScope.Global, true) },
+                new InstrumentRule(null, null, null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true),
-                new InstrumentRule(null, null, null, MeterScope.Global, true) },
+                new InstrumentRule(null, null, null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule(null, null, "listenerName", MeterScope.Global, true),
-                new InstrumentRule(null, null, null, MeterScope.Global, true) },
+                new InstrumentRule(null, null, null, MeterScope.Global, true), false },
 
             // Meter > Instrument > Listener
             new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true) },
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentRule(null, "instrumentName", "listenerName", MeterScope.Global, true) },
+                new InstrumentRule(null, "instrumentName", "listenerName", MeterScope.Global, true), false },
             new object[] { new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true),
-                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
 
             // Multiple fields are better than one.
             new object[] { new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true),
-                new InstrumentRule("meterName", null, null, MeterScope.Global, true) },
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", null, "listenerName", MeterScope.Global, true),
-                new InstrumentRule("meterName", null, null, MeterScope.Global, true) },
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
-                new InstrumentRule("meterName", null, null, MeterScope.Global, true) },
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true), false },
 
             new object[] { new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true),
-                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true) },
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", null, "listenerName", MeterScope.Global, true),
-                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true) },
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
-                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true) },
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true), false },
 
             new object[] { new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true),
-                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", null, "listenerName", MeterScope.Global, true),
-                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
-                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true) },
+                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
 
             // Longer Meter Name is better
             new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentRule("*", null, null, MeterScope.Global, true) },
+                new InstrumentRule("*", null, null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName.*", null, null, MeterScope.Global, true),
-                new InstrumentRule("meterName", null, null, MeterScope.Global, true) },
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meter.Name", null, null, MeterScope.Global, true),
-                new InstrumentRule("meter", null, null, MeterScope.Global, true) },
+                new InstrumentRule("meter", null, null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meter.Name", null, null, MeterScope.Global, true),
-                new InstrumentRule("meter.*", null, null, MeterScope.Global, true) },
+                new InstrumentRule("meter.*", null, null, MeterScope.Global, true), false },
 
-            // TODO: Scopes
+            // Scopes: Local > Global+Local, Global > Global+Local
+            new object[] { new InstrumentRule(null, null, null, MeterScope.Local, true),
+                new InstrumentRule(null, null, null, MeterScope.Global | MeterScope.Local, true), true },
+            new object[] { new InstrumentRule(null, null, null, MeterScope.Global, true),
+                new InstrumentRule(null, null, null, MeterScope.Global | MeterScope.Local, true), false },
         };
+
+        [Fact]
+        public void EqualMatchRulesTakeLastTest()
+        {
+            var emptyTrue = new InstrumentRule(null, null, null, MeterScope.Global, true);
+            var emptyFalse = new InstrumentRule(null, null, null, MeterScope.Global, false);
+            Assert.True(ListenerSubscription.IsMoreSpecific(emptyFalse, emptyTrue, isLocalScope: false));
+            Assert.True(ListenerSubscription.IsMoreSpecific(emptyTrue, emptyFalse, isLocalScope: false));
+        }
 
         public delegate void FakeMeasurementCallback(Instrument instrument, object measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state);
         private class FakeMetricListener : IMetricsListener

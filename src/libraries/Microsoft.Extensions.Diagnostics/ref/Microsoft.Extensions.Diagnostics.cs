@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public void Initialize() { }
         internal void UpdateRules(IList<InstrumentRule> rules) { }
         internal static bool RuleMatches(InstrumentRule rule, System.Diagnostics.Metrics.Instrument instrument, string listenerName) => throw null!;
-        internal static bool IsMoreSpecific(InstrumentRule rule, InstrumentRule? best) => throw null!;
+        internal static bool IsMoreSpecific(InstrumentRule rule, InstrumentRule? best, bool isLocalScope) => throw null!;
     }
     internal sealed class DefaultMeterFactory : System.Diagnostics.Metrics.IMeterFactory
     {
