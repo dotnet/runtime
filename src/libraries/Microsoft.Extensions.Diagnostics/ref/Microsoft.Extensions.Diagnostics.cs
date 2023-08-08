@@ -19,6 +19,10 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         public static IMetricsBuilder AddDebugConsole(this IMetricsBuilder builder) => throw null!;
     }
+    public static class MetricsBuilderConfigurationExtensions
+    {
+        public static IMetricsBuilder AddConfiguration(this IMetricsBuilder builder, Microsoft.Extensions.Configuration.IConfiguration configuration) => throw null!;
+    }
     internal sealed class DebugConsoleMetricListener : IMetricsListener, System.IDisposable
     {
         internal System.IO.TextWriter _textWriter;
@@ -42,5 +46,16 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public DefaultMeterFactory() { }
         public System.Diagnostics.Metrics.Meter Create(System.Diagnostics.Metrics.MeterOptions options) => throw null!;
         public void Dispose() { }
+    }
+}
+namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
+{
+    public interface IMetricListenerConfiguration<T>
+    {
+        Microsoft.Extensions.Configuration.IConfiguration Configuration { get; }
+    }
+    public interface IMetricListenerConfigurationFactory
+    {
+        Microsoft.Extensions.Configuration.IConfiguration GetConfiguration(System.Type listenerType);
     }
 }

@@ -6,6 +6,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
+    /// <summary>
+    /// Extensions for <see cref="IMetricsBuilder"/> for enabling metrics based on <see cref="IConfiguration"/>.
+    /// </summary>
     public static class MetricsBuilderConfigurationExtensions
     {
         /// <summary>
