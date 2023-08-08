@@ -455,6 +455,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var variableDef = await GetVariableDefinitions(resolver, replacer.variableDefinitions, replacer.hasExpressionStatement, token);
             return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, variableDef, logger, token);
         }
+
         internal static async Task<List<string>> GetVariableDefinitions(MemberReferenceResolver resolver, List<(string idName, JObject obj, string definition)> variableDefinitions, bool callToString, CancellationToken token)
         {
             var variableDef = new List<string>();
