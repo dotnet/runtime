@@ -21,7 +21,7 @@ import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from
 import { instantiate_wasm_asset, wait_for_all_assets } from "./assets";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
-import { export_linker } from "./exports-linker";
+import { export_linker, replace_linker_placeholders } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
 import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
@@ -449,28 +449,6 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
         aindex += 1;
     }
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
-}
-
-function replace_linker_placeholders(
-    imports: WebAssembly.Imports,
-    realFunctions: any
-) {
-    // the output from emcc contains wrappers for these linker imports which add overhead,
-    //  but now we have what we need to replace them with the actual functions
-    // By default the imports all live inside of 'env', but emscripten minification could rename it to 'a'.
-    // See https://github.com/emscripten-core/emscripten/blob/c5d1a856592b788619be11bbdc1dd119dec4e24c/src/preamble.js#L933-L936
-    const env = imports.env || imports.a;
-    if (!env) {
-        mono_log_warn("WARNING: Neither imports.env or imports.a were present when instantiating the wasm module. This likely indicates an emscripten configuration issue.");
-        return;
-    }
-    for (const k in realFunctions) {
-        const v = realFunctions[k];
-        if (typeof (v) !== "function")
-            continue;
-        if (k in env)
-            env[k] = v;
-    }
 }
 
 async function instantiate_wasm_module(

@@ -19,7 +19,7 @@ import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
 import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pipe_early_startup_callback } from "./diagnostics";
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
-import { mono_wasm_trace_logger } from "./logging";
+import { mono_log_warn, mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
 import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
 import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
@@ -35,6 +35,7 @@ import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
 import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
 import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
+import { mono_assert } from "./globals";
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
@@ -71,7 +72,7 @@ const mono_wasm_legacy_interop_exports = !WasmEnableLegacyJsInterop ? undefined 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
 // --- keep in sync with dotnet.es6.lib.js ---
-export function export_linker(): any {
+export function export_linker(): { [key: string]: Function } {
     return {
         // mini-wasm.c
         mono_wasm_schedule_timer,
@@ -125,4 +126,38 @@ export function export_linker(): any {
         // legacy interop exports, if enabled
         ...mono_wasm_legacy_interop_exports
     };
+}
+
+export function replace_linker_placeholders(
+    imports: WebAssembly.Imports,
+    realFunctions: { [key: string]: Function }
+) {
+    // the output from emcc contains wrappers for these linker imports which add overhead,
+    //  but now we have what we need to replace them with the actual functions
+    // By default the imports all live inside of 'env', but emscripten minification could rename it to 'a'.
+    // See https://github.com/emscripten-core/emscripten/blob/c5d1a856592b788619be11bbdc1dd119dec4e24c/src/preamble.js#L933-L936
+    const env = imports.env || imports.a;
+    if (!env) {
+        mono_log_warn("WARNING: Neither imports.env or imports.a were present when instantiating the wasm module. This likely indicates an emscripten configuration issue.");
+        return;
+    }
+
+    // the import names could be minified by applyImportAndExportNameChanges in emcc
+    // but the stubs are not, so we can use the stub names to find the short names
+    const nameMap: { [k: string]: string } = {};
+    for (const shortName in env) {
+        const fn = env[shortName] as Function;
+        const realName = fn.name;
+        nameMap[realName] = shortName;
+    }
+
+    for (const realName in realFunctions) {
+        const fn = realFunctions[realName];
+        mono_assert(typeof (fn) === "function", `Expected ${realName} to be a function`);
+        const shortName = nameMap["_" + realName];
+        // if it's not found it means the emcc linker didn't include it, which is fine
+        if (shortName) {
+            env[shortName] = fn;
+        }
+    }
 }
