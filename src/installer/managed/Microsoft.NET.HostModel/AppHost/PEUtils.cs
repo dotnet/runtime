@@ -24,7 +24,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
                 // https://en.wikipedia.org/wiki/Portable_Executable
                 // Validate that we're looking at Windows PE file
-                if (((ushort*)bytes)[0] != PEOffsets.DosStubSignature
+                if (((ushort*)bytes)[0] != PEOffsets.DosImageSignature
                     || accessor.Capacity < PEOffsets.DosStub.PESignatureOffset + sizeof(uint))
                 {
                     return false;
@@ -50,7 +50,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 }
 
                 ushort signature = reader.ReadUInt16();
-                return signature == PEOffsets.DosStubSignature;
+                return signature == PEOffsets.DosImageSignature;
             }
         }
 

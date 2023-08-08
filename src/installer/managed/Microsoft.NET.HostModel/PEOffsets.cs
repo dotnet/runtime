@@ -10,8 +10,7 @@ internal static class PEOffsets
 {
     private const int PESignatureSize = sizeof(int);
     private const int CoffHeaderSize = 20;
-    // Signature of DOS Stub.
-    public const ushort DosStubSignature = 0x5A4D;
+    public const ushort DosImageSignature = 0x5A4D;
     public const int PEHeaderSize = PESignatureSize + CoffHeaderSize;
     public const int OneSectionHeaderSize = 40;
     public const int DataDirectoryEntrySize = 8;
