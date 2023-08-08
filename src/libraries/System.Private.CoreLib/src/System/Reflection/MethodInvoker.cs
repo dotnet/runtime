@@ -163,6 +163,10 @@ namespace System.Reflection
         public object? Invoke(object? obj, Span<object?> arguments)
         {
             int argLen = arguments.Length;
+            if (argLen != _argCount)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
 
             if (!_needsByRefStrategy)
             {
@@ -170,48 +174,18 @@ namespace System.Reflection
                 switch (_argCount)
                 {
                     case 0:
-                        if (argLen != _argCount)
-                        {
-                            MethodBaseInvoker.ThrowTargetParameterCountException();
-                        }
-
                         return InvokeImpl(obj, null, null, null, null);
                     case 1:
-                        if (argLen != _argCount)
-                        {
-                            MethodBaseInvoker.ThrowTargetParameterCountException();
-                        }
-
                         return InvokeImpl(obj, arguments[0], null, null, null);
                     case 2:
-                        if (argLen != _argCount)
-                        {
-                            MethodBaseInvoker.ThrowTargetParameterCountException();
-                        }
-
                         return InvokeImpl(obj, arguments[0], arguments[1], null, null);
                     case 3:
-                        if (argLen != _argCount)
-                        {
-                            MethodBaseInvoker.ThrowTargetParameterCountException();
-                        }
-
                         return InvokeImpl(obj, arguments[0], arguments[1], arguments[2], null);
                     case 4:
-                        if (argLen != _argCount)
-                        {
-                            MethodBaseInvoker.ThrowTargetParameterCountException();
-                        }
-
                         return InvokeImpl(obj, arguments[0], arguments[1], arguments[2], arguments[3]);
                     default:
                         break;
                 }
-            }
-
-            if (argLen != _argCount)
-            {
-                MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
             if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
