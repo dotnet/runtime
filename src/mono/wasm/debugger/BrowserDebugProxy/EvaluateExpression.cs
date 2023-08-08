@@ -47,7 +47,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             private int visitCount;
             public bool hasMethodCalls;
             public bool hasElementAccesses;
-            internal List<string> variableDefinitions = new List<string>();
+            public bool hasExpressionStatement;
+            internal List<(string idName, JObject obj, string definition)> variableDefinitions = new ();
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -91,6 +92,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         elementAccess.Add(node as ElementAccessExpressionSyntax);
                     hasElementAccesses = true;
                 }
+
+                if (node is BinaryExpressionSyntax)
+                    hasExpressionStatement = true;
 
                 if (node is AssignmentExpressionSyntax)
                     throw new Exception("Assignment is not implemented yet");
@@ -214,7 +218,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (localsSet.Contains(idName))
                         return;
                     localsSet.Add(idName);
-                    variableDefinitions.Add(ConvertJSToCSharpLocalVariableAssignment(idName, value));
+                    variableDefinitions.Add(new (idName, value, ConvertJSToCSharpLocalVariableAssignment(idName, value)));
                 }
             }
         }
@@ -445,12 +449,32 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 syntaxTree = replacer.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }
-
             expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
-
-            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, replacer.variableDefinitions, logger, token);
+            var variableDef = await GetVariableDefinitions(resolver, replacer.variableDefinitions, replacer.hasExpressionStatement, token);
+            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, variableDef, logger, token);
+        }
+        internal static async Task<List<string>> GetVariableDefinitions(MemberReferenceResolver resolver, List<(string idName, JObject obj, string definition)> variableDefinitions, bool callToString, CancellationToken token)
+        {
+            var variableDef = new List<string>();
+            foreach ( var definition in variableDefinitions )
+            {
+                if (!callToString || definition.obj?["type"]?.Value<string>() != "object")
+                {
+                    variableDef.Add(definition.definition);
+                    continue;
+                }
+                if (DotnetObjectId.TryParse(definition.obj?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                {
+                    var typeIds = await resolver.GetContext().SdbAgent.GetTypeIdsForObject(objectId.Value, withParents: true, token);
+                    var toString = await resolver.GetContext().SdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId.Value, BindingFlags.DeclaredOnly, invokeObjectToString: true, token);
+                    variableDef.Add($"string {definition.idName} = \"{toString}\";");
+                }
+                else
+                    variableDef.Add(definition.definition);
+            }
+            return variableDef;
         }
 
         internal static async Task<JObject> EvaluateSimpleExpression(

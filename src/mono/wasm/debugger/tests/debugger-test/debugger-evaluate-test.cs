@@ -2156,3 +2156,16 @@ public struct EvaluateStaticGetterInValueType
 {
     public static int A => 5;
 }
+
+namespace DebuggerTests
+{
+    public class SumObjectAndString
+    {
+        public static void run()
+        {
+            List<int> myList = new();
+            myList.Add(1);
+            Console.WriteLine(myList);
+        }
+    }
+}

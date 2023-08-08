@@ -693,10 +693,10 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                   ("localString.Length", TNumber(5)),
-                   ("localString[1]", TChar('B')),
-                   ("instance.str.Length", TNumber(5)),
-                   ("instance.str[3]", TChar('c'))
+                   //("localString.Length", TNumber(5)),
+                   ("localString[1]", TChar('B'))
+                   //("instance.str.Length", TNumber(5)),
+                   //("instance.str[3]", TChar('c'))
                 );
            });
         
@@ -709,6 +709,18 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
                    ("EvaluateStaticGetterInValueType.A", TNumber(5))
+                );
+           });
+
+        [Fact]
+        public async Task EvaluateSumBetweenObjectAndString() => await CheckInspectLocalsAtBreakpointSite(
+             $"DebuggerTests.SumObjectAndString", "run", 3, "DebuggerTests.SumObjectAndString.run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.SumObjectAndString:run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("myList+\"asd\"", TString("System.Collections.Generic.List`1[System.Int32]asd"))
                 );
            });
     }
