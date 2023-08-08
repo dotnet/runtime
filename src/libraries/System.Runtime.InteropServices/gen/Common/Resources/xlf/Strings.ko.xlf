@@ -147,6 +147,16 @@
         <target state="translated">'EnableComHosting'을 사용한 .NET COM 호스팅은 'GeneratedComInterfaceAttribute'를 사용한 인터페이스를 지원하지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
+        <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
+        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
+        <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
+        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
         <target state="translated">소스 생성 COM은 지원되지 않는 구성을 무시합니다.</target>
@@ -985,6 +995,21 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">'SafeHandle'에서 파생된 추상 형식은 참조로 마샬링할 수 없습니다. 제공된 형식은 구체적이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
+        <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
+        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
+        <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
+        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
+        <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
+        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">

@@ -118,8 +118,8 @@ mini_llvmonly_create_ftndesc (MonoMethod *m, gpointer addr, gpointer arg)
 {
 	MonoFtnDesc *ftndesc;
 
-	if (m->dynamic && ((MonoDynamicMethod*)m)->mp)
-		ftndesc = mono_mempool_alloc0 (((MonoDynamicMethod*)m)->mp, sizeof (MonoFtnDesc));
+	if (m->dynamic)
+		ftndesc = mono_dyn_method_alloc0 (m, sizeof (MonoFtnDesc));
 	else
 		ftndesc = (MonoFtnDesc*)m_method_alloc0 (m, sizeof (MonoFtnDesc));
 	ftndesc->addr = addr;

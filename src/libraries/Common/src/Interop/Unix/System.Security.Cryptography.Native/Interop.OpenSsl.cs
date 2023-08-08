@@ -380,7 +380,7 @@ internal static partial class Interop
 
                 if (sslAuthenticationOptions.IsClient)
                 {
-                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost))
+                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !TargetHostNameHelper.IsValidAddress(sslAuthenticationOptions.TargetHost))
                     {
                         // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
                         if (!Ssl.SslSetTlsExtHostName(sslHandle, sslAuthenticationOptions.TargetHost))

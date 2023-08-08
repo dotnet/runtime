@@ -252,7 +252,7 @@ namespace System.Net
                 Interop.AndroidCrypto.SSLStreamRequestClientAuthentication(handle);
             }
 
-            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
+            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !TargetHostNameHelper.IsValidAddress(authOptions.TargetHost))
             {
                 Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
             }

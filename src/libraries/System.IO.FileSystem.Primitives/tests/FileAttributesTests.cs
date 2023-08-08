@@ -11,6 +11,7 @@ namespace System.IO.Tests
         [Fact]
         public static void ValueTest()
         {
+            Assert.Equal(0x0000, (int)FileAttributes.None);
             Assert.Equal(0x0001, (int)FileAttributes.ReadOnly);
             Assert.Equal(0x0002, (int)FileAttributes.Hidden);
             Assert.Equal(0x0004, (int)FileAttributes.System);

@@ -71,17 +71,18 @@ namespace System.Net.Sockets
             IPEndPoint ep = new IPEndPoint(tempAddress, 0);
 
             Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
+            int size = socketAddress.Buffer.Length;
             unsafe
             {
-                fixed (byte* bufferPtr = socketAddress.InternalBuffer)
-                fixed (int* sizePtr = &socketAddress.InternalSize)
+                fixed (byte* bufferPtr = socketAddress.Buffer.Span)
                 {
-                    errorCode = SocketPal.GetSockName(_handle, bufferPtr, sizePtr);
+                    errorCode = SocketPal.GetSockName(_handle, bufferPtr, &size);
                 }
             }
 
             if (errorCode == SocketError.Success)
             {
+                socketAddress.Size = size;
                 _rightEndPoint = ep.Create(socketAddress);
             }
             else if (errorCode == SocketError.InvalidArgument)

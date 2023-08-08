@@ -51,7 +51,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
-                if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
+                if (context.CurrentStage != StubCodeContext.Stage.NotifyForSuccessfulInvoke)
                 {
                     yield break;
                 }

@@ -369,7 +369,20 @@ namespace System.Net
                     }
                 }
 
-                if (mechListMIC != null)
+                // Process MIC if the server sent it.
+                //
+                // We workaround broken servers that send the mechanism token in the mechListMIC
+                // field. This is the same workaround that exists in MIT KRB5 and it's attributed to
+                // Windows 2000 bug. It was reported in a .NET issue and tracked down as a bug in
+                // IBM Websphere 8.5.5.19 on Java 1.8.
+                //
+                // References:
+                // - https://github.com/krb5/krb5/blame/master/src/lib/gssapi/spnego/spnego_mech.c#L3521-L3525
+                // - https://github.com/dotnet/runtime/issues/88874
+                // - https://krbdev.mit.edu/rt/Ticket/Display.html?id=6726
+                // - https://www.ibm.com/support/pages/apar/IV74044
+                if (mechListMIC != null &&
+                    !mechListMIC.AsSpan().SequenceEqual(blob.AsSpan()))
                 {
                     if (_spnegoMechList == null || state != NegState.AcceptCompleted)
                     {

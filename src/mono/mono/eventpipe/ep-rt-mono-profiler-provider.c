@@ -2965,6 +2965,7 @@ ep_on_error:
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
