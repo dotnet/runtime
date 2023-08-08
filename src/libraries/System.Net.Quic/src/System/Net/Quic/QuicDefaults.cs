@@ -36,5 +36,10 @@ internal static partial class QuicDefaults
     /// <summary>
     /// Our own imposed timeout in the handshake process, since in certain cases MsQuic will not impose theirs, see <see href="https://github.com/microsoft/msquic/discussions/2705"/>.
     /// </summary>
-    public static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(10);
+    public static readonly TimeSpan ConnectionHandshakeTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Our own imposed timeout on the stream disposal, since the peer's behavior - lack of consuming data - might block the graceful shutdown of the writing side.
+    /// </summary>
+    public static readonly TimeSpan StreamDisposeTimeout = TimeSpan.FromSeconds(2.5);
 }

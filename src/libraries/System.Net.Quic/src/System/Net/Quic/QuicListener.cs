@@ -214,7 +214,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         try
         {
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
-            linkedCts.CancelAfter(QuicDefaults.HandshakeTimeout);
+            linkedCts.CancelAfter(QuicDefaults.ConnectionHandshakeTimeout);
             cancellationToken = linkedCts.Token;
             wrapException = true;
             QuicServerConnectionOptions options = await _connectionOptionsCallback(connection, clientHello, cancellationToken).ConfigureAwait(false);
@@ -251,7 +251,7 @@ public sealed partial class QuicListener : IAsyncDisposable
                 NetEventSource.Error(connection, $"{connection} Connection handshake timed out: {oce}");
             }
 
-            Exception ex = ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), oce));
+            Exception ex = ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.ConnectionHandshakeTimeout), oce));
             await connection.DisposeAsync().ConfigureAwait(false);
             if (!_acceptQueue.Writer.TryWrite(ex))
             {

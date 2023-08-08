@@ -30,6 +30,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     private CancellationTokenRegistration _cancellationRegistration;
     private Action<object?>? _cancellationAction;
     private GCHandle _keepAlive;
+    private bool _finalContinuationRegistered;
 
     private readonly TaskCompletionSource _finalTaskSource;
 
@@ -39,8 +40,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
         _cancellationRegistration = default;
         _keepAlive = default;
-
-        // TODO: defer instantiation only after Task is retrieved
+        _finalContinuationRegistered = false;
         _finalTaskSource = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
     }
 
@@ -134,7 +134,27 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     /// Gets a <see cref="Task"/> that will transition to a completed state with the last transition of this source, i.e. into <see cref="State.Completed"/>.
     /// </summary>
     /// <returns>The <see cref="Task"/> that will transition to a completed state with the last transition of this source.</returns>
-    public Task GetFinalTask() => _finalTaskSource.Task;
+    public Task GetFinalTask(object? keepAlive)
+    {
+        if (_finalContinuationRegistered || keepAlive is null)
+        {
+            return _finalTaskSource.Task;
+        }
+
+        lock (this)
+        {
+            if (!_finalContinuationRegistered)
+            {
+                GCHandle handle = GCHandle.Alloc(keepAlive);
+                _finalTaskSource.Task.ContinueWith(static (_, state) =>
+                {
+                    ((GCHandle)state!).Free();
+                }, handle, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                _finalContinuationRegistered = true;
+            }
+            return _finalTaskSource.Task;
+        }
+    }
 
     private bool TryComplete(Exception? exception, bool final)
     {

@@ -134,19 +134,7 @@ public sealed partial class QuicStream
     /// or when <see cref="Abort"/> for <see cref="QuicAbortDirection.Read"/> is called,
     /// or when the peer called <see cref="Abort"/> for <see cref="QuicAbortDirection.Write"/>.
     /// </summary>
-    public Task ReadsClosed
-    {
-        get
-        {
-            GCHandle keepAlive = GCHandle.Alloc(this);
-            Task finalTask = _receiveTcs.GetFinalTask();
-            finalTask.ContinueWith(static (_, state) =>
-            {
-                ((GCHandle)state!).Free();
-            }, keepAlive, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-            return finalTask;
-        }
-    }
+    public Task ReadsClosed => _receiveTcs.GetFinalTask(this);
 
     /// <summary>
     /// A <see cref="Task"/> that will get completed once writing side has been closed.
@@ -155,19 +143,7 @@ public sealed partial class QuicStream
     /// or when <see cref="Abort"/> for <see cref="QuicAbortDirection.Write"/> is called,
     /// or when the peer called <see cref="Abort"/> for <see cref="QuicAbortDirection.Read"/>.
     /// </summary>
-    public Task WritesClosed
-    {
-        get
-        {
-            GCHandle keepAlive = GCHandle.Alloc(this);
-            Task finalTask = _sendTcs.GetFinalTask();
-            finalTask.ContinueWith(static (_, state) =>
-            {
-                ((GCHandle)state!).Free();
-            }, keepAlive, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-            return finalTask;
-        }
-    }
+    public Task WritesClosed => _sendTcs.GetFinalTask(this);
 
     /// <inheritdoc />
     public override string ToString() => _handle.ToString();
@@ -446,19 +422,13 @@ public sealed partial class QuicStream
         }
 
         QUIC_STREAM_SHUTDOWN_FLAGS flags = QUIC_STREAM_SHUTDOWN_FLAGS.NONE;
-        if (abortDirection.HasFlag(QuicAbortDirection.Read))
+        if (abortDirection.HasFlag(QuicAbortDirection.Read) && !_receiveTcs.IsCompleted)
         {
-            if (_receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted), final: true))
-            {
-                flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE;
-            }
+            flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE;
         }
-        if (abortDirection.HasFlag(QuicAbortDirection.Write))
+        if (abortDirection.HasFlag(QuicAbortDirection.Write) && !_sendTcs.IsCompleted)
         {
-            if (_sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted), final: true))
-            {
-                flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND;
-            }
+            flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND;
         }
         // Nothing to abort, the requested sides to abort are already closed.
         if (flags == QUIC_STREAM_SHUTDOWN_FLAGS.NONE)
@@ -470,7 +440,6 @@ public sealed partial class QuicStream
         {
             NetEventSource.Info(this, $"{this} Aborting {abortDirection} with {errorCode}");
         }
-
         unsafe
         {
             ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.StreamShutdown(
@@ -478,6 +447,15 @@ public sealed partial class QuicStream
                 flags,
                 (ulong)errorCode),
                 "StreamShutdown failed");
+        }
+
+        if (abortDirection.HasFlag(QuicAbortDirection.Read))
+        {
+            _receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted), final: true);
+        }
+        if (abortDirection.HasFlag(QuicAbortDirection.Write))
+        {
+            _sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted), final: true);
         }
     }
 
@@ -492,16 +470,23 @@ public sealed partial class QuicStream
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        if (_shutdownTcs.TryInitialize(out _, this))
+        // Nothing to complete, the writing side is already closed.
+        if (_sendTcs.IsCompleted)
         {
-            unsafe
-            {
-                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.StreamShutdown(
-                    _handle,
-                    QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL,
-                    default),
-                    "StreamShutdown failed");
-            }
+            return;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Completing writes.");
+        }
+        unsafe
+        {
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.StreamShutdown(
+                _handle,
+                QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL,
+                default),
+                "StreamShutdown failed");
         }
     }
 
@@ -678,33 +663,30 @@ public sealed partial class QuicStream
             return;
         }
 
-        ValueTask valueTask;
-
         // If the stream wasn't started successfully, gracelessly abort it.
         if (!_startedTcs.IsCompletedSuccessfully)
         {
             // Check if the stream has been shut down and if not, shut it down.
-            if (_shutdownTcs.TryInitialize(out valueTask, this))
-            {
-                StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT | QUIC_STREAM_SHUTDOWN_FLAGS.IMMEDIATE, _defaultErrorCode);
-            }
+            StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT | QUIC_STREAM_SHUTDOWN_FLAGS.IMMEDIATE, _defaultErrorCode);
         }
         else
         {
-            // Abort the read side of the stream if it hasn't been fully consumed.
-            if (_receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(), final: true))
+            // Abort the read side and complete the write side if that side hasn't been completed yet.
+            if (!_receiveTcs.IsCompleted)
             {
                 StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, _defaultErrorCode);
             }
-            // Check if the stream has been shut down and if not, shut it down.
-            if (_shutdownTcs.TryInitialize(out valueTask, this))
+            if (!_sendTcs.IsCompleted)
             {
                 StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, default);
             }
         }
 
         // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
-        await valueTask.ConfigureAwait(false);
+        if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
+        {
+            await valueTask.ConfigureAwait(false);
+        }
         Debug.Assert(_startedTcs.IsCompleted);
         // TODO: Revisit this with https://github.com/dotnet/runtime/issues/79818 and https://github.com/dotnet/runtime/issues/79911
         Debug.Assert(_receiveTcs.KeepAliveReleased);
@@ -725,6 +707,17 @@ public sealed partial class QuicStream
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(this, $"{this} StreamShutdown({flags}) failed: {ThrowHelper.GetErrorMessageForStatus(status)}.");
+                }
+            }
+            else
+            {
+                if (flags.HasFlag(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE) && !_receiveTcs.IsCompleted)
+                {
+                    _receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted), final: true);
+                }
+                if (flags.HasFlag(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND) && !_sendTcs.IsCompleted)
+                {
+                    _sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted), final: true);
                 }
             }
         }
