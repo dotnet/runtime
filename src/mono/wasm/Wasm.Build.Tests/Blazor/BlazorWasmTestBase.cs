@@ -216,6 +216,4 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
     public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
         => _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework);
-        
-    public string GetRandomNameWithoutDots() => Path.GetRandomFileName().Replace(".", "");
 }

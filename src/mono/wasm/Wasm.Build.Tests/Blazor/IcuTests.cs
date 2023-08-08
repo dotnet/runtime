@@ -28,8 +28,8 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", null)]
     public async Task HybridWithInvariant(string config, bool? invariant)
     {
-        string id = $"blz_hybrid_{config}_{GetRandomNameWithoutDots()}";
-        string projectFile = CreateProjectWithNativeReference(id);
+        string id = $"blz_hybrid_{config}_{GetRandomId()}";
+        string projectFile = CreateBlazorWasmTemplateProject(id);
         string extraProperties = "<HybridGlobalization>true</HybridGlobalization>";
         if (invariant != null)
             extraProperties += $"<InvariantGlobalization>{invariant}</InvariantGlobalization>";
@@ -60,14 +60,18 @@ public class IcuTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
+    [InlineData("Debug", null)]
     [InlineData("Release", false)]
     [InlineData("Release", true)]
-    public async Task HybridWithFullIcuFromRuntimePack(string config, bool fullIcu)
+    [InlineData("Release", null)]
+    public async Task HybridWithFullIcuFromRuntimePack(string config, bool? fullIcu)
     {
-        string id = $"blz_hybrid_{config}_{GetRandomNameWithoutDots()}";
-        string projectFile = CreateProjectWithNativeReference(id);
-        AddItemsPropertiesToProject(projectFile, extraProperties: 
-             $"<HybridGlobalization>true</HybridGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData>");
+        string id = $"blz_hybrid_{config}_{GetRandomId()}";
+        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string extraProperties = "<HybridGlobalization>true</HybridGlobalization>";
+        if (fullIcu != null)
+            extraProperties += $"<BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData>";
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         (CommandResult res, string logPath) = BlazorBuild(
             new BlazorBuildOptions(
@@ -79,7 +83,7 @@ public class IcuTests : BlazorWasmTestBase
             ));
 
         string warning = "$(BlazorWebAssemblyLoadAllGlobalizationData) has no effect when $(HybridGlobalization) is set to true.";
-        if (fullIcu)
+        if (fullIcu == true)
         {
              Assert.Contains(warning, res.Output);
         }
@@ -91,7 +95,6 @@ public class IcuTests : BlazorWasmTestBase
         await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
-    
     [Theory]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
@@ -101,8 +104,8 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", null)]
     public async Task FullIcuFromRuntimePackWithInvariant(string config, bool? invariant)
     {
-        string id = $"blz_hybrid_{config}_{GetRandomNameWithoutDots()}";
-        string projectFile = CreateProjectWithNativeReference(id);        
+        string id = $"blz_hybrid_{config}_{GetRandomId()}";
+        string projectFile = CreateBlazorWasmTemplateProject(id);
         string extraProperties = "<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>";
         if (invariant != null)
             extraProperties += $"<InvariantGlobalization>{invariant}</InvariantGlobalization>";
