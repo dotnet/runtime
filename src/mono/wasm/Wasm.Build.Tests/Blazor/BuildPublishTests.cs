@@ -109,7 +109,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         string id = $"blz_resources_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
-        // Ensure we have the source data we really on
+        // Ensure we have the source data we rely on
         string resxSourcePath = Path.Combine(BuildEnvironment.TestAssetsPath, "resx");
         foreach (string culture in cultures)
             Assert.True(File.Exists(Path.Combine(resxSourcePath, $"words.{culture}.resx")));
@@ -137,8 +137,8 @@ public class BuildPublishTests : BlazorWasmTestBase
         {
             foreach (string culture in cultures)
             {
-                string jaJPResources = Path.Combine(basePath, culture, $"{id}.resources{ProjectProviderBase.WasmAssemblyExtension}");
-                Assert.True(File.Exists(jaJPResources), $"Expects to have a resource assembly at {jaJPResources}");
+                string resourceAssemblyPath = Path.Combine(basePath, culture, $"{id}.resources{ProjectProviderBase.WasmAssemblyExtension}");
+                Assert.True(File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
             }
         }
     }
