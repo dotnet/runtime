@@ -28,7 +28,7 @@
   <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoBundleLLVMOptimizer)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <PropertyGroup Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
   <PropertyGroup Condition="'$(MonoWasmBuildVariant)' != ''">
