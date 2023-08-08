@@ -11754,7 +11754,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                             }
                                         }
 
-                                        if (subField->GetOffset() >= (DWORD)valueOffset)
+                                        if (subField->GetOffset() > (DWORD)valueOffset)
                                         {
                                             // no point in looking futher
                                             break;
