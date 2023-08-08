@@ -161,11 +161,11 @@ namespace System.Threading
 
             boundHandle.Release();
 
-            Win32ThreadPoolNativeOverlapped.CompleteWithCallback(ioResult, (uint)numberOfBytesTransferred, overlapped);
-            ThreadPool.IncrementCompletedWorkItemCount();
-
             if (NativeRuntimeEventSource.Log.IsEnabled())
                 NativeRuntimeEventSource.Log.ThreadPoolIODequeue(Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(overlapped));
+
+            Win32ThreadPoolNativeOverlapped.CompleteWithCallback(ioResult, (uint)numberOfBytesTransferred, overlapped);
+            ThreadPool.IncrementCompletedWorkItemCount();
 
             wrapper.Exit();
         }
