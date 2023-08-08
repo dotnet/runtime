@@ -41,8 +41,18 @@
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
     <!-- FIXME: is the blazor condition here correct? -->
-    <_WasmNativeWorkloadNeeded Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmEnableSIMD)' == 'true' or '$(WasmEnableLegacyJsInterop)' == 'false' or '$(WasmBuildNative)' == 'true' or
-      '$(WasmGenerateAppBundle)' == 'true' or '$(_UsingBlazorOrWasmSdk)' != 'true'" >true</_WasmNativeWorkloadNeeded>
+    <!-- Keep in sync with WasmApp.Native.targets -->
+    <_WasmNativeWorkloadNeeded Condition="
+        '$(RunAOTCompilation)' == 'true' or
+        '$(WasmEnableSIMD)' == 'true' or
+        '$(WasmEnableLegacyJsInterop)' == 'false' or
+        '$(WasmEnableExceptionHandling)' == 'true' or
+        '$(InvariantTimezone)' == 'true' or
+        '$(InvariantGlobalization)' == 'true' or
+        '$(WasmNativeStrip)' == 'false' or
+        '$(WasmBuildNative)' == 'true' or
+        '$(WasmGenerateAppBundle)' == 'true' or
+        '$(_UsingBlazorOrWasmSdk)' != 'true'" >true</_WasmNativeWorkloadNeeded>
 
     <UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
