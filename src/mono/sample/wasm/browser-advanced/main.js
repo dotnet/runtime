@@ -38,6 +38,9 @@ try {
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
                 config.browserProfilerOptions = {};
+                config.resources.modulesAfterConfigLoaded = {
+                    "advanced-sample.lib.module.js": ""
+                }
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
@@ -51,6 +54,10 @@ try {
                 console.log('user code Module.onDotnetReady');
             },
             postRun: () => { console.log('user code Module.postRun'); },
+        })
+        .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
+            return name;
         })
         .create();
 

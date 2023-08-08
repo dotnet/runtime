@@ -22,6 +22,7 @@ namespace Microsoft.Interop
 
             public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
             public const string UnnecessaryMarshallingInfo = Prefix + "1063";
+            public const string NotRecommendedGeneratedComInterfaceUsage = Prefix + "1092";
         }
 
         private const string Category = "LibraryImportGenerator";
@@ -231,6 +232,26 @@ namespace Microsoft.Interop
                 {
                     WellKnownDiagnosticTags.Unnecessary
                 });
+
+        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam"/>
+        public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
+            new DiagnosticDescriptor(
+                Ids.InvalidLibraryImportAttributeUsage,
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+        /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue"/>
+        public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallReturnValue =
+            new DiagnosticDescriptor(
+                Ids.InvalidLibraryImportAttributeUsage,
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
+                GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.

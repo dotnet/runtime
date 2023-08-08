@@ -17,6 +17,7 @@
 #include "thread.h"
 #include "threadstore.h"
 
+extern uint8_t g_CrashInfoBuffer[];
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
 struct DebugTypeEntry
@@ -195,6 +196,11 @@ extern "C" void PopulateDebugHeaders()
     MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_rgbAllocContextBuffer);
     MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_threadId);
     MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_pThreadStressLog);
+    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_pExInfoStackHead);
+
+    MAKE_SIZE_ENTRY(ExInfo);
+    MAKE_DEBUG_FIELD_ENTRY(ExInfo, m_pPrevExInfo);
+    MAKE_DEBUG_FIELD_ENTRY(ExInfo, m_exception);
 
     MAKE_SIZE_ENTRY(MethodTable);
     MAKE_DEBUG_FIELD_ENTRY(MethodTable, m_uBaseSize);
@@ -244,6 +250,8 @@ extern "C" void PopulateDebugHeaders()
     MAKE_SIZE_ENTRY(RuntimeInstance);
     MAKE_DEBUG_FIELD_ENTRY(RuntimeInstance, m_pThreadStore);
 
+    MAKE_GLOBAL_ENTRY(g_CrashInfoBuffer);
+
     RuntimeInstance *g_pTheRuntimeInstance = GetRuntimeInstance();
     MAKE_GLOBAL_ENTRY(g_pTheRuntimeInstance);
 
@@ -269,4 +277,9 @@ extern "C" void PopulateDebugHeaders()
     static_assert(MethodTable::Flags::IsGenericFlag          == 0x02000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::ElementTypeMask        == 0x7C000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::ElementTypeShift       == 26,         "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::HasComponentSizeFlag   == 0x80000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+
+    static_assert(MethodTable::Kinds::CanonicalEEType        == 0x00000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Kinds. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Kinds::ParameterizedEEType    == 0x00020000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Kinds. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Kinds::GenericTypeDefEEType   == 0x00030000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Kinds. If you change this value you must bump major_version_number.");
 }

@@ -74,14 +74,16 @@ namespace MonoTargetsTasks
 
         private void ResolveInconclusiveTypes(HashSet<string> incompatible, string assyPath, MinimalMarshalingTypeCompatibilityProvider mmtcp)
         {
-            string assyName = MetadataReader.GetAssemblyName(assyPath).Name!;
+            using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using PEReader peReader = new PEReader(file);
+            if (!peReader.HasMetadata)
+                return; // Just return. There are no metadata in the DLL to help us with remaining types.
+
+            MetadataReader mdtReader = peReader.GetMetadataReader();
+            string assyName = mdtReader.GetString(mdtReader.GetAssemblyDefinition().Name);
             HashSet<string> inconclusiveTypes = mmtcp.GetInconclusiveTypesForAssembly(assyName);
             if(inconclusiveTypes.Count == 0)
                 return;
-
-            using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using PEReader peReader = new PEReader(file);
-            MetadataReader mdtReader = peReader.GetMetadataReader();
 
             SignatureDecoder<Compatibility, object> decoder = new(mmtcp, mdtReader, null!);
 
@@ -107,9 +109,8 @@ namespace MonoTargetsTasks
             using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using PEReader peReader = new PEReader(file);
             if (!peReader.HasMetadata)
-            {
-                return false;
-            }
+                return false; // No types in this DLL means no incompatible marshaling constructs.
+
             MetadataReader mdtReader = peReader.GetMetadataReader();
 
             foreach(CustomAttributeHandle attrHandle in mdtReader.CustomAttributes)

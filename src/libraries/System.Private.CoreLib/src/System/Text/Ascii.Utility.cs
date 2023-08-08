@@ -109,6 +109,10 @@ namespace System.Text
             {
                 return GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength);
             }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                return GetIndexOfFirstNonAsciiByte_Vector(pBuffer, bufferLength);
+            }
             else
             {
                 return GetIndexOfFirstNonAsciiByte_Default(pBuffer, bufferLength);

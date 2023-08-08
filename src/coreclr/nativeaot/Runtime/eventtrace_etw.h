@@ -12,11 +12,6 @@
 
 #include "EtwEvents.h"
 
-// Map the CLR private provider to our version so we can avoid inserting more #ifdef's in the code.
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context
-#define Microsoft_Windows_DotNETRuntimeHandle Microsoft_Windows_Redhawk_GC_PublicHandle
-
 #undef ETW_TRACING_INITIALIZED
 #define ETW_TRACING_INITIALIZED(RegHandle) (RegHandle != NULL)
 

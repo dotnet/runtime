@@ -54,13 +54,12 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
         if (isPathAbsolute(path)) return path;
         return loaderHelpers.scriptDirectory + path;
     };
-    loaderHelpers.downloadResource = module.downloadResource;
     loaderHelpers.fetch_like = fetch_like;
     // eslint-disable-next-line no-console
     loaderHelpers.out = console.log;
     // eslint-disable-next-line no-console
     loaderHelpers.err = console.error;
-    loaderHelpers.getApplicationEnvironment = module.getApplicationEnvironment;
+    loaderHelpers.onDownloadResourceProgress = module.onDownloadResourceProgress;
 
     if (ENVIRONMENT_IS_WEB && globalThis.navigator) {
         const navigator: any = globalThis.navigator;
@@ -156,6 +155,18 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
         };
     }
     throw new Error("No fetch implementation available");
+}
+
+// context: the loadBootResource extension point can return URL/string which is unqualified. 
+// For example `xxx/a.js` and we have to make it absolute
+// For compatibility reasons, it's based of document.baseURI even for JS modules like `./xxx/a.js`, which normally use script directory of a caller of `import`
+// Script directory in general doesn't match document.baseURI
+export function makeURLAbsoluteWithApplicationBase(url: string) {
+    mono_assert(typeof url === "string", "url must be a string");
+    if (!isPathAbsolute(url) && url.indexOf("./") !== 0 && url.indexOf("../") !== 0 && globalThis.URL && globalThis.document && globalThis.document.baseURI) {
+        url = (new URL(url, globalThis.document.baseURI)).toString();
+    }
+    return url;
 }
 
 function normalizeFileUrl(filename: string) {

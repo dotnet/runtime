@@ -55,7 +55,7 @@ CrstStatic TieredCompilationManager::s_lock;
 #ifdef _DEBUG
 Thread *TieredCompilationManager::s_backgroundWorkerThread = nullptr;
 #endif
-CLREvent TieredCompilationManager::s_backgroundWorkAvailableEvent;
+CLREventStatic TieredCompilationManager::s_backgroundWorkAvailableEvent;
 bool TieredCompilationManager::s_isBackgroundWorkerRunning = false;
 bool TieredCompilationManager::s_isBackgroundWorkerProcessingWork = false;
 
