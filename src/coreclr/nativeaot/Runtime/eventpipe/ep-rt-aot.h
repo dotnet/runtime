@@ -726,10 +726,9 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_session_or_sampling_thread)
 
     ep_rt_thread_params_t* thread_params = reinterpret_cast<ep_rt_thread_params_t *>(data);
 
-    // The session and sampling threads both assert that the incoming thread handle is
-    // non-null, but do not necessarily rely on it otherwise; just pass a meaningless non-null
-    // value until testing shows that a meaningful value is needed.
-    thread_params->thread = reinterpret_cast<ep_rt_thread_handle_t>(1);
+    // We will create a new thread. cannot call ep_rt_aot_thread_get_handle since that will return null
+    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+    thread_params->thread = ep_rt_aot_setup_thread ();
 
     size_t result = thread_params->thread_func (thread_params);
     delete thread_params;
@@ -793,15 +792,7 @@ ep_rt_current_processor_get_number (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifndef TARGET_UNIX
-    extern uint32_t *_ep_rt_aot_proc_group_offsets;
-    if (_ep_rt_aot_proc_group_offsets) {
-        // PROCESSOR_NUMBER proc;
-        // GetCurrentProcessorNumberEx (&proc);
-        // return _ep_rt_aot_proc_group_offsets [proc.Group] + proc.Number;
-        // PalDebugBreak();
-    }
-#endif
+    // Follows the mono implementation
     return 0xFFFFFFFF;
 }
 
@@ -1588,10 +1579,7 @@ bool
 ep_rt_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return thread_handle != NULL && thread_handle->HasStarted ();
-    return true;
+    return thread_handle != NULL;
 }
 
 static

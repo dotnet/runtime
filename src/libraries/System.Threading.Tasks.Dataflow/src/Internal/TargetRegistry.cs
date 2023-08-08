@@ -20,7 +20,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// <summary>Stores targets registered with a source.</summary>
     /// <typeparam name="T">Specifies the type of data accepted by the targets.</typeparam>
     /// <remarks>This type is not thread-safe.</remarks>
-    [DebuggerDisplay("Count={Count}")]
+    [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(TargetRegistry<>.DebugView))]
     internal sealed class TargetRegistry<T>
     {
@@ -359,7 +359,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     var displaySource = _owningSource as IDebuggerDisplay;
                     var displayTarget = _target as IDebuggerDisplay;
-                    return $"{Common.GetNameForDebugger(this)} Source=\"{(displaySource != null ? displaySource.Content : _owningSource)}\", Target=\"{(displayTarget != null ? displayTarget.Content : _target)}\"";
+                    return $"{Common.GetNameForDebugger(this)} Source = \"{(displaySource != null ? displaySource.Content : _owningSource)}\", Target = \"{(displayTarget != null ? displayTarget.Content : _target)}\"";
                 }
             }
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>

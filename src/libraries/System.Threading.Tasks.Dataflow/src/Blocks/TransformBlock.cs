@@ -401,7 +401,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>The data to display in the debugger display attribute.</summary>
         private object DebuggerDisplayContent =>
-            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, InputCount={InputCountForDebugger}, OutputCount={OutputCountForDebugger}";
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, InputCount = {InputCountForDebugger}, OutputCount = {OutputCountForDebugger}";
 
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
