@@ -1394,6 +1394,7 @@ kernel32!SetEndOfFile
 kernel32!SetEnvironmentStringsW
 kernel32!SetEnvironmentVariableA
 kernel32!SetEnvironmentVariableW
+kernel32!SetErrorMode
 kernel32!SetEvent
 kernel32!SetEventWhenCallbackReturns
 kernel32!SetFileApisToANSI
