@@ -842,12 +842,6 @@ namespace System.Net.Sockets
                 {
                     bytesReceived = received;
                     errorCode = SocketError.Success;
-                    if (socketAddress.Length > 0 && receivedSocketAddressLength == 0)
-                    {
-                        // We can fail to get peer address on TCP
-                        receivedSocketAddressLength = socketAddress.Length;
-                        SocketAddressPal.Clear(socketAddress);
-                    }
                     return true;
                 }
 

@@ -112,7 +112,7 @@ namespace System.Net.Sockets
         /// <summary>Creates an <see cref="EndPoint"/> instance from a <see cref="SocketAddress"/> instance.</summary>
         /// <param name="socketAddress">The socket address that serves as the endpoint for a connection.</param>
         /// <returns>A new <see cref="EndPoint"/> instance that is initialized from the specified <see cref="SocketAddress"/> instance.</returns>
-        public override EndPoint Create(SocketAddress socketAddress) => new UnixDomainSocketEndPoint(socketAddress.Buffer.Span);
+        public override EndPoint Create(SocketAddress socketAddress) => new UnixDomainSocketEndPoint(socketAddress.Buffer.Span.Slice(0, socketAddress.Size));
 
         /// <summary>Gets the address family to which the endpoint belongs.</summary>
         /// <value>One of the <see cref="AddressFamily"/> values.</value>

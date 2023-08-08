@@ -23,6 +23,7 @@ namespace System.Net.Sockets
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
         private static readonly IPAddress s_IPAddressAnyMapToIPv6 = IPAddress.Any.MapToIPv6();
+        private static readonly IPEndPoint s_IPEndPointIPv6 = new IPEndPoint(s_IPAddressAnyMapToIPv6, 0);
 
         private SafeSocketHandle _handle;
 
@@ -1708,7 +1709,11 @@ namespace System.Net.Sockets
             // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
             // with the right address family.
             EndPoint endPointSnapshot = remoteEP;
-            SocketAddress socketAddress = Serialize(ref endPointSnapshot);
+            SocketAddress socketAddress = new SocketAddress(AddressFamily);
+            if (endPointSnapshot.AddressFamily == AddressFamily.InterNetwork && IsDualMode)
+            {
+               endPointSnapshot = s_IPEndPointIPv6;
+            }
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, out int socketAddressLength, out bytesTransferred);
@@ -1735,15 +1740,19 @@ namespace System.Net.Sockets
 
             socketAddress.Size = socketAddressLength;
 
-            if (!SocketAddressExtensions.Equals(socketAddress, remoteEP))
+            if (socketAddressLength > 0 && !socketAddress.Equals(remoteEP) || remoteEP.AddressFamily != socketAddress.Family)
             {
                 try
                 {
                     if (endPointSnapshot.AddressFamily == socketAddress.Family)
                     {
-                        remoteEP = _remoteEndPoint != null ? _remoteEndPoint.Create(socketAddress) : socketAddress.GetIPEndPoint();
+                        remoteEP = endPointSnapshot.Create(socketAddress);
                     }
-                    else if (endPointSnapshot.AddressFamily == AddressFamily.InterNetworkV6 && socketAddress.Family == AddressFamily.InterNetwork)
+                    //else if (socketAddress.Family == AddressFamily.InterNetworkV6 && IsDualMode)
+                    //{
+                    //    remoteEP = socketAddress.GetIPEndPoint();
+                    //}
+                    else if (AddressFamily == AddressFamily.InterNetworkV6 && socketAddress.Family == AddressFamily.InterNetwork)
                     {
                         // We expect IPv6 on DualMode sockets but we can also get plain old IPv4
                         remoteEP = new IPEndPoint(socketAddress.GetIPAddress().MapToIPv6(), socketAddress.GetPort());
@@ -1816,7 +1825,11 @@ namespace System.Net.Sockets
             // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
             // with the right address family.
             EndPoint endPointSnapshot = remoteEP;
-            SocketAddress socketAddress = Serialize(ref endPointSnapshot);
+            SocketAddress socketAddress = new SocketAddress(AddressFamily);
+            if (endPointSnapshot.AddressFamily == AddressFamily.InterNetwork && IsDualMode)
+            {
+                endPointSnapshot = s_IPEndPointIPv6;
+            }
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, out int socketAddressLength, out bytesTransferred);
@@ -1842,13 +1855,13 @@ namespace System.Net.Sockets
             }
 
             socketAddress.Size = socketAddressLength;
-            if (!SocketAddressExtensions.Equals(socketAddress, remoteEP))
+            if (socketAddressLength > 0 && !socketAddress.Equals(remoteEP) || remoteEP.AddressFamily != socketAddress.Family)
             {
                 try
                 {
                     if (endPointSnapshot.AddressFamily == socketAddress.Family)
                     {
-                        remoteEP = _remoteEndPoint != null ? _remoteEndPoint.Create(socketAddress) : socketAddress.GetIPEndPoint();
+                          remoteEP = endPointSnapshot.Create(socketAddress);
                     }
                     else if (endPointSnapshot.AddressFamily == AddressFamily.InterNetworkV6 && socketAddress.Family == AddressFamily.InterNetwork)
                     {
@@ -2921,6 +2934,11 @@ namespace System.Net.Sockets
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
             if (e._socketAddress == null)
             {
+                if (endPointSnapshot is DnsEndPoint)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_sockets_invalid_dnsendpoint, "e.RemoteEndPoint"), nameof(e));
+                }
+
                 if (endPointSnapshot == null)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
@@ -2933,7 +2951,12 @@ namespace System.Net.Sockets
                 // We don't do a CAS demand here because the contents of remoteEP aren't used by
                 // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
                 // with the right address family.
-                e._socketAddress = Serialize(ref endPointSnapshot);
+
+                if (endPointSnapshot.AddressFamily == AddressFamily.InterNetwork && IsDualMode)
+                {
+                    endPointSnapshot = s_IPEndPointIPv6;
+                }
+                e._socketAddress ??= new SocketAddress(AddressFamily);
             }
 
             // DualMode sockets may have updated the endPointSnapshot, and it has to have the same AddressFamily as
@@ -3747,6 +3770,12 @@ namespace System.Net.Sockets
         private void ValidateReceiveFromEndpointAndState(EndPoint remoteEndPoint, string remoteEndPointArgumentName)
         {
             ArgumentNullException.ThrowIfNull(remoteEndPoint, remoteEndPointArgumentName);
+
+            if (remoteEndPoint is DnsEndPoint)
+            {
+                throw new ArgumentException(SR.Format(SR.net_sockets_invalid_dnsendpoint, remoteEndPointArgumentName), remoteEndPointArgumentName);
+            }
+
             if (!CanTryAddressFamily(remoteEndPoint.AddressFamily))
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEndPoint.AddressFamily, _addressFamily), remoteEndPointArgumentName);

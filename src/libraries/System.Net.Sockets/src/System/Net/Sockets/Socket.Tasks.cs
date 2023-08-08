@@ -414,6 +414,11 @@ namespace System.Net.Sockets
             saea.SetBuffer(buffer);
             saea.SocketFlags = socketFlags;
             saea.RemoteEndPoint = remoteEndPoint;
+            saea._socketAddress = new SocketAddress(AddressFamily);
+            if (remoteEndPoint!.AddressFamily != AddressFamily && AddressFamily == AddressFamily.InterNetworkV6 && IsDualMode)
+            {
+                saea.RemoteEndPoint = s_IPEndPointIPv6;
+            }
             saea.WrapExceptionsForNetworkStream = false;
             return saea.ReceiveFromAsync(this, cancellationToken);
         }

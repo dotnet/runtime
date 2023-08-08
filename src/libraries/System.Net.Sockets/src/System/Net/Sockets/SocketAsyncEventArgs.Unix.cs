@@ -196,7 +196,7 @@ namespace System.Net.Sockets
             bool isIPv4, isIPv6;
             Socket.GetIPProtocolInformation(socket.AddressFamily, _socketAddress!, out isIPv4, out isIPv6);
 
-            int socketAddressSize = _socketAddress!.Size;
+            int socketAddressSize = _socketAddress!.Buffer.Length;
             int bytesReceived;
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
