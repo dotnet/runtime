@@ -195,9 +195,9 @@ namespace System
 
         public int CompareTo(nint value)
         {
-            if (_value < value) return -1;
-            if (_value > value) return 1;
-            return 0;
+            int gt = (_value > value) ? 1 : 0;
+            int lt = (_value < value) ? 1 : 0;
+            return gt - lt;
         }
 
         [NonVersionable]

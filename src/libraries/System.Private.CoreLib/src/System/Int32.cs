@@ -63,13 +63,9 @@ namespace System
                 return 1;
             }
 
-            // NOTE: Cannot use return (_value - value) as this causes a wrap
-            // around in cases where _value - value > MaxValue.
             if (value is int i)
             {
-                if (m_value < i) return -1;
-                if (m_value > i) return 1;
-                return 0;
+                return CompareTo(i);
             }
 
             throw new ArgumentException(SR.Arg_MustBeInt32);
@@ -77,11 +73,9 @@ namespace System
 
         public int CompareTo(int value)
         {
-            // NOTE: Cannot use return (_value - value) as this causes a wrap
-            // around in cases where _value - value > MaxValue.
-            if (m_value < value) return -1;
-            if (m_value > value) return 1;
-            return 0;
+            int gt = (m_value > value) ? 1 : 0;
+            int lt = (m_value < value) ? 1 : 0;
+            return gt - lt;
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
