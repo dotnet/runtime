@@ -60,21 +60,65 @@ namespace System.Reflection
             Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
         }
 
-        public object? Invoke(object? obj) => Invoke(obj, null, null, null, null);
-        public object? Invoke(object? obj, object? arg1) => Invoke(obj, arg1, null, null, null);
-        public object? Invoke(object? obj, object? arg1, object? arg2) => Invoke(obj, arg1, arg2, null, null);
-        public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3) => Invoke(obj, arg1, arg2, arg3, null);
+        public object? Invoke(object? obj)
+        {
+            if (_argCount > 0)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(obj, null, null, null, null);
+        }
+
+        public object? Invoke(object? obj, object? arg1)
+        {
+            // Allow unused arguments to simplify caller's logic.
+            if (_argCount > 1)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(obj, arg1, null, null, null);
+        }
+
+        public object? Invoke(object? obj, object? arg1, object? arg2)
+        {
+            // Allow unused arguments to simplify caller's logic.
+            if (_argCount > 2)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(obj, arg1, arg2, null, null);
+        }
+
+        public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3)
+        {
+            // Allow unused arguments to simplify caller's logic.
+            if (_argCount > 3)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(obj, arg1, arg2, arg3, null);
+        }
+
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3, object? arg4)
+        {
+            // Allow unused arguments to simplify caller's logic.
+            if (_argCount > 4)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(obj, arg1, arg2, arg3, arg4);
+        }
+
+        private object? InvokeImpl(object? obj, object? arg1, object? arg2, object? arg3, object? arg4)
         {
             if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
             {
                 ThrowForBadInvocationFlags();
-            }
-
-            // Allow additional non-used arguments to simplify caller's logic.
-            if (_argCount > MaxStackAllocArgCount)
-            {
-                MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
             if (!_isStatic)
@@ -118,24 +162,56 @@ namespace System.Reflection
 
         public object? Invoke(object? obj, Span<object?> arguments)
         {
+            int argLen = arguments.Length;
+
             if (!_needsByRefStrategy)
             {
                 // Switch to fast path if possible.
                 switch (_argCount)
                 {
                     case 0:
-                        return Invoke(obj, null, null, null, null);
+                        if (argLen != _argCount)
+                        {
+                            MethodBaseInvoker.ThrowTargetParameterCountException();
+                        }
+
+                        return InvokeImpl(obj, null, null, null, null);
                     case 1:
-                        return Invoke(obj, arguments[0], null, null, null);
+                        if (argLen != _argCount)
+                        {
+                            MethodBaseInvoker.ThrowTargetParameterCountException();
+                        }
+
+                        return InvokeImpl(obj, arguments[0], null, null, null);
                     case 2:
-                        return Invoke(obj, arguments[0], arguments[1], null, null);
+                        if (argLen != _argCount)
+                        {
+                            MethodBaseInvoker.ThrowTargetParameterCountException();
+                        }
+
+                        return InvokeImpl(obj, arguments[0], arguments[1], null, null);
                     case 3:
-                        return Invoke(obj, arguments[0], arguments[1], arguments[2], null);
+                        if (argLen != _argCount)
+                        {
+                            MethodBaseInvoker.ThrowTargetParameterCountException();
+                        }
+
+                        return InvokeImpl(obj, arguments[0], arguments[1], arguments[2], null);
                     case 4:
-                        return Invoke(obj, arguments[0], arguments[1], arguments[2], arguments[3]);
+                        if (argLen != _argCount)
+                        {
+                            MethodBaseInvoker.ThrowTargetParameterCountException();
+                        }
+
+                        return InvokeImpl(obj, arguments[0], arguments[1], arguments[2], arguments[3]);
                     default:
                         break;
                 }
+            }
+
+            if (argLen != _argCount)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
             if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
@@ -143,17 +219,12 @@ namespace System.Reflection
                 ThrowForBadInvocationFlags();
             }
 
-            if (arguments.Length != _argCount)
-            {
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
-            }
-
             if (!_isStatic)
             {
                 ValidateInvokeTarget(obj, _method);
             }
 
-            if (arguments.Length > MaxStackAllocArgCount)
+            if (argLen > MaxStackAllocArgCount)
             {
                 return InvokeWithManyArgs(obj, arguments);
             }

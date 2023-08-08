@@ -43,7 +43,7 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1)
         {
-            if (_parameterCount > 4)
+            if (_parameterCount > 1)
             {
                 // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
                 ThrowForArgCountMismatch();
