@@ -47,10 +47,10 @@ namespace SharedTypes.ComInterfaces
     [ContiguousCollectionMarshaller]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(StatelessCollectionMarshaller<,>.ManagedToUnmanaged))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.UnmanagedToManagedOut, typeof(StatelessCollectionMarshaller<,>.ManagedToUnmanaged))]
-    [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementIn, typeof(StatelessCollectionMarshaller<,>.ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementIn, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ManagedToUnmanagedOut, typeof(StatelessCollectionMarshaller<,>.UnmanagedToManaged))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.UnmanagedToManagedIn, typeof(StatelessCollectionMarshaller<,>.UnmanagedToManaged))]
-    [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementOut, typeof(StatelessCollectionMarshaller<,>.UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementOut, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.UnmanagedToManagedRef, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ManagedToUnmanagedRef, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementRef, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
@@ -123,11 +123,6 @@ namespace SharedTypes.ComInterfaces
             {
                 throw new NotImplementedException();
             }
-            // Should be removed: https://github.com/dotnet/runtime/issues/89885
-            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(NativeCollection<T> unmanaged, int numElements)
-            {
-                throw new NotImplementedException();
-            }
 
             public static Span<T> GetManagedValuesDestination(StatelessCollection<T> managed)
             {
@@ -135,7 +130,6 @@ namespace SharedTypes.ComInterfaces
             }
 
             public static void Free(NativeCollection<T> unmanaged) => throw new NotImplementedException();
-
         }
     }
 }

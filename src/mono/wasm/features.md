@@ -191,7 +191,7 @@ See also [fetch integrity on MDN](https://developer.mozilla.org/en-US/docs/Web/A
 In order to start downloading application resources as soon as possible you can add HTML elements to `<head>` of your page similar to:
 
 ```html
-<link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="anonymous">
+<link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.native.wasm" as="fetch" crossorigin="anonymous">

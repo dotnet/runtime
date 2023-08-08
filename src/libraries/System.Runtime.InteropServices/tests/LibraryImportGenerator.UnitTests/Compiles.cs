@@ -750,13 +750,13 @@ namespace LibraryImportGenerator.UnitTests
             // Blittable array
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:Out|}"), new DiagnosticResult[] { } };
 
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}, {|#11:Out|}"), new[]
-            {
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}, {|#11:Out|}"), new DiagnosticResult[] { } };
+
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}"), new DiagnosticResult[] {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
                     .WithLocation(0)
                     .WithLocation(10)
-                    .WithLocation(11)
-                    .WithArguments("[In] and [Out] attributes", "p", SR.PinnedMarshallingIsInOutByDefault)
+                    .WithArguments("[In] and [Out] attributes", "p", SR.InAttributeOnlyIsDefault)
             } };
         }
 

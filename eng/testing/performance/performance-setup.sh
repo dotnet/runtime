@@ -285,6 +285,8 @@ if [[ "$internal" == true ]]; then
     else
         if [[ "$logical_machine" == "perfowl" ]]; then
             queue=Ubuntu.1804.Amd64.Owl.Perf
+        elif [[ "$logical_machine" == "perftiger_crossgen" ]]; then
+            queue=Ubuntu.1804.Amd64.Tiger.Perf
         else
             queue=Ubuntu.2204.Amd64.Tiger.Perf
         fi
@@ -410,7 +412,7 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     fi
 
     # Workaround: escaping the quotes around `--wasmArgs=..` so they get retained for the actual command line
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --wasmArgs \\\"$wasm_args\\\" --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/bin/$javascript_engine --wasmArgs \\\"$wasm_args\\\" --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --aotcompilermode wasm --buildTimeout 3600"
     fi

@@ -63,6 +63,7 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_ChangeCaseNative)
     DllImportEntry(GlobalizationNative_CompareStringNative)
     DllImportEntry(GlobalizationNative_EndsWithNative)
+    DllImportEntry(GlobalizationNative_GetCalendarInfoNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoIntNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative)
