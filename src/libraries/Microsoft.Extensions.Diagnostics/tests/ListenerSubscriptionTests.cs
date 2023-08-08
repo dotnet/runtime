@@ -209,8 +209,6 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             }).Dispose();
         }
 
-        // TODO: Scopes
-
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         // [InlineData(null, null, null)] // RemoteExecutor can't handle nulls
         [InlineData("", "", "")]

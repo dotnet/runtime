@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                ServiceCollection services = new ServiceCollection();
+                var services = new ServiceCollection();
                 services.AddMetrics(builder =>
                 {
                     builder.AddDebugConsole();
