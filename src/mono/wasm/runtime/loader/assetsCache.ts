@@ -100,6 +100,8 @@ export function addCachedReponse(asset: AssetEntryInternal, networkResponse: Res
         return;
     }
     const clonedResponse = networkResponse.clone();
+
+    // postpone adding to cache until after we load the assembly, so that we could do the dotnet loading of the asset first
     setTimeout(() => {
         const cacheKey = getCacheKey(asset);
         addToCacheAsync(cache, asset.name, cacheKey, clonedResponse); // Don't await - add to cache in background

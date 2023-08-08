@@ -19,10 +19,7 @@ let throttlingPromise: PromiseAndController<void> | undefined;
 let parallel_count = 0;
 const containedInSnapshotAssets: AssetEntryInternal[] = [];
 const alwaysLoadedAssets: AssetEntryInternal[] = [];
-let wasmModuleAsset: AssetEntryInternal;
-let jsModuleWorkerAsset: AssetEntryInternal;
-let jsModuleNativeAsset: AssetEntryInternal;
-let jsModuleRuntimeAsset: AssetEntryInternal;
+const singleAssets: Map<string, AssetEntryInternal> = new Map();
 
 const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
@@ -38,6 +35,15 @@ const jsModulesAssetTypes: {
 } = {
     ...jsRuntimeModulesAssetTypes,
     "js-module-library-initializer": true,
+};
+
+const singleAssetTypes: {
+    [k: string]: boolean
+} = {
+    ...jsRuntimeModulesAssetTypes,
+    "dotnetwasm": true,
+    "heap": true,
+    "manifest": true,
 };
 
 // append query to asset url to prevent reusing state
@@ -89,7 +95,7 @@ export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
-function convertSingleAsset(modulesAssets: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
+function convert_single_asset(modulesAssets: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
     const keys = Object.keys(resource || {});
     mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
 
@@ -101,29 +107,23 @@ function convertSingleAsset(modulesAssets: AssetEntryInternal[], resource: Resou
         behavior,
     };
 
+    set_single_asset(asset);
+
     // so that we can use it on the worker too
     modulesAssets.push(asset);
     return asset;
 }
 
-function get_single_asset(behavior: SingleAssetBehaviors): AssetEntryInternal {
-    let asset: AssetEntryInternal;
-    switch (behavior) {
-        case "dotnetwasm":
-            asset = wasmModuleAsset;
-            break;
-        case "js-module-threads":
-            asset = jsModuleWorkerAsset;
-            break;
-        case "js-module-native":
-            asset = jsModuleNativeAsset;
-            break;
-        case "js-module-runtime":
-            asset = jsModuleRuntimeAsset;
-            break;
-        default:
-            throw new Error(`Unknown single asset behavior ${behavior}`);
+function set_single_asset(asset: AssetEntryInternal) {
+    if (singleAssetTypes[asset.behavior]) {
+        singleAssets.set(asset.behavior, asset);
     }
+}
+
+function get_single_asset(behavior: SingleAssetBehaviors): AssetEntryInternal {
+    mono_assert(singleAssetTypes[behavior], `Unknown single asset behavior ${behavior}`);
+    const asset = singleAssets.get(behavior);
+    mono_assert(asset, `Single asset for ${behavior} not found`);
     return asset;
 }
 
@@ -274,20 +274,7 @@ export function prepareAssets() {
             } else {
                 alwaysLoadedAssets.push(asset);
             }
-            switch (asset.behavior) {
-                case "dotnetwasm":
-                    wasmModuleAsset = asset;
-                    break;
-                case "js-module-native":
-                    jsModuleNativeAsset = asset;
-                    break;
-                case "js-module-runtime":
-                    jsModuleRuntimeAsset = asset;
-                    break;
-                case "js-module-threads":
-                    jsModuleWorkerAsset = asset;
-                    break;
-            }
+            set_single_asset(asset);
         }
     } else if (config.resources) {
         const resources = config.resources;
@@ -296,11 +283,11 @@ export function prepareAssets() {
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
         mono_assert(resources.jsModuleRuntime, "resources.jsModuleRuntime must be defined");
         mono_assert(!MonoWasmThreads || resources.jsModuleWorker, "resources.jsModuleWorker must be defined");
-        wasmModuleAsset = convertSingleAsset(modulesAssets, resources.wasmNative, "dotnetwasm");
-        jsModuleNativeAsset = convertSingleAsset(modulesAssets, resources.jsModuleNative, "js-module-native");
-        jsModuleRuntimeAsset = convertSingleAsset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
+        convert_single_asset(modulesAssets, resources.wasmNative, "dotnetwasm");
+        convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
+        convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (MonoWasmThreads) {
-            jsModuleWorkerAsset = convertSingleAsset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
+            convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
 
         if (resources.assembly) {
@@ -400,17 +387,7 @@ export function prepareAssetsWorker() {
     mono_assert(config.assets, "config.assets must be defined");
 
     for (const asset of config.assets) {
-        switch (asset.behavior) {
-            case "js-module-native":
-                jsModuleNativeAsset = asset;
-                break;
-            case "js-module-runtime":
-                jsModuleRuntimeAsset = asset;
-                break;
-            case "js-module-threads":
-                jsModuleWorkerAsset = asset;
-                break;
-        }
+        set_single_asset(asset);
     }
 }
 
