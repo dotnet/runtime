@@ -13,12 +13,13 @@
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
     <SkipInstallerBuild>true</SkipInstallerBuild>
+    <SkipArchivesBuild>true</SkipArchivesBuild>
   </PropertyGroup>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
