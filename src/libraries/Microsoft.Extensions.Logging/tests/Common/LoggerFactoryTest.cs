@@ -6,7 +6,6 @@ using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Collections.Generic;
-using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
