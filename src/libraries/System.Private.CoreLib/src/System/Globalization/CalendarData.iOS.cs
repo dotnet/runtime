@@ -15,20 +15,20 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.UseNls);
 
-            this.sNativeName = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.NativeName);
-            this.sMonthDay = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.MonthDay);
-            this.saShortDates = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.ShortDates).Split("||");
-            this.saLongDates = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.LongDates).Split("||");
-            this.saYearMonths = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.YearMonths).Split("||");
-            this.saDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.DayNames).Split("||");
-            this.saAbbrevDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.AbbrevDayNames).Split("||");
-            this.saSuperShortDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.SuperShortDayNames).Split("||");
+            sNativeName = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.NativeName);
+            sMonthDay = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.MonthDay);
+            saShortDates = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.ShortDates).Split("||");
+            saLongDates = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.LongDates).Split("||");
+            saYearMonths = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.YearMonths).Split("||");
+            saDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.DayNames).Split("||");
+            saAbbrevDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.AbbrevDayNames).Split("||");
+            saSuperShortDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.SuperShortDayNames).Split("||");
 
             string? leapHebrewMonthName = null;
-            this.saMonthNames = NormalizeMonthArray(GetCalendarInfoNative(localeName, calendarId, CalendarDataType.MonthNames).Split("||"), calendarId, ref leapHebrewMonthName);
+            saMonthNames = NormalizeMonthArray(GetCalendarInfoNative(localeName, calendarId, CalendarDataType.MonthNames).Split("||"), calendarId, ref leapHebrewMonthName);
             if (leapHebrewMonthName != null)
             {
-                Debug.Assert(this.saMonthNames != null);
+                Debug.Assert(saMonthNames != null);
 
                 // In Hebrew calendar, get the leap month name Adar II and override the non-leap month 7
                 Debug.Assert(calendarId == CalendarId.HEBREW && saMonthNames.Length == 13);
@@ -42,17 +42,17 @@ namespace System.Globalization
                 saMonthNames[6] = leapHebrewMonthName;
 
             }
-            this.saAbbrevMonthNames = NormalizeMonthArray(GetCalendarInfoNative(localeName, calendarId, CalendarDataType.AbbrevMonthNames).Split("||"), calendarId, ref leapHebrewMonthName);
-            this.saMonthGenitiveNames = NormalizeMonthArray(GetCalendarInfoNative(localeName, calendarId, CalendarDataType.MonthGenitiveNames).Split("||"), calendarId, ref leapHebrewMonthName);
-            this.saAbbrevMonthGenitiveNames = NormalizeMonthArray(GetCalendarInfoNative(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames).Split("||"), calendarId, ref leapHebrewMonthName);
+            saAbbrevMonthNames = NormalizeMonthArray(GetCalendarInfoNative(localeName, calendarId, CalendarDataType.AbbrevMonthNames).Split("||"), calendarId, ref leapHebrewMonthName);
+            saMonthGenitiveNames = NormalizeMonthArray(GetCalendarInfoNative(localeName, calendarId, CalendarDataType.MonthGenitiveNames).Split("||"), calendarId, ref leapHebrewMonthName);
+            saAbbrevMonthGenitiveNames = NormalizeMonthArray(GetCalendarInfoNative(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames).Split("||"), calendarId, ref leapHebrewMonthName);
 
-            this.saEraNames = NormalizeEraNames(calendarId, GetCalendarInfoNative(localeName, calendarId, CalendarDataType.EraNames).Split("||"));
-            this.saAbbrevEraNames = Array.Empty<string>();//NormalizeEraNames(calendarId, GetCalendarInfoNative(localeName, calendarId, CalendarDataType.AbbrevEraNames).Split("||"));
+            saEraNames = NormalizeEraNames(calendarId, GetCalendarInfoNative(localeName, calendarId, CalendarDataType.EraNames).Split("||"));
+            saAbbrevEraNames = Array.Empty<string>();
 
-            return this.sNativeName != null && this.saShortDates != null && this.saLongDates != null && this.saYearMonths != null &&
-                   this.saDayNames != null && this.saAbbrevDayNames != null && this.saSuperShortDayNames != null && this.saMonthNames != null &&
-                   this.saAbbrevMonthNames != null && this.saMonthGenitiveNames != null && this.saAbbrevMonthGenitiveNames != null &&
-                   this.saEraNames != null && this.saAbbrevEraNames != null;
+            return sNativeName != null && saShortDates != null && saLongDates != null && saYearMonths != null &&
+                   saDayNames != null && saAbbrevDayNames != null && saSuperShortDayNames != null && saMonthNames != null &&
+                   saAbbrevMonthNames != null && saMonthGenitiveNames != null && saAbbrevMonthGenitiveNames != null &&
+                   saEraNames != null && saAbbrevEraNames != null;
         }
 
         private static string[] NormalizeEraNames(CalendarId calendarId, string[]? eraNames)
@@ -60,10 +60,7 @@ namespace System.Globalization
             // .NET expects that only the Japanese calendars have more than 1 era.
             // So for other calendars, only return the latest era.
             if (calendarId != CalendarId.JAPAN && calendarId != CalendarId.JAPANESELUNISOLAR && eraNames?.Length > 0)
-            {
-                string[] latestEraName = new string[] { eraNames![eraNames.Length - 1] };
-                eraNames = latestEraName;
-            }
+                return new string[] { eraNames![eraNames.Length - 1] };
 
             return eraNames ?? Array.Empty<string>();
         }
@@ -98,10 +95,10 @@ namespace System.Globalization
                 return normalizedMonths;
             }
 
-            return normalizedMonths;
+            throw new Exception("CalendarData.GetCalendarInfoNative() returned an unexpected number of month names.");
         }
 
-        private static unsafe string GetCalendarInfoNative(string localeName, CalendarId calendarId, CalendarDataType calendarDataType)
+        private static string GetCalendarInfoNative(string localeName, CalendarId calendarId, CalendarDataType calendarDataType)
         {
             Debug.Assert(localeName != null);
 

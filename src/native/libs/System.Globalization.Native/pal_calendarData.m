@@ -41,7 +41,6 @@ static NSString* GetCalendarIdentifier(CalendarId calendarId)
             calendarIdentifier = NSCalendarIdentifierRepublicOfChina;
             break;
         default:
-            calendarIdentifier = NSCalendarIdentifierGregorian;
             break;
     }
     return calendarIdentifier;
@@ -59,22 +58,30 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
     NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
 
+    if (dataType == CalendarData_MonthDay)
+    {
+        NSString *formatString = [NSDateFormatter dateFormatFromTemplate:@"MMMMd" options:0 locale:currentLocale];
+        return formatString ? strdup([formatString UTF8String]) : NULL;
+    }
+    else if (dataType == CalendarData_YearMonths)
+    {
+        NSString *formatString = [NSDateFormatter dateFormatFromTemplate:@"MMMM yyyy" options:0 locale:currentLocale];
+        return formatString ? strdup([formatString UTF8String]) : NULL;
+    }
+
     NSString *calendarIdentifier = GetCalendarIdentifier(calendarId);
     NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:calendarIdentifier];
+
+    if (dataType == CalendarData_NativeName)
+        return calendar ? strdup([[calendar calendarIdentifier] UTF8String]) : NULL;
 
     NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
     dateFormat.locale = currentLocale;
     dateFormat.calendar = calendar;
 
+    NSArray *result;
     switch (dataType)
     {
-        case CalendarData_NativeName:
-            return calendar ? strdup([[calendar calendarIdentifier] UTF8String]) : NULL;
-        case CalendarData_MonthDay:
-        {
-             NSString *formatString = [NSDateFormatter dateFormatFromTemplate:@"MMMMd" options:0 locale:currentLocale];
-             return formatString ? strdup([formatString UTF8String]) : NULL;
-        }
         case CalendarData_ShortDates:
         {
             [dateFormat setDateStyle:NSDateFormatterShortStyle];
@@ -82,9 +89,8 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
             [dateFormat setDateStyle:NSDateFormatterMediumStyle];
             NSString *mediumFormatString = [dateFormat dateFormat];
             NSString *yearMonthDayFormat = [NSDateFormatter dateFormatFromTemplate:@"yMd" options:0 locale:currentLocale];
-            NSArray *shortDates = @[shortFormatString, mediumFormatString, yearMonthDayFormat];
-            NSString *shortDatesString = [[shortDates valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return shortDatesString ? strdup([shortDatesString UTF8String]) : NULL;
+            result = @[shortFormatString, mediumFormatString, yearMonthDayFormat];
+            break;
         }
         case CalendarData_LongDates:
         {
@@ -92,67 +98,40 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
             NSString *longFormatString = [dateFormat dateFormat];
             [dateFormat setDateStyle:NSDateFormatterFullStyle];
             NSString *fullFormatString = [dateFormat dateFormat];
-            NSArray *longDates = @[longFormatString, fullFormatString];
-            NSString *longDatesString = [[longDates valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return longDatesString ? strdup([longDatesString UTF8String]) : NULL;
-        }
-        case CalendarData_YearMonths:
-        {
-            NSString *formatString = [NSDateFormatter dateFormatFromTemplate:@"MMMM yyyy" options:0 locale:currentLocale];
-            return formatString ? strdup([formatString UTF8String]) : NULL;
+            result = @[longFormatString, fullFormatString];
+            break;
         }
         case CalendarData_DayNames:
-        {
-            NSArray *standaloneWeekdaySymbols = [dateFormat standaloneWeekdaySymbols];
-            NSString *arrayToString = [[standaloneWeekdaySymbols valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
-        }
+            result = [dateFormat standaloneWeekdaySymbols];
+            break;
         case CalendarData_AbbrevDayNames:
-        {
-            NSArray *shortStandaloneWeekdaySymbols = [dateFormat shortStandaloneWeekdaySymbols];
-            NSString *arrayToString = [[shortStandaloneWeekdaySymbols valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
-        }
+            result = [dateFormat shortStandaloneWeekdaySymbols];
+            break;
         case CalendarData_MonthNames:
-        {
-            NSArray *standaloneMonthSymbols = [dateFormat standaloneMonthSymbols];
-            NSString *arrayToString = [[standaloneMonthSymbols valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
-        }
+            result = [dateFormat standaloneMonthSymbols];
+            break;
         case CalendarData_AbbrevMonthNames:
-        {
-            NSArray *shortStandaloneMonthSymbols = [dateFormat shortStandaloneMonthSymbols];
-            NSString *arrayToString = [[shortStandaloneMonthSymbols valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
-        }
+            result = [dateFormat shortStandaloneMonthSymbols];
+            break;
         case CalendarData_SuperShortDayNames:
-        {
-            NSArray *veryShortStandaloneWeekdaySymbols = [dateFormat veryShortStandaloneWeekdaySymbols];
-            NSString *arrayToString = [[veryShortStandaloneWeekdaySymbols valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
-        }
+            result = [dateFormat veryShortStandaloneWeekdaySymbols];
+            break;
         case CalendarData_MonthGenitiveNames:
-        {
-            NSArray *monthSymbols = [dateFormat monthSymbols];
-            NSString *arrayToString = [[monthSymbols valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
-        }
+            result = [dateFormat monthSymbols];
+            break;
         case CalendarData_AbbrevMonthGenitiveNames:
-        {
-            NSArray *shortMonthSymbols = [dateFormat shortMonthSymbols];
-            NSString *arrayToString = [[shortMonthSymbols valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
-        }
+            result = [dateFormat shortMonthSymbols];
+            break;
         case CalendarData_EraNames:
         case CalendarData_AbbrevEraNames:
-        {
-            NSArray *eraSymbols = [dateFormat eraSymbols];
-            NSString *arrayToString = [[eraSymbols valueForKey:@"description"] componentsJoinedByString:@"||"];
-            return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
-        }
+            result = [dateFormat eraSymbols];
+            break;
         default:
             assert(false);
             return NULL;
     }
+
+    NSString *arrayToString = [[result valueForKey:@"description"] componentsJoinedByString:@"||"];
+    return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
 }
 #endif

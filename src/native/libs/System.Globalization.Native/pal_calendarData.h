@@ -97,5 +97,3 @@ PALEXPORT const char* GlobalizationNative_GetCalendarInfoNative(const char* loca
                                                                 CalendarId calendarId,
                                                                 CalendarDataType dataType);
 #endif
-
-
