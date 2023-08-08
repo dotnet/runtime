@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
+cmake_policy(SET CMP0091 NEW)
+
 project(mono)
 
 include(../../eng/native/configurepaths.cmake)
@@ -9,6 +11,10 @@ include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
+
+  if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+    add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+  endif()
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -69,6 +75,7 @@ if(ENABLE_MINIMAL)
 endif()
 
 set(DISABLE_COM 1)
+set(DISABLE_DLLMAP 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
@@ -195,8 +202,9 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "ios" OR CLR_CMAKE_HOST_OS STREQUAL "tvos")
   # control cross-compiling to ios
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
-  set(HOST_IOS 1)
-  if(CLR_CMAKE_HOST_OS STREQUAL "tvos")
+  if(CLR_CMAKE_HOST_OS STREQUAL "ios")
+    set(HOST_IOS 1)
+  elseif(CLR_CMAKE_HOST_OS STREQUAL "tvos")
     set(HOST_TVOS 1)
   endif()
   set(PTHREAD_POINTER_ID 1)
@@ -316,12 +324,13 @@ if(TARGET_SYSTEM_NAME STREQUAL "darwin")
 elseif(TARGET_SYSTEM_NAME STREQUAL "ios" OR TARGET_SYSTEM_NAME STREQUAL "tvos")
   set(TARGET_UNIX 1)
   set(TARGET_MACH 1)
-  set(TARGET_IOS 1)
   set(TARGET_DARWIN 1)
-  if(TARGET_SYSTEM_NAME STREQUAL "tvos")
+  set(TARGET_APPLE_MOBILE 1)
+  if(TARGET_SYSTEM_NAME STREQUAL "ios")
+    set(TARGET_IOS 1)
+  elseif(TARGET_SYSTEM_NAME STREQUAL "tvos")
     set(TARGET_TVOS 1)
   endif()
-  set(TARGET_APPLE_MOBILE 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "linux")
   set(TARGET_UNIX 1)
   set(TARGET_LINUX 1)
@@ -553,6 +562,12 @@ if(GCC)
     set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
   endif()
 
+  # Check for sometimes suppressed warnings
+  check_c_compiler_flag(-Wreserved-identifier COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  if(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+    add_compile_definitions(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  endif()
+
   if(HOST_WASI)
     # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
     # code (e.g., mono-rand.c:315) to be rejected
@@ -721,7 +736,7 @@ elseif(HOST_BROWSER)
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
-elseif(HOST_IOS OR HOST_MACCAT)
+elseif(HOST_IOS OR HOST_TVOS OR HOST_MACCAT)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
@@ -926,12 +941,6 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
-  # FIXME: the mobile products use mono_dllmap_insert so allow this
-  unset(DISABLE_DLLMAP)
-else()
-  set(DISABLE_DLLMAP 1)
-endif()
 
 if(CLR_CMAKE_HOST_ALPINE_LINUX)
   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
@@ -950,7 +959,7 @@ endif()
 add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
 add_subdirectory(mono)
-if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_TVOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)
 endif()
 

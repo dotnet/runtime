@@ -461,12 +461,6 @@ struct Agnostic_FindCallSiteSig
     DWORDLONG context;
 };
 
-struct Agnostic_GetNewHelper
-{
-    DWORDLONG hClass;
-    DWORDLONG callerHandle;
-};
-
 struct Agnostic_GetCastingHelper
 {
     DWORDLONG hClass;
@@ -530,10 +524,13 @@ struct Agnostic_GetProfilingHandle
 struct Agnostic_GetThreadLocalStaticBlocksInfo
 {
     Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
-    UINT                          offsetOfThreadLocalStoragePointer;
-    UINT                          offsetOfMaxThreadStaticBlocks;
-    UINT                          offsetOfThreadStaticBlocks;
-    UINT                          offsetOfGCDataPointer;
+    DWORDLONG                     tlsGetAddrFtnPtr;
+    DWORDLONG                     tlsIndexObject;
+    DWORDLONG                     threadVarsSection;
+    DWORD                         offsetOfThreadLocalStoragePointer;
+    DWORD                         offsetOfMaxThreadStaticBlocks;
+    DWORD                         offsetOfThreadStaticBlocks;
+    DWORD                         offsetOfGCDataPointer;
 };
 
 struct Agnostic_GetThreadLocalFieldInfo

@@ -339,6 +339,12 @@ void Compiler::lvaInitTypeRef()
             {
                 JITDUMP("-- V%02u is OSR exposed\n", lclNum);
                 varDsc->lvIsOSRExposedLocal = true;
+
+                // Ensure that ref counts for exposed OSR locals take into account
+                // that some of the refs might be in the Tier0 parts of the method
+                // that get trimmed away.
+                //
+                varDsc->lvImplicitlyReferenced = 1;
             }
         }
     }
@@ -1904,8 +1910,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
         const char* className = compiler->info.compCompHnd->getClassNameFromMetadata(node.simdTypeHnd, &namespaceName);
 
 #ifdef FEATURE_SIMD
-        if (compiler->usesSIMDTypes() &&
-            (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName)))
+        if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName))
         {
             unsigned    simdSize;
             CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
@@ -7393,7 +7398,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    printf("[%2s%1s%02XH]  ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
 }
 
 /*****************************************************************************
@@ -7634,6 +7639,19 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             case PROMOTION_TYPE_INDEPENDENT:
                 printf(" P-INDEP");
                 break;
+        }
+    }
+
+    if (varDsc->lvClassHnd != NO_CLASS_HANDLE)
+    {
+        printf(" <%s>", eeGetClassName(varDsc->lvClassHnd));
+    }
+    else if (varTypeIsStruct(varDsc->TypeGet()))
+    {
+        ClassLayout* layout = varDsc->GetLayout();
+        if (layout != nullptr && !layout->IsBlockLayout())
+        {
+            printf(" <%s>", layout->GetClassName());
         }
     }
 

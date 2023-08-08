@@ -633,6 +633,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
     CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
     CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
+    CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION, // throw EntryPointNotFoundException for failed static virtual method resolution
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -906,7 +907,7 @@ enum CORINFO_EH_CLAUSE_FLAGS
     CORINFO_EH_CLAUSE_FINALLY   = 0x0002, // This clause is a finally clause
     CORINFO_EH_CLAUSE_FAULT     = 0x0004, // This clause is a fault clause
     CORINFO_EH_CLAUSE_DUPLICATE = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-    CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
+    CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one
 };
 
 // This enumeration is passed to InternalThrow
@@ -1635,6 +1636,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
     CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE, // object class cannot be referenced from R2R code due to missing tokens
     CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
     CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
+    CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
     CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
 };
 
@@ -1727,8 +1729,11 @@ struct CORINFO_FIELD_INFO
 
 struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
-    CORINFO_CONST_LOOKUP tlsIndex;
-    uint32_t offsetOfThreadLocalStoragePointer;
+    CORINFO_CONST_LOOKUP tlsIndex;              // windows specific
+    void* tlsGetAddrFtnPtr;                     // linux/x64 specific - address of __tls_get_addr() function
+    void* tlsIndexObject;                       // linux/x64 specific - address of tls_index object
+    void* threadVarsSection;                    // osx x64/arm64 specific - address of __thread_vars section of `t_ThreadStatics`
+    uint32_t offsetOfThreadLocalStoragePointer; // windows specific
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
     uint32_t offsetOfGCDataPointer;
@@ -2488,11 +2493,21 @@ public:
             bool                        fOptional
             ) = 0;
 
-    // returns the "NEW" helper optimized for "newCls."
+    //------------------------------------------------------------------------------
+    // getNewHelper: Returns the allocation helper optimized for a specific class.
+    //
+    // Parameters:
+    //   classHandle     - Handle of the type.
+    //   pHasSideEffects - [out] Whether or not the allocation of the specified
+    //                     type can have user-visible side effects; for example,
+    //                     because a finalizer may run as a result.
+    //
+    // Returns:
+    //   Helper to call to allocate the specified type.
+    //
     virtual CorInfoHelpFunc getNewHelper(
-            CORINFO_RESOLVED_TOKEN *    pResolvedToken,
-            CORINFO_METHOD_HANDLE       callerHandle,
-            bool *                      pHasSideEffects
+            CORINFO_CLASS_HANDLE  classHandle,
+            bool*                 pHasSideEffects
             ) = 0;
 
     // returns the newArr (1-Dim array) helper optimized for "arrayCls."
@@ -3171,16 +3186,16 @@ public:
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
     virtual void getCallInfo(
-            // Token info
+            // Token info (in)
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
-            // Generics info
+            // Generics info (in)
             CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
 
-            // Security info
+            // Security info (in)
             CORINFO_METHOD_HANDLE   callerHandle,
 
-            // Jit info
+            // Jit info (in)
             CORINFO_CALLINFO_FLAGS  flags,
 
             // out params

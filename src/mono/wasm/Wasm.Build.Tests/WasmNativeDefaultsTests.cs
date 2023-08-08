@@ -11,7 +11,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class WasmNativeDefaultsTests : BuildTestBase
+    public class WasmNativeDefaultsTests : TestMainJsTestBase
     {
         public WasmNativeDefaultsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -93,7 +93,7 @@ namespace Wasm.Build.Tests
                                         insertAtEnd: printValueTarget);
 
             (_, string output) = BuildProject(buildArgs,
-                                                id: Path.GetRandomFileName(),
+                                                id: GetRandomId(),
                                                 new BuildProjectOptions(
                                                     InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
                                                     DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,

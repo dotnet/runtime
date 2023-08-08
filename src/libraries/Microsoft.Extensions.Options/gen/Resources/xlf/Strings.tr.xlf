@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">Doğrulama öznitelikleri sabit veya statik üye {0} için geçerli değildir.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">Sabitler, statik alanlar veya özellikler doğrulanamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
@@ -60,6 +60,16 @@
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
         <target state="translated">'OptionsValidatorAttribute' ile açıklama eklenmiş bir tür gerekli arabirimi uygulamıyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="translated">'{1}' adlı üye üzerindeki '{0}' doğrulama özniteliğine '{2}' doğrulayıcı türünden erişilemiyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="translated">Üye üzerindeki doğrulama özniteliğine doğrulayıcı türünden erişilemiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

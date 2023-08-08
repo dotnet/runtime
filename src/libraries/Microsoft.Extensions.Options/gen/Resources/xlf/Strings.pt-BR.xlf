@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">Não é possível aplicar atributos de validação a um membro constante ou estático {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">Não é possível validar constantes, campos estáticos ou propriedades.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
@@ -60,6 +60,16 @@
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
         <target state="translated">Um tipo anotado com "OptionsValidatorAttribute" não implementa a interface necessária.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="translated">O atributo de validação '{0}' no membro '{1}' está inacessível do tipo de validador '{2}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="translated">O atributo de validação no membro está inacessível do tipo de validador.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

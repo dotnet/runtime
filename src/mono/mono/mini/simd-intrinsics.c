@@ -548,12 +548,11 @@ emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_i
 }
 
 static MonoInst*
-emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
+emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, MonoInst *arg1, MonoInst *arg2)
 {
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		MonoTypeEnum elemt = get_underlying_type (m_class_get_this_arg (arg1->klass));
-		MonoInst* cmp = emit_xcompare (cfg, arg1->klass, elemt, arg1, arg2);
+		MonoInst* cmp = emit_xcompare (cfg, klass, element_type, arg1, arg2);
 		MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
 		ret->inst_c0 = SIMD_EXTR_ARE_ALL_SET;
 		ret->inst_c1 = mono_class_value_size (klass, NULL);
@@ -572,9 +571,9 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 }
 
 static MonoInst*
-emit_not_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
+emit_not_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, MonoInst *arg1, MonoInst *arg2)
 {
-	MonoInst *ins = emit_xequal (cfg, klass, arg1, arg2);
+	MonoInst *ins = emit_xequal (cfg, klass, element_type, arg1, arg2);
 	int sreg = ins->dreg;
 	int dreg = alloc_ireg (cfg);
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
@@ -1784,11 +1783,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (COMPILE_LLVM (cfg)) {
 			switch (id) {
 				case SN_EqualsAll:
-					return emit_xequal (cfg, arg_class, args [0], args [1]);
+					return emit_xequal (cfg, arg_class, arg0_type, args [0], args [1]);
 				case SN_EqualsAny: {
 					MonoInst *cmp_eq = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
 					MonoInst *zero = emit_xzero (cfg, arg_class);
-					return emit_not_xequal (cfg, arg_class, cmp_eq, zero);
+					return emit_not_xequal (cfg, arg_class, arg0_type, cmp_eq, zero);
 				}
 			}
 		} else {
@@ -1806,9 +1805,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_WASM
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
 #elif defined(TARGET_ARM64)
-		if (COMPILE_LLVM (cfg))
-			return NULL;
-
 		MonoInst* result_ins = NULL;
 		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
@@ -1820,27 +1816,22 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		and_res_vec->sreg2 = msb_mask_vec->dreg;
 
 		MonoInst* msb_shift_vec = emit_msb_shift_vector_constant (cfg, arg_class, arg0_type);
-		MonoInst* shift_res_vec = emit_simd_ins (cfg, arg_class, OP_ARM64_USHL, and_res_vec->dreg, msb_shift_vec->dreg);
+		
+		MonoInst* shift_res_vec = emit_simd_ins (cfg, arg_class, OP_XOP_OVR_X_X_X, and_res_vec->dreg, msb_shift_vec->dreg);
+		shift_res_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_USHL;
 		shift_res_vec->inst_c1 = arg0_type;
 
 		if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1) {
-			// Always perform usigned operations as vector sum and extract operations could sign-extend the result into the GP register
+			// Always perform unsigned operations as vector sum and extract operations could sign-extend the result into the GP register
 			// making the final result invalid. This is not needed for wider type as the maximum sum of extracted MSB cannot be larger than 8bits
 			arg0_type = MONO_TYPE_U1;
 
-			// In order to sum high and low 64bits of the shifted vector separatly, we use a zeroed vector and the extract operation
-			MonoInst* zero_vec = emit_xzero(cfg, arg_class);
-
-			MonoInst* ext_low_vec = emit_simd_ins (cfg, arg_class, OP_ARM64_EXT_IMM, zero_vec->dreg, shift_res_vec->dreg);
-			ext_low_vec->inst_c0 = 8;
-			ext_low_vec->inst_c1 = arg0_type;
+			MonoInst* ext_low_vec = emit_simd_ins_for_sig (cfg, arg_class, OP_XLOWER, 8, arg0_type, fsig, &shift_res_vec);
 			MonoInst* sum_low_vec = emit_sum_vector (cfg, fsig->params [0], arg0_type, ext_low_vec);
-
-			MonoInst* ext_high_vec = emit_simd_ins (cfg, arg_class, OP_ARM64_EXT_IMM, shift_res_vec->dreg, zero_vec->dreg);
-			ext_high_vec->inst_c0 = 8;
-			ext_high_vec->inst_c1 = arg0_type;
-			MonoInst* sum_high_vec = emit_sum_vector (cfg, fsig->params [0], arg0_type, ext_high_vec);
-
+			
+			MonoInst* ext_high_vec = emit_simd_ins_for_sig (cfg, arg_class, OP_XUPPER, 8, arg0_type, fsig, &shift_res_vec);
+			MonoInst* sum_high_vec = emit_sum_vector (cfg, fsig->params [0], arg0_type, ext_high_vec);			
+			
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, sum_high_vec->dreg, sum_high_vec->dreg, 8);
 			EMIT_NEW_BIALU (cfg, result_ins, OP_IOR, sum_high_vec->dreg, sum_high_vec->dreg, sum_low_vec->dreg);
 		} else {
@@ -1979,14 +1970,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				if (type_enum_is_float (arg0_type)) {
 					MonoInst *zero = emit_xzero (cfg, arg_class);
 					MonoInst *inverted_cmp = emit_xcompare (cfg, klass, arg0_type, cmp, zero);
-					return emit_xequal (cfg, arg_class, inverted_cmp, zero);
+					return emit_xequal (cfg, arg_class, arg0_type, inverted_cmp, zero);
 				}
 
 				MonoInst *ones = emit_xones (cfg, arg_class);
-				return emit_xequal (cfg, arg_class, cmp, ones);
+				return emit_xequal (cfg, arg_class, arg0_type, cmp, ones);
 			} else {
 				MonoInst *zero = emit_xzero (cfg, arg_class);
-				return emit_not_xequal (cfg, arg_class, cmp, zero);
+				return emit_not_xequal (cfg, arg_class, arg0_type, cmp, zero);
 			}
 		} else {
 			MonoInst* cmp = emit_xcompare_for_intrinsic (cfg, arg_class, id, arg0_type, args [0], args [1]);
@@ -2516,8 +2507,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return NULL;
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		switch (id) {
-			case SN_op_Equality: return emit_xequal (cfg, arg_class, args [0], args [1]);
-			case SN_op_Inequality: return emit_not_xequal (cfg, arg_class, args [0], args [1]);
+			case SN_op_Equality: return emit_xequal (cfg, arg_class, arg0_type, args [0], args [1]);
+			case SN_op_Inequality: return emit_not_xequal (cfg, arg_class, arg0_type, args [0], args [1]);
 			default: g_assert_not_reached ();
 		}
 	}
@@ -2581,7 +2572,7 @@ static G_GNUC_UNUSED MonoInst*
 emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
-	int id, len;
+	int id;
 	MonoClass *klass;
 	MonoType *type, *etype;
 
@@ -2593,42 +2584,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return NULL;
 	}
 
-	if (!COMPILE_LLVM (cfg)) {
 #ifndef TARGET_ARM64
+	if (!COMPILE_LLVM (cfg))
 		return NULL;
-#else
-		// when a method gets enabled should be removed from here
-		switch (id) {
-		case SN_ctor:
-		case SN_Clamp:
-		case SN_Conjugate:
-		case SN_CopyTo:
-		case SN_Distance:
-		case SN_DistanceSquared:
-		case SN_Dot:
-		case SN_Length:
-		case SN_LengthSquared:
-		case SN_Lerp:
-		case SN_Negate:
-		case SN_Normalize:
-		case SN_get_Identity:
-		case SN_get_Item:
-		case SN_get_One:
-		case SN_get_UnitW:
-		case SN_get_UnitX:
-		case SN_get_UnitY:
-		case SN_get_UnitZ:
-		case SN_get_Zero:
-		case SN_op_Equality:
-		case SN_op_Inequality:
-		case SN_op_UnaryNegation:
-		case SN_set_Item:
-			return NULL;
-		default:
-			break;
-		}
 #endif
-	}
 
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
@@ -2639,7 +2598,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	klass = cmethod->klass;
 	type = m_class_get_byval_arg (klass);
 	etype = m_class_get_byval_arg (mono_defaults.single_class);
-	len = mono_class_value_size (klass, NULL) / 4;
 
 	// Similar to the cases in emit_sys_numerics_vector_t ()
 	switch (id) {
@@ -2650,10 +2608,13 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 
 			int opcode = type_to_expand_op (etype->type);
 			ins = emit_simd_ins (cfg, klass, opcode, args [1]->dreg, -1);
+			ins->dreg = dreg;
+			ins->inst_c1 = MONO_TYPE_R4;
 
 			for (int i = 1; i < fsig->param_count; ++i) {
 				ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, ins->dreg, args [i + 1]->dreg);
 				ins->inst_c0 = i;
+				ins->inst_c1 = MONO_TYPE_R4;
 			}
 			ins->dreg = dreg;
 
@@ -2666,6 +2627,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		}
 		// FIXME: These don't work since Vector2/Vector3 are not handled as SIMD
 #if 0
+		int len = mono_class_value_size (klass, NULL) / 4;
 		} else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector3 (Vector2, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
@@ -2697,13 +2659,44 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		break;
 	case SN_get_Item: {
 		// GetElement is marked as Intrinsic, but handling this in get_Item leads to better code
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
-		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		MonoTypeEnum ty = etype->type;
-		int opcode = type_to_xextract_op (ty);
 		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
-		ins->inst_c1 = ty;
+		int elems = 4;
+		MonoTypeEnum ty = etype->type;
+
+		if (args [1]->opcode == OP_ICONST) {
+			// If the index is provably a constant, we can generate vastly better code.
+			int index = args[1]->inst_c0;
+
+			if (index < 0 || index >= elems) {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+			}
+
+			int opcode = type_to_extract_op (ty);
+			ins = emit_simd_ins (cfg, klass, opcode, src1, -1);
+			ins->inst_c0 = args[1]->inst_c0;
+			ins->inst_c1 = ty;
+			return ins;
+		}
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+
+		if (COMPILE_LLVM (cfg)) {
+			int opcode = type_to_xextract_op (ty);
+			ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
+			ins->inst_c1 = ty;
+		} else {
+			// Load back from vector_dreg + index << elem_size_log2
+			// TODO: on x86, use a LEA
+			int offset_reg = alloc_freg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (ty));
+			int addr_reg = alloc_freg (cfg);
+			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, args [0]->dreg, offset_reg);
+			int dreg = alloc_freg (cfg);
+			NEW_LOAD_MEMBASE (cfg, ins, mono_type_to_load_membase (cfg, fsig->ret), dreg, addr_reg, 0);
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
 		return ins;
 	}
 	case SN_get_Zero:
@@ -2754,17 +2747,52 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		g_assert (fsig->hasthis && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_I4 && fsig->params [1]->type == MONO_TYPE_R4);
 
 		gboolean indirect = FALSE;
+		int elems = 4, index = args [1]->inst_c0;
 		int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
+		if (args [1]->opcode == OP_ICONST) {
+			// If the index is provably a constant, we can generate vastly better code.
+			// Bounds check only if the index is out of range
+			if (index < 0 || index >= elems) {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+			}
+
+			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->dreg);
+			ins->inst_c0 = index;
+			ins->inst_c1 = MONO_TYPE_R4;
+			ins->dreg = dreg;
+
+			if (indirect) {
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
+				ins->klass = klass;
+			}
+
+			return ins;
+		}
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		ins = emit_simd_ins (cfg, klass, OP_XINSERT_R4, dreg, args [2]->dreg);
-		ins->sreg3 = args [1]->dreg;
-		ins->inst_c1 = MONO_TYPE_R4;
-		ins->dreg = dreg;
-		if (indirect) {
-			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
-			ins->klass = klass;
+
+		if (COMPILE_LLVM (cfg)) {
+			ins = emit_simd_ins (cfg, klass, OP_XINSERT_R4, dreg, args [2]->dreg);
+			ins->sreg3 = args [1]->dreg;
+			ins->inst_c1 = MONO_TYPE_R4;
+			ins->dreg = dreg;
+
+			if (indirect) {
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
+				ins->klass = klass;
+			}
+		} else {
+			// Overwrite [vector_dreg + index << elem_size_log2] with replacement value
+			// TODO: on x86, use a LEA
+			int offset_reg = alloc_freg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (MONO_TYPE_R4));
+			int addr_reg = alloc_freg (cfg);
+			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, args [0]->dreg, offset_reg);
+
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [1], addr_reg, 0, args [2]->dreg);
 		}
 
 		return ins;
@@ -2789,8 +2817,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	case SN_Dot: {
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
-		int instc0 = OP_FMUL;
-		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, MONO_TYPE_R4, fsig, args);
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FMUL, MONO_TYPE_R4, fsig, args);
 		return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, pairwise_multiply);
 #elif defined(TARGET_AMD64)
 		if (!(mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41))
@@ -2815,7 +2842,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Negate:
 	case SN_op_UnaryNegation: {
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		return emit_simd_ins (cfg, klass, OP_NEGATION, args [0]->dreg, -1);
+		ins = emit_simd_ins (cfg, klass, OP_NEGATION, args [0]->dreg, -1);
+		ins->inst_c1 = MONO_TYPE_R4;
+		return ins;
 #else
 		return NULL;
 #endif
@@ -2840,13 +2869,13 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		return emit_xequal (cfg, arg_class, args [0], args [1]);
+		return emit_xequal (cfg, arg_class, MONO_TYPE_R4, args [0], args [1]);
 	}
 	case SN_op_Inequality: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		return emit_not_xequal (cfg, arg_class, args [0], args [1]);
+		return emit_not_xequal (cfg, arg_class, MONO_TYPE_R4, args [0], args [1]);
 	}
 	case SN_SquareRoot: {
 #ifdef TARGET_ARM64
@@ -3207,8 +3236,8 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 				  mono_metadata_type_equal (fsig->params [0], type) &&
 				  mono_metadata_type_equal (fsig->params [1], type));
 		switch (id) {
-			case SN_op_Equality: return emit_xequal (cfg, klass, args [0], args [1]);
-			case SN_op_Inequality: return emit_not_xequal (cfg, klass, args [0], args [1]);
+			case SN_op_Equality: return emit_xequal (cfg, klass, etype->type, args [0], args [1]);
+			case SN_op_Inequality: return emit_not_xequal (cfg, klass, etype->type, args [0], args [1]);
 			default: g_assert_not_reached ();
 		}
 	case SN_GreaterThan:
@@ -5285,15 +5314,15 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_CompareLessThan, OP_XCOMPARE, CMP_LT, OP_XCOMPARE, CMP_LT_UN, OP_XCOMPARE_FP, CMP_LT},
 	{SN_CompareLessThanOrEqual, OP_XCOMPARE, CMP_LE, OP_XCOMPARE, CMP_LE_UN, OP_XCOMPARE_FP, CMP_LE},
 	{SN_CompareNotEqual, OP_XCOMPARE, CMP_NE, OP_XCOMPARE, CMP_NE, OP_XCOMPARE_FP, CMP_NE},
-	{SN_ConvertNarrowingSignedSaturate},
-	{SN_ConvertNarrowingUnsignedSaturate},
+	{SN_ConvertNarrowingSaturateSigned},
+	{SN_ConvertNarrowingSaturateUnsigned},
 	{SN_ConvertToDoubleLower, OP_CVTDQ2PD, 0, OP_WASM_SIMD_CONV_U4_TO_R8_LOW, 0, OP_CVTPS2PD},
 	{SN_ConvertToInt32Saturate},
 	{SN_ConvertToSingle, OP_CVT_SI_FP, 0, OP_CVT_UI_FP, 0, OP_WASM_SIMD_CONV_R8_TO_R4},
-	{SN_ConvertToUnsignedInt32Saturate},
+	{SN_ConvertToUInt32Saturate},
 	{SN_Divide},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
-	{SN_ExtractLane},
+	{SN_ExtractScalar},
 	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_SIMD_FLOOR},
 	{SN_LoadScalarAndInsert, OP_WASM_SIMD_LOAD_SCALAR_INSERT},
 	{SN_LoadScalarAndSplatVector128, OP_WASM_SIMD_LOAD_SCALAR_SPLAT},
@@ -5312,7 +5341,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_SIMD_POPCNT},
 	{SN_PseudoMax, OP_XOP_OVR_X_X_X, INTRINS_WASM_PMAX},
 	{SN_PseudoMin, OP_XOP_OVR_X_X_X, INTRINS_WASM_PMIN},
-	{SN_ReplaceLane},
+	{SN_ReplaceScalar},
 	{SN_RoundToNearest, OP_XOP_OVR_X_X, INTRINS_SIMD_NEAREST},
 	{SN_ShiftLeft, OP_SIMD_SHL},
 	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
@@ -5336,6 +5365,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 
 static const IntrinGroup supported_wasm_intrinsics [] = {
 	{ "PackedSimd", MONO_CPU_WASM_SIMD, packedsimd_methods, sizeof (packedsimd_methods) },
+	{ "WasmBase", MONO_CPU_WASM_BASE, wasmbase_methods, sizeof (wasmbase_methods) },
 };
 
 static const IntrinGroup supported_wasm_common_intrinsics [] = {
@@ -5556,7 +5586,7 @@ emit_wasm_supported_intrinsics (
 
 				return NULL;
 			}
-			case SN_ConvertNarrowingSignedSaturate: {
+			case SN_ConvertNarrowingSaturateSigned: {
 				op = OP_XOP_X_X_X;
 
 				switch (arg0_type) {
@@ -5574,7 +5604,7 @@ emit_wasm_supported_intrinsics (
 
 				return NULL;
 			}
-			case SN_ConvertNarrowingUnsignedSaturate: {
+			case SN_ConvertNarrowingSaturateUnsigned: {
 				op = OP_XOP_X_X_X;
 
 				switch (arg0_type) {
@@ -5608,7 +5638,7 @@ emit_wasm_supported_intrinsics (
 				// continue with default emit
 				break;
 			}
-			case SN_ConvertToUnsignedInt32Saturate: {
+			case SN_ConvertToUInt32Saturate: {
 				switch (arg0_type) {
 					case MONO_TYPE_R4:
 						op = OP_CVT_FP_UI;
@@ -5624,7 +5654,7 @@ emit_wasm_supported_intrinsics (
 				// continue with default emit
 				break;
 			}
-			case SN_ExtractLane: {
+			case SN_ExtractScalar: {
 				op = type_to_xextract_op (arg0_type);
 				break;
 			}
@@ -5650,7 +5680,7 @@ emit_wasm_supported_intrinsics (
 				// continue with default emit
 				break;
 			}
-			case SN_ReplaceLane: {
+			case SN_ReplaceScalar: {
 				int insert_op = type_to_xinsert_op (arg0_type);
 				MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
 				ins->sreg3 = args [1]->dreg;

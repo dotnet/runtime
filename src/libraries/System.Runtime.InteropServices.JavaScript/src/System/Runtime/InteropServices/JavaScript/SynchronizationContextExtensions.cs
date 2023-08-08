@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// This is draft for possible public API of SynchronizationContext
+    /// Extensions of SynchronizationContext which propagate errors and return values
     /// </summary>
     public static class SynchronizationContextExtension
     {

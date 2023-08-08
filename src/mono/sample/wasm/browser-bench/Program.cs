@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -209,11 +210,14 @@ namespace Sample
             public DateTime timeStamp;
         }
 
+        [JsonSourceGenerationOptions(IncludeFields = true, WriteIndented = true)]
+        [JsonSerializable(typeof(JsonResultsData))]
+        partial class ResultsSerializerContext : JsonSerializerContext { }
+
         string GetJsonResults()
         {
-            var options = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
             var jsonObject = new JsonResultsData { results = results, minTimes = minTimes, timeStamp = DateTime.UtcNow };
-            return JsonSerializer.Serialize(jsonObject, options);
+            return JsonSerializer.Serialize(jsonObject, ResultsSerializerContext.Default.JsonResultsData);
         }
 
         private void PrintJsonResults()

@@ -5,7 +5,7 @@
 #endif // KNOWN_EVENT
 
 #ifndef DYNAMIC_EVENT
- #define DYNAMIC_EVENT(name, level, keyword, ...)
+ #define DYNAMIC_EVENT(name, level, keyword, version, ...)
 #endif // DYNAMIC_EVENT
 
 KNOWN_EVENT(GCStart_V2, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
@@ -47,6 +47,10 @@ KNOWN_EVENT(GCFullNotify_V1, GCEventProvider_Private, GCEventLevel_Information, 
 KNOWN_EVENT(PrvSetGCHandle, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCHandlePrivate)
 KNOWN_EVENT(PrvDestroyGCHandle, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCHandlePrivate)
 KNOWN_EVENT(PinPlugAtGCTime, GCEventProvider_Private, GCEventLevel_Verbose, GCEventKeyword_GCPrivate)
+
+DYNAMIC_EVENT(CommittedUsage, GCEventLevel_Information, GCEventKeyword_GC, 1)
+DYNAMIC_EVENT(HeapCountTuning, GCEventLevel_Information, GCEventKeyword_GC, 1)
+DYNAMIC_EVENT(HeapCountSample, GCEventLevel_Information, GCEventKeyword_GC, 1)
 
 #undef KNOWN_EVENT
 #undef DYNAMIC_EVENT

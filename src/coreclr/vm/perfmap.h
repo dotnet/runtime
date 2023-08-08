@@ -38,13 +38,17 @@ private:
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
 
-    // Construct a new map for the specified pid.
+    // Construct a new map
     PerfMap();
 
-    void OpenFileForPid(int pid);
+    // Open a perfmap map for the specified pid
+    void OpenFileForPid(int pid, const char* basePath);
 
     // Write a line to the map file.
     void WriteLine(SString & line);
+
+    // Default to /tmp or use DOTNET_PerfMapJitDumpPath if set
+    static const char* InternalConstructPath();
 
 protected:
     // Open the perf map file for write.

@@ -766,9 +766,7 @@ namespace Internal.JitInterface
 
                 if (MethodBeingCompiled.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
-                    // At the moment the ILBody fixup generation is only safe for the System module, as further typerefs may not be safe to encode at this time. When we expand
-                    // cross module inlining to support other modules, this will need to be fixed.
-                    if (methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == ecmaMethod.Context.SystemModule ||
+                    if ((methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == ecmaMethod.Context.SystemModule) ||
                         (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(MethodBeingCompiled) &&
                             _compilation.NodeFactory.CompilationModuleGroup.CrossModuleInlineable(MethodBeingCompiled)))
                     {
@@ -778,7 +776,27 @@ namespace Internal.JitInterface
 
                     // Harvest the method being compiled for the purpose of populating the type resolver
                     var resolver = _compilation.NodeFactory.Resolver;
-                    resolver.AddModuleTokenForMethod(MethodBeingCompiled, new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle));
+                    if (_compilation.CompilationModuleGroup.VersionsWithModule(ecmaMethod.Module))
+                    {
+                        resolver.AddModuleTokenForMethod(MethodBeingCompiled, new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle));
+                    }
+                    else
+                    {
+                        // Cross module optimization scenario. If we aren't able to come up with a token for the method being compiled, then force it to be
+                        // computed.
+                        // NOTE: Technically, we could arrange to require only the set of tokens necessary to describe the type that owns this method
+                        // as well as the parameters and return value to the method. The token for the actual method is not required.
+                        EntityHandle? handle = _compilation.NodeFactory.ManifestMetadataTable._mutableModule.TryGetExistingEntityHandle(ecmaMethod);
+                        if (handle.HasValue)
+                        {
+                            resolver.AddModuleTokenForMethod(MethodBeingCompiled, new ModuleToken(_compilation.NodeFactory.ManifestMetadataTable._mutableModule, handle.Value));
+                        }
+                        else
+                        {
+                            _ilBodiesNeeded = _ilBodiesNeeded ?? new List<EcmaMethod>();
+                            _ilBodiesNeeded.Add(ecmaMethod);
+                        }
+                    }
                 }
                 var compilationResult = CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
                 codeGotPublished = true;
@@ -1487,13 +1505,13 @@ namespace Internal.JitInterface
             return fThrowing ? CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY : CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY;
         }
 
-        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref bool pHasSideEffects)
+        private CorInfoHelpFunc getNewHelper(CORINFO_CLASS_STRUCT_* classHandle, ref bool pHasSideEffects)
         {
-            TypeDesc type = HandleToObject(pResolvedToken.hClass);
+            TypeDesc type = HandleToObject(classHandle);
             MetadataType metadataType = type as MetadataType;
             if (metadataType != null && metadataType.IsAbstract)
             {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramDefault);
             }
 
             pHasSideEffects = type.HasFinalizer;
@@ -2294,6 +2312,10 @@ namespace Internal.JitInterface
                     throw new RequiresRuntimeJitException(pResult->thisTransform.ToString());
                 }
             }
+
+            // We validate the safety of the signature here, as it could have been adjusted
+            // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
+            ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
 
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
             // the caller.  No other kinds of virtual calls have extra information attached.
@@ -3203,6 +3225,28 @@ namespace Internal.JitInterface
         {
             // Implemented for JIT and NativeAOT only for now.
             return false;
+        }
+
+        private void ValidateSafetyOfUsingTypeEquivalenceInSignature(MethodSignature signature)
+        {
+            // Type equivalent valuetypes not in the current version bubble are problematic, and cannot be referred to in our current token
+            // scheme except through type references. So we need to detect them, and if they aren't referred to by type reference from a module
+            // in the current build, then we need to fallback to runtime jit.
+            ValidateSafetyOfUsingTypeEquivalenceOfType(signature.ReturnType);
+            foreach (var type in signature)
+            {
+                ValidateSafetyOfUsingTypeEquivalenceOfType(type);
+            }
+        }
+
+        void ValidateSafetyOfUsingTypeEquivalenceOfType(TypeDesc type)
+        {
+            if (type.IsValueType && type.IsTypeDefEquivalent && !_compilation.CompilationModuleGroup.VersionsWithTypeReference(type))
+            {
+                // Technically this is a bit pickier than needed, as cross module inlineable cases will be hit by this, but type equivalence is a
+                // rarely used feature, and we can fix that if we need to.
+                throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
+            }
         }
     }
 }

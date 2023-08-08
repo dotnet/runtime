@@ -2532,7 +2532,7 @@ namespace System.Xml
 
         private XmlResolver GetTempResolver()
         {
-            return _xmlResolver ?? new XmlUrlResolver();
+            return _xmlResolver ?? XmlReaderSettings.GetDefaultPermissiveResolver();
         }
 
         internal bool DtdParserProxy_PushEntity(IDtdEntityInfo entity, out int entityId)

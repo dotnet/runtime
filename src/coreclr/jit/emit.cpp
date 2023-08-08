@@ -590,13 +590,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -747,6 +747,10 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmMskCalleeTrash = emitComp->rbmMskCalleeTrash;
+#endif // TARGET_XARCH
 }
 
 void emitter::emitEndCG()
@@ -1650,7 +1654,22 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG ||
         (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
     {
-        emitNxtIG(true);
+        // If the current IG has instructions, then we need to create a new one.
+        if (emitCurIGnonEmpty())
+        {
+            emitNxtIG(true);
+        }
+        else
+        {
+            if (emitNoGCIG)
+            {
+                emitCurIG->igFlags |= IGF_NOGCINTERRUPT;
+            }
+            else
+            {
+                emitCurIG->igFlags &= ~IGF_NOGCINTERRUPT;
+            }
+        }
     }
 
     /* Grab the space for the instruction */
@@ -3528,11 +3547,11 @@ void emitter::emitDispVarSet()
 
             if (of < 0)
             {
-                printf("-%02XH", -of);
+                printf("-0x%02X", -of);
             }
             else if (of > 0)
             {
-                printf("+%02XH", +of);
+                printf("+0x%02X", +of);
             }
 
             printf("]");
@@ -4109,7 +4128,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         if (jitdump)
         {
-            printf("%soffs=%06XH, size=%04XH", separator, ig->igOffs, ig->igSize);
+            printf("%soffs=0x%06X, size=0x%04X", separator, ig->igOffs, ig->igSize);
             separator = ", ";
         }
 
@@ -7117,12 +7136,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
                     if (emitComp->opts.disAddr)
                     {
-                        printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
+                        printf("              ;; offset=0x%04X", emitCurCodeOffs(cp));
                     }
                     else
 #endif // DEBUG
                     {
-                        printf("  ;; offset=%04XH", emitCurCodeOffs(cp));
+                        printf("  ;; offset=0x%04X", emitCurCodeOffs(cp));
                     }
                 }
                 printf("\n");
@@ -7134,7 +7153,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             printf("\n%s:", emitLabelString(ig));
             if (!emitComp->opts.disDiffable)
             {
-                printf("                ;; offset=%04XH", emitCurCodeOffs(cp));
+                printf("                ;; offset=0x%04X", emitCurCodeOffs(cp));
             }
             printf("\n");
         }
@@ -8050,7 +8069,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     if (attr == EA_4BYTE)
     {
-        f        = forceCastToFloat(constValue);
+        f        = FloatingPointUtils::convertToSingle(constValue);
         cnsAddr  = &f;
         dataType = TYP_FLOAT;
     }
@@ -10205,9 +10224,9 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
 
     if (callSig == nullptr)
     {
-        assert(methodHandle != nullptr);
-
-        if (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF)
+        // For certain calls whose target is non-containable (e.g. tls access targets), `methodHandle`
+        // will be nullptr, because the target is present in a register.
+        if ((methodHandle != nullptr) && (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF))
         {
             emitComp->eeGetMethodSig(methodHandle, &sigInfo);
             callSig = &sigInfo;
