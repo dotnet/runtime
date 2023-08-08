@@ -148,9 +148,67 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t 
     }
 }
 
+// All the runtime redefine this enum, should move to commmon code.
+// https://github.com/dotnet/runtime/issues/87069
+enum class ActivityControlCode
+{
+    EVENT_ACTIVITY_CONTROL_GET_ID = 1,
+    EVENT_ACTIVITY_CONTROL_SET_ID = 2,
+    EVENT_ACTIVITY_CONTROL_CREATE_ID = 3,
+    EVENT_ACTIVITY_CONTROL_GET_SET_ID = 4,
+    EVENT_ACTIVITY_CONTROL_CREATE_SET_ID = 5
+};
+
 EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(uint32_t controlCode, GUID *pActivityId)
 {
-    return 0;
+    int retVal = 0;
+    ep_rt_thread_activity_id_handle_t activityIdHandle = ep_thread_get_activity_id_handle ();
+    if (activityIdHandle == NULL || pActivityId == NULL)
+    {
+        retVal = 1;
+    }
+    else
+    {
+        ActivityControlCode activityControlCode = (ActivityControlCode)controlCode;
+        GUID currentActivityId;
+        switch (activityControlCode)
+        {
+        case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_ID:
+
+            ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            break;
+
+        case ActivityControlCode::EVENT_ACTIVITY_CONTROL_SET_ID:
+
+            ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            break;
+
+        case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
+
+            ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            break;
+
+        case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:
+
+            ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            *pActivityId = currentActivityId;
+
+            break;
+
+        case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_SET_ID:
+
+            ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
+            break;
+
+        default:
+            retVal = 1;
+        }
+    }
+
+    return retVal;
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_WriteEventData(

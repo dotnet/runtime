@@ -6,9 +6,10 @@ import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
-import { invokeLibraryInitializers } from "./libraryInitializers";
+import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
+import { appendUniqueQuery } from "./assets";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -227,8 +228,6 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
 
         normalizeConfig();
 
-        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config], "modulesAfterConfigLoaded");
-
         if (module.onConfigLoaded) {
             try {
                 await module.onConfigLoaded(loaderHelpers.config, exportedRuntimeAPI);
@@ -239,6 +238,11 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
                 throw err;
             }
         }
+
+        await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
+        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
+        normalizeConfig();
+
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
@@ -268,7 +272,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     let loadConfigResponse: Response;
 
     if (!loaderResponse) {
-        loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
+        loadConfigResponse = await defaultLoadBootConfig(appendUniqueQuery(defaultConfigSrc, "manifest"));
     } else if (typeof loaderResponse === "string") {
         loadConfigResponse = await defaultLoadBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
     } else {

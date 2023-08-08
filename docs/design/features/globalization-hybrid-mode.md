@@ -478,3 +478,34 @@ Below function are used from apple native functions:
 - [uppercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1413316-uppercasestringwithlocale?language=objc)
 - [lowercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1417298-lowercasestringwithlocale?language=objc)
 
+## Calandars
+
+Affected public APIs:
+- DateTimeFormatInfo.AbbreviatedDayNames
+- DateTimeFormatInfo.GetAbbreviatedDayName()
+- DateTimeFormatInfo.AbbreviatedMonthGenitiveNames
+- DateTimeFormatInfo.AbbreviatedMonthNames
+- DateTimeFormatInfo.GetAbbreviatedMonthName()
+- DateTimeFormatInfo.AMDesignator
+- DateTimeFormatInfo.CalendarWeekRule
+- DateTimeFormatInfo.DayNames
+- DateTimeFormatInfo.GetDayName()
+- DateTimeFormatInfo.GetEraName()
+- DateTimeFormatInfo.FirstDayOfWeek
+- DateTimeFormatInfo.FullDateTimePattern
+- DateTimeFormatInfo.LongDatePattern
+- DateTimeFormatInfo.LongTimePattern
+- DateTimeFormatInfo.MonthDayPattern
+- DateTimeFormatInfo.MonthGenitiveNames
+- DateTimeFormatInfo.MonthNames
+- DateTimeFormatInfo.GetMonthName()
+- DateTimeFormatInfo.NativeCalendarName
+- DateTimeFormatInfo.PMDesignator
+- DateTimeFormatInfo.ShortDatePattern
+- DateTimeFormatInfo.ShortestDayNames
+- DateTimeFormatInfo.GetShortestDayName()
+- DateTimeFormatInfo.ShortTimePattern
+- DateTimeFormatInfo.YearMonthPattern
+
+Apple Native API does not have an equivalent for abbreviated era name and will return empty string
+- DateTimeFormatInfo.GetAbbreviatedEraName()
