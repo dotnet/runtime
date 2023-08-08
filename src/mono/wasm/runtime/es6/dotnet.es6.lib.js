@@ -73,34 +73,63 @@ const postset = `
 
 const DotnetSupportLib = {
     $DOTNET: { setup },
-    $DOTNET__postset: postset
+    $DOTNET__postset: postset,
+    icudt68_dat: function () { throw new Error('dummy link symbol') },
 };
 
-// the methods would be visible to EMCC linker
-// --- keep in sync with exports.ts ---
-let linked_functions = [
+// the JS methods would be visible to EMCC linker and become imports of the WASM module
+
+#if USE_PTHREADS
+// --- keep in sync with exports-linker.ts, order matters! ---
+const mono_wasm_threads_imports = [
+    // mono-threads-wasm.c
+    "mono_wasm_pthread_on_pthread_attached",
+    "mono_wasm_pthread_on_pthread_detached",
+    // threads.c
+    "mono_wasm_eventloop_has_unsettled_interop_promises",
+    // diagnostics_server.c
+    "mono_wasm_diagnostic_server_on_server_thread_created",
+    "mono_wasm_diagnostic_server_on_runtime_server_init",
+    "mono_wasm_diagnostic_server_stream_signal_work_available",
+
+    // corebindings.c
+    "mono_wasm_install_js_worker_interop",
+    "mono_wasm_uninstall_js_worker_interop",
+]
+#else
+const mono_wasm_threads_imports = [];
+#endif
+
+// --- keep in sync with exports-linker.ts, order matters! ---
+const mono_wasm_legacy_interop_imports = DISABLE_LEGACY_JS_INTEROP ? [] : [
+    // corebindings.c
+    "mono_wasm_invoke_js_with_args_ref",
+    "mono_wasm_get_object_property_ref",
+    "mono_wasm_set_object_property_ref",
+    "mono_wasm_get_by_index_ref",
+    "mono_wasm_set_by_index_ref",
+    "mono_wasm_get_global_object_ref",
+    "mono_wasm_create_cs_owned_object_ref",
+    "mono_wasm_typed_array_to_array_ref",
+    "mono_wasm_typed_array_from_ref",
+    "mono_wasm_invoke_js_blazor",
+];
+
+// --- keep in sync with exports-linker.ts, order matters! ---
+const linked_functions = [
     // mini-wasm.c
     "mono_wasm_schedule_timer",
 
     // mini-wasm-debugger.c
     "mono_wasm_asm_loaded",
-    "mono_wasm_fire_debugger_agent_message_with_data",
     "mono_wasm_debugger_log",
     "mono_wasm_add_dbg_command_received",
-    "mono_wasm_set_entrypoint_breakpoint",
-
+    "mono_wasm_fire_debugger_agent_message_with_data",
+    "mono_wasm_fire_debugger_agent_message_with_data_to_pause",
     // mono-threads-wasm.c
     "schedule_background_exec",
 
-    // interp.c
-    "mono_wasm_profiler_enter",
-    "mono_wasm_profiler_leave",
-
-    // driver.c
-    "mono_wasm_trace_logger",
-    "mono_wasm_event_pipe_early_startup_callback",
-
-    // jiterpreter.c / interp.c / transform.c
+    // interp.c and jiterpreter.c
     "mono_interp_tier_prepare_jiterpreter",
     "mono_interp_record_interp_entry",
     "mono_interp_jit_wasm_entry_trampoline",
@@ -108,6 +137,14 @@ let linked_functions = [
     "mono_interp_invoke_wasm_jit_call_trampoline",
     "mono_interp_flush_jitcall_queue",
     "mono_jiterp_do_jit_call_indirect",
+
+    "mono_wasm_profiler_enter",
+    "mono_wasm_profiler_leave",
+
+    // driver.c
+    "mono_wasm_trace_logger",
+    "mono_wasm_set_entrypoint_breakpoint",
+    "mono_wasm_event_pipe_early_startup_callback",
 
     // corebindings.c
     "mono_wasm_release_cs_owned_object",
@@ -127,60 +164,17 @@ let linked_functions = [
     "mono_wasm_get_first_day_of_week",
     "mono_wasm_get_first_week_of_year",
 
-    "icudt68_dat",
+    ...mono_wasm_threads_imports,
+    ...mono_wasm_legacy_interop_imports,
 ];
 
-#if USE_PTHREADS
-linked_functions = [...linked_functions,
-    // mono-threads-wasm.c
-    "mono_wasm_pthread_on_pthread_attached",
-    "mono_wasm_pthread_on_pthread_detached",
-    // threads.c
-    "mono_wasm_eventloop_has_unsettled_interop_promises",
-    // diagnostics_server.c
-    "mono_wasm_diagnostic_server_on_server_thread_created",
-    "mono_wasm_diagnostic_server_on_runtime_server_init",
-    "mono_wasm_diagnostic_server_stream_signal_work_available",
-    // corebindings.c
-    "mono_wasm_install_js_worker_interop",
-    "mono_wasm_uninstall_js_worker_interop",
-]
-#endif
-
-if (ENABLE_AOT_PROFILER) {
-    linked_functions = [...linked_functions,
-        "mono_wasm_invoke_js_with_args_ref",
-        "mono_wasm_get_object_property_ref",
-        "mono_wasm_set_object_property_ref",
-        "mono_wasm_get_by_index_ref",
-        "mono_wasm_set_by_index_ref",
-        "mono_wasm_get_global_object_ref",
-        "mono_wasm_create_cs_owned_object_ref",
-        "mono_wasm_typed_array_to_array_ref",
-        "mono_wasm_typed_array_from_ref",
-        "mono_wasm_invoke_js_blazor",
-    ]
-}
-
-if (!DISABLE_LEGACY_JS_INTEROP) {
-    linked_functions = [...linked_functions,
-        "mono_wasm_invoke_js_with_args_ref",
-        "mono_wasm_get_object_property_ref",
-        "mono_wasm_set_object_property_ref",
-        "mono_wasm_get_by_index_ref",
-        "mono_wasm_set_by_index_ref",
-        "mono_wasm_get_global_object_ref",
-        "mono_wasm_create_cs_owned_object_ref",
-        "mono_wasm_typed_array_to_array_ref",
-        "mono_wasm_typed_array_from_ref",
-        "mono_wasm_invoke_js_blazor",
-    ]
-}
-
 // -- this javascript file is evaluated by emcc during compilation! --
-// we generate simple proxy for each exported function so that emcc will include them in the final output
+// we generate simple stub for each exported function so that emcc will include them in the final output
+// we will replace them with the real implementation in replace_linker_placeholders
+let idx = 0;
 for (let linked_function of linked_functions) {
-    DotnetSupportLib[linked_function] = new Function('throw new Error("unreachable");');
+    DotnetSupportLib[linked_function] = new Function(`return {runtime_idx:"${idx}"};//${linked_function}`);
+    idx++;
 }
 
 autoAddDeps(DotnetSupportLib, "$DOTNET");
