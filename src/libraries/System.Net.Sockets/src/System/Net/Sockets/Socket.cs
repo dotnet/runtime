@@ -10,6 +10,7 @@ using System.IO;
 using System.Net.Internals;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -300,22 +301,32 @@ namespace System.Net.Sockets
 
                 if (_localEndPoint == null)
                 {
-                    Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
+                    Span<byte> buffer = stackalloc byte[SocketAddress.GetMaximumAddressSize(_addressFamily)];
+                    int size = buffer.Length;
 
                     unsafe
                     {
-                        fixed (byte* buffer = socketAddress.InternalBuffer)
-                        fixed (int* bufferSize = &socketAddress.InternalSize)
+                        fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
                         {
                             // This may throw ObjectDisposedException.
-                            SocketError errorCode = SocketPal.GetSockName(_handle, buffer, bufferSize);
+                            SocketError errorCode = SocketPal.GetSockName(_handle, ptr, &size);
                             if (errorCode != SocketError.Success)
                             {
                                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
                             }
                         }
                     }
-                    _localEndPoint = _rightEndPoint.Create(socketAddress);
+
+                    if (_addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6)
+                    {
+                        _localEndPoint = IPEndPointExtensions.CreateIPEndPoint(buffer.Slice(0, size));
+                    }
+                    else
+                    {
+                        SocketAddress socketAddress = new SocketAddress(_rightEndPoint.AddressFamily, size);
+                        buffer.Slice(0, size).CopyTo(socketAddress.Buffer.Span);
+                        _localEndPoint = _rightEndPoint.Create(socketAddress);
+                    }
                 }
 
                 return _localEndPoint;
@@ -338,17 +349,13 @@ namespace System.Net.Sockets
                         return null;
                     }
 
-                    Internals.SocketAddress socketAddress =
-                        _addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6 ?
-                            IPEndPointExtensions.Serialize(_rightEndPoint) :
-                            new Internals.SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size than _rightEndPoint.
-
+                    Span<byte> buffer = stackalloc byte[SocketAddress.GetMaximumAddressSize(_addressFamily)];
+                    int size = buffer.Length;
                     // This may throw ObjectDisposedException.
                     SocketError errorCode = SocketPal.GetPeerName(
                         _handle,
-                        socketAddress.InternalBuffer,
-                        ref socketAddress.InternalSize);
-
+                        buffer,
+                        ref size);
                     if (errorCode != SocketError.Success)
                     {
                         UpdateStatusAfterSocketErrorAndThrowException(errorCode);
@@ -356,7 +363,16 @@ namespace System.Net.Sockets
 
                     try
                     {
-                        _remoteEndPoint = _rightEndPoint.Create(socketAddress);
+                        if (_addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6)
+                        {
+                            _remoteEndPoint = IPEndPointExtensions.CreateIPEndPoint(buffer.Slice(0, size));
+                        }
+                        else
+                        {
+                            SocketAddress socketAddress = new SocketAddress(_rightEndPoint.AddressFamily, size);
+                            buffer.Slice(0, size).CopyTo(socketAddress.Buffer.Span);
+                            _remoteEndPoint = _rightEndPoint.Create(socketAddress);
+                        }
                     }
                     catch
                     {
@@ -765,8 +781,7 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketPal.Bind(
                 _handle,
                 _protocolType,
-                socketAddress.InternalBuffer,
-                socketAddress.Size);
+                socketAddress.Buffer.Span);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)

@@ -181,8 +181,10 @@ namespace Microsoft.CSharp
             // If the string is short, use C style quoting (e.g "\r\n")
             // Also do it if it is too long to fit in one line
             // If the string contains '\0', verbatim style won't work.
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
             if (value.Length < 256 || value.Length > 1500 || (value.IndexOf('\0') != -1)) // string.Contains(char) is .NetCore2.1+ specific
                 return QuoteSnippetStringCStyle(value);
+#pragma warning restore CA2249
 
             // Otherwise, use 'verbatim' style quoting (e.g. @"foo")
             return QuoteSnippetStringVerbatimStyle(value);

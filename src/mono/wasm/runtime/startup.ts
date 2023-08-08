@@ -457,7 +457,13 @@ function replace_linker_placeholders(
 ) {
     // the output from emcc contains wrappers for these linker imports which add overhead,
     //  but now we have what we need to replace them with the actual functions
-    const env = imports.env;
+    // By default the imports all live inside of 'env', but emscripten minification could rename it to 'a'.
+    // See https://github.com/emscripten-core/emscripten/blob/c5d1a856592b788619be11bbdc1dd119dec4e24c/src/preamble.js#L933-L936
+    const env = imports.env || imports.a;
+    if (!env) {
+        mono_log_warn("WARNING: Neither imports.env or imports.a were present when instantiating the wasm module. This likely indicates an emscripten configuration issue.");
+        return;
+    }
     for (const k in realFunctions) {
         const v = realFunctions[k];
         if (typeof (v) !== "function")

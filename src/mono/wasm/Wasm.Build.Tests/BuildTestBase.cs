@@ -38,6 +38,7 @@ namespace Wasm.Build.Tests
         protected string _nugetPackagesDir = string.Empty;
         private ProjectProviderBase _providerOfBaseType;
 
+        private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
@@ -574,6 +575,8 @@ namespace Wasm.Build.Tests
             if (_projectDir != null && _enablePerTestCleanup)
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
+
+        public static string GetRandomId() => TestUtils.FixupSymbolName(Path.GetRandomFileName());
 
         internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish = true)
         {

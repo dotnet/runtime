@@ -287,6 +287,7 @@ namespace Microsoft.Interop
                     ArgumentList(SingletonSeparatedList(
                         Argument(IdentifierName(context.GetIdentifiers(info).native))))));
         }
+
         public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
         {
             if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCalleeAllocated)
@@ -345,13 +346,8 @@ namespace Microsoft.Interop
             if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCallerAllocated)
                 yield break;
 
-            if (MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.ManagedToUnmanaged)
-            {
-                yield return EmptyStatement();
-                yield break;
-            }
-
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            // <numElements> = <numElementsExpression>;
             yield return ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
@@ -371,6 +367,7 @@ namespace Microsoft.Interop
             }
 
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            // <numElements> = <numElementsExpression>;
             yield return ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
@@ -443,6 +440,7 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            // int <numElements>;
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
@@ -614,6 +612,7 @@ namespace Microsoft.Interop
                 // If we don't have the numElements variable still available from unmarshal or marshal stage, we need to reassign that again
                 if (!context.AdditionalTemporaryStateLivesAcrossStages)
                 {
+                    // <numElements> = <numElementsExpression>;
                     string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
                     yield return ExpressionStatement(
                         AssignmentExpression(
@@ -646,6 +645,7 @@ namespace Microsoft.Interop
                 // If we don't have the numElements variable still available from unmarshal or marshal stage, we need to reassign that again
                 if (!context.AdditionalTemporaryStateLivesAcrossStages)
                 {
+                    // <numElements> = <numElementsExpression>;
                     string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
                     yield return ExpressionStatement(
                         AssignmentExpression(

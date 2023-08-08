@@ -24,6 +24,7 @@ namespace System.Net.Http.Metrics
             // Meter has a cache for the instruments it owns
             _activeRequests = meter.CreateUpDownCounter<long>(
                 "http.client.active_requests",
+                unit: "{request}",
                 description: "Number of outbound HTTP requests that are currently active on the client.");
             _requestsDuration = meter.CreateHistogram<double>(
                 "http.client.request.duration",
@@ -161,8 +162,8 @@ namespace System.Net.Http.Metrics
         {
             (1, 0) => "1.0",
             (1, 1) => "1.1",
-            (2, 0) => "2.0",
-            (3, 0) => "3.0",
+            (2, 0) => "2",
+            (3, 0) => "3",
             _ => httpVersion.ToString()
         };
 

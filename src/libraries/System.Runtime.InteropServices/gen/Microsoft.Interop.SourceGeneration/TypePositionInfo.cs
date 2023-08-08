@@ -45,10 +45,9 @@ namespace Microsoft.Interop
     /// </summary>
     public sealed record TypePositionInfo(ManagedTypeInfo ManagedType, MarshallingInfo MarshallingAttributeInfo)
     {
-        public const int UnsetIndex = ExceptionIndex + 1;
-        public const int ReturnIndex = ExceptionIndex + 2;
-        // Make ExceptionIndex the min so that it is always the first to be dealt with in each stage
-        public const int ExceptionIndex = int.MinValue;
+        public const int UnsetIndex = int.MinValue;
+        public const int ReturnIndex = UnsetIndex + 1;
+        public const int ExceptionIndex = UnsetIndex + 2;
 
         public static bool IsSpecialIndex(int index)
         {
@@ -95,6 +94,17 @@ namespace Microsoft.Interop
             };
 
             return typeInfo;
+        }
+
+        public static Location GetLocation(TypePositionInfo info, IMethodSymbol methodSymbol)
+        {
+            if (info.ManagedIndex is UnsetIndex)
+                return Location.None;
+
+            if (info.ManagedIndex is ReturnIndex or ExceptionIndex)
+                return methodSymbol.Locations[0];
+
+            return methodSymbol.Parameters[info.ManagedIndex].Locations[0];
         }
 
         private static (ByValueContentsMarshalKind, Location? inAttribute, Location? outAttribute) GetByValueContentsMarshalKind(IEnumerable<AttributeData> attributes, Compilation compilation)
