@@ -31,6 +31,7 @@
     <Compile Include="ServerAsyncAuthenticateTest.cs" />
     <Compile Include="ServerNoEncryptionTest.cs" />
     <Compile Include="ServerRequireEncryptionTest.cs" />
+    <Compile Include="SslStreamCertificateContextTests.cs" />
     <Compile Include="SslStreamConformanceTests.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
     <Compile Include="SslStreamNetworkStreamTest.cs" />
