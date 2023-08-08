@@ -1400,28 +1400,17 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             break;
                         }
 
-                        if (includeMethods != null || excludeMethods != null)
+                        if (PassesMethodFilter(includeMethods, excludeMethods, methodNameFromEventDirectly))
                         {
-                            string methodAsString = method.ToString();
-                            if (includeMethods != null && !includeMethods.IsMatch(methodAsString))
-                            {
-                                continue;
-                            }
-
-                            if (excludeMethods != null && excludeMethods.IsMatch(methodAsString))
-                            {
-                                continue;
-                            }
+                            methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "R2RLoad"));
                         }
-
-                        methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "R2RLoad"));
                     }
                 }
 
                 // In case requesting events before/after jitting a method, discover the
                 // corresponding excludeEventsBefore/excludeEventsAfter in event stream based
                 // on filter criterias.
-                if (_command.ProcessJitEvents && excludeEventsBeforeJittingMethod != null || excludeEventsAfterJittingMethod != null)
+                if (_command.ProcessJitEvents && (excludeEventsBeforeJittingMethod != null || excludeEventsAfterJittingMethod != null))
                 {
                     foreach (var e in p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>())
                     {
@@ -1513,21 +1502,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             break;
                         }
 
-                        if (includeMethods != null || excludeMethods != null)
+                        if (PassesMethodFilter(includeMethods, excludeMethods, methodNameFromEventDirectly))
                         {
-                            string methodAsString = method.ToString();
-                            if (includeMethods != null && !includeMethods.IsMatch(methodAsString))
-                            {
-                                continue;
-                            }
-
-                            if (excludeMethods != null && excludeMethods.IsMatch(methodAsString))
-                            {
-                                continue;
-                            }
+                            methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "JitStart"));
                         }
-
-                        methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "JitStart"));
                     }
                 }
 
@@ -1879,6 +1857,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
             }
             return 0;
+        }
+
+        private static bool PassesMethodFilter(Regex? includeMethods, Regex? excludeMethods, string methodNameFromEventDirectly)
+        {
+            if (includeMethods != null || excludeMethods != null)
+            {
+                if (includeMethods != null && !includeMethods.IsMatch(methodNameFromEventDirectly))
+                {
+                    return false;
+                }
+
+                if (excludeMethods != null && excludeMethods.IsMatch(methodNameFromEventDirectly))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static void GenerateJittraceFile(FileInfo outputFileName, IEnumerable<ProcessedMethodData> methodsToAttemptToPrepare, JitTraceOptions jittraceOptions)
