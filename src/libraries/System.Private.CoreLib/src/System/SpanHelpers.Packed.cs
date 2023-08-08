@@ -317,46 +317,64 @@ namespace System
                 {
                     Vector512<byte> packedValue = Vector512.Create((byte)value);
 
-                    if (length > 2 * Vector512<short>.Count)
+                    unsafe
                     {
-                        // Process the input in chunks of 64 characters (2 * Vector512<short>).
-                        // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
-                        // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
-                        ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
-
-                        do
+                        fixed (short *pSearchSpace = &searchSpace)
                         {
-                            Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
-                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
-                            Vector512<byte> packedSource = PackSources(source0, source1);
+                            short *pCurrentSearchSpace = pSearchSpace;
 
-                            if (HasMatch<TNegator>(packedValue, packedSource))
+                            if (length > 2 * Vector512<short>.Count)
                             {
-                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, GetMatchMask<TNegator>(packedValue, packedSource));
+
+                                // Process the input in chunks of 64 characters (2 * Vector512<short>).
+                                // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
+                                // Let the fallback below handle it instead. This is why the condition is
+                                // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                                short *pTwoVectorsAwayFromEnd = pSearchSpace + (length - (2 * Vector512<short>.Count));
+
+                                Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
+                                Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
+                                Vector512<byte> packedSource = PackSources(source0, source1);
+
+                                if (HasMatch<TNegator>(packedValue, packedSource))
+                                {
+                                    return ComputeFirstIndex(pSearchSpace, pCurrentSearchSpace, GetMatchMask<TNegator>(packedValue, packedSource));
+                                }
+
+                                pCurrentSearchSpace += 2 * Vector512<short>.Count;
+                                pCurrentSearchSpace = (short*)((nuint)(pCurrentSearchSpace) & ~(nuint)(Vector512.Size - 1));
+
+                                while(pCurrentSearchSpace < pTwoVectorsAwayFromEnd)
+                                {
+                                    source0 = Vector512.LoadAligned(pCurrentSearchSpace);
+                                    source1 = Vector512.LoadAligned(pCurrentSearchSpace + Vector512<short>.Count);
+                                    packedSource = PackSources(source0, source1);
+
+                                    if (HasMatch<TNegator>(packedValue, packedSource))
+                                    {
+                                        return ComputeFirstIndex(pSearchSpace, pCurrentSearchSpace, GetMatchMask<TNegator>(packedValue, packedSource));
+                                    }
+
+                                    pCurrentSearchSpace += 2 * Vector512<short>.Count;
+                                }
                             }
 
-                            currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
-                        }
-                        while (Unsafe.IsAddressLessThan(ref currentSearchSpace, ref twoVectorsAwayFromEnd));
-                    }
+                            // We have 1-32 characters remaining. Process the first and last vector in the search space.
+                            // They may overlap, but we'll handle that in the index calculation if we do get a match.
+                            {
+                                short *pOneVectorAwayFromEnd = pSearchSpace + (length - Vector512<short>.Count);
 
-                    // We have 1-32 characters remaining. Process the first and last vector in the search space.
-                    // They may overlap, but we'll handle that in the index calculation if we do get a match.
-                    {
-                        ref short oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector512<short>.Count);
+                                short *pFirstVector = (pCurrentSearchSpace > pOneVectorAwayFromEnd) ? pOneVectorAwayFromEnd : pCurrentSearchSpace;
 
-                        ref short firstVector = ref Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd)
-                            ? ref oneVectorAwayFromEnd
-                            : ref currentSearchSpace;
+                                Vector512<short> source0 = Vector512.Load(pFirstVector);
+                                Vector512<short> source1 = Vector512.Load(pOneVectorAwayFromEnd);
+                                Vector512<byte> packedSource = PackSources(source0, source1);
 
-                        Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
-                        Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
-                        Vector512<byte> packedSource = PackSources(source0, source1);
-
-                        if (HasMatch<TNegator>(packedValue, packedSource))
-                        {
-                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, GetMatchMask<TNegator>(packedValue, packedSource));
+                                if (HasMatch<TNegator>(packedValue, packedSource))
+                                {
+                                    return ComputeFirstIndexOverlapped(pSearchSpace, pFirstVector, pOneVectorAwayFromEnd, GetMatchMask<TNegator>(packedValue, packedSource));
+                                }
+                            }
                         }
                     }
                 }
@@ -1219,6 +1237,15 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        private static unsafe int ComputeFirstIndex(short *searchSpace, short *current, Vector512<byte> equals)
+        {
+            ulong notEqualsElements = FixUpPackedVector512Result(equals).ExtractMostSignificantBits();
+            int index = BitOperations.TrailingZeroCount(notEqualsElements);
+            return index + (int)((nuint)(current - searchSpace) / sizeof(short));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector128<byte> equals)
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
@@ -1260,6 +1287,21 @@ namespace System
                 offsetInVector -= Vector512<short>.Count;
             }
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512F))]
+        private static unsafe int ComputeFirstIndexOverlapped(short* searchSpace, short* current0, short* current1, Vector512<byte> equals)
+        {
+            ulong notEqualsElements = FixUpPackedVector512Result(equals).ExtractMostSignificantBits();
+            int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
+            if (offsetInVector >= Vector512<short>.Count)
+            {
+                // We matched within the second vector
+                current0 = current1;
+                offsetInVector -= Vector512<short>.Count;
+            }
+            return offsetInVector + (int)((nuint)(current0 - searchSpace) / sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
