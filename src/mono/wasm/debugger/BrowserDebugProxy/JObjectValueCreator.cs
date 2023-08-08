@@ -317,10 +317,10 @@ internal sealed class JObjectValueCreator
         var isBoxed = retDebuggerCmdReader.ReadByte() == 1;
         var typeId = retDebuggerCmdReader.ReadInt32();
         var className = await _sdbAgent.GetTypeName(typeId, token);
-        var inlineArray = -1;
+        var inlineArraySize = -1;
         (int MajorVersion, int MinorVersion) = await _sdbAgent.GetVMVersion(token);
         if (MajorVersion == 2 && MinorVersion >= 65)
-            inlineArray = retDebuggerCmdReader.ReadInt32();
+            inlineArraySize = retDebuggerCmdReader.ReadInt32();
         var numValues = retDebuggerCmdReader.ReadInt32();
 
         if (className.StartsWith("System.Nullable<", StringComparison.Ordinal)) //should we call something on debugger-agent to check???
@@ -351,7 +351,7 @@ internal sealed class JObjectValueCreator
                                                     typeId,
                                                     isEnum,
                                                     includeStatic,
-                                                    inlineArray,
+                                                    inlineArraySize,
                                                     token);
         _valueTypes[valueType.Id.Value] = valueType;
         return await valueType.ToJObject(_sdbAgent, forDebuggerDisplayAttribute, token);

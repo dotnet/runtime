@@ -5298,7 +5298,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 
 			buffer_add_value_full (buf, f->type, mono_vtype_get_field_addr (addr, f), domain, FALSE, parent_vtypes, len_fixed_array != 1 ? len_fixed_array : isFixedSizeArray(f));
 			if (CHECK_PROTOCOL_VERSION(2, 65)) {
-				if (m_class_is_inlinearray (klass) && nfields == 1)	{
+				if (m_class_is_inlinearray (klass) && nfields == 1) {
 					int element_size = mono_class_instance_size (mono_class_from_mono_type_internal (f->type)) - MONO_ABI_SIZEOF (MonoObject);
 					int array_size = m_class_inlinearray_value (klass);
 					for (int i = 1; i < array_size; i++)
@@ -5364,6 +5364,8 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	if (CHECK_PROTOCOL_VERSION(2, 61))
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
+	if (CHECK_PROTOCOL_VERSION(2, 65))
+		decode_int (buf, &buf, limit); //ignore inline array
 	if (err != ERR_NONE)
 		return err;
 
@@ -5468,6 +5470,8 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 	if (CHECK_PROTOCOL_VERSION(2, 61))
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
+	if (CHECK_PROTOCOL_VERSION(2, 65))
+		decode_int (buf, &buf, limit); //ignore inline array
 	if (err != ERR_NONE)
 		goto end;
 
@@ -5595,6 +5599,8 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 				decode_byte (buf, &buf, limit);
 				if (CHECK_PROTOCOL_VERSION(2, 61))
 					decode_byte (buf, &buf, limit); //ignore is boxed
+				if (CHECK_PROTOCOL_VERSION(2, 65))
+					decode_int (buf, &buf, limit); //ignore inline array
 				decode_typeid (buf, &buf, limit, &d, &err);
 				ret += decode_vtype_compute_size (NULL, domain, buf, &buf, limit, from_by_ref_value_type);
 			} else {
@@ -5772,6 +5778,8 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				if (CHECK_PROTOCOL_VERSION(2, 61))
 					decode_byte (buf, &buf, limit); //ignore is boxed
 				klass = decode_typeid (buf, &buf, limit, &d, &err);
+				if (CHECK_PROTOCOL_VERSION(2, 65))
+					decode_int (buf, &buf, limit); //ignore inline array
 				if (err != ERR_NONE)
 					return err;
 

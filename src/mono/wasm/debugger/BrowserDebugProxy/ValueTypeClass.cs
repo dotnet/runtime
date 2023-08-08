@@ -24,8 +24,7 @@ namespace BrowserDebugProxy
         private bool fieldsExpanded;
         private readonly string className;
         private JArray fields;
-        private List<JObject> inlineArray;
-
+        public List<JObject> InlineArray { get; init; }
         public DotnetObjectId Id { get; init; }
         public byte[] Buffer { get; init; }
         public int TypeId { get; init; }
@@ -43,12 +42,11 @@ namespace BrowserDebugProxy
             autoExpand = ShouldAutoExpand(className);
             Id = objectId;
             IsEnum = isEnum;
-            this.inlineArray = inlineArray;
+            InlineArray = inlineArray;
         }
 
         public override string ToString() => $"{{ ValueTypeClass: typeId: {TypeId}, Id: {Id}, Id: {Id}, fields: {fields} }}";
 
-        public List<JObject> GetInlineArrayValues() => inlineArray;
         public static async Task<ValueTypeClass> CreateFromReader(
                                                 MonoSDBHelper sdbAgent,
                                                 MonoBinaryReader cmdReader,
@@ -68,14 +66,14 @@ namespace BrowserDebugProxy
 
             JArray fields = new();
             List<JObject> inlineArray = null;
-            JObject fieldValue = null;
+            JObject lastWritableFieldValue = null;
             if (includeStatic)
             {
                 IEnumerable<FieldTypeClass> staticFields =
                     fieldTypes.Where(f => f.Attributes.HasFlag(FieldAttributes.Static));
                 foreach (var field in staticFields)
                 {
-                    fieldValue = await sdbAgent.GetFieldValue(typeId, field.Id, token);
+                    var fieldValue = await sdbAgent.GetFieldValue(typeId, field.Id, token);
                     fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: true));
                 }
             }
@@ -85,21 +83,22 @@ namespace BrowserDebugProxy
                     && !f.Attributes.HasFlag(FieldAttributes.Static));
             foreach (var field in writableFields)
             {
-                fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
-                fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: false));
+                lastWritableFieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, isOwn: true, field.TypeId, forDebuggerDisplayAttribute: false);
+                fields.Add(GetFieldWithMetadata(field, lastWritableFieldValue, isStatic: false));
             }
+            long endPos = cmdReader.BaseStream.Position;
             if (inlineArraySize > 0)
             {
-                inlineArray = new();
-                inlineArray.Add(fieldValue);
+                inlineArray = new(inlineArraySize+1);
+                inlineArray.Add(lastWritableFieldValue);
+                var firstFieldtypeId = writableFields.First().TypeId;
                 for (int i = 1; i < inlineArraySize; i++)
                 {
-                    fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, $"{i}", token, true, writableFields.First().TypeId, false);
-                    inlineArray.Add(fieldValue);
+                    //the valuetype has a single instance field in inline-arrays
+                    var inlineArrayItem = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, $"{i}", token, isOwn: true, firstFieldtypeId, forDebuggerDisplayAttribute: false);
+                    inlineArray.Add(inlineArrayItem);
                 }
             }
-
-            long endPos = cmdReader.BaseStream.Position;
             cmdReader.BaseStream.Position = initialPos;
             byte[] valueTypeBuffer = new byte[endPos - initialPos];
             cmdReader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));

@@ -400,10 +400,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!context.SdbAgent.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass valueType))
                             throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                         var typeInfo = await context.SdbAgent.GetTypeInfo(valueType.TypeId, token);
-                        var methodToInvoke = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "get_Item");
-                        int.TryParse(elementIdxInfo.ElementIdxStr, out elementIdx);
-                        if (elementIdx >= 0 && elementIdx < valueType.GetInlineArrayValues().Count)
-                            return (JObject)valueType.GetInlineArrayValues()[elementIdx]["value"];
+                        if (int.TryParse(elementIdxInfo.ElementIdxStr, out elementIdx) && elementIdx >= 0 && elementIdx < valueType.InlineArray.Count)
+                            return (JObject)valueType.InlineArray[elementIdx]["value"];
                         throw new InvalidOperationException($"Index is outside the bounds of the inline array");
                     }
                     case "array":
