@@ -2,183 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Linq;
+using System.Reflection.PortableExecutable;
+using Microsoft.NET.HostModel.Win32Resources;
 
 namespace Microsoft.NET.HostModel
 {
     /// <summary>
-    /// Provides methods for modifying the embedded native resources
-    /// in a PE image. It currently only works on Windows, because it
-    /// requires various kernel32 APIs.
+    /// Provides methods for modifying the embedded native resources in a PE image.
     /// </summary>
     public class ResourceUpdater : IDisposable
     {
-        private sealed class Kernel32
-        {
-            //
-            // Native methods for updating resources
-            //
-
-            [DllImport(nameof(Kernel32), CharSet = CharSet.Unicode, SetLastError=true)]
-            public static extern SafeUpdateHandle BeginUpdateResource(string pFileName,
-                                                                      [MarshalAs(UnmanagedType.Bool)]bool bDeleteExistingResources);
-
-            // Update a resource with data from an IntPtr
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool UpdateResource(SafeUpdateHandle hUpdate,
-                                                     IntPtr lpType,
-                                                     IntPtr lpName,
-                                                     ushort wLanguage,
-                                                     IntPtr lpData,
-                                                     uint cbData);
-
-            // Update a resource with data from a managed byte[]
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool UpdateResource(SafeUpdateHandle hUpdate,
-                                                     IntPtr lpType,
-                                                     IntPtr lpName,
-                                                     ushort wLanguage,
-                                                     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=5)] byte[] lpData,
-                                                     uint cbData);
-
-            // Update a resource with data from a managed byte[]
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool UpdateResource(SafeUpdateHandle hUpdate,
-                                                     string lpType,
-                                                     IntPtr lpName,
-                                                     ushort wLanguage,
-                                                     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=5)] byte[] lpData,
-                                                     uint cbData);
-
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool EndUpdateResource(SafeUpdateHandle hUpdate,
-                                                        bool fDiscard);
-
-            // The IntPtr version of this dllimport is used in the
-            // SafeHandle implementation
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool EndUpdateResource(IntPtr hUpdate,
-                                                        bool fDiscard);
-
-            public const ushort LangID_LangNeutral_SublangNeutral = 0;
-
-            //
-            // Native methods used to read resources from a PE file
-            //
-
-            // Loading and freeing PE files
-
-            public enum LoadLibraryFlags : uint
-            {
-                LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE = 0x00000040,
-                LOAD_LIBRARY_AS_IMAGE_RESOURCE = 0x00000020
-            }
-
-            [DllImport(nameof(Kernel32), CharSet = CharSet.Unicode, SetLastError=true)]
-            public static extern IntPtr LoadLibraryEx(string lpFileName,
-                                                      IntPtr hReservedNull,
-                                                      LoadLibraryFlags dwFlags);
-
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool FreeLibrary(IntPtr hModule);
-
-            // Enumerating resources
-
-            public delegate bool EnumResTypeProc(IntPtr hModule,
-                                                 IntPtr lpType,
-                                                 IntPtr lParam);
-
-            public delegate bool EnumResNameProc(IntPtr hModule,
-                                                 IntPtr lpType,
-                                                 IntPtr lpName,
-                                                 IntPtr lParam);
-
-            public delegate bool EnumResLangProc(IntPtr hModule,
-                                                 IntPtr lpType,
-                                                 IntPtr lpName,
-                                                 ushort wLang,
-                                                 IntPtr lParam);
-
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool EnumResourceTypes(IntPtr hModule,
-                                                         EnumResTypeProc lpEnumFunc,
-                                                         IntPtr lParam);
-
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool EnumResourceNames(IntPtr hModule,
-                                                         IntPtr lpType,
-                                                         EnumResNameProc lpEnumFunc,
-                                                         IntPtr lParam);
-
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool EnumResourceLanguages(IntPtr hModule,
-                                                            IntPtr lpType,
-                                                            IntPtr lpName,
-                                                            EnumResLangProc lpEnumFunc,
-                                                            IntPtr lParam);
-
-            public const int UserStoppedResourceEnumerationHRESULT = unchecked((int)0x80073B02);
-            public const int ResourceDataNotFoundHRESULT = unchecked((int)0x80070714);
-
-            // Querying and loading resources
-
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            public static extern IntPtr FindResourceEx(IntPtr hModule,
-                                                       IntPtr lpType,
-                                                       IntPtr lpName,
-                                                       ushort wLanguage);
-
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            public static extern IntPtr LoadResource(IntPtr hModule,
-                                                     IntPtr hResInfo);
-
-            [DllImport(nameof(Kernel32))] // does not call SetLastError
-            public static extern IntPtr LockResource(IntPtr hResData);
-
-            [DllImport(nameof(Kernel32), SetLastError=true)]
-            public static extern uint SizeofResource(IntPtr hModule,
-                                                     IntPtr hResInfo);
-
-            public const int ERROR_CALL_NOT_IMPLEMENTED = 0x78;
-        }
-
-        /// <summary>
-        /// Holds the update handle returned by BeginUpdateResource.
-        /// Normally, native resources for the update handle are
-        /// released by a call to ResourceUpdater.Update(). In case
-        /// this doesn't happen, the SafeUpdateHandle will release the
-        /// native resources for the update handle without updating
-        /// the target file.
-        /// </summary>
-        private sealed class SafeUpdateHandle : SafeHandle
-        {
-            public SafeUpdateHandle() : base(IntPtr.Zero, true)
-            {
-            }
-
-            public override bool IsInvalid => handle == IntPtr.Zero;
-
-            protected override bool ReleaseHandle()
-            {
-                // discard pending updates without writing them
-                return Kernel32.EndUpdateResource(handle, true);
-            }
-        }
-
-        /// <summary>
-        /// Holds the native handle for the resource update.
-        /// </summary>
-        private readonly SafeUpdateHandle hUpdate;
+        private readonly FileStream stream;
+        private readonly PEReader _reader;
+        private ResourceData _resourceData;
+        private readonly bool leaveOpen;
 
         ///<summary>
         /// Determines if the ResourceUpdater is supported by the current operating system.
@@ -186,50 +26,41 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public static bool IsSupportedOS()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return false;
-            }
-
-            try
-            {
-                // On Nano Server 1709+, `BeginUpdateResource` is exported but returns a null handle with a zero error
-                // Try to call `BeginUpdateResource` with an invalid parameter; the error should be non-zero if supported
-                // On Nano Server 20213, `BeginUpdateResource` fails with ERROR_CALL_NOT_IMPLEMENTED
-                using (var handle = Kernel32.BeginUpdateResource("", false))
-                {
-                    int lastWin32Error = Marshal.GetLastWin32Error();
-
-                    if (handle.IsInvalid && (lastWin32Error == 0 || lastWin32Error == Kernel32.ERROR_CALL_NOT_IMPLEMENTED))
-                    {
-                        return false;
-                    }
-                }
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // BeginUpdateResource isn't exported from Kernel32
-                return false;
-            }
-
             return true;
         }
 
         /// <summary>
-        /// Create a resource updater for the given PE file. This will
-        /// acquire a native resource update handle for the file,
-        /// preparing it for updates. Resources can be added to this
-        /// updater, which will queue them for update. The target PE
-        /// file will not be modified until Update() is called, after
-        /// which the ResourceUpdater can not be used for further
-        /// updates.
+        /// Create a resource updater for the given PE file.
+        /// Resources can be added to this updater, which will queue them for update.
+        /// The target PE file will not be modified until Update() is called, after
+        /// which the ResourceUpdater can not be used for further updates.
         /// </summary>
         public ResourceUpdater(string peFile)
+            : this(new FileStream(peFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            hUpdate = Kernel32.BeginUpdateResource(peFile, false);
-            if (hUpdate.IsInvalid)
+        }
+
+        /// <summary>
+        /// Create a resource updater for the given PE file. This
+        /// Resources can be added to this updater, which will queue them for update.
+        /// The target PE file will not be modified until Update() is called, after
+        /// which the ResourceUpdater can not be used for further updates.
+        /// </summary>
+        public ResourceUpdater(FileStream stream, bool leaveOpen = false)
+        {
+            this.stream = stream;
+            this.leaveOpen = leaveOpen;
+            try
             {
-                ThrowExceptionForLastWin32Error();
+                this.stream.Seek(0, SeekOrigin.Begin);
+                _reader = new PEReader(this.stream, PEStreamOptions.LeaveOpen);
+                _resourceData = new ResourceData(_reader);
+            }
+            catch (Exception)
+            {
+                if (!leaveOpen)
+                    this.stream?.Dispose();
+                throw;
             }
         }
 
@@ -242,48 +73,12 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public ResourceUpdater AddResourcesFromPEImage(string peFile)
         {
-            if (hUpdate.IsInvalid)
-            {
+            if (_resourceData == null)
                 ThrowExceptionForInvalidUpdate();
-            }
 
-            // Using both flags lets the OS loader decide how to load
-            // it most efficiently. Either mode will prevent other
-            // processes from modifying the module while it is loaded.
-            IntPtr hModule = Kernel32.LoadLibraryEx(peFile, IntPtr.Zero,
-                                                    Kernel32.LoadLibraryFlags.LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE |
-                                                    Kernel32.LoadLibraryFlags.LOAD_LIBRARY_AS_IMAGE_RESOURCE);
-            if (hModule == IntPtr.Zero)
-            {
-                ThrowExceptionForLastWin32Error();
-            }
-
-            var enumTypesCallback = new Kernel32.EnumResTypeProc(EnumAndUpdateTypesCallback);
-            var errorInfo = new EnumResourcesErrorInfo();
-            GCHandle errorInfoHandle = GCHandle.Alloc(errorInfo);
-            var errorInfoPtr = GCHandle.ToIntPtr(errorInfoHandle);
-
-            try
-            {
-                if (!Kernel32.EnumResourceTypes(hModule, enumTypesCallback, errorInfoPtr))
-                {
-                    if (Marshal.GetHRForLastWin32Error() != Kernel32.ResourceDataNotFoundHRESULT)
-                    {
-                        CaptureEnumResourcesErrorInfo(errorInfoPtr);
-                        errorInfo.ThrowException();
-                    }
-                }
-            }
-            finally
-            {
-                errorInfoHandle.Free();
-
-                if (!Kernel32.FreeLibrary(hModule))
-                {
-                    ThrowExceptionForLastWin32Error();
-                }
-            }
-
+            using var module = new PEReader(File.Open(peFile, FileMode.Open, FileAccess.Read, FileShare.Read));
+            var moduleResources = new ResourceData(module);
+            _resourceData.CopyResourcesFrom(moduleResources);
             return this;
         }
 
@@ -291,6 +86,8 @@ namespace Microsoft.NET.HostModel
         {
             return ((uint)lpType >> 16) == 0;
         }
+
+        private const int LangID_LangNeutral_SublangNeutral = 0;
 
         /// <summary>
         /// Add a language-neutral integer resource from a byte[] with
@@ -300,20 +97,14 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public ResourceUpdater AddResource(byte[] data, IntPtr lpType, IntPtr lpName)
         {
-            if (hUpdate.IsInvalid)
-            {
-                ThrowExceptionForInvalidUpdate();
-            }
-
             if (!IsIntResource(lpType) || !IsIntResource(lpName))
             {
                 throw new ArgumentException("AddResource can only be used with integer resource types");
             }
+            if (_resourceData == null)
+                ThrowExceptionForInvalidUpdate();
 
-            if (!Kernel32.UpdateResource(hUpdate, lpType, lpName, Kernel32.LangID_LangNeutral_SublangNeutral, data, (uint)data.Length))
-            {
-                ThrowExceptionForLastWin32Error();
-            }
+            _resourceData.AddResource((ushort)lpName, (ushort)lpType, LangID_LangNeutral_SublangNeutral, data);
 
             return this;
         }
@@ -326,20 +117,14 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public ResourceUpdater AddResource(byte[] data, string lpType, IntPtr lpName)
         {
-            if (hUpdate.IsInvalid)
-            {
-                ThrowExceptionForInvalidUpdate();
-            }
-
             if (!IsIntResource(lpName))
             {
                 throw new ArgumentException("AddResource can only be used with integer resource names");
             }
+            if (_resourceData == null)
+                ThrowExceptionForInvalidUpdate();
 
-            if (!Kernel32.UpdateResource(hUpdate, lpType, lpName, Kernel32.LangID_LangNeutral_SublangNeutral, data, (uint)data.Length))
-            {
-                ThrowExceptionForLastWin32Error();
-            }
+            _resourceData.AddResource((ushort)lpName, lpType, LangID_LangNeutral_SublangNeutral, data);
 
             return this;
         }
@@ -352,126 +137,201 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public void Update()
         {
-            if (hUpdate.IsInvalid)
-            {
+            if (_resourceData == null)
                 ThrowExceptionForInvalidUpdate();
-            }
 
-            try
+            int resourceSectionIndex = _reader.PEHeaders.SectionHeaders.Length;
+            for (int i = 0; i < _reader.PEHeaders.SectionHeaders.Length; i++)
             {
-                if (!Kernel32.EndUpdateResource(hUpdate, false))
+                if (_reader.PEHeaders.SectionHeaders[i].Name == ".rsrc")
                 {
-                    ThrowExceptionForLastWin32Error();
+                    resourceSectionIndex = i;
+                    break;
                 }
             }
-            finally
-            {
-                hUpdate.SetHandleAsInvalid();
-            }
-        }
 
-        private bool EnumAndUpdateTypesCallback(IntPtr hModule, IntPtr lpType, IntPtr lParam)
-        {
-            var enumNamesCallback = new Kernel32.EnumResNameProc(EnumAndUpdateNamesCallback);
-            if (!Kernel32.EnumResourceNames(hModule, lpType, enumNamesCallback, lParam))
-            {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
-            return true;
-        }
+            int fileAlignment = _reader.PEHeaders.PEHeader!.FileAlignment;
+            int sectionAlignment = _reader.PEHeaders.PEHeader!.SectionAlignment;
 
-        private bool EnumAndUpdateNamesCallback(IntPtr hModule, IntPtr lpType, IntPtr lpName, IntPtr lParam)
-        {
-            var enumLanguagesCallback = new Kernel32.EnumResLangProc(EnumAndUpdateLanguagesCallback);
-            if (!Kernel32.EnumResourceLanguages(hModule, lpType, lpName, enumLanguagesCallback, lParam))
+            bool needsAddSection = resourceSectionIndex == _reader.PEHeaders.SectionHeaders.Length;
+            bool isRsrcIsLastSection;
+            int rsrcPointerToRawData;
+            int rsrcVirtualAddress;
+            int rsrcOriginalRawDataSize;
+            int rsrcOriginalVirtualSize;
+            if (needsAddSection)
             {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
-            return true;
-        }
+                isRsrcIsLastSection = true;
 
-        private bool EnumAndUpdateLanguagesCallback(IntPtr hModule, IntPtr lpType, IntPtr lpName, ushort wLang, IntPtr lParam)
-        {
-            IntPtr hResource = Kernel32.FindResourceEx(hModule, lpType, lpName, wLang);
-            if (hResource == IntPtr.Zero)
+                SectionHeader lastSection = _reader.PEHeaders.SectionHeaders.Last();
+                rsrcPointerToRawData =
+                    GetAligned(lastSection.PointerToRawData + lastSection.SizeOfRawData, fileAlignment);
+                rsrcVirtualAddress = GetAligned(lastSection.VirtualAddress + lastSection.VirtualSize, sectionAlignment);
+                rsrcOriginalRawDataSize = 0;
+                rsrcOriginalVirtualSize = 0;
+            }
+            else
             {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
+                isRsrcIsLastSection = _reader.PEHeaders.SectionHeaders.Length - 1 == resourceSectionIndex;
+
+                SectionHeader resourceSection = _reader.PEHeaders.SectionHeaders[resourceSectionIndex];
+                rsrcPointerToRawData = resourceSection.PointerToRawData;
+                rsrcVirtualAddress = resourceSection.VirtualAddress;
+                rsrcOriginalRawDataSize = resourceSection.SizeOfRawData;
+                rsrcOriginalVirtualSize = resourceSection.VirtualSize;
             }
 
-            // hResourceLoaded is just a handle to the resource, which
-            // can be used to get the resource data
-            IntPtr hResourceLoaded = Kernel32.LoadResource(hModule, hResource);
-            if (hResourceLoaded == IntPtr.Zero)
+            var objectDataBuilder = new ObjectDataBuilder();
+            _resourceData.WriteResources(rsrcVirtualAddress, ref objectDataBuilder);
+            var rsrcSectionData = objectDataBuilder.ToData();
+
+            int rsrcSectionDataSize = rsrcSectionData.Length;
+            int newSectionSize = GetAligned(rsrcSectionDataSize, fileAlignment);
+            int newSectionVirtualSize = GetAligned(rsrcSectionDataSize, sectionAlignment);
+
+            int delta = newSectionSize - GetAligned(rsrcOriginalRawDataSize, fileAlignment);
+            int virtualDelta = newSectionVirtualSize - GetAligned(rsrcOriginalVirtualSize, sectionAlignment);
+
+            int trailingSectionVirtualStart = rsrcVirtualAddress + rsrcOriginalVirtualSize;
+            int trailingSectionStart = rsrcPointerToRawData + rsrcOriginalRawDataSize;
+            int trailingSectionLength = (int)(stream.Length - trailingSectionStart);
+
+            bool needsMoveTrailingSections = !isRsrcIsLastSection && delta > 0;
+            long finalImageSize = trailingSectionStart + Math.Max(delta, 0) + trailingSectionLength;
+
+            using (var mmap = MemoryMappedFile.CreateFromFile(stream, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+            using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite))
             {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
+                int peSignatureOffset = ReadI32(accessor, PEOffsets.DosStub.PESignatureOffset);
+                int sectionBase = peSignatureOffset + PEOffsets.PEHeaderSize +
+                                  (ushort)_reader.PEHeaders.CoffHeader.SizeOfOptionalHeader;
 
-            // This doesn't actually lock memory. It just retrieves a
-            // pointer to the resource data. The pointer is valid
-            // until the module is unloaded.
-            IntPtr lpResourceData = Kernel32.LockResource(hResourceLoaded);
-            if (lpResourceData == IntPtr.Zero)
-            {
-                ((EnumResourcesErrorInfo)GCHandle.FromIntPtr(lParam).Target).failedToLockResource = true;
-            }
-
-            if (!Kernel32.UpdateResource(hUpdate, lpType, lpName, wLang, lpResourceData, Kernel32.SizeofResource(hModule, hResource)))
-            {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
-
-            return true;
-        }
-
-        private sealed class EnumResourcesErrorInfo
-        {
-            public int hResult;
-            public bool failedToLockResource;
-
-            public void ThrowException()
-            {
-                if (failedToLockResource)
+                if (needsAddSection)
                 {
-                    Debug.Assert(hResult == 0);
-                    throw new ResourceNotAvailableException("Failed to lock resource");
+                    int resourceSectionBase = sectionBase + PEOffsets.OneSectionHeaderSize * resourceSectionIndex;
+                    // ensure we have space for new section header
+                    if (resourceSectionBase + PEOffsets.OneSectionHeaderSize >
+                        _reader.PEHeaders.SectionHeaders[0].PointerToRawData)
+                        throw new InvalidOperationException("Cannot add section header");
+
+                    WriteI32(accessor, peSignatureOffset + PEOffsets.PEHeader.NumberOfSections, resourceSectionIndex + 1);
+
+                    // section name ".rsrc\0\0\0" = 2E 72 73 72 63 00 00 00
+                    accessor.Write(resourceSectionBase + 0, (byte)0x2E);
+                    accessor.Write(resourceSectionBase + 1, (byte)0x72);
+                    accessor.Write(resourceSectionBase + 2, (byte)0x73);
+                    accessor.Write(resourceSectionBase + 3, (byte)0x72);
+                    accessor.Write(resourceSectionBase + 4, (byte)0x63);
+                    accessor.Write(resourceSectionBase + 5, (byte)0x00);
+                    accessor.Write(resourceSectionBase + 6, (byte)0x00);
+                    accessor.Write(resourceSectionBase + 7, (byte)0x00);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.VirtualAddress, rsrcVirtualAddress);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.RawSize, newSectionSize);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.RawPointer, rsrcPointerToRawData);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.RelocationsPointer, 0);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.LineNumbersPointer, 0);
+                    WriteI16(accessor, resourceSectionBase + PEOffsets.SectionHeader.NumberOfRelocations, 0);
+                    WriteI16(accessor, resourceSectionBase + PEOffsets.SectionHeader.NumberOfLineNumbers, 0);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.SectionCharacteristics,
+                        (int)(SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
                 }
 
-                Debug.Assert(hResult != 0);
-                throw new HResultException(hResult);
+                if (needsMoveTrailingSections)
+                {
+                    byte[] moveTrailingSectionBuffer = new byte[trailingSectionLength];
+                    accessor.ReadArray(trailingSectionStart, moveTrailingSectionBuffer, 0, trailingSectionLength);
+                    accessor.WriteArray(trailingSectionStart + delta, moveTrailingSectionBuffer, 0, trailingSectionLength);
+
+                    for (int i = resourceSectionIndex + 1; i < _reader.PEHeaders.SectionHeaders.Length; i++)
+                    {
+                        int currentSectionBase = sectionBase + PEOffsets.OneSectionHeaderSize * i;
+
+                        ModifyI32(accessor, currentSectionBase + PEOffsets.SectionHeader.VirtualAddress,
+                            pointer => pointer + virtualDelta);
+                        ModifyI32(accessor, currentSectionBase + PEOffsets.SectionHeader.RawPointer,
+                            pointer => pointer + delta);
+                    }
+                }
+
+                if (rsrcSectionDataSize != rsrcOriginalVirtualSize)
+                {
+                    // update size of .rsrc section
+                    int resourceSectionBase = sectionBase + PEOffsets.OneSectionHeaderSize * resourceSectionIndex;
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.VirtualSize, rsrcSectionDataSize);
+                    WriteI32(accessor, resourceSectionBase + PEOffsets.SectionHeader.RawSize, newSectionSize);
+
+                    void PatchRVA(int offset)
+                    {
+                        ModifyI32(accessor, offset,
+                            pointer => pointer >= trailingSectionVirtualStart ? pointer + virtualDelta : pointer);
+                    }
+
+                    int dataDirectoriesOffset = _reader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus
+                        ? peSignatureOffset + PEOffsets.PEHeader.PE64DataDirectories
+                        : peSignatureOffset + PEOffsets.PEHeader.PE32DataDirectories;
+
+                    // fix header
+                    ModifyI32(accessor, peSignatureOffset + PEOffsets.PEHeader.InitializedDataSize,
+                        size => size + delta);
+                    ModifyI32(accessor, peSignatureOffset + PEOffsets.PEHeader.SizeOfImage,
+                        size => size + virtualDelta);
+
+                    if (needsMoveTrailingSections)
+                    {
+                        // fix RVA in DataDirectory
+                        for (int i = 0; i < _reader.PEHeaders.PEHeader.NumberOfRvaAndSizes; i++)
+                            PatchRVA(dataDirectoriesOffset + i * PEOffsets.DataDirectoryEntrySize +
+                                     PEOffsets.DataDirectoryEntry.VirtualAddressOffset);
+                    }
+
+                    // update the ResourceTable in DataDirectories
+                    int resourceTableOffset = dataDirectoriesOffset + PEOffsets.ResourceTableDataDirectoryIndex * PEOffsets.DataDirectoryEntrySize;
+                    WriteI32(accessor, resourceTableOffset + PEOffsets.DataDirectoryEntry.VirtualAddressOffset, rsrcVirtualAddress);
+                    WriteI32(accessor, resourceTableOffset + PEOffsets.DataDirectoryEntry.SizeOffset, rsrcSectionDataSize);
+                }
+
+                accessor.WriteArray(rsrcPointerToRawData, rsrcSectionData, 0, rsrcSectionDataSize);
+
+                // clear rest
+                //Array.Fill is standard 2.1
+                for (int i = rsrcSectionDataSize; i < newSectionSize; i++)
+                    accessor.Write(rsrcPointerToRawData + i, (byte)0);
+
+                _resourceData = null;
             }
         }
 
-        private static void CaptureEnumResourcesErrorInfo(IntPtr errorInfoPtr)
+        private static int ReadI32(MemoryMappedViewAccessor buffer, int position)
         {
-            int hResult = Marshal.GetHRForLastWin32Error();
-            if (hResult != Kernel32.UserStoppedResourceEnumerationHRESULT)
-            {
-                GCHandle errorInfoHandle = GCHandle.FromIntPtr(errorInfoPtr);
-                var errorInfo = (EnumResourcesErrorInfo)errorInfoHandle.Target;
-                errorInfo.hResult = hResult;
-            }
+            return buffer.ReadByte(position + 0)
+                        | (buffer.ReadByte(position + 1) << 8)
+                        | (buffer.ReadByte(position + 2) << 16)
+                        | (buffer.ReadByte(position + 3) << 24);
         }
 
-        private sealed class ResourceNotAvailableException : Exception
+        private static void WriteI32(MemoryMappedViewAccessor buffer, int position, int data)
         {
-            public ResourceNotAvailableException(string message) : base(message)
-            {
-            }
+            buffer.Write(position + 0, (byte)(data & 0xFF));
+            buffer.Write(position + 1, (byte)(data >> 8 & 0xFF));
+            buffer.Write(position + 2, (byte)(data >> 16 & 0xFF));
+            buffer.Write(position + 3, (byte)(data >> 24 & 0xFF));
+        }
+        private static void WriteI16(MemoryMappedViewAccessor buffer, int position, short data)
+        {
+            buffer.Write(position + 0, (byte)(data & 0xFF));
+            buffer.Write(position + 1, (byte)(data >> 8 & 0xFF));
         }
 
-        private static void ThrowExceptionForLastWin32Error()
-        {
-            throw new HResultException(Marshal.GetHRForLastWin32Error());
-        }
+        private static void ModifyI32(MemoryMappedViewAccessor buffer, int position, Func<int, int> modifier) =>
+            WriteI32(buffer, position, modifier(ReadI32(buffer, position)));
+
+        public static int GetAligned(int integer, int alignWith) => (integer + alignWith - 1) & ~(alignWith - 1);
 
         private static void ThrowExceptionForInvalidUpdate()
         {
-            throw new InvalidOperationException("Update handle is invalid. This instance may not be used for further updates");
+            throw new InvalidOperationException(
+                "Update handle is invalid. This instance may not be used for further updates");
         }
 
         public void Dispose()
@@ -482,9 +342,10 @@ namespace Microsoft.NET.HostModel
 
         public void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && !leaveOpen)
             {
-                hUpdate.Dispose();
+                _reader.Dispose();
+                stream.Dispose();
             }
         }
     }
