@@ -1,12 +1,10 @@
-<Project>
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- Needed for PublishTrimmed -->
     <NetCoreAppToolCurrent>{NetCoreAppToolCurrent}</NetCoreAppToolCurrent>
     <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
   </PropertyGroup>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <!-- Use live illink bits. It is necessary to both import the package props and override
        the tasks assembly, because the live package props in the build output do not use
@@ -93,7 +91,5 @@
   </Target>
 
   <Import Project="{NativeSanitizersTargets}" />
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>
