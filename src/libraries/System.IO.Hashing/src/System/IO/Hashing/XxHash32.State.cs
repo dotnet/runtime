@@ -66,6 +66,7 @@ namespace System.IO.Hashing
                 return acc;
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             internal readonly uint Complete(int length, ReadOnlySpan<byte> remaining)
             {
                 uint acc = _hadFullStripe ? Converge() : _smallAcc;
