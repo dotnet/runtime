@@ -173,7 +173,7 @@ const linked_functions = [
 // we will replace them with the real implementation in replace_linker_placeholders
 let idx = 0;
 for (let linked_function of linked_functions) {
-    DotnetSupportLib[linked_function] = new Function(`return {runtime_idx:"${idx}"};//${linked_function}`);
+    DotnetSupportLib[linked_function] = new Function(`return {runtime_idx:${idx}};//${linked_function}`);
     idx++;
 }
 
