@@ -1197,7 +1197,10 @@ ExitProcess(
            Update: [TODO] PROCSuspendOtherThreads has been removed. Can this
            code be changed? */
         WARN("termination already started from another thread; blocking.\n");
-        poll(NULL, 0, INFTIM);
+        while (true)
+        {
+            poll(NULL, 0, INFTIM);
+        }
     }
 
     /* ExitProcess may be called even if PAL is not initialized.
@@ -2205,9 +2208,10 @@ PROCCreateCrashDump(
             _ASSERTE(previousThreadId != currentThreadId);
 
             // The first thread generates the crash info and any other threads are blocked
-            poll(NULL, 0, INFTIM);
-
-            return false;
+            while (true)
+            {
+                poll(NULL, 0, INFTIM);
+            }
         }
     }
 
@@ -3246,7 +3250,10 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
            TerminateProcess won't call DllMain, so there's no danger to get
            caught in an infinite loop */
         WARN("termination already started from another thread; blocking.\n");
-        poll(NULL, 0, INFTIM);
+        while (true)
+        {
+            poll(NULL, 0, INFTIM);
+        }
     }
 
     /* Try to lock the initialization count to prevent multiple threads from
