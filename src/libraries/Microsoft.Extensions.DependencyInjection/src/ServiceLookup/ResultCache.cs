@@ -20,10 +20,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Key = cacheKey;
         }
 
-        public ResultCache(ServiceLifetime lifetime, ServiceIdentifier? serviceIdentifier, int slot)
+        public ResultCache(ServiceLifetime lifetime, ServiceIdentifier serviceIdentifier, int slot)
         {
-            Debug.Assert(lifetime == ServiceLifetime.Transient || serviceIdentifier != null);
-
             switch (lifetime)
             {
                 case ServiceLifetime.Singleton:

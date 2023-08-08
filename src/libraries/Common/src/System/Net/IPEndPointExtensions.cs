@@ -6,7 +6,7 @@ using System.Net;
 
 namespace System.Net.Sockets
 {
-    internal static class IPEndPointExtensions
+    internal static partial class IPEndPointExtensions
     {
         public static IPAddress GetIPAddress(ReadOnlySpan<byte> socketAddressBuffer)
         {
