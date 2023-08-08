@@ -11,7 +11,7 @@ using System.Collections;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [System.Diagnostics.DebuggerDisplay("Name ( {Name} )")]
+    [System.Diagnostics.DebuggerDisplay("Name = {Name}")]
     public abstract class Principal : IDisposable
     {
         //

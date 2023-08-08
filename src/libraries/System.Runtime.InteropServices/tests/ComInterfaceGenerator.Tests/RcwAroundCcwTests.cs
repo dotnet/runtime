@@ -79,14 +79,7 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(data, value);
             obj.SwapArray(ref data, data.Length);
             obj.PassIn(in data, data.Length);
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/89265")]
-        public void IIntArray_Failing()
-        {
-            var obj = CreateWrapper<IIntArrayImpl, IIntArray>();
-            int[] data = new int[] { 1, 2, 3 };
+            data = new int[] { 1, 2, 3 };
             obj.Double(data, data.Length);
             Assert.True(data is [2, 4, 6]);
         }

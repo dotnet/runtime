@@ -140,7 +140,7 @@ extends:
             platforms:
             - linux_arm64
             jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
               nameSuffix: AOT
               isOfficialBuild: false
               extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml

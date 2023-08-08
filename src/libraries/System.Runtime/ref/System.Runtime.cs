@@ -10111,6 +10111,7 @@ namespace System.IO
     }
     public static partial class RandomAccess
     {
+        public static void FlushToDisk(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
         public static long GetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
         public static void SetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle, long length) { throw null; }
         public static long Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset) { throw null; }
