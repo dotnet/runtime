@@ -13,6 +13,8 @@
 #include "mono/metadata/native-library.h"
 #include "mono/metadata/custom-attrs-internals.h"
 
+#include <dnmd.h>
+
 static int pinvoke_search_directories_count;
 static char **pinvoke_search_directories;
 
@@ -1015,11 +1017,6 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	MonoCustomAttrInfo *cinfo;
 	int flags;
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
-	MonoTableInfo *tables = image->tables;
-	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
-	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
-	guint32 im_cols [MONO_IMPLMAP_SIZE];
-	guint32 scope_token;
 	const char *orig_import = NULL;
 	const char *new_import = NULL;
 	const char *orig_scope = NULL;
@@ -1048,18 +1045,30 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		orig_scope = method_aux->dll;
 	}
 	else {
-		if (!piinfo->implmap_idx || mono_metadata_table_bounds_check (image, MONO_TABLE_IMPLMAP, piinfo->implmap_idx))
+		if (!piinfo->implmap_idx)
+			goto exit;
+		
+		guint32 tok = mono_metadata_make_token(MONO_TABLE_IMPLMAP, piinfo->implmap_idx);
+
+		mdcursor_t implmap;
+		if (!md_token_to_cursor (image->metadata_handle, tok, &implmap))
+			goto exit;
+		
+		uint32_t flags;
+		if (1 != md_get_column_value_as_constant (implmap, mdtImplMap_MappingFlags, 1, &flags))
+			goto exit;
+		
+		piinfo->piflags = GUINT32_TO_UINT16(flags);
+
+		if (1 != md_get_column_value_as_utf8 (implmap, mdtImplMap_ImportName, 1, &orig_import))
 			goto exit;
 
-		mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
-
-		if (!im_cols [MONO_IMPLMAP_SCOPE] || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, im_cols [MONO_IMPLMAP_SCOPE]))
+		mdcursor_t scope;
+		if (1 != md_get_column_value_as_cursor (implmap, mdtImplMap_ImportScope, 1, &scope))
 			goto exit;
 
-		piinfo->piflags = GUINT32_TO_UINT16 (im_cols [MONO_IMPLMAP_FLAGS]);
-		orig_import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
-		scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
-		orig_scope = mono_metadata_string_heap (image, scope_token);
+		if (1 != md_get_column_value_as_utf8 (scope, mdtModuleRef_Name, 1, &orig_scope))
+			goto exit;
 	}
 
 #ifndef DISABLE_DLLMAP
