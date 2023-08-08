@@ -39,9 +39,7 @@ public class DllImportSearchPathsTest
         Assert.Equal(3, sum);
     }
 
-    public static bool IsNativeAot => TestLibrary.Utilities.IsNativeAot;
-
-    [ConditionalFact(nameof(IsNativeAot))]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void AssemblyDirectoryAot_Found()
     {
         int sum = NativeLibraryPInvokeAot.Sum(1, 2);
@@ -87,6 +85,9 @@ public class NativeLibraryPInvokeAot
         return NativeSum(a, b);
     }
 
+    // For NativeAOT, validate the case where the native library is next to the AOT application.
+    // The passing of DllImportSearchPath.System32 is done to ensure on Windows the runtime won't fallback
+    // and try to search the application directory by default.
     [DllImport(NativeLibraryToLoad.Name + "-in-native")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
