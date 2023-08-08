@@ -57,6 +57,8 @@
 #include <mach-o/dyld.h>
 #endif
 
+#include <dnmd.h>
+
 /* Contains the list of directories to be searched for assemblies (MONO_PATH) */
 static char **assemblies_path = NULL;
 
@@ -433,69 +435,66 @@ mono_assemblies_init (void)
 gboolean
 mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname, gboolean copyBlobs)
 {
-	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLY];
-	guint32 cols [MONO_ASSEMBLY_SIZE];
-	gint32 machine, flags;
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_Assembly, &c, &count))
+		return FALSE;
+	
+	char const* name;
+	if (1 != md_get_column_value_as_utf8 (c, mdtAssembly_Name, 1, &name))
+		return FALSE;
+	
+	aname->name = copyBlobs ? g_strdup (name) : name;
+	
+	char const* culture;
+	if (1 != md_get_column_value_as_utf8 (c, mdtAssembly_Culture, 1, &culture))
+		return FALSE;
+	
+	aname->culture = copyBlobs ? g_strdup (culture) : culture;
+	
+	if (1 != md_get_column_value_as_constant (c, mdtAssembly_HashAlgId, 1, &aname->hash_alg))
+		return FALSE;
+	
+	uint32_t major;
+	if (1 != md_get_column_value_as_constant (c, mdtAssembly_MajorVersion, 1, &major))
+		return FALSE;
+	aname->major = (int32_t)major;
 
-	if (!table_info_get_rows (t))
+	uint32_t minor;
+	if (1 != md_get_column_value_as_constant (c, mdtAssembly_MinorVersion, 1, &minor))
+		return FALSE;
+	aname->minor = (int32_t)minor;
+
+	uint32_t build;
+	if (1 != md_get_column_value_as_constant (c, mdtAssembly_BuildNumber, 1, &build))
+		return FALSE;
+	aname->build = (int32_t)build;
+
+	uint32_t revision;
+	if (1 != md_get_column_value_as_constant (c, mdtAssembly_RevisionNumber, 1, &revision))
+		return FALSE;
+	aname->revision = (int32_t)revision;
+	
+	if (1 != md_get_column_value_as_constant (c, mdtAssembly_Flags, 1, &aname->flags))
 		return FALSE;
 
-	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
-
-	aname->hash_len = 0;
-	aname->hash_value = NULL;
-	aname->name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
-	if (copyBlobs)
-		aname->name = g_strdup (aname->name);
-	aname->culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
-	if (copyBlobs)
-		aname->culture = g_strdup (aname->culture);
-	aname->flags = cols [MONO_ASSEMBLY_FLAGS];
-	aname->major = cols [MONO_ASSEMBLY_MAJOR_VERSION];
-	aname->minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
-	aname->build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
-	aname->revision = cols [MONO_ASSEMBLY_REV_NUMBER];
-	aname->hash_alg = cols [MONO_ASSEMBLY_HASH_ALG];
-	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
-		guchar* token = (guchar *)g_malloc (8);
-		gchar* encoded;
-		const gchar* pkey;
-		int len;
-
-		pkey = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
-		len = mono_metadata_decode_blob_size (pkey, &pkey);
-		aname->public_key = (guchar*)pkey;
+	uint32_t len;
+	if (1 != md_get_column_value_as_blob (c, mdtAssembly_PublicKey, 1, &aname->public_key, &len))
+		return FALSE;
+	
+	if (len != 0) {
+		guchar token[8];
+		gchar *encoded;
 
 		mono_digest_get_public_token (token, aname->public_key, len);
 		encoded = encode_public_tok (token, 8);
-		g_strlcpy ((char*)aname->public_key_token, encoded, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_strlcpy((char*)aname->public_key_token, (char*)encoded, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 
-		g_free (encoded);
-		g_free (token);
-	}
-	else {
-		aname->public_key = NULL;
-		memset (aname->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_free(encoded);
 	}
 
-	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
-		aname->public_key = (guchar*)mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
-		if (copyBlobs) {
-			const gchar *pkey_end;
-			int len = mono_metadata_decode_blob_size ((const gchar*) aname->public_key, &pkey_end);
-			pkey_end += len; /* move to end */
-			size_t size = pkey_end - (const gchar*)aname->public_key;
-			guchar *tmp = g_new (guchar, size);
-			memcpy (tmp, aname->public_key, size);
-			aname->public_key = tmp;
-		}
-
-	}
-	else
-		aname->public_key = 0;
-
-	machine = image->image_info->cli_header.coff.coff_machine;
-	flags = image->image_info->cli_cli_header.ch_flags;
+	guint16 machine = image->image_info->cli_header.coff.coff_machine;
+	guint16 flags = image->image_info->cli_cli_header.ch_flags;
 	switch (machine) {
 	case COFF_MACHINE_I386:
 		/* https://bugzilla.xamarin.com/show_bug.cgi?id=17632 */
@@ -572,43 +571,15 @@ mono_stringify_assembly_name (MonoAssemblyName *aname)
 }
 
 static gchar*
-assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
+assemblyref_public_tok (uint8_t const* key, uint32_t len, uint32_t flags)
 {
-	const gchar *public_tok;
-	int len;
-
-	public_tok = mono_metadata_blob_heap (image, key_index);
-	len = mono_metadata_decode_blob_size (public_tok, &public_tok);
-
 	if (flags & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG) {
 		guchar token [8];
-		mono_digest_get_public_token (token, (guchar*)public_tok, len);
+		mono_digest_get_public_token (token, (guchar*)key, len);
 		return encode_public_tok (token, 8);
 	}
 
-	return encode_public_tok ((guchar*)public_tok, len);
-}
-
-static gchar*
-assemblyref_public_tok_checked (MonoImage *image, guint32 key_index, guint32 flags, MonoError *error)
-{
-	const gchar *public_tok;
-	int len;
-
-	public_tok = mono_metadata_blob_heap_checked (image, key_index, error);
-	return_val_if_nok (error, NULL);
-	if (!public_tok) {
-		mono_error_set_bad_image (error, image, "expected public key token (index = %d) in assembly reference, but the Blob heap is NULL", key_index);
-		return NULL;
-	}
-	len = mono_metadata_decode_blob_size (public_tok, &public_tok);
-
-	if (flags & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG) {
-		guchar token [8];
-		mono_digest_get_public_token (token, (guchar*)public_tok, len);
-		return encode_public_tok (token, 8);
-	}
-	return encode_public_tok ((guchar*)public_tok, len);
+	return encode_public_tok ((guchar*)key, len);
 }
 
 /**
@@ -668,35 +639,55 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 void
 mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *aname)
 {
-	MonoTableInfo *t;
-	guint32 cols [MONO_ASSEMBLYREF_SIZE];
-	const char *hash;
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_AssemblyRef, &c, &count))
+		g_assert_not_reached ();
 
-	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+	if (!md_cursor_move (&c, index))
+		g_assert_not_reached ();
 
-	mono_metadata_decode_row (t, index, cols, MONO_ASSEMBLYREF_SIZE);
+	uint8_t const* hash_value;
+	if (1 != md_get_column_value_as_blob(c, mdtAssemblyRef_HashValue, 1, &hash_value, &aname->hash_len))
+		g_assert_not_reached ();
+	aname->hash_value =  (const char*)hash_value;
+	
+	if (1 != md_get_column_value_as_utf8(c, mdtAssemblyRef_Name, 1, &aname->name))
+		g_assert_not_reached ();
+	
+	if (1 != md_get_column_value_as_utf8(c, mdtAssemblyRef_Culture, 1, &aname->culture))
+		g_assert_not_reached ();
 
-	// ECMA-335: II.22.5 - AssemblyRef
-	// HashValue can be null or non-null.  If non-null it's an index into the blob heap
-	// Sometimes ILasm can create an image without a Blob heap.
-	hash = mono_metadata_blob_heap_null_ok (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
-	if (hash) {
-		aname->hash_len = mono_metadata_decode_blob_size (hash, &hash);
-		aname->hash_value = hash;
-	} else {
-		aname->hash_len = 0;
-		aname->hash_value = NULL;
-	}
-	aname->name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
-	aname->culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
-	aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
-	aname->major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
-	aname->minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
-	aname->build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
-	aname->revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
+	uint32_t major;
+	if (1 != md_get_column_value_as_constant (c, mdtAssemblyRef_MajorVersion, 1, &major))
+		g_assert_not_reached ();
+	aname->major = (int32_t)major;
 
-	if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
-		gchar *token = assemblyref_public_tok (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname->flags);
+	uint32_t minor;
+	if (1 != md_get_column_value_as_constant (c, mdtAssemblyRef_MinorVersion, 1, &minor))
+		g_assert_not_reached ();
+	aname->minor = (int32_t)minor;
+
+	uint32_t build;
+	if (1 != md_get_column_value_as_constant (c, mdtAssemblyRef_BuildNumber, 1, &build))
+		g_assert_not_reached ();
+	aname->build = (int32_t)build;
+
+	uint32_t revision;
+	if (1 != md_get_column_value_as_constant (c, mdtAssemblyRef_RevisionNumber, 1, &revision))
+		g_assert_not_reached ();
+	aname->revision = (int32_t)revision;
+	
+	if (1 != md_get_column_value_as_constant(c, mdtAssemblyRef_Flags, 1, &aname->flags))
+		g_assert_not_reached ();
+	
+	uint8_t const* public_key_token;
+	uint32_t public_key_token_len;
+	if (1 != md_get_column_value_as_blob(c, mdtAssemblyRef_PublicKeyOrToken, 1, &public_key_token, &public_key_token_len))
+		g_assert_not_reached ();
+	
+	if (public_key_token_len != 0) {
+		gchar* token = assemblyref_public_tok(public_key_token, public_key_token_len, aname->flags);
 		g_strlcpy ((char*)aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_free (token);
 	} else {
@@ -882,51 +873,74 @@ leave:
 gboolean
 mono_assembly_get_assemblyref_checked (MonoImage *image, int index, MonoAssemblyName *aname, MonoError *error)
 {
-	guint32 cols [MONO_ASSEMBLYREF_SIZE];
-	const char *hash;
 
-	if (image_is_dynamic (image)) {
-		MonoDynamicTable *t = &(((MonoDynamicImage*) image)->tables [MONO_TABLE_ASSEMBLYREF]);
-		if (!mono_metadata_decode_row_dynamic_checked ((MonoDynamicImage*)image, t, index, cols, MONO_ASSEMBLYREF_SIZE, error))
-			return FALSE;
-	}
-	else {
-		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
-		if (!mono_metadata_decode_row_checked (image, t, index, cols, MONO_ASSEMBLYREF_SIZE, error))
-			return FALSE;
+	g_assert(!image_is_dynamic (image)); // TODO: Reimplement for dynamic images once we decide what a dynamic image with DNMD looks like.
+
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_AssemblyRef, &c, &count)) {
+		mono_error_set_bad_image_by_name (error, image->name, "No AssemblyRef records in image: %s", image->name);
+		return FALSE;
 	}
 
-
-
-	// ECMA-335: II.22.5 - AssemblyRef
-	// HashValue can be null or non-null.  If non-null it's an index into the blob heap
-	// Sometimes ILasm can create an image without a Blob heap.
-	hash = mono_metadata_blob_heap_checked (image, cols [MONO_ASSEMBLYREF_HASH_VALUE], error);
-	return_val_if_nok (error, FALSE);
-	if (hash) {
-		aname->hash_len = mono_metadata_decode_blob_size (hash, &hash);
-		aname->hash_value = hash;
-	} else {
-		aname->hash_len = 0;
-		aname->hash_value = NULL;
+	if (!md_cursor_move (&c, index)) {
+		mono_error_set_bad_image_by_name (error, image->name, "AssemblyRef index %u out of bounds %u: %s", index, count, image->name);
+		return FALSE;
 	}
-	aname->name = mono_metadata_string_heap_checked (image, cols [MONO_ASSEMBLYREF_NAME], error);
-	return_val_if_nok (error, FALSE);
-	aname->culture = mono_metadata_string_heap_checked (image, cols [MONO_ASSEMBLYREF_CULTURE], error);
-	return_val_if_nok (error, FALSE);
-	aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
-	aname->major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
-	aname->minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
-	aname->build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
-	aname->revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
-	if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
-		gchar *token = assemblyref_public_tok_checked (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname->flags, error);
-		return_val_if_nok (error, FALSE);
+
+	uint8_t const* hash_value;
+	if (1 != md_get_column_value_as_blob(c, mdtAssemblyRef_HashValue, 1, &hash_value, &aname->hash_len)) {
+		mono_error_set_bad_image_by_name (error, image->name, "hash value blob heap index out of bounds: %s", image->name);
+		return FALSE;
+	}
+	aname->hash_value =  (const char*)hash_value;
+	
+	if (1 != md_get_column_value_as_utf8(c, mdtAssemblyRef_Name, 1, &aname->name)) {
+		mono_error_set_bad_image_by_name (error, image->name, "name string heap index out of bounds: %s", image->name);
+		return FALSE;
+	}
+	
+	if (1 != md_get_column_value_as_utf8(c, mdtAssemblyRef_Culture, 1, &aname->culture)) {
+		mono_error_set_bad_image_by_name (error, image->name, "culture string heap index out of bounds: %s", image->name);
+		return FALSE;
+	}
+	
+	uint32_t major;
+	if (1 != md_get_column_value_as_constant (c, mdtAssemblyRef_MajorVersion, 1, &major))
+		return FALSE;
+	aname->major = (int32_t)major;
+
+	uint32_t minor;
+	if (1 != md_get_column_value_as_constant (c, mdtAssemblyRef_MinorVersion, 1, &minor))
+		return FALSE;
+	aname->minor = (int32_t)minor;
+
+	uint32_t build;
+	if (1 != md_get_column_value_as_constant (c, mdtAssemblyRef_BuildNumber, 1, &build))
+		return FALSE;
+	aname->build = (int32_t)build;
+
+	uint32_t revision;
+	if (1 != md_get_column_value_as_constant (c, mdtAssemblyRef_RevisionNumber, 1, &revision))
+		return FALSE;
+	aname->revision = (int32_t)revision;
+	
+	if (1 != md_get_column_value_as_constant(c, mdtAssemblyRef_Flags, 1, &aname->flags))
+		g_assert_not_reached ();
+	
+	uint8_t const* public_key_token;
+	uint32_t public_key_token_len;
+	if (1 != md_get_column_value_as_blob(c, mdtAssemblyRef_PublicKeyOrToken, 1, &public_key_token, &public_key_token_len))
+		g_assert_not_reached ();
+	
+	if (public_key_token_len != 0) {
+		gchar* token = assemblyref_public_tok(public_key_token, public_key_token_len, aname->flags);
 		g_strlcpy ((char*)aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_free (token);
 	} else {
 		memset (aname->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 	}
+
 	return TRUE;
 }
 
@@ -946,9 +960,10 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	 */
 	mono_image_lock (image);
 	if (!image->references) {
-		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+		mdcursor_t c;
+		uint32_t n = 0;
+		md_create_cursor (image->metadata_handle, mdtid_AssemblyRef, &c, &n);
 
-		int n = table_info_get_rows (t);
 		image->references = g_new0 (MonoAssembly *, n + 1);
 		image->nreferences = n;
 	}
@@ -1886,7 +1901,10 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	predicate = req->predicate;
 	user_data = req->predicate_ud;
 
-	if (!table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY])) {
+	mdcursor_t c;
+	uint32_t count;
+
+	if (!md_create_cursor (image->metadata_handle, mdtid_Assembly, &c, &count)) {
 		/* 'image' doesn't have a manifest -- maybe someone is trying to Assembly.Load a .netmodule */
 		*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
