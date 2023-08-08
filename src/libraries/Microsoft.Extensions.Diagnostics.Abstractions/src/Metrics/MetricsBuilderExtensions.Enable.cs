@@ -111,10 +111,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             MeterScope scopes, bool enable)
         {
             ThrowHelper.ThrowIfNull(options);
-            if (scopes == MeterScope.None)
-            {
-                throw new ArgumentOutOfRangeException(nameof(scopes), "The MeterScope must be Global, Local, or both.");
-            }
             options.Rules.Add(new InstrumentRule(meterName, instrumentName, listenerName, scopes, enable));
             return options;
         }

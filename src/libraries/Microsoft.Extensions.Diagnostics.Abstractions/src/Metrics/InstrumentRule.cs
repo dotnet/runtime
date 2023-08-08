@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics.Metrics;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
@@ -45,7 +46,9 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// The <see cref="MeterScope"/>. This is used to distinguish between meters created via <see cref="Meter"/> constructors (<see cref="MeterScope.Global"/>)
         /// and those created via Dependency Injection with <see cref="IMeterFactory.Create(MeterOptions)"/> (<see cref="MeterScope.Local"/>)."/>.
         /// </summary>
-        public MeterScope Scopes { get; } = scopes;
+        public MeterScope Scopes { get; } = scopes == MeterScope.None
+            ? throw new ArgumentOutOfRangeException(nameof(scopes), scopes, "The MeterScope must be Global, Local, or both.")
+            : scopes;
 
         /// <summary>
         /// Indicates if the instrument should be enabled for the listener.
