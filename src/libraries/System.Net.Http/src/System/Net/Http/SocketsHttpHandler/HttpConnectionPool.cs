@@ -742,17 +742,8 @@ namespace System.Net.Http
 
             if (connection is not null)
             {
-                // Register for shutdown notification.
-                // Do this before we return the connection to the pool, because that may result in it being disposed.
-                ValueTask shutdownTask = connection.WaitForShutdownAsync();
-
                 // Add the new connection to the pool.
                 ReturnHttp2Connection(connection, isNewConnection: true, queueItem.Waiter);
-
-                // Wait for connection shutdown.
-                await shutdownTask.ConfigureAwait(false);
-
-                InvalidateHttp2Connection(connection);
             }
             else
             {
