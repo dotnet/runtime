@@ -447,11 +447,6 @@
         <target state="translated">除非一併使用'[Out]'屬性，否則'[In]'屬性為非必要。沒有'[Out]'屬性的'[In]'屬性行為與默認行為相同。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InAttributeOnlyNotSupportedOnPinnedParameters">
-        <source>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</source>
-        <target state="translated">此參數是由釘選排列，不支援沒有 '[Out]' 屬性的 '[In]' 屬性。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">參考所傳遞的參數不支援'[In]'和'[Out]'屬性。請改用 'in'、'ref' 或 'out' 關鍵詞。</target>
@@ -465,11 +460,6 @@
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">[In] 與 [Out] 屬性</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InRefKindIsNotSupportedOnPinnedParameters">
-        <source>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</source>
-        <target state="translated">依釘選封送處理的參數不支援 'in' 關鍵字。請改為使用 'ref' 或 'out'。</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -903,8 +893,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="translated">只有在依釘選排列的陣列參數和參數上，才支援 '[Out]' 屬性。請考慮使用 'out' 或 'ref' 關鍵字將參數設為可變。</target>
+        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="needs-review-translation">只有在依釘選排列的陣列參數和參數上，才支援 '[Out]' 屬性。請考慮使用 'out' 或 'ref' 關鍵字將參數設為可變。</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -915,11 +905,6 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">類型 '{0}' 指定它支援以 'Out' 方向排列，但未提供傳回受管理類型的 'ToManaged' 方法</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="PinnedMarshallingIsInOutByDefault">
-        <source>This parameter is marshalled by pinning and is '[In, Out]' by default.</source>
-        <target state="translated">此參數依釘選排列，預設為 '[In, Out]'。</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -1162,11 +1147,6 @@
         <target state="translated">'{0}' 具有存取範圍 '{1}'。</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeDoesNotSupportByValueMarshalingAttributes">
-        <source>'[In]' and '[Out]' attributes are not supported on this type.</source>
-        <target state="translated">此類型不支援 '[In]' 和 '[Out]' 屬性。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
         <target state="translated">自訂封送處理程式的未受控類型必須是 C# 未受控類型。</target>
@@ -1234,9 +1214,9 @@
         <target state="translated">来源產生的 P/Invokes 不支援指定的類型。</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle1">
+      <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="translated">来源產生的 COM 不支援指定的類型。</target>
+        <target state="new">Specified type is not supported by source-generated COM</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

@@ -447,11 +447,6 @@
         <target state="translated">L'attributo '[In]' non è necessario a meno che non venga usato anche l'attributo '[Out]'. Il comportamento dell'attributo '[In]' senza l'attributo '[Out]' è uguale a quello predefinito.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InAttributeOnlyNotSupportedOnPinnedParameters">
-        <source>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</source>
-        <target state="translated">Il marshalling di questo parametro viene eseguito tramite aggiunta e non supporta l'attributo '[In]' senza l'attributo '[Out]'.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">Gli attributi '[In]' e '[Out]' non sono supportati nei parametri passati per riferimento. Usare le parole chiave 'in', 'ref' o 'out'.</target>
@@ -465,11 +460,6 @@
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">Attributi [In] e [Out]</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InRefKindIsNotSupportedOnPinnedParameters">
-        <source>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</source>
-        <target state="translated">La parola chiave 'in' non è supportata nei parametri di cui viene eseguito il marshalling tramite l'aggiunta. In alternativa, usare 'ref' oppure 'out'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -903,8 +893,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="translated">L'attributo '[Out]' è supportato solo nei parametri di matrice e nei parametri di cui è stato eseguito il marshalling tramite l'aggiunta. Provare a usare parole chiave 'out' o 'ref' per rendere modificabile il parametro.</target>
+        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="needs-review-translation">L'attributo '[Out]' è supportato solo nei parametri di matrice e nei parametri di cui è stato eseguito il marshalling tramite l'aggiunta. Provare a usare parole chiave 'out' o 'ref' per rendere modificabile il parametro.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -915,11 +905,6 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">Il tipo '{0}' specifica che supporta il marshalling nella direzione 'Out', ma non fornisce un metodo 'ToManaged' che restituisce il tipo gestito</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="PinnedMarshallingIsInOutByDefault">
-        <source>This parameter is marshalled by pinning and is '[In, Out]' by default.</source>
-        <target state="translated">Il marshalling di questo parametro viene eseguito tramite aggiunta ed è '[In, Out]' per impostazione predefinita.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -1162,11 +1147,6 @@
         <target state="translated">'{0}' ha accessibilità '{1}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeDoesNotSupportByValueMarshalingAttributes">
-        <source>'[In]' and '[Out]' attributes are not supported on this type.</source>
-        <target state="translated">Gli attributi '[In]' e '[Out]' non sono supportati in questo tipo.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
         <target state="translated">Il tipo non gestito per un marshaller personalizzato deve essere un tipo non gestito C#.</target>
@@ -1234,9 +1214,9 @@
         <target state="translated">Il tipo specificato non è supportato dai P/Invoke generati dall'origine</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle1">
+      <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="translated">Il tipo specificato non è supportato da COM generati dall'origine</target>
+        <target state="new">Specified type is not supported by source-generated COM</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
