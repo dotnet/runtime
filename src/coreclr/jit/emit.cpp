@@ -1655,15 +1655,20 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
     {
         // If the current IG has instructions, then we need to create a new one.
-        // If it does not, then re-use the current one with its flags reset.
         if (emitCurIGnonEmpty())
         {
             emitNxtIG(true);
         }
         else
         {
-            // Reset flags.
-            emitCurIG->igFlags = (emitCurIG->igFlags & IGF_PROPAGATE_MASK) | IGF_EXTEND;
+            if (emitNoGCIG)
+            {
+                emitCurIG->igFlags |= IGF_NOGCINTERRUPT;
+            }
+            else
+            {
+                emitCurIG->igFlags &= ~IGF_NOGCINTERRUPT;
+            }
         }
     }
 
