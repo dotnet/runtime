@@ -287,6 +287,7 @@ namespace Microsoft.Interop
                     ArgumentList(SingletonSeparatedList(
                         Argument(IdentifierName(context.GetIdentifiers(info).native))))));
         }
+
         public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
         {
             if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCalleeAllocated)
@@ -344,12 +345,6 @@ namespace Microsoft.Interop
         {
             if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCallerAllocated)
                 yield break;
-
-            if (MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.ManagedToUnmanaged)
-            {
-                yield return EmptyStatement();
-                yield break;
-            }
 
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return ExpressionStatement(

@@ -410,13 +410,19 @@ namespace Microsoft.Interop
         /// </summary>
         public static StubCodeContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
         {
+            // Unmanaged to managed doesn't properly handle lifetimes right now and will default to the original behavior.
+            // Failures will only occur when marshalling fails, and would only cause leaks, not double frees.
+            // See https://github.com/dotnet/runtime/issues/89483 for more details
             if (context.Direction is MarshalDirection.UnmanagedToManaged)
                 return StubCodeContext.Stage.CleanupCallerAllocated;
 
-            if (GetMarshalDirection(info, context) is MarshalDirection.UnmanagedToManaged)
-                return StubCodeContext.Stage.CleanupCalleeAllocated;
-
-            return StubCodeContext.Stage.CleanupCallerAllocated;
+            return GetMarshalDirection(info, context) switch
+            {
+                MarshalDirection.UnmanagedToManaged => StubCodeContext.Stage.CleanupCalleeAllocated,
+                MarshalDirection.ManagedToUnmanaged => StubCodeContext.Stage.CleanupCallerAllocated,
+                MarshalDirection.Bidirectional => StubCodeContext.Stage.CleanupCallerAllocated,
+                _ => throw new UnreachableException()
+            };
         }
 
         /// Ensure that the count of a collection is available at call time if the parameter is not an out parameter.
