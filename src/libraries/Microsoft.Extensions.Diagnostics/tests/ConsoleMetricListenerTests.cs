@@ -23,13 +23,13 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 services.AddMetrics(builder =>
                 {
                     builder.AddDebugConsole();
-                    builder.EnableMetrics("TestMeter", listenerName: ConsoleMetrics.ListenerName);
+                    builder.EnableMetrics("TestMeter", listenerName: ConsoleMetrics.DebugListenerName);
                 });
                 using var sp = services.BuildServiceProvider();
                 sp.GetRequiredService<IStartupValidator>().Validate();
 
                 var listener = sp.GetRequiredService<IMetricsListener>();
-                var consoleListener = Assert.IsType<ConsoleMetricListener>(listener);
+                var consoleListener = Assert.IsType<DebugConsoleMetricListener>(listener);
                 var output = new StringWriter();
                 consoleListener._textWriter = output;
 

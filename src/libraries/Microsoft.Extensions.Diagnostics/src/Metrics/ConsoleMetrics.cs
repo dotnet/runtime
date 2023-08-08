@@ -11,6 +11,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <summary>
         /// The name of the listener used in configuration and enabling instruments.
         /// </summary>
-        public static string ListenerName => "Console";
+        public static string DebugListenerName => "DebugConsole";
     }
 }

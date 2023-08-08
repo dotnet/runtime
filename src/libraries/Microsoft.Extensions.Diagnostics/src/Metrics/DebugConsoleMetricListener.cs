@@ -9,18 +9,18 @@ using System.Threading;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    internal sealed class ConsoleMetricListener : IMetricsListener, IDisposable
+    internal sealed class DebugConsoleMetricListener : IMetricsListener, IDisposable
     {
         private readonly Timer _timer;
         internal TextWriter _textWriter = Console.Out;
         private IObservableInstrumentsSource? _source;
 
-        public ConsoleMetricListener()
+        public DebugConsoleMetricListener()
         {
             _timer = new Timer(OnTimer, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
 
-        public string Name => ConsoleMetrics.ListenerName;
+        public string Name => ConsoleMetrics.DebugListenerName;
 
         public bool InstrumentPublished(Instrument instrument, out object? userState)
         {

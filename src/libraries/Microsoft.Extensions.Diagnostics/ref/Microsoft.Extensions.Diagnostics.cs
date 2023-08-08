@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class MetricsServiceExtensions
@@ -17,15 +13,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     public static class ConsoleMetrics
     {
-        public static string ListenerName => throw null!;
+        public static string DebugListenerName => throw null!;
     }
     public static class MetricsBuilderConsoleExtensions
     {
         public static IMetricsBuilder AddDebugConsole(this IMetricsBuilder builder) => throw null!;
     }
-    internal sealed class ConsoleMetricListener : IMetricsListener, IDisposable
+    internal sealed class DebugConsoleMetricListener : IMetricsListener, System.IDisposable
     {
-        internal TextWriter _textWriter;
+        internal System.IO.TextWriter _textWriter;
         public string Name { get; }
         public MeasurementHandlers GetMeasurementHandlers() => throw null!;
         public bool InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument, out object? userState) => throw null!;
@@ -37,7 +33,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         internal ListenerSubscription(Microsoft.Extensions.Diagnostics.Metrics.IMetricsListener listener) { }
         public void Initialize() { }
-        internal void UpdateRules(IList<InstrumentRule> rules) { }
+        internal void UpdateRules(System.Collections.Generic.IList<InstrumentRule> rules) { }
         internal static bool RuleMatches(InstrumentRule rule, System.Diagnostics.Metrics.Instrument instrument, string listenerName) => throw null!;
         internal static bool IsMoreSpecific(InstrumentRule rule, InstrumentRule? best, bool isLocalScope) => throw null!;
     }
