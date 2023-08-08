@@ -1367,6 +1367,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             PrintWarning($"Skipped R2REntryPoint {methodNameFromEventDirectly} due to ClrInstanceID of {e.ClrInstanceID}");
                             continue;
                         }
+
                         MethodDesc method = null;
                         string extraWarningText = null;
                         bool failedDueToNonloadableModule = false;
@@ -1460,6 +1461,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         string retArg = e.MethodSignature.Substring(0, parenIndex);
                         string paramsArgs = e.MethodSignature.Substring(parenIndex);
                         string methodNameFromEventDirectly = retArg + e.MethodNamespace + "." + e.MethodName + paramsArgs;
+
                         if (e.ClrInstanceID != clrInstanceId)
                         {
                             if (!_command.Warnings)
