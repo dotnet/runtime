@@ -1626,12 +1626,10 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			}
 			// don't expect to see any other func codes with this table
 			g_assert (func_code == ENC_FUNC_DEFAULT);
-			if (!is_addition) {
-				// Roslyn sometimes sends this when a custom attribute is deleted from
-				// a type definition.
-				break;
-			}
-			/* otherwise it's an added type definition, continue */
+			// If it's an addition, it's an added type definition, continue.
+
+			// If it's a modification, Roslyn sometimes sends this when a custom
+			// attribute is deleted from a type definition.
 			break;
 		}
 		default:
