@@ -126,7 +126,6 @@ namespace Wasm.Build.Tests
         }
 #pragma warning restore xunit1026
 
-        // FIXME: move to defaults?
         public static TheoryData<string, string, bool, bool> SetWasmNativeStripExplicitlyTestData(bool publish) => new()
         {
             {"Debug", "<WasmNativeStrip>true</WasmNativeStrip>", false, true },
@@ -159,7 +158,6 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData))]
         public void WasmNativeStripDefaultWithPublish(string config, string extraProperties, bool expectedWasmBuildNativeValue, bool expectedWasmNativeStripValue)
         {
-            // FIXME: frmo runtime pack..
             string output = CheckWasmNativeDefaultValue("native_strip_defaults", config, extraProperties, aot: false, dotnetWasmFromRuntimePack: !expectedWasmBuildNativeValue, publish: true);
 
             Assert.Contains($"** WasmBuildNative: '{expectedWasmBuildNativeValue.ToString().ToLower()}', WasmNativeStrip: '{expectedWasmNativeStripValue.ToString().ToLower()}', WasmBuildingForNestedPublish: 'true'", output);
@@ -184,7 +182,7 @@ namespace Wasm.Build.Tests
                                                         extraItems: nativeRefItem);
 
             // for build - FIXME:
-            // Assert.DoesNotContain($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+             Assert.DoesNotContain($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
             // for publish
             Assert.Contains($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmNativeStrip: 'true', WasmBuildingForNestedPublish: 'true'", output);
             Assert.Contains("Stopping the build", output);
