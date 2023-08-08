@@ -213,6 +213,7 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(1, obj.ReturnPreserveSig().i);
         }
 
+        [Fact]
         public void ICollectionMarshallingFails()
         {
             Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
