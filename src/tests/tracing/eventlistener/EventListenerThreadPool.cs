@@ -66,7 +66,7 @@ namespace Tracing.Tests
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())
             {
-                // This should fire either of TPWorkerThreadStartCount, TPWorkerThreadStopCount or TPWorkerThreadWaitCount
+                // This should fire at least one ThreadPoolWorkerThreadWait
                 int someNumber = 0;
                 Task[] tasks = new Task[100];
                 for (int i = 0; i < tasks.Length; i++) 
