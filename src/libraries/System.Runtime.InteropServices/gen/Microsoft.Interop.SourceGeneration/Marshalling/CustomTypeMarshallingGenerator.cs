@@ -110,7 +110,7 @@ namespace Microsoft.Interop
         {
             return
             info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
-                && _byValueContentsMarshallingSupport.GetSupport(info.ByValueContentsMarshalKind, info, context, out _) == ByValueMarshalKindSupport.Supported
+                && _byValueContentsMarshallingSupport.GetSupport(info.ByValueContentsMarshalKind, info, context, out _) != ByValueMarshalKindSupport.NotSupported
                 && !info.IsByRef
                 && !_isPinned;
         }
