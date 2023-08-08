@@ -964,7 +964,7 @@ namespace Mono.Linker.Steps
 					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.NoMembersResolvedForMemberSignatureOrType, memberSignature, type.GetDisplayName ());
 					return;
 				}
-			} else {
+			} else if (dynamicDependency.MemberTypes != DynamicallyAccessedMemberTypes.None) {
 				var memberTypes = dynamicDependency.MemberTypes;
 				members = type.GetDynamicallyAccessedMembers (Context, memberTypes);
 				if (!members.Any ()) {
