@@ -2,8 +2,7 @@
   <PropertyGroup>
     <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AppleGenerateAppBundle>
     <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
-    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
-    <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AppleGenerateAppBundle>
+    <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true'">false</AppleGenerateAppBundle>
     <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
@@ -53,9 +52,22 @@
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
+
     <!-- common linker arguments for app and library builds -->
     <ItemGroup>
       <_CommonLinkerArgs Condition="'$(_IsLibraryMode)' == 'true' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator'" Include="-framework GSS" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <_CommonLinkerArgs Include="-lz" />
+      <_CommonLinkerArgs Include="-lc++" />
+      <_CommonLinkerArgs Include="-liconv" />
+      <_CommonLinkerArgs Include="-framework Foundation" />
+      <_CommonLinkerArgs Include="-framework Security" />
+      <_CommonLinkerArgs Include="-framework UIKit" />
     </ItemGroup>
   </Target>
 
@@ -262,11 +274,13 @@
       <ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <NativeDependencies Include="$(LibraryOutputPath)" />
+    </ItemGroup>
+
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
     <AppleAppBuilderTask
-      UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
-      NativeDependencies="$(NativeDependencies)"
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
       Assemblies="@(_AssembliesToBundleInternal)"
@@ -274,24 +288,27 @@
       DevTeamProvisioning="$(DevTeamProvisioning)"
       DiagnosticPorts="$(DiagnosticPorts)"
       EnableAppSandbox="$(EnableAppSandbox)"
+      ExcludeFromAppDir="@(_ExcludeFromAppDir)"
       ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
       GenerateCMakeProject="$(GenerateCMakeProject)"
       GenerateXcodeProject="$(GenerateXcodeProject)"
-      InvariantGlobalization="$(InvariantGlobalization)"
       HybridGlobalization="$(HybridGlobalization)"
+      InvariantGlobalization="$(InvariantGlobalization)"
+      IsLibraryMode="$(_IsLibraryMode)"
       MainLibraryFileName="$(MainLibraryFileName)"
       MonoRuntimeHeaders="$(_MonoHeaderPath)"
       NativeMainSource="$(NativeMainSource)"
+      NativeDependencies="@(NativeDependencies)"
       Optimized="$(Optimized)"
       OutputDirectory="$(AppleBundleDir)"
       ProjectName="$(AppName)"
       RuntimeComponents="$(RuntimeComponents)"
-      TargetOS="$(TargetOS)"
       StripSymbolTable="$(StripDebugSymbols)"
-      ExcludeFromAppDir="@(_ExcludeFromAppDir)"
-      UseConsoleUITemplate="$(UseConsoleUITemplate)">
+      TargetOS="$(TargetOS)"
+      UseConsoleUITemplate="$(UseConsoleUITemplate)"
+      UseNativeAOTRuntime="$(UseNativeAOTRuntime)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
