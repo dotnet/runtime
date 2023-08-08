@@ -34,11 +34,7 @@ namespace System.Text.Json
             Debug.Assert(inputType != null);
 
             options ??= JsonSerializerOptions.Default;
-
-            if (!options.IsConfiguredForJsonSerializer)
-            {
-                options.ConfigureForJsonSerializer();
-            }
+            options.MakeReadOnly(populateMissingResolver: true);
 
             // In order to improve performance of polymorphic root-level object serialization,
             // we bypass GetTypeInfoForRootType and cache JsonTypeInfo<object> in a dedicated property.

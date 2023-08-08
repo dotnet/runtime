@@ -45,13 +45,16 @@ namespace System.Net.Security
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CanEncryptEmptyMessage = true;
 
-        private static readonly byte[] s_sessionTokenBuffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(
-            new Interop.SChannel.SCHANNEL_SESSION_TOKEN()
-            {
+        private static readonly byte[] s_sessionTokenBuffer = InitSessionTokenBuffer();
+
+        private static byte[] InitSessionTokenBuffer()
+        {
+            var schannelSessionToken = new Interop.SChannel.SCHANNEL_SESSION_TOKEN() {
                 dwTokenType = Interop.SChannel.SCHANNEL_SESSION,
                 dwFlags = Interop.SChannel.SSL_SESSION_DISABLE_RECONNECTS,
-            }
-        )).ToArray();
+            };
+            return MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(in schannelSessionToken)).ToArray();
+        }
 
         public static void VerifyPackageInfo()
         {

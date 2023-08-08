@@ -27,9 +27,9 @@ namespace System.Runtime.InteropServices
         internal static IntPtr TaggedImplVftblPtr { get; } = CreateTaggedImplVftbl();
         internal static IntPtr DefaultIReferenceTrackerTargetVftblPtr { get; } = CreateDefaultIReferenceTrackerTargetVftbl();
 
-        internal static Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
-        internal static Guid IID_IReferenceTrackerTarget = new Guid(0x64bd43f8, 0xbfee, 0x4ec4, 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21);
-        internal static Guid IID_TaggedImpl = new Guid(0x5c13e51c, 0x4f32, 0x4726, 0xa3, 0xfd, 0xf3, 0xed, 0xd6, 0x3d, 0xa3, 0xa0);
+        internal static readonly Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+        internal static readonly Guid IID_IReferenceTrackerTarget = new Guid(0x64bd43f8, 0xbfee, 0x4ec4, 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21);
+        internal static readonly Guid IID_TaggedImpl = new Guid(0x5c13e51c, 0x4f32, 0x4726, 0xa3, 0xfd, 0xf3, 0xed, 0xd6, 0x3d, 0xa3, 0xa0);
 
         private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
 
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
-            return Marshal.QueryInterface(wrapper._externalComObject, ref IID_IUnknown, out unknown) == 0;
+            return Marshal.QueryInterface(wrapper._externalComObject, in IID_IUnknown, out unknown) == 0;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -675,7 +675,7 @@ namespace System.Runtime.InteropServices
             {
                 // It is possible the user has defined their own IUnknown impl so
                 // we fallback to the tagged interface approach to be sure.
-                if (0 != Marshal.QueryInterface(comObject, ref IID_TaggedImpl, out nint implMaybe))
+                if (0 != Marshal.QueryInterface(comObject, in IID_TaggedImpl, out nint implMaybe))
                 {
                     return null;
                 }
@@ -737,8 +737,7 @@ namespace System.Runtime.InteropServices
                     {
                         // The unwrapped object has a CCW in this context. Get the IUnknown for the externalComObject
                         // so we can see if it's the CCW for the unwrapped object in this context.
-                        Guid iid = IID_IUnknown;
-                        int hr = Marshal.QueryInterface(externalComObject, ref iid, out IntPtr externalIUnknown);
+                        int hr = Marshal.QueryInterface(externalComObject, in IID_IUnknown, out IntPtr externalIUnknown);
                         Debug.Assert(hr == 0); // An external COM object that came from a ComWrappers instance
                                                // will always be well-formed.
                         if (unwrappedWrapperInThisContext.ComIp == externalIUnknown)

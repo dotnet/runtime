@@ -26,7 +26,7 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
     MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
 
-    Module * pModule = pMethod->GetModule_NoLogging();
+    Module * pModule = pMethod->GetModule();
 
     _ASSERTE(pModule->IsSystem());
 }
@@ -357,7 +357,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 {
                     TypeHandle th = m_methodSig.GetLastTypeHandleThrowing(ClassLoader::DontLoadTypes);
                     CONSISTENCY_CHECK(th.CheckFullyLoaded());
-                    CONSISTENCY_CHECK(th.IsRestored_NoLogging());
+                    CONSISTENCY_CHECK(th.IsRestored());
                 }
             }
             m_methodSig.Reset();

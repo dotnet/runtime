@@ -922,13 +922,13 @@ namespace System.Net.Sockets
 
                 case SocketAsyncOperation.ReceiveFrom:
                     // Deal with incoming address.
-                    _socketAddress!.InternalSize = GetSocketAddressSize();
+                    UpdateReceivedSocketAddress(_socketAddress!);
                     Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
                     if (!socketAddressOriginal.Equals(_socketAddress))
                     {
                         try
                         {
-                            if (_remoteEndPoint!.AddressFamily == _socketAddress.Family)
+                            if (_remoteEndPoint!.AddressFamily == _socketAddress!.Family)
                             {
                                 _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
                             }
@@ -945,13 +945,13 @@ namespace System.Net.Sockets
 
                 case SocketAsyncOperation.ReceiveMessageFrom:
                     // Deal with incoming address.
-                    _socketAddress!.InternalSize = GetSocketAddressSize();
+                    UpdateReceivedSocketAddress(_socketAddress!);
                     socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
                     if (!socketAddressOriginal.Equals(_socketAddress))
                     {
                         try
                         {
-                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
+                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress!);
                         }
                         catch
                         {

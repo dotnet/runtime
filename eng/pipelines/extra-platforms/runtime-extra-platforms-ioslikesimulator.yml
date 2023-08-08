@@ -130,5 +130,5 @@ jobs:
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       extraStepsParameters:
         creator: dotnet-bot
-        testBuildArgs: tree nativeaot/SmokeTests/UnitTests /p:BuildNativeAOTRuntimePack=true
+        testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
         testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)

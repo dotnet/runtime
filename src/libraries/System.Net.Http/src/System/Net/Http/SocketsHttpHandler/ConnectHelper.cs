@@ -143,13 +143,17 @@ namespace System.Net.Http
 
             static HttpRequestError DeduceError(Exception exception)
             {
-                // TODO: Deduce quic errors from QuicException.TransportErrorCode once https://github.com/dotnet/runtime/issues/87262 is implemented.
                 if (exception is AuthenticationException)
                 {
                     return HttpRequestError.SecureConnectionError;
                 }
 
-                if (exception is SocketException socketException && socketException.SocketErrorCode == SocketError.HostNotFound)
+                // Resolving a non-existent hostname often leads to EAI_AGAIN/TryAgain on Linux, indicating a non-authoritative failure, eg. timeout.
+                // Getting EAGAIN/TryAgain from a TCP connect() is not possible on Windows or Mac according to the docs and indicates lack of kernel resources on Linux,
+                // which should be a very rare error in practice. As a result, mapping SocketError.TryAgain to HttpRequestError.NameResolutionError
+                // leads to a more reliable distinction between NameResolutionError and ConnectionError.
+                if (exception is SocketException socketException &&
+                    socketException.SocketErrorCode is SocketError.HostNotFound or SocketError.TryAgain)
                 {
                     return HttpRequestError.NameResolutionError;
                 }

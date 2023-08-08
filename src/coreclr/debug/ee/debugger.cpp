@@ -6539,7 +6539,7 @@ HRESULT Debugger::LaunchDebuggerForUser(Thread * pThread, EXCEPTION_POINTERS * p
 // once and leave them set without the risk of clobbering something we care about.
 JIT_DEBUG_INFO   Debugger::s_DebuggerLaunchJitInfo = {0};
 EXCEPTION_RECORD Debugger::s_DebuggerLaunchJitInfoExceptionRecord = {0};
-CONTEXT          Debugger::s_DebuggerLaunchJitInfoContext = {0};
+CONTEXT          Debugger::s_DebuggerLaunchJitInfoContext = {};
 
 //----------------------------------------------------------------------------
 //
@@ -10462,34 +10462,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                          g_pEEInterface->GetThread(),
                          pEvent->vmAppDomain);
 
-            pIPCResult->hr = hr;
-
-            m_pRCThread->SendIPCReply();
-        }
-        break;
-
-    case DB_IPCE_IS_OPTS_DISABLED:
-        {
-            Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
-            mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
-            _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
-
-            HRESULT hr = E_INVALIDARG;
-            BOOL deoptimized = FALSE; 
-            EX_TRY
-            {
-                hr = IsMethodDeoptimized(pModule, methodDef, &deoptimized);
-            }
-            EX_CATCH_HRESULT(hr);
-            
-            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
-
-            InitIPCEvent(pIPCResult,
-                         DB_IPCE_IS_OPTS_DISABLED_RESULT,
-                         g_pEEInterface->GetThread(),
-                         pEvent->vmAppDomain);
-
-            pIPCResult->IsOptsDisabledData.value = deoptimized;
             pIPCResult->hr = hr;
 
             m_pRCThread->SendIPCReply();

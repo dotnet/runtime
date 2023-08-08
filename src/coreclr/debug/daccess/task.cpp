@@ -2500,7 +2500,7 @@ ClrDataModule::GetFlags(
         PTR_BaseDomain pBaseDomain = pAssembly->GetDomain();
         if (pBaseDomain->IsAppDomain())
         {
-            AppDomain* pAppDomain = pBaseDomain->AsAppDomain();
+            PTR_AppDomain pAppDomain = pBaseDomain->AsAppDomain();
             if (pAssembly == pAppDomain->GetRootAssembly())
             {
                 (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
