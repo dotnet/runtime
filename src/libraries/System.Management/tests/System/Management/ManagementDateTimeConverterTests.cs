@@ -27,7 +27,7 @@ namespace System.Management.Tests
         {
             string dmtfFromDateTimeMinValue = ManagementDateTimeConverter.ToDmtfDateTime(DateTime.MinValue);
             DateTime convertedDate = ManagementDateTimeConverter.ToDateTime(dmtfFromDateTimeMinValue);
-            Assert.Equal(DateTimeKind.Unspecified, convertedDate.Kind);
+            Assert.Equal(DateTimeKind.Local, convertedDate.Kind);
             Assert.Equal(DateTime.MinValue, convertedDate);
         }
 
