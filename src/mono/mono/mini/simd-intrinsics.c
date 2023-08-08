@@ -1844,6 +1844,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		switch (arg0_type) {
 			case MONO_TYPE_U2:
 			case MONO_TYPE_I2: {
+				if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) 
+					return NULL;
+					
 				type = type_enum_is_unsigned (arg0_type) ? MONO_TYPE_U1 : MONO_TYPE_I1;
 				MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 
