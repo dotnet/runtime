@@ -11605,6 +11605,7 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
+// Finds FieldDesc* that corresponds to the given offset in the given type and returns its value if it's nullptr or NonGC heap object
 bool CEEInfo::TryGetFieldObjectHandle(size_t baseAddr, MethodTable* structTypeMT, unsigned offset, CORINFO_OBJECT_HANDLE* handle)
 {
     _ASSERT(handle != nullptr);
@@ -11748,9 +11749,6 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
 
                             const unsigned gcSlotBegin = i * TARGET_POINTER_SIZE;
                             const unsigned gcSlotEnd = gcSlotBegin + TARGET_POINTER_SIZE;
-
-                            _ASSERT((valueOffset >= 0) && (bufferSize > 0));
-
                             if (gcSlotBegin >= (unsigned)valueOffset && gcSlotEnd <= (unsigned)(valueOffset + bufferSize))
                             {
                                 // GC slot intersects with our valueOffset + bufferSize - we can't use memcpy
