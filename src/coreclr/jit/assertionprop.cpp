@@ -2565,15 +2565,39 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     ValueNumPair vnPair = tree->gtVNPair;
     ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
 
+    VNFuncApp structFuncApp = {};
+
     // Check if node evaluates to a constant
     if (!vnStore->IsVNConstant(vnCns))
     {
-        return nullptr;
+        if (!tree->IsLocal() && tree->TypeIs(TYP_STRUCT) && vnStore->GetVNFunc(vnCns, &structFuncApp) &&
+            (structFuncApp.m_func == VNF_ZeroObj))
+        {
+            // For structs we can propagate ZeroObj
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     GenTree* conValTree = nullptr;
     switch (vnStore->TypeOfVN(vnCns))
     {
+        case TYP_STRUCT:
+        {
+            assert(structFuncApp.m_func == VNF_ZeroObj);
+            assert(vnStore->IsVNConstant(structFuncApp.m_args[0]));
+
+            ClassLayout*   layout = (ClassLayout*)vnStore->CoercedConstantValue<ssize_t>(structFuncApp.m_args[0]);
+            unsigned const tmpNum = lvaGrabTemp(true DEBUGARG("empty struct"));
+            lvaSetStruct(tmpNum, layout, true);
+            conValTree                = gtNewLclVarNode(tmpNum);
+            GenTreeLclVar* zeroStruct = gtNewStoreLclVarNode(tmpNum, gtNewIconNode(0));
+            conValTree                = gtNewOperNode(GT_COMMA, TYP_STRUCT, zeroStruct, gtCloneExpr(conValTree));
+            break;
+        }
+
         case TYP_FLOAT:
         {
             float value = vnStore->ConstantValue<float>(vnCns);
@@ -5550,8 +5574,6 @@ struct VNAssertionPropVisitorInfo
 //
 GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
 {
-    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
-
     GenTree* sideEffList = nullptr;
 
     // If we have side effects, extract them.
@@ -5707,10 +5729,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
 
     // Don't propagate floating-point constants into a TYP_STRUCT LclVar
     // This can occur for HFA return values (see hfa_sf3E_r.exe)
-    if (tree->TypeGet() == TYP_STRUCT)
-    {
-        return WALK_CONTINUE;
-    }
 
     switch (tree->OperGet())
     {

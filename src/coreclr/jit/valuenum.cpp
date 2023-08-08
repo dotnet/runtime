@@ -10830,22 +10830,49 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
-        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
+    if (!tree->TypeIs(TYP_BYREF) && GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
+        if (tree->TypeIs(TYP_STRUCT))
+        {
+            size = tree->GetLayout(this)->GetSize();
+        }
+
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
             if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
             {
-                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
-                if (vnStore->IsVNObjHandle(vn))
+                // if it's a TYP_STRUCT then at least we can handle "all zeroes" cases
+                if (tree->TypeIs(TYP_STRUCT))
                 {
-                    setMethodHasFrozenObjects();
+                    bool allZeroes = true;
+                    for (int i = 0; i < size; i++)
+                    {
+                        if (buffer[i] != 0)
+                        {
+                            allZeroes = false;
+                            break;
+                        }
+                    }
+
+                    if (allZeroes)
+                    {
+                        ValueNum vn = vnStore->VNForZeroObj(tree->GetLayout(this));
+                        tree->gtVNPair.SetBoth(vn);
+                        return true;
+                    }
                 }
-                tree->gtVNPair.SetBoth(vn);
-                return true;
+                else
+                {
+                    ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                    if (vnStore->IsVNObjHandle(vn))
+                    {
+                        setMethodHasFrozenObjects();
+                    }
+                    tree->gtVNPair.SetBoth(vn);
+                    return true;
+                }
             }
         }
     }
