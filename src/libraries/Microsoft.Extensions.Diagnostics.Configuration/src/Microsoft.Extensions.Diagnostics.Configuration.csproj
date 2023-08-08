@@ -10,7 +10,7 @@
        should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IsPackable>true</IsPackable>
-    <PackageDescription>This package includes the default implementation of IMeterFactory and additional extension methods to easily register it with the Dependency Injection framework.</PackageDescription>
+    <PackageDescription>This package includes the IConfiguration integration for configuring Meters, Instruments, and IMetricsListeners.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

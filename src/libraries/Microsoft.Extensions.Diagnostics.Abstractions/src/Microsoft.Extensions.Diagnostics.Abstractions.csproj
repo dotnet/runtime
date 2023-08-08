@@ -4,8 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <!-- TODO: Missing XML comment for publicly visible type or member -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
     <!-- Disabling baseline validation since this is a brand new package.
        Once this package has shipped a stable version, the following line
        should be removed in order to re-enable validation. -->
@@ -13,13 +11,12 @@
     <PackageDescription>Diagnostic abstractions for Microsoft.Extensions.Diagnostics.
 
 Commonly Used Types:
-Microsoft.Extensions.Logging.ILogger
-Microsoft.Extensions.Logging.ILoggerFactory
-Microsoft.Extensions.Logging.ILogger&lt;TCategoryName&gt;
-Microsoft.Extensions.Logging.LogLevel
-Microsoft.Extensions.Logging.Logger&lt;T&gt;
-Microsoft.Extensions.Logging.LoggerMessage
-Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
+Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder
+Microsoft.Extensions.Diagnostics.Metrics.IMetricsListener
+Microsoft.Extensions.Diagnostics.Metrics.InstrumentRule
+Microsoft.Extensions.Diagnostics.Metrics.MeterScope
+Microsoft.Extensions.Diagnostics.Metrics.MetricsBuilderExtensions
+Microsoft.Extensions.Diagnostics.Metrics.MetricsOptions</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,6 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+#if NET
+using System.Runtime.CompilerServices;
+#endif
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
@@ -12,9 +15,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         private readonly MeterListener _meterListener;
         private readonly IMetricsListener _metricsListener;
-        private readonly HashSet<Instrument> _instruments = new();
-        private readonly HashSet<Instrument> _enabled = new();
-        private readonly Dictionary<Instrument, (bool, object?)> _published = new();
+#if NET
+        private readonly ConditionalWeakTable<Instrument, InstrumentStatus> _instruments = new();
+#else
+        // TODO: Can't enumerate ConditionalWeakTable in .NET Standard 2.0. How do we clean up the instruments?
+        private readonly Dictionary<Instrument, InstrumentStatus> _instruments = new();
+#endif
         private IList<InstrumentRule> _rules = Array.Empty<InstrumentRule>();
         private bool _disposed;
 
@@ -50,19 +56,19 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     return;
                 }
 
-                if (_instruments.Contains(instrument))
+                if (_instruments.TryGetValue(instrument, out var _))
                 {
                     Debug.Assert(false, "InstrumentPublished called twice for the same instrument");
                     return;
                 }
 
-                _instruments.Add(instrument);
-                RefreshInstrument(instrument);
+                var status = new InstrumentStatus();
+                _instruments.Add(instrument, status);
+                RefreshInstrument(instrument, status);
             }
         }
 
         // Called when we call DisableMeasurementEvents, like when a rule is disabled.
-        // TODO: When should we remove an Instrument from _instruments?
         private void MeasurementsCompleted(Instrument instrument, object? state)
         {
             lock (_instruments)
@@ -72,16 +78,19 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     return;
                 }
 
-                _enabled.Remove(instrument);
-
-                if (_published.TryGetValue(instrument, out var localState))
+                if (!_instruments.TryGetValue(instrument, out var status))
                 {
-                    _published.Remove(instrument);
-                    var listenerEnabled = localState.Item1;
-                    var userState = localState.Item2;
-                    if (listenerEnabled)
+                    Debug.Assert(false, "MeasurementsCompleted called for an instrument that was never published");
+                    return;
+                }
+                status.Enabled = false;
+
+                if (status.Published)
+                {
+                    status.Published = false;
+                    if (status.ListenerEnabled)
                     {
-                        _metricsListener.MeasurementsCompleted(instrument, userState);
+                        _metricsListener.MeasurementsCompleted(instrument, status.State);
                     }
                 }
             }
@@ -98,17 +107,17 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 _rules = rules;
 
-                foreach (var instrument in _instruments)
+                foreach (var instrumentPair in _instruments)
                 {
-                    RefreshInstrument(instrument);
+                    RefreshInstrument(instrumentPair.Key, instrumentPair.Value);
                 }
             }
         }
 
         // Called under _instrument lock
-        private void RefreshInstrument(Instrument instrument)
+        private void RefreshInstrument(Instrument instrument, InstrumentStatus status)
         {
-            var alreadyEnabled = _enabled.Contains(instrument);
+            var alreadyEnabled = status.Enabled;
             var enable = false;
             var rule = GetMostSpecificRule(instrument);
             if (rule != null)
@@ -118,29 +127,24 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
             if (!enable && alreadyEnabled)
             {
-                _enabled.Remove(instrument);
+                status.Enabled = false;
                 _meterListener.DisableMeasurementEvents(instrument);
             }
             else if (enable && !alreadyEnabled)
             {
                 // The first time we enable an instrument, we need to call InstrumentPublished.
-                bool listenerEnabled;
-                if (_published.TryGetValue(instrument, out var metadata))
+                if (!status.Published)
                 {
-                    listenerEnabled = metadata.Item1;
-                }
-                else
-                {
-                    listenerEnabled = _metricsListener.InstrumentPublished(instrument, out var state);
-
                     // However, a listener might decline to enable the instrument, remember that.
-                    _published.Add(instrument, (listenerEnabled, state));
+                    status.Published = true;
+                    status.ListenerEnabled = _metricsListener.InstrumentPublished(instrument, out var state);
+                    status.State = state;
                 }
 
-                if (listenerEnabled)
+                if (status.ListenerEnabled)
                 {
-                    _meterListener.EnableMeasurementEvents(instrument);
-                    _enabled.Add(instrument);
+                    _meterListener.EnableMeasurementEvents(instrument, status.State);
+                    status.Enabled = true;
                 }
             }
         }
@@ -279,6 +283,14 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         {
             _disposed = true;
             _meterListener.Dispose();
+        }
+
+        private class InstrumentStatus
+        {
+            public object? State { get; set; }
+            public bool Published { get; set; }
+            public bool Enabled { get; set; }
+            public bool ListenerEnabled { get; set; }
         }
     }
 }

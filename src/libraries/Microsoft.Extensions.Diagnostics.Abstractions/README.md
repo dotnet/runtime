@@ -1,23 +1,21 @@
-# Microsoft.Extensions.Logging.Abstractions
+# Microsoft.Extensions.Diagnostics.Abstractions
 
-`Microsoft.Extensions.Logging.Abstractions` provides abstractions of logging. Interfaces defined in this package are implemented by classes in [Microsoft.Extensions.Logging](https://www.nuget.org/packages/Microsoft.Extensions.Logging/) and other logging packages.
+`Microsoft.Extensions.Diagnostics.Abstractions` provides abstractions of diagnostics. Interfaces defined in this package are implemented by classes in [Microsoft.Extensions.Diagnostics](https://www.nuget.org/packages/Microsoft.Extensions.Diagnostics/) and other diagnostics packages.
 
 Commonly Used Types:
-- `Microsoft.Extensions.Logging.ILogger`
-- `Microsoft.Extensions.Logging.ILoggerFactory`
-- `Microsoft.Extensions.Logging.ILogger<TCategoryName>`
-- `Microsoft.Extensions.Logging.LogLevel`
-- `Microsoft.Extensions.Logging.Logger<T>`
-- `Microsoft.Extensions.Logging.LoggerMessage`
-- `Microsoft.Extensions.Logging.Abstractions.NullLogger`
+- `Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder`
+- `Microsoft.Extensions.Diagnostics.Metrics.IMetricsListener`
+- `Microsoft.Extensions.Diagnostics.Metrics.InstrumentRule`
+- `Microsoft.Extensions.Diagnostics.Metrics.MeterScope`
+- `Microsoft.Extensions.Diagnostics.Metrics.MetricsBuilderExtensions`
+- `Microsoft.Extensions.Diagnostics.Metrics.MetricsOptions`
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/logging.
+Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/diagnostics.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for improvements to the logging source generator](../../libraries/README.md#secondary-bars)
 
-The APIs and functionality are mature, but do get extended occasionally.
+The APIs and functionality are new in .NET 8 and will continue to be developed.
 
 ## Deployment
-[Microsoft.Extensions.Logging.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions) is included in the ASP.NET Core shared framework. The package is deployed as out-of-band (OOB) too and can be referenced into projects directly.
+[Microsoft.Extensions.Diagnostics.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.Diagnostics.Abstractions) is included in the ASP.NET Core shared framework. The package is deployed as out-of-band (OOB) too and can be referenced into projects directly.

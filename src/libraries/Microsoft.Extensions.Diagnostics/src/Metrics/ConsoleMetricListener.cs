@@ -50,6 +50,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         private void MeasurementHandler<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state) where T : struct
         {
+            Debug.Assert(state == this);
             WriteLine($"{instrument.Meter.Name}-{instrument.Name} {measurement} {instrument.Unit}");
         }
 

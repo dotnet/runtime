@@ -8,8 +8,17 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
+    /// <summary>
+    /// Extension methods for <see cref="IMetricsBuilder"/> to add or clear <see cref="IMetricsListener"/> registrations.
+    /// </summary>
     public static partial class MetricsBuilderExtensions
     {
+        /// <summary>
+        /// Registers a new <see cref="IMetricsListener"/> of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The implementation type of the listener.</typeparam>
+        /// <param name="builder">The <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>Returns the original <see cref="IMetricsBuilder"/> for chaining.</returns>
         public static IMetricsBuilder AddListener<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IMetricsBuilder builder) where T : class, IMetricsListener
         {
             ThrowHelper.ThrowIfNull(builder);
@@ -17,6 +26,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             return builder;
         }
 
+        /// <summary>
+        /// Registers a new <see cref="IMetricsListener"/> instance.
+        /// </summary>
+        /// <param name="listener">The implementation type of the listener.</param>
+        /// <param name="builder">The <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>Returns the original <see cref="IMetricsBuilder"/> for chaining.</returns>
         public static IMetricsBuilder AddListener(this IMetricsBuilder builder, IMetricsListener listener)
         {
             ThrowHelper.ThrowIfNull(builder);
@@ -24,6 +39,11 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             return builder;
         }
 
+        /// <summary>
+        /// Removes all <see cref="IMetricsListener"/> registrations from the dependency injection container.
+        /// </summary>
+        /// <param name="builder">The <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>Returns the original <see cref="IMetricsBuilder"/> for chaining.</returns>
         public static IMetricsBuilder ClearListeners(this IMetricsBuilder builder)
         {
             ThrowHelper.ThrowIfNull(builder);
