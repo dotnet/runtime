@@ -8,7 +8,7 @@ using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipelines
 {
-    [DebuggerDisplay("CanceledState: {_awaitableState}, IsCompleted: {IsCompleted}")]
+    [DebuggerDisplay("CanceledState = {_awaitableState}, IsCompleted = {IsCompleted}")]
     internal struct PipeAwaitable
     {
         private AwaitableState _awaitableState;

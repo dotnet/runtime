@@ -72,7 +72,8 @@ if(HAVE_SYS_ICU)
         ${icu_shim_sources_base}
         pal_locale.m
         pal_collation.m
-        pal_casing.m)
+        pal_casing.m
+        pal_calendarData.m)
   endif()
 
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")

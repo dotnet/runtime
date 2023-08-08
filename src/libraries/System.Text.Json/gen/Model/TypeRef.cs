@@ -9,7 +9,7 @@ namespace System.Text.Json.SourceGeneration
     /// <summary>
     /// An equatable value representing type identity.
     /// </summary>
-    [DebuggerDisplay("Name={Name}")]
+    [DebuggerDisplay("Name = {Name}")]
     public sealed class TypeRef : IEquatable<TypeRef>
     {
         public TypeRef(ITypeSymbol type)

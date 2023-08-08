@@ -142,15 +142,6 @@ namespace Microsoft.Interop
         private static string PinnedIdentifier(string identifier) => $"{identifier}__pinned";
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
         {
-            // Maybe should be done in the CharMarshallerFactory, but complexity and interdependence bleeds in if you do that
-            if (IsPinningPathSupported(info, context) && info.RefKind == RefKind.In)
-            {
-                diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
-                {
-                    NotSupportedDetails = SR.InRefKindIsNotSupportedOnPinnedParameters
-                };
-                return ByValueMarshalKindSupport.NotSupported;
-            }
             return ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
         }
 

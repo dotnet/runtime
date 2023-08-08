@@ -67,9 +67,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         ValidateTrimmingAnnotations(serviceType, serviceTypeGenericArguments, implementationType, implementationTypeGenericArguments);
                     }
                 }
-                else if (!descriptor.HasImplementationInstance() && !descriptor.HasImplementationFactory())
+                else if (descriptor.TryGetImplementationType(out Type? implementationType))
                 {
-                    Type? implementationType = descriptor.GetImplementationType();
                     Debug.Assert(implementationType != null);
 
                     if (implementationType.IsGenericTypeDefinition ||
@@ -573,26 +572,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 ServiceCallSite? callSite = null;
                 Type parameterType = parameters[index].ParameterType;
-                if (parameters[index].CustomAttributes != null)
+                foreach (var attribute in parameters[index].GetCustomAttributes(true))
                 {
-                    foreach (var attribute in parameters[index].GetCustomAttributes(true))
+                    if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
                     {
-                        if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
+                        // Check if the parameter type matches
+                        if (parameterType != serviceIdentifier.ServiceKey.GetType())
                         {
-                            // Check if the parameter type matches
-                            if (parameterType != serviceIdentifier.ServiceKey.GetType())
-                            {
-                                throw new InvalidOperationException(SR.InvalidServiceKeyType);
-                            }
-                            callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
-                            break;
+                            throw new InvalidOperationException(SR.InvalidServiceKeyType);
                         }
-                        if (attribute is FromKeyedServicesAttribute keyed)
-                        {
-                            var parameterSvcId = new ServiceIdentifier(keyed.Key, parameterType);
-                            callSite = GetCallSite(parameterSvcId, callSiteChain);
-                            break;
-                        }
+                        callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
+                        break;
+                    }
+                    if (attribute is FromKeyedServicesAttribute keyed)
+                    {
+                        var parameterSvcId = new ServiceIdentifier(keyed.Key, parameterType);
+                        callSite = GetCallSite(parameterSvcId, callSiteChain);
+                        break;
                     }
                 }
 
