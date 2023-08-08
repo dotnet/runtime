@@ -302,7 +302,7 @@ namespace System.Net.Sockets
                 {
                     bool success = socket.ConnectEx(
                         handle,
-                        _socketAddress!.InternalBuffer.AsSpan(),
+                        _socketAddress!.Buffer.Span,
                         (IntPtr)(bufferPtr + _offset),
                         _count,
                         out int bytesTransferred,
@@ -762,7 +762,7 @@ namespace System.Net.Sockets
                         1,
                         out int bytesTransferred,
                         _socketFlags,
-                        _socketAddress!.InternalBuffer.AsSpan(),
+                        _socketAddress!.Buffer.Span,
                         overlapped,
                         IntPtr.Zero);
 
@@ -789,7 +789,7 @@ namespace System.Net.Sockets
                     _bufferListInternal!.Count,
                     out int bytesTransferred,
                     _socketFlags,
-                    _socketAddress!.InternalBuffer.AsSpan(),
+                    _socketAddress!.Buffer.Span,
                     overlapped,
                     IntPtr.Zero);
 
@@ -1058,10 +1058,11 @@ namespace System.Net.Sockets
                         out localAddr,
                         out localAddrLength,
                         out remoteAddr,
-                        out remoteSocketAddress.InternalSize
+                        out int size
                     );
 
-                    Marshal.Copy(remoteAddr, remoteSocketAddress.InternalBuffer, 0, remoteSocketAddress.Size);
+                    new ReadOnlySpan<byte>((void*)remoteAddr, size).CopyTo(remoteSocketAddress.Buffer.Span);
+                    remoteSocketAddress.Size = size;
                 }
 
                 socketError = Interop.Winsock.setsockopt(
