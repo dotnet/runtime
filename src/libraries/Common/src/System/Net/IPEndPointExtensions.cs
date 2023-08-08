@@ -76,8 +76,12 @@ namespace System.Net.Sockets
                     Span<byte> addressBuffer1 = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
                     Span<byte> addressBuffer2 = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
                     SocketAddressPal.GetIPv6Address(socketAddressBuffer, addressBuffer1, out uint scopeid);
+                    if (endPoint.Address.ScopeId != (long)scopeid)
+                    {
+                        return false;
+                    }
                     endPoint.Address.TryWriteBytes(addressBuffer2, out _);
-                    return endPoint.Address.ScopeId == (long)scopeid && addressBuffer1.SequenceEqual(addressBuffer2);
+                    return addressBuffer1.SequenceEqual(addressBuffer2);
                 }
             }
 
