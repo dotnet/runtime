@@ -6000,26 +6000,19 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
 
     JIT_TO_EE_TRANSITION();
-
-    bool fClassMustBeRestored;
-    result = getCastingHelperStatic(TypeHandle(pResolvedToken->hClass), fThrowing, &fClassMustBeRestored);
-    if (fClassMustBeRestored)
-        classMustBeLoadedBeforeCodeIsRun(pResolvedToken->hClass);
-
+    result = getCastingHelperStatic(TypeHandle(pResolvedToken->hClass), fThrowing);
     EE_TO_JIT_TRANSITION();
 
     return result;
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing, bool * pfClassMustBeRestored)
+CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing)
 {
     STANDARD_VM_CONTRACT;
 
     // Slow helper is the default
     int helper = CORINFO_HELP_ISINSTANCEOFANY;
-
-    *pfClassMustBeRestored = false;
 
     if (clsHnd == TypeHandle(g_pCanonMethodTableClass))
     {
@@ -6033,9 +6026,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     else
     if (!clsHnd.IsTypeDesc() && clsHnd.AsMethodTable()->HasVariance())
     {
-        // Casting to variant type requires the type to be fully loaded
-        *pfClassMustBeRestored = true;
-
         _ASSERTE(helper == CORINFO_HELP_ISINSTANCEOFANY);
     }
     else
@@ -6055,12 +6045,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     else
     if (clsHnd.IsArray())
     {
-        if (clsHnd.GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
-        {
-            // Casting to multidimensional array type requires restored pointer to EEClass to fetch rank
-            *pfClassMustBeRestored = true;
-        }
-
         _ASSERTE(helper == CORINFO_HELP_ISINSTANCEOFANY);
     }
     else
