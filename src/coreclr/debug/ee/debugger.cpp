@@ -1920,6 +1920,14 @@ HRESULT Debugger::Startup(void)
         // the named pipes and semaphores are not created.
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
         {
+            LOG((LF_CORDB, LL_INFO10, "Debugging disabled via EnableDiagnostics config.\n"));
+
+            return S_OK;
+        }
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics_Debugger) == 0)
+        {
+            LOG((LF_CORDB, LL_INFO10, "Debugging disabled via EnableDiagnostics_Debugger config.\n"));
+
             return S_OK;
         }
 
