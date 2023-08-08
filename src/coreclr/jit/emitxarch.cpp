@@ -11141,6 +11141,7 @@ void emitter::emitDispIns(
                 break;
             }
             emitDispEmbBroadcastCount(id);
+            break;
         }
 
         case IF_RRD_ARD_RRD:
@@ -11417,6 +11418,7 @@ void emitter::emitDispIns(
                 break;
             }
             emitDispEmbBroadcastCount(id);
+            break;
         }
 
         case IF_RWR_RRD_SRD_CNS:
