@@ -93,8 +93,8 @@ else()
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m pal_collation.m pal_casing.m)
-    set_source_files_properties(pal_locale.m pal_collation.m pal_casing.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m pal_collation.m pal_casing.m pal_calendarData.m)
+    set_source_files_properties(pal_locale.m pal_collation.m pal_casing.m pal_calendarData.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
 endif()
 
 # time zone names are filtered out of icu data for the browser and associated functionality is disabled

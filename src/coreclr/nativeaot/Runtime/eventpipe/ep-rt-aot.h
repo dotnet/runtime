@@ -80,7 +80,7 @@ static
 inline
 const ep_char8_t *
 ep_rt_entrypoint_assembly_name_get_utf8 (void)
-{ 
+{
     STATIC_CONTRACT_NOTHROW;
 
     extern const ep_char8_t * ep_rt_aot_entrypoint_assembly_name_get_utf8 (void);
@@ -90,7 +90,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 static
 const ep_char8_t *
 ep_rt_runtime_version_get_utf8 (void)
-{ 
+{
     STATIC_CONTRACT_NOTHROW;
 
     return reinterpret_cast<const ep_char8_t*>(STRINGIFY(RuntimeProductVersion));
@@ -215,8 +215,8 @@ ep_rt_atomic_inc_int64_t (volatile int64_t *value)
 static
 inline
 int64_t
-ep_rt_atomic_dec_int64_t (volatile int64_t *value) 
-{ 
+ep_rt_atomic_dec_int64_t (volatile int64_t *value)
+{
     STATIC_CONTRACT_NOTHROW;
 
     extern int64_t ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value);
@@ -226,7 +226,7 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 static
 inline
 size_t
-ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value) 
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
     STATIC_CONTRACT_NOTHROW;
     extern size_t ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value);
@@ -236,8 +236,8 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 static
 inline
 ep_char8_t *
-ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) 
-{ 
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
     STATIC_CONTRACT_NOTHROW;
     extern ep_char8_t * ep_rt_aot_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value);
     return ep_rt_aot_atomic_compare_exchange_utf8_string (target, expected, value);
@@ -245,7 +245,7 @@ ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char
 
 static
 void
-ep_rt_init (void) 
+ep_rt_init (void)
 {
     extern void ep_rt_aot_init (void);
     ep_rt_aot_init();
@@ -367,9 +367,9 @@ bool
 ep_rt_providers_validate_all_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context and MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context are not available in NativeAOT
-    return true;
+
+    extern bool ep_rt_aot_providers_validate_all_disabled (void);
+    return ep_rt_aot_providers_validate_all_disabled ();
 }
 
 static
@@ -576,8 +576,8 @@ ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 static
 inline
 bool
-ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
     extern bool ep_rt_aot_wait_event_set (ep_rt_wait_event_handle_t *wait_event);
     return ep_rt_aot_wait_event_set (wait_event);
@@ -588,8 +588,8 @@ int32_t
 ep_rt_wait_event_wait (
     ep_rt_wait_event_handle_t *wait_event,
     uint32_t timeout,
-    bool alertable) 
-{ 
+    bool alertable)
+{
     STATIC_CONTRACT_NOTHROW;
     extern int32_t
 ep_rt_aot_wait_event_wait (
@@ -603,8 +603,8 @@ ep_rt_aot_wait_event_wait (
 static
 inline
 EventPipeWaitHandle
-ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
 
     // This is not reached in the current product
@@ -615,8 +615,8 @@ ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
 static
 inline
 bool
-ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
     extern bool
     ep_rt_aot_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event);
@@ -726,10 +726,9 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_session_or_sampling_thread)
 
     ep_rt_thread_params_t* thread_params = reinterpret_cast<ep_rt_thread_params_t *>(data);
 
-    // The session and sampling threads both assert that the incoming thread handle is
-    // non-null, but do not necessarily rely on it otherwise; just pass a meaningless non-null
-    // value until testing shows that a meaningful value is needed.
-    thread_params->thread = reinterpret_cast<ep_rt_thread_handle_t>(1);
+    // We will create a new thread. cannot call ep_rt_aot_thread_get_handle since that will return null
+    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+    thread_params->thread = ep_rt_aot_setup_thread ();
 
     size_t result = thread_params->thread_func (thread_params);
     delete thread_params;
@@ -793,15 +792,7 @@ ep_rt_current_processor_get_number (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifndef TARGET_UNIX
-    extern uint32_t *_ep_rt_aot_proc_group_offsets;
-    if (_ep_rt_aot_proc_group_offsets) {
-        // PROCESSOR_NUMBER proc;
-        // GetCurrentProcessorNumberEx (&proc);
-        // return _ep_rt_aot_proc_group_offsets [proc.Group] + proc.Number;
-        // PalDebugBreak();
-    }
-#endif
+    // Follows the mono implementation
     return 0xFFFFFFFF;
 }
 
@@ -815,7 +806,7 @@ ep_rt_processors_get_count (void)
     SYSTEM_INFO sys_info = {};
     GetSystemInfo (&sys_info);
     return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
-#else    
+#else
     // PalDebugBreak();
     return 0xffff;
 #endif
@@ -1280,7 +1271,7 @@ ep_rt_utf8_string_strtok (
     return strtok_r (str, delimiter, context);
 #else
     return strtok_s (str, delimiter, context);
-#endif    
+#endif
 }
 
 // STATIC_CONTRACT_NOTHROW
@@ -1588,10 +1579,7 @@ bool
 ep_rt_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return thread_handle != NULL && thread_handle->HasStarted ();
-    return true;
+    return thread_handle != NULL;
 }
 
 static

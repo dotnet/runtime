@@ -1286,7 +1286,7 @@ bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
     }
     CONTRACTL_END;
 
-    CONTEXT _ctx = {0};
+    CONTEXT _ctx = {};
 
     // Ctor will initialize it to NULL
     REGDISPLAY regdisp;

@@ -853,12 +853,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CorInfoHelpFunc _getNewHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, bool* pHasSideEffects)
+        private static CorInfoHelpFunc _getNewHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* classHandle, bool* pHasSideEffects)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getNewHelper(ref *pResolvedToken, callerHandle, ref *pHasSideEffects);
+                return _this.getNewHelper(classHandle, ref *pHasSideEffects);
             }
             catch (Exception ex)
             {
@@ -2566,7 +2566,7 @@ namespace Internal.JitInterface
             callbacks[54] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, int, CORINFO_FIELD_STRUCT_*>)&_getFieldInClass;
             callbacks[55] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_TYPE_LAYOUT_NODE*, UIntPtr*, GetTypeLayoutResult>)&_getTypeLayout;
             callbacks[56] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, byte, byte>)&_checkMethodModifier;
-            callbacks[57] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, bool*, CorInfoHelpFunc>)&_getNewHelper;
+            callbacks[57] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, bool*, CorInfoHelpFunc>)&_getNewHelper;
             callbacks[58] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getNewArrHelper;
             callbacks[59] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, CorInfoHelpFunc>)&_getCastingHelper;
             callbacks[60] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc>)&_getSharedCCtorHelper;

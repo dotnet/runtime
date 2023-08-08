@@ -405,7 +405,7 @@ PALIMPORT
 VOID
 PALAPI
 PAL_SetCreateDumpCallback(
-    IN PCREATEDUMP_CALLBACK callback); 
+    IN PCREATEDUMP_CALLBACK callback);
 
 PALIMPORT
 BOOL
@@ -1530,6 +1530,14 @@ typedef struct _XMM_SAVE_AREA32 {
 } XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+
+    _CONTEXT() = default;
+    _CONTEXT(const _CONTEXT& ctx)
+    {
+        *this = ctx;
+    }
+
+    _CONTEXT& operator=(const _CONTEXT& ctx);
 
     //
     // Register parameter home addresses.
@@ -2751,15 +2759,6 @@ PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalS
 PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI InitializeCriticalSection(OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
-
-#define SEM_FAILCRITICALERRORS          0x0001
-#define SEM_NOOPENFILEERRORBOX          0x8000
-
-PALIMPORT
-UINT
-PALAPI
-SetErrorMode(
-         IN UINT uMode);
 
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02

@@ -42,6 +42,8 @@
     <Compile Include="ExceptionTests.cs" />
     <Compile Include="PointerTests.cs" />
     <Compile Include="TypeTests.Constraints.cs" />
+    <Compile Include="TestAssembly\EquivalentValueType.cs"
+             Link="EquivalentValueType.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">
