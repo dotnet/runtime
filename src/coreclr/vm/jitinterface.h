@@ -563,6 +563,7 @@ protected:
         return (CORINFO_METHOD_HANDLE)m_pMethodBeingCompiled;
     }
 
+    bool TryGetFieldObjectHandle(size_t baseAddr, MethodTable* structTypeMT, unsigned offset, CORINFO_OBJECT_HANDLE* handle);
     CORINFO_OBJECT_HANDLE getJitHandleForObject(OBJECTREF objref, bool knownFrozen = false);
     OBJECTREF getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle);
 

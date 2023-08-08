@@ -11605,6 +11605,44 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
+bool CEEInfo::TryGetFieldObjectHandle(size_t baseAddr, MethodTable* structTypeMT, unsigned offset, CORINFO_OBJECT_HANDLE* handle)
+{
+    _ASSERT(handle != nullptr);
+    _ASSERT(offset >= 0);
+
+    ApproxFieldDescIterator fieldIterator(structTypeMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
+    {
+        // TODO: If subField is also a struct we might want to inspect its fields too
+        if (subField->GetOffset() == offset && subField->IsObjRef())
+        {
+            GCX_COOP();
+
+            // Read field's value
+            Object* subFieldValue = nullptr;
+            memcpy(&subFieldValue, (uint8_t*)baseAddr + offset, sizeof(CORINFO_OBJECT_HANDLE));
+
+            if (subFieldValue == nullptr)
+            {
+                *handle = nullptr;
+                return true;
+            }
+            else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
+            {
+                *handle = getJitHandleForObject(ObjectToOBJECTREF(subFieldValue), /*knownFrozen*/ true);
+                return true;
+            }
+        }
+
+        if (subField->GetOffset() > (DWORD)offset)
+        {
+            // no point in looking futher
+            break;
+        }
+    }
+    return false;
+}
+
 bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
@@ -11724,41 +11762,12 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                 {
                                     _ASSERT((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE));
 
-                                    // Iterate all instance fields until we find the one that corresponds to the given GC slot
-                                    ApproxFieldDescIterator fieldIterator(structTypeMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-                                    for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
+                                    CORINFO_OBJECT_HANDLE fldValue;
+                                    if (TryGetFieldObjectHandle(baseAddr, structTypeMT, valueOffset, &fldValue))
                                     {
-                                        // TODO: If subField is also a struct we might want to inspect its fields too
-                                        if (subField->GetOffset() == (DWORD)valueOffset && subField->IsObjRef())
-                                        {
-                                            GCX_COOP();
-
-                                            // Read field's value
-                                            Object* subFieldValue = nullptr;
-                                            memcpy(&subFieldValue, (uint8_t*)baseAddr + valueOffset, bufferSize);
-
-                                            if (subFieldValue == nullptr)
-                                            {
-                                                // Report null
-                                                memset(buffer, 0, bufferSize);
-                                                result = true;
-                                            }
-                                            else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
-                                            {
-                                                CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(
-                                                    ObjectToOBJECTREF(subFieldValue), /*knownFrozen*/ true);
-
-                                                // GC handle is either from FOH or null
-                                                memcpy(buffer, &handle, bufferSize);
-                                                result = true;
-                                            }
-                                        }
-
-                                        if (subField->GetOffset() > (DWORD)valueOffset)
-                                        {
-                                            // no point in looking futher
-                                            break;
-                                        }
+                                        // GC handle is either from FOH or null
+                                        memcpy(buffer, &fldValue, bufferSize);
+                                        result = true;
                                     }
                                 }
 
