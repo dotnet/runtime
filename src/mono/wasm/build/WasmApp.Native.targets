@@ -397,7 +397,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmCalculateInitialHeapSize" 
+  <Target Name="_WasmCalculateInitialHeapSize"
       Condition="'$(EmccInitialHeapSize)' == ''"
       DependsOnTargets="_CheckEmccIsExpectedVersion">
     <ItemGroup>
@@ -705,7 +705,7 @@
      <ItemGroup>
       <_AssembliesToScan Include="@(_WasmAssembliesInternal)" />
     </ItemGroup>
-    
+
     <MarshalingPInvokeScanner Assemblies ="@(_AssembliesToScan)">
       <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
     </MarshalingPInvokeScanner>
