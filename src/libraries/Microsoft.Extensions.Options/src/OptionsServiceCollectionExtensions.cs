@@ -33,8 +33,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
         /// <summary>
         /// Adds services required for using options and enforces options validation check on start rather than in runtime.
-        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
         /// </summary>
+        /// <remarks>
+        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// </remarks>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="name">The name of the options instance.</param>
@@ -50,8 +52,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
         /// <summary>
         /// Adds services required for using options and enforces options validation check on start rather than in runtime.
-        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
         /// </summary>
+        /// <remarks>
+        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// </remarks>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <typeparam name="TValidateOptions">The <see cref="IValidateOptions{TOptions}"/> validator type.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
