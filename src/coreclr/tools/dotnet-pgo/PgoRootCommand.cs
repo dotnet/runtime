@@ -46,13 +46,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public CliOption<double> ExcludeEventsAfter { get; } =
             new("--exclude-events-after") { DefaultValueFactory = _ => Double.MaxValue, Description = "Exclude data from events after specified time. Time is specified as milliseconds from the start of the trace" };
         public CliOption<string> ExcludeEventsBeforeJittingMethod { get; } =
-            new("--exclude-events-before-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events before observing a specific method getting jitted. Method is matched using a regular expression" };
+            new("--exclude-events-before-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events before observing a specific method getting jitted. Method is matched using a regular expression against the method name. Note that the method name is formatted the same as in PerfView which includes typed parameters." };
         public CliOption<string> ExcludeEventsAfterJittingMethod { get; } =
-            new("--exclude-events-after-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events after observing a specific method getting jitted. Method is matched using a regular expression" };
+            new("--exclude-events-after-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events after observing a specific method getting jitted. Method is matched using a regular expression against the method name. Note that the method name is formatted the same as in PerfView which includes typed parameters." };
         public CliOption<string> IncludeMethods { get; } =
-            new("--include-methods") { DefaultValueFactory = _ => string.Empty, Description = "Include methods matching regular expression" };
+            new("--include-methods") { DefaultValueFactory = _ => string.Empty, Description = "Include methods with names matching regular expression. Note that the method names are formatted the same as in PerfView which includes typed parameters." };
         public CliOption<string> ExcludeMethods { get; } =
-            new("--exclude-methods") { DefaultValueFactory = _ => string.Empty, Description = "Exclude methods matching regular expression" };
+            new("--exclude-methods") { DefaultValueFactory = _ => string.Empty, Description = "Exclude methods with names matching regular expression. Note that the method names are formatted the same as in PerfView which includes typed parameters." };
         public CliOption<bool> Compressed { get; } =
             new("--compressed") { DefaultValueFactory = _ => true, Description = "Generate compressed mibc" };
         public CliOption<int> DumpWorstOverlapGraphs { get; } =
