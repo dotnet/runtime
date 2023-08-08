@@ -86,7 +86,6 @@ namespace BrowserDebugProxy
                 lastWritableFieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, isOwn: true, field.TypeId, forDebuggerDisplayAttribute: false);
                 fields.Add(GetFieldWithMetadata(field, lastWritableFieldValue, isStatic: false));
             }
-            long endPos = cmdReader.BaseStream.Position;
             if (inlineArraySize > 0)
             {
                 inlineArray = new(inlineArraySize+1);
@@ -99,6 +98,7 @@ namespace BrowserDebugProxy
                     inlineArray.Add(inlineArrayItem);
                 }
             }
+            long endPos = cmdReader.BaseStream.Position;
             cmdReader.BaseStream.Position = initialPos;
             byte[] valueTypeBuffer = new byte[endPos - initialPos];
             cmdReader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
