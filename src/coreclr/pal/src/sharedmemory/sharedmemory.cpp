@@ -188,7 +188,12 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
     }
     if (!createIfNotExist || chmod(path, PermissionsMask_AllUsers_ReadWriteExecute) != 0)
     {
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        // We were not asked to create the path or we weren't able to set the new permissions.
+        // As a last resort, check that at least the current user has full access.
+        if ((statInfo.st_mode & PermissionsMask_CurrentUser_ReadWriteExecute) != PermissionsMask_CurrentUser_ReadWriteExecute)
+        {
+            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        }
     }
     return true;
 }
