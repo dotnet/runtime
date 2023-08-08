@@ -195,8 +195,8 @@
       Text="WebAssembly workloads, required for native relinking, are only supported for projects targeting net6.0+ . Set %24(WasmBuildNative)=false to disable it." />
   </Target>
 
-  <Target Name="_ErrorDualWasmThreadProps"
-    Condition="('$(TargetsCurrent)' == 'true' or '$(TargetsNet7)' == 'true') and '$(RuntimeIdentifier)' == 'browser-wasm' and
+  <Target Name="_ErrorDualWasmThreadPropsOn7"
+    Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
     '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmEnableThreads)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
     BeforeTargets="Build">
     <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads or WasmEnablePerfTracing to true, but not both." />
