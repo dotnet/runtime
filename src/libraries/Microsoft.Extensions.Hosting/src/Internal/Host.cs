@@ -28,6 +28,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly PhysicalFileProvider _defaultProvider;
         private IEnumerable<IHostedService>? _hostedServices;
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
+        private bool _hostStarting;
         private volatile bool _stopCalled;
         private bool _hostStopped;
 
@@ -95,8 +96,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                 token.ThrowIfCancellationRequested();
 
                 List<Exception> exceptions = new();
-                _hostedServices = Services.GetRequiredService<IEnumerable<IHostedService>>();
+                _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
                 _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
+                _hostStarting = true;
                 bool concurrent = _options.ServicesStartConcurrently;
                 bool abortOnFirstException = !concurrent;
 
@@ -243,7 +245,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 CancellationToken token = linkedCts.Token;
 
                 List<Exception> exceptions = new();
-                if (_hostedServices is null) // Started?
+                if (!_hostStarting) // Started?
                 {
 
                     // Call IHostApplicationLifetime.ApplicationStopping.
@@ -252,6 +254,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 }
                 else
                 {
+                    Debug.Assert(_hostedServices != null, "Hosted services are resolved when host is started.");
+
                     // Ensure hosted services are stopped in LIFO order
                     IEnumerable<IHostedService> reversedServices = _hostedServices.Reverse();
                     IEnumerable<IHostedLifecycleService>? reversedLifetimeServices = _hostedLifecycleServices?.Reverse();
@@ -459,7 +463,9 @@ namespace Microsoft.Extensions.Hosting.Internal
             public IHostEnvironment Environment => host._hostEnvironment;
             public IHostApplicationLifetime ApplicationLifetime => host._applicationLifetime;
             public HostOptions Options => host._options;
-            public List<IHostedService> HostedServices => new List<IHostedService>(host._hostedServices ?? Enumerable.Empty<IHostedService>());
+            // _hostedServices is null until the host is started. Resolve services directly from DI if host hasn't started yet.
+            // Want to resolve hosted services once because it's possible they might have been registered with a transient lifetime.
+            public List<IHostedService> HostedServices => new List<IHostedService>(host._hostedServices ??= host.Services.GetRequiredService<IEnumerable<IHostedService>>());
             public bool IsRunning => host.IsRunning;
         }
     }

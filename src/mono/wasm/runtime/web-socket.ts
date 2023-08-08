@@ -201,8 +201,12 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
     // cleanup the delegate proxy
     ws[wasm_ws_on_closed]?.dispose();
 
-    // this is different from Managed implementation
-    ws.close(1000, "Connection was aborted.");
+    try {
+        // this is different from Managed implementation
+        ws.close(1000, "Connection was aborted.");
+    } catch (error) {
+        mono_log_warn("WebSocket error while aborting", error);
+    }
 }
 
 function reject_promises(ws: WebSocketExtension, error: Error) {

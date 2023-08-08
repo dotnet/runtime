@@ -121,9 +121,8 @@ namespace Microsoft.Apple.Build
                 }
                 else
                 {
-                    if (!libDirs.Contains(rootPath))
+                    if (libDirs.Add(rootPath))
                     {
-                        libDirs.Add(rootPath);
                         ret.Append($"-L {rootPath} ");
                     }
                     ret.Append($"-l{libName} ");
