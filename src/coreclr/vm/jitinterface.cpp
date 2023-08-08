@@ -11685,43 +11685,97 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                 // so we expect valueOffset to be a real field offset (same for bufferSize)
                 if (!field->IsRVA() && field->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
                 {
-                    PTR_MethodTable structType = field->GetFieldTypeHandleThrowing().AsMethodTable();
-                    if (structType->ContainsPointers() && (UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE))
+                    TypeHandle structType = field->GetFieldTypeHandleThrowing();
+                    PTR_MethodTable structTypeMT = structType.AsMethodTable();
+                    if (structTypeMT->ContainsPointers())
                     {
-                        ApproxFieldDescIterator fieldIterator(structType, ApproxFieldDescIterator::INSTANCE_FIELDS);
-                        for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
+                        // The struct contains GC pointer(s), but we still can use memcpy if we don't intersect with them.
+                        unsigned numSlots = (structType.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+                        CQuickBytes gcPtrs;
+                        BYTE* ptr = static_cast<BYTE*>(gcPtrs.AllocThrows(numSlots));
+                        CEEInfo::getClassGClayoutStatic(structType, ptr);
+
+                        _ASSERT(numSlots > 0);
+
+                        bool seenGcSlot = false;
+                        bool canUseMemcpy = true;
+                        for (unsigned i = 0; i < numSlots; i++)
                         {
-                            // TODO: If subField is also a struct we might want to inspect its fields too
-                            if (subField->GetOffset() == (DWORD)valueOffset && subField->IsObjRef())
+                            if (ptr[i] == TYPE_GC_NONE)
                             {
-                                GCX_COOP();
+                                // Not a GC slot
+                                continue;
+                            }
+                            seenGcSlot = true;
 
-                                // Read field's value
-                                Object* subFieldValue = nullptr;
-                                memcpy(&subFieldValue, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                            const unsigned gcSlotBegin = i * TARGET_POINTER_SIZE;
+                            const unsigned gcSlotEnd = gcSlotBegin + TARGET_POINTER_SIZE;
 
-                                if (subFieldValue == nullptr)
+                            _ASSERT((valueOffset >= 0) && (bufferSize > 0));
+
+                            if (gcSlotBegin >= (unsigned)valueOffset && gcSlotEnd <= (unsigned)(valueOffset + bufferSize))
+                            {
+                                // GC slot intersects with our valueOffset + bufferSize - we can't use memcpy
+                                // TODO: we might actually ignore it if it stores nullptr
+                                canUseMemcpy = false;
+
+                                // Find FieldDesc that corresponds to the given GC slot if we're interested in its value
+                                if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize))
                                 {
-                                    // Report null
-                                    memset(buffer, 0, bufferSize);
-                                    result = true;
-                                }
-                                else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
-                                {
-                                    CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(
-                                        ObjectToOBJECTREF(subFieldValue), /*knownFrozen*/ true);
+                                    _ASSERT((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE));
 
-                                    // GC handle is either from FOH or null
-                                    memcpy(buffer, &handle, bufferSize);
-                                    result = true;
+                                    // Iterate all instance fields until we find the one that corresponds to the given GC slot
+                                    ApproxFieldDescIterator fieldIterator(structTypeMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+                                    for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
+                                    {
+                                        // TODO: If subField is also a struct we might want to inspect its fields too
+                                        if (subField->GetOffset() == (DWORD)valueOffset && subField->IsObjRef())
+                                        {
+                                            GCX_COOP();
+
+                                            // Read field's value
+                                            Object* subFieldValue = nullptr;
+                                            memcpy(&subFieldValue, (uint8_t*)baseAddr + valueOffset, bufferSize);
+
+                                            if (subFieldValue == nullptr)
+                                            {
+                                                // Report null
+                                                memset(buffer, 0, bufferSize);
+                                                result = true;
+                                            }
+                                            else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
+                                            {
+                                                CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(
+                                                    ObjectToOBJECTREF(subFieldValue), /*knownFrozen*/ true);
+
+                                                // GC handle is either from FOH or null
+                                                memcpy(buffer, &handle, bufferSize);
+                                                result = true;
+                                            }
+                                        }
+
+                                        if (subField->GetOffset() >= (DWORD)valueOffset)
+                                        {
+                                            // no point in looking futher
+                                            break;
+                                        }
+                                    }
                                 }
 
-                                // We're done with this struct
+                                // We had an intersection with a gc slot - no point in looking futher.
                                 break;
                             }
                         }
+
+                        _ASSERT(seenGcSlot); // otherwise, why struct is marked as ContainsPointers?
+
+                        if (canUseMemcpy)
+                        {
+                            memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                            result = true;
+                        }
                     }
-                    else if (!structType->ContainsPointers())
+                    else if (!structTypeMT->ContainsPointers())
                     {
                         // No gc pointers in the struct
                         memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
