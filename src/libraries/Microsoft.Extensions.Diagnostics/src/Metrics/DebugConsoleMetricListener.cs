@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.IO;
@@ -48,7 +49,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             DecimalHandler = MeasurementHandler,
         };
 
-        private void MeasurementHandler<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state) where T : struct
+        private void MeasurementHandler<T>(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) where T : struct
         {
             Debug.Assert(state == this);
             WriteLine($"{instrument.Meter.Name}-{instrument.Name} {measurement} {instrument.Unit}");
