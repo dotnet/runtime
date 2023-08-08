@@ -72,8 +72,8 @@ namespace Microsoft.Interop
             tryStatements.Add(statements.InvokeStatement);
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
-            tryStatements.AddRange(statements.PinnedMarshal);
             tryStatements.AddRange(statements.Marshal);
+            tryStatements.AddRange(statements.PinnedMarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = new();

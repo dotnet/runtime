@@ -39,13 +39,13 @@ namespace SharedTypes.ComInterfaces
 
     [CustomMarshaller(typeof(StatelessType), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanaged))]
     [CustomMarshaller(typeof(StatelessType), MarshalMode.UnmanagedToManagedOut, typeof(ManagedToUnmanaged))]
-    [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementIn, typeof(Bidirectional))]
     [CustomMarshaller(typeof(StatelessType), MarshalMode.ManagedToUnmanagedOut, typeof(UnmanagedToManaged))]
     [CustomMarshaller(typeof(StatelessType), MarshalMode.UnmanagedToManagedIn, typeof(UnmanagedToManaged))]
     [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementOut, typeof(Bidirectional))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementIn, typeof(Bidirectional))]
+    [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementRef, typeof(Bidirectional))]
     [CustomMarshaller(typeof(StatelessType), MarshalMode.UnmanagedToManagedRef, typeof(Bidirectional))]
     [CustomMarshaller(typeof(StatelessType), MarshalMode.ManagedToUnmanagedRef, typeof(Bidirectional))]
-    [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementRef, typeof(Bidirectional))]
     internal static class StatelessTypeMarshaller
     {
         public static int AllFreeCount => Bidirectional.FreeCount + UnmanagedToManaged.FreeCount + ManagedToUnmanaged.FreeCount;
