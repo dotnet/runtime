@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices
                     goto exit;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError != Interop.Errors.ERROR_INVALID_PARAMETER)
                 {
                     errorTracker.TrackErrorCode(lastError);
@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices
             hmod = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, flags & 0xFF);
             if (hmod == IntPtr.Zero)
             {
-                errorTracker.TrackErrorCode(Marshal.GetLastWin32Error());
+                errorTracker.TrackErrorCode(Marshal.GetLastPInvokeError());
             }
 
         exit:
