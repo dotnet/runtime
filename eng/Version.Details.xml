@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-rc.1.23407.2">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-rc.1.23381.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>92124838d3f0efde3ac483a904691a611babb9a0</Sha>
+      <Sha>9ce895ca3ea8d3978219abc9756a067fb90a2089</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="8.0.0-alpha.1.23166.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -318,17 +318,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>edbd5c769a19798b6955050baccf99e6797d3208</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23403.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23407.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>7e3f2975a8767cd416594d7194ba617f6ef8e88e</Sha>
+      <Sha>480b9159eb7e69b182a87581d5a336e97e0b6dae</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="8.0.0-prerelease.23403.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="8.0.0-prerelease.23407.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>7e3f2975a8767cd416594d7194ba617f6ef8e88e</Sha>
+      <Sha>480b9159eb7e69b182a87581d5a336e97e0b6dae</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="8.0.0-prerelease.23403.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="8.0.0-prerelease.23407.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>7e3f2975a8767cd416594d7194ba617f6ef8e88e</Sha>
+      <Sha>480b9159eb7e69b182a87581d5a336e97e0b6dae</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="8.0.0-beta.23407.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
