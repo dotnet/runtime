@@ -851,13 +851,13 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(g, in this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(AsBytes(this), false);
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in guid));
+                MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
         }
@@ -869,13 +869,13 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(g, in this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(AsBytes(this), bigEndian);
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in guid));
+                MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
         }
@@ -888,13 +888,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(destination, in this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(AsBytes(this), false);
-                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in guid));
+                MemoryMarshal.TryWrite(destination, in guid);
             }
             return true;
         }
@@ -910,13 +910,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(destination, in this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(AsBytes(this), bigEndian);
-                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in guid));
+                MemoryMarshal.TryWrite(destination, in guid);
             }
             bytesWritten = 16;
             return true;

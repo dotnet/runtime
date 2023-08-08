@@ -90,7 +90,7 @@ pal::architecture get_current_arch();
 const pal::char_t* get_arch_name(pal::architecture arch);
 const pal::char_t* get_current_arch_name();
 
-pal::string_t get_current_runtime_id(bool use_fallback);
+pal::string_t get_runtime_id();
 bool try_get_runtime_id_from_env(pal::string_t& out_rid);
 
 bool multilevel_lookup_enabled();

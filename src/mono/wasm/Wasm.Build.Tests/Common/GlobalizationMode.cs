@@ -6,7 +6,7 @@
 namespace Wasm.Build.Tests;
 public enum GlobalizationMode
 {
-    Default,         // chosen based on locale
+    Sharded,         // chosen based on locale
     Invariant,       // no icu
     FullIcu,         // full icu data: icudt.dat is loaded
     PredefinedIcu,   // user set WasmIcuDataFileName value and we are loading that file

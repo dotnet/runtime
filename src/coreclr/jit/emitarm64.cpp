@@ -1059,6 +1059,9 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             assert(emitInsIsLoad(ins));
             return true;
 
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
+            return ins == INS_mrs_tpid0;
+
         default:
             return false;
     }
@@ -10138,7 +10141,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = 4;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = %08XH\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
                dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, distVal);
     }
 #endif

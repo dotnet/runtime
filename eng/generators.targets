@@ -55,14 +55,17 @@
   <ItemGroup Condition="'@(EnabledGenerators)' != ''">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"
                       ReferenceOutputAssembly="false"
-                      OutputItemType="Analyzer" />
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
                       Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
                       Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'ComInterfaceGenerator'))" />
   </ItemGroup>
 

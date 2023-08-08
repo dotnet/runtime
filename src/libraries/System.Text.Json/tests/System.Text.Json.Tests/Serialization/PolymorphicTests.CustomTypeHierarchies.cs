@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization.Metadata;
@@ -1701,6 +1702,98 @@ namespace System.Text.Json.Serialization.Tests
             .WithDerivedType<Queue<int>>("queue")
             .WithDerivedType<ISet<int>>("set")
         };
+
+        [Fact]
+        public async Task PolymorphicClassWithDerivedCollection_Collection_RoundtripsAsExpected()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/85934
+
+            PolymorphicClassWithDerivedCollections value = new PolymorphicClassWithDerivedCollections.List
+            {
+                new PolymorphicClassWithDerivedCollections.List(),
+                new PolymorphicClassWithDerivedCollections.Dictionary(),
+            };
+
+            string expectedJson = """{"$type":"list","$values":[{"$type":"list","$values":[]},{"$type":"dictionary"}]}""";
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal(expectedJson, json);
+
+            PolymorphicClassWithDerivedCollections deserializedValue = await Serializer.DeserializeWrapper<PolymorphicClassWithDerivedCollections>(json);
+
+            PolymorphicClassWithDerivedCollections.List list = Assert.IsType<PolymorphicClassWithDerivedCollections.List>(deserializedValue);
+            Assert.Equal(2, list.Count);
+            Assert.IsType<PolymorphicClassWithDerivedCollections.List>(list[0]);
+            Assert.IsType<PolymorphicClassWithDerivedCollections.Dictionary>(list[1]);
+        }
+
+        [Fact]
+        public async Task PolymorphicClassWithDerivedCollection_Dictionary_RoundtripsAsExpected()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/85934
+
+            PolymorphicClassWithDerivedCollections value = new PolymorphicClassWithDerivedCollections.Dictionary
+            {
+                ["key1"] = new PolymorphicClassWithDerivedCollections.Dictionary(),
+                ["key2"] = new PolymorphicClassWithDerivedCollections.List(),
+            };
+
+            string expectedJson = """{"$type":"dictionary","key1":{"$type":"dictionary"},"key2":{"$type":"list","$values":[]}}""";
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal(expectedJson, json);
+
+            PolymorphicClassWithDerivedCollections deserializedValue = await Serializer.DeserializeWrapper<PolymorphicClassWithDerivedCollections>(json);
+            PolymorphicClassWithDerivedCollections.Dictionary dictionary = Assert.IsType<PolymorphicClassWithDerivedCollections.Dictionary>(deserializedValue);
+            Assert.Equal(2, dictionary.Count);
+            Assert.IsType<PolymorphicClassWithDerivedCollections.Dictionary>(dictionary["key1"]);
+            Assert.IsType<PolymorphicClassWithDerivedCollections.List>(dictionary["key2"]);
+        }
+
+        [JsonDerivedType(typeof(List), "list")]
+        [JsonDerivedType(typeof(Dictionary), "dictionary")]
+        public abstract class PolymorphicClassWithDerivedCollections
+        {
+            public class List : PolymorphicClassWithDerivedCollections, IList<PolymorphicClassWithDerivedCollections>
+            {
+                private readonly IList<PolymorphicClassWithDerivedCollections> _items = new List<PolymorphicClassWithDerivedCollections>();
+                public PolymorphicClassWithDerivedCollections this[int index] { get => _items[index]; set => _items[index] = value; }
+                public void Add(PolymorphicClassWithDerivedCollections item) => _items.Add(item);
+                public bool Contains(PolymorphicClassWithDerivedCollections item) => _items.Contains(item);
+                public void CopyTo(PolymorphicClassWithDerivedCollections[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
+                public bool Remove(PolymorphicClassWithDerivedCollections item) => _items.Remove(item);
+                public int IndexOf(PolymorphicClassWithDerivedCollections item) => _items.IndexOf(item);
+                public void Insert(int index, PolymorphicClassWithDerivedCollections item) => _items.Insert(index, item);
+                public void RemoveAt(int index) => _items.RemoveAt(index);
+                public void Clear() => _items.Clear();
+                public int Count => _items.Count;
+                public bool IsReadOnly => false;
+                IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
+                public IEnumerator<PolymorphicClassWithDerivedCollections> GetEnumerator() => _items.GetEnumerator();
+
+            }
+
+            public class Dictionary : PolymorphicClassWithDerivedCollections, IDictionary<string, PolymorphicClassWithDerivedCollections>
+            {
+                private readonly IDictionary<string, PolymorphicClassWithDerivedCollections> _items = new Dictionary<string, PolymorphicClassWithDerivedCollections>();
+                public PolymorphicClassWithDerivedCollections this[string key] { get => _items[key]; set => _items[key] = value; }
+                public ICollection<string> Keys => _items.Keys;
+                public ICollection<PolymorphicClassWithDerivedCollections> Values => _items.Values;
+                public int Count => _items.Count;
+                public bool IsReadOnly => false;
+                public void Add(string key, PolymorphicClassWithDerivedCollections value) => _items.Add(key, value);
+                public void Add(KeyValuePair<string, PolymorphicClassWithDerivedCollections> item) => _items.Add(item);
+                public void Clear() => _items.Clear();
+                public bool Contains(KeyValuePair<string, PolymorphicClassWithDerivedCollections> item) => _items.Contains(item);
+                public bool ContainsKey(string key) => _items.ContainsKey(key);
+                public void CopyTo(KeyValuePair<string, PolymorphicClassWithDerivedCollections>[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
+                public bool Remove(string key) => _items.Remove(key);
+                public bool Remove(KeyValuePair<string, PolymorphicClassWithDerivedCollections> item) => _items.Remove(item);
+                public bool TryGetValue(string key, [MaybeNullWhen(false)] out PolymorphicClassWithDerivedCollections value) => _items.TryGetValue(key, out value);
+                IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
+                public IEnumerator<KeyValuePair<string, PolymorphicClassWithDerivedCollections>> GetEnumerator() => _items.GetEnumerator();
+            }
+        }
         #endregion
 
         #region Polymorphic Dictionary

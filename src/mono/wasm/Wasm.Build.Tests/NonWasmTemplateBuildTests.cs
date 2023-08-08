@@ -98,7 +98,7 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
                                      string? directoryBuildTargets = null,
                                      bool shouldRun = true)
     {
-        string id = $"nonwasm_{targetFramework}_{config}_{Path.GetRandomFileName()}";
+        string id = $"nonwasm_{targetFramework}_{config}_{GetRandomId()}";
         InitPaths(id);
         InitProjectDir(_projectDir);
 
