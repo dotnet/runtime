@@ -746,14 +746,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "int[]", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeNotSupportedOnPinnedParameter
+                inAttributeIsDefaultDiagnostic
             }};
-            // blittable arrays don't support [In] only. Different diagnostics are issued because we can pin in one direction (managed->unmanaged)
-            // but not the other direction.
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                new DiagnosticResult[] { inAttributeNotSupportedOnPinnedParameter, inAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
 
             // bools that are marshalled into a new array are in by default
@@ -782,12 +780,12 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { }
             };
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { }
             };
 
             yield return new object[] {

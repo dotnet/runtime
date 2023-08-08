@@ -167,9 +167,6 @@ function preInit(userPreInit: (() => void)[]) {
             // - init the rest of the polyfills
             await mono_wasm_pre_init_essential_async();
 
-            // - start download assets like DLLs
-            await mono_wasm_pre_init_full();
-
             endMeasure(mark, MeasuredBlock.preInit);
         } catch (err) {
             loaderHelpers.mono_exit(1, err);
@@ -272,7 +269,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (loaderHelpers.config.debugLevel !== 0 && loaderHelpers.config.cacheBootResources) {
             loaderHelpers.logDownloadStatsToConsole();
         }
-        loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        const afterStartupRushIsOver = 10000;// 10 seconds
+        setTimeout(() => {
+            loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        }, afterStartupRushIsOver);
 
         // call user code
         try {
@@ -380,15 +380,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
-}
-
-async function mono_wasm_pre_init_full(): Promise<void> {
-    mono_log_debug("mono_wasm_pre_init_full");
-    Module.addRunDependency("mono_wasm_pre_init_full");
-
-    await loaderHelpers.mono_download_assets();
-
-    Module.removeRunDependency("mono_wasm_pre_init_full");
 }
 
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
