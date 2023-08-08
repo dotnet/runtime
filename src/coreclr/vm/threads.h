@@ -3009,7 +3009,7 @@ public:
         }
 
 #if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
-        if (__asan_addr_is_in_fake_stack(m_fakeStack, addr, nullptr, nullptr))
+        if (__asan_addr_is_in_fake_stack(currentThread->m_fakeStack, addr, nullptr, nullptr))
         {
             return TRUE;
         }
