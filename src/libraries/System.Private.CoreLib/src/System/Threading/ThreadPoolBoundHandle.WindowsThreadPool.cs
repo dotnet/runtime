@@ -56,7 +56,7 @@ namespace System.Threading
                 overlapped->Data._boundHandle = this;
 
                 if (NativeRuntimeEventSource.Log.IsEnabled())
-                    NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue((NativeOverlapped*)overlapped);
+                    NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(overlapped));
 
                 Interop.Kernel32.StartThreadpoolIo(_threadPoolHandle!);
 
@@ -85,6 +85,9 @@ namespace System.Threading
                     throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, nameof(preAllocated));
 
                 data._boundHandle = this;
+
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                    NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(preAllocated._overlappedWindowsThreadPool));
 
                 Interop.Kernel32.StartThreadpoolIo(_threadPoolHandle!);
 
@@ -162,7 +165,7 @@ namespace System.Threading
             ThreadPool.IncrementCompletedWorkItemCount();
 
             if (NativeRuntimeEventSource.Log.IsEnabled())
-                NativeRuntimeEventSource.Log.ThreadPoolIODequeue((NativeOverlapped*)overlappedPtr);
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(overlapped));
 
             wrapper.Exit();
         }

@@ -44,14 +44,14 @@ namespace System.Threading
 
             _tpWait = Interop.Kernel32.CreateThreadpoolWait(&RegisteredWaitCallback, (IntPtr)_gcHandle, IntPtr.Zero);
 
-            if (NativeRuntimeEventSource.Log.IsEnabled())
-                NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(this);
-
             if (_tpWait == IntPtr.Zero)
             {
                 _gcHandle.Free();
                 throw new OutOfMemoryException();
             }
+
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+                NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(this);
         }
 
 #pragma warning disable IDE0060 // Remove unused parameter

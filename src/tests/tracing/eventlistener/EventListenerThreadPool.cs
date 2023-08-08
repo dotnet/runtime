@@ -10,8 +10,6 @@ namespace Tracing.Tests
 {
     internal sealed class RuntimeEventListener : EventListener
     {
-        public volatile int TPWorkerThreadStartCount = 0;
-        public volatile int TPWorkerThreadStopCount = 0;
         public volatile int TPWorkerThreadWaitCount = 0;
         public volatile int TPIOPack = 0;
         public volatile int TPIOEnqueue = 0;
@@ -36,17 +34,7 @@ namespace Tracing.Tests
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            if (eventData.EventName.Equals("ThreadPoolWorkerThreadStart"))
-            {
-                Interlocked.Increment(ref TPWorkerThreadStartCount);
-                TPWaitWorkerThreadEvent.Set();
-            }
-            else if (eventData.EventName.Equals("ThreadPoolWorkerThreadStop"))
-            {
-                Interlocked.Increment(ref TPWorkerThreadStopCount);
-                TPWaitWorkerThreadEvent.Set();
-            }
-            else if (eventData.EventName.Equals("ThreadPoolWorkerThreadWait"))
+            if (eventData.EventName.Equals("ThreadPoolWorkerThreadWait"))
             {
                 Interlocked.Increment(ref TPWorkerThreadWaitCount);
                 TPWaitWorkerThreadEvent.Set();
@@ -113,24 +101,20 @@ namespace Tracing.Tests
 
                 WaitHandle.WaitAll(waitEvents, TimeSpan.FromMinutes(1));
 
-                if (!TestLibrary.Utilities.IsNativeAot) // This test works in CoreCLR only, don't know why yet
+                if (!TestLibrary.Utilities.IsNativeAot)
                 {
                     listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(1));
-                    if (listener.TPWorkerThreadStartCount == 0 &&
-                        listener.TPWorkerThreadStopCount == 0 &&
-                        listener.TPWorkerThreadWaitCount == 0)
+                    if (listener.TPWorkerThreadWaitCount == 0)
                     {
-                        Console.WriteLine("Test Failed: Did not see any of the expected events.");
-                        Console.WriteLine($"ThreadPoolWorkerThreadStartCount: {listener.TPWorkerThreadStartCount}");
-                        Console.WriteLine($"ThreadPoolWorkerThreadStopCount: {listener.TPWorkerThreadStopCount}");
+                        Console.WriteLine("Test Failed: Did not see the expected event.");
                         Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
                         return -1;
                     }
                 }
 
-                if (listener.TPIOPack != listener.TPIOPackGoal &&
-                    listener.TPIOEnqueue != listener.TPIOEnqueueGoal &&
-                    listener.TPIODequeue != listener.TPIODequeueGoal)
+                if (!(listener.TPIOPack >= listener.TPIOPackGoal &&
+                    listener.TPIOEnqueue >= listener.TPIOEnqueueGoal &&
+                    listener.TPIODequeue >= listener.TPIODequeueGoal))
                 {
                     Console.WriteLine("Test Failed: Did not see all of the expected events.");
                     Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}");
