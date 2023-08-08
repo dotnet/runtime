@@ -112,8 +112,7 @@ namespace System.Runtime.InteropServices
         internal static volatile bool s_HasTrackingStarted;
         internal static volatile bool s_IsGlobalPeggingOn = true;
 
-        internal static List<DependentHandle> s_ReferenceCache = new List<DependentHandle>();
-        
+        internal static DependentHandleList s_ReferenceCache;
 
         // Indicates if walking the external objects is needed.
         // (i.e. Have any IReferenceTracker instances been found?)
@@ -241,7 +240,7 @@ namespace System.Runtime.InteropServices
 
         public static void AddReferencePath(object target, object foundReference)
         {
-            s_ReferenceCache.Add(new DependentHandle(target, foundReference));
+            s_ReferenceCache.AddDependentHandle(target, foundReference);
         }
 
         [UnmanagedCallersOnly]
@@ -249,15 +248,9 @@ namespace System.Runtime.InteropServices
         {
             if (condemnedGeneration >= 2)
             {
-                foreach (DependentHandle handle in s_ReferenceCache)
-                {
-                    handle.Dispose();
-                }
-                s_ReferenceCache.Clear();
+                s_ReferenceCache.Reset();
 
                 BeginReferenceTracking();
-
-                s_ReferenceCache.TrimExcess();
             }
         }
 
@@ -358,6 +351,132 @@ namespace System.Runtime.InteropServices
         public readonly void Dispose()
         {
             Marshal.Release(_ptr);
+        }
+    }
+
+    // This is used during a GC callback so it needs to be free of any managed allocations.
+    internal unsafe struct DependentHandleList
+    {
+        private int _freeIndex;                // The next available slot
+        private int _capacity;                 // Total numbers of slots available in the list
+        private IntPtr* _pHandles;             // All handles
+        private int _shrinkHint;               // How many times we've consistently seen "hints" that a
+                                               // shrink is needed
+
+        private const int DefaultCapacity = 100;       // Default initial capacity of this list
+        private const int ShrinkHintThreshold = 10;    // The number of hints we've seen before we really
+                                                       // shrink the list
+
+        public bool AddDependentHandle(object target, object dependent)
+        {
+            if (_freeIndex >= _capacity)
+            {
+                // We need a bigger dependent handle array
+                if (!Grow())
+                    return false;
+            }
+
+            IntPtr handle = _pHandles[_freeIndex];
+            if (handle != default)
+            {
+                RuntimeImports.RhHandleSet(handle, target);
+                RuntimeImports.RhHandleSetDependentSecondary(handle, dependent);
+            }
+            else
+            {
+                _pHandles[_freeIndex] = RuntimeImports.RhHandleAllocDependent(target, dependent);
+            }
+
+            _freeIndex++;
+            return true;
+        }
+
+        public bool Reset()
+        {
+            // Allocation for the first time
+            if (_pHandles == null)
+            {
+                _capacity = DefaultCapacity;
+                _pHandles = (IntPtr*)Interop.Ucrtbase.calloc((nuint)_capacity, (nuint)sizeof(IntPtr));
+
+                return _pHandles != null;
+            }
+
+            // If we are not using half of the handles last time, it is a hint that probably we need to shrink
+            if (_freeIndex < _capacity / 2 && _capacity > DefaultCapacity)
+            {
+                _shrinkHint++;
+
+                // Only shrink if we consistently seen such hint more than ShrinkHintThreshold times
+                if (_shrinkHint > ShrinkHintThreshold)
+                {
+                    Shrink();
+                    _shrinkHint = 0;
+                }
+            }
+            else
+            {
+                // Reset shrink hint and start over the counting
+                _shrinkHint = 0;
+            }
+
+            // Clear all the handles that were used
+            for (int index = 0; index < _freeIndex; index++)
+            {
+                IntPtr handle = _pHandles[index];
+                if (handle != default)
+                {
+                    RuntimeImports.RhHandleSet(handle, null);
+                    RuntimeImports.RhHandleSetDependentSecondary(handle, null);
+                }
+            }
+
+            _freeIndex = 0;
+            return true;
+        }
+
+        private bool Shrink()
+        {
+            int newCapacity = _capacity / 2;
+
+            // Free all handles that will go away
+            for (int index = newCapacity; index < _capacity; index++)
+            {
+                if (_pHandles[index] != default)
+                {
+                    RuntimeImports.RhHandleFree(_pHandles[index]);
+                    // Assign them back to null in case the reallocation fails
+                    _pHandles[index] = default;
+                }
+            }
+
+            // Shrink the size of the memory
+            IntPtr* pNewHandles = (IntPtr*)Interop.Ucrtbase.realloc(_pHandles, (nuint)(newCapacity * sizeof(IntPtr)));
+            if (pNewHandles == null)
+                return false;
+
+            _pHandles = pNewHandles;
+            _capacity = newCapacity;
+
+            return true;
+        }
+
+        private bool Grow()
+        {
+            int newCapacity = _capacity * 2;
+            IntPtr* pNewHandles = (IntPtr*)Interop.Ucrtbase.realloc(_pHandles, (nuint)(newCapacity * sizeof(IntPtr)));
+            if (pNewHandles == null)
+                return false;
+
+            for (int index = _capacity; index < newCapacity; index++)
+            {
+                pNewHandles[index] = default;
+            }
+
+            _pHandles = pNewHandles;
+            _capacity = newCapacity;
+
+            return true;
         }
     }
 }
