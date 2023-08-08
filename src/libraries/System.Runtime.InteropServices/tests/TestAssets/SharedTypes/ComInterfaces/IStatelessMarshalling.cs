@@ -48,6 +48,8 @@ namespace SharedTypes.ComInterfaces
     [CustomMarshaller(typeof(StatelessType), MarshalMode.ElementRef, typeof(Bidirectional))]
     internal static class StatelessTypeMarshaller
     {
+        public static int AllFreeCount => Bidirectional.FreeCount + UnmanagedToManaged.FreeCount + ManagedToUnmanaged.FreeCount;
+
         internal static class Bidirectional
         {
             public static int FreeCount { get; private set; }
