@@ -228,6 +228,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
 
         normalizeConfig();
 
+        // scripts need to be loaded before onConfigLoaded because Blazor calls `beforeStart` export in onConfigLoaded
         await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
         await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
 
