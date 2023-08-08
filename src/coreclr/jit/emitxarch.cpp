@@ -10722,17 +10722,16 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
-// emitDispEmbBroadcastCount: Display the tag where embedded broadcast is activated to show how many elements are broadcasted.
+// emitDispEmbBroadcastCount: Display the tag where embedded broadcast is activated to show how many elements are
+// broadcasted.
 //
 // Arguments:
 //   id - The instruction descriptor
 //
 void emitter::emitDispEmbBroadcastCount(instrDesc* id)
 {
-    ssize_t baseSize = GetInputSizeInBytes(id);
-    id->idClearEvexbContext();
-    ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id);
-    id->idSetEvexbContext();
+    ssize_t baseSize   = GetInputSizeInBytes(id);
+    ssize_t vectorSize = (ssize_t)emitGetBaseMemOpSize(id);
     printf(" {1to%d}", vectorSize / baseSize);
 }
 
@@ -11137,12 +11136,11 @@ void emitter::emitDispIns(
         {
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
-            if(id->idIsEvexbContext())
+            if (!id->idIsEvexbContext())
             {
-                // we should have the assumption that we are under embedded broadcast use case.
-                emitDispEmbBroadcastCount(id);
+                break;
             }
-            break;
+            emitDispEmbBroadcastCount(id);
         }
 
         case IF_RRD_ARD_RRD:
@@ -11414,12 +11412,11 @@ void emitter::emitDispIns(
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-            if(id->idIsEvexbContext())
+            if (!id->idIsEvexbContext())
             {
-                // we should have the assumption that we are under embedded broadcast use case.
-                emitDispEmbBroadcastCount(id);
+                break;
             }
-            break;
+            emitDispEmbBroadcastCount(id);
         }
 
         case IF_RWR_RRD_SRD_CNS:
@@ -11923,11 +11920,11 @@ void emitter::emitDispIns(
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
-            if(id->idIsEvexbContext())
+            if (!id->idIsEvexbContext())
             {
-                // we should have the assumption that we are under embedded broadcast use case.
-                emitDispEmbBroadcastCount(id);
+                break;
             }
+            emitDispEmbBroadcastCount(id);
             break;
         }
 
