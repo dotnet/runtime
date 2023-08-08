@@ -146,11 +146,13 @@ namespace IDynamicInterfaceCastableTests
         {
             if (v is int i)
             {
+                Assert.True(typeof(V) == typeof(int));
                 i *= 2;
                 return Unsafe.As<int, V>(ref i);
             }
             else if (v is string s)
             {
+                Assert.True(typeof(V) == typeof(string));
                 s += s;
                 return Unsafe.As<string, V>(ref s);
             }
@@ -170,11 +172,13 @@ namespace IDynamicInterfaceCastableTests
         {
             if (v is int i)
             {
+                Assert.True(typeof(V) == typeof(int));
                 i *= 2;
                 return Unsafe.As<int, V>(ref i);
             }
             else if (v is string s)
             {
+                Assert.True(typeof(V) == typeof(string));
                 s += s;
                 return Unsafe.As<string, V>(ref s);
             }
@@ -404,8 +408,14 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(expectedInt, testInt.ReturnArg(42));
             Assert.Equal(expectedStr, testStr.ReturnArg(expectedStr));
             Assert.Equal(expectedStr, testVar.ReturnArg(expectedStr));
+
+            Console.WriteLine(" -- Validate generic method call");
             Assert.Equal(expectedInt * 2, testInt.DoubleGenericArg<int>(42));
+            Assert.Equal(expectedStr + expectedStr, testInt.DoubleGenericArg<string>("str"));
+            Assert.Equal(expectedInt * 2, testStr.DoubleGenericArg<int>(42));
             Assert.Equal(expectedStr + expectedStr, testStr.DoubleGenericArg<string>("str"));
+            Assert.Equal(expectedInt * 2, testVar.DoubleGenericArg<int>(42));
+            Assert.Equal(expectedStr + expectedStr, testVar.DoubleGenericArg<string>("str"));
 
             Console.WriteLine(" -- Validate delegate call");
             Func<int, int> funcInt = new Func<int, int>(testInt.ReturnArg);
