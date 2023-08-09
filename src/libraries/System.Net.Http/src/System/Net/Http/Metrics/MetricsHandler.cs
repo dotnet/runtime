@@ -150,8 +150,7 @@ namespace System.Net.Http.Metrics
                     HttpRequestError.ResponseEnded => "response_ended",
                     HttpRequestError.ConfigurationLimitExceeded => "configuration_limit_exceeded",
 
-                    // Fall back to the exception type name
-                    HttpRequestError.Unknown => null,
+                    // Fall back to the exception type name (including for HttpRequestError.Unknown).
                     _ => null
                 };
 
