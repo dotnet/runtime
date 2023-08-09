@@ -263,18 +263,6 @@ namespace Microsoft.Interop.Analyzers
 
         protected static SyntaxNode AddHResultStructAsErrorMarshalling(SyntaxGenerator generator, IMethodSymbol methodSymbol, SyntaxNode generatedDeclaration)
         {
-            foreach (IParameterSymbol parameter in methodSymbol.Parameters)
-            {
-                if (parameter.Type is { TypeKind: TypeKind.Struct }
-                    && IsHResultLikeType(methodSymbol.ReturnType)
-                    && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
-                {
-                    SyntaxNode generatedParameterSyntax = generator.GetParameters(generatedDeclaration)[parameter.Ordinal];
-                    generatedDeclaration = generator.ReplaceNode(generatedDeclaration, generatedParameterSyntax, generator.AddAttributes(generatedParameterSyntax,
-                                    GeneratedMarshalAsUnmanagedTypeErrorAttribute(generator)));
-                }
-            }
-
             if (methodSymbol.ReturnType is { TypeKind: TypeKind.Struct }
                 && IsHResultLikeType(methodSymbol.ReturnType)
                 && !methodSymbol.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
