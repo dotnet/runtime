@@ -62,6 +62,7 @@ namespace Microsoft.NET.HostModel.ComHost
                             byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
                             if (tlbFileBytes.Length == 0)
                                 throw new InvalidTypeLibraryException(typeLibrary.Value);
+
                             updater.AddResource(tlbFileBytes, "typelib", (IntPtr)typeLibrary.Key);
                         }
                         catch (FileNotFoundException ex)
