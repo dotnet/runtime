@@ -11605,45 +11605,6 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
-// Finds FieldDesc* that corresponds to the given offset in the given type and returns its value if it's nullptr or NonGC heap object
-bool CEEInfo::TryGetFieldObjectHandle(size_t baseAddr, MethodTable* structTypeMT, unsigned offset, CORINFO_OBJECT_HANDLE* handle)
-{
-    _ASSERT(handle != nullptr);
-    _ASSERT(offset >= 0);
-
-    ApproxFieldDescIterator fieldIterator(structTypeMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-    for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
-    {
-        // TODO: If subField is also a struct we might want to inspect its fields too
-        if (subField->GetOffset() == offset && subField->IsObjRef())
-        {
-            GCX_COOP();
-
-            // Read field's value
-            Object* subFieldValue = nullptr;
-            memcpy(&subFieldValue, (uint8_t*)baseAddr + offset, sizeof(CORINFO_OBJECT_HANDLE));
-
-            if (subFieldValue == nullptr)
-            {
-                *handle = nullptr;
-                return true;
-            }
-            else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
-            {
-                *handle = getJitHandleForObject(ObjectToOBJECTREF(subFieldValue), /*knownFrozen*/ true);
-                return true;
-            }
-        }
-
-        if (subField->GetOffset() > (DWORD)offset)
-        {
-            // no point in looking futher
-            break;
-        }
-    }
-    return false;
-}
-
 bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
@@ -11749,23 +11710,35 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
 
                             const unsigned gcSlotBegin = i * TARGET_POINTER_SIZE;
                             const unsigned gcSlotEnd = gcSlotBegin + TARGET_POINTER_SIZE;
+
                             if (gcSlotBegin >= (unsigned)valueOffset && gcSlotEnd <= (unsigned)(valueOffset + bufferSize))
                             {
-                                // GC slot intersects with our valueOffset + bufferSize - we can't use memcpy
-                                // TODO: we might actually ignore it if it stores nullptr
+                                // GC slot intersects with our valueOffset + bufferSize - we can't use memcpy...
                                 canUseMemcpy = false;
 
-                                // Find FieldDesc that corresponds to the given GC slot if we're interested in its value
-                                if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize))
+                                // ...unless we're interested in that GC slot's value itself
+                                if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize) && ptr[i] == TYPE_GC_REF)
                                 {
                                     _ASSERT((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE));
 
-                                    CORINFO_OBJECT_HANDLE fldValue;
-                                    if (TryGetFieldObjectHandle(baseAddr, structTypeMT, valueOffset, &fldValue))
+                                    GCX_COOP();
+
+                                    // Read field's value under COOP mode
+                                    Object* gcSlotValue = nullptr;
+                                    memcpy(&gcSlotValue, (uint8_t*)baseAddr + gcSlotBegin, sizeof(CORINFO_OBJECT_HANDLE));
+
+                                    if (gcSlotValue == nullptr)
                                     {
-                                        // GC handle is either from FOH or null
-                                        memcpy(buffer, &fldValue, bufferSize);
+                                        // GC handle is null
+                                        memcpy(buffer, 0, bufferSize);
                                         result = true;
+                                    }
+                                    else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(gcSlotValue))
+                                    {
+                                        // GC handle is a frozen (nongc) object
+                                        CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(ObjectToOBJECTREF(gcSlotValue), /*knownFrozen*/ true);
+                                        memcpy(buffer, &handle, bufferSize);
+                                        return true;
                                     }
                                 }
 
