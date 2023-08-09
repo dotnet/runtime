@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace Microsoft.Extensions.Options
 {
@@ -52,19 +55,86 @@ namespace Microsoft.Extensions.Options
             ThrowHelper.ThrowIfNull(options);
 
             var validationResults = new List<ValidationResult>();
-            if (Validator.TryValidateObject(options, new ValidationContext(options), validationResults, validateAllProperties: true))
+            HashSet<object>? visited = null;
+            List<string>? errors = null;
+
+            if (TryValidateOptions(options, options.GetType().Name, validationResults, ref errors, ref visited))
             {
                 return ValidateOptionsResult.Success;
             }
 
-            string typeName = options.GetType().Name;
-            var errors = new List<string>();
-            foreach (ValidationResult result in validationResults)
-            {
-                errors.Add($"DataAnnotation validation failed for '{typeName}' members: '{string.Join(",", result.MemberNames)}' with the error: '{result.ErrorMessage}'.");
-            }
+            Debug.Assert(errors is not null && errors.Count > 0);
 
             return ValidateOptionsResult.Fail(errors);
+        }
+
+        [RequiresUnreferencedCode("This method on this type will walk through all properties of the passed in options object, and its type cannot be " +
+            "statically analyzed so its members may be trimmed.")]
+        private static bool TryValidateOptions(object options, string qualifiedName, List<ValidationResult> results, ref List<string>? errors, ref HashSet<object>? visited)
+        {
+            if (visited is not null && visited.Contains(options))
+            {
+                return true;
+            }
+
+            results?.Clear();
+
+            bool res = Validator.TryValidateObject(options, new ValidationContext(options), results, validateAllProperties: true);
+            if (!res)
+            {
+                errors ??= new List<string>();
+
+                foreach (ValidationResult result in results!)
+                {
+                    errors.Add($"DataAnnotation validation failed for '{qualifiedName}' members: '{string.Join(",", result.MemberNames)}' with the error: '{result.ErrorMessage}'.");
+                }
+            }
+
+            foreach (PropertyInfo propertyInfo in options.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (propertyInfo.GetMethod is null)
+                {
+                    continue;
+                }
+
+                object? value = propertyInfo!.GetValue(options);
+
+                if (value is null)
+                {
+                    continue;
+                }
+
+                if (propertyInfo.GetCustomAttribute<ValidateObjectMembersAttribute>() is not null)
+                {
+                    visited ??= new HashSet<object>(new ReferenceComparer());
+                    visited.Add(options);
+
+                    results ??= new List<ValidationResult>();
+                    res = TryValidateOptions(value, $"{qualifiedName}.{propertyInfo.Name}", results, ref errors, ref visited) && res;
+                }
+                else if (propertyInfo.GetCustomAttribute<ValidateEnumeratedItemsAttribute>() is not null &&
+                        value is IEnumerable enumerable)
+                {
+                    visited ??= new HashSet<object>(new ReferenceComparer());
+                    visited.Add(options);
+                    results ??= new List<ValidationResult>();
+
+                    int index = 0;
+                    foreach (object item in enumerable)
+                    {
+                        res = TryValidateOptions(item, $"{qualifiedName}.{propertyInfo.Name}[{index++}]", results, ref errors, ref visited) && res;
+                    }
+                }
+            }
+
+            return res;
+        }
+
+        private readonly struct ReferenceComparer : IEqualityComparer<object>
+        {
+            public ReferenceComparer() { }
+            bool IEqualityComparer<object>.Equals(object? x, object? y) => object.ReferenceEquals(x, y);
+            int IEqualityComparer<object>.GetHashCode(object obj) => obj is null ? 0 : obj.GetHashCode();
         }
     }
 }
