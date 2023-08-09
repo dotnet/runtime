@@ -894,8 +894,27 @@ namespace System.Reflection.Tests
             Assert.Contains("TestAssembly", asm.ToString());
         }
 
+        // Mono will throw System.ArgumentException : Object of type 'System.IntPtr' cannot be converted to type 'System.Boolean(System.Int32)'.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        private static unsafe void TestFunctionPointersWithFunctionPointerArgs()
+        {
+            void* fn = FunctionPointerMethods.GetFunctionPointer();
+            MethodInfo m;
+
+            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_FP));
+            Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
+            Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
+
+            // Verify return type; currently returned as a boxed IntPtr.
+            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.GetFunctionPointer));
+            object ret = m.Invoke(null, null);
+            Assert.IsType<IntPtr>(ret);
+            Assert.True((IntPtr)ret != 0);
+        }
+
+        // Mono will throw System.ArgumentException : Object of type 'System.IntPtr' cannot be converted to type 'System.Boolean(System.Int32)'.
         [Fact]
-        private static unsafe void TestFunctionPointers()
+        private static unsafe void TestFunctionPointersWithIntPtrArgs()
         {
             void* fn = FunctionPointerMethods.GetFunctionPointer();
 
@@ -908,19 +927,6 @@ namespace System.Reflection.Tests
             Assert.False(FunctionPointerMethods.CallFcnPtr_Void(fn, 41));
 
             MethodInfo m;
-
-            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_FP));
-            if (PlatformDetection.IsNativeAot)
-            {
-                Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
-                Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
-            }
-            else
-            {
-                //  System.ArgumentException : Object of type 'System.IntPtr' cannot be converted to type 'System.Boolean(System.Int32)'
-                Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
-                Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
-            }
 
             m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_IntPtr));
             Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));

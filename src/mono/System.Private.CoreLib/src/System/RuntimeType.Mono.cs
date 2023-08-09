@@ -1809,6 +1809,11 @@ namespace System
             return CheckValueStatus.ArgumentException;
         }
 
+        // Remove this once Mono support for function pointers (#71095) is addressed.
+#pragma warning disable CA1822
+        internal bool IsIntPtrBasedFunctionPointer => false;
+#pragma warning restore CA1822
+
         // Binder uses some incompatible conversion rules. For example
         // int value cannot be used with decimal parameter but in other
         // ways it's more flexible than normal convertor, for example

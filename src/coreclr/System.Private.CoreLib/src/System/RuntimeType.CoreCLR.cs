@@ -3668,6 +3668,9 @@ namespace System
             return CheckValueStatus.Success;
         }
 
+        // Remove this once Mono support for function pointers (#71095) is addressed.
+        internal bool IsIntPtrBasedFunctionPointer => IsFunctionPointer;
+
         #endregion
 
         #region Function Pointer
