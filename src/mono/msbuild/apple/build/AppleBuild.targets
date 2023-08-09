@@ -121,7 +121,7 @@
       <RuntimeComponentList Remove="marshal-ilgen" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(ForceAllComponents)'!='true'">
+    <PropertyGroup Condition="'$(ForceAllComponents)'!='true' and '@(RuntimeComponentList->Count())' > 0">
       <RuntimeComponents>@(RuntimeComponentList)</RuntimeComponents>
     </PropertyGroup>
   </Target>
@@ -237,17 +237,23 @@
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Apple" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_CompilerBinaryPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</_CompilerBinaryPath>
+      <_MonoLLVMPath>$(MonoAotCrossDir)</_MonoLLVMPath>
+      <_MonoLLVMPath Condition="'$(_MonoLLVMPath)' == '' and '$(MonoEnableLLVM)' == 'true'">$([System.IO.Path]::GetDirectoryName("$(_CompilerBinaryPath)"))</_MonoLLVMPath>
+    </PropertyGroup>
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
         Assemblies="@(_AotInputAssemblies)"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="$(_CompilerBinaryPath)"
         DedupAssembly="$(_iOSLikeDedupAssembly)"
         DirectPInvokes="@(DirectPInvokes)"
         DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
-        LLVMPath="$(MonoAotCrossDir)"
+        LLVMPath="$(_MonoLLVMPath)"
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
