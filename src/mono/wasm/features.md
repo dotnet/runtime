@@ -332,10 +332,10 @@ It includes the WASM templates for `dotnet new` and also preview version of mult
 
 You can use browser dev tools to debug the JavaScript of the application and the runtime.
 
-You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
-
 You could also debug the C# code using our integration with browser dev tools or Visual Studio.
 See detailed [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/debug)
+
+You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
 
 ### Native debug symbols
 
@@ -348,6 +348,7 @@ You can add following elements in your .csproj
 ```
 
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
+For more details see also [debugger.md](debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
 ### Runtime logging and tracing
 
@@ -395,3 +396,11 @@ In simple browser template, you can add following to your `main.js`
 import { dotnet } from './dotnet.js'
 await dotnet.withConfig({browserProfilerOptions: {}}).run();
 ```
+
+### Diagnostic tools
+
+We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe)
+
+At the moment it requires multi-threaded build of the runtime.
+
+For more details see [diagnostic-server.md](runtime\diagnostics\diagnostic-server.md)
