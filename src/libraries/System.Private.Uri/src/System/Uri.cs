@@ -3636,16 +3636,11 @@ namespace System
 
             // Find the colon.
             // Note that we don't support one-letter schemes that will be put into a DOS path bucket
-
-            int colonIndex = i;
-            while ((uint)colonIndex < (uint)uriString.Length && uriString[colonIndex] != ':')
-            {
-                colonIndex++;
-            }
+            int colonOffset = uriString.AsSpan(i).IndexOf(':');
 
             // NB: A string must have at least 3 characters and at least 1 before ':'
             if ((uint)(i + 2) >= (uint)uriString.Length ||
-                colonIndex == i ||
+                colonOffset == 0 ||
                 // Redundant checks to eliminate range checks below
                 (uint)i >= (uint)uriString.Length ||
                 (uint)(i + 1) >= (uint)uriString.Length)
@@ -3697,7 +3692,7 @@ namespace System
                 return 0;
             }
 
-            if (colonIndex == uriString.Length)
+            if (colonOffset < 0)
             {
                 err = ParsingError.BadFormat;
                 return 0;
@@ -3705,12 +3700,12 @@ namespace System
 
             // This is a potentially valid scheme, but we have not identified it yet.
             // Check for illegal characters, canonicalize, and check the length.
-            syntax = CheckSchemeSyntax(uriString.AsSpan(i, colonIndex - i), ref err);
+            syntax = CheckSchemeSyntax(uriString.AsSpan(i, colonOffset), ref err);
             if (syntax is null)
             {
                 return 0;
             }
-            return colonIndex + 1;
+            return i + colonOffset + 1;
         }
 
         // This will check whether a scheme string follows the rules
