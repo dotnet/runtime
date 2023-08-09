@@ -267,7 +267,7 @@ namespace System.Runtime.Serialization.Json
                 int charCount = _dec!.GetChars(buffer.Slice(0, size), _chars, false);
                 _byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
                 _stream.Write(_bytes, 0, _byteCount);
-                buffer = buffer.Slice(size, buffer.Length - size);
+                buffer = buffer.Slice(size);
             }
         }
 
