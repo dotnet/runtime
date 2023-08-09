@@ -5,10 +5,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Xunit;
 
 public class Test_DDB188478
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_DDB188478[] test = new Test_DDB188478[0];
         IList<Test_DDB188478> ls = (IList<Test_DDB188478>)test;

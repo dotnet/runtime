@@ -123,7 +123,7 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
 template <bool ForCodeGen>
 void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarCommon* lclVarTree)
 {
-    assert(lclVarTree->OperIsNonPhiLocal() || lclVarTree->OperIsLocalAddr());
+    assert(lclVarTree->OperIsNonPhiLocal() || lclVarTree->OperIs(GT_LCL_ADDR));
 
     unsigned int lclNum = lclVarTree->GetLclNum();
     LclVarDsc*   varDsc = compiler->lvaGetDesc(lclNum);
@@ -300,7 +300,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
     {
         lclVarTree = tree->AsLclVarCommon();
     }
-    else if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIsLocalAddr())
+    else if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_ADDR))
     {
         lclVarTree = tree->AsIndir()->Addr()->AsLclVarCommon();
     }

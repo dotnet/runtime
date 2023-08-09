@@ -249,7 +249,7 @@ namespace System.Reflection.Emit
 
         private RuntimeTypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            ArgumentNullException.ThrowIfNull(name, "fullname");
+            Debug.Assert(name is not null);
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
                 throw new ArgumentException(SR.Argument_DuplicateTypeName);
@@ -426,8 +426,9 @@ namespace System.Reflection.Emit
             return index;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -440,11 +441,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
         /*
                 internal ISymbolDocumentWriter? DefineDocument (string url, Guid language, Guid languageVendor, Guid documentType)
@@ -858,33 +854,10 @@ namespace System.Reflection.Emit
             return base.IsDefined(attributeType, inherit);
         }
 
-        public override object[] GetCustomAttributes(bool inherit)
-        {
-            return GetCustomAttributes(null!, inherit); // FIXME: coreclr doesn't allow null attributeType
-        }
+        public override object[] GetCustomAttributes(bool inherit) => CustomAttribute.GetCustomAttributes(this, inherit);
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
-        {
-            if (cattrs == null || cattrs.Length == 0)
-                return Array.Empty<object>();
-
-            if (attributeType is TypeBuilder)
-                throw new InvalidOperationException(SR.InvalidOperation_CannotHaveFirstArgumentAsTypeBuilder);
-
-            List<object> results = new List<object>();
-            for (int i = 0; i < cattrs.Length; i++)
-            {
-                Type t = cattrs[i].Ctor.GetType();
-
-                if (t is TypeBuilder)
-                    throw new InvalidOperationException(SR.InvalidOperation_CannotConstructCustomAttributeForTypeBuilderType);
-
-                if (attributeType == null || attributeType.IsAssignableFrom(t))
-                    results.Add(cattrs[i].Invoke());
-            }
-
-            return results.ToArray();
-        }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
+            CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {

@@ -268,7 +268,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
             if (pwzModule != NULL)
             {
                 // truncate if necessary
-                COUNT_T iLen = (COUNT_T) wcslen(pwzModule);
+                COUNT_T iLen = (COUNT_T) u16_strlen(pwzModule);
                 if (iLen > MAX_LOG_SWITCH_NAME_LEN)
                 {
                     iLen = MAX_LOG_SWITCH_NAME_LEN;
@@ -279,7 +279,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
             SString message;
             if (pwzMessage != NULL)
             {
-                message.Set(pwzMessage, (COUNT_T) wcslen(pwzMessage));
+                message.Set(pwzMessage, (COUNT_T) u16_strlen(pwzMessage));
             }
 
             g_pDebugInterface->SendLogMessage (Level, &switchName, &message);

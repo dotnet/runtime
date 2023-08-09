@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 namespace GitHub_23545
 {
@@ -31,7 +32,8 @@ namespace GitHub_23545
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int value = 0;
             foreach (var e in StructKeyValue)

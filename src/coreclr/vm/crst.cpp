@@ -92,7 +92,7 @@ void CrstBase::Destroy()
         DeleteCriticalSection(&m_criticalsection);
     }
 
-    LOG((LF_SYNC, INFO3, "Deleting 0x%x\n", this));
+    LOG((LF_SYNC, INFO3, "CrstBase::Destroy %p\n", this));
 #ifdef _DEBUG
     DebugDestroy();
 #endif
@@ -616,7 +616,7 @@ void CrstBase::DebugInit(CrstType crstType, CrstFlags flags)
 
     // @todo - Any Crst w/ CRST_DEBUGGER_THREAD must be on a special blessed list. Check that here.
 
-    LOG((LF_SYNC, INFO3, "ConstructCrst with this:0x%x\n", this));
+    LOG((LF_SYNC, INFO3, "CrstBase::DebugInit %p\n", this));
 
     for (int i = 0; i < crstDebugInfoCount; i++)
     {

@@ -30,9 +30,7 @@
 // Note: you will find below that Caller uses localloc - this is done in order to prevent a call to Caller to be transformed into fast tail call.
 // Note: DOTNET_GCStress=3 or DOTNET_GCStress=C are required in order to reliably expose this issue.
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly Runtime_39581
 {

@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 public class Runtime_55253
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int errors = 0;
         if (AsInt32() != -1)

@@ -10,9 +10,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Text.RegularExpressions;
-#if !READYTORUN
 using System.Xml;
-#endif
 using System.Xml.Linq;
 using System.Xml.XPath;
 
@@ -58,6 +56,15 @@ namespace ILCompiler
         protected readonly bool _globalAttributeRemoval;
         private readonly IReadOnlyDictionary<string, bool> _featureSwitchValues;
         protected readonly TypeSystemContext _context;
+
+        protected ProcessLinkerXmlBase(Logger logger, TypeSystemContext context, XmlReader xmlReader, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        {
+            _context = context;
+            _logger = logger;
+            _document = XDocument.Load(xmlReader, LoadOptions.SetLineInfo).CreateNavigator();
+            _xmlDocumentLocation = xmlDocumentLocation;
+            _featureSwitchValues = featureSwitchValues;
+        }
 
         protected ProcessLinkerXmlBase(Logger logger, TypeSystemContext context, Stream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
@@ -204,7 +211,7 @@ namespace ILCompiler
 
                 string fullname = GetFullName(typeNav);
 
-                if (fullname.IndexOf("*") != -1)
+                if (fullname.Contains('*'))
                 {
                     if (ProcessTypePattern(fullname, assembly, typeNav))
                         continue;
@@ -231,7 +238,7 @@ namespace ILCompiler
         {
             StringBuilder sb = new StringBuilder();
             CecilTypeNameFormatter.Instance.AppendName(sb, type);
-            if (regex.IsMatch(sb.ToString()))
+            if (regex.Match(sb.ToString()).Success)
                 ProcessType(type, nav);
         }
 

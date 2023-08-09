@@ -29,7 +29,7 @@ namespace DebuggerTests
         ConcurrentQueue<(string, JObject)> nextNotifications = new (); //in a multithreaded runtime we can receive more than one pause at same time
         public const string PAUSE = "pause";
         public const string APP_READY = "app-ready";
-        public CancellationToken Token { get; }
+        public CancellationToken Token { get; set; }
         public InspectorClient Client { get; }
         public DebuggerProxyBase? Proxy { get; }
         public bool DetectAndFailOnAssertions { get; set; } = true;
@@ -351,13 +351,12 @@ namespace DebuggerTests
             });
         }
 
-        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan span)
+        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, string urlToInspect, TimeSpan span)
         {
             var start = DateTime.Now;
             try
             {
                 await LaunchBrowser(start, span);
-
                 var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
 
                 Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
@@ -373,7 +372,10 @@ namespace DebuggerTests
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
                     if (_isFailingWithException is not null)
+                    {
+                        _logger.LogError($"_isFailingWithException. {_isFailingWithException}.");
                         throw _isFailingWithException;
+                    }
 
                     if (completedTask.IsCanceled)
                     {
@@ -388,11 +390,15 @@ namespace DebuggerTests
                         _logger.LogError($"Command {cmd_name} failed with {completedTask.Exception}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}.");
                         throw completedTask.Exception!;
                     }
+
                     await Client.ProcessCommand(completedTask.Result, _cancellationTokenSource.Token);
                     Result res = completedTask.Result;
+
                     if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
 
+                    if (DebuggerTestBase.RunningOnChrome && cmd_name == "Debugger.enable")
+                        await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
                     init_cmds.RemoveAt(cmdIdx);
                 }
 

@@ -76,10 +76,16 @@ namespace System.Security.Cryptography.Xml
         //
         // public constructors
         //
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public EncryptedXml() : this(new XmlDocument()) { }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public EncryptedXml(XmlDocument document) : this(document, null) { }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public EncryptedXml(XmlDocument document, Evidence? evidence)
         {
             _document = document;
@@ -299,6 +305,8 @@ namespace System.Security.Cryptography.Xml
 
         // default behaviour is to look for keys defined by an EncryptedKey clause
         // either directly or through a KeyInfoRetrievalMethod, and key names in the key mapping
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public virtual SymmetricAlgorithm? GetDecryptionKey(EncryptedData encryptedData, string? symmetricAlgorithmUri)
         {
             if (encryptedData is null)
@@ -374,7 +382,7 @@ namespace System.Security.Cryptography.Xml
                 if (key == null)
                     throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
 
-                SymmetricAlgorithm? symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(symmetricAlgorithmUri);
+                SymmetricAlgorithm? symAlg = CryptoHelpers.CreateNonTransformFromName<SymmetricAlgorithm>(symmetricAlgorithmUri);
                 if (symAlg == null)
                 {
                     throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
@@ -386,6 +394,8 @@ namespace System.Security.Cryptography.Xml
         }
 
         // Try to decrypt the EncryptedKey given the key mapping
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public virtual byte[]? DecryptEncryptedKey(EncryptedKey encryptedKey)
         {
             if (encryptedKey is null)
@@ -484,7 +494,7 @@ namespace System.Security.Cryptography.Xml
                     if (encryptionKey != null)
                     {
                         // this is a symmetric algorithm for sure
-                        SymmetricAlgorithm? symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(encryptedKey.EncryptionMethod!.KeyAlgorithm);
+                        SymmetricAlgorithm? symAlg = CryptoHelpers.CreateNonTransformFromName<SymmetricAlgorithm>(encryptedKey.EncryptionMethod!.KeyAlgorithm);
                         if (symAlg == null)
                         {
                             throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
@@ -531,6 +541,8 @@ namespace System.Security.Cryptography.Xml
 
         // Encrypts the given element with the certificate specified. The certificate is added as
         // an X509Data KeyInfo to an EncryptedKey (AES session key) generated randomly.
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public EncryptedData Encrypt(XmlElement inputElement, X509Certificate2 certificate)
         {
             if (inputElement is null)
@@ -575,6 +587,8 @@ namespace System.Security.Cryptography.Xml
         // Encrypts the given element with the key name specified. A corresponding key name mapping
         // has to be defined before calling this method. The key name is added as
         // a KeyNameInfo KeyInfo to an EncryptedKey (AES session key) generated randomly.
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public EncryptedData Encrypt(XmlElement inputElement, string keyName)
         {
             if (inputElement is null)
@@ -657,6 +671,8 @@ namespace System.Security.Cryptography.Xml
         // decrypts the document using the defined key mapping in GetDecryptionKey
         // The behaviour of this method can be extended because GetDecryptionKey is virtual
         // the document is decrypted in place
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public void DecryptDocument()
         {
             // Look for all EncryptedData elements and decrypt them

@@ -4,7 +4,7 @@
 
 // The test reproduces an issue with tail call via slow helper to VSD stub over generic interface.
 
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Diagnostics.Debug {}
 .assembly extern System.Console {}
 .assembly GitHub_26311 {}

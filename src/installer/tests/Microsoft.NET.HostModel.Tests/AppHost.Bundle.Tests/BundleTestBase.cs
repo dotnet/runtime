@@ -22,7 +22,8 @@ namespace AppHost.Bundle.Tests
             var publishedHostPath = BundleHelper.GetHostPath(testFixture);
             HostWriter.CreateAppHost(Binaries.SingleFileHost.FilePath,
                                      publishedHostPath,
-                                     BundleHelper.GetAppName(testFixture));
+                                     BundleHelper.GetAppName(testFixture),
+                                     assemblyToCopyResourcesFrom: BundleHelper.GetAppPath(testFixture));
             return publishedHostPath;
         }
 
@@ -31,7 +32,8 @@ namespace AppHost.Bundle.Tests
             var publishedHostPath = BundleHelper.GetHostPath(testFixture);
             HostWriter.CreateAppHost(Binaries.AppHost.FilePath,
                                      publishedHostPath,
-                                     BundleHelper.GetAppName(testFixture));
+                                     BundleHelper.GetAppName(testFixture),
+                                     assemblyToCopyResourcesFrom: BundleHelper.GetAppPath(testFixture));
             return publishedHostPath;
         }
 
@@ -77,6 +79,7 @@ namespace AppHost.Bundle.Tests
                 testFixture
                     .EnsureRestoredForRid(testFixture.CurrentRid)
                     .PublishProject(runtime: testFixture.CurrentRid,
+                                    selfContained: true,
                                     outputDirectory: BundleHelper.GetPublishPath(testFixture),
                                     extraArgs: extraArgs);
 

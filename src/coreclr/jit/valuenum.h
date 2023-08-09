@@ -167,7 +167,7 @@ enum VNFunc
 {
     // Implicitly, elements of genTreeOps here.
     VNF_Boundary = GT_COUNT,
-#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic) VNF_##nm,
+#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic, extra) VNF_##nm,
 #include "valuenumfuncs.h"
     VNF_COUNT
 };
@@ -242,10 +242,6 @@ public:
         VNMap(CompAllocator alloc) : JitHashTable<fromType, keyfuncs, ValueNum>(alloc)
         {
         }
-        ~VNMap()
-        {
-            ~VNMap<fromType, keyfuncs>::JitHashTable();
-        }
 
         bool Set(fromType k, ValueNum val)
         {
@@ -279,10 +275,21 @@ private:
         VNFOA_SharedStatic     = 0x40, // 1 iff this VNF is represent one of the shared static jit helpers
     };
 
-    static const unsigned VNFOA_ArityShift = 2;
-    static const unsigned VNFOA_ArityBits  = 3;
-    static const unsigned VNFOA_MaxArity   = (1 << VNFOA_ArityBits) - 1; // Max arity we can represent.
-    static const unsigned VNFOA_ArityMask  = (VNFOA_Arity4 | VNFOA_Arity2 | VNFOA_Arity1);
+    static const unsigned VNFOA_IllegalGenTreeOpShift = 0;
+    static const unsigned VNFOA_CommutativeShift      = 1;
+    static const unsigned VNFOA_ArityShift            = 2;
+    static const unsigned VNFOA_ArityBits             = 3;
+    static const unsigned VNFOA_MaxArity              = (1 << VNFOA_ArityBits) - 1; // Max arity we can represent.
+    static const unsigned VNFOA_ArityMask             = (VNFOA_Arity4 | VNFOA_Arity2 | VNFOA_Arity1);
+    static const unsigned VNFOA_KnownNonNullShift     = 5;
+    static const unsigned VNFOA_SharedStaticShift     = 6;
+
+    static_assert(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
+    static_assert(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
+    static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
+    static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
+    static_assert(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
+    static_assert(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
@@ -293,8 +300,14 @@ private:
         VCA_ReservedBits = 0x01, // i.e. (VCA_UnsignedSrc)
     };
 
-    // An array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
-    static UINT8* s_vnfOpAttribs;
+    // Helpers and an array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
+    static constexpr uint8_t GetOpAttribsForArity(genTreeOps oper, GenTreeOperKind kind);
+    static constexpr uint8_t GetOpAttribsForGenTree(genTreeOps      oper,
+                                                    bool            commute,
+                                                    bool            illegalAsVNFunc,
+                                                    GenTreeOperKind kind);
+    static constexpr uint8_t GetOpAttribsForFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
+    static const uint8_t s_vnfOpAttribs[];
 
     // Returns "true" iff gtOper is a legal value number function.
     // (Requires InitValueNumStoreStatics to have been run.)
@@ -387,8 +400,8 @@ private:
     GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
 
 public:
-    // Initializes any static variables of ValueNumStore.
-    static void InitValueNumStoreStatics();
+    // Validate that the new initializer for s_vnfOpAttribs matches the old code.
+    static void ValidateValueNumStoreStatics();
 
     // Initialize an empty ValueNumStore.
     ValueNumStore(Compiler* comp, CompAllocator allocator);
@@ -442,6 +455,7 @@ public:
     ValueNum VNForSimd64Con(simd64_t cnsVal);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
+    ValueNum VNForGenericCon(var_types typ, uint8_t* cnsVal);
 
 #ifdef TARGET_64BIT
     ValueNum VNForPtrSizeIntCon(INT64 cnsVal)
@@ -667,9 +681,16 @@ public:
 
     ValueNum VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size);
 
+    ValueNum VNForMapSelectInner(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
+
     // A method that does the work for VNForMapSelect and may call itself recursively.
-    ValueNum VNForMapSelectWork(
-        ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN);
+    ValueNum VNForMapSelectWork(ValueNumKind          vnk,
+                                var_types             type,
+                                ValueNum              map,
+                                ValueNum              index,
+                                int*                  pBudget,
+                                bool*                 pUsedRecursiveVN,
+                                ArrayStack<ValueNum>* loopMemoryDependencies);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
@@ -857,11 +878,17 @@ public:
     // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
     BasicBlock::loopNumber LoopOfVN(ValueNum vn);
 
-    // Returns true iff the VN represents a (non-handle) constant.
+    // Returns true iff the VN represents a constant.
     bool IsVNConstant(ValueNum vn);
+
+    // Returns true iff the VN represents a (non-handle) constant.
+    bool IsVNConstantNonHandle(ValueNum vn);
 
     // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
+
+    // Returns true if the VN represents a node that is never negative.
+    bool IsVNNeverNegative(ValueNum vn);
 
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
@@ -942,8 +969,8 @@ public:
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
-    // Check if "vn" IsVNNewArr and return <= 0 if arr size cannot be determined, else array size.
-    int GetNewArrSize(ValueNum vn);
+    // Check if "vn" IsVNNewArr and return false if arr size cannot be determined.
+    bool TryGetNewArrSize(ValueNum vn, int* size);
 
     // Check if "vn" is "a.Length" or "a.GetLength(n)"
     bool IsVNArrLen(ValueNum vn);
@@ -986,6 +1013,9 @@ public:
 
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
+
+    // Returns true iff the VN represents an object handle constant.
+    bool IsVNObjHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
@@ -1117,6 +1147,12 @@ public:
         return ConstantValueInternal<T>(vn DEBUGARG(true));
     }
 
+    CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)
+    {
+        assert(IsVNObjHandle(vn));
+        return reinterpret_cast<CORINFO_OBJECT_HANDLE>(CoercedConstantValue<size_t>(vn));
+    }
+
     // Requires "mthFunc" to be an intrinsic math function (one of the allowable values for the "gtMath" field
     // of a GenTreeMath node).  For unary ops, return the value number for the application of this function to
     // "arg0VN". For binary ops, return the value number for the application of this function to "arg0VN" and
@@ -1154,6 +1190,16 @@ public:
                                       ValueNum       arg1VN,
                                       bool           encodeResultType,
                                       ValueNum       resultTypeVN);
+
+    ValueNum EvalHWIntrinsicFunTernary(var_types      type,
+                                       var_types      baseType,
+                                       NamedIntrinsic ni,
+                                       VNFunc         func,
+                                       ValueNum       arg0VN,
+                                       ValueNum       arg1VN,
+                                       ValueNum       arg2VN,
+                                       bool           encodeResultType,
+                                       ValueNum       resultTypeVN);
 
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);
@@ -1761,6 +1807,33 @@ private:
             m_VNFunc4Map = new (m_alloc) VNFunc4ToValueNumMap(m_alloc);
         }
         return m_VNFunc4Map;
+    }
+
+    class MapSelectWorkCacheEntry
+    {
+        union {
+            ValueNum* m_memoryDependencies;
+            ValueNum  m_inlineMemoryDependencies[sizeof(ValueNum*) / sizeof(ValueNum)];
+        };
+
+        unsigned m_numMemoryDependencies = 0;
+
+    public:
+        ValueNum Result;
+
+        void SetMemoryDependencies(CompAllocator alloc, ArrayStack<ValueNum>& deps, unsigned startIndex);
+        void GetMemoryDependencies(ArrayStack<ValueNum>& deps);
+    };
+
+    typedef JitHashTable<VNDefFuncApp<2>, VNDefFuncAppKeyFuncs<2>, MapSelectWorkCacheEntry> MapSelectWorkCache;
+    MapSelectWorkCache* m_mapSelectWorkCache = nullptr;
+    MapSelectWorkCache* GetMapSelectWorkCache()
+    {
+        if (m_mapSelectWorkCache == nullptr)
+        {
+            m_mapSelectWorkCache = new (m_alloc) MapSelectWorkCache(m_alloc);
+        }
+        return m_mapSelectWorkCache;
     }
 
     // We reserve Chunk 0 for "special" VNs.

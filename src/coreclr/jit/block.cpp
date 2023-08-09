@@ -68,86 +68,39 @@ unsigned SsaStressHashHelper()
 }
 #endif
 
-EHSuccessorIterPosition::EHSuccessorIterPosition(Compiler* comp, BasicBlock* block)
-    : m_remainingRegSuccs(block->NumSucc(comp)), m_curRegSucc(nullptr), m_curTry(comp->ehGetBlockExnFlowDsc(block))
+//------------------------------------------------------------------------
+//  AllSuccessorEnumerator: Construct an instance of the enumerator.
+//
+//  Arguments:
+//     comp  - Compiler instance
+//     block - The block whose successors are to be iterated
+//
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
 {
-    // If "block" is a "leave helper" block (the empty BBJ_ALWAYS block that pairs with a
-    // preceding BBJ_CALLFINALLY block to implement a "leave" IL instruction), then no exceptions
-    // can occur within it, so clear m_curTry if it's non-null.
-    if (m_curTry != nullptr)
-    {
-        if (block->isBBCallAlwaysPairTail())
+    m_numSuccs = 0;
+    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
+        if (m_numSuccs < ArrLen(m_successors))
         {
-            m_curTry = nullptr;
-        }
-    }
-
-    if (m_curTry == nullptr && m_remainingRegSuccs > 0)
-    {
-        // Examine the successors to see if any are the start of try blocks.
-        FindNextRegSuccTry(comp, block);
-    }
-}
-
-void EHSuccessorIterPosition::FindNextRegSuccTry(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry == nullptr);
-
-    // Must now consider the next regular successor, if any.
-    while (m_remainingRegSuccs > 0)
-    {
-        m_remainingRegSuccs--;
-        m_curRegSucc = block->GetSucc(m_remainingRegSuccs, comp);
-        if (comp->bbIsTryBeg(m_curRegSucc))
-        {
-            assert(m_curRegSucc->hasTryIndex()); // Since it is a try begin.
-            unsigned newTryIndex = m_curRegSucc->getTryIndex();
-
-            // If the try region started by "m_curRegSucc" (represented by newTryIndex) contains m_block,
-            // we've already yielded its handler, as one of the EH handler successors of m_block itself.
-            if (comp->bbInExnFlowRegions(newTryIndex, block))
-            {
-                continue;
-            }
-
-            // Otherwise, consider this try.
-            m_curTry = comp->ehGetDsc(newTryIndex);
-            break;
-        }
-    }
-}
-
-void EHSuccessorIterPosition::Advance(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry != nullptr);
-    if (m_curTry->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-    {
-        m_curTry = comp->ehGetDsc(m_curTry->ebdEnclosingTryIndex);
-
-        // If we've gone over into considering try's containing successors,
-        // then the enclosing try must have the successor as its first block.
-        if (m_curRegSucc == nullptr || m_curTry->ebdTryBeg == m_curRegSucc)
-        {
-            return;
+            m_successors[m_numSuccs] = succ;
         }
 
-        // Otherwise, give up, try the next regular successor.
-        m_curTry = nullptr;
-    }
-    else
+        m_numSuccs++;
+        return BasicBlockVisit::Continue;
+    });
+
+    if (m_numSuccs > ArrLen(m_successors))
     {
-        m_curTry = nullptr;
+        m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
+
+        unsigned numSuccs = 0;
+        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+            assert(numSuccs < m_numSuccs);
+            m_pSuccessors[numSuccs++] = succ;
+            return BasicBlockVisit::Continue;
+        });
+
+        assert(numSuccs == m_numSuccs);
     }
-
-    // We've exhausted all try blocks.
-    // See if there are any remaining regular successors that start try blocks.
-    FindNextRegSuccTry(comp, block);
-}
-
-BasicBlock* EHSuccessorIterPosition::Current(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry != nullptr);
-    return m_curTry->ExFlowBlock();
 }
 
 FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
@@ -194,6 +147,30 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 genFlowNodeCnt += 1;
                 genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
+            }
+        }
+
+        if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+        {
+            // block is a finally or fault handler; all enclosing filters are predecessors
+            unsigned enclosing = ehblk->ebdEnclosingTryIndex;
+            while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
+                if (enclosingDsc->HasFilter())
+                {
+                    for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
+                         filterBlk             = filterBlk->bbNext)
+                    {
+                        res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+
+                        assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                            return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+                        }) == BasicBlockVisit::Abort);
+                    }
+                }
+
+                enclosing = enclosingDsc->ebdEnclosingTryIndex;
             }
         }
 
@@ -609,6 +586,10 @@ void BasicBlock::dspJumpKind()
             printf(" (finret)");
             break;
 
+        case BBJ_EHFAULTRET:
+            printf(" (falret)");
+            break;
+
         case BBJ_EHFILTERRET:
             printf(" (fltret)");
             break;
@@ -889,7 +870,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 // Return Value:
 //    The unique successor of a block, or nullptr if there is no unique successor.
-
+//
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
     if (bbJumpKind == BBJ_ALWAYS)
@@ -925,8 +906,8 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
 // isEmpty: check if block is empty or contains only ignorable statements
 //
 // Return Value:
-//    True if block is empty, or contains only PHI assignments,
-//    or contains zero or more PHI assignments followed by NOPs.
+//    True if block is empty, or contains only PHI stores,
+//    or contains zero or more PHI stores followed by NOPs.
 //
 bool BasicBlock::isEmpty() const
 {
@@ -978,25 +959,15 @@ bool BasicBlock::isValid() const
 Statement* BasicBlock::FirstNonPhiDef() const
 {
     Statement* stmt = firstStmt();
-    if (stmt == nullptr)
-    {
-        return nullptr;
-    }
-    GenTree* tree = stmt->GetRootNode();
-    while ((tree->OperGet() == GT_ASG && tree->AsOp()->gtOp2->OperGet() == GT_PHI) ||
-           (tree->OperGet() == GT_STORE_LCL_VAR && tree->AsOp()->gtOp1->OperGet() == GT_PHI))
+    while ((stmt != nullptr) && stmt->IsPhiDefnStmt())
     {
         stmt = stmt->GetNextStmt();
-        if (stmt == nullptr)
-        {
-            return nullptr;
-        }
-        tree = stmt->GetRootNode();
     }
+
     return stmt;
 }
 
-Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
+Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
 {
     Statement* stmt = FirstNonPhiDef();
     if (stmt == nullptr)
@@ -1004,8 +975,7 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
         return nullptr;
     }
     GenTree* tree = stmt->GetRootNode();
-    if ((tree->OperGet() == GT_ASG && tree->AsOp()->gtOp2->OperGet() == GT_CATCH_ARG) ||
-        (tree->OperGet() == GT_STORE_LCL_VAR && tree->AsOp()->gtOp1->OperGet() == GT_CATCH_ARG))
+    if (tree->OperIs(GT_STORE_LCL_VAR) && tree->AsLclVar()->Data()->OperIs(GT_CATCH_ARG))
     {
         stmt = stmt->GetNextStmt();
     }
@@ -1023,6 +993,7 @@ bool BasicBlock::bbFallsThrough() const
     {
         case BBJ_THROW:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
         case BBJ_EHCATCHRET:
         case BBJ_RETURN:
@@ -1060,6 +1031,7 @@ unsigned BasicBlock::NumSucc() const
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             return 0;
 
@@ -1147,30 +1119,17 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
             return 0;
 
         case BBJ_EHFINALLYRET:
-        {
             // We may call this method before we realize we have invalid IL. Tolerate.
             //
             if (!hasHndIndex())
             {
                 return 0;
             }
-
-            // The first block of the handler is labelled with the catch type.
-            BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
-            if (hndBeg->bbCatchTyp == BBCT_FINALLY)
-            {
-                return comp->fgNSuccsOfFinallyRet(this);
-            }
-            else
-            {
-                assert(hndBeg->bbCatchTyp == BBCT_FAULT); // We can only BBJ_EHFINALLYRET from FINALLY and FAULT.
-                // A FAULT block has no successors.
-                return 0;
-            }
-        }
+            return comp->fgNSuccsOfFinallyRet(this);
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1615,16 +1574,7 @@ bool BasicBlock::hasEHBoundaryIn() const
 //
 bool BasicBlock::hasEHBoundaryOut() const
 {
-    bool returnVal = false;
-    if (bbJumpKind == BBJ_EHFILTERRET)
-    {
-        returnVal = true;
-    }
-
-    if (bbJumpKind == BBJ_EHFINALLYRET)
-    {
-        returnVal = true;
-    }
+    bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
 
 #if FEATURE_EH_FUNCLETS
     if (bbJumpKind == BBJ_EHCATCHRET)
@@ -1677,4 +1627,102 @@ void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason
         bbFlags &= ~BBF_LOOP_ALIGN;
         JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
+}
+
+//------------------------------------------------------------------------
+// getCalledCount: get the value used to normalized weights for this method
+//
+// Arguments:
+//    compiler - Compiler instance
+//
+// Notes:
+//   If we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
+//   otherwise it returns the number of times that profile data says the method was called.
+
+// static
+weight_t BasicBlock::getCalledCount(Compiler* comp)
+{
+    // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
+    weight_t calledCount = comp->fgCalledCount;
+
+    // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
+    // so return a reasonable value to use until we set it.
+    //
+    if (calledCount == 0)
+    {
+        if (comp->fgIsUsingProfileWeights())
+        {
+            // When we use profile data block counts we have exact counts,
+            // not multiples of BB_UNITY_WEIGHT (100)
+            calledCount = 1;
+        }
+        else
+        {
+            calledCount = comp->fgFirstBB->bbWeight;
+
+            if (calledCount == 0)
+            {
+                calledCount = BB_UNITY_WEIGHT;
+            }
+        }
+    }
+    return calledCount;
+}
+
+//------------------------------------------------------------------------
+// getBBWeight: get the normalized weight of this block
+//
+// Arguments:
+//    compiler - Compiler instance
+//
+// Notes:
+//    with profie data: number of expected executions of this block, given
+//    one call to the method
+//
+weight_t BasicBlock::getBBWeight(Compiler* comp)
+{
+    if (this->bbWeight == BB_ZERO_WEIGHT)
+    {
+        return BB_ZERO_WEIGHT;
+    }
+    else
+    {
+        weight_t calledCount = getCalledCount(comp);
+
+        // Normalize the bbWeight.
+        //
+        weight_t fullResult = (this->bbWeight / calledCount) * BB_UNITY_WEIGHT;
+
+        return fullResult;
+    }
+}
+
+//------------------------------------------------------------------------
+// bbStackDepthOnEntry: return depth of IL stack at block entry
+//
+unsigned BasicBlock::bbStackDepthOnEntry() const
+{
+    return (bbEntryState ? bbEntryState->esStackDepth : 0);
+}
+
+//------------------------------------------------------------------------
+// bbSetStack: update IL stack for block entry
+//
+// Arguments;
+//   stack - new stack for block
+//
+void BasicBlock::bbSetStack(StackEntry* stack)
+{
+    assert(bbEntryState);
+    assert(stack);
+    bbEntryState->esStack = stack;
+}
+
+//------------------------------------------------------------------------
+// bbStackOnEntry: fetch IL stack for block entry
+//
+StackEntry* BasicBlock::bbStackOnEntry() const
+{
+    assert(bbEntryState);
+    return bbEntryState->esStack;
 }

@@ -97,13 +97,6 @@ namespace System.Runtime.Tests
                     _caughtException = true;
                 }
 
-                if (!PlatformDetection.IsWindows)
-                {
-                    // Rethrowing a ThreadAbortException at the end of catch blocks is not implemented, so force it
-                    // here by calling native code (https://github.com/dotnet/runtime/issues/72703).
-                    Thread.Sleep(0);
-                }
-
                 _finishedExecution = true;
             }
         }

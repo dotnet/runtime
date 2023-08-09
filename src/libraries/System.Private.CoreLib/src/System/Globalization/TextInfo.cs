@@ -32,6 +32,8 @@ namespace System.Globalization
         private readonly string _cultureName;
         private readonly CultureData _cultureData;
 
+        private bool HasEmptyCultureName { get { return _cultureName.Length == 0; } }
+
         // // Name of the text info we're using (ie: _cultureData.TextInfoName)
         private readonly string _textInfoName;
 
@@ -682,11 +684,22 @@ namespace System.Globalization
             if (GlobalizationMode.UseNls)
             {
                 NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                return;
             }
-            else
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
             {
-                IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                JsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                return;
             }
+#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                ChangeCaseNative(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                return;
+            }
+#endif
+            IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
         }
 
         // Used in ToTitleCase():

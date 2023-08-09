@@ -39,7 +39,7 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeTypeHandle rtth = type.GetRuntimeTypeHandle();
 
                 // Check if we have metadata.
-                if (Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
+                if (TryGetMetadataForNamedType(rtth, out qTypeDefinition))
                     return qTypeDefinition.NativeFormatHandle.GetFullName(qTypeDefinition.NativeFormatReader);
             }
             return "?";
@@ -196,7 +196,7 @@ namespace Internal.Runtime.TypeLoader
                     targetTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                     isDefaultInterfaceMethodImplementation = RuntimeAugments.IsInterface(targetTypeHandle);
 #if GVM_RESOLUTION_TRACE
-                    Debug.WriteLine("    Searching for GVM implementation on targe type = " + RuntimeAugments.GetLastResortString(targetTypeHandle));
+                    Debug.WriteLine("    Searching for GVM implementation on targe type = " + targetTypeHandle.LowLevelToString());
 #endif
                 }
                 else
@@ -211,7 +211,7 @@ namespace Internal.Runtime.TypeLoader
                     RuntimeTypeHandle implementingTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
 #if GVM_RESOLUTION_TRACE
-                    Debug.WriteLine("      -> Current implementing type = " + RuntimeAugments.GetLastResortString(implementingTypeHandle));
+                    Debug.WriteLine("      -> Current implementing type = " + implementingTypeHandle.LowLevelToString());
 #endif
 
                     uint numIfaceSigs = entryParser.GetUnsigned();
@@ -231,7 +231,7 @@ namespace Internal.Runtime.TypeLoader
                         NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, entryParser.GetUnsigned());
 
                         NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-                        nativeLayoutContext._module = Instance.ModuleList.GetModuleInfoByHandle(module.Handle);
+                        nativeLayoutContext._module = ModuleList.Instance.GetModuleInfoByHandle(module.Handle);
                         nativeLayoutContext._typeSystemContext = context;
                         nativeLayoutContext._typeArgumentHandles = targetType.Instantiation;
 

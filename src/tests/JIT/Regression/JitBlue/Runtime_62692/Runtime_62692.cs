@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 public unsafe class Runtime_62692
 {
@@ -25,7 +26,8 @@ public unsafe class Runtime_62692
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint Problem6(uint crc, float data) => Sse42.Crc32(crc, (uint)data);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (Sse42.IsSupported)
         {

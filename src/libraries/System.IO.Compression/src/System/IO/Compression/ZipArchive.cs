@@ -164,7 +164,7 @@ namespace System.IO.Compression
                 if (mode == ZipArchiveMode.Create)
                     _archiveReader = null;
                 else
-                    _archiveReader = new BinaryReader(_archiveStream);
+                    _archiveReader = new BinaryReader(_archiveStream, Encoding.UTF8, leaveOpen: true);
                 _entries = new List<ZipArchiveEntry>();
                 _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
                 _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();
@@ -391,10 +391,7 @@ namespace System.IO.Compression
 
         private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {
-            ArgumentNullException.ThrowIfNull(entryName);
-
-            if (string.IsNullOrEmpty(entryName))
-                throw new ArgumentException(SR.CannotBeEmpty, nameof(entryName));
+            ArgumentException.ThrowIfNullOrEmpty(entryName);
 
             if (_mode == ZipArchiveMode.Read)
                 throw new NotSupportedException(SR.CreateInReadMode);

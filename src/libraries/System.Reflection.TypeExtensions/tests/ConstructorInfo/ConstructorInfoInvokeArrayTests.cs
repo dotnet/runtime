@@ -238,10 +238,10 @@ namespace System.Reflection.Tests
         [ActiveIssue("https://github.com/mono/mono/issues/15318", TestRuntimes.Mono)]
         public void Invoke_LargeDimensionalArrayConstructor()
         {
-            Type type = Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]");
+            Type type = Type.GetType($"System.Type[{new string(',', 31)}]");
             ConstructorInfo[] cia = TypeExtensions.GetConstructors(type);
             Assert.Equal(2, cia.Length);
-            Assert.Throws<TypeLoadException>(() => Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]"));
+            Assert.Throws<TypeLoadException>(() => Type.GetType($"System.Type[{new string(',', 42)}]"));
         }
 
         [Fact]

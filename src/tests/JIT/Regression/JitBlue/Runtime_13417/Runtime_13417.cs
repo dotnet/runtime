@@ -4,10 +4,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class BoundsCheck
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(new byte[7]);
         return (int)GetKey(span) + 100;

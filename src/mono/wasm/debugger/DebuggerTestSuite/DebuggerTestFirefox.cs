@@ -39,7 +39,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             };
 
         await Ready();
-        await insp.OpenSessionAsync(fn, TestTimeout);
+        await insp.OpenSessionAsync(fn, "", TestTimeout);
     }
 
     internal override Dictionary<string, string> SubscribeToScripts(Inspector insp)
@@ -181,6 +181,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
                     reason = "other"
                 });
     }
+
+    internal override Task SetJustMyCode(bool enabled) => Task.CompletedTask;
 
     internal override async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)

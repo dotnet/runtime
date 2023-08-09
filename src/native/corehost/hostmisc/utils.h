@@ -45,6 +45,8 @@
 
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
 
+#define SDK_DOTNET_DLL _X("dotnet.dll")
+
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
 
@@ -88,7 +90,9 @@ pal::architecture get_current_arch();
 const pal::char_t* get_arch_name(pal::architecture arch);
 const pal::char_t* get_current_arch_name();
 
-pal::string_t get_current_runtime_id(bool use_fallback);
+pal::string_t get_runtime_id();
+bool try_get_runtime_id_from_env(pal::string_t& out_rid);
+
 bool multilevel_lookup_enabled();
 void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);

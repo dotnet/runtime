@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,23 +20,40 @@ namespace System.Net.Quic.Tests
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public async Task TestConnect()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TestConnect(bool ipv6)
         {
-            await using QuicListener listener = await CreateQuicListener();
+            await using QuicListener listener = await CreateQuicListener(ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback);
 
-            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+            var options = CreateQuicClientOptions(listener.LocalEndPoint);
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(options);
             ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
 
             await new Task[] { connectTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
             await using QuicConnection serverConnection = acceptTask.Result;
             await using QuicConnection clientConnection = connectTask.Result;
 
-            Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
-            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            IgnoreScopeIdIPEndpointComparer endPointComparer = new();
+            Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint, endPointComparer);
+            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint, endPointComparer);
+            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint, endPointComparer);
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, serverConnection.TargetHostName);
+        }
+
+        private class IgnoreScopeIdIPEndpointComparer : IEqualityComparer<IPEndPoint>
+        {
+            public bool Equals(IPEndPoint x, IPEndPoint y)
+            {
+                byte[] xBytes = x.Address.GetAddressBytes();
+                byte[] yBytes = y.Address.GetAddressBytes();
+                return xBytes.AsSpan().SequenceEqual(yBytes) && x.Port == y.Port;
+            }
+            public int GetHashCode([DisallowNull] IPEndPoint obj) => obj.Port;
         }
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
@@ -363,6 +383,49 @@ namespace System.Net.Quic.Tests
                     await using var stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
                     await stream.WriteAsync(new byte[1] { data }, completeWrites: true);
                 }).WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ConnectAsync_InvalidName_ThrowsSocketException(bool sameTargetHost)
+        {
+            string name = $"{Guid.NewGuid().ToString("N")}.microsoft.com.";
+            var options = new QuicClientConnectionOptions()
+            {
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
+                RemoteEndPoint = new DnsEndPoint(name, 10000),
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(sameTargetHost ? name : "localhost")
+            };
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => QuicConnection.ConnectAsync(options).AsTask());
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+        }
+
+        [Fact]
+        public void ConnectAsync_MissingName_ThrowsInvalidArgument()
+        {
+            var options = new QuicClientConnectionOptions()
+            {
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+
+            Assert.Throws<ArgumentNullException>(() => QuicConnection.ConnectAsync(options));
+        }
+
+        [Fact]
+        public void ConnectAsync_MissingDefaults_ThrowsInvalidArgument()
+        {
+            var options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = new DnsEndPoint("localhost", 10000),
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => QuicConnection.ConnectAsync(options));
         }
     }
 }

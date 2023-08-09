@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -428,7 +431,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            return jsonTypeInfo.DeserializeAsyncEnumerable(utf8Json, cancellationToken);
+            return DeserializeAsyncEnumerableCore(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -459,65 +462,70 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.DeserializeAsyncEnumerable(utf8Json, cancellationToken);
+            return DeserializeAsyncEnumerableCore(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
-        /// <summary>
-        /// Wraps the UTF-8 encoded text into an <see cref="IAsyncEnumerable{Object}" />
-        /// that can be used to deserialize root-level JSON arrays in a streaming manner.
-        /// </summary>
-        /// <returns>An <see cref="IAsyncEnumerable{Object}" /> representation of the provided JSON array.</returns>
-        /// <param name="utf8Json">JSON data to parse.</param>
-        /// <param name="returnType">The type of the object to convert to and return.</param>
-        /// <param name="options">Options to control the behavior during reading.</param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.</param>
-        /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="utf8Json"/> or <paramref name="returnType"/> is <see langword="null"/>.
-        /// </exception>
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        public static IAsyncEnumerable<object?> DeserializeAsyncEnumerable(
-            Stream utf8Json,
-            Type returnType,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        private static IAsyncEnumerable<T> DeserializeAsyncEnumerableCore<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken)
         {
-            if (utf8Json is null)
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            JsonTypeInfo<Queue<T>> queueTypeInfo = jsonTypeInfo._asyncEnumerableQueueTypeInfo is { } cachedQueueTypeInfo
+                ? (JsonTypeInfo<Queue<T>>)cachedQueueTypeInfo
+                : CreateQueueTypeInfo(jsonTypeInfo);
+
+            return CreateAsyncEnumerable(utf8Json, queueTypeInfo, cancellationToken);
+
+            static async IAsyncEnumerable<T> CreateAsyncEnumerable(Stream utf8Json, JsonTypeInfo<Queue<T>> queueTypeInfo, [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+                Debug.Assert(queueTypeInfo.IsConfigured);
+                JsonSerializerOptions options = queueTypeInfo.Options;
+                var bufferState = new ReadBufferState(options.DefaultBufferSize);
+                ReadStack readStack = default;
+                readStack.Initialize(queueTypeInfo, supportContinuation: true);
+
+                var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
+
+                try
+                {
+                    do
+                    {
+                        bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                        queueTypeInfo.ContinueDeserialize(
+                            ref bufferState,
+                            ref jsonReaderState,
+                            ref readStack);
+
+                        if (readStack.Current.ReturnValue is { } returnValue)
+                        {
+                            var queue = (Queue<T>)returnValue!;
+                            while (queue.TryDequeue(out T? element))
+                            {
+                                yield return element;
+                            }
+                        }
+                    }
+                    while (!bufferState.IsFinalBlock);
+                }
+                finally
+                {
+                    bufferState.Dispose();
+                }
             }
 
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return jsonTypeInfo.DeserializeAsyncEnumerableAsObject(utf8Json, cancellationToken);
-        }
-
-        /// <summary>
-        /// Wraps the UTF-8 encoded text into an <see cref="IAsyncEnumerable{Object}" />
-        /// that can be used to deserialize root-level JSON arrays in a streaming manner.
-        /// </summary>
-        /// <returns>An <see cref="IAsyncEnumerable{Object}" /> representation of the provided JSON array.</returns>
-        /// <param name="utf8Json">JSON data to parse.</param>
-        /// <param name="jsonTypeInfo">Metadata about the element type to convert.</param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.</param>
-        /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="utf8Json"/> or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
-        /// </exception>
-        public static IAsyncEnumerable<object?> DeserializeAsyncEnumerable(
-            Stream utf8Json,
-            JsonTypeInfo jsonTypeInfo,
-            CancellationToken cancellationToken = default)
-        {
-            if (utf8Json is null)
+            static JsonTypeInfo<Queue<T>> CreateQueueTypeInfo(JsonTypeInfo<T> jsonTypeInfo)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+                var queueConverter = new QueueOfTConverter<Queue<T>, T>();
+                var queueTypeInfo = new JsonTypeInfo<Queue<T>>(queueConverter, jsonTypeInfo.Options)
+                {
+                    CreateObject = static () => new Queue<T>(),
+                    ElementTypeInfo = jsonTypeInfo,
+                    NumberHandling = jsonTypeInfo.Options.NumberHandling,
+                };
 
-            jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.DeserializeAsyncEnumerableAsObject(utf8Json, cancellationToken);
+                queueTypeInfo.EnsureConfigured();
+                jsonTypeInfo._asyncEnumerableQueueTypeInfo = queueTypeInfo;
+                return queueTypeInfo;
+            }
         }
     }
 }

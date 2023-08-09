@@ -1006,13 +1006,6 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.ArgumentCannotBeOfTypeVoid, paramName);
         }
         /// <summary>
-        /// ArgumentOutOfRangeException with message like "{0} must be greater than or equal to {1}"
-        /// </summary>
-        internal static ArgumentException OutOfRange(string? paramName, object? p1)
-        {
-            return new ArgumentOutOfRangeException(paramName, Strings.OutOfRange(paramName, p1));
-        }
-        /// <summary>
         /// InvalidOperationException with message like "Cannot redefine label '{0}' in an inner block."
         /// </summary>
         internal static InvalidOperationException LabelTargetAlreadyDefined(object? p0)

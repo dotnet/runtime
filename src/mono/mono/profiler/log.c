@@ -38,7 +38,7 @@
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-linked-list-set.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-os-semaphore.h>

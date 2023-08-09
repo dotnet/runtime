@@ -893,6 +893,7 @@ namespace System.Collections.Generic
 
         internal TreeSet(TreeSet<T> set, IComparer<T>? comparer) : base(set, comparer) { }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
 
         internal override bool AddIfNotPresent(T item)

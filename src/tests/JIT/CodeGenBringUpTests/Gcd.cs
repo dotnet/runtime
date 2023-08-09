@@ -5,13 +5,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_Gcd
 {
     const int Pass = 100;
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void print(int a, int b)
+    internal static void print(int a, int b)
     {
          Console.WriteLine("GCD: " + a + "," + b);
     }
@@ -32,7 +33,8 @@ public class BringUpTest_Gcd
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int s = Gcd(36, 81);
         Console.WriteLine("GCD is " + s);

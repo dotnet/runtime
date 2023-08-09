@@ -27,6 +27,7 @@
 #include "CommonMacros.inl"
 #include "slist.inl"
 #include "MethodTable.inl"
+#include "../../inc/clrversion.h"
 
 #ifdef  FEATURE_GC_STRESS
 enum HijackType { htLoop, htCallsite };
@@ -35,17 +36,32 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 
 #include "shash.inl"
 
-#ifndef DACCESS_COMPILE
-COOP_PINVOKE_HELPER(uint8_t *, RhSetErrorInfoBuffer, (uint8_t * pNewBuffer))
-{
-    return (uint8_t *) PalSetWerDataBuffer(pNewBuffer);
-}
-#endif // DACCESS_COMPILE
-
+#define MAX_CRASHINFOBUFFER_SIZE 8192
+uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
     return m_pThreadStore;
+}
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
+{
+    *pcbMaxSize = MAX_CRASHINFOBUFFER_SIZE;
+    return g_CrashInfoBuffer;
+}
+
+#if TARGET_UNIX
+#include "PalCreateDump.h"
+COOP_PINVOKE_HELPER(void, RhCreateCrashDumpIfEnabled, (PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext))
+{
+    PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
+}
+#endif
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
+{
+    *pcbLength = sizeof(CLR_PRODUCT_VERSION) - 1;           // don't include the terminating null
+    return (uint8_t*)&CLR_PRODUCT_VERSION;
 }
 
 COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))

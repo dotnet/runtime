@@ -10,10 +10,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace DevDiv_736188
 {
-    class Program
+    public class Program
     {
         private static object InternalSyncObject = new object();
 
@@ -24,10 +25,11 @@ namespace DevDiv_736188
         internal static T CallWith2Args<T>(ref T field, Func<T> initializer) where T : class =>
     CallWith3Args(ref field, ref InternalSyncObject, initializer);
 
-        static int Main(string[] args)
+        [Fact]
+        public static void TestEntryPoint()
         {
+            var args = new string[0];
             CallWith2Args(ref args, null);
-            return 100;
         }
     }
 }

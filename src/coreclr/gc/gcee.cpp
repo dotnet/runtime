@@ -62,6 +62,7 @@ void GCHeap::ReportGenerationBounds()
     {
         g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
         {
+            ASSERT((0 <= generation) && (generation <= poh_generation));
             uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
             uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
             FIRE_EVENT(GCGenerationRange, (uint8_t)generation, rangeStart, range, rangeReserved);
@@ -540,6 +541,23 @@ void GCHeap::ControlEvents(GCEventKeyword keyword, GCEventLevel level)
 void GCHeap::ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level)
 {
     GCEventStatus::Set(GCEventProvider_Private, keyword, level);
+}
+
+uint64_t GCHeap::GetGenerationBudget(int generation)
+{
+    uint64_t budget = 0;
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [i];
+#else
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif
+        dynamic_data* dd = hp->dynamic_data_of (generation);
+        budget += dd_desired_allocation (dd);
+    }
+    return budget;
 }
 
 #endif // !DACCESS_COMPILE

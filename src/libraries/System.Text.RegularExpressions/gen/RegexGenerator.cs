@@ -50,9 +50,9 @@ namespace System.Text.RegularExpressions.Generator
                         default);
 
             // Produces one entry per generated regex.  This may be:
-            // - Diagnostic in the case of a failure that should end the compilation
+            // - DiagnosticData in the case of a failure that should end the compilation
             // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
-            // - (RegexMethod regexMethod, string reason, Diagnostic diagnostic) in the case of a limited-support regex
+            // - (RegexMethod regexMethod, string reason, DiagnosticData diagnostic) in the case of a limited-support regex
             IncrementalValueProvider<ImmutableArray<object>> results =
                 context.SyntaxProvider
 
@@ -72,7 +72,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Filter out any parsing errors that resulted in null objects being returned.
                 .Where(static m => m is not null)
 
-                // The input here will either be a Diagnostic (in the case of something erroneous detected in GetRegexMethodDataOrFailureDiagnostic)
+                // The input here will either be a DiagnosticData (in the case of something erroneous detected in GetRegexMethodDataOrFailureDiagnostic)
                 // or it will be a RegexPatternAndSyntax containing all of the successfully parsed data from the attribute/method.
                 .Select((methodOrDiagnostic, _) =>
                 {
@@ -86,7 +86,7 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         catch (Exception e)
                         {
-                            return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, method.DiagnosticLocation, e.Message);
+                            return new DiagnosticData(DiagnosticDescriptors.InvalidRegexArguments, method.DiagnosticLocation, e.Message);
                         }
                     }
 
@@ -102,7 +102,7 @@ namespace System.Text.RegularExpressions.Generator
                     object? state = methodOrDiagnosticAndCompilationData.Left;
                     if (state is not RegexMethod regexMethod)
                     {
-                        Debug.Assert(state is Diagnostic);
+                        Debug.Assert(state is DiagnosticData);
                         return state;
                     }
 
@@ -110,7 +110,7 @@ namespace System.Text.RegularExpressions.Generator
                     // We'll still output a limited implementation that just caches a new Regex(...).
                     if (!SupportsCodeGeneration(regexMethod, methodOrDiagnosticAndCompilationData.Right.LanguageVersion, out string? reason))
                     {
-                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), methodOrDiagnosticAndCompilationData.Right);
+                        return (regexMethod, reason, new DiagnosticData(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), methodOrDiagnosticAndCompilationData.Right);
                     }
 
                     // Generate the core logic for the regex.
@@ -135,9 +135,9 @@ namespace System.Text.RegularExpressions.Generator
                 bool allFailures = true;
                 foreach (object result in results)
                 {
-                    if (result is Diagnostic d)
+                    if (result is DiagnosticData d)
                     {
-                        context.ReportDiagnostic(d);
+                        context.ReportDiagnostic(d.ToDiagnostic());
                     }
                     else
                     {
@@ -174,7 +174,7 @@ namespace System.Text.RegularExpressions.Generator
                 // pair is the implementation used for the key.
                 var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), RegexMethod>();
 
-                // If we have any (RegexMethod regexMethod, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
+                // If we have any (RegexMethod regexMethod, string generatedName, string reason, DiagnosticData diagnostic), these are regexes for which we have
                 // limited support and need to simply output boilerplate.  We need to emit their diagnostics.
                 // If we have any (RegexMethod regexMethod, string generatedName, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers),
                 // those are generated implementations to be emitted.  We need to gather up their required helpers.
@@ -182,9 +182,9 @@ namespace System.Text.RegularExpressions.Generator
                 foreach (object? result in results)
                 {
                     RegexMethod? regexMethod = null;
-                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
+                    if (result is ValueTuple<RegexMethod, string, DiagnosticData, CompilationData> limitedSupportResult)
                     {
-                        context.ReportDiagnostic(limitedSupportResult.Item3);
+                        context.ReportDiagnostic(limitedSupportResult.Item3.ToDiagnostic());
                         regexMethod = limitedSupportResult.Item1;
                     }
                     else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>, CompilationData> regexImpl)
@@ -244,7 +244,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.Indent++;
                 foreach (object? result in results)
                 {
-                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
+                    if (result is ValueTuple<RegexMethod, string, DiagnosticData, CompilationData> limitedSupportResult)
                     {
                         if (!limitedSupportResult.Item1.IsDuplicate)
                         {
@@ -355,6 +355,17 @@ namespace System.Text.RegularExpressions.Generator
 
                 return false;
             }
+        }
+
+        /// <summary>Stores the data necessary to create a Diagnostic.</summary>
+        /// <remarks>
+        /// Diagnostics do not have value equality semantics.  Storing them in an object model
+        /// used in the pipeline can result in unnecessary recompilation.
+        /// </remarks>
+        private sealed record class DiagnosticData(DiagnosticDescriptor descriptor, Location location, object? arg = null)
+        {
+            /// <summary>Create a <see cref="Diagnostic"/> from the data.</summary>
+            public Diagnostic ToDiagnostic() => Diagnostic.Create(descriptor, location, arg is null ? Array.Empty<object>() : new[] { arg });
         }
     }
 }

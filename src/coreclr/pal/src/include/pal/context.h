@@ -28,6 +28,8 @@ extern "C"
 #include <signal.h>
 #include <pthread.h>
 
+#include <minipal/cpuid.h>
+
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
 #if HAVE_UCONTEXT_T
@@ -161,7 +163,6 @@ bool Xstate_IsAvx512Supported();
 #define MCREG_Pc(mc)      ((mc).__pc)
 
 #elif defined(HOST_RISCV64)
-#error "TODO-RISCV64: review this"
 
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
 #define MCREG_Sp(mc)      ((mc).__gregs[2])
@@ -170,7 +171,7 @@ bool Xstate_IsAvx512Supported();
 #define MCREG_T0(mc)      ((mc).__gregs[5])
 #define MCREG_T1(mc)      ((mc).__gregs[6])
 #define MCREG_T2(mc)      ((mc).__gregs[7])
-#define MCREG_S0(mc)      ((mc).__gregs[8])
+#define MCREG_Fp(mc)      ((mc).__gregs[8])
 #define MCREG_S1(mc)      ((mc).__gregs[9])
 #define MCREG_A0(mc)      ((mc).__gregs[10])
 #define MCREG_A1(mc)      ((mc).__gregs[11])
@@ -196,7 +197,7 @@ bool Xstate_IsAvx512Supported();
 #define MCREG_T6(mc)      ((mc).__gregs[31])
 #define MCREG_Pc(mc)      ((mc).__gregs[0])
 
-#else // HOST_LOONGARCH64
+#else // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).__gregs[_REG_RCX])
@@ -233,7 +234,7 @@ bool Xstate_IsAvx512Supported();
 #define FPREG_MxCsr(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr)
 #define FPREG_MxCsr_Mask(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr_mask)
 
-#endif // HOST_LOONGARCH64
+#endif // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #else // HOST_64BIT
 
@@ -1292,8 +1293,6 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
-#elif defined(HOST_RISCV64)
-    return pContext->S0;
 #else
     return pContext->Fp;
 #endif

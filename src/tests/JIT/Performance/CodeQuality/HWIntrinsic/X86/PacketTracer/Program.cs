@@ -9,8 +9,9 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-class Program
+public class Program
 {
 #if DEBUG
 
@@ -48,7 +49,8 @@ class Program
         _freeBuffers = new ObjectPool<int[]>(() => new int[_width * 3 * _height]); // Each pixel has 3 fields (RGB)
     }
 
-    static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         if (Avx2.IsSupported)
         {

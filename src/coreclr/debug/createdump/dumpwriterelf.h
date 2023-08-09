@@ -23,6 +23,8 @@
 #define ELF_ARCH  EM_ARM
 #elif defined(__loongarch64)
 #define ELF_ARCH  EM_LOONGARCH
+#elif defined(__riscv)
+#define ELF_ARCH  EM_RISCV
 #endif
 
 #define PH_HDR_CANARY 0xFFFF
@@ -54,6 +56,7 @@ public:
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
+    bool WriteDiagInfo(size_t size);
     bool WriteProcessInfo();
     bool WriteAuxv();
     size_t GetNTFileInfoSize(size_t* alignmentBytes = nullptr);

@@ -38,12 +38,14 @@ static void log_icu_error(const char* name, UErrorCode status)
     log_shim_error("ICU call %s failed with error #%d '%s'.", name, status, statusText);
 }
 
+#if defined(ICU_TRACING)
 static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int32_t level, const char* fmt, va_list args)
 {
     char buf[1000];
     utrace_vformat(buf, sizeof(buf), 0, fmt, args);
     printf("[ICUDT] %s: %s\n", utrace_functionName(fnNumber), buf);
 }
+#endif
 
 static int32_t load_icu_data(const void* pData);
 
@@ -127,7 +129,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    file_buf = malloc(sizeof(char) * (file_buf_size + 1));
+    file_buf = malloc(sizeof(char) * (unsigned long)(file_buf_size + 1));
 
     if (file_buf == NULL)
     {
@@ -141,7 +143,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    fread(file_buf, sizeof(char), file_buf_size, fp);
+    fread(file_buf, sizeof(char), (unsigned long)file_buf_size, fp);
     if (ferror( fp ) != 0)
     {
         log_shim_error("Unable to read ICU dat file");
@@ -169,9 +171,14 @@ int32_t
 GlobalizationNative_LoadICUData(const char* path)
 {
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+    if (path && path[0] != '/')
+    {
+        // if the path is relative, prepend the app bundle root
+        path = GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(path);
+    }
     if (!path)
     {
-        // fallback to icudt.dat in the app bundle root in case the path isn't set
+        // fallback to icudt.dat in the app bundle resources in case the path isn't set
         path = GlobalizationNative_GetICUDataPathFallback();
     }
 #endif

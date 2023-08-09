@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateInstallers>
+    <PackageTargetOS>rhel.8</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="openssl-libs;libicu;krb5-libs" />
+  </ItemGroup>
+</Project>

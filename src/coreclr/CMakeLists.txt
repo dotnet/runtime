@@ -1,16 +1,9 @@
-cmake_minimum_required(VERSION 3.6.2)
+cmake_minimum_required(VERSION 3.20)
 
 cmake_policy(SET CMP0042 NEW) # MACOSX_RPATH is enabled by default.
-
-if (CMAKE_VERSION VERSION_GREATER 3.7 OR CMAKE_VERSION VERSION_EQUAL 3.7)
-  cmake_policy(SET CMP0066 NEW) # Honor per-config flags in try_compile() source-file signature.
-endif()
-if (CMAKE_VERSION VERSION_GREATER 3.8 OR CMAKE_VERSION VERSION_EQUAL 3.8)
-  cmake_policy(SET CMP0067 NEW) # Honor language standard in try_compile() source-file signature
-endif()
-if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
-  cmake_policy(SET CMP0091 NEW) # MSVC runtime library flags are selected by an abstraction.
-endif()
+cmake_policy(SET CMP0066 NEW) # Honor per-config flags in try_compile() source-file signature.
+cmake_policy(SET CMP0067 NEW) # Honor language standard in try_compile() source-file signature
+cmake_policy(SET CMP0091 NEW) # MSVC runtime library flags are selected by an abstraction.
 
 # Set the project name
 project(CoreCLR)
@@ -19,6 +12,7 @@ include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
+include_directories("${CLR_SRC_NATIVE_DIR}/inc")
 
 if(MSVC)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
@@ -41,7 +35,7 @@ if(CORECLR_SET_RPATH)
 endif(CORECLR_SET_RPATH)
 
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS)
-  set(FEATURE_EVENT_TRACE 0)
+  set(FEATURE_STANDALONE_GC 0)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
@@ -97,7 +91,7 @@ endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 #     - do not depend on clr's compile definitions
 #-----------------------------------------
 if(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_TARGET_ANDROID)
+    if(CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ANDROID_NDK)
         find_library(LZMA NAMES lzma)
         if(LZMA STREQUAL LZMA-NOTFOUND)
            message(FATAL_ERROR "Cannot find liblzma.")
@@ -107,6 +101,10 @@ if(CLR_CMAKE_HOST_UNIX)
         if(ANDROID_GLOB STREQUAL ANDROID_GLOB-NOTFOUND)
           message(FATAL_ERROR "Cannot find android-glob.")
         endif()
+    endif()
+
+    if(CLR_CMAKE_TARGET_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_RISCV64))
+      add_linker_flag(-Wl,-z,notext)
     endif()
 
     if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
@@ -122,7 +120,9 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
+endif()
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(pal/prebuilt/inc)
@@ -192,7 +192,6 @@ include_directories("debug/inc/${ARCH_SOURCES_DIR}")
 include_directories("debug/inc/dump")
 include_directories("md/inc")
 include_directories("classlibnative/bcltype")
-include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")

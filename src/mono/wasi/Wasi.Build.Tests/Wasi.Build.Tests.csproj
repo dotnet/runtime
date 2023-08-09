@@ -17,7 +17,7 @@
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
 
     <!-- don't run any wasm build steps -->
-    <IsBrowserWasmProject>false</IsBrowserWasmProject>
+    <IsWasiProject>false</IsWasiProject>
     <UseDefaultTestHost>true</UseDefaultTestHost>
 
     <EnableRunSettingsSupport>false</EnableRunSettingsSupport>

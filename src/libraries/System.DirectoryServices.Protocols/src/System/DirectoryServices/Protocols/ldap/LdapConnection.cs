@@ -1063,7 +1063,7 @@ namespace System.DirectoryServices.Protocols
             else if (AuthType == AuthType.Basic)
             {
                 var tempDomainName = new StringBuilder(100);
-                if (domainName != null && domainName.Length != 0)
+                if (!string.IsNullOrEmpty(domainName))
                 {
                     tempDomainName.Append(domainName);
                     tempDomainName.Append('\\');

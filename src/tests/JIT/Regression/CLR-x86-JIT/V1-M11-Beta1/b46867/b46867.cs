@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -12,7 +13,8 @@ namespace Test
         {
             param3 = (double)param4;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Method2(1.0d, 1, __arglist());
             return 100;

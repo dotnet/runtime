@@ -3,13 +3,15 @@
 //
 
 using System;
+using Xunit;
 public class Program
 {
     public static bool IsGuid(object item)
     {
         return item is Guid;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (IsGuid(Guid.NewGuid()))
             return 100;

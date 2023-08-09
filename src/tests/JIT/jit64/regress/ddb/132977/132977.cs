@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 // Bug: OSR bug causing bad GC pointers
 // a GC root becomes an interior pointer when added.
-internal class Repro
+public class Repro
 {
     private int[] _arr;
 
@@ -17,7 +18,8 @@ internal class Repro
         }
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new Repro().Bug();
         // will fail with an assert under GCSTRESS=4

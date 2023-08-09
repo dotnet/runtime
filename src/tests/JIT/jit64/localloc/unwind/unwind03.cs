@@ -7,12 +7,14 @@
 
 using System;
 using LocallocTesting;
+using Xunit;
 
-internal class LocallocTest
+public class LocallocTest
 {
     private static bool s_testFailed = false;
     private static int s_locallocSize = 0;
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         ulong local1 = Global.INITIAL_VALUE;
         ulong local2 = local1 + 1;
@@ -55,7 +57,7 @@ internal class LocallocTest
         return 100;
     }
 
-    public unsafe static void unwindTest1()
+    internal unsafe static void unwindTest1()
     {
 #if LOCALLOC_SMALL
 		Int32* intArray2 = stackalloc Int32[1];

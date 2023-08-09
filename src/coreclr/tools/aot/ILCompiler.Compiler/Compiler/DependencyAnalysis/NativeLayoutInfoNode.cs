@@ -12,9 +12,9 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Native layout info blob.
     /// </summary>
-    public sealed class NativeLayoutInfoNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class NativeLayoutInfoNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private ExternalReferencesTableNode _staticsReferences;
 
@@ -29,7 +29,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public NativeLayoutInfoNode(ExternalReferencesTableNode externalReferences, ExternalReferencesTableNode staticsReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__nativelayoutinfo_End", true);
             _externalReferences = externalReferences;
             _staticsReferences = staticsReferences;
 
@@ -45,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__nativelayoutinfo");
         }
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -87,9 +86,9 @@ namespace ILCompiler.DependencyAnalysis
 
             SaveNativeLayoutInfoWriter(factory);
 
-            _endSymbol.SetSymbolOffset(_writerSavedBytes.Length);
+            _size = _writerSavedBytes.Length;
 
-            return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

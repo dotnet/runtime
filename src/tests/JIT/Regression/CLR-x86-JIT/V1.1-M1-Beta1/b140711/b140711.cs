@@ -3,11 +3,13 @@
 //
 
 using System;
+using Xunit;
 
 public class BadMath
 {
     public static double[,] Res = new double[2, 40];
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         double t0 = 1.5;

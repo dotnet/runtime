@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
     public class AA
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool[] cond = new bool[40];
             while (cond[0])

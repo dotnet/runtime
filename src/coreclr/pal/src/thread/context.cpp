@@ -199,23 +199,20 @@ typedef int __ptrace_request;
 
 #elif defined(HOST_RISCV64)
 
-#error "TODO-RISCV64: review this"
-
 // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
 
 #define ASSIGN_CONTROL_REGS  \
     ASSIGN_REG(Ra)      \
     ASSIGN_REG(Sp)      \
-    ASSIGN_REG(Sp)      \
-    ASSIGN_REG(Gp)      \
-    ASSIGN_REG(Tp)      \
+    ASSIGN_REG(Fp)      \
     ASSIGN_REG(Pc)
 
 #define ASSIGN_INTEGER_REGS \
+    ASSIGN_REG(Gp)     \
+    ASSIGN_REG(Tp)     \
     ASSIGN_REG(T0)     \
     ASSIGN_REG(T1)     \
     ASSIGN_REG(T2)     \
-    ASSIGN_REG(S0)     \
     ASSIGN_REG(S1)     \
     ASSIGN_REG(A0)     \
     ASSIGN_REG(A1)     \
@@ -737,14 +734,17 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
-        native->uc_mcontext.__fcsr = lpContext->Fcsr;
-        for (int i = 0; i < 32; i++)
-        {
-            native->uc_mcontext.__fpregs[i].__val64[0] = lpContext->F[i];
-        }
+        struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
+        // TODO-LoongArch: supports SIMD128 and SIMD256.
+        _ASSERTE(FPU_CTX_MAGIC == info->magic);
+
+        struct fpu_context* fpr = (struct fpu_context*) ++info;
+        fpr->fcsr = lpContext->Fcsr;
+        fpr->fcc  = lpContext->Fcc;
+        memcpy(fpr->regs, lpContext->F, sizeof(lpContext->F));
 #elif defined(HOST_RISCV64)
         native->uc_mcontext.__fpregs.__d.__fcsr = lpContext->Fcsr;
-        for (int i = 0; i < 64; i++)
+        for (int i = 0; i < 32; i++)
         {
             native->uc_mcontext.__fpregs.__d.__f[i] = lpContext->F[i];
         }
@@ -931,14 +931,17 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(lpContext->Fpr, fp->fprs, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
-        lpContext->Fcsr = native->uc_mcontext.__fcsr;
-        for (int i = 0; i < 32; i++)
-        {
-            lpContext->F[i] = native->uc_mcontext.__fpregs[i].__val64[0];
-        }
+        struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
+        // TODO-LoongArch: supports SIMD128 and SIMD256.
+        _ASSERTE(FPU_CTX_MAGIC == info->magic);
+
+        struct fpu_context* fpr = (struct fpu_context*) ++info;
+        lpContext->Fcsr = fpr->fcsr;
+        lpContext->Fcc  = fpr->fcc;
+        memcpy(lpContext->F, fpr->regs, sizeof(lpContext->F));
 #elif defined(HOST_RISCV64)
         lpContext->Fcsr = native->uc_mcontext.__fpregs.__d.__fcsr;
-        for (int i = 0; i < 64; i++)
+        for (int i = 0; i < 32; i++)
         {
             lpContext->F[i] = native->uc_mcontext.__fpregs.__d.__f[i];
         }
@@ -1861,8 +1864,45 @@ DBG_FlushInstructionCache(
         __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
         begin = endOrNextPageBegin;
     }
+#elif defined(HOST_RISCV64)
+    // __clear_cache() expanded from __builtin___clear_cache() is not implemented
+    // on Linux/RISCV64, at least in Clang 14, and we have to make syscall directly.
+    //
+    // TODO-RISCV64: use __builtin___clear_cache() in future. See https://github.com/llvm/llvm-project/issues/63551
+
+#ifndef __NR_riscv_flush_icache
+    #define __NR_riscv_flush_icache 259
+#endif
+
+    syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
 #else
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
 #endif
     return TRUE;
 }
+
+#ifdef HOST_AMD64
+CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
+{
+    size_t copySize;
+    if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
+    {
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
+        {
+            copySize = sizeof(CONTEXT);
+        }
+        else
+        {
+            copySize = offsetof(CONTEXT, KMask0);
+        }
+    }
+    else
+    {
+        copySize = offsetof(CONTEXT, XStateFeaturesMask);
+    }
+
+    memcpy(this, &ctx, copySize);
+
+    return *this;
+}
+#endif // HOST_AMD64

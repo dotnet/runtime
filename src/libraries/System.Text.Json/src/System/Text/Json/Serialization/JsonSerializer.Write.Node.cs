@@ -52,7 +52,7 @@ namespace System.Text.Json
         public static JsonNode? SerializeToNode(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
             ValidateInputType(value, inputType);
-            JsonTypeInfo typeInfo = GetTypeInfo(options, inputType, fallBackToNearestAncestorType: true);
+            JsonTypeInfo typeInfo = GetTypeInfo(options, inputType);
             return WriteNodeAsObject(value, typeInfo);
         }
 

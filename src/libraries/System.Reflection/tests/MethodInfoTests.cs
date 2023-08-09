@@ -717,7 +717,7 @@ namespace System.Reflection.Tests
             Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
             Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
             Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { Type.Missing }));
-        } 
+        }
 
         [Fact]
         public static void InvokeNullableEnumParameterDefaultYes()
@@ -895,7 +895,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]        
         private static unsafe void TestFunctionPointers()
         {
             void* fn = FunctionPointerMethods.GetFunctionPointer();
@@ -911,9 +910,17 @@ namespace System.Reflection.Tests
             MethodInfo m;
 
             m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_FP));
-            //  System.ArgumentException : Object of type 'System.IntPtr' cannot be converted to type 'System.Boolean(System.Int32)'
-            Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
-            Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
+                Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
+            }
+            else
+            {
+                //  System.ArgumentException : Object of type 'System.IntPtr' cannot be converted to type 'System.Boolean(System.Int32)'
+                Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
+                Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
+            }
 
             m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_IntPtr));
             Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
@@ -1349,4 +1356,3 @@ namespace System.Reflection.Tests
     }
 #pragma warning restore 0414
 }
-

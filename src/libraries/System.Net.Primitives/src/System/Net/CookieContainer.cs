@@ -817,7 +817,7 @@ namespace System.Net
                 // DNS.resolve may return short names even for other inet domains ;-(
                 // We _don't_ know what the exact domain is, so try also grab short hostname cookies.
                 // Grab long name from the local domain
-                if (m_fqdnMyDomain != null && m_fqdnMyDomain.Length != 0)
+                if (!string.IsNullOrEmpty(m_fqdnMyDomain))
                 {
                     domainAttributeMatchAnyCookieVariant.Add(fqdnRemote + m_fqdnMyDomain);
                     // Grab the local domain itself

@@ -11,6 +11,7 @@ using System.Xml.XPath;
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Logging;
 using ILCompiler.Metadata;
 using ILLink.Shared;
 
@@ -62,6 +63,7 @@ namespace ILCompiler
 
         private readonly HashSet<string> _rootEntireAssembliesModules;
         private readonly HashSet<string> _trimmedAssemblies;
+        private readonly List<string> _satelliteAssemblyFiles;
 
         internal FlowAnnotations FlowAnnotations { get; }
 
@@ -79,10 +81,11 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions generationOptions,
             MetadataManagerOptions options,
             Logger logger,
-            IEnumerable<KeyValuePair<string, bool>> featureSwitchValues,
+            IReadOnlyDictionary<string, bool> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
-            IEnumerable<string> trimmedAssemblies)
+            IEnumerable<string> trimmedAssemblies,
+            IEnumerable<string> satelliteAssemblyFilePaths)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _compilationModuleGroup = group;
@@ -91,12 +94,26 @@ namespace ILCompiler
             FlowAnnotations = flowAnnotations;
             Logger = logger;
 
-            _linkAttributesHashTable = new LinkAttributesHashTable(Logger, new Dictionary<string, bool>(featureSwitchValues));
-            FeatureSwitches = new Dictionary<string, bool>(featureSwitchValues);
+            _linkAttributesHashTable = new LinkAttributesHashTable(Logger, featureSwitchValues);
+            FeatureSwitches = featureSwitchValues;
 
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
             _rootEntireAssembliesModules.UnionWith(additionalRootedAssemblies);
             _trimmedAssemblies = new HashSet<string>(trimmedAssemblies);
+            _satelliteAssemblyFiles = new List<string>(satelliteAssemblyFilePaths);
+        }
+
+        public IEnumerable<EcmaModule> GetSatelliteAssemblies(EcmaAssembly module)
+        {
+            string expectedSimpleName = module.GetName().Name + ".resources";
+            foreach (string filePath in _satelliteAssemblyFiles)
+            {
+                string simpleName = Path.GetFileNameWithoutExtension(filePath);
+                if (simpleName == expectedSimpleName)
+                {
+                    yield return _typeSystemContext.GetMetadataOnlyModuleFromPath(filePath);
+                }
+            }
         }
 
         protected override void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -137,12 +154,9 @@ namespace ILCompiler
             if (reflectedFieldNode != null)
             {
                 FieldDesc field = reflectedFieldNode.Field;
-                DefType fieldOwningType = field.OwningType;
 
                 // Filter out to those that make sense to have in the mapping tables
-                if (!fieldOwningType.IsGenericDefinition
-                    && !field.IsLiteral
-                    && (!fieldOwningType.IsCanonicalSubtype(CanonicalFormKind.Specific) || !field.IsStatic))
+                if (!field.OwningType.IsGenericDefinition && !field.IsLiteral)
                 {
                     Debug.Assert((GetMetadataCategory(field) & MetadataCategory.RuntimeMapping) != 0);
                     _fieldsWithRuntimeMapping.Add(field);
@@ -211,7 +225,7 @@ namespace ILCompiler
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
-            out List<MetadataMapping<MethodDesc>> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping)
         {
             ComputeMetadata(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory),
                 factory, out metadataBlob, out typeMappings, out methodMappings, out fieldMappings, out stackTraceMapping);
@@ -272,7 +286,7 @@ namespace ILCompiler
                 if (!IsReflectionBlocked(invokeMethod))
                 {
                     dependencies ??= new DependencyList();
-                    dependencies.Add(factory.ReflectedMethod(invokeMethod), "Delegate invoke method is always reflectable");
+                    dependencies.Add(factory.ReflectedMethod(invokeMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Delegate invoke method is always reflectable");
                 }
             }
 
@@ -311,16 +325,7 @@ namespace ILCompiler
                 bool fullyRoot;
                 string reason;
 
-                // https://github.com/dotnet/runtime/issues/78752
-                // Compat with https://github.com/dotnet/linker/issues/1541 IL Linker bug:
-                // Asking to root an assembly with entrypoint will not actually root things in the assembly.
-                // We need to emulate this because the SDK injects a root for the entrypoint assembly right now
-                // because of IL Linker's implementation details (IL Linker won't root Main() by itself).
-                // TODO: We should technically reflection-root Main() here but hopefully the above issue
-                // will be fixed before it comes to that being necessary.
-                bool isEntrypointAssembly = module is EcmaModule ecmaModule && ecmaModule.PEReader.PEHeaders.IsExe;
-
-                if (!isEntrypointAssembly && _rootEntireAssembliesModules.Contains(assemblyName))
+                if (_rootEntireAssembliesModules.Contains(assemblyName))
                 {
                     // If the assembly was specified as a root on the command line, root it
                     fullyRoot = true;
@@ -337,7 +342,7 @@ namespace ILCompiler
                 {
                     // If rooting default assemblies was requested, root
                     fullyRoot = (_generationOptions & UsageBasedMetadataGenerationOptions.RootDefaultAssemblies) != 0;
-                    reason = "Assemblies rooted from command line";
+                    reason = "Partial trimming and assembly not trimmable";
                 }
 
                 if (fullyRoot)
@@ -482,13 +487,28 @@ namespace ILCompiler
                         continue;
 
                     // Generic methods need to be instantiated over something.
+                    // We try to make up a canonical instantiation if possible to match the
+                    // general expectation that if one has a type, and a method on the uninstantiated type,
+                    // one can GetMemberWithSameMetadataDefinitionAs and MakeGenericMethod the result
+                    // over reference types. We promise reference type instantiations are possible.
+                    MethodDesc reflectedMethod;
                     if (method.HasInstantiation)
-                        continue;
+                    {
+                        Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: true);
+                        if (inst.IsNull)
+                            continue;
+
+                        reflectedMethod = method.MakeInstantiatedMethod(inst);
+                    }
+                    else
+                    {
+                        reflectedMethod = method;
+                    }
 
                     dependencies ??= new CombinedDependencyList();
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        factory.ReflectedMethod(method),
-                        factory.ReflectedMethod(method.GetTypicalMethodDefinition()),
+                        factory.ReflectedMethod(reflectedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                        factory.ReflectedMethod(reflectedMethod.GetTypicalMethodDefinition()),
                         "Methods have same reflectability"));
                 }
             }
@@ -496,7 +516,17 @@ namespace ILCompiler
 
         public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
         {
-            if (!IsReflectionBlocked(field))
+            if (!IsReflectionBlocked(field)
+                // Scanning will report many field ldtokens due to InitializeArray/CreateSpan.
+                // We don't consider those reflection because codegen is going to intrinsically
+                // expand them if the pattern match holds. Scanner doesn't replicate the
+                // exact rules that codegen will follow - it will report it all as LDTOKEN
+                // and this can potentially reflection-root things that don't need rooting.
+                // If LDTOKEN with an RVA static field ever becomes an actual user scenario
+                // (outside InitializeArray/CreateSpan) we need to remove this condition, but
+                // we should also replicate the codegen expansion rules in the scanner
+                // so that it doesn't become an unnecessary size regression for the common patterns.
+                && !field.HasRva)
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectedField(field), "LDTOKEN field");
@@ -508,7 +538,18 @@ namespace ILCompiler
             dependencies ??= new DependencyList();
 
             if (!IsReflectionBlocked(method))
-                dependencies.Add(factory.ReflectedMethod(method), "LDTOKEN method");
+            {
+                MethodDesc canonicalMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                dependencies.Add(factory.ReflectedMethod(canonicalMethod), "LDTOKEN method");
+
+                if (canonicalMethod != method)
+                {
+                    foreach (TypeDesc instArg in method.Instantiation)
+                    {
+                        dependencies.Add(factory.ReflectedType(instArg), "LDTOKEN method");
+                    }
+                }
+            }
         }
 
         public override void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, MethodDesc target)
@@ -516,7 +557,10 @@ namespace ILCompiler
             if (!IsReflectionBlocked(target))
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectedMethod(target), "Target of a delegate");
+                dependencies.Add(factory.ReflectedMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Target of a delegate");
+
+                if (target.IsVirtual)
+                    dependencies.Add(factory.DelegateTargetVirtualMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Target of a delegate");
             }
         }
 
@@ -524,29 +568,14 @@ namespace ILCompiler
         {
             Debug.Assert(decl.IsVirtual && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
 
-            // If a virtual method slot is reflection visible, all implementations become reflection visible.
-            //
-            // We could technically come up with a weaker position on this because the code below just needs to
-            // to ensure that delegates to virtual methods can have their GetMethodInfo() called.
-            // Delegate construction introduces a ReflectableMethod for the slot defining method; it doesn't need to.
-            // We could have a specialized node type to track that specific thing and introduce a conditional dependency
-            // on that.
-            //
-            // class Base { abstract Boo(); }
-            // class Derived1 : Base { override Boo() { } }
-            // class Derived2 : Base { override Boo() { } }
-            //
-            // typeof(Derived2).GetMethods(...)
-            //
-            // In the above case, we don't really need Derived1.Boo to become reflection visible
-            // but the below code will do that because ReflectedMethodNode tracks all reflectable methods,
-            // without keeping information about subtleities like "reflectable delegate".
+            // If a virtual method slot is a target of a delegate, all implementations become reflection visible
+            // to support Delegate.GetMethodInfo().
             if (!IsReflectionBlocked(decl) && !IsReflectionBlocked(impl))
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
                     factory.ReflectedMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    factory.ReflectedMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                     "Virtual method declaration is reflectable"));
             }
         }
@@ -563,6 +592,18 @@ namespace ILCompiler
                 {
                     AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
                 }
+
+                if (method.IsStaticConstructor)
+                {
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor, method.GetDisplayName());
+
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresDynamicCodeAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresDynamicCodeOnStaticConstructor, method.GetDisplayName());
+
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresAssemblyFilesOnStaticConstructor, method.GetDisplayName());
+                }
             }
 
             if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod)
@@ -574,26 +615,6 @@ namespace ILCompiler
             if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
                 GetDependenciesDueToReflectability(ref dependencies, factory, method);
-            }
-        }
-
-        public override void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            Debug.Assert(!method.IsSharedByGenericInstantiations && method.HasInstantiation && method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
-
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) == 0
-                && !IsReflectionBlocked(method))
-            {
-                // Ensure that if SomeMethod<T> is considered reflectable, SomeMethod<ConcreteType> is also reflectable.
-                // We only need this because there's a file format limitation in the reflection mapping tables that
-                // requires generic methods to be concrete (i.e. SomeMethod<__Canon> can never be in the mapping table).
-                // If we ever lift this limitation, this code can be deleted: the reflectability is going to be covered
-                // by GetConditionalDependenciesDueToMethodCodePresence below (we get that callback for SomeMethod<__Canon>).
-                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-
-                dependencies ??= new CombinedDependencyList();
-                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    factory.ReflectedMethod(method), factory.ReflectedMethod(typicalMethod), "Reflectability of methods is same across genericness"));
             }
         }
 
@@ -621,7 +642,7 @@ namespace ILCompiler
                 if (method.IsAbstract && GetMetadataCategory(method) != 0)
                 {
                     dependencies ??= new DependencyList();
-                    dependencies.Add(factory.ReflectedMethod(method), "Abstract reflectable method");
+                    dependencies.Add(factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Abstract reflectable method");
                 }
             }
         }
@@ -639,19 +660,10 @@ namespace ILCompiler
         private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
         {
             // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
+            foreach (var constructedType in GetTypesWithEETypes())
             {
                 if (!IsReflectionBlocked(constructedType))
                     yield return constructedType;
-            }
-
-            // All necessary types for which this is the highest load level that are not blocked
-            // get runtime mapping.
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                    yield return necessaryType;
             }
         }
 
@@ -663,40 +675,8 @@ namespace ILCompiler
                 AddDataflowDependency(ref dependencies, factory, methodIL, "Access to interesting field");
             }
 
-            string reason = "Use of a field";
-
-            bool generatesMetadata = false;
-            if (!IsReflectionBlocked(writtenField))
-            {
-                if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
-                {
-                    // If access to the field should trigger metadata generation, we should generate the field
-                    generatesMetadata = true;
-                }
-                else
-                {
-                    // There's an invalid suppression in the CoreLib that assumes used fields on attributes will be kept.
-                    // It's used in the reflection-based implementation of Attribute.Equals and Attribute.GetHashCode.
-                    // .NET Native used to have a non-reflection based implementation of Equals/GetHashCode to get around
-                    // this problem. We could explore that as well, but for now, emulate the fact that accessed fields
-                    // on custom attributes will be visible in reflection metadata.
-                    MetadataType currentType = (MetadataType)writtenField.OwningType.BaseType;
-                    while (currentType != null)
-                    {
-                        if (currentType.Module == factory.TypeSystemContext.SystemModule
-                            && currentType.Name == "Attribute" && currentType.Namespace == "System")
-                        {
-                            generatesMetadata = true;
-                            reason = "Field of an attribute";
-                            break;
-                        }
-
-                        currentType = currentType.MetadataBaseType;
-                    }
-                }
-            }
-
-            if (generatesMetadata)
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0
+                && !IsReflectionBlocked(writtenField))
             {
                 FieldDesc fieldToReport = writtenField;
 
@@ -714,7 +694,7 @@ namespace ILCompiler
                 }
 
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectedField(fieldToReport), reason);
+                dependencies.Add(factory.ReflectedField(fieldToReport), "Use of a field");
             }
 
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
@@ -741,15 +721,6 @@ namespace ILCompiler
             }
 
             return null;
-        }
-
-        public override void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            // Presence of code might trigger the reflectability dependencies.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
-            {
-                GetDependenciesDueToReflectability(ref dependencies, factory, method);
-            }
         }
 
         public bool GeneratesAttributeMetadata(TypeDesc attributeType)
@@ -1034,10 +1005,10 @@ namespace ILCompiler
 
         private sealed class LinkAttributesHashTable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
-            private readonly Dictionary<string, bool> _switchValues;
+            private readonly IReadOnlyDictionary<string, bool> _switchValues;
             private readonly Logger _logger;
 
-            public LinkAttributesHashTable(Logger logger, Dictionary<string, bool> switchValues)
+            public LinkAttributesHashTable(Logger logger, IReadOnlyDictionary<string, bool> switchValues)
             {
                 _logger = logger;
                 _switchValues = switchValues;

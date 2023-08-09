@@ -4,8 +4,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
@@ -13,49 +11,6 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
-        private static readonly IdnMapping s_idnMapping = new IdnMapping();
-
-        // Simplified version of IPAddressParser.Parse to avoid allocations and dependencies.
-        // It purposely ignores scopeId as we don't really use so we do not need to map it to actual interface id.
-        private static unsafe bool IsValidAddress(ReadOnlySpan<char> ipSpan)
-        {
-            int end = ipSpan.Length;
-
-            if (ipSpan.Contains(':'))
-            {
-                // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
-                // we don't support/parse a port specification at the end of an IPv4 address.
-                Span<ushort> numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
-
-                fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
-                {
-                    return IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
-                }
-            }
-            else if (char.IsDigit(ipSpan[0]))
-            {
-                long tmpAddr;
-
-                fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
-                {
-                    tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
-                }
-
-                if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static readonly IndexOfAnyValues<char> s_safeDnsChars =
-            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
-
-        private static bool IsSafeDnsString(ReadOnlySpan<char> name) =>
-            name.IndexOfAnyExcept(s_safeDnsChars) < 0;
-
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
@@ -86,6 +41,7 @@ namespace System.Net.Security
 
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslClientAuthenticationOptions.AllowTlsResume;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
             CheckCertName = !(sslClientAuthenticationOptions.CertificateChainPolicy?.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName) == true);
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslClientAuthenticationOptions.EnabledSslProtocols);
@@ -93,29 +49,7 @@ namespace System.Net.Security
             IsServer = false;
             RemoteCertRequired = true;
             CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
-            if (!string.IsNullOrEmpty(sslClientAuthenticationOptions.TargetHost))
-            {
-                // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
-                string targetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
-
-                // RFC 6066 forbids IP literals
-                if (IsValidAddress(targetHost))
-                {
-                    TargetHost = string.Empty;
-                }
-                else
-                {
-                    try
-                    {
-                        TargetHost = s_idnMapping.GetAscii(targetHost);
-                    }
-                    catch (ArgumentException) when (IsSafeDnsString(targetHost))
-                    {
-                        // Seems like name that does not confrom to IDN but apers somewhat valid according to orogional DNS rfc.
-                        TargetHost = targetHost;
-                    }
-                }
-            }
+            TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
@@ -168,6 +102,7 @@ namespace System.Net.Security
 
             IsServer = true;
             AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslServerAuthenticationOptions.AllowTlsResume;
             ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
@@ -246,6 +181,7 @@ namespace System.Net.Security
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
+        internal bool AllowTlsResume { get; set; }
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }

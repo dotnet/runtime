@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Test case for fix 20838
 // We are a missing check for ZeroOffsetFldSeq values on LclVar reads
@@ -593,7 +594,8 @@ public class Program
         return true;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool isPassing = true;
 

@@ -8,6 +8,7 @@
 // Debug: Outputs 0
 // Release: Outputs 255
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct S0
 {
@@ -28,7 +29,8 @@ public struct S0
 public class Runtime_66414
 {
     public static long[] s_3 = new long[]{0};
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var vr1 = new S0();
         return M5(vr1) == 0 ? 100 : -1;

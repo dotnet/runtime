@@ -1108,20 +1108,6 @@ mono_monitor_exit (MonoObject *obj)
 	MONO_EXTERNAL_ONLY_VOID (mono_monitor_exit_internal (obj));
 }
 
-MonoGCHandle
-mono_monitor_get_object_monitor_gchandle (MonoObject *object)
-{
-	LockWord lw;
-
-	lw.sync = object->synchronisation;
-
-	if (lock_word_is_inflated (lw)) {
-		MonoThreadsSync *mon = lock_word_get_inflated_lock (lw);
-		return (MonoGCHandle)mon->data;
-	}
-	return NULL;
-}
-
 /*
  * mono_monitor_threads_sync_member_offset:
  * @status_offset: returns size and offset of the "status" member

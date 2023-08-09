@@ -912,13 +912,12 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     STATIC_CONTRACT_FAULT;
 
     HMODULE hMod;
-    UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+    ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibrary(lpLibFileName);
         *pLastError = GetLastError();
     }
-    SetErrorMode(last);
     return hMod;
 }
 
@@ -949,13 +948,12 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     STATIC_CONTRACT_FAULT;
 
     HMODULE hMod;
-    UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+    ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibraryEx(lpLibFileName, hFile, dwFlags);
         *pLastError = GetLastError();
     }
-    SetErrorMode(last);
     return hMod;
 }
 
@@ -1940,13 +1938,13 @@ HRESULT GetFileVersion(                     // S_OK or error
 
 Volatile<double> NormalizedTimer::s_frequency = -1.0;
 
-void FillStubCodePage(BYTE* pageBase, const void* code, int codeSize, int pageSize)
+void FillStubCodePage(BYTE* pageBase, const void* code, SIZE_T codeSize, SIZE_T pageSize)
 {
-    int totalCodeSize = (pageSize / codeSize) * codeSize;
+    SIZE_T totalCodeSize = (pageSize / codeSize) * codeSize;
 
     memcpy(pageBase, code, codeSize);
 
-    int i;
+    SIZE_T i;
     for (i = codeSize; i < pageSize / 2; i *= 2)
     {
         memcpy(pageBase + i, pageBase, i);

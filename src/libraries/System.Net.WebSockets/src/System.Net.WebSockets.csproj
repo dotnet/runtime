@@ -33,6 +33,8 @@
              Link="Common\System\IO\Compression\ZLibNative.ZStream.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.zlib.cs"
              Link="Common\Interop\Interop.zlib.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

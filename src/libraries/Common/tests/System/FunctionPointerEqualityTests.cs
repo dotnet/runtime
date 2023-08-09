@@ -16,7 +16,6 @@ namespace System.Tests.Types
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void DifferentReturnValue()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -33,7 +32,6 @@ namespace System.Tests.Types
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void ObjectEquals_ModifiedTypes()
         {
             Type holder = typeof(FunctionPointerHolder).Project();
@@ -50,7 +48,6 @@ namespace System.Tests.Types
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void ObjectEquals_OneSideModifiedType()
         {
             Type holder = typeof(FunctionPointerHolder).Project();
@@ -69,7 +66,6 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Thiscall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Fastcall))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void CallingConvention_Unmodified(string methodName1, string methodName2)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -88,7 +84,6 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Thiscall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Fastcall))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void CallingConvention_Modified(string methodName1, string methodName2)
         {
             Type t = typeof(FunctionPointerHolder).Project();

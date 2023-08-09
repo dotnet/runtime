@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // TreeNodeInfoInitCmp attempts to eliminate the cast from cmp(cast<ubyte>(x), icon)
 // by narrowing the compare to ubyte. This should only happen if the constant fits in
@@ -17,7 +18,8 @@ public class Program
     {
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if ((byte)GetValue() > 300)
         {

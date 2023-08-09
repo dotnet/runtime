@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Runtime 65327
 // M1 and M2 should generate the same code
@@ -31,7 +32,8 @@ public class RedundantBranchUnsigned
         return default;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var rbu = new RedundantBranchUnsigned();
         var m1 = rbu.M1("hello", 2);

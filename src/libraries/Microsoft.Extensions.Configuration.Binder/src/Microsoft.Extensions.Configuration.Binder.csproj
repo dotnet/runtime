@@ -37,6 +37,10 @@
 
   <PropertyGroup>
     <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
-    <RoslynComponentsAreOffByDefault>true</RoslynComponentsAreOffByDefault>
+    <DisableNETStandardCompatErrors>true</DisableNETStandardCompatErrors>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="buildTransitive\$(PackageId).targets" PackagePath="buildTransitive\netstandard2.0\" />
+  </ItemGroup>
 </Project>

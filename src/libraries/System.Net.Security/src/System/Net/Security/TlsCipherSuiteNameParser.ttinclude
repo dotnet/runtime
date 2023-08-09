@@ -70,6 +70,38 @@ public enum HashAlgorithmType
     Aead,
 }
 
+public enum CipherAlgorithmTypeIndex
+{
+    None,
+    Null,
+    Des,
+    Rc2,
+    TripleDes,
+    Aes128,
+    Aes192,
+    Aes256,
+    Aes,
+    Rc4,
+}
+
+public enum ExchangeAlgorithmTypeIndex
+{
+    None,
+    RsaSign,
+    RsaKeyX,
+    DiffieHellman,
+}
+
+public enum HashAlgorithmTypeIndex
+{
+    None,
+    Md5,
+    Sha1,
+    Sha256,
+    Sha384,
+    Sha512
+}
+
 internal static class EnumHelpers
 {
     public static string ToFrameworkName(ExchangeAlgorithmType val)

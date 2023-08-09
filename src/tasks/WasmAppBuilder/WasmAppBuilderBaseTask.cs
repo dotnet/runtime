@@ -22,7 +22,7 @@ public abstract class WasmAppBuilderBaseTask : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
-    // files like dotnet.wasm, icudt.dat etc
+    // files like dotnet.native.wasm, icudt.dat etc
     [NotNull]
     [Required]
     public ITaskItem[] NativeAssets { get; set; } = Array.Empty<ITaskItem>();
@@ -38,6 +38,7 @@ public abstract class WasmAppBuilderBaseTask : Task
 
     public int DebugLevel { get; set; }
     public ITaskItem[] SatelliteAssemblies { get; set; } = Array.Empty<ITaskItem>();
+    public bool HybridGlobalization { get; set; }
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[] FilesToIncludeInFileSystem { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraFilesToDeploy { get; set; } = Array.Empty<ITaskItem>();

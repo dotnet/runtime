@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 public class testout1
 {
 
@@ -20307,7 +20308,7 @@ public class testout1
         if (ab_false[index] && ab_false[index] ? ab_false[index] : ab_false[index]) True_Sum++; else False_Sum++;
         sum += (True_Sum * 2) - False_Sum; return;
     }
-    public void Fire()
+    internal void Fire()
     {
         int temp = sum;
         sum = 0;
@@ -20824,7 +20825,8 @@ public class testout1
         return;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int Sum = 0;
         Thread[] Thrd = new Thread[15];

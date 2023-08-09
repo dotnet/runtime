@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class A
 {
@@ -14,7 +15,8 @@ public class A
         int n;
         for (aa = new A[7]; true; n = B[2] + B[2]) ;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

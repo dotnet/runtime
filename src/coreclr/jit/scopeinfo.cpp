@@ -942,7 +942,7 @@ void CodeGen::psiBegProlog()
             if (!isStructHandled)
             {
 #ifdef DEBUG
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 var_types regType;
                 if (varTypeIsStruct(lclVarDsc))
                 {
@@ -963,7 +963,7 @@ void CodeGen::psiBegProlog()
                     regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
                     if (emitter::isGeneralRegisterOrR0(lclVarDsc->GetArgReg()) && isFloatRegType(regType))
                     {
-                        // For LoongArch64's ABI, the float args may be passed by integer register.
+                        // For LoongArch64 and RISCV64's ABI, the float args may be passed by integer register.
                         regType = TYP_LONG;
                     }
                 }
@@ -973,7 +973,7 @@ void CodeGen::psiBegProlog()
                 {
                     regType = lclVarDsc->GetHfaType();
                 }
-#endif
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 assert(genMapRegNumToRegArgNum(lclVarDsc->GetArgReg(), regType) != (unsigned)-1);
 #endif // DEBUG
                 varLocation.storeVariableInRegisters(lclVarDsc->GetArgReg(), REG_NA);

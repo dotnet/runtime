@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class Test_b99969
 {
@@ -55,7 +56,8 @@ public class Test_b99969
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_b99969 t = new Test_b99969();
 

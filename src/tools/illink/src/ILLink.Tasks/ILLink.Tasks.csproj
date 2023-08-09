@@ -22,14 +22,17 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddBuildOutputToToolsPackage</TargetsForTfmSpecificContentInPackage>
+    <!-- Disable analyzer to prevent a circular dependency due to PackageReference to the LKG Microsoft.NET.ILLink.Tasks. -->
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Note: 'build/Microsoft.NET.ILLink.targets' should not match the package name, because we don't want the targets
          to be imported by nuget. The SDK will import them in the right order. -->
-    <None Include="**\*.props;**\*.targets" Pack="true" PackagePath="%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="build/6.0_suppressions.xml" Pack="true" PackagePath="build/" />
-    <None Include="..\ILLink.RoslynAnalyzer\Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build/" />
+    <Content Include="**\*.props;**\*.targets" Pack="true" PackagePath="%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" TargetPath="%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="..\ILLink.RoslynAnalyzer\build\**\*.props" Pack="true" PackagePath="build/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" TargetPath="build/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

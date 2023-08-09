@@ -80,6 +80,9 @@
 {
   .method public static int32  _main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       6 (0x6)
     .maxstack  8

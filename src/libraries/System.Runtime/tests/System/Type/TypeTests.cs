@@ -55,7 +55,7 @@ namespace System.Tests
                 new object().GetType().GetType()
             };
 
-            if (PlatformDetection.IsWindows)
+            if (PlatformDetection.IsBuiltInComEnabled)
             {
                 NonArrayBaseTypes.Add(Type.GetTypeFromCLSID(default(Guid)));
             }
@@ -507,6 +507,8 @@ namespace System.Tests
         [InlineData("Outside[,,]", typeof(Outside[,,]))]
         [InlineData("Outside[][]", typeof(Outside[][]))]
         [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
+        [InlineData(".Outside`1", typeof(Outside<>))]
+        [InlineData(".Outside`1+.Inside`1", typeof(Outside<>.Inside<>))]
         public void GetTypeByName_ValidType_ReturnsExpected(string typeName, Type expectedType)
         {
             Assert.Equal(expectedType, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
@@ -520,6 +522,8 @@ namespace System.Tests
         [InlineData("System.Int32[,*,]", typeof(ArgumentException), false)]
         [InlineData("Outside`2", typeof(TypeLoadException), false)]
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
+        [InlineData(".System.Int32", typeof(TypeLoadException), false)]
+        [InlineData("..Outside`1", typeof(TypeLoadException), false)]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
@@ -530,8 +534,18 @@ namespace System.Tests
             Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [InlineData(".GlobalStructStartingWithDot")]
+        [InlineData(" GlobalStructStartingWithSpace")]
+        public void GetTypeByName_NonRoundtrippable(string typeName)
+        {
+            Type type = Assembly.Load("System.TestStructs").GetTypes().Single((t) => t.FullName == typeName);
+            string assemblyQualifiedName = type.AssemblyQualifiedName;
+            Assert.Null(Type.GetType(assemblyQualifiedName));
+        }
+
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
@@ -730,7 +744,7 @@ namespace System.Tests
                 yield return new object[] { typeof(IEnumerable<>) };
                 yield return new object[] { 3.GetType().GetType() };  // This yields a reflection-blocked type on .NET Native - which is implemented separately
 
-                if (PlatformDetection.IsWindows)
+                if (PlatformDetection.IsBuiltInComEnabled)
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)) };
             }
         }
@@ -783,7 +797,7 @@ namespace System.Tests
                 yield return new object[] { typeof(int[]), false };
                 yield return new object[] { typeof(int[,]), false };
                 yield return new object[] { typeof(object), false };
-                if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
+                if (PlatformDetection.IsBuiltInComEnabled) // GetTypeFromCLSID = built-in COM
                 {
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false };
                 }
@@ -826,7 +840,7 @@ namespace System.Tests
                 yield return new object[] { typeof(int).MakePointerType(), false, false, false };
                 yield return new object[] { typeof(DummyGenericClassForTypeTests<>), false, false, false };
                 yield return new object[] { typeof(DummyGenericClassForTypeTests<int>), false, false, false };
-                if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
+                if (PlatformDetection.IsBuiltInComEnabled) // GetTypeFromCLSID = built-in COM
                 {
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false, false, false };
                 }
@@ -945,6 +959,27 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> InvalidGenericArgumentTypes()
+        {
+            yield return new object[] { typeof(void) };
+            yield return new object[] { typeof(object).MakeByRefType() };
+            yield return new object[] { typeof(int).MakePointerType() };
+
+            // https://github.com/dotnet/runtime/issues/71095
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                yield return new object[] { FunctionPointerType() };
+                static unsafe Type FunctionPointerType() => typeof(delegate*<void>);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidGenericArgumentTypes))]
+        public void MakeGenericType_InvalidGenericArgument(Type type)
+        {
+            Assert.Throws<ArgumentException>(() => typeof(List<>).MakeGenericType(type));
+        }
+
 #region GetInterfaceMap tests
         public static IEnumerable<object[]> GetInterfaceMap_TestData()
         {
@@ -1042,7 +1077,7 @@ namespace System.Tests
             };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/861", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89157", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)

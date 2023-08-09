@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace TestLibrary
@@ -10,7 +11,7 @@ namespace TestLibrary
     {
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
-    
+
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
 
@@ -20,6 +21,30 @@ namespace TestLibrary
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);
+
+        public static bool IsRareEnumsSupported => !Utilities.IsNativeAot;
+
+        private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
+        public static bool IsNonZeroLowerBoundArraySupported
+        {
+            get
+            {
+                if (s_lazyNonZeroLowerBoundArraySupported == null)
+                {
+                    bool nonZeroLowerBoundArraysSupported = false;
+                    try
+                    {
+                        Array.CreateInstance(typeof(int), new int[] { 5 }, new int[] { 5 });
+                        nonZeroLowerBoundArraysSupported = true;
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                    }
+                    s_lazyNonZeroLowerBoundArraySupported = Tuple.Create<bool>(nonZeroLowerBoundArraysSupported);
+                }
+                return s_lazyNonZeroLowerBoundArraySupported.Item1;
+            }
+        }
 
         static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
 

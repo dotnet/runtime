@@ -49,7 +49,7 @@ namespace System.Collections.Immutable.Tests
                         break;
                     case Operation.Union:
                         int inputLength = random.Next(100);
-                        int[] values = Enumerable.Range(0, inputLength).Select(i => random.Next()).ToArray();
+                        IEnumerable<int> values = Enumerable.Range(0, inputLength).Select(i => random.Next()).ToArray();
                         Debug.WriteLine("Adding {0} elements to the set.", inputLength);
                         expected.UnionWith(values);
                         actual = actual.Union(values);
@@ -293,7 +293,15 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(2, set.Count);
             Assert.Same(Comparer<string>.Default, set.KeyComparer);
 
+            set = ImmutableSortedSet.Create((ReadOnlySpan<string>)new[] { "a", "b" });
+            Assert.Equal(2, set.Count);
+            Assert.Same(Comparer<string>.Default, set.KeyComparer);
+
             set = ImmutableSortedSet.Create(comparer, "a", "b");
+            Assert.Equal(2, set.Count);
+            Assert.Same(comparer, set.KeyComparer);
+
+            set = ImmutableSortedSet.Create(comparer, (ReadOnlySpan<string>)new[] { "a", "b" });
             Assert.Equal(2, set.Count);
             Assert.Same(comparer, set.KeyComparer);
 
@@ -321,6 +329,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal("b", list[1]);
             Assert.Equal(0, list.IndexOf("a"));
             Assert.Equal(1, list.IndexOf("b"));
+            Assert.Equal(-1, list.IndexOf(null));
             Assert.Throws<NotSupportedException>(() => list.Add("b"));
             Assert.Throws<NotSupportedException>(() => list[3] = "c");
             Assert.Throws<NotSupportedException>(() => list.Clear());
@@ -329,6 +338,10 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
             Assert.True(list.IsFixedSize);
             Assert.True(list.IsReadOnly);
+
+            list = ImmutableSortedSet.Create(1, 2, 3);
+            Assert.Equal(-1, list.IndexOf(null));
+            Assert.Equal(-1, list.IndexOf("a"));
         }
 
         [Fact]
@@ -397,7 +410,7 @@ namespace System.Collections.Immutable.Tests
             var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
 
             ref readonly int safeRef = ref array.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, array.ItemRef(1));
 

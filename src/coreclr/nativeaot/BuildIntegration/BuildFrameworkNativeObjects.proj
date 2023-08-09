@@ -13,8 +13,7 @@
     <_targetArchitecture>$(TargetArchitecture)</_targetArchitecture>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(IlcCalledViaPackage)' == 'true'" />
-  <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(IlcCalledViaPackage)' == ''" />
+  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.SingleEntry.targets" />
 
   <Target Name="BuildAllFrameworkLibraries"
     DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"

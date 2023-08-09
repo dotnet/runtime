@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Runtime_83242
+public class Runtime_83242
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Map(int i)
@@ -27,7 +28,8 @@ class Runtime_83242
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[][] a = new int[11][];
         int sum = 0;

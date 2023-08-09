@@ -26,5 +26,48 @@ Parameters :
 --*/
 void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, size_t customSp, SignalHandlerWorkerReturnPoint* returnPoint)
 {
-#error "TODO-RISCV64: missing implementation"
+    ucontext_t *ucontext = (ucontext_t *)context;
+    size_t faultSp = (size_t)MCREG_Sp(ucontext->uc_mcontext);
+    _ASSERTE(IS_ALIGNED(faultSp, 8));
+
+    if (customSp == 0)
+    {
+        // preserve 128 bytes long red zone and align stack pointer
+        customSp = ALIGN_DOWN(faultSp - 128, 16);
+    }
+
+    size_t fakeFrameReturnAddress;
+
+    if (IS_ALIGNED(faultSp, 16))
+    {
+        fakeFrameReturnAddress = (size_t)SignalHandlerWorkerReturnOffset0 + (size_t)CallSignalHandlerWrapper0;
+    }
+    else
+    {
+        fakeFrameReturnAddress = (size_t)SignalHandlerWorkerReturnOffset8 + (size_t)CallSignalHandlerWrapper8;
+    }
+
+    // preserve 128 bytes long red zone and align stack pointer
+    size_t* sp = (size_t*)customSp;
+
+    // Build fake stack frame to enable the stack unwinder to unwind from signal_handler_worker to the faulting instruction
+    // pushed RA
+    *--sp = (size_t)MCREG_Pc(ucontext->uc_mcontext);
+    // pushed frame pointer
+    *--sp = (size_t)MCREG_Fp(ucontext->uc_mcontext);
+
+    // Switch the current context to the signal_handler_worker and the original stack
+    CONTEXT context2;
+    RtlCaptureContext(&context2);
+
+    context2.Sp = (size_t)sp;
+    context2.Fp = (size_t)sp;
+    context2.Ra = fakeFrameReturnAddress;
+    context2.Pc = (size_t)signal_handler_worker;
+    context2.A0 = code;
+    context2.A1 = (size_t)siginfo;
+    context2.A2 = (size_t)context;
+    context2.A3 = (size_t)returnPoint;
+
+    RtlRestoreContext(&context2, NULL);
 }

@@ -12,10 +12,7 @@
     <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
     <WasmEnableLegacyJsInterop Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
-    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'true'" >$(DefineConstants);ENABLE_LEGACY_JS_INTEROP</DefineConstants>
-    <ILLinkDescriptorsLibraryBuildXml
-      Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == 'true'"
-      >$(MonoProjectRoot)wasm\build\ILLink.Descriptors.LegacyJsInterop.xml</ILLinkDescriptorsLibraryBuildXml>
+    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" >$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -42,6 +39,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\SynchronizationContextExtensions.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.BigInt64.cs" />
@@ -61,12 +59,10 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.String.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
-
-    <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
   </ItemGroup>
 
   <!-- only include legacy interop when WasmEnableLegacyJsInterop is enabled -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' != 'false'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\LegacyExports.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />
@@ -77,17 +73,27 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\LegacyHostImplementation.cs" />
   </ItemGroup>
 
+  <!-- only include threads support when FeatureWasmThreads is enabled -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(FeatureWasmThreads)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorker.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MonoWasmBuildVariant)' == 'multithread'">
+    <ApiCompatSuppressionFile Include="CompatibilitySuppressions.xml;CompatibilitySuppressions.WasmThreads.xml" />
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Channels" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

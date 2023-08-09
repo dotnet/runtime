@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.IO;
 
@@ -116,7 +117,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public uint ReadStackPop()
         {
-            Debug.Assert(_reader.Architecture == Architecture.X86);
+            Debug.Assert(_reader.Machine == Machine.I386);
 
             int x = GetTwoBit();
 
@@ -159,7 +160,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             List<GCRefMapEntry> entries = new List<GCRefMapEntry>();
             uint stackPop = GCRefMap.InvalidStackPop;
 
-            if (_reader.Architecture == Architecture.X86)
+            if (_reader.Machine == Machine.I386)
             {
                 stackPop = ReadStackPop();
             }

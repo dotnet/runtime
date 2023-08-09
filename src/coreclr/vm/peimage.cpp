@@ -387,20 +387,6 @@ void PEImage::GetMVID(GUID *pMvid)
 #endif // _DEBUG
 }
 
-void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    EEFileLoadException::Throw(m_path, hrError);
-}
-
-
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
     : m_lock(CrstIJWFixupData),
@@ -886,7 +872,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return S_OK;
 
-    ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
+    ErrorModeHolder mode{};
     m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
                           GENERIC_READ
 #if TARGET_WINDOWS

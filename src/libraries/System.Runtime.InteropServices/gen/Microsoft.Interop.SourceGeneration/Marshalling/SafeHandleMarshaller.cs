@@ -214,7 +214,7 @@ namespace Microsoft.Interop
                                         IdentifierName(newHandleObjectIdentifier)))));
                     }
                     break;
-                case StubCodeContext.Stage.Cleanup:
+                case StubCodeContext.Stage.CleanupCallerAllocated:
                     if (!info.IsManagedReturnPosition && (!info.IsByRef || info.RefKind == RefKind.In))
                     {
                         yield return IfStatement(
@@ -234,6 +234,7 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
     }
 }

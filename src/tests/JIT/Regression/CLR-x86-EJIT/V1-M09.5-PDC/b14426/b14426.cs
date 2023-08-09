@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using Xunit;
 namespace SetIPTest
 {
     public class SetIP
@@ -13,7 +14,7 @@ namespace SetIPTest
         }
 
 
-        public static void F()
+        internal static void F()
         {
             String s;
             double d;
@@ -53,7 +54,8 @@ namespace SetIPTest
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Entering Main of SetIP");
 

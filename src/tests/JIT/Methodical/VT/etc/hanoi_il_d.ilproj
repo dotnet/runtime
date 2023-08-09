@@ -7,6 +7,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="hanoi_d.il" />
     <Compile Include="hanoi.il" />
   </ItemGroup>
 </Project>

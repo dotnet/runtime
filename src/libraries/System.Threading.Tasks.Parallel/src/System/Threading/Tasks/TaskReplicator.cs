@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 
 namespace System.Threading.Tasks
 {
@@ -15,7 +13,7 @@ namespace System.Threading.Tasks
     //
     internal sealed class TaskReplicator
     {
-        public delegate void ReplicatableUserAction<TState>(ref TState replicaState, int timeout, out bool yieldedBeforeCompletion);
+        public delegate void ReplicatableUserAction<TState>(ref TState replicaState, long timeout, out bool yieldedBeforeCompletion);
 
         private readonly TaskScheduler _scheduler;
         private readonly bool _stopOnFirstFailure;
@@ -27,11 +25,11 @@ namespace System.Threading.Tasks
         private abstract class Replica
         {
             protected readonly TaskReplicator _replicator;
-            protected readonly int _timeout;
+            protected readonly long _timeout;
             protected int _remainingConcurrency;
             protected volatile Task? _pendingTask; // the most recently queued Task for this replica, or null if we're done.
 
-            protected Replica(TaskReplicator replicator, int maxConcurrency, int timeout)
+            protected Replica(TaskReplicator replicator, int maxConcurrency, long timeout)
             {
                 _replicator = replicator;
                 _timeout = timeout;
@@ -105,7 +103,7 @@ namespace System.Threading.Tasks
             private readonly ReplicatableUserAction<TState> _action;
             private TState _state = default!;
 
-            public Replica(TaskReplicator replicator, int maxConcurrency, int timeout, ReplicatableUserAction<TState> action)
+            public Replica(TaskReplicator replicator, int maxConcurrency, long timeout, ReplicatableUserAction<TState> action)
                 : base(replicator, maxConcurrency, timeout)
             {
                 _action = action;
@@ -133,19 +131,22 @@ namespace System.Threading.Tasks
         {
             // Browser hosts do not support synchronous Wait so we want to run the
             //  replicated task directly instead of going through Task infrastructure
-            if (OperatingSystem.IsBrowser()) {
+            if (OperatingSystem.IsBrowser())
+            {
                 // Since we are running on a single thread, we don't want the action to time out
-                var timeout = int.MaxValue - 1;
+                long timeout = long.MaxValue - 1;
                 var state = default(TState)!;
 
                 action(ref state, timeout, out bool yieldedBeforeCompletion);
                 if (yieldedBeforeCompletion)
                     throw new Exception("Replicated tasks cannot yield in this single-threaded browser environment");
-            } else {
+            }
+            else
+            {
                 int maxConcurrencyLevel = (options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue;
 
                 TaskReplicator replicator = new TaskReplicator(options, stopOnFirstFailure);
-                new Replica<TState>(replicator, maxConcurrencyLevel, CooperativeMultitaskingTaskTimeout_RootTask, action).Start();
+                new Replica<TState>(replicator, maxConcurrencyLevel, timeout: long.MaxValue, action).Start();
 
                 Replica? nextReplica;
                 while (replicator._pendingReplicas.TryDequeue(out nextReplica))
@@ -156,18 +157,12 @@ namespace System.Threading.Tasks
             }
         }
 
-
-        private const int CooperativeMultitaskingTaskTimeout_Min = 100;  // millisec
-        private const int CooperativeMultitaskingTaskTimeout_Increment = 50;  // millisec
-        private const int CooperativeMultitaskingTaskTimeout_RootTask = (int.MaxValue / 2);
-
         private static int GenerateCooperativeMultitaskingTaskTimeout()
         {
-            // This logic ensures that we have a diversity of timeouts across worker tasks (100, 150, 200, 250, 100, etc)
-            // Otherwise all worker will try to timeout at precisely the same point, which is bad if the work is just about to finish.
-            int period = Environment.ProcessorCount;
-            int pseudoRnd = Environment.TickCount;
-            return CooperativeMultitaskingTaskTimeout_Min + (pseudoRnd % period) * CooperativeMultitaskingTaskTimeout_Increment;
+            // This logic ensures that we have a diversity of timeouts in the range [100 ms, 100 + 50 * ProcessorCount ms) across worker tasks.
+            // Otherwise all workers will try to timeout at precisely the same point, which is bad if the work is just about to finish.
+            // These 100/50 values are somewhat arbitrary.
+            return 100 + Random.Shared.Next(0, 50 * Environment.ProcessorCount);
         }
     }
 }

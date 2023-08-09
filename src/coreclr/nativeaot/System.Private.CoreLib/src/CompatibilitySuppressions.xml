@@ -574,6 +574,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.Metadata.NativeFormat.SignatureCallingConvention</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.SingleCollection</Target>
   </Suppression>
   <Suppression>
@@ -682,7 +686,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Reflection.Core.Execution.MethodInvoker</Target>
+    <Target>T:Internal.Reflection.Core.Execution.MethodBaseInvoker</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -798,14 +802,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Diagnostics.DebuggerGuidedStepThroughAttribute</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Diagnostics.Tracing.PropertyValue</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.MDArray</Target>
   </Suppression>
   <Suppression>
@@ -870,23 +866,11 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Resources.RuntimeResourceSet</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.ForceDictionaryLookupsAttribute</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.ForceLazyDictionaryAttribute</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.ReflectionBlockedAttribute</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -973,7 +957,45 @@
     <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.GetObjectValue(System.Object)-&gt;object?:[T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute]</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0016</DiagnosticId>
-    <Target>M:System.Runtime.InteropServices.Marshal.GetObjectForNativeVariant``1(System.IntPtr)-&gt;T?:[T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute]</Target>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.Tracing.EventSource.Write``1(System.String,``0):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.Tracing.EventSource.Write``1(System.String,System.Diagnostics.Tracing.EventSourceOptions@,``0@):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.Tracing.EventSource.Write``1(System.String,System.Diagnostics.Tracing.EventSourceOptions@,System.Guid@,System.Guid@,``0@):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.Tracing.EventSource.WriteEvent(System.Int32,System.Object[]):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.Tracing.EventSource.WriteEventCore(System.Int32,System.Int32,System.Diagnostics.Tracing.EventSource.EventData*):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.Tracing.EventSource.WriteEventWithRelatedActivityId(System.Int32,System.Guid,System.Object[]):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Diagnostics.Tracing.EventSource.WriteEventWithRelatedActivityIdCore(System.Int32,System.Guid*,System.Int32,System.Diagnostics.Tracing.EventSource.EventData*):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
+    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
   </Suppression>
 </Suppressions>

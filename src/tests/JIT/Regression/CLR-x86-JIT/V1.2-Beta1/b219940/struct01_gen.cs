@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 
 public struct ValX1<T>
@@ -65,7 +66,7 @@ public class Test_struct01_gen
 {
     public static int counter = 0;
     public static bool result = true;
-    public static void Eval(bool exp)
+    internal static void Eval(bool exp)
     {
         counter++;
         if (!exp)
@@ -76,7 +77,8 @@ public class Test_struct01_gen
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i = 0;
         int[] int_arr = new int[] { 0, 1, 2, 3 };

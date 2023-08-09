@@ -1,32 +1,39 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../imports";
+import MonoWasmThreads from "consts:monoWasmThreads";
+import BuildConfiguration from "consts:configuration";
+
+import { Module, mono_assert, runtimeHelpers } from "../../globals";
 import { MonoConfig } from "../../types";
-import { pthread_ptr } from "./types";
+import { pthreadPtr } from "./types";
+import { mono_log_debug } from "../../logging";
+import { bindings_init } from "../../startup";
+import { forceDisposeProxies } from "../../gc-handles";
+import { pthread_self } from "../worker";
 
 export interface PThreadInfo {
-    readonly pthread_id: pthread_ptr;
+    readonly pthreadId: pthreadPtr;
     readonly isBrowserThread: boolean;
 }
 
 export const MainThread: PThreadInfo = {
-    get pthread_id(): pthread_ptr {
+    get pthreadId(): pthreadPtr {
         return getBrowserThreadID();
     },
     isBrowserThread: true
 };
 
-let browser_thread_id_lazy: pthread_ptr | undefined;
-export function getBrowserThreadID(): pthread_ptr {
-    if (browser_thread_id_lazy === undefined) {
-        browser_thread_id_lazy = (<any>Module)["_emscripten_main_browser_thread_id"]() as pthread_ptr;
+let browserThreadIdLazy: pthreadPtr | undefined;
+export function getBrowserThreadID(): pthreadPtr {
+    if (browserThreadIdLazy === undefined) {
+        browserThreadIdLazy = (<any>Module)["_emscripten_main_runtime_thread_id"]() as pthreadPtr;
     }
-    return browser_thread_id_lazy;
+    return browserThreadIdLazy;
 }
 
 const enum WorkerMonoCommandType {
-    channel_created = "channel_created",
+    channelCreated = "channel_created",
     preload = "preload",
 }
 
@@ -74,7 +81,7 @@ export const monoSymbol = "__mono_message_please_dont_collide__"; //Symbol("mono
 /// We should just use this to establish a dedicated MessagePort for Mono's uses.
 export interface MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: WorkerMonoCommandType;
+        monoCmd: WorkerMonoCommandType;
         port: TPort;
     };
 }
@@ -82,33 +89,24 @@ export interface MonoWorkerMessage<TPort> {
 /// The message sent early during pthread creation to set up a dedicated MessagePort for Mono between the main thread and the pthread.
 export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: WorkerMonoCommandType.channel_created;
-        thread_id: pthread_ptr;
+        monoCmd: WorkerMonoCommandType.channelCreated;
+        threadId: pthreadPtr;
         port: TPort;
     };
 }
 
 export interface MonoWorkerMessagePreload<TPort> extends MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: WorkerMonoCommandType.preload;
+        monoCmd: WorkerMonoCommandType.preload;
         port: TPort;
     };
 }
 
-export function makeChannelCreatedMonoMessage<TPort>(thread_id: pthread_ptr, port: TPort): MonoWorkerMessageChannelCreated<TPort> {
+export function makeChannelCreatedMonoMessage<TPort>(threadId: pthreadPtr, port: TPort): MonoWorkerMessageChannelCreated<TPort> {
     return {
         [monoSymbol]: {
-            mono_cmd: WorkerMonoCommandType.channel_created,
-            thread_id,
-            port
-        }
-    };
-}
-
-export function makePreloadMonoMessage<TPort>(port: TPort): MonoWorkerMessagePreload<TPort> {
-    return {
-        [monoSymbol]: {
-            mono_cmd: WorkerMonoCommandType.preload,
+            monoCmd: WorkerMonoCommandType.channelCreated,
+            threadId: threadId,
             port
         }
     };
@@ -121,7 +119,7 @@ export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMess
 export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessageChannelCreated<TPort> {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
-        if (monoMessage.mono_cmd === WorkerMonoCommandType.channel_created) {
+        if (monoMessage.monoCmd === WorkerMonoCommandType.channelCreated) {
             return true;
         }
     }
@@ -131,9 +129,56 @@ export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMess
 export function isMonoWorkerMessagePreload<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessagePreload<TPort> {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
-        if (monoMessage.mono_cmd === WorkerMonoCommandType.preload) {
+        if (monoMessage.monoCmd === WorkerMonoCommandType.preload) {
             return true;
         }
     }
     return false;
+}
+
+export function mono_wasm_install_js_worker_interop(install_js_synchronization_context: number): void {
+    if (!MonoWasmThreads) return;
+    bindings_init();
+    if (install_js_synchronization_context && !runtimeHelpers.jsSynchronizationContextInstalled) {
+        runtimeHelpers.jsSynchronizationContextInstalled = true;
+        mono_log_debug("Installed JSSynchronizationContext");
+    }
+    if (install_js_synchronization_context) {
+        Module.runtimeKeepalivePush();
+    }
+
+    set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, true, !!install_js_synchronization_context);
+}
+
+export function mono_wasm_uninstall_js_worker_interop(uninstall_js_synchronization_context: number): void {
+    if (!MonoWasmThreads) return;
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "JS interop is not installed on this worker.");
+    mono_assert(!uninstall_js_synchronization_context || runtimeHelpers.jsSynchronizationContextInstalled, "JSSynchronizationContext is not installed on this worker.");
+
+    if (uninstall_js_synchronization_context) {
+        forceDisposeProxies(true, runtimeHelpers.diagnosticTracing);
+        Module.runtimeKeepalivePop();
+    }
+
+    runtimeHelpers.jsSynchronizationContextInstalled = false;
+    runtimeHelpers.mono_wasm_bindings_is_ready = false;
+    set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, false, false);
+}
+
+export function assert_synchronization_context(): void {
+    if (MonoWasmThreads) {
+        mono_assert(runtimeHelpers.jsSynchronizationContextInstalled, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+    }
+}
+
+// this is just for Debug build of the runtime, making it easier to debug worker threads
+export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInterop: boolean, hasSynchronization: boolean): void {
+    if (MonoWasmThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
+        try {
+            (globalThis as any).monoThreadInfo = new Function(`//# sourceURL=https://WorkerInfo/\r\nconsole.log("tid:0x${pthread_ptr.toString(16)} isAttached:${isAttached} hasInterop:${!!hasInterop} hasSynchronization:${hasSynchronization}" );`);
+        }
+        catch (ex) {
+            runtimeHelpers.cspPolicy = true;
+        }
+    }
 }

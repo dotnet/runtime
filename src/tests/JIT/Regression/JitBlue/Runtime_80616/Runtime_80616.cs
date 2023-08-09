@@ -1,12 +1,14 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Runtime_80616
+public class Runtime_80616
 {
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         Vector<uint> foo = default;
         FooBar(ref foo, default);

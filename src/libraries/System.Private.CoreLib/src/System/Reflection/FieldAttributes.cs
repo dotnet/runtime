@@ -22,6 +22,7 @@ namespace System.Reflection
         Static = 0x0010,        // Defined on type, else per instance.
         InitOnly = 0x0020,     // Field may only be initialized, not written to after init.
         Literal = 0x0040,        // Value is compile time constant.
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         NotSerialized = 0x0080,        // Field does not have to be serialized when type is remoted.
 
         SpecialName = 0x0200,     // field is special.  Name describes how.

@@ -56,7 +56,7 @@ internal class ChromeProvider : WasmHostProvider
             // for WIndows setting --lang arg is enough
             if (!OperatingSystem.IsWindows())
                 Environment.SetEnvironmentVariable("LANGUAGE", locale);
-            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort, locale), targetUrl);
+            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort, locale), "about:blank");
             line = await LaunchHostAsync(
                                     psi,
                                     context,
@@ -87,7 +87,9 @@ internal class ChromeProvider : WasmHostProvider
 
         _logger.LogInformation($"{messagePrefix} launching proxy for {con_str}");
 
-        _debuggerProxy = new DebuggerProxy(loggerFactory, loggerId: Id);
+        var options = new ProxyOptions();
+        options.JustMyCode = true;
+        _debuggerProxy = new DebuggerProxy(loggerFactory, loggerId: Id, options: options);
         TestHarnessProxy.RegisterNewProxy(Id, _debuggerProxy);
         var browserUri = new Uri(con_str);
         WebSocket? ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);

@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import type { pthread_ptr } from "../shared/types";
+import type { pthreadPtr } from "../shared/types";
 import type { PThreadInfo, MonoThreadMessage } from "../shared";
 
 /// Identification of the current thread executing on a worker
 export interface PThreadSelf extends PThreadInfo {
-    readonly pthread_id: pthread_ptr;
+    readonly pthreadId: pthreadPtr;
     readonly portToBrowser: MessagePort;
     readonly isBrowserThread: boolean;
     postMessageToBrowser: <T extends MonoThreadMessage>(message: T, transfer?: Transferable[]) => void;

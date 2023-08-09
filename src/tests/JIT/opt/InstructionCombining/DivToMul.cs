@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // JIT is able to replace "x / 2" with "x * 0.5" where 2 is a power of two float
 // Make sure this optimization doesn't change the results
@@ -12,7 +13,8 @@ public class Program
 {
     private static int resultCode = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Some corner cases
         var testValues = new List<double>(new []

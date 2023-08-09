@@ -7,10 +7,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class DynBlkNullAssertions
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!TestCpBlk(ref Unsafe.NullRef<byte>(), ref Unsafe.NullRef<byte>(), 0))
         {
@@ -29,7 +31,7 @@ public class DynBlkNullAssertions
     {
         Unsafe.CopyBlock(ref dst, ref src, size);
 
-        return Unsafe.AreSame(ref dst, ref Unsafe.NullRef<byte>());
+        return Unsafe.AreSame(ref dst, ref Unsafe.NullRef<byte>()) && Unsafe.AreSame(ref src, ref Unsafe.NullRef<byte>());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

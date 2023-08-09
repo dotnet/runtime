@@ -1728,8 +1728,7 @@ void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact,
     // FieldDesc::GetExactDeclaringType to get at the correct field. This requires the exact
     // TypeHandle. </TODO>
     EncApproxFieldDescIterator fdIterator(thApprox.GetMethodTable(),
-                                          ApproxFieldDescIterator::ALL_FIELDS,
-                                          FALSE);  // don't fixup EnC (we can't, we're stopped)
+                                          ApproxFieldDescIterator::ALL_FIELDS); // don't fixup EnC (we can't, we're stopped)
 
     PTR_FieldDesc pCurrentFD;
     unsigned int index = 0;
@@ -3617,11 +3616,7 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
     if (pVcsMgr)
     {
         if (pVcsMgr->indcell_heap != NULL) heapsToEnumerate.Push(pVcsMgr->indcell_heap);
-        if (pVcsMgr->lookup_heap != NULL) heapsToEnumerate.Push(pVcsMgr->lookup_heap);
-        if (pVcsMgr->resolve_heap != NULL) heapsToEnumerate.Push(pVcsMgr->resolve_heap);
-        if (pVcsMgr->dispatch_heap != NULL) heapsToEnumerate.Push(pVcsMgr->dispatch_heap);
         if (pVcsMgr->cache_entry_heap != NULL) heapsToEnumerate.Push(pVcsMgr->cache_entry_heap);
-        if (pVcsMgr->vtable_heap != NULL) heapsToEnumerate.Push(pVcsMgr->vtable_heap);
     }
 
     TADDR rangeAccumAsTaddr = TO_TADDR(rangeAcummulator);
@@ -3877,8 +3872,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypes(
 PTR_FieldDesc  DacDbiInterfaceImpl::FindField(TypeHandle thApprox, mdFieldDef fldToken)
 {
     EncApproxFieldDescIterator fdIterator(thApprox.GetMethodTable(),
-                                          ApproxFieldDescIterator::ALL_FIELDS,
-                                          FALSE);  // don't fixup EnC (we can't, we're stopped)
+                                          ApproxFieldDescIterator::ALL_FIELDS); // don't fixup EnC (we can't, we're stopped)
 
     PTR_FieldDesc pCurrentFD;
 
@@ -4519,7 +4513,9 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     // Debugger isn't notified of Resource / Inspection-only modules.
     if (pDomainAssembly->GetModule()->IsVisibleToDebugger())
     {
-        _ASSERTE(pDomainAssembly->IsLoaded());
+        // If domain assembly isn't yet loaded, just return
+        if (!pDomainAssembly->IsLoaded())
+            return;
 
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
         vmDomainAssembly.SetHostPtr(pDomainAssembly);
@@ -5201,7 +5197,7 @@ void DacDbiInterfaceImpl::Hijack(
     HRESULT hr = m_pTarget->GetThreadContext(
         dwThreadId,
         CONTEXT_FULL,
-        sizeof(ctx),
+        sizeof(DT_CONTEXT),
         (BYTE*) &ctx);
     IfFailThrow(hr);
 
@@ -5348,7 +5344,7 @@ void DacDbiInterfaceImpl::Hijack(
     //
     // Commit the context.
     //
-    hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(ctx), reinterpret_cast<BYTE*> (&ctx));
+    hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&ctx));
     IfFailThrow(hr);
 }
 
@@ -5719,7 +5715,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
         pContextBuffer->ContextFlags = DT_CONTEXT_ALL;
         HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
                                                 pContextBuffer->ContextFlags,
-                                                sizeof(*pContextBuffer),
+                                                sizeof(DT_CONTEXT),
                                                 reinterpret_cast<BYTE *>(pContextBuffer));
         if (hr == E_NOTIMPL)
         {
@@ -6747,7 +6743,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
         seg = gen2.start_segment;
         for (; seg && (i < count); ++i)
         {
-            pHeaps[0].Segments[i].Generation = 2;
+            pHeaps[0].Segments[i].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;
             pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
             pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6756,7 +6752,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
         seg = gen1.start_segment;
         for (; seg && (i < count); ++i)
         {
-            pHeaps[0].Segments[i].Generation = 1;
+            pHeaps[0].Segments[i].Generation = CorDebug_Gen1;
             pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
             pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6775,7 +6771,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
             {
                 pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
             }
-            pHeaps[0].Segments[i].Generation = 0;
+            pHeaps[0].Segments[i].Generation = CorDebug_Gen0;
 
             seg = seg->next;
         }
@@ -6789,13 +6785,13 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
             if (seg.GetAddr() == (TADDR)*g_gcDacGlobals->ephemeral_heap_segment)
             {
                 pHeaps[0].Segments[i].End = (CORDB_ADDRESS)*g_gcDacGlobals->alloc_allocated;
-                pHeaps[0].Segments[i].Generation = 1;
+                pHeaps[0].Segments[i].Generation = CorDebug_Gen1;
                 pHeaps[0].EphemeralSegment = i;
             }
             else
             {
                 pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
-                pHeaps[0].Segments[i].Generation = 2;
+                pHeaps[0].Segments[i].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;
             }
 
             seg = seg->next;
@@ -6806,7 +6802,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     seg = loh.start_segment;
     for (; seg && (i < count); ++i)
     {
-        pHeaps[0].Segments[i].Generation = 3;
+        pHeaps[0].Segments[i].Generation = CorDebug_LOH;
         pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
         pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6817,7 +6813,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     seg = poh.start_segment;
     for (; seg && (i < count); ++i)
     {
-        pHeaps[0].Segments[i].Generation = 4;
+        pHeaps[0].Segments[i].Generation = CorDebug_POH;
         pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
         pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6999,13 +6995,13 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
             }
             else
             {
-                // Otherwise, we have a gen2 or gen3 (LOH) segment
+                // Otherwise, we have a gen2, POH, LOH or NonGC
                 _ASSERTE(curr < total);
                 COR_SEGMENT &seg = (*pSegments)[curr++];
                 seg.start = heaps[i].Segments[j].Start;
                 seg.end = heaps[i].Segments[j].End;
 
-                _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_POH);
+                _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_NonGC);
                 seg.type = (CorDebugGenerationTypes)heaps[i].Segments[j].Generation;
                 seg.heap = (ULONG)i;
             }
@@ -7408,6 +7404,27 @@ HRESULT DacDbiInterfaceImpl::GetReJitInfo(VMPTR_MethodDesc vmMethod, CORDB_ADDRE
 {
     DD_ENTER_MAY_THROW;
     _ASSERTE(!"You shouldn't be calling this - use GetNativeCodeVersionNode instead");
+    return S_OK;
+}
+
+HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled)
+{
+    DD_ENTER_MAY_THROW;
+#ifdef FEATURE_REJIT
+    PTR_Module pModule = vmModule.GetDacPtr();
+    if (pModule == NULL || pOptimizationsDisabled == NULL || TypeFromToken(methodTk) != mdtMethodDef)
+    {
+        return E_INVALIDARG;
+    }
+    {
+        CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
+        ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
+        *pOptimizationsDisabled = activeILVersion.IsDeoptimized();
+    }
+#else
+    pOptimizationsDisabled->SetDacTargetPtr(0);
+#endif
+    
     return S_OK;
 }
 

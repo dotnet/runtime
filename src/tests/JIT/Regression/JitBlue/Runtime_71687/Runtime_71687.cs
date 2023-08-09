@@ -4,6 +4,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 public class Runtime_71687
 {
@@ -16,7 +17,8 @@ public class Runtime_71687
     // Must be inlined so we end up with null check above
     private static void Consume<T>(T value) { }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test(ref (new byte[10])[0], 5);
         Test(ref (new sbyte[10])[0], 5);

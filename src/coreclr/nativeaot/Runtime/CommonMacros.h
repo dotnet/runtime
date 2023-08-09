@@ -64,6 +64,8 @@
 
 #ifndef __GCENV_BASE_INCLUDED__
 
+#include <cstdint>
+
 //
 // This macro returns val rounded up as necessary to be a multiple of alignment; alignment must be a power of 2
 //
@@ -132,42 +134,32 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #endif
 
 #ifndef __GCENV_BASE_INCLUDED__
+
+#if defined(HOST_WASM)
+#define OS_PAGE_SIZE    0x4
+#else
+#define OS_PAGE_SIZE    PalOsPageSize()
+#endif
+
 #if defined(HOST_AMD64)
 
 #define DATA_ALIGNMENT  8
-#define OS_PAGE_SIZE    0x1000
 
 #elif defined(HOST_X86)
 
 #define DATA_ALIGNMENT  4
-#ifndef OS_PAGE_SIZE
-#define OS_PAGE_SIZE    0x1000
-#endif
 
 #elif defined(HOST_ARM)
 
 #define DATA_ALIGNMENT  4
-#ifndef OS_PAGE_SIZE
-#define OS_PAGE_SIZE    0x1000
-#endif
 
 #elif defined(HOST_ARM64)
 
 #define DATA_ALIGNMENT  8
-#ifndef OS_PAGE_SIZE
-#ifdef HOST_APPLE
-#define OS_PAGE_SIZE    0x4000
-#else
-#define OS_PAGE_SIZE    0x1000
-#endif
-#endif
 
 #elif defined(HOST_WASM)
 
 #define DATA_ALIGNMENT  4
-#ifndef OS_PAGE_SIZE
-#define OS_PAGE_SIZE    0x4
-#endif
 
 #else
 #error Unsupported target architecture

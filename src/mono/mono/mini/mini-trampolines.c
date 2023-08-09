@@ -14,7 +14,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
@@ -128,6 +128,16 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 		res = mono_aot_get_static_rgctx_trampoline (ctx, addr);
 	else
 		res = mono_arch_get_static_rgctx_trampoline (jit_mm->mem_manager, ctx, addr);
+
+	/* This address might be passed to mini_init_delegate () which needs to look up the method */
+	MonoJitInfo *ji;
+
+	ji = mini_alloc_jinfo (jit_mm, MONO_SIZEOF_JIT_INFO);
+	ji->code_start = MINI_FTNPTR_TO_ADDR (res);
+	/* Doesn't matter, just need to be able to look up the exact address */
+	ji->code_size = 4;
+	ji->d.method = m;
+	mono_jit_info_table_add (ji);
 
 	jit_mm_lock (jit_mm);
 	/* Duplicates inserted while we didn't hold the lock are OK */
@@ -969,7 +979,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	MonoMethod *m;
 	MonoMethod *method = NULL;
 	ERROR_DECL (error);
-	gboolean multicast, callvirt = FALSE, closed_over_null = FALSE;
+	gboolean multicast, callvirt = FALSE;
+	gboolean closed_static = FALSE, closed_over_null = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
 	gboolean need_unbox_tramp = FALSE;
 	gboolean enable_caching = TRUE;
@@ -978,13 +989,22 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	guint8 *impl_this = (guint8 *)tramp_info->impl_this;
 	guint8 *impl_nothis = (guint8 *)tramp_info->impl_nothis;
 	MonoMethodSignature *sig;
-	gpointer addr, compiled_method;
+	gpointer addr, invoke_impl, compiled_method;
 
 	UnlockedIncrement (&trampoline_calls);
 
 	/* Obtain the delegate object according to the calling convention */
 	delegate = (MonoDelegate *)mono_arch_get_this_arg_from_call (regs, code);
 	g_assert (mono_class_has_parent (mono_object_class (delegate), mono_defaults.multicastdelegate_class));
+
+	/*
+	 * The 'arg' argument might point to a MonoDelegateTrampInfo which
+	 * has no method set, if the trampoline was created by
+	 * mono_create_delegate_trampoline (). Use the more precise info
+	 * from the delegate itself.
+	 */
+	if (delegate->invoke_info)
+		tramp_info = (MonoDelegateTrampInfo*)delegate->invoke_info;
 
 	if (delegate->method) {
 		method = delegate->method;
@@ -1040,6 +1060,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		callvirt = !delegate->target && sig->hasthis;
 		if (callvirt)
 			closed_over_null = tramp_info->invoke_sig->param_count == sig->param_count;
+		if (m_method_is_static (method) && sig->param_count == tramp_info->invoke_sig->param_count + 1)
+			closed_static = TRUE;
 
 		if (callvirt && !closed_over_null) {
 			/*
@@ -1051,7 +1073,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			 * If the call doesn't return a valuetype, then the vcall uses the same calling
 			 * convention as a normal call.
 			 */
-			if ((mono_class_is_sealed (method->klass) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
+			if ((mono_class_is_sealed (method->klass) || !m_method_is_virtual (method)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
 				callvirt = FALSE;
 				enable_caching = FALSE;
 			}
@@ -1066,7 +1088,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			enable_caching = FALSE;
 		}
 
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		if (m_method_is_synchronized (method))
 			method = mono_marshal_get_synchronized_wrapper (method);
 
 		if (method == tramp_info->method)
@@ -1081,8 +1103,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	 */
 	if (method && !callvirt) {
 		/* Avoid the overhead of looking up an already compiled method if possible */
-		if (enable_caching && delegate->method_code && *delegate->method_code) {
-			delegate->method_ptr = *delegate->method_code;
+		if (enable_caching && method == tramp_info->method && tramp_info->method_ptr) {
+			delegate->method_ptr = tramp_info->method_ptr;
 		} else {
 			compiled_method = addr = mono_jit_compile_method (method, error);
 			if (!is_ok (error)) {
@@ -1091,46 +1113,42 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			}
 			addr = mini_add_method_trampoline (method, compiled_method, need_rgctx_tramp, need_unbox_tramp);
 			delegate->method_ptr = addr;
-			if (enable_caching && delegate->method_code)
-				*delegate->method_code = (guint8 *)delegate->method_ptr;
 		}
 	} else {
 		if (need_rgctx_tramp)
 			delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
 	}
 
-	/* Necessary for !code condition to fallback to slow path */
-	code = NULL;
+	invoke_impl = NULL;
 
 	multicast = ((MonoMulticastDelegate*)delegate)->delegates != NULL;
 	if (!multicast && !callvirt) {
-		if (method && (method->flags & METHOD_ATTRIBUTE_STATIC) && mono_method_signature_internal (method)->param_count == mono_method_signature_internal (invoke)->param_count + 1)
-			/* Closed static delegate */
-			code = impl_this;
+		if (closed_static)
+			invoke_impl = impl_this;
 		else
-			code = delegate->target ? impl_this : impl_nothis;
+			invoke_impl = delegate->target ? impl_this : impl_nothis;
 	}
 
-	if (!code) {
+	if (!invoke_impl) {
 		/* The general, unoptimized case */
 		m = mono_marshal_get_delegate_invoke (invoke, delegate);
-		code = (guint8 *)mono_jit_compile_method (m, error);
+		invoke_impl = (guint8 *)mono_jit_compile_method (m, error);
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
 			return NULL;
 		}
-		code = (guint8 *)mini_add_method_trampoline (m, code, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
+		invoke_impl = (guint8 *)mini_add_method_trampoline (m, invoke_impl, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
 	}
 
 	mono_memory_barrier ();
 
-	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
+	delegate->invoke_impl = mono_get_addr_from_ftnptr (invoke_impl);
 	if (enable_caching && !callvirt && tramp_info->method) {
 		tramp_info->method_ptr = delegate->method_ptr;
 		tramp_info->invoke_impl = delegate->invoke_impl;
 	}
 
-	return code;
+	return invoke_impl;
 }
 
 /*
@@ -1142,6 +1160,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 gconstpointer
 mono_get_trampoline_func (MonoTrampolineType tramp_type)
 {
+#ifndef HOST_WASM
 	switch (tramp_type) {
 	case MONO_TRAMPOLINE_JIT:
 	case MONO_TRAMPOLINE_JUMP:
@@ -1162,6 +1181,9 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 		g_assert_not_reached ();
 		return NULL;
 	}
+#else
+	return NULL;
+#endif
 }
 
 static guchar*
@@ -1403,7 +1425,11 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	invoke = mono_get_delegate_invoke_internal (klass);
 	g_assert (invoke);
 
-	tramp_info = (MonoDelegateTrampInfo *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateTrampInfo));
+	if (method && method->dynamic)
+		// FIXME: Can the dynamic method outlive the delegate class if its unloadable ?
+		tramp_info = (MonoDelegateTrampInfo *)mono_dyn_method_alloc0 (method, sizeof (MonoDelegateTrampInfo));
+	else
+		tramp_info = (MonoDelegateTrampInfo *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateTrampInfo));
 	tramp_info->klass = klass;
 	tramp_info->invoke = invoke;
 	tramp_info->invoke_sig = mono_method_signature_internal (invoke);
@@ -1434,13 +1460,27 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	}
 #endif
 
-	dpair = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateClassMethodPair));
+	if (method && method->dynamic)
+		dpair = (MonoDelegateClassMethodPair *)mono_dyn_method_alloc0 (method, sizeof (MonoDelegateClassMethodPair));
+	else
+		dpair = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateClassMethodPair));
 	memcpy (dpair, &pair, sizeof (MonoDelegateClassMethodPair));
 
 	/* store trampoline address */
 	jit_mm_lock (jit_mm);
 	g_hash_table_insert (jit_mm->delegate_info_hash, dpair, tramp_info);
 	jit_mm_unlock (jit_mm);
+
+	if (method && method->dynamic) {
+		jit_mm = jit_mm_for_method (method);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->dyn_delegate_info_hash)
+			jit_mm->dyn_delegate_info_hash = g_hash_table_new (NULL, NULL);
+		GSList *l = g_hash_table_lookup (jit_mm->dyn_delegate_info_hash, method);
+		l = g_slist_prepend (l, dpair);
+		g_hash_table_insert (jit_mm->dyn_delegate_info_hash, method, l);
+		jit_mm_unlock (jit_mm);
+	}
 
 	return tramp_info;
 }

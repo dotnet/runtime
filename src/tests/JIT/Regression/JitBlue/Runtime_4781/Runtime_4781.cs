@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Test for proper ordering of exception-causing ctor args and
 // the newobj allocation
@@ -27,7 +28,7 @@ public class Runtime_4781
 {
     private static int Throw() => throw new NotSupportedException();
     private static bool failed = false;
-    public static void Fail() { failed = true; }
+    internal static void Fail() { failed = true; }
     
     private static IDisposable Test()
     {
@@ -42,7 +43,8 @@ public class Runtime_4781
         return new Foo(2);
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test().Dispose();
         GC.Collect();

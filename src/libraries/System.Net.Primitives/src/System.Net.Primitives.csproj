@@ -60,6 +60,8 @@
              Link="Common\System\Net\CookieParser.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+                 Link="Common\System\Net\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
@@ -68,6 +70,8 @@
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddress.cs"
              Link="Common\System\Net\SocketAddress.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressExtensions.cs"
+             Link="Common\System\Net\SocketAddressExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformation.cs"
@@ -88,7 +92,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.ErrorCodes.cs"
              Link="Common\Interop\Windows\WinSock\Interop.ErrorCodes.cs" />
     <!-- Common -->
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -107,8 +111,6 @@
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs"
              Link="Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs"
              Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs"

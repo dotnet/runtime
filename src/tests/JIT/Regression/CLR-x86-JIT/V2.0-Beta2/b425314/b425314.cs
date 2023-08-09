@@ -10,6 +10,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Collections;
+using Xunit;
 
 #if false
 Here is the bug text from the bugs that motivated this regression case.  I've annotated
@@ -184,7 +185,7 @@ public static class Util
         return new Timer(callback, null, dueTimeInMilliseconds, Timeout.Infinite);
     }
 
-    public static void PrintFailureAndAddToTestResults(string format, params object[] args)
+    internal static void PrintFailureAndAddToTestResults(string format, params object[] args)
     {
         Console.WriteLine(format, args);
         Mutate.RecordFailure(new Exception(String.Format(format, args)));
@@ -921,7 +922,7 @@ public class Mutate
     private static object s_syncRoot = new object();
     private static volatile List<Exception> s_exceptions = new List<Exception>();
 
-    public static void RecordFailure(Exception ex)
+    internal static void RecordFailure(Exception ex)
     {
         lock (Mutate.s_syncRoot)
         {
@@ -929,7 +930,8 @@ public class Mutate
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

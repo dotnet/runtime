@@ -60,6 +60,9 @@ namespace System.Security.Cryptography.Tests
                 yield return new object[] { "2.16.840.1.101.3.4.2.1", HashAlgorithmName.SHA256 };
                 yield return new object[] { "2.16.840.1.101.3.4.2.2", HashAlgorithmName.SHA384 };
                 yield return new object[] { "2.16.840.1.101.3.4.2.3", HashAlgorithmName.SHA512 };
+                yield return new object[] { "2.16.840.1.101.3.4.2.8", HashAlgorithmName.SHA3_256 };
+                yield return new object[] { "2.16.840.1.101.3.4.2.9", HashAlgorithmName.SHA3_384 };
+                yield return new object[] { "2.16.840.1.101.3.4.2.10", HashAlgorithmName.SHA3_512 };
             }
         }
     }

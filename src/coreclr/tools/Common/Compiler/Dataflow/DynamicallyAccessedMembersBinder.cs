@@ -133,7 +133,7 @@ namespace ILCompiler.Dataflow
 
             foreach (var method in type.GetMethods())
             {
-                if (!method.IsConstructor)
+                if (!method.IsConstructor && !method.IsStaticConstructor)
                     continue;
 
                 if (filter != null && !filter(method))

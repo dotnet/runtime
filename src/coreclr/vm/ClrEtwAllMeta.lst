@@ -190,7 +190,7 @@ nostack:Contention:::ContentionStop
 nomac:Contention:::ContentionStop
 nostack:Contention:::ContentionStop_V1
 nomac:Contention:::ContentionStop_V1
-nomac:Contention:::LockCreated
+nomac:Contention:::ContentionLockCreated
 
 ##################
 # StackWalk events

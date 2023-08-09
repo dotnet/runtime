@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_65942
 {
@@ -17,7 +18,8 @@ public unsafe class Runtime_65942
         float unused1 = a[i];
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double d = 0;
         Test1(&d, 0);

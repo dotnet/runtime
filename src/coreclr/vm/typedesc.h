@@ -115,7 +115,6 @@ public:
     void DoRestoreTypeKey();
     void Restore();
     BOOL IsRestored();
-    BOOL IsRestored_NoLogging();
     void SetIsRestored();
 
     inline BOOL HasUnrestoredTypeKey() const
@@ -180,6 +179,8 @@ public:
 
         return GetLoaderModule()->GetLoaderAllocator();
     }
+
+    BOOL IsSharedByGenericInstantiations();
 
  protected:
     // See methodtable.h for details of the flags with the same name there
@@ -523,6 +524,8 @@ public:
 
         return PTR_TypeHandle(m_RetAndArgTypes);
     }
+
+    BOOL IsSharedByGenericInstantiations();
 
 #ifndef DACCESS_COMPILE
     // Returns TRUE if all return and argument types are externally visible.

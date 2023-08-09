@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -27,7 +28,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class WeakReference : ISerializable
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
@@ -51,6 +52,8 @@ namespace System
             Create(target, trackResurrection);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected WeakReference(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
@@ -61,6 +64,8 @@ namespace System
             Create(target, trackResurrection);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
@@ -152,13 +157,22 @@ namespace System
                 if (th == 0)
                     return default;
 
+                object? target;
+
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
-                    return ComAwareWeakReference.GetTarget(th);
+                {
+                    target = ComAwareWeakReference.GetTarget(th);
+
+                    // must keep the instance alive as long as we use the handle.
+                    GC.KeepAlive(this);
+
+                    return target;
+                }
 #endif
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
-                object? target = GCHandle.InternalGet(th);
+                target = GCHandle.InternalGet(th);
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -181,6 +195,10 @@ namespace System
                 if ((th & ComAwareBit) != 0 || comInfo != null)
                 {
                     ComAwareWeakReference.SetTarget(ref _taggedHandle, value, comInfo);
+
+                    // must keep the instance alive as long as we use the handle.
+                    GC.KeepAlive(this);
+
                     return;
                 }
 #endif

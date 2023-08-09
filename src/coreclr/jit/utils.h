@@ -25,11 +25,34 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Needed for unreached()
 #include "error.h"
 
-#ifdef TARGET_64BIT
-#define BitScanForwardPtr BitScanForward64
-#else
-#define BitScanForwardPtr BitScanForward
-#endif
+#if defined(_MSC_VER)
+
+// Define wrappers over the non-underscore versions of the BitScan* APIs. The PAL defines these already.
+// We've #undef'ed the definitions in winnt.h for these names to avoid confusion.
+
+inline BOOLEAN BitScanForward(DWORD* Index, DWORD Mask)
+{
+    return ::_BitScanForward(Index, Mask);
+}
+
+inline BOOLEAN BitScanReverse(DWORD* Index, DWORD Mask)
+{
+    return ::_BitScanReverse(Index, Mask);
+}
+
+#if defined(HOST_64BIT)
+inline BOOLEAN BitScanForward64(DWORD* Index, DWORD64 Mask)
+{
+    return ::_BitScanForward64(Index, Mask);
+}
+
+inline BOOLEAN BitScanReverse64(DWORD* Index, DWORD64 Mask)
+{
+    return ::_BitScanReverse64(Index, Mask);
+}
+#endif // defined(HOST_64BIT)
+
+#endif // _MSC_VER
 
 template <typename T, int size>
 inline constexpr unsigned ArrLen(T (&)[size])
@@ -241,8 +264,17 @@ public:
     // bitVectInit() - Initializes a bit vector of a given size
     static FixedBitVect* bitVectInit(UINT size, Compiler* comp);
 
+    // bitVectGetSize() - Get number of bits in the bit set
+    UINT bitVectGetSize()
+    {
+        return bitVectSize;
+    }
+
     // bitVectSet() - Sets the given bit
     void bitVectSet(UINT bitNum);
+
+    // bitVectClear() - Clears the given bit
+    void bitVectClear(UINT bitNum);
 
     // bitVectTest() - Tests the given bit
     bool bitVectTest(UINT bitNum);
@@ -697,6 +729,10 @@ public:
 
     static unsigned __int64 convertDoubleToUInt64(double d);
 
+    static double convertToDouble(float f);
+
+    static float convertToSingle(double d);
+
     static double round(double x);
 
     static float round(float x);
@@ -731,11 +767,35 @@ public:
 
     static double maximum(double val1, double val2);
 
+    static double maximumMagnitude(double val1, double val2);
+
+    static double maximumMagnitudeNumber(double val1, double val2);
+
+    static double maximumNumber(double val1, double val2);
+
     static float maximum(float val1, float val2);
+
+    static float maximumMagnitude(float val1, float val2);
+
+    static float maximumMagnitudeNumber(float val1, float val2);
+
+    static float maximumNumber(float val1, float val2);
 
     static double minimum(double val1, double val2);
 
+    static double minimumMagnitude(double val1, double val2);
+
+    static double minimumMagnitudeNumber(double val1, double val2);
+
+    static double minimumNumber(double val1, double val2);
+
     static float minimum(float val1, float val2);
+
+    static float minimumMagnitude(float val1, float val2);
+
+    static float minimumMagnitudeNumber(float val1, float val2);
+
+    static float minimumNumber(float val1, float val2);
 
     static double normalize(double x);
 };
@@ -743,9 +803,65 @@ public:
 class BitOperations
 {
 public:
-    static uint32_t BitScanForward(uint32_t value);
+    //------------------------------------------------------------------------
+    // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+    // (MSB) for a set bit (1)
+    //
+    // Arguments:
+    //    value - the value
+    //
+    // Return Value:
+    //    0 if the mask is zero; nonzero otherwise.
+    //
+    FORCEINLINE static uint32_t BitScanForward(uint32_t value)
+    {
+        assert(value != 0);
 
-    static uint32_t BitScanForward(uint64_t value);
+#if defined(_MSC_VER)
+        unsigned long result;
+        ::_BitScanForward(&result, value);
+        return static_cast<uint32_t>(result);
+#else
+        int32_t result = __builtin_ctz(value);
+        return static_cast<uint32_t>(result);
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+    // (MSB) for a set bit (1)
+    //
+    // Arguments:
+    //    value - the value
+    //
+    // Return Value:
+    //    0 if the mask is zero; nonzero otherwise.
+    //
+    FORCEINLINE static uint32_t BitScanForward(uint64_t value)
+    {
+        assert(value != 0);
+
+#if defined(_MSC_VER)
+#if defined(HOST_64BIT)
+        unsigned long result;
+        ::_BitScanForward64(&result, value);
+        return static_cast<uint32_t>(result);
+#else
+        uint32_t lower = static_cast<uint32_t>(value);
+
+        if (lower == 0)
+        {
+            uint32_t upper = static_cast<uint32_t>(value >> 32);
+            return 32 + BitScanForward(upper);
+        }
+
+        return BitScanForward(lower);
+#endif // HOST_64BIT
+#else
+        int32_t result = __builtin_ctzll(value);
+        return static_cast<uint32_t>(result);
+#endif
+    }
 
     static uint32_t BitScanReverse(uint32_t value);
 

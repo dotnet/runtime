@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
@@ -16,6 +17,8 @@ namespace System.Xml.Xsl
             : base(CreateMessage(res, args), inner)
         { }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public XslTransformException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -110,6 +113,7 @@ namespace System.Xml.Xsl
             SetSourceLineInfo(lineInfo);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         internal XslLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -161,6 +165,8 @@ namespace System.Xml.Xsl
             _lineInfo = lineInfo;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

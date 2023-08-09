@@ -2404,7 +2404,7 @@ void Thread::RareEnablePreemptiveGC()
 
         }
     }
-    STRESS_LOG0(LF_SYNC, LL_INFO100000, " RareEnablePreemptiveGC: leaving.\n");
+    STRESS_LOG0(LF_SYNC, LL_INFO100000, "RareEnablePreemptiveGC: leaving.\n");
 }
 
 // Called when we are passing through a safe point in CommonTripThread or
@@ -2764,6 +2764,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
     SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
 
+    __asan_handle_no_return();
 #ifdef TARGET_X86
     g_pfnRtlRestoreContext(pCtx, NULL);
 #else
@@ -3722,7 +3723,7 @@ void Thread::CommitGCStressInstructionUpdate()
         else
             *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
@@ -3931,6 +3932,7 @@ ThrowControlForThread(
                 _ASSERTE(!"Should not reach here");
             }
 #else // FEATURE_EH_FUNCLETS
+            __asan_handle_no_return();
             RtlRestoreContext(pThread->m_OSContext, NULL);
 #endif // !FEATURE_EH_FUNCLETS
             _ASSERTE(!"Should not reach here");
@@ -3954,7 +3956,9 @@ ThrowControlForThread(
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
     // Here we raise an exception.
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER
     RaiseComPlusException();
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4881,7 +4885,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     {
                          // We already have the caller context available at this point
                         _ASSERTE(pRDT->IsCallerContextValid);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                         // Why do we use CallerContextPointers below?
                         //
@@ -4900,7 +4904,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         // Note that the JIT always pushes LR even for leaf methods to make hijacking
                         // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                         if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
 #else
                         if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
@@ -4939,7 +4943,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             // This is the case of IP being inside the method body and LR is
                             // pushed on the stack. We get it to determine the return address
                             // in the caller of the current non-interruptible frame.
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
 #else
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;

@@ -3,16 +3,17 @@
 
 using System;
 using System.Security;
+using Xunit;
 
 
 public class Foo
 {
-    public virtual void callee()
+    internal virtual void callee()
     {
         Console.WriteLine("callee");
     }
 
-    public static void caller(object o)
+    internal static void caller(object o)
     {
         if (o == null)
             return;
@@ -22,7 +23,8 @@ public class Foo
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Foo f = new Foo();
         caller(f);

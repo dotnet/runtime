@@ -396,7 +396,6 @@ public:
     enum FrameAttribs {
         FRAME_ATTR_NONE = 0,
         FRAME_ATTR_EXCEPTION = 1,           // This frame caused an exception
-        FRAME_ATTR_OUT_OF_LINE = 2,         // The exception out of line (IP of the frame is not correct)
         FRAME_ATTR_FAULTED = 4,             // Exception caused by Win32 fault
         FRAME_ATTR_RESUMABLE = 8,           // We may resume from this frame
         FRAME_ATTR_CAPTURE_DEPTH_2 = 0x10,  // This is a helperMethodFrame and the capture occurred at depth 2
@@ -468,7 +467,8 @@ public:
         return NULL;
     }
 
-    virtual PCODE GetReturnAddress()
+    // ASAN doesn't like us messing with the return address.
+    virtual DISABLE_ASAN PCODE GetReturnAddress()
     {
         WRAPPER_NO_CONTRACT;
         TADDR ptr = GetReturnAddressPtr();
@@ -482,7 +482,8 @@ public:
         return NULL;
     }
 
-    void SetReturnAddress(TADDR val)
+    // ASAN doesn't like us messing with the return address.
+    void DISABLE_ASAN SetReturnAddress(TADDR val)
     {
         WRAPPER_NO_CONTRACT;
         TADDR ptr = GetReturnAddressPtr();
@@ -863,6 +864,9 @@ public:
 #elif defined(TARGET_LOONGARCH64)
             Object** firstIntReg = (Object**)&this->GetContext()->Tp;
             Object** lastIntReg  = (Object**)&this->GetContext()->S8;
+#elif defined(TARGET_RISCV64)
+            Object** firstIntReg = (Object**)&this->GetContext()->Gp;
+            Object** lastIntReg  = (Object**)&this->GetContext()->T6;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
@@ -1904,7 +1908,7 @@ protected:
     TADDR           m_ReturnAddress;
     TADDR           m_x8; // ret buff arg
     ArgumentRegisters m_argumentRegisters;
-#elif defined (TARGET_LOONGARCH64)
+#elif defined (TARGET_LOONGARCH64) || defined (TARGET_RISCV64)
     TADDR           m_fp;
     TADDR           m_ReturnAddress;
     ArgumentRegisters m_argumentRegisters;
@@ -2230,7 +2234,7 @@ public:
         // So we need to pretent that unresolved default interface methods are like any other interface
         // methods and don't have an instantiation argument.
         //
-        // See code:CEEInfo::getMethodSigInternal
+        // See code:getMethodSigInternal
         //
         assert(GetFunction()->GetMethodTable()->IsInterface());
         return TRUE;

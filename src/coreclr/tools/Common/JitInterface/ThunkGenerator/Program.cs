@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Thunkerator
@@ -174,7 +176,7 @@ namespace Thunkerator
             IFDEFING
         }
 
-        private static IEnumerable<FunctionDecl> ParseInput(TextReader tr)
+        private static ReadOnlyCollection<FunctionDecl> ParseInput(StreamReader tr)
         {
             Dictionary<string, TypeReplacement> ThunkReturnTypes = new Dictionary<string, TypeReplacement>();
             Dictionary<string, TypeReplacement> ThunkTypes = new Dictionary<string, TypeReplacement>();
@@ -632,6 +634,28 @@ public:
                                 wrappedObjectName: "original_ICorJitInfo");
         }
 
+        private static void GenerateNewJitEEVersion(string file)
+        {
+            if (!File.Exists(file))
+                throw new FileNotFoundException(file);
+
+            Guid newGuid = Guid.NewGuid();
+            string[] hex = newGuid.ToString("X").Replace("{", "").Replace("}", "").Split(',');
+
+            string newGuidStr = $$"""
+constexpr GUID JITEEVersionIdentifier = { /* {{newGuid:D}} */
+    {{hex[0]}},
+    {{hex[1]}},
+    {{hex[2]}},
+    {{{hex[3]}}, {{hex[4]}}, {{hex[5]}}, {{hex[6]}}, {{hex[7]}}, {{hex[8]}}, {{hex[9]}}, {{hex[10]}}}
+  };
+""";
+            string pattern = @"constexpr GUID JITEEVersionIdentifier = .*\n.*\n.*\n.*\n.*\n.*;";
+            string output = Regex.Replace(File.ReadAllText(file), pattern, newGuidStr);
+            File.WriteAllText(file, output);
+            Console.WriteLine($"Updated to {newGuid}");
+        }
+
         private static void Main(string[] args)
         {
             if (args.Length == 0)
@@ -639,11 +663,22 @@ public:
                 Console.WriteLine("ThunkGenerator - Generate thunks for the jit interface and for defining the set of instruction sets supported by the runtime, JIT, and crossgen2. Call by using the gen scripts which are aware of the right set of files generated and command line args.");
                 return;
             }
-            if (args[0] == "InstructionSetGenerator")
+
+            if (args[0] == "NewJITEEVersion")
+            {
+                if (args.Length != 2)
+                {
+                    Console.WriteLine("Incorrect number of arguments specified for NewJITEEVersion");
+                    return;
+                }
+                GenerateNewJitEEVersion(args[1]);
+            }
+            else if (args[0] == "InstructionSetGenerator")
             {
                 if (args.Length != 7)
                 {
                     Console.WriteLine("Incorrect number of files specified for generation");
+                    return;
                 }
                 InstructionSetGenerator generator = new InstructionSetGenerator();
                 if (!generator.ParseInput(new StreamReader(args[1])))
@@ -684,6 +719,7 @@ public:
                 if (args.Length != 8)
                 {
                     Console.WriteLine("Incorrect number of files specified for generation");
+                    return;
                 }
 
                 IEnumerable<FunctionDecl> functions = ParseInput(new StreamReader(args[0]));

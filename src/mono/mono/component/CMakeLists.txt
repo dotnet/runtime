@@ -192,7 +192,7 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
       target_link_libraries("mono-component-${component}" PRIVATE monosgen-shared)
     endif()
     target_link_libraries("mono-component-${component}" PRIVATE ${OS_LIBS})
-    install(TARGETS "mono-component-${component}" LIBRARY)
+    install_with_stripped_symbols("mono-component-${component}" TARGETS lib)
   endforeach()
 
   #define a library for each component and component stub

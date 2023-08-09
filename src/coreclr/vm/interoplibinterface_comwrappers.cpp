@@ -866,12 +866,42 @@ namespace
         }
         else if (handle != NULL)
         {
-            // We have an object handle from the COM instance which is a CCW. Use that object.
-            // This allows for the round-trip from object -> COM instance -> object.
+            // We have an object handle from the COM instance which is a CCW.
             ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
-            gc.objRefMaybe = ObjectFromHandle(objectHandle);
+
+            // Now we need to check if this object is a CCW from the same ComWrappers instance
+            // as the one creating the EOC. If it is not, we need to create a new EOC for it.
+            // Otherwise, use it. This allows for the round-trip from object -> COM instance -> object.
+            OBJECTREF objRef = NULL;
+            GCPROTECT_BEGIN(objRef);
+            objRef = ObjectFromHandle(objectHandle);
+
+            SyncBlock* syncBlock = objRef->GetSyncBlock();
+            InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+
+            // If we found a managed object wrapper in this ComWrappers instance
+            // and it's the same identity pointer as the one we're creating an EOC for,
+            // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+            //
+            // A managed object can have multiple managed object wrappers, with a max of one per context.
+            // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+            // managed object wrappers for A created with C1 and C2 respectively.
+            // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+            // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+            void* wrapperRawMaybe = NULL;
+            if (interopInfo->TryGetManagedObjectComWrapper(wrapperId, &wrapperRawMaybe)
+                && wrapperRawMaybe == identity)
+            {
+                gc.objRefMaybe = objRef;
+            }
+            else
+            {
+                STRESS_LOG2(LF_INTEROP, LL_INFO1000, "Not unwrapping handle (0x%p) because the object's MOW in this ComWrappers instance (if any) (0x%p) is not the provided identity\n", handle, wrapperRawMaybe);
+            }
+            GCPROTECT_END();
         }
-        else
+
+        if (gc.objRefMaybe == NULL)
         {
             // Create context instance for the possibly new external object.
             ExternalWrapperResultHolder resultHolder;

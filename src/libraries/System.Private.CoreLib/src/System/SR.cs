@@ -15,7 +15,9 @@ namespace System
         private static readonly object _lock = new object();
         private static List<string>? _currentlyLoading;
         private static int _infinitelyRecursingCount;
+#if SYSTEM_PRIVATE_CORELIB
         private static bool _resourceManagerInited;
+#endif
 
         private static string InternalGetResourceString(string key)
         {
@@ -65,13 +67,14 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
                     // Note: our infrastructure for reporting this exception will again cause resource lookup.
                     // This is the most direct way of dealing with that problem.
-                    string message = $@"Encountered infinite recursion while looking up resource '{key}' in {System.CoreLib.Name}. Verify the installation of .NET is complete and does not need repairing, and that the state of the process has not become corrupted.";
+                    string message = $@"Encountered infinite recursion while looking up resource '{key}' in {CoreLib.Name}. Verify the installation of .NET is complete and does not need repairing, and that the state of the process has not become corrupted.";
                     Environment.FailFast(message);
 #endif
                 }
 
                 _currentlyLoading ??= new List<string>();
 
+#if SYSTEM_PRIVATE_CORELIB
                 // Call class constructors preemptively, so that we cannot get into an infinite
                 // loop constructing a TypeInitializationException.  If this were omitted,
                 // we could get the Infinite recursion assert above by failing type initialization
@@ -84,6 +87,7 @@ namespace System
                     RuntimeHelpers.RunClassConstructor(typeof(BinaryReader).TypeHandle);
                     _resourceManagerInited = true;
                 }
+#endif
 
                 _currentlyLoading.Add(key); // Push
 

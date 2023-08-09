@@ -256,11 +256,11 @@ namespace System.Diagnostics
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName));
             }
 
-            if (logName == null || logName.Length == 0)
+            if (string.IsNullOrEmpty(logName))
                 logName = "Application";
             if (!ValidLogName(logName, false))
                 throw new ArgumentException(SR.BadLogName);
-            if (source == null || source.Length == 0)
+            if (string.IsNullOrEmpty(source))
                 throw new ArgumentException(SR.Format(SR.MissingParameter, nameof(source)));
             if (source.Length + EventLogKey.Length > 254)
                 throw new ArgumentException(SR.Format(SR.ParameterTooLong, nameof(source), 254 - EventLogKey.Length));
@@ -363,7 +363,7 @@ namespace System.Diagnostics
         {
             if (!SyntaxCheck.CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.InvalidParameterFormat, nameof(machineName)), nameof(machineName));
-            if (logName == null || logName.Length == 0)
+            if (string.IsNullOrEmpty(logName))
                 throw new ArgumentException(SR.NoLogName);
             if (!ValidLogName(logName, false))
                 throw new InvalidOperationException(SR.BadLogName);
@@ -501,7 +501,7 @@ namespace System.Diagnostics
             if (!SyntaxCheck.CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.InvalidParameterFormat, nameof(machineName)));
 
-            if (logName == null || logName.Length == 0)
+            if (string.IsNullOrEmpty(logName))
                 return false;
 
             RegistryKey eventkey = null;
@@ -530,7 +530,7 @@ namespace System.Diagnostics
 
         private static RegistryKey FindSourceRegistration(string source, string machineName, bool readOnly, bool wantToCreate)
         {
-            if (source != null && source.Length != 0)
+            if (!string.IsNullOrEmpty(source))
             {
                 RegistryKey eventkey = null;
                 try

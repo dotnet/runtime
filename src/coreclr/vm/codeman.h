@@ -102,6 +102,10 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_DYNAMICHELPER,
     STUB_CODE_BLOCK_STUBPRECODE,
     STUB_CODE_BLOCK_FIXUPPRECODE,
+    STUB_CODE_BLOCK_VSD_DISPATCH_STUB,
+    STUB_CODE_BLOCK_VSD_RESOLVE_STUB,
+    STUB_CODE_BLOCK_VSD_LOOKUP_STUB,
+    STUB_CODE_BLOCK_VSD_VTABLE_STUB,
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
@@ -480,13 +484,14 @@ struct HeapList
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine
 #endif
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         return (TADDR)CLRPersonalityRoutine;
  #else
         return (TADDR)mapBase;

@@ -28,11 +28,11 @@ typedef struct {
 	GHashTable *jump_trampoline_hash;
 	GHashTable *jit_trampoline_hash;
 	GHashTable *delegate_info_hash;
+	GHashTable *dyn_delegate_info_hash;
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *static_rgctx_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
-	GHashTable *method_code_hash;
 	/* Maps methods to a RuntimeInvokeInfo structure, protected by the associated MonoDomain lock */
 	MonoConcurrentHashTable *runtime_invoke_hash;
 	/* Maps MonoMethod to a GPtrArray containing sequence point locations */
@@ -621,6 +621,7 @@ void mono_jit_dump_cleanup (void);
 gpointer mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size);
 MonoException* mini_get_stack_overflow_ex (void);
 MonoJitInfo* mini_alloc_jinfo (MonoJitMemoryManager *jit_mm, int size);
+void* mono_dyn_method_alloc0 (MonoMethod *method, guint size);
 
 /*
  * Per-OS implementation functions.

@@ -20,11 +20,12 @@
     <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
     <_ResetSimulatorSwitch Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">--reset-simulator</_ResetSimulatorSwitch>
-    <_SignalAppEndSwitch Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">--signal-app-end</_SignalAppEndSwitch>
+    <_SignalAppEndSwitch>--signal-app-end</_SignalAppEndSwitch>
+    <_AppleSignCommand Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">sign &quot;$app&quot;</_AppleSignCommand>
 
     <_AfterBuildCommands>
       mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
-      sign &quot;$app&quot;
+      $(_AppleSignCommand)
       xharness apple test --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) -- </_AfterBuildCommands>
 
     <RunScriptCommand>$(_AOTBuildCommand) $(_AfterBuildCommands)</RunScriptCommand>
@@ -65,10 +66,9 @@
                    Include="@(AppleAssembliesToBundle)"         TargetDir="publish\%(AppleAssembliesToBundle.RecursiveDir)" />
       <BundleFiles Include="@(AppleNativeFilesToBundle)"        TargetDir="publish\%(AppleNativeFilesToBundle.RecursiveDir)" />
       <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
-
       <BundleFiles Include="$(MonoProjectRoot)\msbuild\apple\data\*" TargetDir="publish" />
       <ExtraFiles Condition="'%(AppleAssembliesToBundle._IsNative)' == 'true'"
-                  Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
+                   Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
@@ -103,6 +103,8 @@
       <_ApplePropertyNames Include="HybridGlobalization" />
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
+      <_ApplePropertyNames Include="UseRuntimeComponents" />
+      <_ApplePropertyNames Include="IsRuntimeTests" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
@@ -137,7 +139,7 @@
 
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
     
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>

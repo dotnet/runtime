@@ -305,35 +305,28 @@ template <typename T, typename Allocator>
 template <typename Alt, typename AltAllocator>
 vector<T, Allocator>::vector(const vector<Alt, AltAllocator>& vec)
     : m_allocator(vec.m_allocator)
-    , m_pArray(NULL)
-    , m_nSize(0)
-    , m_nCapacity(0)
+    , m_pArray(m_allocator.allocate(vec.m_nSize))
+    , m_nSize(vec.m_nSize)
+    , m_nCapacity(vec.m_nSize)
 {
-    ensure_capacity(vec.m_nSize);
-    for (size_type i = 0, j = 0; i < vec.m_nSize; ++i, ++j)
+    for (size_type i = 0; i < vec.m_nSize; ++i)
     {
-        new (m_pArray + i, placement_t()) T((T) vec.m_pArray[j]);
+        new (m_pArray + i, placement_t()) T((T) vec.m_pArray[i]);
     }
-
-    m_nSize = vec.m_nSize;
 }
 
 template <typename T, typename Allocator>
 vector<T, Allocator>::vector(const vector<T, Allocator>& vec)
     : m_allocator(vec.m_allocator)
-    , m_pArray(NULL)
-    , m_nSize(0)
-    , m_nCapacity(0)
+    , m_pArray(m_allocator.allocate(vec.m_nSize))
+    , m_nSize(vec.m_nSize)
+    , m_nCapacity(vec.m_nSize)
 {
-    ensure_capacity(vec.m_nSize);
-    for (size_type i = 0, j = 0; i < vec.m_nSize; ++i, ++j)
+    for (size_type i = 0; i < vec.m_nSize; ++i)
     {
-        new (m_pArray + i, placement_t()) T(vec.m_pArray[j]);
+        new (m_pArray + i, placement_t()) T(vec.m_pArray[i]);
     }
-
-    m_nSize = vec.m_nSize;
 }
-
 
 template <typename T, typename Allocator>
 vector<T, Allocator>::~vector()
@@ -479,7 +472,7 @@ typename vector<T, Allocator>::iterator
     assert(last.m_pElem >= m_pArray);
     assert(first.m_pElem <= m_pArray + m_nSize);
     assert(last.m_pElem <= m_pArray + m_nSize);
-    assert(last.m_pElem > first.m_pElem);
+    assert(last.m_pElem >= first.m_pElem);
 
     pointer fptr = first.m_pElem;
     pointer lptr = last.m_pElem;
@@ -733,7 +726,7 @@ void vector<T, Allocator>::insert_elements_helper(iterator iter, size_type size,
 
     ensure_capacity(m_nSize + size);
 
-    for (int src = m_nSize - 1, dst = m_nSize + size - 1; src >= (int) pos; --src, --dst)
+    for (int src = (int)(m_nSize - 1), dst = (int)(m_nSize + size - 1); src >= (int) pos; --src, --dst)
     {
         m_pArray[dst] = m_pArray[src];
     }

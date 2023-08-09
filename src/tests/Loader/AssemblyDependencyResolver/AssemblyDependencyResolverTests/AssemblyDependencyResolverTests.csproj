@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+    <!-- AssemblyDependencyResolver is not supported -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyDependencyResolverTests.cs" />

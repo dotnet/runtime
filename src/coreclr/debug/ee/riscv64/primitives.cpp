@@ -7,4 +7,8 @@
 #include "threads.h"
 #include "../../shared/riscv64/primitives.cpp"
 
-#error "TODO-RISCV64: missing implementation"
+void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc)
+{
+    CONTEXT tmp;
+    CopyRegDisplay(pSrc, pDst, &tmp);
+}

@@ -5,7 +5,7 @@
 // https://github.com/sq/JSIL/blob/1d57d5427c87ab92ffa3ca4b82429cd7509796ba/JSIL.Libraries/Includes/Bootstrap/Core/Classes/System.Convert.js#L149
 // Thanks to Katelyn Gadd @kg
 
-export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?: number) :                 string{
+export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?: number) : string{
     const reader = _makeByteReader(inArray, offset, length);
     let result = "";
     let ch1: number | null = 0, ch2: number | null = 0, ch3: number | null = 0;

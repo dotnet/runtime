@@ -388,7 +388,8 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 	if (!cattrs || !mono_array_length_internal (cattrs))
 		return;
 
-	ainfo = mono_custom_attrs_from_builders (image, image, cattrs);
+	// setting custom attributes should not take attribute visibility into account
+	ainfo = mono_custom_attrs_from_builders (image, image, cattrs, FALSE);
 
 	mono_loader_lock ();
 	tmp = (MonoCustomAttrInfo *)mono_image_property_lookup (image, obj, MONO_PROP_DYNAMIC_CATTR);
@@ -1188,13 +1189,13 @@ leave:
 static gpointer
 register_assembly (MonoReflectionAssembly *res, MonoAssembly *assembly)
 {
-	return CACHE_OBJECT (MonoReflectionAssembly *, mono_mem_manager_get_ambient (), assembly, &res->object, NULL);
+	return CACHE_OBJECT (MonoReflectionAssembly *, mono_mem_manager_get_ambient (), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, assembly, &res->object, NULL);
 }
 
 static MonoReflectionModuleBuilderHandle
 register_module (MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
 {
-	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, mono_mem_manager_get_ambient (), module, MONO_HANDLE_CAST (MonoObject, res), NULL);
+	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, mono_mem_manager_get_ambient (), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
 }
 
 /*
@@ -3087,7 +3088,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				if (pb->cattrs) {
 					if (!method_aux->param_cattr)
 						method_aux->param_cattr = image_g_new0 (image, MonoCustomAttrInfo*, m->signature->param_count + 1);
-					method_aux->param_cattr [i] = mono_custom_attrs_from_builders (image, klass->image, pb->cattrs);
+					// setting custom attributes should not take attribute visibility into account
+					method_aux->param_cattr [i] = mono_custom_attrs_from_builders (image, klass->image, pb->cattrs, FALSE);
 				}
 			}
 		}

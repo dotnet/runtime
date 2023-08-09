@@ -1196,6 +1196,53 @@ namespace System.Globalization.Tests
             Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));
         }
 
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [InlineData(0x0001)]
+        [InlineData(0x7c5C)]
+        [InlineData(0x03_0404)] // with sort id
+        [InlineData(0x007F)] // LOCALE_INVARIANT
+        public void TestCultureInfo_Ctor_Int32_ReturnsInvariant(int culture)
+        {
+            Assert.Equal(new CultureInfo(culture), CultureInfo.InvariantCulture);
+        }
+
+        [Fact]
+        public void TestCasing()
+        {
+            // This test verifies that the casing table in the invariant globalization mode.
+            // The casing table is what we generate from the Unicode data files, and implemented in the CharUnicodeInfo.cs file.
+
+            TextInfo textInfo = CultureInfo.InvariantCulture.TextInfo;
+
+            for (int i = 0; i <= 0xFFFF; i++)
+            {
+                char ch = (char)i;
+                char upper = textInfo.ToUpper(ch);
+                char lower = textInfo.ToLower(ch);
+
+                if (ch != upper)
+                {
+                    string upperString = upper.ToString();
+                    string chString = ch.ToString();
+
+                    Assert.True(chString.Equals(upperString, StringComparison.OrdinalIgnoreCase), $"Expected {(int)ch:x4} to be equal to {(int)upper:x4}.");
+                    Assert.True(chString.IndexOf(upperString, StringComparison.OrdinalIgnoreCase) == 0, $"Expected {(int)ch:x4} exist in {(int)upper:x4}.");
+                    Assert.True(chString.StartsWith(upperString, StringComparison.OrdinalIgnoreCase), $"Expected {(int)ch:x4} start with {(int)upper:x4}.");
+                }
+
+                // String comparisons has been done using ToUpper method, it is possible the lowercased character can be mapped to a different character when it is upper cased.
+                if (ch != lower && textInfo.ToUpper(lower) == ch)
+                {
+                    string lowerString = lower.ToString();
+                    string chString = ch.ToString();
+
+                    Assert.True(chString.Equals(lowerString, StringComparison.OrdinalIgnoreCase), $"Expected {(int)ch:x4} to be equal to {(int)lower:x4}.");
+                    Assert.True(chString.IndexOf(lowerString, StringComparison.OrdinalIgnoreCase) == 0, $"Expected {(int)ch:x4} exist in {(int)lower:x4}.");
+                    Assert.True(chString.StartsWith(lowerString, StringComparison.OrdinalIgnoreCase), $"Expected {(int)ch:x4} start with {(int)lower:x4}.");
+                }
+            }
+        }
+
         private static byte[] GetExpectedInvariantOrdinalSortKey(ReadOnlySpan<char> input)
         {
             MemoryStream memoryStream = new MemoryStream();

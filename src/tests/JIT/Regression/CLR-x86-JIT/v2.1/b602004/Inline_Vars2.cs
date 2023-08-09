@@ -9,6 +9,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 //Disable the warning about having variables that are not used
 #pragma warning disable 219
@@ -2821,7 +2822,8 @@ public class Test_Inline_Vars2
         Console.WriteLine(a400);
         return 100;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         (new Test_Inline_Vars2()).RunTest0_Inline();

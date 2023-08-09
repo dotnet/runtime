@@ -47,7 +47,7 @@ namespace System.Collections.Tests
         public static IEnumerable<object[]> ListTestData() =>
             GetEnumerableTestData(EnumerableType.List);
 
-        private static IEnumerable<object[]> GetEnumerableTestData(EnumerableType enumerableType)
+        protected static IEnumerable<object[]> GetEnumerableTestData(EnumerableType enumerableType)
         {
             foreach (object[] collectionSizeArray in ValidCollectionSizes())
             {

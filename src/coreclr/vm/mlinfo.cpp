@@ -762,12 +762,11 @@ OleColorMarshalingInfo::OleColorMarshalingInfo() :
     SString qualifiedColorTranslatorTypeName(SString::Utf8, COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME);
 
     // Load the color translator class.
-    TypeHandle hndColorTranslatorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTranslatorTypeName.GetUnicode());
-
+    TypeHandle hndColorTranslatorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTranslatorTypeName.GetUnicode(), TRUE /* bThrowIfNotFound */);
 
     SString qualifiedColorTypeName(SString::Utf8, COLOR_ASM_QUAL_TYPE_NAME);
     // Load the color class.
-    m_hndColorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTypeName.GetUnicode());
+    m_hndColorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTypeName.GetUnicode(), TRUE /* bThrowIfNotFound */);
 
     // Retrieve the method to convert an OLE_COLOR to a System.Drawing.Color.
     m_OleColorToSystemColorMD = MemberLoader::FindMethodByName(hndColorTranslatorType.GetMethodTable(), OLECOLOR_TO_SYSTEMCOLOR_METH_NAME);
@@ -934,20 +933,13 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
         SString strCMMarshalerTypeName(SString::Utf8, strMarshalerTypeName, cMarshalerTypeNameBytes);
 
         // Load the custom marshaler class.
-        BOOL fNameIsAsmQualified = FALSE;
-        hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.GetUTF8(), pAssembly, &fNameIsAsmQualified);
+        hndCustomMarshalerType = TypeName::GetTypeReferencedByCustomAttribute(strCMMarshalerTypeName.GetUnicode(), pAssembly);
 
         if (hndCustomMarshalerType.IsGenericTypeDefinition())
         {
             // Instantiate generic custom marshalers using the instantiation of the type being marshaled.
             hndCustomMarshalerType = hndCustomMarshalerType.Instantiate(hndManagedType.GetInstantiation());
         }
-
-        // Set the assembly to null to indicate that the custom marshaler name is assembly
-        // qualified.
-        if (fNameIsAsmQualified)
-            pAssembly = NULL;
-
 
         // Create the custom marshaler info in the specified heap.
         pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pAllocator, hndCustomMarshalerType, hndManagedType, strCookie, cCookieStrBytes);
@@ -1009,7 +1001,7 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(SharedCustomMarsha
     strCMMarshalerTypeName[strLen] = 0;
 
     // Load the custom marshaler class.
-    hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.Ptr(), pSharedCMHelper->GetAssembly());
+    hndCustomMarshalerType = TypeName::GetTypeReferencedByCustomAttribute(strCMMarshalerTypeName.Ptr(), pSharedCMHelper->GetAssembly());
     if (hndCustomMarshalerType.IsGenericTypeDefinition())
     {
         // Instantiate generic custom marshalers using the instantiation of the type being marshaled.
@@ -2134,7 +2126,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                     // Load the type. Use an SString for the string since we need to NULL terminate the string
                                     // that comes from the metadata.
                                     SString safeArrayUserDefTypeName(SString::Utf8, ParamInfo.m_strSafeArrayUserDefTypeName, ParamInfo.m_cSafeArrayUserDefTypeNameBytes);
-                                    thElement = TypeName::GetTypeUsingCASearchRules(safeArrayUserDefTypeName.GetUTF8(), pAssembly);
+                                    thElement = TypeName::GetTypeReferencedByCustomAttribute(safeArrayUserDefTypeName.GetUTF8(), pAssembly);
                                 }
                             }
                             else

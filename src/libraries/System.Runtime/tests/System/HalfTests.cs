@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -882,6 +883,51 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expectedFloat)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+
+            Half result;
+            Half expected = (Half)expectedFloat;
+
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(Half.TryParse(valueUtf8, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, Half.Parse(valueUtf8));
+                }
+
+                Assert.Equal(expected, Half.Parse(valueUtf8, provider: provider));
+            }
+
+            Assert.True(expected.Equals(Half.Parse(valueUtf8, style, provider)) || (Half.IsNaN(expected) && Half.IsNaN(Half.Parse(value.AsSpan(offset, count), style, provider))));
+
+            Assert.True(Half.TryParse(valueUtf8, style, provider, out result));
+            Assert.True(expected.Equals(result) || (Half.IsNaN(expected) && Half.IsNaN(result)));
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+                Assert.Throws(exceptionType, () => float.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(float.TryParse(valueUtf8, style, provider, out float result));
+                Assert.Equal(0, result);
+            }
+        }
+
         public static IEnumerable<object[]> ToString_TestData()
         {
             yield return new object[] { -4570.0f, "G", null, "-4570" };
@@ -1001,28 +1047,7 @@ namespace System.Tests
 
                     try
                     {
-                        char[] actual;
-                        int charsWritten;
-
-                        // Just right
-                        actual = new char[localExpected.Length];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual));
-
-                        // Longer than needed
-                        actual = new char[localExpected.Length + 1];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual, 0, charsWritten));
-
-                        // Too short
-                        if (localExpected.Length > 0)
-                        {
-                            actual = new char[localExpected.Length - 1];
-                            Assert.False(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                            Assert.Equal(0, charsWritten);
-                        }
+                        NumberFormatTestHelper.TryFormatNumberTest(localI, localFormat, localProvider, localExpected, formatCasingMatchesOutput: false);
                     }
                     catch (Exception exc)
                     {
@@ -2117,6 +2142,76 @@ namespace System.Tests
         {
             AssertExtensions.Equal(+expectedResult, Half.Lerp(+value1, +value2, amount), Half.Zero);
             AssertExtensions.Equal((expectedResult == Half.Zero) ? expectedResult : -expectedResult, Half.Lerp(-value1, -value2, amount), Half.Zero);
+        }
+
+        public static IEnumerable<object[]> DegreesToRadians_TestData()
+        {
+            yield return new object[] { Half.NaN,               Half.NaN,              Half.Zero };
+            yield return new object[] { Half.Zero,              Half.Zero,             Half.Zero };
+            yield return new object[] { (Half)(0.3184f),        (Half)(0.005554f),     CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (Half)(0.4343f),        (Half)(0.00758f),      CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (Half)(0.5f),           (Half)(0.00872f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.6367f),        (Half)(0.01111f),      CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (Half)(0.6934f),        (Half)(0.0121f),       CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (Half)(0.707f),         (Half)(0.01234f),      CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (Half)(0.785f),         (Half)(0.0137f),       CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (Half)(1.0f),           (Half)(0.01744f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(1.128f),         (Half)(0.01968f),      CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (Half)(1.414f),         (Half)(0.02467f),      CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (Half)(1.442f),         (Half)(0.02518f),      CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (Half)(1.5f),           (Half)(0.02617f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(1.57f),          (Half)(0.0274f),       CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (Half)(2.0f),           (Half)(0.03488f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(2.303f),         (Half)(0.04016f),      CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (Half)(2.5f),           (Half)(0.0436f),       CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(2.719f),         (Half)(0.04742f),      CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (Half)(3.0f),           (Half)(0.05234f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(3.14f),          (Half)(0.0548f),       CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (Half)(3.5f),           (Half)(0.06107f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { Half.PositiveInfinity,  Half.PositiveInfinity, Half.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(DegreesToRadians_TestData))]
+        public static void DegreesToRadiansTest(Half value, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, Half.DegreesToRadians(-value), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, Half.DegreesToRadians(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> RadiansToDegrees_TestData()
+        {
+            yield return new object[] { Half.NaN,              Half.NaN,              Half.Zero };
+            yield return new object[] { Half.Zero,             Half.Zero,             Half.Zero };
+            yield return new object[] { (Half)(0.005554f),     (Half)(0.3184f),       CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (Half)(0.00758f),      (Half)(0.4343f),       CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (Half)(0.00872f),      (Half)(0.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.01111f),      (Half)(0.6367f),       CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (Half)(0.0121f),       (Half)(0.6934f),       CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (Half)(0.01234f),      (Half)(0.707f),        CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (Half)(0.0137f),       (Half)(0.785f),        CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (Half)(0.01744f),      (Half)(1.0f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.01968f),      (Half)(1.128f),        CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (Half)(0.02467f),      (Half)(1.414f),        CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (Half)(0.02518f),      (Half)(1.442f),        CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (Half)(0.02617f),      (Half)(1.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.0274f),       (Half)(1.57f),         CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (Half)(0.03488f),      (Half)(2.0f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.04016f),      (Half)(2.303f),        CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (Half)(0.0436f),       (Half)(2.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.04742f),      (Half)(2.719f),        CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (Half)(0.05234f),      (Half)(3.0f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.0548f),       (Half)(3.14f),         CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (Half)(0.06107f),      (Half)(3.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { Half.PositiveInfinity, Half.PositiveInfinity, Half.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(RadiansToDegrees_TestData))]
+        public static void RadiansToDegreesTest(Half value, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, Half.RadiansToDegrees(-value), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, Half.RadiansToDegrees(+value), allowedVariance);
         }
     }
 }

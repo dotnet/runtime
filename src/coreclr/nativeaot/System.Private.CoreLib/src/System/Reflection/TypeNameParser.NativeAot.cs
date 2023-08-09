@@ -13,7 +13,7 @@ namespace System.Reflection
     //
     // Parser for type names passed to GetType() apis.
     //
-    internal ref partial struct TypeNameParser
+    internal partial struct TypeNameParser
     {
         private Func<AssemblyName, Assembly?>? _assemblyResolver;
         private Func<Assembly?, string, bool, Type?>? _typeResolver;

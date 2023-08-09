@@ -6,9 +6,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace IntrinsicsMisoptimizationTest {
-    class Program {
+    public class Program {
         unsafe static void WriteArray (float* ptr, int count)
         {
             Console.Write ("[");
@@ -227,7 +228,8 @@ namespace IntrinsicsMisoptimizationTest {
             return true;
         }
 
-        static int Main ()
+	[Fact]
+        public static int TestEntryPoint()
         {
             bool result = true;
             result &= TestXmm_NoCSE();

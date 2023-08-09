@@ -7,8 +7,6 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
-
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -199,11 +197,10 @@ namespace ILCompiler.DependencyAnalysis
         public override TypeSystemEntity OwningEntity => _owningMethod;
         public MethodDesc OwningMethod => _owningMethod;
         public override bool HasConditionalStaticDependencies => true;
+
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            CombinedDependencyList list = null;
-            factory.MetadataManager.GetConditionalDependenciesDueToMethodGenericDictionary(ref list, factory, _owningMethod);
-            return list ?? (IEnumerable<CombinedDependencyListEntry>)System.Array.Empty<CombinedDependencyListEntry>();
+            return factory.MetadataManager.GetConditionalDependenciesDueToGenericDictionary(factory, _owningMethod);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -214,8 +211,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.CompilationModuleGroup.ContainsMethodBody(canonicalTarget, false))
                 dependencies.Add(GetDictionaryLayout(factory), "Layout");
 
-            // TODO-SIZE: We probably don't need to add these for all dictionaries
-            GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
+            factory.MetadataManager.GetDependenciesDueToGenericDictionary(ref dependencies, factory, _owningMethod);
 
             factory.InteropStubManager.AddMarshalAPIsGenericDependencies(ref dependencies, factory, _owningMethod);
 
@@ -246,8 +242,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // Make sure the dictionary can also be populated
             dependencies.Add(factory.ShadowConcreteMethod(_owningMethod), "Dictionary contents");
-
-            factory.MetadataManager.GetDependenciesForGenericDictionary(ref dependencies, factory, _owningMethod);
 
             return dependencies;
         }

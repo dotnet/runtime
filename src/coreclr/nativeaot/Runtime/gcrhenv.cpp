@@ -12,7 +12,6 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
-#include "profheapwalkhelper.h"
 
 #include "gcenv.ee.h"
 
@@ -49,25 +48,6 @@
 #include "holder.h"
 #include "volatile.h"
 
-#ifdef FEATURE_ETW
-    #ifndef _INC_WINDOWS
-        typedef void* LPVOID;
-        typedef uint32_t UINT;
-        typedef void* PVOID;
-        typedef uint64_t ULONGLONG;
-        typedef uint32_t ULONG;
-        typedef int64_t LONGLONG;
-        typedef uint8_t BYTE;
-        typedef uint16_t UINT16;
-    #endif // _INC_WINDOWS
-
-    #include "etwevents.h"
-    #include "eventtrace.h"
-#else // FEATURE_ETW
-    #include "etmdummy.h"
-    #define ETW_EVENT_ENABLED(e,f) false
-#endif // FEATURE_ETW
-
 GPTR_IMPL(MethodTable, g_pFreeObjectEEType);
 
 #include "gctoclreventsink.h"
@@ -81,53 +61,6 @@ void RhEnableFinalization();
 // A few settings are now backed by the cut-down version of Redhawk configuration values.
 static RhConfig g_sRhConfig;
 RhConfig * g_pRhConfig = &g_sRhConfig;
-
-#ifdef FEATURE_ETW
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// The automatically generated part of the Redhawk ETW infrastructure (EtwEvents.h) calls the following
-// function whenever the system enables or disables tracing for this provider.
-//
-
-uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
-{
-    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle),
-                                            static_cast<GCEventKeyword>(pContext->MatchAnyKeyword),
-                                            static_cast<GCEventLevel>(pContext->Level));
-
-    if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PrivateHandle) &&
-        GCHeapUtilities::IsGCHeapInitialized())
-    {
-        FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
-                          GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
-                          GCHeapUtilities::IsServerHeap());
-        GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
-    }
-
-    // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
-    // flick this to force a full GC.
-    if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle) &&
-        GCHeapUtilities::IsGCHeapInitialized() &&
-        ((pContext->MatchAnyKeyword & CLR_GCHEAPCOLLECT_KEYWORD) != 0))
-    {
-        // Profilers may (optionally) specify extra data in the filter parameter
-        // to log with the GCStart event.
-        LONGLONG l64ClientSequenceNumber = 0;
-        if ((pContext->FilterData != NULL) &&
-            (pContext->FilterData->Type == 1) &&
-            (pContext->FilterData->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (pContext->FilterData->Ptr);
-        }
-        ETW::GCLog::ForceGC(l64ClientSequenceNumber);
-    }
-
-    return 0;
-}
-#endif // FEATURE_ETW
 
 //
 // -----------------------------------------------------------------------------------------------------------
@@ -151,18 +84,6 @@ MethodTable g_FreeObjectEEType;
 // static
 bool RedhawkGCInterface::InitializeSubsystems()
 {
-#ifdef FEATURE_ETW
-    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
-    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
-
-    // Register the Redhawk event provider with the system.
-    RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Private();
-    RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public();
-
-    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PrivateHandle;
-    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
-#endif // FEATURE_ETW
-
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
     g_pFreeObjectEEType = &g_FreeObjectEEType;
@@ -207,6 +128,7 @@ bool RedhawkGCInterface::InitializeSubsystems()
 Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, Thread* pThread)
 {
     ASSERT(!pThread->IsDoNotTriggerGcSet());
+    ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
     size_t cbSize = pEEType->get_BaseSize();
 
@@ -292,12 +214,38 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
 //  pEEType         -  type of the object
 //  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
 //  numElements     -  number of array elements
-//  pTransitionFrame-  transition frame to make stack crawable
+//  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
 
 COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
+
+    // The allocation fast path is an asm helper that runs in coop mode and handles most allocation cases.
+    // The helper can also be tail-called. That is desirable for the fast path.
+    //
+    // Here we are on the slow(er) path when we need to call into GC. The fast path pushes a frame and calls here.
+    // In extremely rare cases the caller of the asm helper is hijacked and the helper is tail-called.
+    // As a result the asm helper may capture a hijacked return address into the transition frame.
+    // We do not want to put the burden of preventing such scenario on the fast path. Instead we will
+    // check for "hijacked frame" here and un-hijack m_RIP.
+    // We do not need to re-hijack when we are done, since m_RIP is discarded in POP_COOP_PINVOKE_FRAME
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    if (Thread::IsHijackTarget(pTransitionFrame->m_RIP))
+    {
+        ASSERT(pThread->IsHijacked());
+        pTransitionFrame->m_RIP = pThread->GetHijackedReturnAddress();
+    }
+#else
+
+    // NOTE: The x64 fixup above would not be sufficient on ARM64 and similar architectures since
+    //       m_RIP is used to restore LR in POP_COOP_PINVOKE_FRAME.
+    //       However, this entire scenario is not a problem on architectures where the return address is
+    //       in a register as that makes tail-calling methods not hijackable.
+    //       (see:GetReturnAddressHijackInfo for detailed reasons in the context of ARM64)
+    ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
+
+#endif
 
     pThread->SetDeferredTransitionFrame(pTransitionFrame);
 
@@ -781,144 +729,6 @@ Thread* GCToEEInterface::GetThread()
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_EVENT_TRACE
-void ProfScanRootsHelper(Object** ppObject, ScanContext* pSC, uint32_t dwFlags)
-{
-    Object* pObj = *ppObject;
-    if (dwFlags& GC_CALL_INTERIOR)
-    {
-        pObj = GCHeapUtilities::GetGCHeap()->GetContainingObject(pObj, true);
-        if (pObj == nullptr)
-            return;
-    }
-    ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
-}
-
-void GcScanRootsForETW(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
-{
-    UNREFERENCED_PARAMETER(condemned);
-    UNREFERENCED_PARAMETER(max_gen);
-
-    FOREACH_THREAD(pThread)
-    {
-        if (pThread->IsGCSpecial())
-            continue;
-
-        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), sc->thread_number))
-            continue;
-
-        sc->thread_under_crawl = pThread;
-        sc->dwEtwRootKind = kEtwGCRootKindStack;
-        pThread->GcScanRoots(reinterpret_cast<void*>(fn), sc);
-        sc->dwEtwRootKind = kEtwGCRootKindOther;
-    }
-    END_FOREACH_THREAD
-}
-
-void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent)
-{
-    ProfilingScanContext* pSC = (ProfilingScanContext*)context;
-
-    // Notify ETW of the handle
-    if (ETW::GCLog::ShouldWalkHeapRootsForEtw())
-    {
-        ETW::GCLog::RootReference(
-            pRef,
-            *pRef,          // object being rooted
-            pSec,           // pSecondaryNodeForDependentHandle
-            isDependent,
-            pSC,
-            0,              // dwGCFlags,
-            flags);     // ETW handle flags
-    }
-}
-
-// This is called only if we've determined that either:
-//     a) The Profiling API wants to do a walk of the heap, and it has pinned the
-//     profiler in place (so it cannot be detached), and it's thus safe to call into the
-//     profiler, OR
-//     b) ETW infrastructure wants to do a walk of the heap either to log roots,
-//     objects, or both.
-// This can also be called to do a single walk for BOTH a) and b) simultaneously.  Since
-// ETW can ask for roots, but not objects
-void GCProfileWalkHeapWorker(BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw)
-{
-    ProfilingScanContext SC(FALSE);
-    unsigned max_generation = GCHeapUtilities::GetGCHeap()->GetMaxGeneration();
-
-    // **** Scan roots:  Only scan roots if profiling API wants them or ETW wants them.
-    if (fShouldWalkHeapRootsForEtw)
-    {
-        GcScanRootsForETW(&ProfScanRootsHelper, max_generation, max_generation, &SC);
-        SC.dwEtwRootKind = kEtwGCRootKindFinalizer;
-        GCHeapUtilities::GetGCHeap()->DiagScanFinalizeQueue(&ProfScanRootsHelper, &SC);
-
-        // Handles are kept independent of wks/svr/concurrent builds
-        SC.dwEtwRootKind = kEtwGCRootKindHandle;
-        GCHeapUtilities::GetGCHeap()->DiagScanHandles(&ScanHandleForETW, max_generation, &SC);
-    }
-
-    // **** Scan dependent handles: only if ETW wants roots
-    if (fShouldWalkHeapRootsForEtw)
-    {
-        // GcScanDependentHandlesForProfiler double-checks
-        // CORProfilerTrackConditionalWeakTableElements() before calling into the profiler
-
-        ProfilingScanContext* pSC = &SC;
-
-        // we'll re-use pHeapId (which was either unused (0) or freed by EndRootReferences2
-        // (-1)), so reset it to NULL
-        _ASSERTE((*((size_t *)(&pSC->pHeapId)) == (size_t)(-1)) ||
-                (*((size_t *)(&pSC->pHeapId)) == (size_t)(0)));
-        pSC->pHeapId = NULL;
-
-        GCHeapUtilities::GetGCHeap()->DiagScanDependentHandles(&ScanHandleForETW, max_generation, &SC);
-    }
-
-    ProfilerWalkHeapContext profilerWalkHeapContext(FALSE, SC.pvEtwContext);
-
-    // **** Walk objects on heap: only if ETW wants them.
-    if (fShouldWalkHeapObjectsForEtw)
-    {
-        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&HeapWalkHelper, &profilerWalkHeapContext, max_generation, true /* walk the large object heap */);
-    }
-
-    #ifdef FEATURE_EVENT_TRACE
-    // **** Done! Indicate to ETW helpers that the heap walk is done, so any buffers
-    // should be flushed into the ETW stream
-    if (fShouldWalkHeapObjectsForEtw || fShouldWalkHeapRootsForEtw)
-    {
-        ETW::GCLog::EndHeapDump(&profilerWalkHeapContext);
-    }
-#endif // FEATURE_EVENT_TRACE
-}
-#endif // defined(FEATURE_EVENT_TRACE)
-
-void GCProfileWalkHeap()
-{
-
-#ifdef FEATURE_EVENT_TRACE
-    if (ETW::GCLog::ShouldWalkStaticsAndCOMForEtw())
-        ETW::GCLog::WalkStaticsAndCOMForETW();
-
-    BOOL fShouldWalkHeapRootsForEtw = ETW::GCLog::ShouldWalkHeapRootsForEtw();
-    BOOL fShouldWalkHeapObjectsForEtw = ETW::GCLog::ShouldWalkHeapObjectsForEtw();
-#else // !FEATURE_EVENT_TRACE
-    BOOL fShouldWalkHeapRootsForEtw = FALSE;
-    BOOL fShouldWalkHeapObjectsForEtw = FALSE;
-#endif // FEATURE_EVENT_TRACE
-
-#ifdef FEATURE_EVENT_TRACE
-    // we need to walk the heap if one of GC_PROFILING or FEATURE_EVENT_TRACE
-    // is defined, since both of them make use of the walk heap worker.
-    if (fShouldWalkHeapRootsForEtw || fShouldWalkHeapObjectsForEtw)
-    {
-        GCProfileWalkHeapWorker(fShouldWalkHeapRootsForEtw, fShouldWalkHeapObjectsForEtw);
-    }
-#endif // defined(FEATURE_EVENT_TRACE)
-}
-
-
 void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
 {
     UNREFERENCED_PARAMETER(gen);
@@ -942,7 +752,7 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
 
     if (!fConcurrent)
     {
-        GCProfileWalkHeap();
+        ETW::GCLog::WalkHeap();
     }
 }
 
@@ -1149,9 +959,9 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     }
 }
 
-void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)
 {
-    if (foundFinalizers)
+    if (gcHasWorkForFinalizerThread)
         RhEnableFinalization();
 }
 
@@ -1339,40 +1149,58 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
         return true;
     }
 
-#ifdef UNICODE
-    size_t keyLength = strlen(privateKey) + 1;
-    TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (size_t i = 0; i < keyLength; i++)
-        pKey[i] = privateKey[i];
-#else
-    const TCHAR* pKey = privateKey;
-#endif
+    uint64_t uiValue;
+    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    {
+        *value = uiValue != 0;
+        return true;
+    }
 
-    uint32_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(pKey, &uiValue))
-        return false;
+    if (publicKey)
+    {
+        if (g_pRhConfig->ReadKnobBooleanValue(publicKey, value))
+        {
+            return true;
+        }
+    }
 
-    *value = uiValue != 0;
-    return true;
+    return false;
 }
+
+extern GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+extern bool g_gcHeapHardLimitInfoSpecified;
 
 bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
-#ifdef UNICODE
-    size_t keyLength = strlen(privateKey) + 1;
-    TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (size_t i = 0; i < keyLength; i++)
-        pKey[i] = privateKey[i];
-#else
-    const TCHAR* pKey = privateKey;
-#endif
+    if (g_gcHeapHardLimitInfoSpecified)
+    {
+        if ((g_gcHeapHardLimitInfo.heapHardLimit != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimit") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimit; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitSOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitSOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitSOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitLOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitLOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitLOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitSOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitSOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitSOHPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitLOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitLOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitLOHPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPOHPercent; return true; }
+    }
 
-    uint32_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(pKey, &uiValue))
-        return false;
+    uint64_t uiValue;
+    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    {
+        *value = uiValue;
+        return true;
+    }
 
-    *value = uiValue;
-    return true;
+    if (publicKey)
+    {
+        if (g_pRhConfig->ReadKnobUInt64Value(publicKey, &uiValue))
+        {
+            *value = uiValue;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void GCToEEInterface::LogErrorToHost(const char *message)
@@ -1422,14 +1250,3 @@ bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
 void LogSpewAlways(const char * /*fmt*/, ...)
 {
 }
-
-#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
-    : ScanContext()
-{
-    pHeapId = NULL;
-    fProfilerPinned = fProfilerPinnedParam;
-    pvEtwContext = NULL;
-    promotion = true;
-}
-#endif // defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)

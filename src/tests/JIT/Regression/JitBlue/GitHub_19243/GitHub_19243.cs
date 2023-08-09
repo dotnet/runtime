@@ -3,6 +3,7 @@
 //
 // This test exposed a bug with the ordering of evaluation of a cpblk.
 
+using Xunit;
 struct S0
 {
     public long F0;
@@ -37,7 +38,8 @@ public class GitHub_19243
         return ref s_37;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         M7() = s_13.F5;
         return checkValue(s_37.F0);

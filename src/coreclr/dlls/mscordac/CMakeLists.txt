@@ -49,6 +49,8 @@ else(CLR_CMAKE_HOST_WIN32)
 
         if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_LOONGARCH64)
             set(JUMP_INSTRUCTION b)
+        elseif (CLR_CMAKE_HOST_ARCH_RISCV64)
+            set(JUMP_INSTRUCTION tail)
         else()
             set(JUMP_INSTRUCTION jmp)
         endif()
@@ -164,6 +166,7 @@ if(CLR_CMAKE_HOST_WIN32)
         oleaut32.lib
         uuid.lib
         user32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
     )
@@ -173,6 +176,7 @@ else(CLR_CMAKE_HOST_WIN32)
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         palrt
+        coreclrminipal
         ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)
@@ -192,7 +196,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
 # add the install targets
-install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT runtime)
+install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT debug)
 
 if(CLR_CMAKE_HOST_WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})
@@ -208,8 +212,15 @@ if(CLR_CMAKE_HOST_WIN32)
     string(REGEX MATCH "#define VER_FILEVERSION[ \t]+[0-9]+(,[0-9]+)+" FILE_VERSION_LINE "${NATIVE_VERSION_HEADER}")
     string(REGEX MATCHALL "[0-9]+" FILE_VERSION_COMPONENTS "${FILE_VERSION_LINE}")
     list(JOIN FILE_VERSION_COMPONENTS "." FILE_VERSION)
-    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION}.dll DESTINATION sharedFramework COMPONENT runtime)
+
+    # This is unlike all other targets in the runtime, and is largely a long standing contract between
+    # debuggers and the runtime. This long form supports postmortem cross-architecture diagnostic scenarios.
+    # It doesn't make sense to complicate install_clr for this purpose, so keep it self-contained here.
+    set(LONG_NAME_BASE mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION})
+    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT runtime)
+    install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT runtime)
     if (NOT FEATURE_CROSSBITNESS)
-        install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION}.dll DESTINATION sharedFramework COMPONENT crosscomponents)
+        install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT crosscomponents)
+        install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT crosscomponents)
     endif()
 endif()

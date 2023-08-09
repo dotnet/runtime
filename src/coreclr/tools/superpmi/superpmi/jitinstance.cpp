@@ -35,7 +35,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     const WCHAR* altJitFlag = jit->getForceOption(W("AltJit"));
     if (altJitFlag != nullptr)
     {
-        if (wcscmp(altJitFlag, W("")) == 0)
+        if (u16_strcmp(altJitFlag, W("")) == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -47,7 +47,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     const WCHAR* altJitNgenFlag = jit->getForceOption(W("AltJitNgen"));
     if (altJitNgenFlag != nullptr)
     {
-        if (wcscmp(altJitNgenFlag, W("")) == 0)
+        if (u16_strcmp(altJitNgenFlag, W("")) == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -395,7 +395,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
                 default:
                     LogError("Unknown target architecture");
-                break;
+                    break;
             }
 
             // If the target architecture doesn't match the expected target architecture
@@ -405,16 +405,16 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             {
                 jitResult = CORJIT_OK;
             }
-
         }
-        if (jitResult == CORJIT_OK)
+
+        if ((jitResult == CORJIT_OK) || (jitResult == CORJIT_BADCODE))
         {
             // capture the results of compilation
             pParam->pThis->mc->cr->recCompileMethod(&NEntryBlock, &NCodeSizeBlock, jitResult);
             pParam->pThis->mc->cr->recAllocMemCapture();
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
-            pParam->pThis->mc->cr->recMessageLog("Successful Compile");
+            pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
 
             pParam->metrics->NumCodeBytes += NCodeSizeBlock;
         }
@@ -434,6 +434,20 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             LogMissing("Method context %d failed to replay: %s", mcIndex, message);
             e.DeleteMessage();
             param.result = RESULT_MISSING;
+        }
+        else if (e.GetCode() == EXCEPTIONCODE_RECORDED_EXCEPTION)
+        {
+            // Exception thrown by EE during recording, for example a managed
+            // MissingFieldException thrown by resolveToken. Several JIT-EE
+            // APIs can throw exceptions and the recorder expects and rethrows
+            // their exceptions under this exception code. We do not consider
+            // these a replay failure.
+
+            // Call these methods to capture that no code/GC info was generated.
+            mc->cr->recAllocMemCapture();
+            mc->cr->recAllocGCInfoCapture();
+
+            mc->cr->recMessageLog("Successful Compile (EE API exception)");
         }
         else
         {
@@ -532,7 +546,7 @@ const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWOR
         return nullptr;
     }
 
-    size_t keyLenInBytes = sizeof(WCHAR) * (wcslen(key) + 1);
+    size_t keyLenInBytes = sizeof(WCHAR) * (u16_strlen(key) + 1);
     int    keyIndex      = options->Contains((unsigned char*)key, (unsigned int)keyLenInBytes);
     if (keyIndex == -1)
     {

@@ -59,32 +59,28 @@
     <Python>%HELIX_PYTHONPATH%</Python>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>$HELIX_PYTHONPATH</Python>
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
   </PropertyGroup>
 
   <!-- OS-specific settings for non-benchmarks collections -->
 
-  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(AGENT_OS)' == 'Windows_NT' ">
+  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(AGENT_OS)' == 'Windows_NT' ">
     <AssembliesDirectoryOnHelix>%HELIX_WORKITEM_PAYLOAD%\binaries</AssembliesDirectoryOnHelix>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(AGENT_OS)' != 'Windows_NT' ">
+  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(AGENT_OS)' != 'Windows_NT' ">
     <AssembliesDirectoryOnHelix>$HELIX_WORKITEM_PAYLOAD/binaries</AssembliesDirectoryOnHelix>
   </PropertyGroup>
 
   <!-- OS-specific settings for benchmarks collections -->
 
-  <PropertyGroup Condition=" '$(CollectionName)' == 'benchmarks' and '$(AGENT_OS)' == 'Windows_NT' ">
+  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld') and '$(AGENT_OS)' == 'Windows_NT' ">
     <PerformanceDirectory>%HELIX_WORKITEM_PAYLOAD%\performance</PerformanceDirectory>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(CollectionName)' == 'benchmarks' and '$(AGENT_OS)' != 'Windows_NT' ">
+  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld') and '$(AGENT_OS)' != 'Windows_NT' ">
     <PerformanceDirectory>$HELIX_WORKITEM_PAYLOAD/performance</PerformanceDirectory>
   </PropertyGroup>
 
@@ -116,15 +112,27 @@
     <PmiArguments></PmiArguments>
   </PropertyGroup>
 
+  <!-- Settings for Run collections -->
+
+  <PropertyGroup Condition=" '$(CollectionType)' == 'run_tiered' ">
+    <RunArguments>--tiered_compilation</RunArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionType)' == 'run_pgo' ">
+    <RunArguments>--tiered_pgo</RunArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionType)' != 'run_tiered' and '$(CollectionType)' != 'run_pgo' ">
+    <RunArguments></RunArguments>
+  </PropertyGroup>
+
   <!-- Define the Helix work item command and timeout for each collection type -->
 
-  <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks'">
+  <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) -assemblies $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
     <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
+  <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld'">
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture) $(RunArguments)</WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -162,7 +170,7 @@
   <!-- For non-benchmark collections, we create one Helix work item for each sub-directory
        in the `InputArtifacts` directory.
   -->
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(InputArtifacts)))"/>
     <Partition Include="@(PartitionDirectories -> '%(Filename)')" CollectAssemblies="%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
@@ -170,8 +178,15 @@
   <!-- For benchmark collections, we create one Helix work item for each `BDN_Partition` item
        in the ItemGroup below.
   -->
-  <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
+  <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks' and '$(AGENT_OS)' == 'Windows_NT'">
     <PartitionCount>30</PartitionCount>
+    <BenchmarkPath>src\benchmarks\micro\MicroBenchmarks.csproj</BenchmarkPath>
+    <BenchmarkBinary>MicroBenchmarks.dll</BenchmarkBinary>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks' and '$(AGENT_OS)' != 'Windows_NT'">
+    <PartitionCount>30</PartitionCount>
+    <BenchmarkPath>src/benchmarks/micro/MicroBenchmarks.csproj</BenchmarkPath>
+    <BenchmarkBinary>MicroBenchmarks.dll</BenchmarkBinary>
   </PropertyGroup>
   <ItemGroup Condition="'$(CollectionName)' == 'benchmarks'">
     <BDN_Partition Include="Partition0" Index="0" />
@@ -205,8 +220,24 @@
     <BDN_Partition Include="Partition28" Index="28" />
     <BDN_Partition Include="Partition29" Index="29" />
   </ItemGroup>
+  <ItemGroup Condition="'$(CollectionName)' == 'realworld' and '$(AGENT_OS)' == 'Windows_NT'">
+    <BDN_Partition Include="Partition0" BenchmarkPath="src\benchmarks\real-world\bepuphysics2\DemoBenchmarks.csproj" BenchmarkBinary="DemoBenchmarks.dll" />
+    <BDN_Partition Include="Partition1" BenchmarkPath="src\benchmarks\real-world\FSharp\FSharp.fsproj" BenchmarkBinary="FSharp.dll" />
+    <BDN_Partition Include="Partition2" BenchmarkPath="src\benchmarks\real-world\ILLink\ILLinkBenchmarks.csproj" BenchmarkBinary="ILLinkBenchmarks.dll" />
+    <BDN_Partition Include="Partition3" BenchmarkPath="src\benchmarks\real-world\ImageSharp\ImageSharp.Benchmarks.csproj" BenchmarkBinary="ImageSharp.Benchmarks.dll" />
+    <BDN_Partition Include="Partition4" BenchmarkPath="src\benchmarks\real-world\Microsoft.ML.Benchmarks\Microsoft.ML.Benchmarks.csproj" BenchmarkBinary="Microsoft.ML.Benchmarks.dll" />
+    <BDN_Partition Include="Partition5" BenchmarkPath="src\benchmarks\real-world\Roslyn\CompilerBenchmarks.csproj" BenchmarkBinary="CompilerBenchmarks.dll" />
+  </ItemGroup>  
+  <ItemGroup Condition="'$(CollectionName)' == 'realworld' and '$(AGENT_OS)' != 'Windows_NT'">
+    <BDN_Partition Include="Partition0" BenchmarkPath="src/benchmarks/real-world/bepuphysics2/DemoBenchmarks.csproj" BenchmarkBinary="DemoBenchmarks.dll" />
+    <BDN_Partition Include="Partition1" BenchmarkPath="src/benchmarks/real-world/FSharp/FSharp.fsproj" BenchmarkBinary="FSharp.dll" />
+    <BDN_Partition Include="Partition2" BenchmarkPath="src/benchmarks/real-world/ILLink/ILLinkBenchmarks.csproj" BenchmarkBinary="ILLinkBenchmarks.dll" />
+    <BDN_Partition Include="Partition3" BenchmarkPath="src/benchmarks/real-world/ImageSharp/ImageSharp.Benchmarks.csproj" BenchmarkBinary="ImageSharp.Benchmarks.dll" />
+    <BDN_Partition Include="Partition4" BenchmarkPath="src/benchmarks/real-world/Microsoft.ML.Benchmarks/Microsoft.ML.Benchmarks.csproj" BenchmarkBinary="Microsoft.ML.Benchmarks.dll" />
+    <BDN_Partition Include="Partition5" BenchmarkPath="src/benchmarks/real-world/Roslyn/CompilerBenchmarks.csproj" BenchmarkBinary="CompilerBenchmarks.dll" />
+  </ItemGroup>  
 
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
     <HelixWorkItem Include="@(Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(AssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.CollectAssemblies)</PayloadDirectory>
@@ -220,9 +251,19 @@
     <HelixWorkItem Include="@(BDN_Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -partition_count $(PartitionCount) -partition_index %(HelixWorkItem.Index) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
+      <Command>$(WorkItemCommand) -partition_count $(PartitionCount) -partition_index %(HelixWorkItem.Index) -benchmark_path $(BenchmarkPath) -benchmark_binary $(BenchmarkBinary) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
+
+  <ItemGroup Condition="'$(CollectionName)' == 'realworld'">
+    <HelixWorkItem Include="@(BDN_Partition)">
+      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(WorkItemCommand) -partition_count 1 -partition_index 0 -benchmark_path %(HelixWorkItem.BenchmarkPath) -benchmark_binary %(HelixWorkItem.BenchmarkBinary) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
+    </HelixWorkItem>
+  </ItemGroup>  
 </Project>

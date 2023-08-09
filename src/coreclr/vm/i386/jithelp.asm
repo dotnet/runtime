@@ -193,7 +193,7 @@ ifdef WRITE_BARRIER_CHECK
         jb      WriteBarrier_NoShadow_&rg
         add     ecx, [g_GCShadow]
         cmp     ecx, [g_GCShadowEnd]
-        ja      WriteBarrier_NoShadow_&rg
+        jae     WriteBarrier_NoShadow_&rg
 
         ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
         ; mfence barriers on either side of these two writes to make sure that
@@ -330,7 +330,7 @@ ifdef WRITE_BARRIER_CHECK
         jb      ByRefWriteBarrier_NoShadow
         add     edx, [g_GCShadow]
         cmp     edx, [g_GCShadowEnd]
-        ja      ByRefWriteBarrier_NoShadow
+        jae     ByRefWriteBarrier_NoShadow
 
         ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
         ; mfence barriers on either side of these two writes to make sure that

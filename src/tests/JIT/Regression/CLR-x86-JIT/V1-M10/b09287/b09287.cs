@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Default
 {
     //@BEGINRENAME; Verify this renames
@@ -12,7 +13,8 @@ namespace Default
     //
     public class X
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             Console.WriteLine("Entering Hello world");

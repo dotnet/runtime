@@ -594,7 +594,7 @@ namespace System.Net.Http.Headers
 
         private sealed class TokenObjectCollection : ObjectCollection<string>
         {
-            public override void Validate(string item) => HeaderUtilities.CheckValidToken(item, nameof(item));
+            public override void Validate(string item) => HeaderUtilities.CheckValidToken(item);
 
             public int GetHashCode(StringComparer comparer)
             {

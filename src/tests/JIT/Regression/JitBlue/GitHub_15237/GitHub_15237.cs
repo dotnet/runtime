@@ -2,12 +2,14 @@ using System;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace UnsafeTesting
 {
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             float UnsafeAs = LengthSquaredUnsafeAs();
             Console.WriteLine($"Unsafe.As           : {UnsafeAs}");

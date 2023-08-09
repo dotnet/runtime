@@ -401,24 +401,3 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
     return UErrorCodeToBool(status);
 }
 
-/*
-PAL Function:
-GetLocaleTimeFormat
-
-Obtains time format information (in ICU format, it needs to be converted to .NET's format).
-Returns 1 for success, 0 otherwise
-*/
-int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
-                                                int shortFormat,
-                                                UChar* value,
-                                                int32_t valueLength)
-{
-    UErrorCode err = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
-    UDateFormatStyle style = (shortFormat != 0) ? UDAT_SHORT : UDAT_MEDIUM;
-    UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, NULL, 0, NULL, 0, &err);
-    udat_toPattern(pFormat, false, value, valueLength, &err);
-    udat_close(pFormat);
-    return UErrorCodeToBool(err);
-}

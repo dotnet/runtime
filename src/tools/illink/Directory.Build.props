@@ -9,9 +9,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
-    <!-- Arcade uses by default xunit as test runner, illink uses nunit instead. 
-         We need to setup UseVSTestRunner to use the runner VS is using (in this case nunit) -->
-    <UseVSTestRunner>true</UseVSTestRunner>
     <!-- TODO: Fix the api differences between the ref and src illink. -->
     <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
   </PropertyGroup>

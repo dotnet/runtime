@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml;
 namespace XUnitWrapperLibrary;
 
 public class TestSummary
@@ -43,7 +44,7 @@ public class TestSummary
                               + $@" method=""{MethodName}"" time=""{Duration.TotalSeconds:F6}""");
 
             string outputElement = !string.IsNullOrWhiteSpace(Output)
-                                 ? $"<output><![CDATA[{Output}]]></output>"
+                                 ? $"<output><![CDATA[{XmlConvert.EncodeName(Output)}]]></output>"
                                  : string.Empty;
 
             if (Exception is not null)
@@ -114,11 +115,23 @@ public class TestSummary
                         + $"    run-date-time=\"{_testRunStart.ToString("yyyy-MM-dd HH:mm:ss")}\">");
     }
 
+    public void WriteFooterToTempLog(StreamWriter tempLogSw)
+    {
+        tempLogSw.WriteLine("</assembly>");
+    }
+
+    public void ReportStartingTest(string name, TextWriter outTw)
+    {
+        outTw.WriteLine("{0:HH:mm:ss.fff} Running test: {1}", System.DateTime.Now, name);
+        outTw.Flush();
+    }
+
     public void ReportPassedTest(string name,
                                  string containingTypeName,
                                  string methodName,
                                  TimeSpan duration,
                                  string output,
+                                 TextWriter outTw,
                                  StreamWriter tempLogSw,
                                  StreamWriter statsCsvSw)
     {
@@ -127,8 +140,10 @@ public class TestSummary
         var result = new TestResult(name, containingTypeName, methodName, duration, null, null, output);
         _testResults.Add(result);
 
+        outTw.WriteLine($"{0:HH:mm:ss.fff} Passed test: {1}", System.DateTime.Now, name);
         statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
         tempLogSw.WriteLine(result.ToXmlString());
+        outTw.Flush();
         statsCsvSw.Flush();
         tempLogSw.Flush();
     }
@@ -139,6 +154,7 @@ public class TestSummary
                                  TimeSpan duration,
                                  Exception ex,
                                  string output,
+                                 TextWriter outTw,
                                  StreamWriter tempLogSw,
                                  StreamWriter statsCsvSw)
     {
@@ -147,8 +163,11 @@ public class TestSummary
         var result = new TestResult(name, containingTypeName, methodName, duration, ex, null, output);
         _testResults.Add(result);
 
+        outTw.WriteLine(ex);
+        outTw.WriteLine("{0:HH:mm:ss.fff} Failed test: {1}", System.DateTime.Now, name);
         statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
         tempLogSw.WriteLine(result.ToXmlString());
+        outTw.Flush();
         statsCsvSw.Flush();
         tempLogSw.Flush();
     }

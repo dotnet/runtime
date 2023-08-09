@@ -13,7 +13,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Class for reporting diagnostics in the library import generator
     /// </summary>
-    public class GeneratorDiagnostics : IGeneratorDiagnostics
+    public static class GeneratorDiagnostics
     {
         public class Ids
         {
@@ -28,145 +28,6 @@ namespace Microsoft.Interop
         }
 
         private const string Category = "JSImportGenerator";
-        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
-
-        public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
-
-        public void ReportInvalidMarshallingAttributeInfo(
-            AttributeData attributeData,
-            string reasonResourceName,
-            params string[] reasonArgs)
-        {
-            _diagnostics.Add(
-                attributeData.CreateDiagnostic(
-                    GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
-                    new LocalizableResourceString(reasonResourceName, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR), reasonArgs)));
-        }
-
-        /// <summary>
-        /// Report diagnostic for configuration that is not supported by the DLL import source generator
-        /// </summary>
-        /// <param name="attributeData">Attribute specifying the unsupported configuration</param>
-        /// <param name="configurationName">Name of the configuration</param>
-        /// <param name="unsupportedValue">[Optiona] Unsupported configuration value</param>
-        public void ReportConfigurationNotSupported(
-            AttributeData attributeData,
-            string configurationName,
-            string? unsupportedValue = null)
-        {
-            if (unsupportedValue == null)
-            {
-                _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
-                        GeneratorDiagnostics.ConfigurationNotSupported,
-                        configurationName));
-            }
-            else
-            {
-                _diagnostics.Add(
-                    attributeData.CreateDiagnostic(
-                        GeneratorDiagnostics.ConfigurationValueNotSupported,
-                        unsupportedValue,
-                        configurationName));
-            }
-        }
-
-        /// <summary>
-        /// Report diagnostic for marshalling of a parameter/return that is not supported
-        /// </summary>
-        /// <param name="diagnosticLocations">Method with the parameter/return</param>
-        /// <param name="info">Type info for the parameter/return</param>
-        /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
-        public void ReportMarshallingNotSupported(
-            MethodSignatureDiagnosticLocations diagnosticLocations,
-            TypePositionInfo info,
-            string? notSupportedDetails,
-            ImmutableDictionary<string, string> diagnosticProperties)
-        {
-            Location diagnosticLocation = Location.None;
-            string elementName = string.Empty;
-
-            if (info.IsManagedReturnPosition)
-            {
-                diagnosticLocation = diagnosticLocations.FallbackLocation;
-                elementName = diagnosticLocations.MethodIdentifier;
-            }
-            else
-            {
-                Debug.Assert(info.ManagedIndex <= diagnosticLocations.ManagedParameterLocations.Length);
-                diagnosticLocation = diagnosticLocations.ManagedParameterLocations[info.ManagedIndex];
-                elementName = info.InstanceIdentifier;
-            }
-
-            if (!string.IsNullOrEmpty(notSupportedDetails))
-            {
-                // Report the specific not-supported reason.
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
-                            diagnosticProperties,
-                            notSupportedDetails!,
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
-                            diagnosticProperties,
-                            notSupportedDetails!,
-                            elementName));
-                }
-            }
-            else if (info.MarshallingAttributeInfo is MarshalAsInfo)
-            {
-                // Report that the specified marshalling configuration is not supported.
-                // We don't forward marshalling attributes, so this is reported differently
-                // than when there is no attribute and the type itself is not supported.
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ReturnConfigurationNotSupported,
-                            diagnosticProperties,
-                            nameof(System.Runtime.InteropServices.MarshalAsAttribute),
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ParameterConfigurationNotSupported,
-                            diagnosticProperties,
-                            nameof(System.Runtime.InteropServices.MarshalAsAttribute),
-                            elementName));
-                }
-            }
-            else
-            {
-                // Report that the type is not supported
-                if (info.IsManagedReturnPosition)
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ReturnTypeNotSupported,
-                            diagnosticProperties,
-                            info.ManagedType.DiagnosticFormattedName,
-                            elementName));
-                }
-                else
-                {
-                    _diagnostics.Add(
-                        diagnosticLocation.CreateDiagnostic(
-                            GeneratorDiagnostics.ParameterTypeNotSupported,
-                            diagnosticProperties,
-                            info.ManagedType.DiagnosticFormattedName,
-                            elementName));
-                }
-            }
-        }
 
         public static readonly DiagnosticDescriptor ConfigurationNotSupported =
             new DiagnosticDescriptor(
@@ -209,14 +70,14 @@ namespace Microsoft.Interop
                 description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
-                    new DiagnosticDescriptor(
-                        Ids.TypeNotSupported,
-                        GetResourceString(nameof(SR.TypeNotSupportedTitle)),
-                        GetResourceString(nameof(SR.TypeNotSupportedMessageParameter)),
-                        Category,
-                        DiagnosticSeverity.Error,
-                        isEnabledByDefault: true,
-                        description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
+            new DiagnosticDescriptor(
+                Ids.TypeNotSupported,
+                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageParameter)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
 
         public static readonly DiagnosticDescriptor ReturnTypeNotSupported =
             new DiagnosticDescriptor(

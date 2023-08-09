@@ -12,12 +12,15 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
 - [Covariant Return Types](#covariant-return-types)
+- [Function Pointer Type Identity](#function-pointer-type-identity)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
 - [Ref field support](#ref-fields)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
 - [Checked user-defined operators](#checked-user-defined-operators)
 - [Atomic reads and writes](#atomic-reads-and-writes)
 - [Backward branch constraints](#backward-branch-constraints)
+- [Transient pointers](#transient-pointers)
+- [Creating arrays using newobj](#creating-arrays-using-newobj)
 - [API documentation](#api-documentation)
 - [Debug Interchange Format](#debug-interchange-format)
 
@@ -925,6 +928,16 @@ For this example, the behavior of calls on objects of various types is presented
 ### II.22.27
 Edit rule 12 to specify that "The method signature defined by *MethodBody* shall match those defined by *MethodDeclaration* exactly if *MethodDeclaration* defines a method on an interface or be *covariant-return-compatible-with* (§I.8.7.1) if *MethodDeclaration* represents a method on a class."
 
+## Function Pointer Type Identity
+
+The unmanaged calling convention of the function pointer type no longer contributes to the type identity. For the purposes of type identity, the only important bit is whether the calling convention is managed or unmanaged.
+
+### I.8.7 Assignment compatibility
+
+For the purpose of type compatibility when determining a type from a signature:
+
+iv) ~~Any calling convention~~ _Whether the calling convention is managed or unmanaged_ is considered part of the type.
+
 ## Unsigned data conversion with overflow detection
 
 `conv.ovf.<to type>.un` opcode is purposed for converting a value on the stack to an integral value while treating the stack source as unsigned. Ecma does not distinguish signed and unsigned values on the stack so such opcode is needed as a complement for `conv.ovf.<to type>`.
@@ -1037,6 +1050,16 @@ A conforming CLI shall guarantee that read and write access of *built-in primiti
 ## Backward branch constraints
 
 Section "II.1.7.5 Backward branch constraints" is deleted. These constraints were not enforced by any mainstream .NET runtime and they are not respected by .NET compilers. It means that it is not possible to infer the exact state of the evaluation stack at every instruction with a single forward-pass through the CIL instruction stream.
+
+## Transient pointers
+
+The paragraphs mentioning "transient pointers" in section "I.12.3.2.1 The evaluation stack" are deleted. The transient pointers seemed to be a concept in the very early versions of the spec that was deleted in the final version of the spec and this one place was missed.
+
+Instead, note is added to sections "III.3.39 ldarga" and "III.3.44 ldloca": The arguments / local variables are stored in unmanaged memory. The address of argument / local variable can be converted to unmanaged pointer without explicit pinning.
+
+## Creating arrays using newobj
+
+Note about creating zero-based, one-dimensional arrays in section III.4.21 "newobj – create a new object" is replaced with "All zero-based, one-dimensional arrays *should* be created using newarr, not newobj". Rationale: All arrays have runtime provided constructors. It does not make sense to disallow one specific constructor just because there is more efficient alternative.
 
 ## API documentation
 

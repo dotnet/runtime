@@ -58,11 +58,6 @@ HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::Map(
     _ASSERTE(IndexForType(tkFrom) < GetMaxMapSize());
     _ASSERTE(IndexForType(tkTo) != -1 && IndexForType(tkTo) < GetMaxMapSize());
 
-    // If there is another token mapper that the user wants called, go
-    // ahead and call it now.
-    if (m_pIMapToken)
-        m_pIMapToken->Map(tkFrom, tkTo);
-
     ridFrom = RidFromToken(tkFrom);
     pMap = &m_rgMap[IndexForType(tkFrom)];
 

@@ -303,7 +303,7 @@ bool CrawlFrame::IsGcSafe()
     return GetCodeManager()->IsGcSafe(&codeInfo, GetRelOffset());
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool CrawlFrame::HasTailCalls()
 {
     CONTRACTL {
@@ -314,7 +314,7 @@ bool CrawlFrame::HasTailCalls()
 
     return GetCodeManager()->HasTailCalls(&codeInfo);
 }
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 inline void CrawlFrame::GotoNextFrame()
 {
@@ -647,7 +647,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
     uControlPc = TADDR(pContext->Lr);
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     uControlPc = TADDR(pContext->Ra);
 
 #else
@@ -1386,7 +1386,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                 if (m_crawl.isInterrupted)
                 {
                     m_crawl.hasFaulted   = ((uFrameAttribs & Frame::FRAME_ATTR_FAULTED) != 0);
-                    m_crawl.isIPadjusted = ((uFrameAttribs & Frame::FRAME_ATTR_OUT_OF_LINE) != 0);
+                    m_crawl.isIPadjusted = false;
                 }
 
                 m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
@@ -2537,10 +2537,10 @@ StackWalkAction StackFrameIterator::NextRaw(void)
              DBG_ADDR(GetRegdisplaySP(m_crawl.pRD)),
              DBG_ADDR(GetControlPC(m_crawl.pRD))));
 
-        m_crawl.isFirst       = FALSE;
-        m_crawl.isInterrupted = FALSE;
-        m_crawl.hasFaulted    = FALSE;
-        m_crawl.isIPadjusted  = FALSE;
+        m_crawl.isFirst       = false;
+        m_crawl.isInterrupted = false;
+        m_crawl.hasFaulted    = false;
+        m_crawl.isIPadjusted  = false;
 
 #ifndef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
         // remember, x86 handles the managed stack frame before the explicit frames contained in it
@@ -2578,8 +2578,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         if (m_crawl.isInterrupted)
         {
             m_crawl.hasFaulted = (uFrameAttribs & Frame::FRAME_ATTR_FAULTED) != 0;
-            m_crawl.isIPadjusted = (uFrameAttribs & Frame::FRAME_ATTR_OUT_OF_LINE) != 0;
-            _ASSERTE(!m_crawl.hasFaulted || !m_crawl.isIPadjusted); // both cant be set together
+            m_crawl.isIPadjusted = false;
         }
 
         PCODE adr = m_crawl.pFrame->GetReturnAddress();
@@ -3214,9 +3213,9 @@ void StackFrameIterator::PostProcessingForNoFrameTransition()
     m_crawl.isFrameless = true;
 
     // Flags the same as from a FaultingExceptionFrame.
-    m_crawl.isInterrupted = 1;
-    m_crawl.hasFaulted = 1;
-    m_crawl.isIPadjusted = 0;
+    m_crawl.isInterrupted = true;
+    m_crawl.hasFaulted = true;
+    m_crawl.isIPadjusted = false;
 
 #if defined(STACKWALKER_MAY_POP_FRAMES)
     // If Frames would be unlinked from the Frame chain, also reset the UseExInfoForStackwalk bit

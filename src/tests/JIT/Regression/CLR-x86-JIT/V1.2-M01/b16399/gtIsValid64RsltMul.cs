@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public struct AA
 {
     public static char[, , , ,][, ,] Static1(char param1, int param2, bool[,] param3,
@@ -18,7 +19,8 @@ public struct AA
 
 public class App
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

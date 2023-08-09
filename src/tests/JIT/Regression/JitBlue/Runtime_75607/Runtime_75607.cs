@@ -1,11 +1,13 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class Program
 {
     private static int s_result;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         C c = new();
         for (int i = 0; i < 100; i++)

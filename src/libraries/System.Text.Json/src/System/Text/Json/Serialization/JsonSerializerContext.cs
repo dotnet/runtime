@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Provides metadata about a set of types that is relevant to JSON serialization.
     /// </summary>
-    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver
+    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver, IBuiltInJsonTypeInfoResolver
     {
         private JsonSerializerOptions? _options;
 
@@ -37,30 +37,32 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        internal void AssociateWithOptions(JsonSerializerOptions options)
+        {
+            Debug.Assert(!options.IsReadOnly);
+            options.TypeInfoResolver = this;
+            options.MakeReadOnly();
+            _options = options;
+        }
+
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
         /// is compatible with the run time specified <see cref="JsonSerializerOptions"/>.
         /// </summary>
-        internal bool IsCompatibleWithGeneratedOptions(JsonSerializerOptions options)
+        bool IBuiltInJsonTypeInfoResolver.IsCompatibleWithOptions(JsonSerializerOptions options)
         {
             Debug.Assert(options != null);
 
             JsonSerializerOptions? generatedSerializerOptions = GeneratedSerializerOptions;
 
-            if (ReferenceEquals(options, generatedSerializerOptions))
-            {
-                // Fast path for the 99% case
-                return true;
-            }
-
             return
                 generatedSerializerOptions is not null &&
                 // Guard against unsupported features
                 options.Converters.Count == 0 &&
-                options.Encoder == null &&
+                options.Encoder is null &&
                 // Disallow custom number handling we'd need to honor when writing.
                 // AllowReadingFromString and Strict are fine since there's no action to take when writing.
-                (options.NumberHandling & (JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals)) == 0 &&
+                !JsonHelpers.RequiresSpecialNumberHandlingOnWrite(options.NumberHandling) &&
                 options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&
 #pragma warning disable SYSLIB0020
                 !options.IgnoreNullValues && // This property is obsolete.
@@ -72,8 +74,7 @@ namespace System.Text.Json.Serialization
                 options.IgnoreReadOnlyProperties == generatedSerializerOptions.IgnoreReadOnlyProperties &&
                 options.IncludeFields == generatedSerializerOptions.IncludeFields &&
                 options.PropertyNamingPolicy == generatedSerializerOptions.PropertyNamingPolicy &&
-                options.DictionaryKeyPolicy == generatedSerializerOptions.DictionaryKeyPolicy &&
-                options.WriteIndented == generatedSerializerOptions.WriteIndented;
+                options.DictionaryKeyPolicy is null;
         }
 
         /// <summary>
@@ -94,9 +95,7 @@ namespace System.Text.Json.Serialization
             if (options != null)
             {
                 options.VerifyMutable();
-                options.TypeInfoResolver = this;
-                options.MakeReadOnly();
-                _options = options;
+                AssociateWithOptions(options);
             }
         }
 

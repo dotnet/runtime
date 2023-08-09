@@ -14,6 +14,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using Xunit;
 
 namespace BigFrame
 {
@@ -94,7 +95,8 @@ namespace BigFrame
                 iret = 666;
             return iret;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int iret = 100;
             float f1 = 1.1F;

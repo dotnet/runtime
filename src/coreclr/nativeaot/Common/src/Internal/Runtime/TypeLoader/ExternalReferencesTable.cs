@@ -56,11 +56,6 @@ namespace Internal.Runtime.TypeLoader
             return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
         }
 
-        public IntPtr GetGenericDictionaryFromIndex(uint index)
-        {
-            return GetIntPtrFromIndex(index);
-        }
-
         public unsafe IntPtr GetAddressFromIndex(uint index)
         {
             if (index >= _elementsCount)

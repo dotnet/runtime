@@ -3,12 +3,14 @@
 //
 
 using System;
-class SwitchTest
+using Xunit;
+public class SwitchTest
 {
  const int Pass = 100;
  const int Fail = -1;
 
- public static int Main()
+ [Fact]
+ public static int TestEntryPoint()
  {
   int sum =0;
   for(int i=2; i < 5; i++) {

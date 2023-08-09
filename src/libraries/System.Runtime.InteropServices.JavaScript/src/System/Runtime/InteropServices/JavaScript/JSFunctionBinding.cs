@@ -142,8 +142,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <exception cref="PlatformNotSupportedException">The method is executed on an architecture other than WebAssembly.</exception>
         // JavaScriptExports need to be protected from trimming because they are used from C/JS code which IL linker can't see
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
-        // TODO make this DynamicDependency conditional again, see https://github.com/dotnet/runtime/pull/82826
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExports", "System.Runtime.InteropServices.JavaScript")]
+        // Same for legacy, but the type could be explicitly trimmed by setting WasmEnableLegacyJsInterop=false which would use ILLink.Descriptors.LegacyJsInterop.xml
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExportsTrimmingRoot", "System.Runtime.InteropServices.JavaScript")]
         public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
@@ -172,6 +172,11 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSImpl(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
+            ObjectDisposedException.ThrowIf(jsFunction.IsDisposed, jsFunction);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(jsFunction);
+#endif
+
             IntPtr functionJSHandle = jsFunction.JSHandle;
             fixed (JSMarshalerArgument* ptr = arguments)
             {
@@ -200,6 +205,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
+#if FEATURE_WASM_THREADS
+            JSSynchronizationContext.AssertWebWorkerContext();
+#endif
+
             var signature = JSHostImplementation.GetMethodSignature(signatures);
 
             Interop.Runtime.BindJSFunction(functionName, moduleName, signature.Header, out IntPtr jsFunctionHandle, out int isException, out object exceptionMessage);
@@ -207,6 +216,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new JSException((string)exceptionMessage);
 
             signature.FnHandle = jsFunctionHandle;
+
+            JSHostImplementation.FreeMethodSignatureBuffer(signature);
 
             return signature;
         }
@@ -220,6 +231,9 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 throw new JSException((string)exceptionMessage);
             }
+
+            JSHostImplementation.FreeMethodSignatureBuffer(signature);
+
             return signature;
         }
     }

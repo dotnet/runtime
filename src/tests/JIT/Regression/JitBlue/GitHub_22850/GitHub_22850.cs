@@ -6,10 +6,12 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 public static class GitHub_22850
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return test128((byte)90) ? 100 : -1;
     }

@@ -2,16 +2,12 @@
 <root>
   <!--
     Microsoft ResX Schema
-
     Version 2.0
-
     The primary goals of this format is to allow a simple XML format
     that is mostly human readable. The generation and parsing of the
     various data types are done through the TypeConverter classes
     associated with the data types.
-
     Example:
-
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,34 +22,27 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
     There are any number of "resheader" rows that contain simple
     name/value pairs.
-
     Each data row contains a name, and value. The row also contains a
     type or mimetype. Type corresponds to a .NET class that support
     text/value conversion through the TypeConverter architecture.
     Classes that don't support this are serialized and stored with the
     mimetype set.
-
     The mimetype is used for serialized objects, and tells the
     ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-
     Note - application/x-microsoft.net.object.binary.base64 is the format
     that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-
     mimetype: application/x-microsoft.net.object.binary.base64
     value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
     mimetype: application/x-microsoft.net.object.soap.base64
     value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
-
     mimetype: application/x-microsoft.net.object.bytearray.base64
     value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
@@ -518,8 +507,8 @@
   <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
     <value>Serialization and deserialization of '{0}' instances is not supported.</value>
   </data>
-  <data name="JsonIncludeOnNonPublicInvalid" xml:space="preserve">
-    <value>The non-public property '{0}' on type '{1}' is annotated with 'JsonIncludeAttribute' which is invalid.</value>
+  <data name="JsonIncludeOnInaccessibleProperty" xml:space="preserve">
+    <value>The property '{0}' on type '{1}' which is annotated with 'JsonIncludeAttribute' is not accesible by the source generator.</value>
   </data>
   <data name="CannotSerializeInvalidMember" xml:space="preserve">
     <value>The type '{0}' of property '{1}' on type '{2}' is invalid for serialization or deserialization because it is a pointer type, is a ref struct, or contains generic parameters that have not been replaced by specific types.</value>
@@ -559,6 +548,9 @@
   </data>
   <data name="SerializerConverterFactoryReturnsJsonConverterFactory" xml:space="preserve">
     <value>The converter '{0}' cannot return an instance of JsonConverterFactory.</value>
+  </data>
+  <data name="SerializerConverterFactoryInvalidArgument" xml:space="preserve">
+    <value>The type '{0}' is not supported by the current JsonConverterFactory.</value>
   </data>
   <data name="NodeElementWrongType" xml:space="preserve">
     <value>The element must be of type '{0}'</value>
@@ -668,6 +660,9 @@
   <data name="JsonSerializerOptionsNoTypeInfoResolverSpecified" xml:space="preserve">
     <value>JsonSerializerOptions instance must specify a TypeInfoResolver setting before being marked as read-only.</value>
   </data>
+  <data name="JsonSerializerIsReflectionDisabled" xml:space="preserve">
+    <value>Reflection-based serialization has been disabled for this application. Either use the source generator APIs or explicitly configure the 'JsonSerializerOptions.TypeInfoResolver' property.</value>
+  </data>
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
   </data>
@@ -679,5 +674,32 @@
   </data>
   <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
     <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
+  </data>
+  <data name="ObjectCreationHandlingPopulateNotSupportedByConverter" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it doesn't support populating. This can be either because the property type is immutable or it could use a custom converter.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyMustHaveAGetter" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it doesn't have a getter.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyValueTypeMustHaveASetter" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but is a value type that doesn't have a setter.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyCannotAllowPolymorphicDeserialization" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but its type allows polymorphic deserialization.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyCannotAllowReadOnlyMember" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it is a read-only member and JsonSerializerOptions has IgnoreReadOnlyProperties or IgnoreReadOnlyFields set.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyCannotAllowReferenceHandling" xml:space="preserve">
+    <value>JsonObjectCreationHandling.Populate is incompatible with reference handling.</value>
+  </data>
+  <data name="FormatInt128" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int128.</value>
+  </data>
+  <data name="FormatUInt128" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an UInt128.</value>
+  </data>
+  <data name="FormatHalf" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for a Half.</value>
   </data>
 </root>

@@ -141,6 +141,26 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
         }
 
         [Fact]
+        public static void SupportsRecursiveTypeSerialization()
+        {
+            JsonTypeInfo<MyLinkedList> jsonTypeInfo = Net60GeneratedContext.Default.MyLinkedList;
+
+            MyLinkedList linkedList = new(
+                value: 0,
+                nested: new(
+                    value: 1,
+                    nested: new(
+                        value: 2,
+                        nested: null)));
+
+            string json = JsonSerializer.Serialize(linkedList, jsonTypeInfo);
+            Assert.Equal("""{"Value":0,"Nested":{"Value":1,"Nested":{"Value":2,"Nested":null}}}""", json);
+
+            linkedList = JsonSerializer.Deserialize(json, jsonTypeInfo);
+            Assert.Equal(2, linkedList.Nested.Nested.Value);
+        }
+
+        [Fact]
         public static void CombinedContexts_ThrowsInvalidOperationException()
         {
             var options = new JsonSerializerOptions

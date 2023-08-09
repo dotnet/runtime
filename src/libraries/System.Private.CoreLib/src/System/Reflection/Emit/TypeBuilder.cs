@@ -63,9 +63,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
-
             return DefineEventCore(name, attributes, eventtype);
         }
 
@@ -76,7 +73,12 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers,
             FieldAttributes attributes)
-                => DefineFieldCore(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
+            ArgumentNullException.ThrowIfNull(type);
+
+            return DefineFieldCore(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+        }
 
         protected abstract FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers,
             FieldAttributes attributes);
@@ -159,7 +161,11 @@ namespace System.Reflection.Emit
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
-                => DefineNestedTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return DefineNestedTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
+        }
 
         protected abstract TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize);
@@ -174,7 +180,11 @@ namespace System.Reflection.Emit
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
-                => DefineNestedTypeCore(name, attr, parent, null, packSize, typeSize);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return DefineNestedTypeCore(name, attr, parent, null, packSize, typeSize);
+        }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,
@@ -267,20 +277,48 @@ namespace System.Reflection.Emit
             SetCustomAttributeCore(con, binaryAttribute);
         }
 
-        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            SetCustomAttributeCore(customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
         }
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
 
         public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
             => SetParentCore(parent);
 
         protected abstract void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent);
+
+        public override Type MakePointerType()
+        {
+            return SymbolType.FormCompoundType("*", this, 0)!;
+        }
+
+        public override Type MakeByRefType()
+        {
+            return SymbolType.FormCompoundType("&", this, 0)!;
+        }
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType()
+        {
+            return SymbolType.FormCompoundType("[]", this, 0)!;
+        }
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType(int rank)
+        {
+            string s = GetRankString(rank);
+            return SymbolType.FormCompoundType(s, this, 0)!;
+        }
+
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        public override Type MakeGenericType(params Type[] typeArguments)
+        {
+            return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
+        }
     }
 }

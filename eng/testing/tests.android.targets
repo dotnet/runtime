@@ -69,6 +69,8 @@
           DestinationFolder="$(TestArchiveTestsDir)"
           SkipUnchangedFiles="true"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
+
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(AndroidGenerateAppBundle)' == 'true'" Directories="$(OutDir)" />
   </Target>
 
 </Project>
