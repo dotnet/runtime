@@ -19,7 +19,6 @@ namespace Microsoft.Interop
         private static readonly BlittableMarshaller s_blittable = new();
         private static readonly DelegateMarshaller s_delegate = new();
         private static readonly SafeHandleMarshaller s_safeHandle = new();
-        private static readonly StructAsHResultMarshaller s_structAsHResult = new();
         private InteropGenerationOptions Options { get; }
         private IMarshallingGeneratorFactory InnerFactory { get; }
 
@@ -109,10 +108,6 @@ namespace Microsoft.Interop
                 // void
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Void } }:
                     return ResolvedGenerator.Resolved(s_forwarder);
-
-                // Value type with MarshalAs(UnmanagedType.Error), to be marshalled as an unmanaged HRESULT.
-                case { ManagedType: ValueTypeInfo, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.Error, _) }:
-                    return ResolvedGenerator.Resolved(s_structAsHResult);
 
                 default:
                     return InnerFactory.Create(info, context);
