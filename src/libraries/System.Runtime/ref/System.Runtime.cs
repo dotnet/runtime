@@ -9639,6 +9639,7 @@ namespace System.IO
     }
     public static partial class File
     {
+        public static void AppendAllBytes(string path, byte[] bytes) { }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
