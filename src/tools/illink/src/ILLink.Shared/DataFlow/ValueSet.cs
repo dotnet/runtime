@@ -132,6 +132,8 @@ namespace ILLink.Shared.DataFlow
 
 		public static implicit operator ValueSet<TValue> (TValue value) => new (value);
 
+		public bool HasMultipleValues => _values is EnumerableValues;
+
 		public override bool Equals (object? obj) => obj is ValueSet<TValue> other && Equals (other);
 
 		public bool Equals (ValueSet<TValue> other)
