@@ -949,6 +949,15 @@ if(CLR_CMAKE_HOST_ALPINE_LINUX)
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif()
+
+if(CLR_CMAKE_HOST_APPLE)
+  # TODO: this is already set by configurecompiler.cmake, remove this once mono uses that
+  check_c_compiler_flag(-fno-objc-msgsend-selector-stubs COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+  if(COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+    set(CLR_CMAKE_COMMON_OBJC_FLAGS "${CLR_CMAKE_COMMON_OBJC_FLAGS} -fno-objc-msgsend-selector-stubs")
+  endif()
+endif()
+
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
