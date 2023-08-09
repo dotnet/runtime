@@ -659,12 +659,10 @@ namespace DebuggerTests
                     ("f[longString]", TBool(true)),
                     ("f[aBool]", TString("True")),
                     ("f[aChar]", TString("res_9")),
-                    ("f[shortString]", TBool(false))
-                    // ("f[aFloat]", TNumber(1)),
-                    // ("f[aDouble]", TNumber(2)),
-
-                    // FixMe: https://github.com/dotnet/runtime/issues/76014
-                    // ("f[aDecimal]", TNumber(3)) // object
+                    ("f[shortString]", TBool(false)),
+                    ("f[aFloat]", TNumber(1)),
+                    ("f[aDouble]", TNumber(2)),
+                    ("f[aDecimal]", TNumber(3)) // object
                 );
             });
 

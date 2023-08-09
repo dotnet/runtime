@@ -715,14 +715,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, CancellationToken token)
+        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, ElementType? expectedType, CancellationToken token)
         {
             switch (objValue["type"].Value<string>())
             {
                 case "number":
                 {
-                    // FixMe: what if the number is not int but single/double?
-                    Write(ElementType.I4, objValue["value"].Value<int>());
+                    var expected = expectedType is not null ? expectedType.Value : ElementType.I4;
+                    if (expected == ElementType.R4)
+                        Write(expected, objValue["value"].Value<float>());
+                    else if (expected == ElementType.R8)
+                        Write(expected, objValue["value"].Value<double>());
+                    else
+                        Write(expected, objValue["value"].Value<int>());
                     return true;
                 }
                 case "symbol":

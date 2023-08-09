@@ -358,6 +358,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int KickOffMethod { get; }
         internal bool IsCompilerGenerated { get; }
         private AsyncScopeDebugInformation[] _asyncScopes { get; set; }
+        private static SignatureTypeProvider _signatureTypeProvider = new();
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
@@ -436,6 +437,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (_parametersInfo != null)
                 return _parametersInfo;
 
+            var signature = methodDef.Signature;
+            var sigReader = Assembly.asmMetadataReader.GetBlobReader(signature);
+            var decoder = new SignatureDecoder<ElementType, object>(_signatureTypeProvider, Assembly.asmMetadataReader, genericContext: null);
+            var methodSignature = decoder.DecodeMethodSignature(ref sigReader);
+
             var paramsHandles = methodDef.GetParameters().ToArray();
             var paramsCnt = paramsHandles.Length;
             var paramsInfo = new ParameterInfo[paramsCnt];
@@ -447,7 +453,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
                 if (!isOptional)
                 {
-                    paramsInfo[i] = new ParameterInfo(paramName);
+                    paramsInfo[i] = new ParameterInfo(paramName, methodSignature.ParameterTypes[i]);
                     continue;
                 }
                 var constantHandle = parameter.GetDefaultValue();
@@ -653,7 +659,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public ElementType? TypeCode { get; init; }
 
         public object Value { get; init; }
-
+        public ParameterInfo(string name, ElementType type)
+        {
+            Name = name;
+            TypeCode = type;
+        }
         public ParameterInfo(string name, ConstantTypeCode? typeCode = null, byte[] value = null)
         {
             Name = name;
