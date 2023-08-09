@@ -1541,12 +1541,6 @@ protected:
             _idEvexbContext = 1;
             assert(_idEvexbContext == 1);
         }
-        void idClearEvexbContext()
-        {
-            assert(_idEvexbContext == 1);
-            _idEvexbContext = 0;
-            assert(_idEvexbContext == 0);
-        }
 #endif
 
 #ifdef TARGET_ARMARCH
