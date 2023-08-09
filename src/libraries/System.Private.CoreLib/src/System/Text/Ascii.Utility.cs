@@ -2146,8 +2146,7 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            // Commented out to workaround https://github.com/dotnet/runtime/issues/90265
-            // Debug.Assert(Vector256.IsHardwareAccelerated, "Vector256 is required.");
+            Debug.Assert(Vector256.IsHardwareAccelerated, "Vector256 is required.");
             Debug.Assert(BitConverter.IsLittleEndian, "This implementation assumes little-endian.");
             Debug.Assert(elementCount >= 2 * Vector256.Size);
 
