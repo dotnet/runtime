@@ -5,14 +5,6 @@ namespace System
 {
     public partial class TypeLoadException
     {
-        // Called by runtime
-        internal TypeLoadException(string className, string assemblyName)
-            : this(null)
-        {
-            _className = className;
-            _assemblyName = assemblyName;
-        }
-
         private void SetMessageField()
         {
             if (_message != null)

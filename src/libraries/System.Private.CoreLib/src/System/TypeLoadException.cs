@@ -29,6 +29,14 @@ namespace System
             HResult = HResults.COR_E_TYPELOAD;
         }
 
+        public TypeLoadException(string className, string assemblyName) : base()
+        {
+            _className = className;
+            _assemblyName = assemblyName;
+
+            SetMessageField();
+        }
+
         public override string Message
         {
             get

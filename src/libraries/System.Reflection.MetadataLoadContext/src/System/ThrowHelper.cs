@@ -9,7 +9,7 @@ using System.Reflection.TypeLoading;
 
 namespace System
 {
-    internal static class ThrowHelper
+    internal static partial class ThrowHelper
     {
         internal static AmbiguousMatchException GetAmbiguousMatchException(RoDefinitionType roDefinitionType)
         {

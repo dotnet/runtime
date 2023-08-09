@@ -410,6 +410,18 @@ namespace System.Reflection.Tests
             }
         }
 
+        [ConditionalFact(typeof(AssemblyTests), nameof(IsDotnetMajorVersion8OrGreater))]
+        public static void TypeLoadExceptionShouldExposeTypeName()
+        {
+            string inexistantTypeName = "NonExistentType";
+            // Note this is using SimpleAssemblyResolver in order to resolve names between assemblies.
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
+            {
+                TypeLoadException ex = Assert.Throws<TypeLoadException>(() => lc.CoreAssembly.GetType(inexistantTypeName, true));
+                Assert.Equal(inexistantTypeName, ex.TypeName);
+            }
+        }
+
         [Fact]
         public static void AssemblyGetForwardedTypes3()
         {
@@ -624,5 +636,7 @@ namespace System.Reflection.Tests
                 Assert.Null(r);
             }
         }
+
+        public static bool IsDotnetMajorVersion8OrGreater() => PlatformDetection.IsNetCore && Environment.Version.Major >= 8;
     }
 }

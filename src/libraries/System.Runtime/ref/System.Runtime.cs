@@ -6331,6 +6331,7 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected TypeLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TypeLoadException(string? message) { }
+        public TypeLoadException(string className, string assemblyName) { }
         public TypeLoadException(string? message, System.Exception? inner) { }
         public override string Message { get { throw null; } }
         public string TypeName { get { throw null; } }
