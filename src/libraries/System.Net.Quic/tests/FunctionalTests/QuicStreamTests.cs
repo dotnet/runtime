@@ -1211,34 +1211,41 @@ namespace System.Net.Quic.Tests
 
         private const int SmallestPayload = 1;
         private const int SmallPayload = 1024;
+        private const int BufferPayload = 64*1024;
+        private const int BufferPlusPayload = 64*1024+1;
         private const int BigPayload = 1024*1024*1024;
 
+        public static IEnumerable<object[]> PayloadSizeAndTwoBools()
+        {
+            var boolValues = new [] { true, false };
+            var payloadValues = new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload };
+            return
+                from payload in payloadValues
+                from bool1 in boolValues
+                from bool2 in boolValues
+                select new object[] { payload, bool1, bool2 };
+        }
+
         [Theory]
-        [InlineData(SmallestPayload, true, true)]
-        [InlineData(SmallPayload, true, true)]
-        [InlineData(BigPayload, true, true)]
-        [InlineData(SmallestPayload, false, true)]
-        [InlineData(SmallPayload, false, true)]
-        [InlineData(BigPayload, false, true)]
-        [InlineData(SmallestPayload, true, false)]
-        [InlineData(SmallPayload, true, false)]
-        [InlineData(BigPayload, true, false)]
-        [InlineData(SmallestPayload, false, false)]
-        [InlineData(SmallPayload, false, false)]
-        [InlineData(BigPayload, false, false)]
+        [MemberData(nameof(PayloadSizeAndTwoBools))]
         public async Task ReadsClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool useDispose)
         {
-            using SemaphoreSlim sem = new SemaphoreSlim(0);
+            using SemaphoreSlim serverSem = new SemaphoreSlim(0);
+            using SemaphoreSlim clientSem = new SemaphoreSlim(0);
+
             await RunClientServer(
                 serverFunction: async connection =>
                 {
                     QuicError expectedError = QuicError.ConnectionAborted;
                     long expectedErrorCode = DefaultCloseErrorCodeClient;
+
                     await using QuicStream stream = await connection.AcceptInboundStreamAsync();
                     await stream.WriteAsync(new byte[payloadSize], completeWrites: true);
+                    serverSem.Release();
+                    await clientSem.WaitAsync();
+
                     if (closeServer)
                     {
-                        await sem.WaitAsync();
                         expectedError = QuicError.OperationAborted;
                         expectedErrorCode = DefaultCloseErrorCodeServer;
                         if (useDispose)
@@ -1249,10 +1256,6 @@ namespace System.Net.Quic.Tests
                         {
                             await connection.CloseAsync(DefaultCloseErrorCodeServer);
                         }
-                    }
-                    else
-                    {
-                        sem.Release();
                     }
 
                     var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.ReadsClosed);
@@ -1269,11 +1272,14 @@ namespace System.Net.Quic.Tests
                 {
                     QuicError expectedError = QuicError.ConnectionAborted;
                     long expectedErrorCode = DefaultCloseErrorCodeServer;
+
                     await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     await stream.WriteAsync(new byte[payloadSize], completeWrites: true);
+                    clientSem.Release();
+                    await serverSem.WaitAsync();
+
                     if (!closeServer)
                     {
-                        await sem.WaitAsync();
                         expectedError = QuicError.OperationAborted;
                         expectedErrorCode = DefaultCloseErrorCodeClient;
                         if (useDispose)
@@ -1284,10 +1290,6 @@ namespace System.Net.Quic.Tests
                         {
                             await connection.CloseAsync(DefaultCloseErrorCodeClient);
                         }
-                    }
-                    else
-                    {
-                        sem.Release();
                     }
 
                     var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.ReadsClosed);
@@ -1304,31 +1306,25 @@ namespace System.Net.Quic.Tests
         }
 
         [Theory]
-        [InlineData(SmallestPayload, true, true)]
-        [InlineData(SmallPayload, true, true)]
-        [InlineData(BigPayload, true, true)]
-        [InlineData(SmallestPayload, false, true)]
-        [InlineData(SmallPayload, false, true)]
-        [InlineData(BigPayload, false, true)]
-        [InlineData(SmallestPayload, true, false)]
-        [InlineData(SmallPayload, true, false)]
-        [InlineData(BigPayload, true, false)]
-        [InlineData(SmallestPayload, false, false)]
-        [InlineData(SmallPayload, false, false)]
-        [InlineData(BigPayload, false, false)]
+        [MemberData(nameof(PayloadSizeAndTwoBools))]
         public async Task WritesClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool useDispose)
         {
-            using SemaphoreSlim sem = new SemaphoreSlim(0);
+            using SemaphoreSlim serverSem = new SemaphoreSlim(0);
+            using SemaphoreSlim clientSem = new SemaphoreSlim(0);
+
             await RunClientServer(
                 serverFunction: async connection =>
                 {
                     QuicError expectedError = QuicError.ConnectionAborted;
                     long expectedErrorCode = DefaultCloseErrorCodeClient;
+
                     await using QuicStream stream = await connection.AcceptInboundStreamAsync();
                     await stream.WriteAsync(new byte[payloadSize]);
+                    serverSem.Release();
+                    await clientSem.WaitAsync();
+
                     if (closeServer)
                     {
-                        await sem.WaitAsync();
                         expectedError = QuicError.OperationAborted;
                         expectedErrorCode = DefaultCloseErrorCodeServer;
                         if (useDispose)
@@ -1339,10 +1335,6 @@ namespace System.Net.Quic.Tests
                         {
                             await connection.CloseAsync(DefaultCloseErrorCodeServer);
                         }
-                    }
-                    else
-                    {
-                        sem.Release();
                     }
 
                     var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.WritesClosed);
@@ -1359,11 +1351,14 @@ namespace System.Net.Quic.Tests
                 {
                     QuicError expectedError = QuicError.ConnectionAborted;
                     long expectedErrorCode = DefaultCloseErrorCodeServer;
+
                     await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     await stream.WriteAsync(new byte[payloadSize]);
+                    clientSem.Release();
+                    await serverSem.WaitAsync();
+
                     if (!closeServer)
                     {
-                        await sem.WaitAsync();
                         expectedError = QuicError.OperationAborted;
                         expectedErrorCode = DefaultCloseErrorCodeClient;
                         if (useDispose)
@@ -1374,10 +1369,6 @@ namespace System.Net.Quic.Tests
                         {
                             await connection.CloseAsync(DefaultCloseErrorCodeClient);
                         }
-                    }
-                    else
-                    {
-                        sem.Release();
                     }
 
                     var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.WritesClosed);
@@ -1394,18 +1385,12 @@ namespace System.Net.Quic.Tests
         }
 
         [Theory]
-        [InlineData(SmallestPayload, true, true)]
-        [InlineData(SmallPayload, true, true)]
-        [InlineData(SmallestPayload, false, true)]
-        [InlineData(SmallPayload, false, true)]
-        [InlineData(SmallestPayload, true, false)]
-        [InlineData(SmallPayload, true, false)]
-        [InlineData(SmallestPayload, false, false)]
-        [InlineData(SmallPayload, false, false)]
+        [MemberData(nameof(PayloadSizeAndTwoBools))]
         public async Task ReadsWritesClosedFinish_StreamDisposed(int payloadSize, bool disposeServer, bool completeWrites)
         {
             using SemaphoreSlim serverSem = new SemaphoreSlim(0);
             using SemaphoreSlim clientSem = new SemaphoreSlim(0);
+            TaskCompletionSource<long?> tcs = new TaskCompletionSource<long?>();
 
             await RunClientServer(
                 serverFunction: async connection =>
@@ -1418,11 +1403,11 @@ namespace System.Net.Quic.Tests
 
                     if (disposeServer)
                     {
-                        await DisposeSide(stream, serverSem);
+                        await DisposeSide(stream, tcs);
                     }
                     else
                     {
-                        await WaitingSide(stream, clientSem, DefaultStreamErrorCodeClient);
+                        await WaitingSide(stream, tcs.Task, DefaultStreamErrorCodeClient);
                     }
                 },
                 clientFunction: async connection =>
@@ -1435,99 +1420,31 @@ namespace System.Net.Quic.Tests
 
                     if (disposeServer)
                     {
-                        await WaitingSide(stream, serverSem, DefaultStreamErrorCodeServer);
+                        await WaitingSide(stream, tcs.Task, DefaultStreamErrorCodeServer);
                     }
                     else
                     {
-                        await DisposeSide(stream, clientSem);
+                        await DisposeSide(stream, tcs);
                     }
                 });
 
-            async ValueTask DisposeSide(QuicStream stream, SemaphoreSlim sem)
+            async ValueTask DisposeSide(QuicStream stream, TaskCompletionSource<long?> tcs)
             {
-                await stream.DisposeAsync();
-
-                // Reads should be aborted as we didn't consume the data.
-                var readEx = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.ReadsClosed);
-                Assert.Null(readEx.ApplicationErrorCode);
-
-                // Writes should be completed successfully as they should all fit in the peers buffers.
-                Assert.True(stream.WritesClosed.IsCompletedSuccessfully);
-
-                sem.Release();
-            }
-            async ValueTask WaitingSide(QuicStream stream, SemaphoreSlim sem, long errorCode)
-            {
-                await sem.WaitAsync();
-
-                // Reads should be still open as the peer closed gracefully and we are keeping the data in buffer.
-                Assert.False(stream.ReadsClosed.IsCompleted);
-
-                if (!completeWrites)
+                // Abort writing side if it's getting blocked by peer not consuming the data.
+                long? abortCode = null;
+                if (completeWrites || payloadSize >= BigPayload)
                 {
-                    // Writes must be aborted by the peer as we didn't complete them.
-                    var writeEx = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => stream.WritesClosed);
-                    Assert.Equal(errorCode, writeEx.ApplicationErrorCode);
+                    try
+                    {
+                        await stream.WritesClosed.WaitAsync(TimeSpan.FromSeconds(2.5));
+                    }
+                    catch (TimeoutException)
+                    {
+                        Assert.True(payloadSize >= BigPayload);
+                        abortCode = 0xABC;
+                        stream.Abort(QuicAbortDirection.Write, abortCode.Value);
+                    }
                 }
-                else
-                {
-                    // Writes must be closed, but whether successfully or not depends on the timing.
-                    // Peer might have aborted reading side before receiving all the data.
-                    Assert.True(stream.WritesClosed.IsCompleted);
-                }
-            }
-        }
-
-        [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(false, false)]
-        public async Task ReadsWritesClosedFinish_BigData_StreamDisposed(bool disposeServer, bool completeWrites)
-        {
-            using SemaphoreSlim serverSem = new SemaphoreSlim(0);
-            using SemaphoreSlim clientSem = new SemaphoreSlim(0);
-
-            await RunClientServer(
-                serverFunction: async connection =>
-                {
-                    // Establish stream, send the payload based on the input and synchronize with the peer.
-                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
-                    await stream.WriteAsync(new byte[BigPayload], completeWrites);
-                    serverSem.Release();
-                    await clientSem.WaitAsync();
-
-                    if (disposeServer)
-                    {
-                        await DisposeSide(stream, serverSem, DefaultStreamErrorCodeServer);
-                    }
-                    else
-                    {
-                        await WaitingSide(stream, clientSem, DefaultStreamErrorCodeClient);
-                    }
-                },
-                clientFunction: async connection =>
-                {
-                    // Establish stream, send the payload based on the input and synchronize with the peer.
-                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
-                    await stream.WriteAsync(new byte[BigPayload], completeWrites);
-                    clientSem.Release();
-                    await serverSem.WaitAsync();
-
-                    if (disposeServer)
-                    {
-                        await WaitingSide(stream, serverSem, DefaultStreamErrorCodeServer);
-                    }
-                    else
-                    {
-                        await DisposeSide(stream, clientSem, DefaultStreamErrorCodeClient);
-                    }
-                });
-
-            async ValueTask DisposeSide(QuicStream stream, SemaphoreSlim sem, long errorCode)
-            {
-                // With big payloads, graceful closure of the writing side won't shutdown the stream until the peer either consumes the data or aborts the reading side.
-                stream.Abort(QuicAbortDirection.Write, errorCode);
 
                 await stream.DisposeAsync();
 
@@ -1536,18 +1453,34 @@ namespace System.Net.Quic.Tests
                 Assert.Null(readEx.ApplicationErrorCode);
 
                 // Writes should be aborted as we aborted them.
-                var writeEx = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.WritesClosed);
-                Assert.Null(writeEx.ApplicationErrorCode);
+                if (abortCode.HasValue)
+                {
+                    var writeEx = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.WritesClosed);
+                    Assert.Null(writeEx.ApplicationErrorCode);
+                }
+                else
+                {
+                    // Writes should be completed successfully as they should all fit in the peers buffers.
+                    Assert.True(stream.WritesClosed.IsCompletedSuccessfully);
+                }
 
-                sem.Release();
+                tcs.SetResult(abortCode);
             }
-            async ValueTask WaitingSide(QuicStream stream, SemaphoreSlim sem, long errorCode)
+            async ValueTask WaitingSide(QuicStream stream, Task<long?> task, long errorCode)
             {
-                await sem.WaitAsync();
+                long? abortCode = await task;
 
                 // Reads will be aborted by the peer as we didn't consume them all.
-                var readEx = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => stream.ReadsClosed);
-                Assert.Equal(errorCode, readEx.ApplicationErrorCode);
+                if (abortCode.HasValue)
+                {
+                    var readEx = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => stream.ReadsClosed);
+                    Assert.Equal(abortCode.Value, readEx.ApplicationErrorCode);
+                }
+                // Reads should be still open as the peer closed gracefully and we are keeping the data in buffer.
+                else
+                {
+                    Assert.False(stream.ReadsClosed.IsCompleted);
+                }
 
                 if (!completeWrites)
                 {
