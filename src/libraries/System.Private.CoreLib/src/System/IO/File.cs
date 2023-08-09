@@ -689,6 +689,22 @@ namespace System.IO
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
         }
 
+        public static void AppendAllBytes(string path, byte[] bytes)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+
+            if (fileHandle.CanSeek == false)
+            {
+                throw new NotSupportedException();
+            }
+
+            long fileOffset = RandomAccess.GetLength(fileHandle);
+            RandomAccess.WriteAtOffset(fileHandle, bytes, fileOffset);
+        }
+
         public static string[] ReadAllLines(string path)
             => ReadAllLines(path, Encoding.UTF8);
 
