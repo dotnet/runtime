@@ -29,7 +29,7 @@ namespace System
             HResult = HResults.COR_E_TYPELOAD;
         }
 
-        public TypeLoadException(string className, string assemblyName) : base()
+        public TypeLoadException(string assemblyName, string className) : base()
         {
             _className = className;
             _assemblyName = assemblyName;

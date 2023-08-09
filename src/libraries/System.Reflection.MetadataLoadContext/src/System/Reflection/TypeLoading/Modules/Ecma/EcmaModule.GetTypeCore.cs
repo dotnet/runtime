@@ -59,7 +59,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 return assembly?.GetTypeCore(ns, name, ignoreCase: false, out e);
             }
 
-            e = ThrowHelper.GetTypeLoadException(ns.ToUtf16().AppendTypeName(name.ToUtf16()), FullyQualifiedName);
+            e = ThrowHelper.GetTypeLoadException(FullyQualifiedName, ns.ToUtf16().AppendTypeName(name.ToUtf16()));
             return null;
         }
     }
