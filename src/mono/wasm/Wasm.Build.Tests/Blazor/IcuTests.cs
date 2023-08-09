@@ -40,8 +40,7 @@ public class IcuTests : BlazorWasmTestBase
                 id,
                 config,
                 WarnAsError: false,
-                GlobalizationMode: invariant == true ? GlobalizationMode.Invariant : GlobalizationMode.Hybrid,
-                ExpectedFileType: NativeFilesType.Relinked
+                GlobalizationMode: invariant == true ? GlobalizationMode.Invariant : GlobalizationMode.Hybrid
             ));
 
         string warning = "$(HybridGlobalization) has no effect when $(InvariantGlobalization) is set to true.";
@@ -78,8 +77,7 @@ public class IcuTests : BlazorWasmTestBase
                 id,
                 config,
                 WarnAsError: false,
-                GlobalizationMode: GlobalizationMode.Hybrid,
-                ExpectedFileType: NativeFilesType.Relinked
+                GlobalizationMode: GlobalizationMode.Hybrid
             ));
 
         string warning = "$(BlazorWebAssemblyLoadAllGlobalizationData) has no effect when $(HybridGlobalization) is set to true.";
@@ -116,8 +114,7 @@ public class IcuTests : BlazorWasmTestBase
                 id,
                 config,
                 WarnAsError: false,
-                GlobalizationMode: invariant == true ? GlobalizationMode.Invariant : GlobalizationMode.FullIcu,
-                ExpectedFileType: NativeFilesType.Relinked
+                GlobalizationMode: invariant == true ? GlobalizationMode.Invariant : GlobalizationMode.FullIcu
             ));
 
         string warning = "$(BlazorWebAssemblyLoadAllGlobalizationData) has no effect when $(InvariantGlobalization) is set to true.";
