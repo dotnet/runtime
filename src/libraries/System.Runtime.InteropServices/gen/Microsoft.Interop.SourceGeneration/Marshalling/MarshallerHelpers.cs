@@ -406,6 +406,26 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
+        /// Returns which stage cleanup should be performed for the parameter.
+        /// </summary>
+        public static StubCodeContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
+        {
+            // Unmanaged to managed doesn't properly handle lifetimes right now and will default to the original behavior.
+            // Failures will only occur when marshalling fails, and would only cause leaks, not double frees.
+            // See https://github.com/dotnet/runtime/issues/89483 for more details
+            if (context.Direction is MarshalDirection.UnmanagedToManaged)
+                return StubCodeContext.Stage.CleanupCallerAllocated;
+
+            return GetMarshalDirection(info, context) switch
+            {
+                MarshalDirection.UnmanagedToManaged => StubCodeContext.Stage.CleanupCalleeAllocated,
+                MarshalDirection.ManagedToUnmanaged => StubCodeContext.Stage.CleanupCallerAllocated,
+                MarshalDirection.Bidirectional => StubCodeContext.Stage.CleanupCallerAllocated,
+                _ => throw new UnreachableException()
+            };
+        }
+
+        /// <summary>
         /// Ensure that the count of a collection is available at call time if the parameter is not an out parameter.
         /// It only looks at an indirection level of 0 (the size of the outer array), so there are some holes in
         /// analysis if the parameter is a multidimensional array, but that case seems very unlikely to be hit.
@@ -417,10 +437,10 @@ namespace Microsoft.Interop
             if (stubDirection is MarshalDirection.ManagedToUnmanaged)
                 return;
 
-            if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
-                && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo
-                && !(info.RefKind is RefKind.Out
-                    || info.ManagedIndex is TypePositionInfo.ReturnIndex))
+            if (!(info.RefKind is RefKind.Out
+                    || info.ManagedIndex is TypePositionInfo.ReturnIndex)
+                && info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
+                && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo)
             {
                 if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
                 {
@@ -444,6 +464,5 @@ namespace Microsoft.Interop
                 // If the parameter is multidimensional and a higher indirection level parameter is ByValue [Out], then we should warn.
             }
         }
-
     }
 }

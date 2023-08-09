@@ -4,11 +4,15 @@
 using System;
 using System.Collections;
 
+#if HOST_MODEL
+namespace Microsoft.NET.HostModel.Win32Resources
+#else
 namespace ILCompiler.Win32Resources
+#endif
 {
     public unsafe partial class ResourceData
     {
-        private void AddResource(object type, object name, ushort language, byte[] data)
+        private void AddResourceInternal(object name, object type, ushort language, byte[] data)
         {
             ResType resType;
 
