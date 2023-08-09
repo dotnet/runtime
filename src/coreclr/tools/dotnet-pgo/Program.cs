@@ -1414,6 +1414,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 // on filter criterias.
                 if (_command.ProcessJitEvents && (excludeEventsBeforeJittingMethod != null || excludeEventsAfterJittingMethod != null))
                 {
+                    double firstMatchEventsBeforeJittingMethod = double.PositiveInfinity;
+                    double lastMatchEventsAfterJittingMethod = double.NegativeInfinity;
                     foreach (var e in p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>())
                     {
                         if (e.ClrInstanceID != clrInstanceId)
@@ -1437,15 +1439,26 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         int parenIndex = e.MethodSignature.IndexOf('(');
                         string paramsArgs = e.MethodSignature.Substring(parenIndex);
                         string perfviewMethodName = e.MethodNamespace + "." + e.MethodName + paramsArgs;
-                        if (e.TimeStampRelativeMSec > excludeEventsBefore && excludeEventsBeforeJittingMethod != null && excludeEventsBeforeJittingMethod.IsMatch(perfviewMethodName))
+
+                        if (e.TimeStampRelativeMSec > excludeEventsBefore && e.TimeStampRelativeMSec < firstMatchEventsBeforeJittingMethod && excludeEventsBeforeJittingMethod != null && excludeEventsBeforeJittingMethod.IsMatch(perfviewMethodName))
                         {
-                            excludeEventsBefore = e.TimeStampRelativeMSec;
+                            firstMatchEventsBeforeJittingMethod = e.TimeStampRelativeMSec;
                         }
 
-                        if (e.TimeStampRelativeMSec < excludeEventsAfter && excludeEventsAfterJittingMethod != null && excludeEventsAfterJittingMethod.IsMatch(perfviewMethodName))
+                        if (e.TimeStampRelativeMSec < excludeEventsAfter && e.TimeStampRelativeMSec > lastMatchEventsAfterJittingMethod && excludeEventsAfterJittingMethod != null && excludeEventsAfterJittingMethod.IsMatch(perfviewMethodName))
                         {
-                            excludeEventsAfter = e.TimeStampRelativeMSec;
+                            lastMatchEventsAfterJittingMethod = e.TimeStampRelativeMSec;
                         }
+                    }
+
+                    if (firstMatchEventsBeforeJittingMethod < double.PositiveInfinity)
+                    {
+                        excludeEventsBefore = firstMatchEventsBeforeJittingMethod;
+                    }
+
+                    if (lastMatchEventsAfterJittingMethod > double.NegativeInfinity)
+                    {
+                        excludeEventsAfter = lastMatchEventsAfterJittingMethod;
                     }
 
                     if (excludeEventsBefore > excludeEventsAfter)
