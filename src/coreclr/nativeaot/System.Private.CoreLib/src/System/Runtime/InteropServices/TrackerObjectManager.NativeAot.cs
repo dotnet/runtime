@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices
         private static unsafe IntPtr CreateHostServices()
         {
             IntPtr wrapperMem = (IntPtr)NativeMemory.Alloc(2 * (nuint)sizeof(IntPtr));
-            *(IntPtr*)(wrapperMem) = ComWrappers.DefaultIReferenceTrackerHostVftblPtr;
+            *(IntPtr*)(wrapperMem) = DefaultIReferenceTrackerHostVftblPtr;
             *(IntPtr*)(wrapperMem + sizeof(IntPtr)) = wrapperMem;
             return wrapperMem;
         }
@@ -82,14 +82,14 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException();
             }
 
-            if (Marshal.QueryInterface(punk, in ComWrappers.IID_IUnknown, out IntPtr ppv) != 0)
+            if (Marshal.QueryInterface(punk, in IID_IUnknown, out IntPtr ppv) != 0)
             {
                 throw new InvalidCastException();
             }
 
             using ComHolder identity = new ComHolder(ppv);
-            using ComHolder trackerTarget = new ComHolder(ComWrappers.GetOrCreateTrackerTarget(identity.Ptr));
-            if (Marshal.QueryInterface(trackerTarget.Ptr, in ComWrappers.IID_IReferenceTrackerTarget, out ppNewReference) != 0)
+            using ComHolder trackerTarget = new ComHolder(GetOrCreateTrackerTarget(identity.Ptr));
+            if (Marshal.QueryInterface(trackerTarget.Ptr, in IID_IReferenceTrackerTarget, out ppNewReference) != 0)
             {
                 throw new InvalidCastException();
             }
@@ -108,6 +108,8 @@ namespace System.Runtime.InteropServices
 
     internal static class TrackerObjectManager
     {
+        internal static readonly IntPtr s_findReferencesTargetCallback = FindReferenceTargetsCallback.CreateFindReferenceTargetsCallback();
+
         internal static volatile IntPtr s_TrackerManager;
         internal static volatile bool s_HasTrackingStarted;
         internal static volatile bool s_IsGlobalPeggingOn = true;
@@ -238,9 +240,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void AddReferencePath(object target, object foundReference)
+        public static bool AddReferencePath(object target, object foundReference)
         {
-            s_ReferenceCache.AddDependentHandle(target, foundReference);
+            return s_ReferenceCache.AddDependentHandle(target, foundReference);
         }
 
         [UnmanagedCallersOnly]
@@ -332,6 +334,66 @@ namespace System.Runtime.InteropServices
         public static void PegFromTrackerSource(IntPtr pThis)
         {
             Marshal.ThrowExceptionForHR((*(delegate* unmanaged[Stdcall]<IntPtr, int>**)pThis)[9](pThis));
+        }
+    }
+
+    // Callback implementation of IFindReferenceTargetsCallback
+    internal unsafe struct FindReferenceTargetsCallback
+    {
+        internal static GCHandle s_currentRootObjectHandle;
+
+        [UnmanagedCallersOnly]
+        private static unsafe int IFindReferenceTargetsCallback_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
+        {
+            if (pThis == IntPtr.Zero)
+            {
+                return HResults.E_POINTER;
+            }
+
+            if (*guid == IID_IFindReferenceTargetsCallback || *guid == IID_IUnknown)
+            {
+                *ppObject = pThis;
+                return 0;
+            }
+            else
+            {
+                return HResults.COR_E_INVALIDCAST;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe int IFindReferenceTargetsCallback_FoundTrackerTarget(IntPtr pThis, IntPtr referenceTrackerTarget)
+        {
+            if (referenceTrackerTarget == IntPtr.Zero)
+            {
+                return HResults.E_INVALIDARG;
+            }
+
+            if (TryGetObject(referenceTrackerTarget, out object? foundObject))
+            {
+                // Notify the runtime a reference path was found.
+                return TrackerObjectManager.AddReferencePath(s_currentRootObjectHandle.Target, foundObject) ? HResults.S_OK : HResults.S_FALSE;
+            }
+
+            return HResults.S_OK;
+        }
+
+        private static unsafe IntPtr CreateDefaultIFindReferenceTargetsCallbackVftbl()
+        {
+            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(FindReferenceTargetsCallback), 4 * sizeof(IntPtr));
+            vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&IFindReferenceTargetsCallback_QueryInterface;
+            vftbl[1] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_AddRef;
+            vftbl[2] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_Release;
+            vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&IFindReferenceTargetsCallback_FoundTrackerTarget;
+            return (IntPtr)vftbl;
+        }
+
+        internal static unsafe IntPtr CreateFindReferenceTargetsCallback()
+        {
+            IntPtr wrapperMem = (IntPtr)NativeMemory.Alloc(2 * (nuint)sizeof(IntPtr));
+            *(IntPtr*)(wrapperMem) = CreateDefaultIFindReferenceTargetsCallbackVftbl();
+            *(IntPtr*)(wrapperMem + sizeof(IntPtr)) = wrapperMem;
+            return wrapperMem;
         }
     }
 
