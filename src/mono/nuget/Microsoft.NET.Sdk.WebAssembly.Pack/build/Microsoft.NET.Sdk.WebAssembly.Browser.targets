@@ -168,14 +168,20 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(BlazorIcuDataFileName)' != '' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(BlazorIcuDataFileName) is set." />
     <PropertyGroup>
-      <HybridGlobalization Condition="'$(BlazorIcuDataFileName)' != ''">false</HybridGlobalization>
+      <_LoadCustomIcuData>false</_LoadCustomIcuData>
+      <_LoadCustomIcuData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
+      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true'">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
+      <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' != 'true' AND '$(_LoadCustomIcuData)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true'">$(HybridGlobalization)</_IsHybridGlobalization>
+      <_IsHybridGlobalization Condition="'$(HybridGlobalization)' == ''">false</_IsHybridGlobalization>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(_BlazorWebAssemblyLoadAllGlobalizationData)' == ''">false</_BlazorWebAssemblyLoadAllGlobalizationData>
-      <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' == 'true'"></_IsHybridGlobalization>
-      <_BlazorIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
-      <_LoadCustomIcuData>false</_LoadCustomIcuData>
-      <_LoadCustomIcuData Condition="'$(_BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
     </PropertyGroup>
+    <ItemGroup Condition="'$(_LoadCustomIcuData)' == 'true'">
+      <!-- First make sure we do not have the duplicate of this file (might happen if it's from the runtime pack). Then, add it. -->
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
+                               Condition="@(WasmNativeAsset->Count()) > 0 and '%(FileName)' == $([System.IO.Path]::GetFileName('$(BlazorIcuDataFileName)')) and '%(Extension)' == $([System.IO.Path]::GetExtension('$(BlazorIcuDataFileName)'))" />      
+      <ReferenceCopyLocalPaths Include="$(_BlazorIcuDataFileName)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">

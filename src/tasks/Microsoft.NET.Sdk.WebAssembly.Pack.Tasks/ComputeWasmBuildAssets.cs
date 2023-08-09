@@ -77,10 +77,9 @@ public class ComputeWasmBuildAssets : Task
                 return true;
             }
 
-            if (AssetsComputingHelper.TryGetAssetFilename(CustomIcuCandidate, out string customIcuCandidateFilename))
+            if (!AssetsComputingHelper.TryGetAssetFilename(CustomIcuCandidate, out string customIcuCandidateFilename))
             {
-                var customIcuCandidate = AssetsComputingHelper.GetCustomIcuAsset(CustomIcuCandidate);
-                assetCandidates.Add(customIcuCandidate);
+                Log.LogMessage("Failed getting custom icu asset file name");
             }
 
             for (int i = 0; i < Candidates.Length; i++)
