@@ -362,47 +362,80 @@ public sealed partial class QuicStream
         }
 
         // Concurrent call, this one lost the race.
-        if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
+        if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, default))
         {
             throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
         }
 
-        // No need to call anything since we already have a result, most likely an exception.
-        if (valueTask.IsCompleted)
+        // Register cancellation if the token can be cancelled and the task is not completed yet.
+        CancellationTokenRegistration cancellationRegistration = default;
+        bool aborted = false;
+        try
         {
-            await valueTask.ConfigureAwait(false);
-            return;
-        }
-
-        // For an empty buffer complete immediately, close the writing side of the stream if necessary.
-        if (buffer.IsEmpty)
-        {
-            _sendTcs.TrySetResult();
-            if (completeWrites)
+            if (cancellationToken.CanBeCanceled)
             {
-                CompleteWrites();
+                cancellationRegistration = cancellationToken.UnsafeRegister((obj, cancellationToken) =>
+                {
+                    try
+                    {
+                        QuicStream stream = (QuicStream)obj!;
+                        stream.Abort(QuicAbortDirection.Write, stream._defaultErrorCode);
+                        aborted = true;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // We collided with a Dispose in another thread. This can happen
+                        // when using CancellationTokenSource.CancelAfter.
+                        // Ignore the exception
+                    }
+                }, this);
             }
-            await valueTask.ConfigureAwait(false);
-            return;
-        }
 
-        unsafe
-        {
-            _sendBuffers.Initialize(buffer);
-            int status = MsQuicApi.Api.StreamSend(
-                _handle,
-                _sendBuffers.Buffers,
-                (uint)_sendBuffers.Count,
-                completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                null);
-            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+            // No need to call anything since we already have a result, most likely an exception.
+            if (valueTask.IsCompleted)
             {
-                _sendBuffers.Reset();
-                _sendTcs.TrySetException(exception, final: true);
+                await valueTask.ConfigureAwait(false);
+                return;
+            }
+
+            // For an empty buffer complete immediately, close the writing side of the stream if necessary.
+            if (buffer.IsEmpty)
+            {
+                _sendTcs.TrySetResult();
+                if (completeWrites)
+                {
+                    CompleteWrites();
+                }
+                await valueTask.ConfigureAwait(false);
+                return;
+            }
+
+            unsafe
+            {
+                _sendBuffers.Initialize(buffer);
+                int status = MsQuicApi.Api.StreamSend(
+                    _handle,
+                    _sendBuffers.Buffers,
+                    (uint)_sendBuffers.Count,
+                    completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
+                    null);
+                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+                {
+                    _sendBuffers.Reset();
+                    _sendTcs.TrySetException(exception, final: true);
+                }
+            }
+
+            await valueTask.ConfigureAwait(false);
+        }
+        finally
+        {
+            cancellationRegistration.Dispose();
+            if (aborted)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
             }
         }
-
-        await valueTask.ConfigureAwait(false);
     }
 
     /// <summary>
