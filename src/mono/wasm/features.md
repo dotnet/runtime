@@ -330,11 +330,11 @@ It includes the WASM templates for `dotnet new` and also preview version of mult
 
 ### Debugging
 
-You can use browser dev tools to debug the JavaScript of the application and the runtime. 
+You can use browser dev tools to debug the JavaScript of the application and the runtime.
 
 You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
 
-You could also debug the C# code using our integration with browser dev tools or Visual Studio. 
+You could also debug the C# code using our integration with browser dev tools or Visual Studio.
 See detailed [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/debug)
 
 ### Native debug symbols
