@@ -33,7 +33,10 @@
     <DirectPInvoke Include="__Internal" />
     <_ExcludeFromAppDir Include=".dll" />
     <_ExcludeFromAppDir Include=".json" />
-    <_ExcludeFromAppDir Include="libbootstrapper.o" />
+    <!-- The libbootstrapper and libbootstrapperdll get copied over to the AppDir, and since their extension is *.o both get included in the app build which results with an error.
+         This was not a problem before when these libraries were shipped as archives. -->
+    <_ExcludeFromAppDir Condition="'$(PublishAotUsingRuntimePack)' == 'true'"
+                        Include="libbootstrapper.o" />
   </ItemGroup>
 
   <!-- Use locally built runtime and ilcompiler packages -->
