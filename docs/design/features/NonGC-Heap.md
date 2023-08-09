@@ -37,7 +37,7 @@ Here, VM must create a small pinned handle that keeps a reference to the source 
        ret
 ```
 
-## So can we just pin it or even allocate on the Pinned Object Heap?
+## Can we just pin them directly?
 
 [PinnedHeap](PinnedHeap.md) doc explains all the pitfalls of having long-living pinned objects in normal heaps. In contrast, the Pinned Object Heap (POH) itself may initially seem like a perfect target, but it comes with its own set of pitfalls too. The POH has a public API, allowing users to use it for both long- and short-living objects. This flexibility can create complications when these objects are mixed with immortal ones. Consider the following arrangement:
 ```
@@ -48,11 +48,11 @@ Since it's not guaranteed that all immortal objects will be allocated simultaneo
 ## Benefits of the NonGC heap
 
 As it was already noted, the two most obvious benefits of such a separate heap are:
-* **No Mark-n-Sweep Participation**: Since the objects in the NonGC Heap are always alive and the heap itself is not managed by the GC, there's no need for the heap to be involved in the mark-and-sweep procedure. This also eliminates the need to root objects to a specific AppDomain or Assembly Load Context (ALC) to maintain their persistence.
-* **Direct Addressing by JIT**: The JIT compiler can "bake" direct addresses into the code generation, removing the need for redundant indirect loads. This enhances the efficiency of code execution.
+* **No Mark-n-Sweep participation**: Since the objects in the NonGC Heap are always alive and the heap itself is not managed by the GC, there's no need for the heap to be involved in the mark-and-sweep procedure. This also eliminates the need to root objects to a specific AppDomain or Assembly Load Context (ALC) to maintain their persistence.
+* **Address embedding in RyuJIT**: The JIT compiler can "bake" direct addresses into the code generation, removing the need for redundant indirect loads. This enhances the efficiency of code execution.
 
 There are also a couple of unobvious benefits:
-* **No Write Barriers:** Since the NonGC heap is not managed by the GC we no longer need to emit the write-barriers for objects in it, e.g.:
+* **No Write-Barriers:** Since the NonGC heap is not managed by the GC we no longer need to emit the write-barriers for objects in it, e.g.:
 ```cs
 string _field;
 
@@ -83,16 +83,16 @@ Although, we may need to emit memory barriers on platforms with a weak memory mo
 
 ## Limitations: which objects cannot be allocated on NonGC heaps
 The NonGC Heap, while powerful and beneficial, comes with certain inherent limitations, both obvious and specific to the current design used by CoreCLR and NativeAOT:
-* **Immortal Objects Only:** Only immortal objects should be allocated on NonGC heap.
+* **Immortal objects only:** Only immortal objects should be allocated on NonGC heap.
 * **Avoid unloadble contexts:** NonGC heap should never be used for objects belonging to unloadable contexts. Doing so could lead to potential memory leaks. As a consequence, all string literals associated with **unloadable** Assembly Load Contexts (ALCs) won't be placed in the NonGC Heap.
-* **No References to GC Heap's Objects:** NonGC heap **must** never contain references to GC heaps' objects. It may contain references to other NonGC objects.
+* **No References to GC Heap's objects:** NonGC heap **must** never contain references to GC heaps' objects. However, it may contain references to other NonGC objects and GC heaps are allowed to reference NonGC objects.
 * The current design of CoreCLR's `FrozenObjectHeapManager` has certain design limitations such as:
   * Large objects are not supported.
   * Objects requiring unusual data alignment are not supported.
 
 Because of these restrictions, users **must never** assume that certain kinds of objects can be accessed without pinning.
 
-## What typically can be found in an NonGC heap?
+## What typically can be found in NonGC heap?
 The NonGC Heap is suitable for a specific set of objects that adhere to the previously described rules. Here's a list showcasing the types of objects that are commonly found in the NonGC Heap for CoreCLR and NativeAOT runtimes:
 * String literal objects
 * RuntimeType objects (CoreCLR-only as of the time of writing), which means for:
