@@ -371,13 +371,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
   </ItemGroup>
 
-  <!-- Test WASM with WASMStripIL enabled -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunAOTCompilation)' == 'true'">
-    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\Browser\StartupHook\WebAssembly.Browser.StartupHook.Test.csproj"
-                      AdditionalProperties="%(AdditionalProperties);WASMStripIL=true;TestProjectName=WebAssembly_Browser_StartupHook_Test_ILStripped"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
   <!-- Aggressive Trimming related failures -->
   <ItemGroup Condition="('$(TargetOS)' != 'browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true')">
   </ItemGroup>
