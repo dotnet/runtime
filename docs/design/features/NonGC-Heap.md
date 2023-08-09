@@ -33,8 +33,8 @@ Produces the following codegen:
        ret
 ```
 Here, the VM must create a small pinned handle that keeps a reference to the source string object that is kept in a normal heap. The address of the pinned handle (`0xAABBCCDDEEFF` in the example above) is passed to RyuJIT, enabling it to access the original object via an indirect load and to keep the codegen GC-friendly in case if the source string object is moved to a different location during a sudden heap compaction. The pinned handle must be rooted to ensure it remains alive. By pinning the object itself instead, JIT can "bake" the direct reference, resulting in a more efficient codegen:
-```
-; Method Program:SetFTestield():System.String:this
+```asm
+; Method Program:Test():System.String:this
        mov      rax, 0x112233445566
        ret
 ```
