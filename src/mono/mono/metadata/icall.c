@@ -99,6 +99,8 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-signal-handler.h"
 
+#include <dnmd.h>
+
 #if _MSC_VER
 #pragma warning(disable:4047) // FIXME differs in levels of indirection
 #endif
@@ -3290,11 +3292,6 @@ ves_icall_RuntimeMethodInfo_GetPInvoke (MonoReflectionMethodHandle ref_method, i
 	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
-	MonoTableInfo *tables = image->tables;
-	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
-	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
-	guint32 im_cols [MONO_IMPLMAP_SIZE];
-	guint32 scope_token;
 	const char *import = NULL;
 	const char *scope = NULL;
 
@@ -3313,12 +3310,36 @@ ves_icall_RuntimeMethodInfo_GetPInvoke (MonoReflectionMethodHandle ref_method, i
 	}
 	else {
 		if (piinfo->implmap_idx) {
-			mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
 
-			piinfo->piflags = GUINT32_TO_UINT16 (im_cols [MONO_IMPLMAP_FLAGS]);
-			import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
-			scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
-			scope = mono_metadata_string_heap (image, scope_token);
+			mdcursor_t c;
+			if (!md_token_to_cursor(image->metadata_handle, mono_metadata_make_token(MONO_TABLE_IMPLMAP, piinfo->implmap_idx), &c)) {
+				mono_error_set_bad_image(error, image, "Invalid implmap row id 0x%x", piinfo->implmap_idx);
+				return;
+			}
+
+			uint32_t flags;
+			if (1 != md_get_column_value_as_constant(c, mdtImplMap_MappingFlags, 1, &flags)) {
+				mono_error_set_bad_image(error, image, "Corrupt implmap row id 0x%x", piinfo->implmap_idx);
+				return;
+			}
+
+			piinfo->piflags = GUINT32_TO_UINT16 (flags);
+
+			if (1 != md_get_column_value_as_utf8(c, mdtImplMap_ImportName, 1, &import)) {
+				mono_error_set_bad_image(error, image, "Corrupt implmap row id 0x%x", piinfo->implmap_idx);
+				return;
+			}
+
+			mdcursor_t scope_cursor;
+			if (1 != md_get_column_value_as_cursor(c, mdtImplMap_ImportScope, 1, &scope_cursor)) {
+				mono_error_set_bad_image(error, image, "Corrupt implmap row id 0x%x", piinfo->implmap_idx);
+				return;
+			}
+
+			if (1 != md_get_column_value_as_utf8(scope_cursor, mdtModuleRef_Name, 1, &scope)) {
+				mono_error_set_bad_image(error, image, "Corrupt implmap row id 0x%x", piinfo->implmap_idx);
+				return;
+			}
 		}
 	}
 
@@ -4643,13 +4664,17 @@ ves_icall_System_Reflection_Assembly_GetManifestModuleInternal (MonoQCallAssembl
 }
 
 static gboolean
-add_manifest_resource_name_to_array (MonoImage *image, MonoTableInfo *table, int i, MonoArrayHandle dest, MonoError *error)
+add_manifest_resource_name_to_array (MonoImage *image, mdcursor_t resource, int array_index, MonoArrayHandle dest, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	const char *val = mono_metadata_string_heap (image, mono_metadata_decode_row_col (table, i, MONO_MANIFEST_NAME));
+	const char *val;
+	if (1 != md_get_column_value_as_utf8(resource, mdtManifestResource_Name, 1, &val)) {
+		mono_error_set_bad_image (error, image, "Corrupt ManifestResource table");
+		goto_if_nok (error, leave);
+	}
 	MonoStringHandle str = mono_string_new_handle (val, error);
 	goto_if_nok (error, leave);
-	MONO_HANDLE_ARRAY_SETREF (dest, i, str);
+	MONO_HANDLE_ARRAY_SETREF (dest, array_index, str);
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
@@ -4658,14 +4683,15 @@ void
 ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceNames (MonoQCallAssemblyHandle assembly_h, MonoObjectHandleOnStack res, MonoError *error)
 {
 	MonoAssembly *assembly = assembly_h.assembly;
-	MonoTableInfo *table = &assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	/* FIXME: metadata-update */
-	int rows = table_info_get_rows (table);
+	mdcursor_t c;
+	int rows = 0;
+	md_create_cursor(assembly->image->metadata_handle, mdtid_ManifestResource, &c, &rows);
 	MonoArrayHandle result = mono_array_new_handle (mono_defaults.string_class, rows, error);
 	return_if_nok (error);
 
-	for (int i = 0; i < rows; ++i) {
-		if (!add_manifest_resource_name_to_array (assembly->image, table, i, result, error))
+	for (int i = 0; i < rows; ++i, md_cursor_next(&c)) {
+		if (!add_manifest_resource_name_to_array (assembly->image, c, i, result, error))
 			return;
 	}
 	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (result));
@@ -4708,8 +4734,10 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 		count = t->rows;
 	}
 	else {
-		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
-		count = table_info_get_rows (t);
+		mdcursor_t c;
+		uint32_t numRows = 0;
+		md_create_cursor(image->metadata_handle, mdtid_AssemblyRef, &c, &numRows);
+		count = (int)numRows;
 	}
 
 	GPtrArray *result = g_ptr_array_sized_new (count);

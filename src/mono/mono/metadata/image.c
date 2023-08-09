@@ -1148,21 +1148,19 @@ pe_image_load_cli_data (MonoImage *image)
 void
 mono_image_load_names (MonoImage *image)
 {
-	/* modules don't have an assembly table row */
-	if (table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY])) {
-		image->assembly_name = mono_metadata_string_heap (image,
-			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
-					0, MONO_ASSEMBLY_NAME));
+	mdcursor_t assemblyCursor;
+	uint32_t count;
+	if (md_create_cursor (image->metadata_handle, mdtid_Assembly, &assemblyCursor, &count))
+	{
+		image->assembly_name = NULL;
+		md_get_column_value_as_utf8(assemblyCursor, mdtAssembly_Name, 1, &image->assembly_name);
 	}
-
-	/* Portable pdb images don't have a MODULE row */
-	/* Minimal ENC delta images index the combined string heap of the base and delta image,
-	 * so the module index is out of bounds here.
-	 */
-	if (table_info_get_rows (&image->tables [MONO_TABLE_MODULE]) && !image->minimal_delta) {
-		image->module_name = mono_metadata_string_heap (image,
-			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
-					0, MONO_MODULE_NAME));
+	
+	mdcursor_t moduleCursor;
+	if (md_create_cursor(image->metadata_handle, mdtid_Module, &moduleCursor, &count))
+	{
+		image->module_name = NULL;
+		md_get_column_value_as_utf8(moduleCursor, mdtModule_Name, 1, &image->module_name);
 	}
 }
 
@@ -1219,16 +1217,17 @@ hash_guid (const char *str)
 static void
 dump_encmap (MonoImage *image)
 {
-	MonoTableInfo *encmap = &image->tables [MONO_TABLE_ENCMAP];
-	if (!encmap || !table_info_get_rows (encmap))
+	mdcursor_t encmap;
+	uint32_t count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_ENCMap, &encmap, &count))
 		return;
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
-		for (guint32 i = 0; i < table_info_get_rows (encmap); ++i) {
-			guint32 cols [MONO_ENCMAP_SIZE];
-			mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
-			int token = cols [MONO_ENCMAP_TOKEN];
+		for (guint32 i = 0; i < count; ++i) {
+			uint32_t token;
+			if (1 != md_get_column_value_as_constant(encmap, mdtENCMap_Token, 1, &token))
+				continue;
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "\t0x%08x: 0x%08x table: %s", i+1, token, mono_meta_table_name (mono_metadata_token_table (token)));
 		}
 	}
