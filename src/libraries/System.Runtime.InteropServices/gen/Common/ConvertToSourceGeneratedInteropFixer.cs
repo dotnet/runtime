@@ -293,6 +293,7 @@ namespace Microsoft.Interop.Analyzers
                     || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
             }
 
+            // MarshalAs(UnmanagedType.Error)
             static SyntaxNode GeneratedMarshalAsUnmanagedTypeErrorAttribute(SyntaxGenerator generator)
                  => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
                      generator.AttributeArgument(
