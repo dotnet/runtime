@@ -50,12 +50,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 }
 namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
 {
-    public interface IMetricListenerConfiguration<T>
-    {
-        Microsoft.Extensions.Configuration.IConfiguration Configuration { get; }
-    }
     public interface IMetricListenerConfigurationFactory
     {
-        Microsoft.Extensions.Configuration.IConfiguration GetConfiguration(System.Type listenerType);
+        Microsoft.Extensions.Configuration.IConfiguration GetConfiguration(string listenerName);
+    }
+    internal class MetricsConfigureOptions : Microsoft.Extensions.Options.IConfigureOptions<MetricsOptions>
+    {
+        public MetricsConfigureOptions(Microsoft.Extensions.Configuration.IConfiguration configuration) { }
+        public void Configure(MetricsOptions options) => throw null!;
+        internal static void LoadMeterRules(MetricsOptions options, Microsoft.Extensions.Configuration.IConfigurationSection configurationSection, MeterScope scopes, string? listenerName) => throw null!;
+        internal static void LoadInstrumentRules(MetricsOptions options, Microsoft.Extensions.Configuration.IConfigurationSection meterSection, MeterScope scopes, string? listenerName) => throw null!;
     }
 }

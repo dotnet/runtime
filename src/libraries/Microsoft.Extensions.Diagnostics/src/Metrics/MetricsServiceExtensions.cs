@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.Metrics;
+using Microsoft.Extensions.Diagnostics.Metrics.Configuration;
 using System;
 using System.Diagnostics.Metrics;
 
@@ -32,6 +33,8 @@ namespace Microsoft.Extensions.DependencyInjection
             // Make sure the subscription manager is started when the host starts.
             // The host will trigger options validation.
             services.AddOptions<NoOpOptions>().Configure<MetricsSubscriptionManager>((_, manager) => manager.Initialize()).ValidateOnStart();
+
+            services.TryAddSingleton<IMetricListenerConfigurationFactory, MetricListenerConfigurationFactory>();
 
             return services;
         }
