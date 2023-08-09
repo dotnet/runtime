@@ -332,8 +332,8 @@ namespace System
                                 // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
                                 short *pTwoVectorsAwayFromEnd = pSearchSpace + (length - (2 * Vector512<short>.Count));
 
-                                Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
-                                Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
+                                Vector512<short> source0 = Vector512.Load(pCurrentSearchSpace);
+                                Vector512<short> source1 = Vector512.Load(pCurrentSearchSpace + Vector512<short>.Count);
                                 Vector512<byte> packedSource = PackSources(source0, source1);
 
                                 if (HasMatch<TNegator>(packedValue, packedSource))
@@ -359,7 +359,7 @@ namespace System
                                 }
                             }
 
-                            // We have 1-32 characters remaining. Process the first and last vector in the search space.
+                            // We have 1-64 characters remaining. Process the first and last vector in the search space.
                             // They may overlap, but we'll handle that in the index calculation if we do get a match.
                             {
                                 short *pOneVectorAwayFromEnd = pSearchSpace + (length - Vector512<short>.Count);
@@ -1242,7 +1242,7 @@ namespace System
         {
             ulong notEqualsElements = FixUpPackedVector512Result(equals).ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)((nuint)(current - searchSpace) / sizeof(short));
+            return index + (int)(((nuint)current - (nuint)searchSpace) / sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1301,7 +1301,7 @@ namespace System
                 current0 = current1;
                 offsetInVector -= Vector512<short>.Count;
             }
-            return offsetInVector + (int)((nuint)(current0 - searchSpace) / sizeof(short));
+            return offsetInVector + (int)(((nuint)current0 - (nuint)searchSpace) / sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
