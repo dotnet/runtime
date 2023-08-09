@@ -1,17 +1,27 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
+if("${CLI_CMAKE_COMMIT_HASH}" STREQUAL "")
+    message(FATAL_ERROR "Commit hash needs to be specified to build the host")
+else()
+    add_definitions(-DREPO_COMMIT_HASH="${CLI_CMAKE_COMMIT_HASH}")
+endif()
+
+if("${CLI_CMAKE_HOST_VER}" STREQUAL "")
+    message(FATAL_ERROR "Host version is not specified")
+else()
+    add_definitions(-DHOST_PKG_VER="${CLI_CMAKE_HOST_VER}")
+    # All versions are the same in single-file.
+    if(CLR_SINGLE_FILE_HOST_ONLY)
+        add_definitions(-DCOMMON_HOST_PKG_VER="${CLI_CMAKE_HOST_VER}")
+        add_definitions(-DHOST_POLICY_PKG_VER="${CLI_CMAKE_HOST_VER}")
+        add_definitions(-DHOST_FXR_PKG_VER="${CLI_CMAKE_HOST_VER}")
+    endif()
+endif()
+
 if(CLR_SINGLE_FILE_HOST_ONLY)
-    # CLR partition builds only the single file host where hosting components are all statically linked.
-    # the versioning information is irrelevant and may only come up in tracing.
-    # so we will use "static"
-    add_definitions(-DHOST_POLICY_PKG_VER="static")
-    add_definitions(-DHOST_FXR_PKG_VER="static")
-    add_definitions(-DHOST_PKG_VER="static")
-    add_definitions(-DCOMMON_HOST_PKG_VER="static")
     add_definitions(-DHOST_POLICY_PKG_NAME="static")
     add_definitions(-DHOST_POLICY_PKG_REL_DIR="static")
-    add_definitions(-DREPO_COMMIT_HASH="static")
 else()
     if("${CLI_CMAKE_HOST_POLICY_VER}" STREQUAL "")
         message(FATAL_ERROR "Host policy version is not specified")
@@ -23,12 +33,6 @@ else()
         message(FATAL_ERROR "Host FXR version is not specified")
     else()
         add_definitions(-DHOST_FXR_PKG_VER="${CLI_CMAKE_HOST_FXR_VER}")
-    endif()
-
-    if("${CLI_CMAKE_HOST_VER}" STREQUAL "")
-        message(FATAL_ERROR "Dotnet host version is not specified")
-    else()
-        add_definitions(-DHOST_PKG_VER="${CLI_CMAKE_HOST_VER}")
     endif()
 
     if("${CLI_CMAKE_COMMON_HOST_VER}" STREQUAL "")

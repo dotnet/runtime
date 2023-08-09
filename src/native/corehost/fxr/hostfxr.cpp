@@ -21,7 +21,7 @@ namespace
     void trace_hostfxr_entry_point(const pal::char_t *entry_point)
     {
         trace::setup();
-        trace::info(_X("--- Invoked %s [commit hash: %s]"), entry_point, _STRINGIFY(REPO_COMMIT_HASH));
+        trace::info(_X("--- Invoked %s [version: %s, commit hash: %s]"), entry_point, _STRINGIFY(HOST_FXR_PKG_VER), _STRINGIFY(REPO_COMMIT_HASH));
     }
 }
 
