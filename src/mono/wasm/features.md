@@ -6,7 +6,7 @@
 - [Hosting the application](#Hosting-the-application)
 - [Resources consumed on the target device](#Resources-consumed-on-the-target-device)
 - [Choosing the right platform target](#Choosing-the-right-platform-target)
-- [wasm-tools workload](#wasm-tools-workload)
+- [Developer tools](#Developer-tools)
 
 
 ## Configuring browser features
@@ -316,12 +316,82 @@ it may be better if you re/write your logic in Web native technologies like HTML
 
 Sometimes it makes sense to implement a mix of both.
 
-## wasm-tools workload
+## Developer tools
+
+### wasm-tools workload
 The `wasm-tools` workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application.
 
-Although it's optional for Blazor, we strongly recommend using it!
+Although it's optional for Blazor, **we strongly recommend using it!**
 
 You can install it by running `dotnet workload install wasm-tools` from the command line.
 
 You can also install `dotnet workload install wasm-experimental` to test out new experimental features and templates.
 It includes the WASM templates for `dotnet new` and also preview version of multi-threading flavor of the runtime pack.
+
+### Debugging
+
+You can use browser dev tools to debug the JavaScript of the application and the runtime. 
+
+You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
+
+You could also debug the C# code using our integration with browser dev tools or Visual Studio. 
+See detailed [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/debug)
+
+### Native debug symbols
+
+You can add following elements in your .csproj
+```xml
+<PropertyGroup>
+  <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+  <WasmNativeStrip>false</WasmNativeStrip>
+</PropertyGroup>
+```
+
+See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
+
+### Runtime logging and tracing
+
+You can enable detailed runtime logging.
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet
+        .withDiagnosticTracing(true) // enable JavaScript tracing
+        .withConfig({environmentVariables: {
+            "MONO_LOG_LEVEL":"debug", //enable Mono VM detailed logging by
+            "MONO_LOG_MASK":"all", // categories, could be also gc,aot,type,...
+        }})
+        .run();
+```
+
+See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
+
+### Profiling
+
+You can enable integration with browser profiler via following elements in your .csproj
+```xml
+<PropertyGroup>
+  <WasmProfilers>browser;</WasmProfilers>
+</PropertyGroup>
+```
+
+In Blazor, you can customize the startup in your index.html
+```html
+<script src="_framework/blazor.webassembly.js" autostart="false"></script>
+<script>
+Blazor.start({
+    configureRuntime: function (builder) {
+        builder.withConfig({
+            browserProfilerOptions: {}
+        });
+    }
+});
+</script>
+```
+
+In simple browser template, you can add following to your `main.js`
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet.withConfig({browserProfilerOptions: {}}).run();
+```
