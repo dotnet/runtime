@@ -486,6 +486,7 @@ extends:
             - Build_tvos_arm64_release_AllSubsets_Mono
             - Build_tvossimulator_arm64_release_AllSubsets_Mono
             - Build_tvossimulator_x64_release_AllSubsets_Mono
+            - Build_windows_arm64_release_CrossAOT_Mono
             - Build_windows_x64_release_CrossAOT_Mono
             - installer__coreclr__windows_x64_Release_
             - installer__coreclr__windows_x86_Release_
