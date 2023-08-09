@@ -282,6 +282,7 @@ namespace DebuggerTests
 
             // Hit resume to skip
             int count = 0;
+            var taskWait = insp.WaitFor(Inspector.APP_READY);
             while(true)
             {
                 await cli.SendCommand("Debugger.resume", null, token);
@@ -299,6 +300,7 @@ namespace DebuggerTests
                     break;
                 }
             }
+            await taskWait;
             _testOutput.WriteLine ($"* Resumed {count} times");
 
             var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
@@ -321,7 +323,10 @@ namespace DebuggerTests
             }), "exception0.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            await CheckString(exception_members, "_message", "not implemented caught");
+            var ptd = JObject.FromObject(new { value = new { objectId = pause_location["data"]["objectId"]?.Value<string>() } });
+            var res = await InvokeGetter(ptd, "Message");
+            await CheckValue(res.Value["result"], JObject.FromObject(new { type = "string", value = $"not implemented caught" }), "exception0.message");
+
 
             pause_location = await WaitForManagedException(null);
             AssertEqual($"{class_name_pause}.TestUncaughtException.run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
@@ -339,7 +344,9 @@ namespace DebuggerTests
             }), "exception1.data");
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            await CheckString(exception_members, "_message", "not implemented uncaught");
+            ptd = JObject.FromObject(new { value = new { objectId = pause_location["data"]["objectId"]?.Value<string>() } });
+            res = await InvokeGetter(ptd, "Message");
+            await CheckValue(res.Value["result"], JObject.FromObject(new { type = "string", value = $"not implemented uncaught" }), "exception1.message");
         }
 
 

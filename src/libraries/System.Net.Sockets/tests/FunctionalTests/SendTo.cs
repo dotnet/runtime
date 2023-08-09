@@ -64,6 +64,16 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task NullSocketAddress_Throws_ArgumentException()
+        {
+            using Socket socket = CreateSocket();
+            SocketAddress socketAddress = null;
+
+            Assert.Throws<ArgumentNullException>(() => socket.SendTo(new byte[1], SocketFlags.None, socketAddress));
+            await AssertThrowsSynchronously<ArgumentNullException>(() => socket.SendToAsync(new byte[1], SocketFlags.None, socketAddress).AsTask());
+        }
+
+        [Fact]
         public async Task Datagram_UDP_ShouldImplicitlyBindLocalEndpoint()
         {
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);

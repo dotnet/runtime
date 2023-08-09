@@ -617,6 +617,14 @@ enum gc_type
     gc_type_max = 3
 };
 
+#ifdef DYNAMIC_HEAP_COUNT
+enum gc_dynamic_adaptation_mode
+{
+    dynamic_adaptation_default = 0,
+    dynamic_adaptation_to_application_sizes = 1,
+};
+#endif //DYNAMIC_HEAP_COUNT
+
 //encapsulates the mechanism for the current gc
 class gc_mechanisms
 {
@@ -1614,6 +1622,8 @@ private:
     PER_HEAP_ISOLATED_METHOD void fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num);
 
     PER_HEAP_ISOLATED_METHOD void fire_pevents();
+
+    PER_HEAP_ISOLATED_METHOD void fire_committed_usage_event();
 
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
@@ -3378,6 +3388,12 @@ private:
     PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
         size_t new_current_total_committed);
 
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
+                                  size_t* new_committed_by_oh);
+#endif
+
     PER_HEAP_METHOD void update_collection_counts ();
 
     /*****************************************************************************************************************/
@@ -4418,6 +4434,10 @@ private:
 #ifdef HOST_64BIT
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t youngest_gen_desired_th;
 #endif //HOST_64BIT
+
+#ifdef DYNAMIC_HEAP_COUNT
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int dynamic_adaptation_mode;
+#endif //DYNAMIC_HEAP_COUNT
 
     /********************************************/
     // PER_HEAP_ISOLATED_FIELD_DIAG_ONLY fields //

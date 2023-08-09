@@ -115,12 +115,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 foreach ((string fwName, string[] fwVersions) in ProgramFilesGlobalFrameworks)
                 {
                     foreach (string fwVersion in fwVersions)
-                        Directory.CreateDirectory(Path.Combine(ProgramFilesGlobalFrameworksDir, fwName, fwVersion));
+                        AddFrameworkDirectory(ProgramFilesGlobalFrameworksDir, fwName, fwVersion);
                 }
                 foreach ((string fwName, string[] fwVersions) in LocalFrameworks)
                 {
                     foreach (string fwVersion in fwVersions)
-                        Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, fwVersion));
+                        AddFrameworkDirectory(LocalFrameworksDir, fwName, fwVersion);
+
+                    // Empty framework directory - this should not be recognized as a valid framework directory
+                    Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, "9.9.9"));
                 }
 
                 static void AddSdkDirectory(string sdkDir, string version)
@@ -128,6 +131,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     string versionDir = Path.Combine(sdkDir, version);
                     Directory.CreateDirectory(versionDir);
                     File.WriteAllText(Path.Combine(versionDir, "dotnet.dll"), string.Empty);
+                }
+
+                static void AddFrameworkDirectory(string frameworkDir, string name, string version)
+                {
+                    string versionDir = Path.Combine(frameworkDir, name, version);
+                    Directory.CreateDirectory(versionDir);
+                    File.WriteAllText(Path.Combine(versionDir, $"{name}.deps.json"), string.Empty);
                 }
             }
         }
@@ -486,12 +496,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             var fixture = sharedTestState.HostApiInvokerAppFixture;
 
-            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(fixture.TestProject.AppDll)}")
+                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {RepoDirectoriesProvider.Default.BuildRID}")
                 .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
                 .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}");
         }

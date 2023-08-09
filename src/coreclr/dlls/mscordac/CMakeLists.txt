@@ -212,8 +212,15 @@ if(CLR_CMAKE_HOST_WIN32)
     string(REGEX MATCH "#define VER_FILEVERSION[ \t]+[0-9]+(,[0-9]+)+" FILE_VERSION_LINE "${NATIVE_VERSION_HEADER}")
     string(REGEX MATCHALL "[0-9]+" FILE_VERSION_COMPONENTS "${FILE_VERSION_LINE}")
     list(JOIN FILE_VERSION_COMPONENTS "." FILE_VERSION)
-    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION}.dll DESTINATION sharedFramework COMPONENT runtime)
+
+    # This is unlike all other targets in the runtime, and is largely a long standing contract between
+    # debuggers and the runtime. This long form supports postmortem cross-architecture diagnostic scenarios.
+    # It doesn't make sense to complicate install_clr for this purpose, so keep it self-contained here.
+    set(LONG_NAME_BASE mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION})
+    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT runtime)
+    install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT runtime)
     if (NOT FEATURE_CROSSBITNESS)
-        install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION}.dll DESTINATION sharedFramework COMPONENT crosscomponents)
+        install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT crosscomponents)
+        install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT crosscomponents)
     endif()
 endif()

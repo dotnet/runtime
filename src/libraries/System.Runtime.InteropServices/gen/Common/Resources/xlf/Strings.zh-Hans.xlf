@@ -147,6 +147,16 @@
         <target state="translated">具有“EnableComHosting”的 .NET COM 托管不支持具有“GeneratedComInterfaceAttribute”的接口</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
+        <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
+        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
+        <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
+        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
         <target state="translated">源生成的 COM 将忽略任何不受支持的配置。</target>
@@ -437,11 +447,6 @@
         <target state="translated">不需要 “[In]” 属性，除非同时使用 “[Out]” 属性。没有 “[Out]” 属性的情况下，“[In]” 属性的行为与默认行为相同。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InAttributeOnlyNotSupportedOnPinnedParameters">
-        <source>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</source>
-        <target state="translated">此参数通过固定进行封送，不支持没有“[Out]”属性的“[In]”属性。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">引用传递的参数不支持 “[In]” 和 “[Out]” 属性。请改用 “in”、“ref” 或 “out” 关键字。</target>
@@ -455,11 +460,6 @@
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">[In] 和 [Out] 属性</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InRefKindIsNotSupportedOnPinnedParameters">
-        <source>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</source>
-        <target state="translated">通过固定封送的参数不支持“in”关键字。请改用“ref”或“out”。</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -893,8 +893,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="translated">`[Out]` 属性仅在数组参数和通过固定封送的参数上受支持。请考虑使用“out”或“ref”关键字使参数可变。</target>
+        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="needs-review-translation">`[Out]` 属性仅在数组参数和通过固定封送的参数上受支持。请考虑使用“out”或“ref”关键字使参数可变。</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -905,11 +905,6 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">类型“{0}”指定它支持按 “Out” 方向进行封送，但不提供返回托管类型的 “ToManaged” 方法</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="PinnedMarshallingIsInOutByDefault">
-        <source>This parameter is marshalled by pinning and is '[In, Out]' by default.</source>
-        <target state="translated">此参数通过固定进行封送，默认情况下为“[In, Out]”。</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -985,6 +980,21 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">无法通过引用封送派生自 “SafeHandle” 的抽象类型。提供的类型必须是具体的。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
+        <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
+        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
+        <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
+        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
+        <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
+        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
@@ -1137,11 +1147,6 @@
         <target state="translated">“{0}”具有可访问性“{1}”。</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeDoesNotSupportByValueMarshalingAttributes">
-        <source>'[In]' and '[Out]' attributes are not supported on this type.</source>
-        <target state="translated">此类型不支持“[In]”和“[Out]”特性。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
         <target state="translated">自定义封送程序的非托管类型必须为 C# 非托管类型。</target>
@@ -1209,9 +1214,9 @@
         <target state="translated">源生成的 P/Invoke 不支持指定的类型</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle1">
+      <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="translated">源生成的 COM 不支持指定的类型</target>
+        <target state="new">Specified type is not supported by source-generated COM</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

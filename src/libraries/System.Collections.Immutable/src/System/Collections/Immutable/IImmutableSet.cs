@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -14,6 +14,7 @@ namespace System.Collections.Immutable
     /// Mutations on this set generate new sets.  Incremental changes to a set share as much memory as possible with the prior versions of a set,
     /// while allowing garbage collection to clean up any unique set data that is no longer being referenced.
     /// </remarks>
+    [CollectionBuilder(typeof(ImmutableHashSet), nameof(ImmutableHashSet.Create))]
     public interface IImmutableSet<T> : IReadOnlyCollection<T>
     {
         /// <summary>

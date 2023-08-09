@@ -1,13 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GSDelegate.cs" />
+    <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>

@@ -3340,7 +3340,7 @@ NoSpecialCase:
             // Encode method
             _ASSERTE(pTemplateMD != NULL);
 
-            mdMethodDef methodToken               = pTemplateMD->GetMemberDef_NoLogging();
+            mdMethodDef methodToken               = pTemplateMD->GetMemberDef();
             DWORD       methodFlags               = 0;
 
             // Check for non-NULL method spec first. We can encode the method instantiation only if we have one in method spec to start with. Note that there are weird cases
@@ -5772,7 +5772,7 @@ bool __stdcall TrackAllocationsEnabled()
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects)
+CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects)
 {
     CONTRACTL {
         THROWS;
@@ -5784,7 +5784,7 @@ CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
 
     JIT_TO_EE_TRANSITION();
 
-    TypeHandle  VMClsHnd(pResolvedToken->hClass);
+    TypeHandle  VMClsHnd(classHandle);
 
     if(VMClsHnd.IsTypeDesc())
     {
@@ -8107,14 +8107,14 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     if (LoggingOn(LF_JIT, LL_INFO100000))
     {
         SString currentMethodName;
-        currentMethodName.AppendUTF8(m_pMethodBeingCompiled->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
+        currentMethodName.AppendUTF8(m_pMethodBeingCompiled->GetModule()->GetPEAssembly()->GetSimpleName());
         currentMethodName.Append(L'/');
         TypeString::AppendMethodInternal(currentMethodName, m_pMethodBeingCompiled, TypeString::FormatBasic);
 
         SString inlineeMethodName;
         if (GetMethod(inlineeHnd))
         {
-            inlineeMethodName.AppendUTF8(GetMethod(inlineeHnd)->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
+            inlineeMethodName.AppendUTF8(GetMethod(inlineeHnd)->GetModule()->GetPEAssembly()->GetSimpleName());
             inlineeMethodName.Append(L'/');
             TypeString::AppendMethodInternal(inlineeMethodName, GetMethod(inlineeHnd), TypeString::FormatBasic);
         }
@@ -8126,7 +8126,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         SString inlinerMethodName;
         if (GetMethod(inlinerHnd))
         {
-            inlinerMethodName.AppendUTF8(GetMethod(inlinerHnd)->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
+            inlinerMethodName.AppendUTF8(GetMethod(inlinerHnd)->GetModule()->GetPEAssembly()->GetSimpleName());
             inlinerMethodName.Append(L'/');
             TypeString::AppendMethodInternal(inlinerMethodName, GetMethod(inlinerHnd), TypeString::FormatBasic);
         }
@@ -12103,7 +12103,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
         if (m_pMethodBeingCompiled)
         {
-            Module* pModule = m_pMethodBeingCompiled->GetModule_NoLogging();
+            Module* pModule = m_pMethodBeingCompiled->GetModule();
             ullModuleID = (ULONGLONG)(TADDR)pModule;
             ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
         }
