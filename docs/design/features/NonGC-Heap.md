@@ -12,7 +12,7 @@ flowchart
     gcheap --> poh
     gcheap --> loh
 
-    gcheap("Heaps managed by GC")
+    gcheap("GC Heap")
     soh("Small Object Heap\n(SOH)")
     poh("Pinned Object Heap\n(SOH)")
     loh("Large Object Heap\n(SOH)")
