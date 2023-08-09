@@ -1258,7 +1258,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (!Connected)
+            if (!IsConnectionOriented || !Connected)
             {
                 throw new NotSupportedException(SR.net_notconnected);
             }
