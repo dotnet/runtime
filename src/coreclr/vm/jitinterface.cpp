@@ -11738,7 +11738,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                         // GC handle is a frozen (nongc) object
                                         CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(ObjectToOBJECTREF(gcSlotValue), /*knownFrozen*/ true);
                                         memcpy(buffer, &handle, bufferSize);
-                                        return true;
+                                        result = true;
                                     }
                                 }
 
