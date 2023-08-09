@@ -9866,6 +9866,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->trimming_eligible_methods_outfile != NULL) {
 		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only && mini_get_interp_callbacks ()->jit_call_can_be_supported (method, mono_method_signature_internal (method))) {
+			// The call back to jit_call_can_be_supported is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
+			// When that happens, interpreter needs to have the capability to call the AOT'ed version of that method, since the method body has already been trimmed.
 			fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
 		}
 	}
@@ -15625,7 +15627,7 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 
 	if (aot_opts.trimming_eligible_methods_outfile) {
 		if (g_ensure_directory_exists (aot_opts.trimming_eligible_methods_outfile) == FALSE) {
-			fprintf (stderr, "AOT : failed to create the directory to save the compiled method names: %s\n", aot_opts.trimming_eligible_methods_outfile);
+			fprintf (stderr, "AOT : failed to create the directory to save the trimmable method names: %s\n", aot_opts.trimming_eligible_methods_outfile);
 			exit (1);
 		}
 	}
