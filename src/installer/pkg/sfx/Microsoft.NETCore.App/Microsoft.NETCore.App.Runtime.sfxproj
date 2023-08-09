@@ -14,11 +14,11 @@
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
-    <SkipInstallerBuild>true</SkipInstallerBuild>
+  <PropertyGroup>
+    <SkipInstallerBuild Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">true</SkipInstallerBuild>
     <!-- Skip building any archives except in source-build, where the symbols archive is necessary
          for distro maintainers. It can generally be removed when https://github.com/dotnet/source-build/issues/3547 is resolved. -->
-    <SkipArchivesBuild Condition="'$(DotNetBuildFromSource)' != 'true' or '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipArchivesBuild>
+    <SkipArchivesBuild Condition="'$(DotNetBuildFromSource)' != 'true' or '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(BuildNativeAOTRuntimePack)' == 'true'">true</SkipArchivesBuild>
   </PropertyGroup>
 
   <ItemGroup>
