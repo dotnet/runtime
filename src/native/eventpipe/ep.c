@@ -54,7 +54,6 @@ enable (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
-	bool stacks_requested,
 	IpcStream *stream,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
 	EventPipeSessionSynchronousCallback sync_callback,
@@ -466,7 +465,6 @@ enable (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
-	bool stacks_requested,
 	IpcStream *stream,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
 	EventPipeSessionSynchronousCallback sync_callback,
@@ -494,7 +492,6 @@ enable (
 		session_type,
 		format,
 		rundown_requested,
-		stacks_requested,
 		circular_buffer_size_in_mb,
 		providers,
 		providers_len,
@@ -908,7 +905,6 @@ enable_default_session_via_env_variables (void)
 			ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 			true,
-			true,
 			NULL,
 			NULL,
 			NULL);
@@ -960,7 +956,6 @@ ep_enable (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
-	bool stacks_requested,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data)
@@ -991,7 +986,6 @@ ep_enable (
 			session_type,
 			format,
 			rundown_requested,
-			stacks_requested,
 			stream,
 			provider_callback_data_queue,
 			sync_callback,
@@ -1022,7 +1016,6 @@ ep_enable_2 (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
-	bool stacks_requested,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data)
@@ -1101,7 +1094,6 @@ ep_enable_2 (
 		session_type,
 		format,
 		rundown_requested,
-		stacks_requested,
 		stream,
 		sync_callback,
 		callback_additional_data);
