@@ -323,7 +323,7 @@ namespace Microsoft.Interop
                 // that is defined as a structure. These types used to work with built-in COM interop, but they do not work with
                 // source-generated interop as we now use the MemberFunction calling convention, which is more correct.
                 TypePositionInfo? managedReturnInfo = signatureContext.ElementTypeInformation.FirstOrDefault(e => e.IsManagedReturnPosition);
-                if (managedReturnInfo is { MarshallingAttributeInfo: UnmanagedBlittableMarshallingInfo { IsStrictlyBlittable: true }, ManagedType: ValueTypeInfo valueType }
+                if (managedReturnInfo is { MarshallingAttributeInfo: UnmanagedBlittableMarshallingInfo, ManagedType: ValueTypeInfo valueType }
                     && IsHResultLikeType(valueType))
                 {
                     generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(
