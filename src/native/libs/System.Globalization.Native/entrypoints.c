@@ -58,11 +58,12 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_ToAscii)
     DllImportEntry(GlobalizationNative_ToUnicode)
     DllImportEntry(GlobalizationNative_WindowsIdToIanaId)
-#ifdef __APPLE__
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
     DllImportEntry(GlobalizationNative_ChangeCaseInvariantNative)
     DllImportEntry(GlobalizationNative_ChangeCaseNative)
     DllImportEntry(GlobalizationNative_CompareStringNative)
     DllImportEntry(GlobalizationNative_EndsWithNative)
+    DllImportEntry(GlobalizationNative_GetCalendarInfoNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoIntNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative)

@@ -9,6 +9,7 @@
 #include "slist.h"
 #include "runtimeinstance.h"
 #include "shash.h"
+#include "eventtracebase.h"
 #include "eventtracepriv.h"
 #include "shash.inl"
 

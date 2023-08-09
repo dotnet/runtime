@@ -86,7 +86,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void BrowserBuildThenPublish(string config)
         {
-            string id = $"browser_{config}_{Path.GetRandomFileName()}";
+            string id = $"browser_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
@@ -131,7 +131,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void ConsoleBuildThenPublish(string config)
         {
-            string id = $"{config}_{Path.GetRandomFileName()}";
+            string id = $"{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
@@ -196,7 +196,7 @@ namespace Wasm.Build.Tests
 
         private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM)
         {
-            string id = $"{config}_{Path.GetRandomFileName()}";
+            string id = $"{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
@@ -262,7 +262,7 @@ namespace Wasm.Build.Tests
 
         private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
         {
-            string id = $"browser_{config}_{Path.GetRandomFileName()}";
+            string id = $"browser_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
 
             UpdateBrowserMainJs(DefaultTargetFramework);
@@ -295,7 +295,7 @@ namespace Wasm.Build.Tests
 
         private Task ConsoleRunWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
         {
-            string id = $"console_{config}_{Path.GetRandomFileName()}";
+            string id = $"console_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
 
             UpdateProgramCS();
@@ -358,7 +358,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(TestDataForConsolePublishAndRun))]
         public void ConsolePublishAndRun(string config, bool aot, bool relinking)
         {
-            string id = $"{config}_{Path.GetRandomFileName()}";
+            string id = $"{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
@@ -416,7 +416,7 @@ namespace Wasm.Build.Tests
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";
-            string id = $"browser_{config}_{Path.GetRandomFileName()}";
+            string id = $"browser_{config}_{GetRandomId()}";
             CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
 
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);

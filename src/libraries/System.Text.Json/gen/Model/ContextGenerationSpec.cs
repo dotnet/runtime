@@ -24,7 +24,7 @@ namespace System.Text.Json.SourceGeneration
     /// When adding new members to the type, please ensure that these properties
     /// are satisfied otherwise we risk breaking incremental caching in the source generator!
     /// </remarks>
-    [DebuggerDisplay("ContextType={ContextType.Name}")]
+    [DebuggerDisplay("ContextType = {ContextType.Name}")]
     public sealed record ContextGenerationSpec
     {
         public required TypeRef ContextType { get; init; }

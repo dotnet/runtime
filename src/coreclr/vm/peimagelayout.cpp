@@ -1190,7 +1190,6 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
     PVOID loadedImage;
 #if TARGET_UNIX
     {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
         HANDLE fileHandle = WszCreateFile(
             fullPath,
             GENERIC_READ,

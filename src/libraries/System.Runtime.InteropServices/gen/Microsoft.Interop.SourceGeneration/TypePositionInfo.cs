@@ -96,6 +96,17 @@ namespace Microsoft.Interop
             return typeInfo;
         }
 
+        public static Location GetLocation(TypePositionInfo info, IMethodSymbol methodSymbol)
+        {
+            if (info.ManagedIndex is UnsetIndex)
+                return Location.None;
+
+            if (info.ManagedIndex is ReturnIndex or ExceptionIndex)
+                return methodSymbol.Locations[0];
+
+            return methodSymbol.Parameters[info.ManagedIndex].Locations[0];
+        }
+
         private static (ByValueContentsMarshalKind, Location? inAttribute, Location? outAttribute) GetByValueContentsMarshalKind(IEnumerable<AttributeData> attributes, Compilation compilation)
         {
             INamedTypeSymbol outAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;

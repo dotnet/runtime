@@ -1359,7 +1359,7 @@ namespace System.Net.Quic.Tests
             await using (clientConnection)
             await using (serverConnection)
             {
-                Assert.Equal(expectedHostName, clientConnection.TargetHostName);
+                Assert.Equal(hostname, clientConnection.TargetHostName);
                 Assert.Equal(expectedHostName, serverConnection.TargetHostName);
             }
         }

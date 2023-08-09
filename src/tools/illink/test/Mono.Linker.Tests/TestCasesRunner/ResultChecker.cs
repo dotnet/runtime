@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -110,8 +111,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			try {
 				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
+
+				VerifyExitCode (linkResult, original);
+
 				if (!HasAttribute (original, nameof (NoLinkedOutputAttribute))) {
 					Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
+
 					var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
 					if (ShouldValidateIL (original)) {
@@ -124,7 +129,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 					PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-					if (!HasActiveSkipKeptItemsValidationAttribute(original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName))) {
+					if (!HasActiveSkipKeptItemsValidationAttribute(linkResult.TestCase.FindTypeDefinition (original))) {
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
 				}
@@ -239,6 +244,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
+		void VerifyExitCode (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		{
+			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
+				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
+				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
+			} else {
+				if (linkResult.ExitCode != 0) {
+					Assert.Fail($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
+				}
+			}
+
+			string FormatLinkerOutput ()
+			{
+				var sb = new StringBuilder ();
+				foreach (var message in linkResult.Logger.GetLoggedMessages ())
+					sb.AppendLine (message.ToString ());
+				return sb.ToString ();
+			}
+		}
+
 		void VerifyKeptSymbols (CustomAttribute symbolsAttribute)
 		{
 			var assemblyName = (string) symbolsAttribute.ConstructorArguments[0].Value;
@@ -276,7 +301,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original)
 		{
-			bool checkRemainingErrors = !HasAttribute (original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName), nameof (SkipRemainingErrorsValidationAttribute));
+			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
 		}
@@ -759,7 +784,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
-			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
+			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByLinker (attr))
@@ -860,9 +885,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											continue;
 									}
 								} else if (isCompilerGeneratedCode == true) {
-									if (loggedMessage.Origin?.Provider is IMemberDefinition memberDefinition) {
-										if (attrProvider is not IMemberDefinition expectedMember)
-											continue;
+									if (loggedMessage.Origin?.Provider is not IMemberDefinition memberDefinition)
+										continue;
+
+									if (attrProvider is IMemberDefinition expectedMember) {
 										string actualName = memberDefinition.DeclaringType.FullName + "." + memberDefinition.Name;
 
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
@@ -883,6 +909,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										}
 										if (memberDefinition.Name == ".ctor" &&
 											memberDefinition.DeclaringType.FullName == expectedMember.FullName) {
+											expectedWarningFound = true;
+											loggedMessages.Remove (loggedMessage);
+											break;
+										}
+									} else if (attrProvider is AssemblyDefinition expectedAssembly) {
+										// Allow assembly-level attributes to match warnings from compiler-generated Main
+										if (memberDefinition.Name == "<Main>$" &&
+											memberDefinition.DeclaringType.FullName == "Program" &&
+											memberDefinition.DeclaringType.Module.Assembly.Name.Name == expectedAssembly.Name.Name) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
@@ -923,9 +958,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					case nameof (ExpectedNoWarningsAttribute): {
 							// Postpone processing of negative checks, to make it possible to mark some warnings as expected (will be removed from the list above)
 							// and then do the negative check on the rest.
-							var memberDefinition = attrProvider as IMemberDefinition;
-							Assert.NotNull (memberDefinition);
-							expectedNoWarningsAttributes.Add ((memberDefinition, attr));
+							expectedNoWarningsAttributes.Add ((attrProvider, attr));
 							break;
 						}
 					}
@@ -949,7 +982,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						continue;
 
 					// This is a hacky way to say anything in the "subtree" of the attrProvider
-					if ((mc.Origin?.Provider is IMemberDefinition member) && member.FullName.Contains (attrProvider.FullName) != true)
+					if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.Provider is IMemberDefinition member) && member.FullName.Contains (attrMember.FullName) != true)
 						continue;
 
 					unexpectedWarningMessage = mc;
@@ -972,9 +1005,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (origin?.Provider is AssemblyDefinition asm)
 					return expectedOriginProvider is AssemblyDefinition expectedAsm && asm.Name.Name == expectedAsm.Name.Name;
 
-				var actualMember = origin?.Provider as IMemberDefinition;
-				var expectedOriginMember = expectedOriginProvider as IMemberDefinition;
-				return actualMember?.FullName == expectedOriginMember.FullName;
+				if (origin?.Provider is not IMemberDefinition actualMember)
+					return false;
+
+				if (expectedOriginProvider is not IMemberDefinition expectedOriginMember)
+					return false;
+
+				return actualMember.FullName == expectedOriginMember.FullName;
 			}
 		}
 

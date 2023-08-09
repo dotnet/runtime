@@ -1920,6 +1920,7 @@ ep_rt_write_event_contention_stop (
 */
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntime (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -1930,6 +1931,7 @@ EventPipeEtwCallbackDotNETRuntime (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeRundown (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -1940,6 +1942,7 @@ EventPipeEtwCallbackDotNETRuntimeRundown (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimePrivate (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -1950,6 +1953,7 @@ EventPipeEtwCallbackDotNETRuntimePrivate (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeStress (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -1960,6 +1964,7 @@ EventPipeEtwCallbackDotNETRuntimeStress (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	const uint8_t *source_id,
 	unsigned long is_enabled,

@@ -100,10 +100,10 @@ static bool InitDLL(HANDLE hPalInstance)
 
 #ifdef FEATURE_PERFTRACING
     // Initialize EventPipe
-    EventPipeAdapter_Initialize();
+    EventPipe_Initialize();
     // Initialize DS
-    DiagnosticServerAdapter_Initialize();
-    DiagnosticServerAdapter_PauseForDiagnosticsMonitor();
+    DiagnosticServer_Initialize();
+    DiagnosticServer_PauseForDiagnosticsMonitor();
 #endif
 #ifdef FEATURE_EVENT_TRACE
     EventTracing_Initialize();
@@ -157,7 +157,7 @@ static bool InitDLL(HANDLE hPalInstance)
     // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
     // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
     // EventPipe initialization, so this is done after the GC has been fully initialized.
-    EventPipeAdapter_FinishInitialize();
+    EventPipe_FinishInitialize();
 #endif
 
 #ifndef USE_PORTABLE_HELPERS
@@ -309,8 +309,8 @@ static void __cdecl OnProcessExit()
 #endif
 
 #ifdef FEATURE_PERFTRACING
-    EventPipeAdapter_Shutdown();
-    DiagnosticServerAdapter_Shutdown();
+    EventPipe_Shutdown();
+    DiagnosticServer_Shutdown();
 #endif
 }
 
@@ -342,7 +342,7 @@ void RuntimeThreadShutdown(void* thread)
 #endif
 
     ThreadStore::DetachCurrentThread();
-    
+
 #ifdef FEATURE_PERFTRACING
     EventPipe_ThreadShutdown();
 #endif
