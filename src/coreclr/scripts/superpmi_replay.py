@@ -35,7 +35,6 @@ jit_flags_all = [
     "JitStressRegs=8",
     "JitStressRegs=0x10",
     "JitStressRegs=0x80",
-    "JitStressRegs=0x800",
     "JitStressRegs=0x1000",
 ]
 
