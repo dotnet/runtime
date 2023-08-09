@@ -886,108 +886,48 @@ namespace System.Runtime.InteropServices
                 out IntPtr identity,
                 out IntPtr inner);
 
-            try
+            using ComHolder releaseIdentity = new ComHolder(identity);
+            if (flags.HasFlag(CreateObjectFlags.Unwrap))
             {
-                if (flags.HasFlag(CreateObjectFlags.Unwrap))
+                ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
+                if (comInterfaceDispatch != null)
                 {
-                    ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
-                    if (comInterfaceDispatch != null)
+                    // If we found a managed object wrapper in this ComWrappers instance
+                    // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                    // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+                    //
+                    // A managed object can have multiple managed object wrappers, with a max of one per context.
+                    // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+                    // managed object wrappers for A created with C1 and C2 respectively.
+                    // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+                    // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+                    object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+                    if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
                     {
-                        // If we found a managed object wrapper in this ComWrappers instance
-                        // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
-                        // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
-                        //
-                        // A managed object can have multiple managed object wrappers, with a max of one per context.
-                        // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
-                        // managed object wrappers for A created with C1 and C2 respectively.
-                        // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
-                        // we will create a new wrapper. In this scenario, we'll only unwrap B2.
-                        object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                        if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                        // The unwrapped object has a CCW in this context. Compare with identity
+                        // so we can see if it's the CCW for the unwrapped object in this context.
+                        if (unwrappedWrapperInThisContext.ComIp == identity)
                         {
-                            // The unwrapped object has a CCW in this context. Compare with identity
-                            // so we can see if it's the CCW for the unwrapped object in this context.
-                            if (unwrappedWrapperInThisContext.ComIp == identity)
-                            {
-                                retValue = unwrapped;
-                                return true;
-                            }
-                        }
-                    }
-                }
-
-                if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
-                {
-                    using (LockHolder.Hold(_lock))
-                    {
-                        if (_rcwCache.TryGetValue(identity, out GCHandle handle))
-                        {
-                            object? cachedWrapper = handle.Target;
-                            if (cachedWrapper is not null)
-                            {
-                                retValue = cachedWrapper;
-                                return true;
-                            }
-                            else
-                            {
-                                // The GCHandle has been clear out but the NativeObjectWrapper
-                                // finalizer has not yet run to remove the entry from _rcwCache
-                                _rcwCache.Remove(identity);
-                            }
-                        }
-
-                        if (wrapperMaybe is not null)
-                        {
-                            retValue = wrapperMaybe;
-                            NativeObjectWrapper wrapper = new NativeObjectWrapper(
-                                identity,
-                                inner,
-                                this,
-                                retValue,
-                                flags);
-                            if (!s_rcwTable.TryAdd(retValue, wrapper))
-                            {
-                                wrapper.Release();
-                                throw new NotSupportedException();
-                            }
-                            _rcwCache.Add(identity, wrapper._proxyHandle);
-                            s_nativeObjectWrapperCache.Add(wrapper._nativeObjectWrapperWeakHandle);
+                            retValue = unwrapped;
                             return true;
                         }
                     }
                 }
+            }
 
-                retValue = CreateObject(identity, flags);
-                if (retValue == null)
-                {
-                    // If ComWrappers instance cannot create wrapper, we can do nothing here.
-                    return false;
-                }
-
-                if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
-                {
-                    NativeObjectWrapper wrapper = new NativeObjectWrapper(
-                        identity,
-                        inner,
-                        null, // No need to cache NativeObjectWrapper for unique instances. They are not cached.
-                        retValue,
-                        flags);
-                    if (!s_rcwTable.TryAdd(retValue, wrapper))
-                    {
-                        wrapper.Release();
-                        throw new NotSupportedException();
-                    }
-                    s_nativeObjectWrapperCache.Add(wrapper._nativeObjectWrapperWeakHandle);
-                    return true;
-                }
-
+            if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
+            {
                 using (LockHolder.Hold(_lock))
                 {
-                    object? cachedWrapper = null;
-                    if (_rcwCache.TryGetValue(identity, out var existingHandle))
+                    if (_rcwCache.TryGetValue(identity, out GCHandle handle))
                     {
-                        cachedWrapper = existingHandle.Target;
-                        if (cachedWrapper is null)
+                        object? cachedWrapper = handle.Target;
+                        if (cachedWrapper is not null)
+                        {
+                            retValue = cachedWrapper;
+                            return true;
+                        }
+                        else
                         {
                             // The GCHandle has been clear out but the NativeObjectWrapper
                             // finalizer has not yet run to remove the entry from _rcwCache
@@ -995,12 +935,9 @@ namespace System.Runtime.InteropServices
                         }
                     }
 
-                    if (cachedWrapper is not null)
+                    if (wrapperMaybe is not null)
                     {
-                        retValue = cachedWrapper;
-                    }
-                    else
-                    {
+                        retValue = wrapperMaybe;
                         NativeObjectWrapper wrapper = new NativeObjectWrapper(
                             identity,
                             inner,
@@ -1014,12 +951,69 @@ namespace System.Runtime.InteropServices
                         }
                         _rcwCache.Add(identity, wrapper._proxyHandle);
                         s_nativeObjectWrapperCache.Add(wrapper._nativeObjectWrapperWeakHandle);
+                        return true;
                     }
                 }
             }
-            finally
+
+            retValue = CreateObject(identity, flags);
+            if (retValue == null)
             {
-                Marshal.Release(identity);
+                // If ComWrappers instance cannot create wrapper, we can do nothing here.
+                return false;
+            }
+
+            if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
+            {
+                NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                    identity,
+                    inner,
+                    null, // No need to cache NativeObjectWrapper for unique instances. They are not cached.
+                    retValue,
+                    flags);
+                if (!s_rcwTable.TryAdd(retValue, wrapper))
+                {
+                    wrapper.Release();
+                    throw new NotSupportedException();
+                }
+                s_nativeObjectWrapperCache.Add(wrapper._nativeObjectWrapperWeakHandle);
+                return true;
+            }
+
+            using (LockHolder.Hold(_lock))
+            {
+                object? cachedWrapper = null;
+                if (_rcwCache.TryGetValue(identity, out var existingHandle))
+                {
+                    cachedWrapper = existingHandle.Target;
+                    if (cachedWrapper is null)
+                    {
+                        // The GCHandle has been clear out but the NativeObjectWrapper
+                        // finalizer has not yet run to remove the entry from _rcwCache
+                        _rcwCache.Remove(identity);
+                    }
+                }
+
+                if (cachedWrapper is not null)
+                {
+                    retValue = cachedWrapper;
+                }
+                else
+                {
+                    NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                        identity,
+                        inner,
+                        this,
+                        retValue,
+                        flags);
+                    if (!s_rcwTable.TryAdd(retValue, wrapper))
+                    {
+                        wrapper.Release();
+                        throw new NotSupportedException();
+                    }
+                    _rcwCache.Add(identity, wrapper._proxyHandle);
+                    s_nativeObjectWrapperCache.Add(wrapper._nativeObjectWrapperWeakHandle);
+                }
             }
 
             return true;

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -11,7 +10,7 @@ using static System.Runtime.InteropServices.ComWrappers;
 namespace System.Runtime.InteropServices
 {
     // Defined in windows.ui.xaml.hosting.referencetracker.h.
-    enum XAML_REFERENCETRACKER_DISCONNECT
+    internal enum XAML_REFERENCETRACKER_DISCONNECT
     {
         // Indicates the disconnect is during a suspend and a GC can be trigger.
         XAML_REFERENCETRACKER_DISCONNECT_SUSPEND = 0x00000001
