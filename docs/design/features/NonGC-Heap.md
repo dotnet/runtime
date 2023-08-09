@@ -1,7 +1,5 @@
 # NonGC Heap
 
-## Problem space
-
 .NET 8.0 introduces a new concept called **NonGC Heap** - a specialized heap that is not managed by the Garbage Collector (GC) and is designed to store immortal objects with certain benefits for GC and codegen. Although the name is new, the feature is based on pre-existing **Frozen Segments** which were added long time ago to serve a similar purpose. What's changed in .NET 8.0 is that this functionality has been exposed to users through public profiling and debugging APIs, and it is now heavily leveraged for several code generation optimizations. A general overview of the .NET managed heap can be visualized as shown in the following mermaid diagram:
 
 ```mermaid
