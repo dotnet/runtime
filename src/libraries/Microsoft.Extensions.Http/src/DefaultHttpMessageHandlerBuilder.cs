@@ -36,16 +36,8 @@ namespace Microsoft.Extensions.Http
             {
                 if (_primaryHandler is null && !PrimaryHandlerIsSet)
                 {
-                    _primaryHandler =
-#if NET5_0_OR_GREATER
-                        SocketsHttpHandler.IsSupported
-                            // There's a lot of erroneous usecases when a client gets captured by a singleton.
-                            // This should make the default case better by preventing the loss of DNS changes.
-                            ? new SocketsHttpHandler() { PooledConnectionLifetime = HttpClientFactoryOptions.DefaultHandlerLifetime }
-                            : new HttpClientHandler();
-#else
-                        new HttpClientHandler();
-#endif
+                    _primaryHandler = new HttpClientHandler();
+                    PrimaryHandlerIsSet = true;
                 }
                 return _primaryHandler!;
             }

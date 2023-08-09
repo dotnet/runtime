@@ -40,13 +40,10 @@ namespace Microsoft.Extensions.Http
             var messageHandlerFactory = services.GetRequiredService<IHttpMessageHandlerFactory>();
 
             var defaultPrimaryHandlerChain = messageHandlerFactory.CreateHandler("DefaultPrimaryHandler");
-            var useSocketsHttpHandlerChain = messageHandlerFactory.CreateHandler("UseSocketsHttpHandler");
+            var socketsHttpHandlerChain = messageHandlerFactory.CreateHandler("UseSocketsHttpHandler");
 
-            var defaultPrimaryHandler = Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(defaultPrimaryHandlerChain));
-            var useSocketsHttpHandler = Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(useSocketsHttpHandlerChain));
-
-            Assert.Equal(HttpClientFactoryOptions.DefaultHandlerLifetime, defaultPrimaryHandler.PooledConnectionLifetime); // opinionated default
-            Assert.Equal(Timeout.InfiniteTimeSpan, useSocketsHttpHandler.PooledConnectionLifetime); // clear unconfigured instance
+            Assert.IsType<HttpClientHandler>(GetPrimaryHandler(defaultPrimaryHandlerChain));
+            Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(socketsHttpHandlerChain));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

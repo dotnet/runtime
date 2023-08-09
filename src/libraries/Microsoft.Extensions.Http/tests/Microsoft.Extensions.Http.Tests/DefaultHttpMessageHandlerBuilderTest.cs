@@ -27,14 +27,8 @@ namespace Microsoft.Extensions.Http
             // Arrange & Act
             var builder = new DefaultHttpMessageHandlerBuilder(Services);
 
-            // Act
-#if NET5_0_OR_GREATER
-            HttpMessageHandler _ = SocketsHttpHandler.IsSupported
-                ? Assert.IsType<SocketsHttpHandler>(builder.PrimaryHandler)
-                : Assert.IsType<HttpClientHandler>(builder.PrimaryHandler);
-#else
+            // Assert
             Assert.IsType<HttpClientHandler>(builder.PrimaryHandler);
-#endif
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
