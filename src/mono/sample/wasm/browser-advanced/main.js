@@ -30,6 +30,13 @@ try {
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
         // It is preferred to use specific 'with***' methods instead in all other cases.
+        .withConfig({
+            resources: {
+                modulesAfterConfigLoaded: {
+                    "advanced-sample.lib.module.js": ""
+                }
+            }
+        })
         .withModuleConfig({
             configSrc: "./blazor.boot.json",
             onConfigLoaded: (config) => {
@@ -38,9 +45,6 @@ try {
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
                 config.browserProfilerOptions = {};
-                config.resources.modulesAfterConfigLoaded = {
-                    "advanced-sample.lib.module.js": ""
-                }
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },

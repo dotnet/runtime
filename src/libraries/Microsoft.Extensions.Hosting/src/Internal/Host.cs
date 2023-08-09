@@ -63,8 +63,8 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         /// <summary>
         /// Order:
-        ///  IHostLifetime.WaitForStartAsync (can abort chain)
-        ///  Services.GetService{IStartupValidator}().Validate() (can abort chain)
+        ///  IHostLifetime.WaitForStartAsync
+        ///  Services.GetService{IStartupValidator}().Validate()
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
@@ -125,11 +125,11 @@ namespace Microsoft.Extensions.Hosting.Internal
                     await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions,
                         (service, token) => service.StartingAsync(token)).ConfigureAwait(false);
 
-                    // We do not abort on exceptions from StartingAsync.
+                    // Exceptions in StartingAsync cause startup to be aborted.
+                    LogAndRethrow();
                 }
 
                 // Call StartAsync().
-                // We do not abort on exceptions from StartAsync.
                 await ForeachService(_hostedServices, token, concurrent, abortOnFirstException, exceptions,
                     async (service, token) =>
                     {
@@ -141,14 +141,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                         }
                     }).ConfigureAwait(false);
 
+                // Exceptions in StartAsync cause startup to be aborted.
+                LogAndRethrow();
+
                 // Call StartedAsync().
-                // We do not abort on exceptions from StartedAsync.
                 if (_hostedLifecycleServices is not null)
                 {
                     await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions,
                         (service, token) => service.StartedAsync(token)).ConfigureAwait(false);
                 }
 
+                // Exceptions in StartedAsync cause startup to be aborted.
                 LogAndRethrow();
 
                 // Call IHostApplicationLifetime.Started
@@ -333,7 +336,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 // The beginning synchronous portions of the implementations are run serially in registration order for
                 // performance since it is common to return Task.Completed as a noop.
-                // Any subsequent asynchronous portions are grouped together run concurrently.
+                // Any subsequent asynchronous portions are grouped together and run concurrently.
                 List<Task>? tasks = null;
 
                 foreach (T service in services)
@@ -358,6 +361,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                     else
                     {
+                        // The task encountered an await; add it to a list to run concurrently.
                         tasks ??= new();
                         tasks.Add(Task.Run(() => task, token));
                     }

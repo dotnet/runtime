@@ -3,12 +3,7 @@
 
 #include "common.h"
 #include "eventpipeadapter.h"
-
-#include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "SpinLock.h"
+#include "PalRedhawk.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -17,7 +12,7 @@ struct EventPipeEventInstanceData
     void *ProviderID;
     unsigned int EventID;
     unsigned int ThreadID;
-    LARGE_INTEGER TimeStamp;
+    int64_t TimeStamp;
     GUID ActivityId;
     GUID RelatedActivityId;
     const uint8_t *Payload;
@@ -40,7 +35,7 @@ struct EventPipeProviderConfigurationNative
 };
 
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
-    LPCWSTR outputFile,
+    const WCHAR* outputFile,
     EventPipeSerializationFormat format,
     uint32_t circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ const void * pProviders,
@@ -102,11 +97,11 @@ EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
 
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_Disable(uint64_t sessionID)
 {
-    EventPipeAdapter::Disable(sessionID);
+    ep_disable(sessionID);
 }
 
 EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
-    LPCWSTR providerName,
+    const WCHAR* providerName,
     EventPipeCallback pCallbackFunc,
     void* pCallbackContext)
 {
@@ -133,10 +128,17 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_DefineEvent(
     return reinterpret_cast<intptr_t>(pEvent);
 }
 
-EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(LPCWSTR providerName)
+EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(const WCHAR* providerName)
 {
-    EventPipeProvider* pProvider = EventPipeAdapter::GetProvider(providerName);
-    return reinterpret_cast<intptr_t>(pProvider);
+    EventPipeProvider * provider = NULL;
+    if (providerName)
+    {
+        ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
+        provider = ep_get_provider (providerNameUTF8);
+        ep_rt_utf8_string_free(providerNameUTF8);
+    }
+
+    return reinterpret_cast<intptr_t>(provider);
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t provHandle)
@@ -144,7 +146,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t 
     if (provHandle != 0)
     {
         EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
-        EventPipeAdapter::DeleteProvider(pProvider);
+        ep_delete_provider(pProvider);
     }
 }
 
@@ -251,7 +253,7 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetNextEvent(uint
         pInstance->ProviderID = ep_event_get_provider(ep_event_instance_get_ep_event(pNextInstance));
         pInstance->EventID = ep_event_get_event_id(ep_event_instance_get_ep_event(pNextInstance));
         pInstance->ThreadID = static_cast<uint32_t>(ep_event_get_event_id(ep_event_instance_get_ep_event(pNextInstance)));
-        pInstance->TimeStamp.QuadPart = ep_event_instance_get_timestamp(pNextInstance);
+        pInstance->TimeStamp = ep_event_instance_get_timestamp(pNextInstance);
         pInstance->ActivityId = *reinterpret_cast<const GUID *>(ep_event_instance_get_activity_id_cref(pNextInstance));
         pInstance->RelatedActivityId = *reinterpret_cast<const GUID *>(ep_event_instance_get_related_activity_id_cref(pNextInstance));
         pInstance->Payload = ep_event_instance_get_data(pNextInstance);
@@ -267,7 +269,7 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_SignalSession(uin
     if (!session)
         return false;
 
-    return ep_rt_wait_event_set (ep_session_get_wait_event (session));    
+    return ep_rt_wait_event_set (ep_session_get_wait_event (session));
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSignal(uint64_t sessionID, int32_t timeoutMs)
