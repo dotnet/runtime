@@ -59,7 +59,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == '' and '$(UseNativeAOTRuntime)' != 'true'">marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
     <!-- common linker arguments for app and library builds -->
