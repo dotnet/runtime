@@ -3031,8 +3031,8 @@ public:
     PTR_VOID GetRealStackPointer(PTR_VOID addr)
     {
 #if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
-        void* realAddr = __asan_addr_is_in_fake_stack(m_fakeStack, addr, nullptr, nullptr);
-        return realAddr ? realAddr : addr;
+        void* realAddr = __asan_addr_is_in_fake_stack(m_fakeStack, (void*)PTR_TO_TADDR(addr), nullptr, nullptr);
+        return realAddr ? dac_cast<PTR_VOID>(realAddr) : addr;
 #else
         return addr;
 #endif
