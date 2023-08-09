@@ -263,7 +263,7 @@ namespace System.Runtime.Serialization.Json
 
             while (buffer.Length > 0)
             {
-                int size = _chars.Length < buffer.Length ? _chars.Length : buffer.Length;
+                int size = Math.Min(_chars.Length, buffer.Length);
                 int charCount = _dec!.GetChars(buffer.Slice(0, size), _chars, false);
                 _byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
                 _stream.Write(_bytes, 0, _byteCount);
