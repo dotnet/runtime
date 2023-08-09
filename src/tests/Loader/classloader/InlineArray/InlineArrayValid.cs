@@ -198,7 +198,10 @@ unsafe class Validate
     ref struct ObjShortArrRef
     {
         public const int Length = 100;
-        public (object o, short s) element;
+        public (object, short) element;
+
+        [UnscopedRef]
+        public ref (object o, short s) At(int i) => ref Unsafe.Add(ref element, i);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -208,8 +211,8 @@ unsafe class Validate
 
         for (short i = 0; i < ObjShortArrRef.Length; i++)
         {
-            Assert.Equal(i * 2, arr[i].o);
-            Assert.Equal(i * 2 + 1, arr[i].s);
+            Assert.Equal(i * 2, arr.At(i).o);
+            Assert.Equal(i * 2 + 1, arr.At(i).s);
         }
     }
 
@@ -221,22 +224,22 @@ unsafe class Validate
         var arr = new ObjShortArrRef();
         for (short i = 0; i < ObjShortArrRef.Length; i++)
         {
-            arr[i].o = i;
-            arr[i].s = (short)(i + 1);
+            arr.At(i).o = i;
+            arr.At(i).s = (short)(i + 1);
         }
 
         GC.Collect(2, GCCollectionMode.Forced, true, true);
 
         for (short i = 0; i < ObjShortArrRef.Length; i++)
         {
-            Assert.Equal(i, arr[i].o);
-            Assert.Equal(i + 1, arr[i].s);
+            Assert.Equal(i, arr.At(i).o);
+            Assert.Equal(i + 1, arr.At(i).s);
         }
 
         for (short i = 0; i < ObjShortArrRef.Length; i++)
         {
-            arr[i].o = i * 2;
-            arr[i].s = (short)(i * 2 + 1);
+            arr.At(i).o = i * 2;
+            arr.At(i).s = (short)(i * 2 + 1);
         }
 
         TestRefLikeOuterMethodArg(arr);
