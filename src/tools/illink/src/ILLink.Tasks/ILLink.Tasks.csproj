@@ -27,7 +27,7 @@
   </PropertyGroup>
 
   <!-- Include the illink.runtimeconfig.pack.json file (which depends on the runtimeversion being built)
-       as illink.runtime.config.json in the package, instead of the original illink.runtime.config.json. -->
+       as illink.runtimeconfig.json in the package, instead of the original illink.runtimeconfig.json. -->
   <Target Name="FixPackageRuntimeConfigPath"
           AfterTargets="AddBuildOutputToToolsPackage"
           Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
