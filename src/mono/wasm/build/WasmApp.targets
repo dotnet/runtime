@@ -85,7 +85,7 @@
                                               - AppBundle directly contains user files
                                               - AppBundle/_framework contains generated files (dlls, runtime scripts, icu)
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
-      - $(WASMStripIL)                      - Set to true to enable trimming away AOT compiled methods body (IL code)
+      - $(WasmStripILAfterAOT)                      - Set to true to enable trimming away AOT compiled methods body (IL code)
                                               Defaults to false.
 
       Public items:
@@ -149,7 +149,7 @@
     <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' != 'true'">.dll</WasmAssemblyExtension>
 
     <!-- by default, method body IL code trimming is disabled -->
-    <WASMStripIL Condition="'$(WASMStripIL)' == ''">false</WASMStripIL>
+    <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">false</WasmStripILAfterAOT>
 
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
   </PropertyGroup>

@@ -685,7 +685,7 @@
       CacheFilePath="$(_AOTCompilerCacheFile)"
       LLVMDebug="dwarfdebug"
       LLVMPath="$(EmscriptenUpstreamBinPath)"
-      CollectTrimmingEligibleMethods="$(WASMStripIL)"
+      CollectTrimmingEligibleMethods="$(WasmStripILAfterAOT)"
       TrimmingEligibleMethodsOutputDirectory="$(_WasmIntermediateOutputPath)tokens"
       IntermediateOutputPath="$(_WasmIntermediateOutputPath)"
       AotProfilePath="@(AotProfilePath)">
@@ -694,13 +694,13 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
     <ILStrip
-        Condition=" '$(WASMStripIL)' == 'true' "
+        Condition=" '$(WasmStripILAfterAOT)' == 'true' "
         TrimIndividualMethods="true"
         Assemblies="@(_WasmAssembliesInternal)">
       <Output TaskParameter="TrimmedAssemblies" ItemName="_ILStripTrimmedAssemblies" />
     </ILStrip>
     <Move
-        Condition=" '$(WASMStripIL)' == 'true' "
+        Condition=" '$(WasmStripILAfterAOT)' == 'true' "
         SourceFiles="@(_ILStripTrimmedAssemblies->'%(TrimmedAssemblyFileName)')"
         DestinationFiles="@(_ILStripTrimmedAssemblies)"
     />
