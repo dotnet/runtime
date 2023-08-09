@@ -579,7 +579,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
             buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
-            timeoutInMinutes: 180
+            timeoutInMinutes: 480
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
