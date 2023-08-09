@@ -65,35 +65,35 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void Args_0_ExtraIgnored()
+        public void Args_0_Extra_Throws()
         {
             ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { }));
-            Assert.Equal("0", ((TestClass)invoker.Invoke(42))._args);
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(42));
         }
 
         [Fact]
-        public void Args_1_ExtraIgnored()
+        public void Args_1_Extra_Throws()
         {
             ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { typeof(string) }));
-            Assert.Equal("1", ((TestClass)invoker.Invoke("1", 42))._args);
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1", 42));
         }
 
         [Fact]
-        public void Args_2_ExtraIgnored()
+        public void Args_2_Extra_Throws()
         {
             ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
                 new Type[] { typeof(string), typeof(string) }));
 
-            Assert.Equal("12", ((TestClass)invoker.Invoke("1", "2", 42))._args);
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1", "2", 42));
         }
 
         [Fact]
-        public void Args_3_ExtraIgnored()
+        public void Args_3_Extra_Throws()
         {
             ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
                 new Type[] { typeof(string), typeof(string), typeof(string) }));
 
-            Assert.Equal("123", ((TestClass)invoker.Invoke("1", "2", "3", 42))._args);
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1", "2", "3", 42));
         }
 
         [Fact]

@@ -731,28 +731,32 @@ namespace Microsoft.Extensions.DependencyInjection
             if (serviceProvider is null)
                 ThrowHelperArgumentNullExceptionServiceProvider();
 
-            object? arg1 = null;
-            object? arg2 = null;
-            object? arg3 = null;
-            object? arg4 = null;
-
             switch (parameterTypes.Length)
             {
-                case 4:
-                    arg4 = GetService(serviceProvider, parameterTypes[3], declaringType, false);
-                    goto case 3;
-                case 3:
-                    arg3 = GetService(serviceProvider, parameterTypes[2], declaringType, false);
-                    goto case 2;
-                case 2:
-                    arg2 = GetService(serviceProvider, parameterTypes[1], declaringType, false);
-                    goto case 1;
                 case 1:
-                    arg1 = GetService(serviceProvider, parameterTypes[0], declaringType, false);
-                    break;
+                    return invoker.Invoke(
+                        GetService(serviceProvider, parameterTypes[0], declaringType, false));
+
+                case 2:
+                    return invoker.Invoke(
+                        GetService(serviceProvider, parameterTypes[0], declaringType, false),
+                        GetService(serviceProvider, parameterTypes[1], declaringType, false));
+
+                case 3:
+                    return invoker.Invoke(
+                        GetService(serviceProvider, parameterTypes[0], declaringType, false),
+                        GetService(serviceProvider, parameterTypes[1], declaringType, false),
+                        GetService(serviceProvider, parameterTypes[2], declaringType, false));
+
+                case 4:
+                    return invoker.Invoke(
+                        GetService(serviceProvider, parameterTypes[0], declaringType, false),
+                        GetService(serviceProvider, parameterTypes[1], declaringType, false),
+                        GetService(serviceProvider, parameterTypes[2], declaringType, false),
+                        GetService(serviceProvider, parameterTypes[3], declaringType, false));
             }
 
-            return invoker.Invoke(arg1, arg2, arg3, arg4);
+            return null!;
         }
 
         private static object ReflectionFactoryServiceOnlySpan(
@@ -786,57 +790,117 @@ namespace Microsoft.Extensions.DependencyInjection
             if (serviceProvider is null)
                 ThrowHelperArgumentNullExceptionServiceProvider();
 
-            object? arg1 = null;
-            object? arg2 = null;
-            object? arg3 = null;
-            object? arg4 = null;
+            ref FactoryParameterContext parameter1 = ref parameters[0];
 
             switch (parameters.Length)
             {
-                case 4:
-                    ref FactoryParameterContext parameter4 = ref parameters[3];
-                    arg4 = ((parameter4.ArgumentIndex != -1)
-                        // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
-                        ? arguments![parameter4.ArgumentIndex]
-                        : GetService(
-                            serviceProvider,
-                            parameter4.ParameterType,
-                            declaringType,
-                            parameter4.HasDefaultValue)) ?? parameter4.DefaultValue;
-                    goto case 3;
-                case 3:
-                    ref FactoryParameterContext parameter3 = ref parameters[2];
-                    arg3 = ((parameter3.ArgumentIndex != -1)
-                        ? arguments![parameter3.ArgumentIndex]
-                        : GetService(
-                            serviceProvider,
-                            parameter3.ParameterType,
-                            declaringType,
-                            parameter3.HasDefaultValue)) ?? parameter3.DefaultValue;
-                    goto case 2;
-                case 2:
-                    ref FactoryParameterContext parameter2 = ref parameters[1];
-                    arg2 = ((parameter2.ArgumentIndex != -1)
-                        ? arguments![parameter2.ArgumentIndex]
-                        : GetService(
-                            serviceProvider,
-                            parameter2.ParameterType,
-                            declaringType,
-                            parameter2.HasDefaultValue)) ?? parameter2.DefaultValue;
-                    goto case 1;
                 case 1:
-                    ref FactoryParameterContext parameter1 = ref parameters[0];
-                    arg1 = ((parameter1.ArgumentIndex != -1)
-                        ? arguments![parameter1.ArgumentIndex]
-                        : GetService(
-                            serviceProvider,
-                            parameter1.ParameterType,
-                            declaringType,
-                            parameter1.HasDefaultValue)) ?? parameter1.DefaultValue;
-                    break;
+                    return invoker.Invoke(
+                         ((parameter1.ArgumentIndex != -1)
+                            // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                            ? arguments![parameter1.ArgumentIndex]
+                            : GetService(
+                                serviceProvider,
+                                parameter1.ParameterType,
+                                declaringType,
+                                parameter1.HasDefaultValue)) ?? parameter1.DefaultValue);
+                case 2:
+                    {
+                        ref FactoryParameterContext parameter2 = ref parameters[1];
+
+                        return invoker.Invoke(
+                             ((parameter1.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter1.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter1.ParameterType,
+                                    declaringType,
+                                    parameter1.HasDefaultValue)) ?? parameter1.DefaultValue,
+                             ((parameter2.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter2.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter2.ParameterType,
+                                    declaringType,
+                                    parameter2.HasDefaultValue)) ?? parameter2.DefaultValue);
+                    }
+                case 3:
+                    {
+                        ref FactoryParameterContext parameter2 = ref parameters[1];
+                        ref FactoryParameterContext parameter3 = ref parameters[2];
+
+                        return invoker.Invoke(
+                             ((parameter1.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter1.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter1.ParameterType,
+                                    declaringType,
+                                    parameter1.HasDefaultValue)) ?? parameter1.DefaultValue,
+                             ((parameter2.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter2.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter2.ParameterType,
+                                    declaringType,
+                                    parameter2.HasDefaultValue)) ?? parameter2.DefaultValue,
+                             ((parameter3.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter3.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter3.ParameterType,
+                                    declaringType,
+                                    parameter3.HasDefaultValue)) ?? parameter3.DefaultValue);
+                    }
+                case 4:
+                    {
+                        ref FactoryParameterContext parameter2 = ref parameters[1];
+                        ref FactoryParameterContext parameter3 = ref parameters[2];
+                        ref FactoryParameterContext parameter4 = ref parameters[3];
+
+                        return invoker.Invoke(
+                             ((parameter1.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter1.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter1.ParameterType,
+                                    declaringType,
+                                    parameter1.HasDefaultValue)) ?? parameter1.DefaultValue,
+                             ((parameter2.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter2.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter2.ParameterType,
+                                    declaringType,
+                                    parameter2.HasDefaultValue)) ?? parameter2.DefaultValue,
+                             ((parameter3.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter3.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter3.ParameterType,
+                                    declaringType,
+                                    parameter3.HasDefaultValue)) ?? parameter3.DefaultValue,
+                             ((parameter4.ArgumentIndex != -1)
+                                // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
+                                ? arguments![parameter4.ArgumentIndex]
+                                : GetService(
+                                    serviceProvider,
+                                    parameter4.ParameterType,
+                                    declaringType,
+                                    parameter4.HasDefaultValue)) ?? parameter4.DefaultValue);
+                    }
+
             }
 
-            return invoker.Invoke(arg1, arg2, arg3, arg4);
+            return null!;
         }
 
         private static object ReflectionFactoryCanonicalSpan(

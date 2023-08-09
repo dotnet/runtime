@@ -63,31 +63,31 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void Args_0_ExtraIgnored()
+        public void Args_0_Extra_Throws()
         {
             MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_0)));
-            Assert.Equal("0", invoker.Invoke(obj: null, 42));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, 42));
         }
 
         [Fact]
-        public void Args_1_ExtraIgnored()
+        public void Args_1_Extra_Throws()
         {
             MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
-            Assert.Equal("1", invoker.Invoke(obj: null, "1", 42));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", 42));
         }
 
         [Fact]
-        public void Args_2_ExtraIgnored()
+        public void Args_2_Extra_Throws()
         {
             MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_2)));
-            Assert.Equal("12", invoker.Invoke(obj: null, "1", "2", 42));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", "2", 42));
         }
 
         [Fact]
-        public void Args_3_ExtraIgnored()
+        public void Args_3_Extra_Throws()
         {
             MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_3)));
-            Assert.Equal("123", invoker.Invoke(obj: null, "1", "2", "3", 42));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", "2", "3", 42));
         }
 
         [Fact]

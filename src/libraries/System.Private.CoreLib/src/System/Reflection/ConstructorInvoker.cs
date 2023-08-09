@@ -48,7 +48,7 @@ namespace System.Reflection
 
         public object Invoke()
         {
-            if (_argCount > 0)
+            if (_argCount != 0)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -58,8 +58,7 @@ namespace System.Reflection
 
         public object Invoke(object? arg1)
         {
-            // Allow unused arguments to simplify caller's logic.
-            if (_argCount > 1)
+            if (_argCount != 1)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -69,8 +68,7 @@ namespace System.Reflection
 
         public object Invoke(object? arg1, object? arg2)
         {
-            // Allow unused arguments to simplify caller's logic.
-            if (_argCount > 2)
+            if (_argCount != 2)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -80,8 +78,7 @@ namespace System.Reflection
 
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
-            // Allow unused arguments to simplify caller's logic.
-            if (_argCount > 3)
+            if (_argCount !=3)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -91,8 +88,7 @@ namespace System.Reflection
 
         public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            // Allow unused arguments to simplify caller's logic.
-            if (_argCount > 4)
+            if (_argCount != 4)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }

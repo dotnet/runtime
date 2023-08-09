@@ -35,6 +35,11 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke()
         {
+            if (_parameterCount != 0)
+            {
+                ThrowForArgCountMismatch();
+            }
+
             object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>());
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
@@ -43,9 +48,8 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1)
         {
-            if (_parameterCount > 1)
+            if (_parameterCount != 1)
             {
-                // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
                 ThrowForArgCountMismatch();
             }
 
@@ -57,9 +61,8 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2)
         {
-            if (_parameterCount > 2)
+            if (_parameterCount != 2)
             {
-                // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
                 ThrowForArgCountMismatch();
             }
 
@@ -74,9 +77,8 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
-            if (_parameterCount > 3)
+            if (_parameterCount != 3)
             {
-                // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
                 ThrowForArgCountMismatch();
             }
 
@@ -92,9 +94,8 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            if (_parameterCount > 4)
+            if (_parameterCount != 4)
             {
-                // Ignore extra parameters, but throw if not enough to avoid referencing invalid memory.
                 ThrowForArgCountMismatch();
             }
 
