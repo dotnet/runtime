@@ -96,7 +96,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public abstract TValue HandleArrayElementRead (TValue arrayValue, TValue indexValue, IOperation operation);
 
-		public abstract void HandleArrayElementWrite (TValue arrayValue, TValue indexValue, TValue valueToWrite, IOperation operation);
+		public abstract void HandleArrayElementWrite (TValue arrayValue, TValue indexValue, TValue valueToWrite, IOperation operation, bool merge);
 
 		// This takes an IOperation rather than an IReturnOperation because the return value
 		// may (must?) come from BranchValue of an operation whose FallThroughSuccessor is the exit block.
@@ -231,10 +231,45 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					if (arrayElementRef.Indices.Length != 1)
 						break;
 
-					TValue arrayRef = Visit (arrayElementRef.ArrayReference, state);
-					TValue index = Visit (arrayElementRef.Indices[0], state);
-					TValue value = Visit (operation.Value, state);
-					HandleArrayElementWrite (arrayRef, index, value, operation);
+					// Similarly to VisitSimpleAssignment, this needs to handle cases where the array reference
+					// is a captured variable, even if the target of the assignment (the array element reference) is not.
+
+					TValue arrayRef;
+					TValue index;
+					TValue value;
+					if (arrayElementRef.ArrayReference is not IFlowCaptureReferenceOperation captureReference) {
+						arrayRef = Visit (arrayElementRef.ArrayReference, state);
+						index = Visit (arrayElementRef.Indices[0], state);
+						value = Visit (operation.Value, state);
+						HandleArrayElementWrite (arrayRef, index, value, operation, merge: merge);
+						return value;
+					}
+
+					index = Visit (arrayElementRef.Indices[0], state);
+					value = Visit (operation.Value, state);
+
+					var capturedReferences = state.Current.CapturedReferences.Get (captureReference.Id);
+					if (!capturedReferences.HasMultipleValues) {
+						// Single captured reference. Treat this as an overwriting assignment,
+						// unless the caller already told us to merge values because this is an
+						// assignment to one of multiple captured array element references.
+						var enumerator = capturedReferences.GetEnumerator ();
+						enumerator.MoveNext ();
+						var capture = enumerator.Current;
+						arrayRef = Visit (capture.Reference, state);
+						HandleArrayElementWrite (arrayRef, index, value, operation, merge: merge);
+						return value;
+					}
+
+					// The capture id may have captured multiple references, as in:
+					// (b ? arr1 : arr2)[0] = value;
+					// We treat this as possible write to each of the captured references,
+					// which requires merging with the previous values of each.
+
+					foreach (var capture in state.Current.CapturedReferences.Get (captureReference.Id)) {
+						arrayRef = Visit (capture.Reference, state);
+						HandleArrayElementWrite (arrayRef, index, value, operation, merge: true);
+					}
 					return value;
 				}
 			case IDiscardOperation:
@@ -333,7 +368,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				return TopValue;
 			}
 
-			Debug.Assert (IsRValueFlowCapture (operation.Id));
+			// This assert is incorrect for cases like (b ? arr1 : arr2)[0] = v;
+			// Here the ValueUsageInfo shows that the value usage is for reading (this is probably wrong!)
+			// but the value is actually an LValueFlowCapture.
+			// Let's just disable the assert for now.
+			// Debug.Assert (IsRValueFlowCapture (operation.Id));
+
 			return state.Get (new LocalKey (operation.Id));
 		}
 
