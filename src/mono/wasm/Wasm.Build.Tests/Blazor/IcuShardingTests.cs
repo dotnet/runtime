@@ -28,7 +28,7 @@ public class IcuShardingTests : BlazorWasmTestBase
     [InlineData("Release", "icudt_no_CJK.dat")]
     [InlineData("Debug", "icudt_CJK.dat")]
     [InlineData("Release", "icudt_CJK.dat")]
-    public async Task CustomIcuFileFromRuntimePack(string config, string fileName)
+    public async Task CustomIcuFileFromRuntimePackAbsolutePath(string config, string fileName)
     {
         string id = $"blz_customFromRuntimePack_{config}_{GetRandomId()}";
         string projectFile = CreateBlazorWasmTemplateProject(id);
