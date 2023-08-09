@@ -88,6 +88,8 @@ namespace Internal.Runtime
                     return SR.ClassLoad_RankTooLarge;
                 case ExceptionStringID.ClassLoadInlineArrayFieldCount:
                     return SR.ClassLoad_InlineArrayFieldCount;
+                case ExceptionStringID.ClassLoadInlineArrayReadOnly:
+                    return SR.ClassLoad_InlineArrayReadOnly;
                 case ExceptionStringID.ClassLoadInlineArrayLength:
                     return SR.ClassLoad_InlineArrayLength;
                 case ExceptionStringID.ClassLoadInlineArrayExplicit:

@@ -1724,6 +1724,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT);
             }
 
+            DWORD dwFieldAttrs = bmtMetaData->pFieldAttrs[0];
+            if (IsFdInitOnly(dwFieldAttrs))
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_READONLY);
+            }
+
             if (cbVal >= (sizeof(INT32) + 2))
             {
                 INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);

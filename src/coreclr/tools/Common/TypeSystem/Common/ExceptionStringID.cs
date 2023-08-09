@@ -19,6 +19,7 @@ namespace Internal.TypeSystem
         ClassLoadInlineArrayFieldCount,
         ClassLoadInlineArrayLength,
         ClassLoadInlineArrayExplicit,
+        ClassLoadInlineArrayReadOnly,
 
         // MissingMethodException
         MissingMethod,

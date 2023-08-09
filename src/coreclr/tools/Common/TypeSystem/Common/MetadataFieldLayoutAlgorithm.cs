@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -491,6 +492,14 @@ namespace Internal.TypeSystem
             if (instanceFieldCount != 1)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayFieldCount, type);
+            }
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsInitOnly && !field.IsStatic)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayReadOnly, type);
+                }
             }
 
             if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
