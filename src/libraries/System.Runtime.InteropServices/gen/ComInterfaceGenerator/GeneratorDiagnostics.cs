@@ -154,7 +154,7 @@ namespace Microsoft.Interop
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
-                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedTitleCom)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageParameterCom)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -165,7 +165,7 @@ namespace Microsoft.Interop
         public static readonly DiagnosticDescriptor ReturnTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
-                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedTitleCom)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageReturnCom)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -176,7 +176,7 @@ namespace Microsoft.Interop
         public static readonly DiagnosticDescriptor ParameterTypeNotSupportedWithDetails =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
-                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedTitleCom)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageParameterWithDetails)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -187,7 +187,7 @@ namespace Microsoft.Interop
         public static readonly DiagnosticDescriptor ReturnTypeNotSupportedWithDetails =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
-                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedTitleCom)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageReturnWithDetails)),
                 Category,
                 DiagnosticSeverity.Error,

@@ -447,11 +447,6 @@
         <target state="translated">'[In]' 属性は、'[Out]' 属性も使用しない限り必要ではありません。'[Out]' 属性なしでの '[In]' 属性の動作は、既定の動作と同じです。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InAttributeOnlyNotSupportedOnPinnedParameters">
-        <source>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</source>
-        <target state="translated">このパラメーターは固定によってマーシャリングされ、'[Out]'属性のない'[In]'属性はサポートされません。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">'[In]' 属性と '[Out]' 属性は、参照渡しされたパラメーターではサポートされていません。代わりに 'in'、'ref'、または 'out' キーワードを使用します。</target>
@@ -465,11 +460,6 @@
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">属性の[In]と[Out]</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InRefKindIsNotSupportedOnPinnedParameters">
-        <source>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</source>
-        <target state="translated">'in' キーワード (keyword)は、固定によってマーシャリングされたパラメーターではサポートされていません。代わりに 'ref' または 'out' を使用してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -903,8 +893,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="translated">'[Out]' 属性は、固定によってマーシャリングされた配列パラメーターとパラメーターでのみサポートされます。パラメーターを変更可能にするには、'out' または 'ref' キーワードを使用することを検討してください。</target>
+        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="needs-review-translation">'[Out]' 属性は、固定によってマーシャリングされた配列パラメーターとパラメーターでのみサポートされます。パラメーターを変更可能にするには、'out' または 'ref' キーワードを使用することを検討してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -915,11 +905,6 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">型 '{0}' は、'Out' 方向のマーシャリングをサポートしますが、マネージド型を返す 'ToManaged' メソッドは指定されません</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="PinnedMarshallingIsInOutByDefault">
-        <source>This parameter is marshalled by pinning and is '[In, Out]' by default.</source>
-        <target state="translated">このパラメーターはピン留めによってマーシャリングされ、既定では '[In, Out]' です。</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -1163,11 +1148,6 @@
         <target state="translated">'{0}' にはアクセシビリティ '{1}' があります。</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeDoesNotSupportByValueMarshalingAttributes">
-        <source>'[In]' and '[Out]' attributes are not supported on this type.</source>
-        <target state="translated">'[In]'属性および'[Out]'属性は、この型ではサポートされていません。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
         <target state="translated">カスタム マーシャラーのアンマネージド型は、C# アンマネージド型である必要があります。</target>
@@ -1235,9 +1215,9 @@
         <target state="translated">指定された型は、ソースで生成された P/Invoke ではサポートされていません</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle1">
+      <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="translated">指定された型は、ソース生成済みの COM ではサポートされていません</target>
+        <target state="new">Specified type is not supported by source-generated COM</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
