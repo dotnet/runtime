@@ -11730,7 +11730,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                     if (gcSlotValue == nullptr)
                                     {
                                         // GC handle is null
-                                        memcpy(buffer, 0, bufferSize);
+                                        memset(buffer, 0, bufferSize);
                                         result = true;
                                     }
                                     else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(gcSlotValue))
