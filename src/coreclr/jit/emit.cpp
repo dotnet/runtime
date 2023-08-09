@@ -3027,7 +3027,6 @@ void emitter::emitSplit(emitLocation*         startLoc,
          ig != igEnd && ig != NULL; igPrev = ig, ig = ig->igNext)
     {
         splitIfNecessary();
-        assert(curSize < maxSplitSize);
 
         // Update the current candidate to be this block, if it isn't in the middle of a
         // prolog or epilog, which we can't split. All we know is that certain
