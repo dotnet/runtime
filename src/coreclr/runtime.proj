@@ -6,8 +6,6 @@
 
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
-    <BuildRuntimeDependsOn>GetPgoDataPackagePath;GetProductVersions</BuildRuntimeDependsOn>
-    <BuildRuntimeDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildRuntimeDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildRuntimeDependsOn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +19,7 @@
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
   <Target Name="BuildRuntime"
-          DependsOnTargets="$(BuildRuntimeDependsOn)"
+          DependsOnTargets="GetPgoDataPackagePath"
           BeforeTargets="Build">
     <ItemGroup>
       <_CMakeArgs Include="$(CMakeArgs)" />
@@ -52,9 +50,6 @@
       <_CoreClrBuildArg Condition="'$(HostCrossOS)' != ''" Include="-hostos $(HostCrossOS)" />
       <_CoreClrBuildArg Include="-outputrid $(OutputRID)" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
-
-      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLI_CMAKE_COMMIT_HASH=$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))&quot;" />
-      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLI_CMAKE_HOST_VER=$(HostVersion)&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">

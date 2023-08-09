@@ -4,11 +4,16 @@
     Add basic project properties for NuGet restore, needed to import the SourceLink MSBuild tool
     package's targets into the build.
   -->
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+
   <PropertyGroup>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
-    <BuildCoreHostDependsOn>GetProductVersions;GenerateNativeVersionFile</BuildCoreHostDependsOn>
+    <BuildCoreHostDependsOn>GetProductVersions;GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRID).$(Configuration)\</IntermediateOutputRootPath>
+    <!-- Global location for version files -->
+    <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
   </PropertyGroup>
 
   <ItemGroup>
