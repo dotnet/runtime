@@ -1,23 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "common.h"
-#include "eventpipeadapter.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
+#include "PalRedhawk.h"
+
+#include <eventpipe/ep.h>
 
 #ifdef FEATURE_PERFTRACING
-
-#include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "SpinLock.h"
 
 struct EventPipeEventInstanceData;
 
 struct EventPipeSessionInfo;
 
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
-    LPCWSTR outputFile,
+    const WCHAR* outputFile,
     EventPipeSerializationFormat format,
     uint32_t circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ const void * pProviders,
@@ -31,7 +28,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_Disable(uint64_t session
 }
 
 EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
-    LPCWSTR providerName,
+    const WCHAR* providerName,
     EventPipeCallback pCallbackFunc,
     void* pCallbackContext)
 {
@@ -50,7 +47,7 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_DefineEvent(
     return 0;
 }
 
-EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(LPCWSTR providerName)
+EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(const WCHAR* providerName)
 {
     return 0;
 }

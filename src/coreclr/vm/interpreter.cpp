@@ -6084,7 +6084,7 @@ void Interpreter::NewObj()
             {
                 GCX_PREEMP();
                 bool sideEffect;
-                newHelper = m_interpCeeInfo.getNewHelper(&methTok, m_methInfo->m_method, &sideEffect);
+                newHelper = m_interpCeeInfo.getNewHelper(methTok.hClass, m_methInfo->m_method, &sideEffect);
             }
 
             MethodTable * pNewObjMT = GetMethodTableFromClsHnd(methTok.hClass);

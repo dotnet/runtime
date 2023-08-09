@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -440,7 +441,7 @@ namespace Microsoft.Interop
                 indexConstraintName,
                 _elementInfo,
                 _elementMarshaller,
-                StubCodeContext.Stage.Cleanup);
+                context.CurrentStage);
 
             if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
             {
@@ -463,7 +464,7 @@ namespace Microsoft.Interop
                     VariableDeclarator(
                         Identifier(nativeSpanIdentifier))
                     .WithInitializer(EqualsValueClause(
-                            context.Direction == MarshalDirection.ManagedToUnmanaged
+                            MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.ManagedToUnmanaged
                                 ? CollectionSource.GetUnmanagedValuesDestination(info, context)
                                 : CollectionSource.GetUnmanagedValuesSource(info, context)))))),
                 contentsCleanupStatements);
@@ -531,6 +532,18 @@ namespace Microsoft.Interop
                     .WithInitializer(EqualsValueClause(
                         CollectionSource.GetManagedValuesDestination(info, context))))));
 
+            StubCodeContext.Stage[] stagesToGenerate;
+
+            // Until we separate CalleeAllocated cleanup and CallerAllocated cleanup in unmanaged to managed, we'll need this hack
+            if (context.Direction is MarshalDirection.UnmanagedToManaged && info.ByValueContentsMarshalKind is ByValueContentsMarshalKind.Out)
+            {
+                stagesToGenerate = new[] { StubCodeContext.Stage.Marshal, StubCodeContext.Stage.PinnedMarshal };
+            }
+            else
+            {
+                stagesToGenerate = new[] { StubCodeContext.Stage.Marshal, StubCodeContext.Stage.PinnedMarshal, StubCodeContext.Stage.CleanupCallerAllocated, StubCodeContext.Stage.CleanupCalleeAllocated };
+            }
+
             return Block(
                 setNumElements,
                 unmanagedValuesSource,
@@ -541,9 +554,7 @@ namespace Microsoft.Interop
                     IdentifierName(numElementsIdentifier),
                     _elementInfo,
                     new FreeAlwaysOwnedOriginalValueGenerator(_elementMarshaller),
-                    StubCodeContext.Stage.Marshal,
-                    StubCodeContext.Stage.PinnedMarshal,
-                    StubCodeContext.Stage.Cleanup));
+                    stagesToGenerate));
         }
 
         private static List<StatementSyntax> GenerateElementStages(
@@ -630,8 +641,7 @@ namespace Microsoft.Interop
             {
                 return false;
             }
-            bool usesLastIndexMarshalled = !shouldCleanupAllElements && !onlyUnmarshals;
-            return usesLastIndexMarshalled;
+            return true;
         }
 
         private static bool ShouldCleanUpAllElements(TypePositionInfo info, StubCodeContext context)
@@ -640,7 +650,7 @@ namespace Microsoft.Interop
             _ = context;
             // AdditionalTemporaryStateLivesAcrossStages implies that it is an outer collection
             // Out parameters means that the contents are created by the P/Invoke and assumed to have successfully created all elements
-            return !context.AdditionalTemporaryStateLivesAcrossStages || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out;
+            return !context.AdditionalTemporaryStateLivesAcrossStages || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out || info.IsNativeReturnPosition;
         }
 
         public override StatementSyntax GenerateSetupStatement(TypePositionInfo info, StubCodeContext context)

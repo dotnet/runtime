@@ -49,10 +49,7 @@ namespace System.Threading
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            if (lck.TryAcquire(0))
-                return;
-
-            TryAcquireContended(lck, obj, Timeout.Infinite);
+            TryAcquireSlow(lck, obj, Timeout.Infinite);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -103,10 +100,10 @@ namespace System.Threading
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            if (lck.TryAcquire(0))
-                return true;
+            if (millisecondsTimeout == 0)
+                return lck.TryAcquireNoSpin();
 
-            return TryAcquireContended(lck, obj, millisecondsTimeout);
+            return TryAcquireSlow(lck, obj, millisecondsTimeout);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -164,11 +161,11 @@ namespace System.Threading
 
         #region Slow path for Entry/TryEnter methods.
 
-        internal static bool TryAcquireContended(Lock lck, object obj, int millisecondsTimeout)
+        internal static bool TryAcquireSlow(Lock lck, object obj, int millisecondsTimeout)
         {
             using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorCriticalSection, millisecondsTimeout, out _))
             {
-                return lck.TryAcquire(millisecondsTimeout, trackContentions: true);
+                return lck.TryAcquireSlow(Environment.CurrentManagedThreadId, millisecondsTimeout, trackContentions: true);
             }
         }
 

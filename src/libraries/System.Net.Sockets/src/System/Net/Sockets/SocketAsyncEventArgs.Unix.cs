@@ -25,16 +25,23 @@ namespace System.Net.Sockets
 
         private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, Memory<byte> socketAddress, SocketError socketError)
         {
-            CompleteAcceptOperation(acceptedFileDescriptor, socketAddress);
+            CompleteAcceptOperation(acceptedFileDescriptor, socketAddress, socketError);
 
             CompletionCallback(0, SocketFlags.None, socketError);
         }
 
-        private void CompleteAcceptOperation(IntPtr acceptedFileDescriptor, Memory<byte> socketAddress)
+        private void CompleteAcceptOperation(IntPtr acceptedFileDescriptor, Memory<byte> socketAddress, SocketError socketError)
         {
             _acceptedFileDescriptor = acceptedFileDescriptor;
-            Debug.Assert(socketAddress.Length > 0);
-            _acceptAddressBufferCount = socketAddress.Length;
+            if (socketError == SocketError.Success)
+            {
+                Debug.Assert(socketAddress.Length > 0);
+                _acceptAddressBufferCount = socketAddress.Length;
+            }
+            else
+            {
+                _acceptAddressBufferCount = 0;
+            }
         }
 
         internal unsafe SocketError DoOperationAccept(Socket _ /*socket*/, SafeSocketHandle handle, SafeSocketHandle? acceptHandle, CancellationToken cancellationToken)
@@ -53,7 +60,7 @@ namespace System.Net.Sockets
 
             if (socketError != SocketError.IOPending)
             {
-                CompleteAcceptOperation(acceptedFd, new Memory<byte>(_acceptBuffer, 0, socketAddressLen));
+                CompleteAcceptOperation(acceptedFd, new Memory<byte>(_acceptBuffer, 0, socketAddressLen), socketError);
                 FinishOperationSync(socketError, 0, SocketFlags.None);
             }
 
@@ -189,7 +196,7 @@ namespace System.Net.Sockets
             bool isIPv4, isIPv6;
             Socket.GetIPProtocolInformation(socket.AddressFamily, _socketAddress!, out isIPv4, out isIPv6);
 
-            int socketAddressSize = _socketAddress!.Size;
+            int socketAddressSize = _socketAddress!.Buffer.Length;
             int bytesReceived;
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
@@ -329,9 +336,11 @@ namespace System.Net.Sockets
             }
         }
 
-        private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
+        private SocketError FinishOperationAccept(SocketAddress remoteSocketAddress)
         {
-            System.Buffer.BlockCopy(_acceptBuffer!, 0, remoteSocketAddress.InternalBuffer, 0, _acceptAddressBufferCount);
+            new ReadOnlySpan<byte>(_acceptBuffer, 0, _acceptAddressBufferCount).CopyTo(remoteSocketAddress.Buffer.Span);
+            remoteSocketAddress.Size = _acceptAddressBufferCount;
+
             Socket acceptedSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
                 _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
@@ -357,7 +366,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        private void UpdateReceivedSocketAddress(Internals.SocketAddress socketAddress)
+        private void UpdateReceivedSocketAddress(SocketAddress socketAddress)
         {
             if (_socketAddressSize > 0)
             {

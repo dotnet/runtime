@@ -700,6 +700,15 @@
   <data name="RuntimeComApisDoNotSupportSourceGeneratedComTitle" xml:space="preserve">
     <value>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</value>
   </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeTitle" xml:space="preserve">
+    <value>The size of a collection that is marshalled to the callee must be defined when the method is called.</value>
+  </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam" xml:space="preserve">
+    <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</value>
+  </data>
+  <data name="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue" xml:space="preserve">
+    <value>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</value>
+  </data>
   <data name="StatefulMarshallerRequiresFreeDescription" xml:space="preserve">
     <value>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</value>
   </data>

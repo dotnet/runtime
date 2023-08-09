@@ -746,14 +746,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "int[]", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeNotSupportedOnPinnedParameter
+                inAttributeIsDefaultDiagnostic
             }};
-            // blittable arrays don't support [In] only. Different diagnostics are issued because we can pin in one direction (managed->unmanaged)
-            // but not the other direction.
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                new DiagnosticResult[] { inAttributeNotSupportedOnPinnedParameter, inAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
 
             // bools that are marshalled into a new array are in by default
@@ -782,12 +780,12 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { }
             };
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { }
             };
 
             yield return new object[] {
@@ -973,6 +971,102 @@ namespace ComInterfaceGenerator.Unit.Tests
             test.TestState.Sources.Add(source);
             test.ExpectedDiagnostics.Add(expectedDiagnostic);
             await test.RunAsync();
+        }
+
+        public static IEnumerable<object[]> CountParameterIsOutSnippets()
+        {
+            var g = GetAttributeProvider(GeneratorKind.ComInterfaceGenerator);
+            CodeSnippets a = new(g);
+            DiagnosticResult returnValueDiag = new DiagnosticResult(GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue)
+                .WithLocation(1)
+                .WithArguments("arr");
+            DiagnosticResult outParamDiag = new DiagnosticResult(GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam)
+                .WithLocation(1)
+                .WithArguments("arr", "size");
+
+            var voidReturn = ("void", "", Array.Empty<string>());
+
+            var size = ("int", "", "size", Array.Empty<string>());
+            var outSize = ("int", "out", "size", Array.Empty<string>());
+            var inSize = ("int", "in", "size", Array.Empty<string>());
+            var refSize = ("int", "ref", "size", Array.Empty<string>());
+
+            var arr = ("IntStruct[]", "", "arr", new[] { "nameof(size)" });
+            var outArr = ("IntStruct[]", "out", "arr", new[] { "nameof(size)" });
+            var inArr = ("IntStruct[]", "in", "arr", new[] { "nameof(size)" });
+            var refArr = ("IntStruct[]", "ref", "arr", new[] { "nameof(size)" });
+            var contentsOutArr = ("IntStruct[]", "[OutAttribute]", "arr", new[] { "nameof(size)" });
+            var contentsInOutArr = ("IntStruct[]", "[InAttribute, OutAttribute]", "arr", new[] { "nameof(size)" });
+
+            yield return new object[] { ID(), Source(voidReturn, arr, size) };
+            yield return new object[] { ID(), Source(voidReturn, arr, inSize) };
+            yield return new object[] { ID(), Source(voidReturn, arr, outSize), outParamDiag };
+            yield return new object[] { ID(), Source(voidReturn, arr, refSize) };
+
+            yield return new object[] { ID(), Source(voidReturn, inArr, size) };
+            yield return new object[] { ID(), Source(voidReturn, inArr, inSize) };
+            yield return new object[] { ID(), Source(voidReturn, inArr, outSize), outParamDiag };
+            yield return new object[] { ID(), Source(voidReturn, inArr, refSize) };
+
+            yield return new object[] { ID(), Source(voidReturn, outArr, size) };
+            yield return new object[] { ID(), Source(voidReturn, outArr, inSize) };
+            yield return new object[] { ID(), Source(voidReturn, outArr, outSize) };
+            yield return new object[] { ID(), Source(voidReturn, outArr, refSize) };
+
+            yield return new object[] { ID(), Source(voidReturn, refArr, size) };
+            yield return new object[] { ID(), Source(voidReturn, refArr, inSize) };
+            yield return new object[] { ID(), Source(voidReturn, refArr, outSize), outParamDiag };
+            yield return new object[] { ID(), Source(voidReturn, refArr, refSize) };
+
+            yield return new object[] { ID(), Source(voidReturn, contentsOutArr, size) };
+            yield return new object[] { ID(), Source(voidReturn, contentsOutArr, inSize) };
+            yield return new object[] { ID(), Source(voidReturn, contentsOutArr, outSize), outParamDiag };
+            yield return new object[] { ID(), Source(voidReturn, contentsOutArr, refSize) };
+
+            yield return new object[] { ID(), Source(voidReturn, contentsInOutArr, size) };
+            yield return new object[] { ID(), Source(voidReturn, contentsInOutArr, inSize) };
+            yield return new object[] { ID(), Source(voidReturn, contentsInOutArr, outSize), outParamDiag };
+            yield return new object[] { ID(), Source(voidReturn, contentsInOutArr, refSize) };
+
+            var sizeReturn = ("int", "", Array.Empty<string>());
+
+            var arrReturnSize = ("IntStruct[]", "", "arr", new[] { "MarshalUsingAttribute.ReturnsCountValue" });
+            var outArrReturnSize = ("IntStruct[]", "out", "arr", new[] { "MarshalUsingAttribute.ReturnsCountValue" });
+            var inArrReturnSize = ("IntStruct[]", "in", "arr", new[] { "MarshalUsingAttribute.ReturnsCountValue" });
+            var refArrReturnSize = ("IntStruct[]", "ref", "arr", new[] { "MarshalUsingAttribute.ReturnsCountValue" });
+            var contentsOutArrReturnSize = ("IntStruct[]", "[OutAttribute]", "arr", new[] { "MarshalUsingAttribute.ReturnsCountValue" });
+            var contentsInOutArrReturnSize = ("IntStruct[]", "[InAttribute, OutAttribute]", "arr", new[] { "MarshalUsingAttribute.ReturnsCountValue" });
+
+            yield return new object[] { ID(), Source(sizeReturn, arrReturnSize), returnValueDiag };
+            yield return new object[] { ID(), Source(sizeReturn, outArrReturnSize) };
+            yield return new object[] { ID(), Source(sizeReturn, inArrReturnSize), returnValueDiag };
+            yield return new object[] { ID(), Source(sizeReturn, refArrReturnSize), returnValueDiag };
+            yield return new object[] { ID(), Source(sizeReturn, contentsOutArrReturnSize), returnValueDiag };
+            yield return new object[] { ID(), Source(sizeReturn, contentsInOutArrReturnSize), returnValueDiag };
+
+            var returnArr = ("IntStruct[]", "", new[] { "size" });
+
+            yield return new object[] { ID(), Source(returnArr, size) };
+            yield return new object[] { ID(), Source(returnArr, inSize) };
+            yield return new object[] { ID(), Source(returnArr, outSize) };
+            yield return new object[] { ID(), Source(returnArr, refSize) };
+
+            string Source(
+                (string type, string modifiers, string[] counts) returnValue,
+                params (string type, string modifiers, string name, string[] counts)[] parameters)
+            {
+                return a.CollectionMarshallingWithCountRefKinds(returnValue, parameters)
+                    + "[NativeMarshalling(typeof(IntStructMarshaller))]"
+                    + CodeSnippets.IntStructAndMarshaller;
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CountParameterIsOutSnippets))]
+        public async Task ValidateSizeParameterRefKindDiagnostics(string ID, string source, params DiagnosticResult[] diagnostics)
+        {
+            _ = ID;
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
         }
 
         public static IEnumerable<object[]> IntAndEnumReturnTypeSnippets()

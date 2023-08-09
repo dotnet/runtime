@@ -88,7 +88,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.ExpectRelinkDirWhenPublishing)
             Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
         else
-            Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
+            Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected files in {objBuildDir}, which gets created when relinking during Build");
 
         return (res, logPath);
     }
@@ -172,7 +172,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
                                     .WithWorkingDirectory(workingDirectory);
 
         await using var runner = new BrowserRunner(_testOutput);
-        var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, onError: OnErrorMessage);
+        var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, onError: OnErrorMessage, modifyBrowserUrl: browserUrl => browserUrl + runOptions.QueryString);
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);

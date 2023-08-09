@@ -167,9 +167,6 @@ function preInit(userPreInit: (() => void)[]) {
             // - init the rest of the polyfills
             await mono_wasm_pre_init_essential_async();
 
-            // - start download assets like DLLs
-            await mono_wasm_pre_init_full();
-
             endMeasure(mark, MeasuredBlock.preInit);
         } catch (err) {
             loaderHelpers.mono_exit(1, err);
@@ -272,7 +269,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (loaderHelpers.config.debugLevel !== 0 && loaderHelpers.config.cacheBootResources) {
             loaderHelpers.logDownloadStatsToConsole();
         }
-        loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        const afterStartupRushIsOver = 10000;// 10 seconds
+        setTimeout(() => {
+            loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        }, afterStartupRushIsOver);
 
         // call user code
         try {
@@ -382,15 +382,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
 
-async function mono_wasm_pre_init_full(): Promise<void> {
-    mono_log_debug("mono_wasm_pre_init_full");
-    Module.addRunDependency("mono_wasm_pre_init_full");
-
-    await loaderHelpers.mono_download_assets();
-
-    Module.removeRunDependency("mono_wasm_pre_init_full");
-}
-
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
     mono_log_debug("mono_wasm_after_user_runtime_initialized");
     try {
@@ -457,7 +448,13 @@ function replace_linker_placeholders(
 ) {
     // the output from emcc contains wrappers for these linker imports which add overhead,
     //  but now we have what we need to replace them with the actual functions
-    const env = imports.env;
+    // By default the imports all live inside of 'env', but emscripten minification could rename it to 'a'.
+    // See https://github.com/emscripten-core/emscripten/blob/c5d1a856592b788619be11bbdc1dd119dec4e24c/src/preamble.js#L933-L936
+    const env = imports.env || imports.a;
+    if (!env) {
+        mono_log_warn("WARNING: Neither imports.env or imports.a were present when instantiating the wasm module. This likely indicates an emscripten configuration issue.");
+        return;
+    }
     for (const k in realFunctions) {
         const v = realFunctions[k];
         if (typeof (v) !== "function")

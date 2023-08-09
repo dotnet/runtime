@@ -5772,7 +5772,7 @@ bool __stdcall TrackAllocationsEnabled()
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects)
+CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects)
 {
     CONTRACTL {
         THROWS;
@@ -5784,7 +5784,7 @@ CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
 
     JIT_TO_EE_TRANSITION();
 
-    TypeHandle  VMClsHnd(pResolvedToken->hClass);
+    TypeHandle  VMClsHnd(classHandle);
 
     if(VMClsHnd.IsTypeDesc())
     {

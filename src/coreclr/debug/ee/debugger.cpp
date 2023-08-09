@@ -1920,6 +1920,14 @@ HRESULT Debugger::Startup(void)
         // the named pipes and semaphores are not created.
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
         {
+            LOG((LF_CORDB, LL_INFO10, "Debugging disabled via EnableDiagnostics config.\n"));
+
+            return S_OK;
+        }
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics_Debugger) == 0)
+        {
+            LOG((LF_CORDB, LL_INFO10, "Debugging disabled via EnableDiagnostics_Debugger config.\n"));
+
             return S_OK;
         }
 
@@ -6539,7 +6547,7 @@ HRESULT Debugger::LaunchDebuggerForUser(Thread * pThread, EXCEPTION_POINTERS * p
 // once and leave them set without the risk of clobbering something we care about.
 JIT_DEBUG_INFO   Debugger::s_DebuggerLaunchJitInfo = {0};
 EXCEPTION_RECORD Debugger::s_DebuggerLaunchJitInfoExceptionRecord = {0};
-CONTEXT          Debugger::s_DebuggerLaunchJitInfoContext = {0};
+CONTEXT          Debugger::s_DebuggerLaunchJitInfoContext = {};
 
 //----------------------------------------------------------------------------
 //

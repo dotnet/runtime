@@ -214,7 +214,7 @@ namespace Microsoft.Interop
                                         IdentifierName(newHandleObjectIdentifier)))));
                     }
                     break;
-                case StubCodeContext.Stage.Cleanup:
+                case StubCodeContext.Stage.CleanupCallerAllocated:
                     if (!info.IsManagedReturnPosition && (!info.IsByRef || info.RefKind == RefKind.In))
                     {
                         yield return IfStatement(
