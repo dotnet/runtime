@@ -268,6 +268,7 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetExactRootDirMatchCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88049", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws(TarEntryFormat format, TarEntryType entryType, string fileName)
         {
             ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Internal(format, entryType, fileName, inverted: false);
