@@ -181,6 +181,10 @@ export function normalizeConfig() {
         config.debugLevel = -1;
     }
 
+    if (config.cachedResourcesPurgeDelay === undefined) {
+        config.cachedResourcesPurgeDelay = 10000;
+    }
+
     // Default values (when WasmDebugLevel is not set)
     // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
     // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
