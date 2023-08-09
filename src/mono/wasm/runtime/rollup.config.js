@@ -18,6 +18,7 @@ const isDebug = configuration !== "Release";
 const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
+const wasmObjDir = process.env.WasmObjDir ? process.env.WasmObjDir.replace(/"/g, "") : "obj";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
@@ -179,6 +180,22 @@ const runtimeConfig = {
     plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
     onwarn: onwarn
 };
+const wasmImportsConfig = {
+    treeshake: true,
+    input: "exports-linker.ts",
+    output: [
+        {
+            format: "iife",
+            name: "exportsLinker",
+            file: wasmObjDir + "/exports-linker.js",
+            plugins: [evalCodePlugin()],
+            sourcemap: false
+        }
+    ],
+    external: externalDependencies,
+    plugins: [...outputCodePlugins],
+    onwarn: onwarn
+};
 const typesConfig = {
     input: "./types/export-types.ts",
     output: [
@@ -264,11 +281,34 @@ const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => make
 const allConfigs = [
     loaderConfig,
     runtimeConfig,
+    wasmImportsConfig,
     typesConfig,
     legacyTypesConfig,
 ].concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
+
+function evalCodePlugin() {
+    return {
+        name: "evalCode",
+        generateBundle: evalCode
+    };
+}
+
+async function evalCode(options, bundle) {
+    try {
+        const name = Object.keys(bundle)[0];
+        const asset = bundle[name];
+        const code = asset.code;
+        eval(code);
+        const extractedCode = globalThis.export_linker_indexes_as_code();
+        asset.code = extractedCode;
+    } catch (ex) {
+        this.warn(ex.toString());
+        throw ex;
+    }
+}
+
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
 function writeOnChangePlugin() {
@@ -442,6 +482,10 @@ function onwarn(warning) {
         return;
     }
 
+    if (warning.code === "PLUGIN_WARNING" && warning.message.indexOf("sourcemap") !== -1) {
+        return;
+    }
+
     // eslint-disable-next-line no-console
-    console.warn(`(!) ${warning.toString()}`);
+    console.warn(`(!) ${warning.toString()} ${warning.code}`);
 }

@@ -4,6 +4,7 @@
 
 "use strict";
 
+// -- this javascript file is evaluated by emcc during compilation! --
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
 const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
@@ -11,6 +12,7 @@ const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
 const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
+var methodIndexByName = undefined;
 
 function setup(linkerSetup) {
     const pthreadReplacements = {};
@@ -78,104 +80,31 @@ const DotnetSupportLib = {
 };
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
-
-#if USE_PTHREADS
-// --- keep in sync with exports-linker.ts, order matters! ---
-const mono_wasm_threads_imports = [
-    // mono-threads-wasm.c
-    "mono_wasm_pthread_on_pthread_attached",
-    "mono_wasm_pthread_on_pthread_detached",
-    // threads.c
-    "mono_wasm_eventloop_has_unsettled_interop_promises",
-    // diagnostics_server.c
-    "mono_wasm_diagnostic_server_on_server_thread_created",
-    "mono_wasm_diagnostic_server_on_runtime_server_init",
-    "mono_wasm_diagnostic_server_stream_signal_work_available",
-
-    // corebindings.c
-    "mono_wasm_install_js_worker_interop",
-    "mono_wasm_uninstall_js_worker_interop",
-]
-#else
-const mono_wasm_threads_imports = [];
-#endif
-
-// --- keep in sync with exports-linker.ts, order matters! ---
-const mono_wasm_legacy_interop_imports = DISABLE_LEGACY_JS_INTEROP ? [] : [
-    // corebindings.c
-    "mono_wasm_invoke_js_with_args_ref",
-    "mono_wasm_get_object_property_ref",
-    "mono_wasm_set_object_property_ref",
-    "mono_wasm_get_by_index_ref",
-    "mono_wasm_set_by_index_ref",
-    "mono_wasm_get_global_object_ref",
-    "mono_wasm_create_cs_owned_object_ref",
-    "mono_wasm_typed_array_to_array_ref",
-    "mono_wasm_typed_array_from_ref",
-    "mono_wasm_invoke_js_blazor",
-];
-
-// --- keep in sync with exports-linker.ts, order matters! ---
-const linked_functions = [
-    // mini-wasm.c
-    "mono_wasm_schedule_timer",
-
-    // mini-wasm-debugger.c
-    "mono_wasm_asm_loaded",
-    "mono_wasm_debugger_log",
-    "mono_wasm_add_dbg_command_received",
-    "mono_wasm_fire_debugger_agent_message_with_data",
-    "mono_wasm_fire_debugger_agent_message_with_data_to_pause",
-    // mono-threads-wasm.c
-    "schedule_background_exec",
-
-    // interp.c and jiterpreter.c
-    "mono_interp_tier_prepare_jiterpreter",
-    "mono_interp_record_interp_entry",
-    "mono_interp_jit_wasm_entry_trampoline",
-    "mono_interp_jit_wasm_jit_call_trampoline",
-    "mono_interp_invoke_wasm_jit_call_trampoline",
-    "mono_interp_flush_jitcall_queue",
-    "mono_jiterp_do_jit_call_indirect",
-
-    "mono_wasm_profiler_enter",
-    "mono_wasm_profiler_leave",
-
-    // driver.c
-    "mono_wasm_trace_logger",
-    "mono_wasm_set_entrypoint_breakpoint",
-    "mono_wasm_event_pipe_early_startup_callback",
-
-    // corebindings.c
-    "mono_wasm_release_cs_owned_object",
-    "mono_wasm_bind_js_function",
-    "mono_wasm_invoke_bound_function",
-    "mono_wasm_invoke_import",
-    "mono_wasm_bind_cs_function",
-    "mono_wasm_marshal_promise",
-    "mono_wasm_change_case_invariant",
-    "mono_wasm_change_case",
-    "mono_wasm_compare_string",
-    "mono_wasm_starts_with",
-    "mono_wasm_ends_with",
-    "mono_wasm_index_of",
-    "mono_wasm_get_calendar_info",
-    "mono_wasm_get_culture_info",
-    "mono_wasm_get_first_day_of_week",
-    "mono_wasm_get_first_week_of_year",
-
-    ...mono_wasm_threads_imports,
-    ...mono_wasm_legacy_interop_imports,
-];
-
-// -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple stub for each exported function so that emcc will include them in the final output
 // we will replace them with the real implementation in replace_linker_placeholders
-let idx = 0;
-for (let linked_function of linked_functions) {
-    DotnetSupportLib[linked_function] = new Function(`return {runtime_idx:${idx}};//${linked_function}`);
-    idx++;
+function createWasmImportStubs() {
+    for (let functionName in methodIndexByName.mono_wasm_imports) {
+        const idx = methodIndexByName.mono_wasm_imports[functionName];
+        DotnetSupportLib[functionName] = new Function(`return {runtime_idx:${idx}};//${functionName}`);
+    }
+
+    #if USE_PTHREADS
+    for (let functionName in methodIndexByName.mono_wasm_threads_imports) {
+        const idx = methodIndexByName.mono_wasm_threads_imports[functionName];
+        DotnetSupportLib[functionName] = new Function(`return {runtime_idx:${idx}};//${functionName}`);
+    }
+    #endif
+
+    if (!DISABLE_LEGACY_JS_INTEROP) {
+        for (let functionName in methodIndexByName.mono_wasm_legacy_interop_imports) {
+            const idx = methodIndexByName.mono_wasm_legacy_interop_imports[functionName];
+            DotnetSupportLib[functionName] = new Function(`return {runtime_idx:${idx}};//${functionName}`);
+        }
+    }
+
+    autoAddDeps(DotnetSupportLib, "$DOTNET");
+    mergeInto(LibraryManager.library, DotnetSupportLib);
 }
 
-autoAddDeps(DotnetSupportLib, "$DOTNET");
-mergeInto(LibraryManager.library, DotnetSupportLib);
+
+// var methodIndexByName wil be appended below by the MSBuild in wasm.proj

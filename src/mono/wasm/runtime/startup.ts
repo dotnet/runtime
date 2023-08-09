@@ -21,7 +21,7 @@ import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from
 import { instantiate_wasm_asset, wait_for_all_assets } from "./assets";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
-import { export_linker, replace_linker_placeholders } from "./exports-linker";
+import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
 import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
@@ -136,7 +136,7 @@ async function instantiateWasmWorker(
     // wait for the config to arrive by message from the main thread
     await loaderHelpers.afterConfigLoaded.promise;
 
-    replace_linker_placeholders(imports, export_linker());
+    replace_linker_placeholders(imports);
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
@@ -474,7 +474,7 @@ async function instantiate_wasm_module(
         await runtimeHelpers.beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
 
-        replace_linker_placeholders(imports, export_linker());
+        replace_linker_placeholders(imports);
         const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
