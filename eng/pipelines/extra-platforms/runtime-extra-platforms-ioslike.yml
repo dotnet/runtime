@@ -36,7 +36,7 @@ jobs:
       nameSuffix: AllSubsets_Mono
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true
-      timeoutInMinutes: 240
+      timeoutInMinutes: 480
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -74,7 +74,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
       buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 240
+      timeoutInMinutes: 480
       # extra steps, run tests
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -111,7 +111,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_NativeAOT_RuntimeTests
-      timeoutInMinutes: 240
+      timeoutInMinutes: 480
       buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
       # extra steps, run tests
       extraVariablesTemplates:

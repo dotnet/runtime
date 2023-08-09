@@ -15,7 +15,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 7:0:0:0
 }
-.assembly RecursiveGeneric
+.assembly GitHub_70385
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -27,7 +27,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module RecursiveGeneric.dll
+.module GitHub_70385.dll
 // MVID: {10541B0F-16D6-4F9A-B0EB-E793F524F163}
 .imagebase 0x00400000
 .file alignment 0x00000200
