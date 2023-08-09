@@ -510,6 +510,102 @@ namespace Microsoft.Extensions.Http
             return cleanupEntry;
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void HandlerBuilderActionsOptimizationTest(bool accessHandlerBuilderActions)
+        {
+            var primaryHandler1 = new TestMessageHandler();
+            var primaryHandler2 = new TestMessageHandler();
+
+            bool firstCreationActionCalled = false;
+            bool firstUpdateActionCalled = false;
+            bool secondCreationActionCalled = false;
+            bool secondUpdateActionCalled = false;
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddHttpClient("test")
+                .ConfigurePrimaryHttpMessageHandler(_ =>
+                    {
+                        firstCreationActionCalled = true;
+                        return primaryHandler1;
+                    })
+                .ConfigurePrimaryHttpMessageHandler((handler, _) =>
+                    {
+                        Assert.Same(primaryHandler1, handler);
+                        firstUpdateActionCalled = true;
+                    })
+                .AddHttpMessageHandler(_ => new TestDelegatingHandler());
+
+            serviceCollection.Configure<HttpClientFactoryOptions>("test", o =>
+            {
+                Assert.False(o.MergedToHandlerBuilderActions);
+                Assert.Equal(2, o.PrimaryHandlerActions.Count);
+                Assert.Equal(1, o.AdditionalHandlersActions.Count);
+
+                if (accessHandlerBuilderActions)
+                {
+                    // accessing the property will merge the action lists and disable optimizations
+                    Assert.NotNull(o.HttpMessageHandlerBuilderActions);
+
+                    Assert.Equal(3, o.HttpMessageHandlerBuilderActions.Count);
+                    Assert.True(o.MergedToHandlerBuilderActions);
+                    Assert.Null(o.PrimaryHandlerActions);
+                    Assert.Null(o.AdditionalHandlersActions);
+                }
+            });
+
+            // continue configuration
+            serviceCollection.AddHttpClient("test")
+                .ConfigurePrimaryHttpMessageHandler(_ =>
+                    {
+                        secondCreationActionCalled = true;
+                        return primaryHandler2;
+                    })
+                .ConfigurePrimaryHttpMessageHandler((handler, _) =>
+                    {
+                        Assert.Same(primaryHandler2, handler);
+                        secondUpdateActionCalled = true;
+                    });
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            var options = serviceProvider.GetRequiredService<IOptionsSnapshot<HttpClientFactoryOptions>>().Get("test");
+
+            if (accessHandlerBuilderActions)
+            {
+                Assert.True(options.MergedToHandlerBuilderActions);
+                Assert.Null(options.PrimaryHandlerActions);
+                Assert.Null(options.AdditionalHandlersActions);
+                Assert.Equal(5, options.HttpMessageHandlerBuilderActions.Count);
+            }
+            else
+            {
+                Assert.False(options.MergedToHandlerBuilderActions);
+                Assert.Equal(2, options.PrimaryHandlerActions.Count);
+                Assert.Equal(1, options.AdditionalHandlersActions.Count);
+            }
+
+            var handler = serviceProvider.GetRequiredService<IHttpMessageHandlerFactory>().CreateHandler("test");
+            while (handler is DelegatingHandler dh)
+            {
+                handler = dh.InnerHandler;
+            }
+
+            Assert.Same(primaryHandler2, handler); // the final handler is the same in both cases
+
+            Assert.Equal(accessHandlerBuilderActions, firstCreationActionCalled);
+            Assert.Equal(accessHandlerBuilderActions, firstUpdateActionCalled);
+            Assert.True(secondCreationActionCalled);
+            Assert.True(secondUpdateActionCalled);
+        }
+
+        private class TestDelegatingHandler : DelegatingHandler
+        {
+            public TestDelegatingHandler() { }
+        }
+
         private class TestHttpClientFactory : DefaultHttpClientFactory
         {
             public TestHttpClientFactory(
