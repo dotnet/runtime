@@ -1,7 +1,7 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
   <Target Name="_WorkloadTelemetry"
-          Condition="'$(_MonoWorkloadTargetsMobile)' == 'true' and '$(TargetsNet8)' == 'true'"
+          Condition="'$(_MonoWorkloadTargetsMobile)' == 'true' and '$(TargetsCurrent)' == 'true'"
           AfterTargets="Publish"
           DependsOnTargets="_WorkloadGatherTelemetryData">
 
