@@ -211,6 +211,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         if (codeIsIL)
         {
             pEvent->BreakpointData.nativeCodeMethodDescToken = pEvent->BreakpointData.nativeCodeMethodDescToken.NullPtr();
+            pEvent->BreakpointData.codeStartAddress = 0;
         }
         else
         {
