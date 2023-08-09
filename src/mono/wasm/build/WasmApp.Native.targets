@@ -685,8 +685,8 @@
       CacheFilePath="$(_AOTCompilerCacheFile)"
       LLVMDebug="dwarfdebug"
       LLVMPath="$(EmscriptenUpstreamBinPath)"
-      CollectCompiledMethods="$(WASMStripIL)"
-      CompiledMethodsOutputDirectory="$(_WasmIntermediateOutputPath)tokens"
+      CollectTrimmingEligibleMethods="$(WASMStripIL)"
+      TrimmingEligibleMethodsOutputDirectory="$(_WasmIntermediateOutputPath)tokens"
       IntermediateOutputPath="$(_WasmIntermediateOutputPath)"
       AotProfilePath="@(AotProfilePath)">
 
