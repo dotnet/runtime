@@ -969,17 +969,17 @@ namespace System.Net.Http.Functional.Tests
         {
             RemoteExecutor.Invoke(static async Task () =>
             {
+                if (PlatformDetection.IsMobile)
+                {
+                    // Force the test to use SocketsHttpHandler
+                    AppContext.SetSwitch("System.Net.Http.UseNativeHttpHandler", false);
+                }
+
                 TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
-                    if (PlatformDetection.IsMobile)
-                    {
-                        // Force the test to use SocketsHttpHandler
-                        AppContext.SetSwitch("System.Net.Http.UseNativeHttpHandler", false);
-                    }
-
                     using MultiInstrumentRecorder recorder = new();
 
                     using (HttpClient client = test.CreateHttpClient())
