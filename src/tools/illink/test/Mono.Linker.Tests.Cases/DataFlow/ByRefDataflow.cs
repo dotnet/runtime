@@ -35,6 +35,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			PointerDereference.Test ();
 			MultipleOutRefsToField.Test ();
+			SingleRefCapture.Test ();
 			MultipleRefCaptures.Test ();
 		}
 
@@ -190,6 +191,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		class SingleRefCapture
+		{
+			[Kept]
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			static void TestArrayElementReferenceAssignment ()
+			{
+				var arr1 = new Type[] { GetUnknownType () };
+				ref var local = ref arr1[0];
+				local = GetTypeWithPublicFields ();
+				arr1[0].RequiresAll ();
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				TestArrayElementReferenceAssignment ();
+			}
+		}
+
+		[Kept]
 		class MultipleRefCaptures
 		{
 			[Kept]
@@ -242,10 +265,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll))]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll))]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll))]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll))]
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestArrayElementReferenceAssignment (bool b = true)
 			{
 				var arr1 = new Type[] { GetUnknownType () };
@@ -258,8 +283,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll))]
 			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll))]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll))]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll))]
+			// BUG: illink/nativeaot have an analysis hole here
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
 			static void TestArrayElementAssignment (bool b = true)
 			{
 				var arr1 = new Type[] { GetUnknownType () };
