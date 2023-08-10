@@ -139,9 +139,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             RemoteExecutor.Invoke(() =>
             {
                 var publishCalled = 0;
-                var publishedTcs = new TaskCompletionSource<Instrument>();
                 var onCompletedCalled = 0;
-                var completedTcs = new TaskCompletionSource<Instrument>();
                 var measurements = new List<int>();
 
                 using var services = new ServiceCollection().AddMetrics().BuildServiceProvider();
@@ -152,17 +150,17 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 {
                     publishCalled++;
                     Assert.Equal(factory, instrument.Meter.Scope); // Local
-                    publishedTcs.TrySetResult(instrument);
-                    return (true, null);
+                    return (true, fakeListener);
                 };
                 fakeListener.OnCompleted = (instrument, state) =>
                 {
                     onCompletedCalled++;
-                    completedTcs.TrySetResult(instrument);
+                    Assert.Equal(fakeListener, state);
                 };
                 fakeListener.OnMeasurement = (instrument, measurement, tags, state) =>
                 {
                     measurements.Add((int)measurement);
+                    Assert.Equal(fakeListener, state);
                 };
 
                 var subscription = new ListenerSubscription(fakeListener, factory);
@@ -176,26 +174,23 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var counter = meter.CreateCounter<int>("counter", "blip", "I count blips");
                 counter.Add(1);
 
-                Assert.False(publishedTcs.Task.IsCompleted);
                 Assert.Equal(0, measurements.Count);
                 Assert.Equal(0, publishCalled);
+                Assert.Equal(0, onCompletedCalled);
 
                 // Add a rule that matches the counter.
                 subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Local, enable: true) });
 
-                Assert.True(publishedTcs.Task.IsCompleted);
                 Assert.Equal(1, publishCalled);
 
                 counter.Add(2);
                 Assert.Equal(1, measurements.Count);
                 Assert.Equal(2, measurements[0]);
-
-                Assert.False(completedTcs.Task.IsCompleted);
+                Assert.Equal(0, onCompletedCalled);
 
                 // Disable
                 subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Local, enable: false) });
 
-                Assert.True(completedTcs.Task.IsCompleted);
                 Assert.Equal(1, onCompletedCalled);
                 counter.Add(3);
                 // Not received
@@ -218,7 +213,6 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         // [InlineData(null, null, null)] // RemoteExecutor can't handle nulls
         [InlineData("", "", "")]
         [InlineData("*", "", "")]
-        [InlineData("*.*", "", "")]
         [InlineData("lonG", "", "")]
         [InlineData("lonG.*", "", "")]
         [InlineData("lonG.sillY.meteR", "", "")]
@@ -241,6 +235,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("*.*", "", "")]
         [InlineData("", "*", "")]
         [InlineData("", "", "*")]
         [InlineData("lonG.", "", "")]
@@ -289,15 +284,15 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             new object[] { new InstrumentRule(null, null, "listenerName", MeterScope.Global, true),
                 new InstrumentRule(null, null, null, MeterScope.Global, true), false },
 
-            // Meter > Instrument > Listener
-            new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
+            // Listener > Meter > Instrument
+            new object[] { new InstrumentRule(null, null, "listenerName", MeterScope.Global, true),
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true), false },
+            new object[] { new InstrumentRule(null, "instrumentName", "listenerName", MeterScope.Global, true),
+                new InstrumentRule("meterName", null, null, MeterScope.Global, true), false },
+            new object[] { new InstrumentRule(null, null, "listenerName", MeterScope.Global, true),
                 new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
-            new object[] { new InstrumentRule("meterName", null, null, MeterScope.Global, true),
-                new InstrumentRule(null, "instrumentName", "listenerName", MeterScope.Global, true), false },
-            new object[] { new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true),
-                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
+                new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true), false },
 
             // Multiple fields are better than one.
             new object[] { new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true),
@@ -314,8 +309,9 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             new object[] { new InstrumentRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),
                 new InstrumentRule(null, "instrumentName", null, MeterScope.Global, true), false },
 
-            new object[] { new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true),
-                new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
+            // Except Listener wins regardless
+            new object[] { new InstrumentRule(null, null, "listenerName", MeterScope.Global, true),
+                new InstrumentRule("meterName", "instrumentName", null, MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", null, "listenerName", MeterScope.Global, true),
                 new InstrumentRule(null, null, "listenerName", MeterScope.Global, true), false },
             new object[] { new InstrumentRule("meterName", "instrumentName", "listenerName", MeterScope.Global, true),

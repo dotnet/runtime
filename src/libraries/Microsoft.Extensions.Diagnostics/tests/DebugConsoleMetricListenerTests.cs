@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 counter.Add(1);
 
                 // Meters from the factory can't be disposed, you have to dispose the whole factory.
-                factory.Dispose();
+                sp.Dispose();
 
                 Assert.Equal("TestMeter-counter Started; Description: I count blips." + Environment.NewLine
                     + "TestMeter-counter 4 blip" + Environment.NewLine

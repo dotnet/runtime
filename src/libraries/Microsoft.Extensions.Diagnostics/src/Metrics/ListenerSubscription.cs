@@ -131,7 +131,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             foreach (var rule in _rules)
             {
                 if (RuleMatches(rule, instrument, _metricsListener.Name, _meterFactory)
-                    && IsMoreSpecific(rule, best, isLocalScope: instrument.Meter.Scope != null))
+                    && IsMoreSpecific(rule, best, isLocalScope: instrument.Meter.Scope == _meterFactory))
                 {
                     best = rule;
                 }
@@ -166,6 +166,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             // Meter
 
             var ruleMeterName = rule.MeterName.AsSpan();
+            // Don't allow "*" anywhere except at the end.
+            var starIndex = ruleMeterName.IndexOf('*');
+            if (starIndex != -1 && starIndex != ruleMeterName.Length - 1)
+            {
+                return false;
+            }
             // Rule "System.Net.*" matches meter "System.Net" and "System.Net.Http"
             if (ruleMeterName.EndsWith(".*".AsSpan(), StringComparison.Ordinal))
             {
@@ -209,6 +215,16 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 return true;
             }
 
+            // Listener name
+            if (!string.IsNullOrEmpty(rule.ListenerName) && string.IsNullOrEmpty(best.ListenerName))
+            {
+                return true;
+            }
+            else if (string.IsNullOrEmpty(rule.ListenerName) && !string.IsNullOrEmpty(best.ListenerName))
+            {
+                return false;
+            }
+
             // Meter name
             if (!string.IsNullOrEmpty(rule.MeterName))
             {
@@ -234,16 +250,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 return true;
             }
             else if (string.IsNullOrEmpty(rule.InstrumentName) && !string.IsNullOrEmpty(best.InstrumentName))
-            {
-                return false;
-            }
-
-            // Listener name
-            if (!string.IsNullOrEmpty(rule.ListenerName) && string.IsNullOrEmpty(best.ListenerName))
-            {
-                return true;
-            }
-            else if (string.IsNullOrEmpty(rule.ListenerName) && !string.IsNullOrEmpty(best.ListenerName))
             {
                 return false;
             }
