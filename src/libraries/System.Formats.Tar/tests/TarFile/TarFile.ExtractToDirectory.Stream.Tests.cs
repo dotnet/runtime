@@ -302,6 +302,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88049", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ExtractToDirectory_ExactRootDirMatch_HardLinks_Throws(TarEntryFormat format)
         {
             ExtractToDirectory_ExactRootDirMatch_Links_Throws(format, TarEntryType.HardLink, inverted: false);
