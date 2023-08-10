@@ -65,13 +65,13 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 // Return Value:
 //    True if the inline is recursive and should be disallowed.
 //
-bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* info)
+bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo)
 {
     // We disallow inlining the exact same instantiation.
-    if ((ancestor->GetCallee() == info->fncHandle) &&
-        (ancestor->GetRuntimeContext() == info->inlineCandidateInfo->exactContextHnd))
+    if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
+        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
     {
-        JITDUMP("Callsite is trivially recursive\n");
+        JITDUMP("Call site is trivially recursive\n");
         return true;
     }
 
@@ -79,14 +79,10 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
     // type/method loading for generic contexts. When polymorphic recursion is
     // involved this can quickly consume a large amount of resources, so try to
     // verify that we aren't inlining recursively with complex contexts.
-    //
-    // We currently approximate this by checking whether the IL code pointers
-    // are equal, since the method handles and context handles we have are
-    // going to be different (instantiated over different types).
-    if ((ancestor->GetCode() == info->inlineCandidateInfo->methInfo.ILCode) &&
-        ContextComplexityExceeds(info->inlineCandidateInfo->exactContextHnd, 64))
+    if (info.compCompHnd->haveSameMethodDefinition(inlineInfo->fncHandle, ancestor->GetCallee()) &&
+        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHnd, 64))
     {
-        JITDUMP("Callsite is potentially recursive with a complex generic context\n");
+        JITDUMP("Call site is recursive with a complex generic context\n");
         return true;
     }
 
