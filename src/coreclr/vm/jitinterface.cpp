@@ -11706,7 +11706,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                 if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize) && ptr[i] == TYPE_GC_REF)
                                 {
                                     Object* gcSlotValue = nullptr;
-                                    memcpy(&gcSlotValue, (uint8_t*)baseAddr + gcSlotBegin, sizeof(CORINFO_OBJECT_HANDLE));
+                                    memcpy(&gcSlotValue, (uint8_t*)baseAddr + gcSlotBegin, sizeof(Object*));
 
                                     _ASSERT((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE));
                                     result = getStaticObjRefContent(ObjectToOBJECTREF(gcSlotValue), buffer, ignoreMovableObjects);
