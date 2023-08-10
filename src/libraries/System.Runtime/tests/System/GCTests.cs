@@ -1060,8 +1060,15 @@ namespace System.Tests
 
         struct EmbeddedValueType<T>
         {
-            unsafe fixed byte _[7];
+            // There's a few extra fields here to ensure any reads and writes to Value reasonably are not just offset 0.
+            // This is a low-level smoke check that can give a bit of confidence in pointer arithmetic.
+            // This isn't a guarantee since CoreCLR reorders fields and ignores the implicit sequential consistency of
+            // structs, but it will never hurt the test.
+            object _1;
+            byte _2;
             public T Value;
+            int _3;
+            string _4;
         }
 
         [Theory]
