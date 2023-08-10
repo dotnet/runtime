@@ -948,7 +948,8 @@ namespace System.Text
             if (((nuint)pUtf16Buffer & 1) != 0)
             {
                 // Input isn't char aligned, we won't be able to vectorize.
-                return WidenLatin1ToUtf16_MisalignedAddress(pLatin1Buffer, pUtf16Buffer, elementCount);
+                WidenLatin1ToUtf16_MisalignedAddress(pLatin1Buffer, pUtf16Buffer, elementCount);
+                return;
             }
 
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
