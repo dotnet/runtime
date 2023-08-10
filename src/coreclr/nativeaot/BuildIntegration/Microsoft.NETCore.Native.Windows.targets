@@ -30,7 +30,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerSubsystem Condition="'$(OutputType)' == 'WinExe' and '$(LinkerSubsystem)' == ''">WINDOWS</LinkerSubsystem>
     <LinkerSubsystem Condition="'$(OutputType)' == 'Exe' and '$(LinkerSubsystem)' == ''">CONSOLE</LinkerSubsystem>
     <EventPipeName>eventpipe-disabled</EventPipeName>
-    <EventPipeName Condition="'$(EnableNativeEventPipe)' == 'true' or '$(EventSourceSupport)' == 'true'">eventpipe-enabled</EventPipeName>
+    <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">eventpipe-enabled</EventPipeName>
   </PropertyGroup>
 
   <!-- Ensure that runtime-specific paths have already been set -->
