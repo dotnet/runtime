@@ -2826,6 +2826,7 @@ ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCall
 {
 	MonoType *type = type_handle.type;
 	g_assert (type->type == MONO_TYPE_FNPTR);
+	// FIXME: Once we address: https://github.com/dotnet/runtime/issues/90308 this should not be needed anymore
 	return type->data.method->suppress_gc_transition ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention;
 }
 
@@ -2918,7 +2919,7 @@ ves_icall_RuntimeTypeHandle_IsByRefLike (MonoQCallTypeHandle type_handle, MonoEr
 GPtrArray*
 ves_icall_RuntimeType_FunctionPointerReturnAndParameterTypes (MonoQCallTypeHandle type_handle, MonoError *error)
 {
-	// TODO: cache - possible on managed side
+	// FIXME: cache - possible on managed side
 
 	MonoType *type = type_handle.type;
 	GPtrArray *res_array = g_ptr_array_new ();
