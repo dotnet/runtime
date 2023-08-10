@@ -65,7 +65,7 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 // 'ancestor'), and whether it should be disallowed.
 //
 // Return Value:
-//    True if we can allow this inline.
+//    True if the inline is recursive and should be disallowed.
 //
 bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* info)
 {
