@@ -7867,17 +7867,21 @@ bool CEEInfo::haveSameMethodDefinition(
     CORINFO_METHOD_HANDLE meth1Hnd,
     CORINFO_METHOD_HANDLE meth2Hnd)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
     bool result = false;
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 
     MethodDesc* meth1 = GetMethod(meth1Hnd);
     MethodDesc* meth2 = GetMethod(meth2Hnd);
     result = meth1->HasSameMethodDefAs(meth2);
 
-    EE_TO_JIT_TRANSITION();
+    EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
 }
