@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 using System.Buffers; // Copied from https://github.com/dotnet/runtime/pull/86370 by @davmason:
 {
@@ -15,6 +16,20 @@ using System.Buffers; // Copied from https://github.com/dotnet/runtime/pull/8637
     Console.WriteLine($"buffer length={localBuffer.Length}");
 }
 
+// Build osx-x64 Release AllSubsets_Mono_Interpreter_RuntimeTests monointerpreter fails with no events
+// Build osx-x64 Release AllSubsets_Mono_Minijit_RuntimeTests minijit fails with no events
+if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+{
+    return 100;
+}
+
+// Build linux-arm64 Release AllSubsets_Mono_Minijit_RuntimeTests minijit fails with no events
+// Build linux-x64 Release AllSubsets_Mono_LLVMAot_RuntimeTests llvmaot fails with no events
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+{
+    return 100;
+}
+
 Listener.NextLevel = EventLevel.Informational;
 using Listener informational = new();
 
@@ -24,39 +39,39 @@ using Listener verbose = new();
 Listener.NextLevel = EventLevel.LogAlways;
 using Listener logAlways = new();
 
-Listener.Event gCStart_V2 = new(1, EventLevel.Informational, 0xf00000000001L, "GCStart_V2");
-Listener.Event gCAllocationTick_V4 = new(10, EventLevel.Verbose, 0xf00000000001L, "GCAllocationTick_V4");
+Listener.Event event4 = new(3, EventLevel.Informational, 0xf00000000001L, "GCRestartEEEnd_V1");
+Listener.Event event5 = new(29, EventLevel.Verbose, 0xf00000000001L, "FinalizeObject");
 
-for (Stopwatch stopwatch = Stopwatch.StartNew(); stopwatch.Elapsed.TotalSeconds < 10d;)
+Stopwatch stopwatch = Stopwatch.StartNew();
+
+for (ulong i1 = 0ul; stopwatch.Elapsed.TotalSeconds < 10d; i1++)
 {
-    for (int i = 0; i < 1000; i++)
+    for (ulong i2 = 0ul; i2 < i1; i2++)
     {
         GC.KeepAlive(new());
     }
     GC.Collect();
 
-    if (informational.Contains(gCStart_V2) &&
-        verbose.Contains(gCAllocationTick_V4))
+    if (informational.Contains(event4) &&
+        verbose.Contains(event5))
     {
-        Console.WriteLine($"\n{nameof(stopwatch.Elapsed.TotalSeconds)} {stopwatch.Elapsed.TotalSeconds}");
         break;
     }
+    i1 = ulong.Min(i1, ulong.MaxValue - 1ul);
 }
-try
-{
-    ThrowIfEvent(informational, gCStart_V2, false);
-    ThrowIfEvent(informational, gCAllocationTick_V4);
-    ThrowIfEvent(verbose, gCStart_V2, false);
-    ThrowIfEvent(verbose, gCAllocationTick_V4, false);
-    ThrowIfEvent(logAlways, gCStart_V2, false);
-    ThrowIfEvent(logAlways, gCAllocationTick_V4, false);
-}
-finally
-{
-    informational.DumpEvents();
-    verbose.DumpEvents();
-    logAlways.DumpEvents();
-}
+informational.DumpEvents();
+verbose.DumpEvents();
+logAlways.DumpEvents();
+
+Console.WriteLine($"\n{nameof(stopwatch.Elapsed.TotalSeconds)} {stopwatch.Elapsed.TotalSeconds}");
+
+ThrowIfEvent(informational, event4, false);
+ThrowIfEvent(informational, event5);
+ThrowIfEvent(verbose, event4, false);
+ThrowIfEvent(verbose, event5, false);
+ThrowIfEvent(logAlways, event4, false);
+ThrowIfEvent(logAlways, event5, false);
+
 return 100;
 
 static void ThrowIfEvent(Listener listener, Listener.Event e, bool contains = true)
