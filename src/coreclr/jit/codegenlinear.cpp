@@ -1214,21 +1214,21 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             GenTreeLclVar* lcl    = unspillTree->AsLclVar();
             LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
 
-            // Pick type to reload register from stack with. Note that for
-            // normalize-on-load variables the type of 'lcl' does not have any
-            // relation to the type of 'varDsc':
-            // * It is wider under normal circumstances, where morph has added a cast on top
-            // * It is the same in many circumstances, e.g. when morph tries to
-            // guess via a subrange assertion that the upper bits are going to
-            // be zero.
-            // * It is narrower in some cases, e.g. when lowering optimizes to
-            // use a byte `cmp`
+            // Pick type to reload register from stack with. Note that in
+            // general, the type of 'lcl' does not have any relation to the
+            // type of 'varDsc':
             //
-            // For unspilling purposes we should always make sure we get a
-            // normalized value in the register, so use the type from the
-            // varDsc.
+            // * For NOL locals it is wider under normal circumstances, where
+            // morph has added a cast on top
+            // * For all locals it can be narrower narrower in some cases, e.g.
+            // when lowering optimizes to use a smaller typed `cmp` (e.g.
+            // 32-bit cmp for 64-bit local, or 8-bit cmp for 16-bit local).
+            //
+            // Thus, we should always pick the type from varDsc. For NOL locals
+            // we further want to make sure we always leave a normalized value
+            // in the register.
 
-            var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetRegisterType(lcl);
+            var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
             assert(unspillType != TYP_UNDEF);
 
 #if defined(TARGET_LOONGARCH64)
