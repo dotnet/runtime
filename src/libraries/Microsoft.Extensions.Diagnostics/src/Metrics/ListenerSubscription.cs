@@ -177,9 +177,14 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             {
                 ruleMeterName = ruleMeterName.Slice(0, ruleMeterName.Length - 2);
             }
+            // System.Net* matches System.Net and System.Net.Http
+            else if (starIndex != -1)
+            {
+                ruleMeterName = ruleMeterName.Slice(0, ruleMeterName.Length - 1);
+            }
 
-            // Rule "" or "*" matches everything
-            if (ruleMeterName.IsEmpty || ruleMeterName.Equals("*".AsSpan(), StringComparison.Ordinal))
+            // Rule "" matches everything
+            if (ruleMeterName.IsEmpty)
             {
                 return true;
             }
