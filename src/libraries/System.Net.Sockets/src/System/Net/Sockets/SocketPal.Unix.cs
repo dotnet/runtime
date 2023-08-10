@@ -152,7 +152,7 @@ namespace System.Net.Sockets
                     Count = (UIntPtr)buffer.Length
                 };
 
-                Debug.Assert(socketAddress.Length != 0 || rawSocketAddress == null);
+                Debug.Assert(socketAddress.Length != 0 || sockAddr == null);
 
                 var messageHeader = new Interop.Sys.MessageHeader {
                     SocketAddress = sockAddr,
