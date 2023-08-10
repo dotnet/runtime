@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
 {
-    internal class MetricListenerConfigurationFactory : IMetricListenerConfigurationFactory
+    internal sealed class MetricListenerConfigurationFactory : IMetricListenerConfigurationFactory
     {
         private readonly IEnumerable<MetricsConfiguration> _configurations;
 

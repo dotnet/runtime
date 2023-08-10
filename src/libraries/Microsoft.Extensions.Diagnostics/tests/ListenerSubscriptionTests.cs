@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.Metrics;
 using Xunit;
 
@@ -80,7 +81,8 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var completedTcs = new TaskCompletionSource<Instrument>();
                 var measurementTcs = new TaskCompletionSource<int>();
 
-                var factory = new DefaultMeterFactory();
+                using var services = new ServiceCollection().AddMetrics().BuildServiceProvider();
+                var factory = services.GetRequiredService<IMeterFactory>();
 
                 var fakeListener = new FakeMetricListener();
                 fakeListener.OnPublished = (instrument) =>
@@ -142,7 +144,8 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var completedTcs = new TaskCompletionSource<Instrument>();
                 var measurements = new List<int>();
 
-                var factory = new DefaultMeterFactory();
+                using var services = new ServiceCollection().AddMetrics().BuildServiceProvider();
+                var factory = services.GetRequiredService<IMeterFactory>();
 
                 var fakeListener = new FakeMetricListener();
                 fakeListener.OnPublished = (instrument) =>
@@ -155,7 +158,6 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 fakeListener.OnCompleted = (instrument, state) =>
                 {
                     onCompletedCalled++;
-                    Assert.Equal(1, onCompletedCalled);
                     completedTcs.TrySetResult(instrument);
                 };
                 fakeListener.OnMeasurement = (instrument, measurement, tags, state) =>
@@ -194,6 +196,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 subscription.UpdateRules(new[] { new InstrumentRule("TestMeter", "counter", null, MeterScope.Local, enable: false) });
 
                 Assert.True(completedTcs.Task.IsCompleted);
+                Assert.Equal(1, onCompletedCalled);
                 counter.Add(3);
                 // Not received
                 Assert.Equal(1, measurements.Count);
@@ -206,6 +209,8 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 Assert.Equal(2, measurements.Count);
                 Assert.Equal(4, measurements[1]);
 
+                services.Dispose();
+                Assert.Equal(2, onCompletedCalled);
             }).Dispose();
         }
 

@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    internal class ListenerSubscription : IObservableInstrumentsSource, IDisposable
+    internal sealed class ListenerSubscription : IObservableInstrumentsSource, IDisposable
     {
         private readonly MeterListener _meterListener;
         private readonly IMetricsListener _metricsListener;
@@ -313,7 +313,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             _meterListener.Dispose();
         }
 
-        private class InstrumentStatus
+        private sealed class InstrumentStatus
         {
             public object? State { get; set; }
             public bool Published { get; set; }

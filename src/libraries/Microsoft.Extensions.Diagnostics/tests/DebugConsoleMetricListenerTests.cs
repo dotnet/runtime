@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 var services = new ServiceCollection();
                 services.AddMetrics(builder =>
                 {
-                    builder.AddDebugConsole();
+                    builder.AddListener<DebugConsoleMetricListener>();
                     builder.EnableMetrics("TestMeter", scopes: MeterScope.Local, listenerName: ConsoleMetrics.DebugListenerName);
                 });
                 using var sp = services.BuildServiceProvider();
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 ServiceCollection services = new ServiceCollection();
                 services.AddMetrics(builder =>
                 {
-                    builder.AddDebugConsole();
+                    builder.AddListener<DebugConsoleMetricListener>();
                     builder.EnableMetrics("TestMeter", scopes: MeterScope.Global, listenerName: ConsoleMetrics.DebugListenerName);
                 });
                 using var sp = services.BuildServiceProvider();

@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// Called when a new instrument is created and enabled by a matching rule.
         /// </summary>
         /// <param name="instrument">The new <see cref="Instrument"/>.</param>
-        /// <param name="userState">Listener state associated with this instrument. This should be returned to <see cref="MeasurementCallback{T}"/>
+        /// <param name="userState">Listener state associated with this instrument. This will be returned to <see cref="MeasurementCallback{T}"/>
         /// and <see cref="MeasurementsCompleted(Instrument, object?)"/>.</param>
         /// <returns>Returns true if the listener wants to subscribe to this instrument, otherwise false.</returns>
         public bool InstrumentPublished(Instrument instrument, out object? userState);

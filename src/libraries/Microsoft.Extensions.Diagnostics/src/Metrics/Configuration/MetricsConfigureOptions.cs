@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
 {
-    internal class MetricsConfigureOptions : IConfigureOptions<MetricsOptions>
+    internal sealed class MetricsConfigureOptions : IConfigureOptions<MetricsOptions>
     {
         private const string EnabledMetricsKey = "EnabledMetrics";
         private const string EnabledGlobalMetricsKey = "EnabledGlobalMetrics";

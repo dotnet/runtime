@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
 {
-    internal class MetricsConfiguration
+    internal sealed class MetricsConfiguration
     {
         public MetricsConfiguration(IConfiguration configuration)
         {
