@@ -742,9 +742,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithLocation(1)
                     .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
-            var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
+
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "int[]", paramNameWithLocation), new DiagnosticResult[] {
                 inAttributeIsDefaultDiagnostic
             }};
@@ -771,12 +769,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
 
-            // [In, Out] is default
-            var inOutAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(1)
-                    .WithLocation(2)
-                    .WithArguments(SR.InOutAttributes, paramName, SR.PinnedMarshallingIsInOutByDefault);
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),

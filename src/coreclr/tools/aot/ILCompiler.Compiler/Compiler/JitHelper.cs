@@ -242,19 +242,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
-                    mangledName = "RhTypeCast_CheckCast";
-                    break;
-                case ReadyToRunHelper.CheckInstanceAny:
-                    mangledName = "RhTypeCast_IsInstanceOf";
-                    break;
-                case ReadyToRunHelper.IsInstanceOfException:
-                    mangledName = "RhTypeCast_IsInstanceOfException";
+                    mangledName = "RhTypeCast_CheckCastAny";
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
                     mangledName = "RhTypeCast_CheckCastInterface";
-                    break;
-                case ReadyToRunHelper.CheckInstanceInterface:
-                    mangledName = "RhTypeCast_IsInstanceOfInterface";
                     break;
                 case ReadyToRunHelper.CheckCastClass:
                     mangledName = "RhTypeCast_CheckCastClass";
@@ -262,14 +253,18 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckCastClassSpecial:
                     mangledName = "RhTypeCast_CheckCastClassSpecial";
                     break;
+
+                case ReadyToRunHelper.CheckInstanceAny:
+                    mangledName = "RhTypeCast_IsInstanceOfAny";
+                    break;
+                case ReadyToRunHelper.CheckInstanceInterface:
+                    mangledName = "RhTypeCast_IsInstanceOfInterface";
+                    break;
                 case ReadyToRunHelper.CheckInstanceClass:
                     mangledName = "RhTypeCast_IsInstanceOfClass";
                     break;
-                case ReadyToRunHelper.CheckCastArray:
-                    mangledName = "RhTypeCast_CheckCastArray";
-                    break;
-                case ReadyToRunHelper.CheckInstanceArray:
-                    mangledName = "RhTypeCast_IsInstanceOfArray";
+                case ReadyToRunHelper.IsInstanceOfException:
+                    mangledName = "RhTypeCast_IsInstanceOfException";
                     break;
 
                 case ReadyToRunHelper.MonitorEnter:

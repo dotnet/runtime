@@ -447,11 +447,6 @@
         <target state="translated">Atribut „[In]“ není nezbytný, pokud není použit také atribut „[Out]“. Chování atributu „[In]“ bez atributu „[Out]“ je stejné, jako výchozí chování.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InAttributeOnlyNotSupportedOnPinnedParameters">
-        <source>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</source>
-        <target state="translated">Tento parametr je zařazován připnutím a nepodporuje atribut [In] bez atributu [Out].</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
         <target state="translated">Atributy „[In]“ a „[Out]“ se nepodporují u parametrů předaných odkazem. Použijte místo nich klíčová slova „in“, „ref“ nebo „out“.</target>
@@ -465,11 +460,6 @@
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">atributy [In] a [Out]</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InRefKindIsNotSupportedOnPinnedParameters">
-        <source>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</source>
-        <target state="translated">Klíčové slovo „in“ není podporováno u parametrů, které jsou zařazeny připnutím. Místo toho použijte „ref“ nebo „out“.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -903,8 +893,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="translated">Atribut [Out] je podporován pouze u parametrů pole a parametrů zařazených připnutím. Zvažte použití klíčových slov out nebo ref, aby byl parametr měnitelný.</target>
+        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="needs-review-translation">Atribut [Out] je podporován pouze u parametrů pole a parametrů zařazených připnutím. Zvažte použití klíčových slov out nebo ref, aby byl parametr měnitelný.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -915,11 +905,6 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">Typ {0}určuje, že podporuje zařazování ve směru „Out“, ale neposkytuje metodu ToManaged, která vrací spravovaný typ</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="PinnedMarshallingIsInOutByDefault">
-        <source>This parameter is marshalled by pinning and is '[In, Out]' by default.</source>
-        <target state="translated">Tento parametr se zařazuje připnutím a ve výchozím nastavení je [In, Out].</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -1162,11 +1147,6 @@
         <target state="translated">„{0}“ má přístupnost „{1}“.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeDoesNotSupportByValueMarshalingAttributes">
-        <source>'[In]' and '[Out]' attributes are not supported on this type.</source>
-        <target state="translated">Atributy [In] a [Out] nejsou u tohoto typu podporovány.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
         <target state="translated">Nespravovaný typ vlastního zařazovacího modulu musí být nespravovaný typ jazyka C#.</target>
@@ -1234,9 +1214,9 @@
         <target state="translated">Určený typ nepodporují zdrojem generovaná volání P/Invokes.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle1">
+      <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="translated">Zadaný typ není podporován modelem COM generovaným zdrojem.</target>
+        <target state="new">Specified type is not supported by source-generated COM</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
