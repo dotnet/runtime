@@ -604,7 +604,9 @@ namespace Internal.JitInterface
                         // This instruction set isn't supported on the current platform at all.
                         continue;
                     }
-                    if (instructionSetSupport.IsInstructionSetSupported(instructionSet) || instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                    if (instructionSetSupport.IsInstructionSetSupported(instructionSet) ||
+                        instructionSetSupport.IsInstructionSetOptimisticallySupported(instructionSet) ||
+                        instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
                     {
                         doBypass = false;
                     }
