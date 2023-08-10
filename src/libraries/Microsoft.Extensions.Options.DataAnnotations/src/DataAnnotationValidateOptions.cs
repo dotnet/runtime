@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Options
 {
@@ -72,12 +73,14 @@ namespace Microsoft.Extensions.Options
             "statically analyzed so its members may be trimmed.")]
         private static bool TryValidateOptions(object options, string qualifiedName, List<ValidationResult> results, ref List<string>? errors, ref HashSet<object>? visited)
         {
+            Debug.Assert(options is not null);
+
             if (visited is not null && visited.Contains(options))
             {
                 return true;
             }
 
-            results?.Clear();
+            results.Clear();
 
             bool res = Validator.TryValidateObject(options, new ValidationContext(options), results, validateAllProperties: true);
             if (!res)
@@ -106,16 +109,16 @@ namespace Microsoft.Extensions.Options
 
                 if (propertyInfo.GetCustomAttribute<ValidateObjectMembersAttribute>() is not null)
                 {
-                    visited ??= new HashSet<object>(new ReferenceComparer());
+                    visited ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
                     visited.Add(options);
 
                     results ??= new List<ValidationResult>();
                     res = TryValidateOptions(value, $"{qualifiedName}.{propertyInfo.Name}", results, ref errors, ref visited) && res;
                 }
-                else if (propertyInfo.GetCustomAttribute<ValidateEnumeratedItemsAttribute>() is not null &&
-                        value is IEnumerable enumerable)
+                else if (value is IEnumerable enumerable &&
+                         propertyInfo.GetCustomAttribute<ValidateEnumeratedItemsAttribute>() is not null)
                 {
-                    visited ??= new HashSet<object>(new ReferenceComparer());
+                    visited ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
                     visited.Add(options);
                     results ??= new List<ValidationResult>();
 
@@ -128,13 +131,6 @@ namespace Microsoft.Extensions.Options
             }
 
             return res;
-        }
-
-        private readonly struct ReferenceComparer : IEqualityComparer<object>
-        {
-            public ReferenceComparer() { }
-            bool IEqualityComparer<object>.Equals(object? x, object? y) => object.ReferenceEquals(x, y);
-            int IEqualityComparer<object>.GetHashCode(object obj) => obj is null ? 0 : obj.GetHashCode();
         }
     }
 }
