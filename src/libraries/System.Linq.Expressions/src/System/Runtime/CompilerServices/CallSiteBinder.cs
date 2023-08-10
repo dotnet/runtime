@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Reflection;
 using static System.Linq.Expressions.CachedReflectionInfo;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {
@@ -100,6 +101,7 @@ namespace System.Runtime.CompilerServices
             return null;
         }
 
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         internal T BindCore<T>(CallSite<T> site, object[] args) where T : class
         {
             //

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -43,7 +44,10 @@ namespace System.Dynamic.Utils
         {
             if (CanEmitObjectArrayDelegate)
             {
+#pragma warning disable IL3050
+                // Suppress analyzer warnings since they don't currently support feature flags
                 return CreateObjectArrayDelegateRefEmit(delegateType, handler);
+#pragma warning restore IL3050
             }
             else
             {
@@ -88,8 +92,7 @@ namespace System.Dynamic.Utils
             return (TReturn)handler(new object?[]{t1, t2});
         }
 
-        private static MethodInfo GetEmptyObjectArrayMethod() =>
-            typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(typeof(object));
+        private static MethodInfo GetEmptyObjectArrayMethod() => ((Func<object[]>)Array.Empty<object>).GetMethodInfo();
 
         private static MethodInfo[] GetActionThunks()
         {
@@ -109,6 +112,7 @@ namespace System.Dynamic.Utils
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "The above ActionThunk and FuncThunk methods don't have trimming annotations.")]
+        [RequiresDynamicCode(Expression.GenericMethodRequiresDynamicCode)]
         private static MethodInfo? GetCSharpThunk(Type returnType, bool hasReturnValue, ParameterInfo[] parameters)
         {
             try
@@ -181,6 +185,7 @@ namespace System.Dynamic.Utils
         //      param0 = (T0)args[0];   // only generated for each byref argument
         // }
         // return (TRet)ret;
+        [RequiresDynamicCode("Ref emit requires dynamic code.")]
         private static Delegate CreateObjectArrayDelegateRefEmit(Type delegateType, Func<object?[], object?> handler)
         {
             if (!s_thunks.TryGetValue(delegateType, out MethodInfo? thunkMethod))

@@ -276,6 +276,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string? ToString() => _debugInfo != null ? _methodName + ": " + _debugInfo : _methodName;
     }
 
+    [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
     internal sealed class LightCompiler
     {
         private readonly InstructionList _instructions;

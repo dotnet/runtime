@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic.Utils
 {
@@ -20,6 +21,7 @@ namespace System.Dynamic.Utils
 
         public static Type GetNonNullableType(this Type type) => IsNullableType(type) ? type.GetGenericArguments()[0] : type;
 
+        [RequiresDynamicCode("Creating nullable types requires dynamic code.")]
         public static Type GetNullableType(this Type type)
         {
             Debug.Assert(type != null, "type cannot be null");
@@ -29,6 +31,74 @@ namespace System.Dynamic.Utils
             }
 
             return type;
+        }
+
+        /// <summary>
+        /// This is an alternative to <see cref="GetNullableType" /> that will throw
+        /// if dynamic code is required. Some common primitive types are special-cased.
+        /// </summary>
+        public static Type LiftPrimitiveOrThrow(this Type type)
+        {
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+#pragma warning disable IL3050
+                // Analyzer doesn't yet understand feature switches
+                return GetNullableType(type);
+#pragma warning restore IL3050
+            }
+            if (!type.IsValueType || IsNullableType(type))
+            {
+                return type;
+            }
+            if (type == typeof(bool))
+            {
+                return typeof(bool?);
+            }
+            else if (type == typeof(int))
+            {
+                return typeof(int?);
+            }
+            else if (type == typeof(long))
+            {
+                return typeof(long?);
+            }
+            else if (type == typeof(float))
+            {
+                return typeof(float?);
+            }
+            else if (type == typeof(double))
+            {
+                return typeof(double?);
+            }
+            else if (type == typeof(uint))
+            {
+                return typeof(uint?);
+            }
+            else if (type == typeof(ulong))
+            {
+                return typeof(ulong?);
+            }
+            else if (type == typeof(byte))
+            {
+                return typeof(byte?);
+            }
+            else if (type == typeof(sbyte))
+            {
+                return typeof(sbyte?);
+            }
+            else if (type == typeof(short))
+            {
+                return typeof(short?);
+            }
+            else if (type == typeof(ushort))
+            {
+                return typeof(ushort?);
+            }
+            else if (type == typeof(char))
+            {
+                return typeof(char?);
+            }
+            throw new NotSupportedException(Strings.LiftingInExpressionRequiresDynamicCode);
         }
 
         public static ConstructorInfo GetNullableConstructor(Type nullableType)
