@@ -13,7 +13,7 @@ namespace Microsoft.Apple.Build
 {
     public sealed class AppleProject
     {
-        private const string DefaultMinOSVersion = "11.0";
+        private string defaultMinOSVersion;
 
         private TaskLoggingHelper logger;
 
@@ -26,6 +26,8 @@ namespace Microsoft.Apple.Build
         public AppleProject(string projectName, string runtimeIdentifier, TaskLoggingHelper logger)
         {
             GetTargets(runtimeIdentifier, out targetOS, out targetArchitecture);
+
+            defaultMinOSVersion = (targetOS == "maccatalyst") ? "13.1" : "11.0";
             targetAbi = DetermineAbi(targetArchitecture);
 
             AppleSdk sdk = new AppleSdk(targetOS, logger);
@@ -44,7 +46,12 @@ namespace Microsoft.Apple.Build
             }
         }
 
-        public void Build(string workingDir, ClangBuildOptions buildOptions, bool stripDebugSymbols = false, string minOSVersion = DefaultMinOSVersion)
+        public void Build(string workingDir, ClangBuildOptions buildOptions, bool stripDebugSymbols = false)
+        {
+            Build(workingDir, buildOptions, defaultMinOSVersion, stripDebugSymbols);
+        }
+
+        public void Build(string workingDir, ClangBuildOptions buildOptions, string minOSVersion, bool stripDebugSymbols = false)
         {
             string clangArgs = BuildClangArgs(buildOptions, minOSVersion);
             Utils.RunProcess(logger, "xcrun", workingDir: workingDir, args: clangArgs);

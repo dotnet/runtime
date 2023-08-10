@@ -333,6 +333,8 @@ namespace System.Runtime.CompilerServices
             return ChkCastClassSpecial(toTypeHnd, obj);
         }
 
+        // Optimized helper for classes. Assumes that the trivial cases
+        // has been taken care of by the inlined check
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
