@@ -153,7 +153,7 @@ namespace System.Runtime.InteropServices
                     if (!rooted)
                     {
                         rooted = GetTrackerCount(refCount) > 0 &&
-                            ((Flags & CreateComInterfaceFlagsEx.IsPegged) != 0 || TrackerObjectManager.s_IsGlobalPeggingOn);
+                            ((Flags & CreateComInterfaceFlagsEx.IsPegged) != 0 || TrackerObjectManager.s_isGlobalPeggingOn);
                     }
                     return rooted;
                 }
@@ -514,8 +514,7 @@ namespace System.Runtime.InteropServices
 
                 if (flags.HasFlag(CreateObjectFlags.TrackerObject))
                 {
-                    if (Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == 0 &&
-                        trackerObject != IntPtr.Zero)
+                    if (Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == 0)
                     {
                         _fromTrackerRuntime = true;
                         _trackerObject = trackerObject;
@@ -1026,7 +1025,7 @@ namespace System.Runtime.InteropServices
             {
                 // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                 // in the time between the GC cleared the contents of the GC handle but before the
-                // NativeObjectWrapper finializer ran.
+                // NativeObjectWrapper finalizer ran.
                 if (_rcwCache.TryGetValue(comPointer, out GCHandle cachedValue) && expectedValue.Equals(cachedValue))
                 {
                     _rcwCache.Remove(comPointer);
@@ -1170,29 +1169,31 @@ namespace System.Runtime.InteropServices
 
         internal static unsafe void WalkExternalTrackerObjects()
         {
-            try
+            bool walkFailed = false;
+
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_nativeObjectWrapperCache)
             {
-                foreach (GCHandle weakNativeObjectWrapperHandle in s_nativeObjectWrapperCache)
+                NativeObjectWrapper? nativeObjectWrapper = Unsafe.As<NativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                if (nativeObjectWrapper != null &&
+                    nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
-                    NativeObjectWrapper? nativeObjectWrapper = Unsafe.As<NativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
-                    if (nativeObjectWrapper != null &&
-                        nativeObjectWrapper.TrackerObject != IntPtr.Zero)
+                    FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper._proxyHandle;
+                    if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, TrackerObjectManager.s_findReferencesTargetCallback) != 0)
                     {
-                        FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper._proxyHandle;
-                        IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, TrackerObjectManager.s_findReferencesTargetCallback);
+                        walkFailed = true;
                         FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
+                        break;
                     }
+                    FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
                 }
             }
-            catch
-            {
-                // Report that we failed while walking.
-                TrackerObjectManager.s_IsGlobalPeggingOn = true;
-                IReferenceTrackerManager.FindTrackerTargetsCompleted(TrackerObjectManager.s_TrackerManager, true);
-                throw;
-            }
 
-            IReferenceTrackerManager.FindTrackerTargetsCompleted(TrackerObjectManager.s_TrackerManager, false);
+            // Report whether walking failed or not.
+            if (walkFailed)
+            {
+                TrackerObjectManager.s_isGlobalPeggingOn = true;
+            }
+            IReferenceTrackerManager.FindTrackerTargetsCompleted(TrackerObjectManager.s_trackerManager, walkFailed);
         }
 
         internal static void DetachNonPromotedObjects()
@@ -1407,11 +1408,6 @@ namespace System.Runtime.InteropServices
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
         {
-            if (pThis == IntPtr.Zero)
-            {
-                return HResults.E_POINTER;
-            }
-
             if (*guid == IID_IReferenceTrackerHost || *guid == IID_IUnknown)
             {
                 *ppObject = HostServices.s_globalHostServices;

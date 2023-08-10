@@ -25,7 +25,7 @@
 #include "threadstore.inl"
 #include "thread.inl"
 
-EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode)
+EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -35,7 +35,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uM
     pCurThread->DisablePreemptiveMode();
 
     ASSERT(!pCurThread->IsDoNotTriggerGcSet());
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(uGeneration, FALSE, uMode);
+    GCHeapUtilities::GetGCHeap()->GarbageCollect(uGeneration, lowMemoryP, uMode);
 
     pCurThread->EnablePreemptiveMode();
 }
