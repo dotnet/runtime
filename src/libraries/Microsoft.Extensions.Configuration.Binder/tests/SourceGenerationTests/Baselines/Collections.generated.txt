@@ -2,12 +2,19 @@
 #nullable enable
 #pragma warning disable CS0612, CS0618 // Suppress warnings about [Obsolete] member usage in generated code.
 
-/// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
-internal static class GeneratedConfigurationBinder
+namespace System.Runtime.CompilerServices
 {
-    /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.CoreBindingHelper.GetCore(configuration, typeof(T), configureOptions: null) ?? default(T));
+    using System;
+    using System.CodeDom.Compiler;
+
+    [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    file sealed class InterceptsLocationAttribute : Attribute
+    {
+        public InterceptsLocationAttribute(string filePath, int line, int column)
+        {
+        }
+    }
 }
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -18,11 +25,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Runtime.CompilerServices;
 
-    /// <summary>Provide core binding logic.</summary>
     [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
-    file static class CoreBindingHelper
+    file static class BindingExtensions
     {
+        #region IConfiguration extensions.
+        /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
+        [InterceptsLocationAttribute(@"src-0.cs", 12, 17)]
+        public static T? Get<T>(this IConfiguration configuration) => (T?)(GetCore(configuration, typeof(T), configureOptions: null) ?? default(T));
+        #endregion IConfiguration extensions.
+
+        #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClassWithCustomCollections = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "IReadOnlyList", "IReadOnlyDictionary" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
@@ -46,7 +60,83 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return obj;
             }
 
-            throw new global::System.NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
+            throw new NotSupportedException($"Unable to bind to type ''{type}'': generator did not detect the type as input.");
+        }
+
+        public static void BindCoreMain(IConfiguration? configuration, object? obj, Action<BinderOptions>? configureOptions)
+        {
+            if (configuration is null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            if (obj is null)
+            {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
+            BinderOptions? binderOptions = GetBinderOptions(configureOptions);
+
+            if (!HasValueOrChildren(configuration))
+            {
+                return;
+            }
+
+            if (obj is Program.CustomDictionary<string, int> typedObj1)
+            {
+                BindCore(configuration, ref typedObj1, binderOptions);
+                return;
+            }
+
+            if (obj is Program.CustomList typedObj3)
+            {
+                BindCore(configuration, ref typedObj3, binderOptions);
+                return;
+            }
+
+            if (obj is List<int> typedObj5)
+            {
+                BindCore(configuration, ref typedObj5, binderOptions);
+                return;
+            }
+
+            if (obj is ICollection<int> typedObj7)
+            {
+                BindCore(configuration, ref typedObj7, binderOptions);
+                return;
+            }
+
+            if (obj is IReadOnlyList<int> typedObj9)
+            {
+                BindCore(configuration, ref typedObj9, binderOptions);
+                return;
+            }
+
+            if (obj is Dictionary<string, int> typedObj11)
+            {
+                BindCore(configuration, ref typedObj11, binderOptions);
+                return;
+            }
+
+            if (obj is IDictionary<string, int> typedObj13)
+            {
+                BindCore(configuration, ref typedObj13, binderOptions);
+                return;
+            }
+
+            if (obj is IReadOnlyDictionary<string, int> typedObj15)
+            {
+                BindCore(configuration, ref typedObj15, binderOptions);
+                return;
+            }
+
+            if (obj is Program.MyClassWithCustomCollections typedObj17)
+            {
+                BindCore(configuration, ref typedObj17, binderOptions);
+                return;
+            }
+
+            throw new NotSupportedException($"Unable to bind to type ''{obj.GetType()}'': generator did not detect the type as input.");
         }
 
         public static void BindCore(IConfiguration configuration, ref Program.CustomDictionary<string, int> obj, BinderOptions? binderOptions)
@@ -196,36 +286,36 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             ValidateConfigurationKeys(typeof(Program.MyClassWithCustomCollections), s_configKeys_ProgramMyClassWithCustomCollections, configuration, binderOptions);
 
-            if (AsConfigWithChildren(configuration.GetSection("CustomDictionary")) is IConfigurationSection section1)
+            if (AsConfigWithChildren(configuration.GetSection("CustomDictionary")) is IConfigurationSection section19)
             {
-                Program.CustomDictionary<string, int>? temp3 = obj.CustomDictionary;
-                temp3 ??= new Program.CustomDictionary<string, int>();
-                BindCore(section1, ref temp3, binderOptions);
-                obj.CustomDictionary = temp3;
+                Program.CustomDictionary<string, int>? temp21 = obj.CustomDictionary;
+                temp21 ??= new Program.CustomDictionary<string, int>();
+                BindCore(section19, ref temp21, binderOptions);
+                obj.CustomDictionary = temp21;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("CustomList")) is IConfigurationSection section4)
+            if (AsConfigWithChildren(configuration.GetSection("CustomList")) is IConfigurationSection section22)
             {
-                Program.CustomList? temp6 = obj.CustomList;
-                temp6 ??= new Program.CustomList();
-                BindCore(section4, ref temp6, binderOptions);
-                obj.CustomList = temp6;
+                Program.CustomList? temp24 = obj.CustomList;
+                temp24 ??= new Program.CustomList();
+                BindCore(section22, ref temp24, binderOptions);
+                obj.CustomList = temp24;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section7)
+            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section25)
             {
-                IReadOnlyList<int>? temp9 = obj.IReadOnlyList;
-                temp9 = temp9 is null ? new List<int>() : new List<int>(temp9);
-                BindCore(section7, ref temp9, binderOptions);
-                obj.IReadOnlyList = temp9;
+                IReadOnlyList<int>? temp27 = obj.IReadOnlyList;
+                temp27 = temp27 is null ? new List<int>() : new List<int>(temp27);
+                BindCore(section25, ref temp27, binderOptions);
+                obj.IReadOnlyList = temp27;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section10)
+            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section28)
             {
-                IReadOnlyDictionary<string, int>? temp12 = obj.IReadOnlyDictionary;
-                temp12 = temp12 is null ? new Dictionary<string, int>() : temp12.ToDictionary(pair => pair.Key, pair => pair.Value);
-                BindCore(section10, ref temp12, binderOptions);
-                obj.IReadOnlyDictionary = temp12;
+                IReadOnlyDictionary<string, int>? temp30 = obj.IReadOnlyDictionary;
+                temp30 = temp30 is null ? new Dictionary<string, int>() : temp30.ToDictionary(pair => pair.Key, pair => pair.Value);
+                BindCore(section28, ref temp30, binderOptions);
+                obj.IReadOnlyDictionary = temp30;
             }
         }
 
@@ -281,7 +371,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         
             if (binderOptions.BindNonPublicProperties)
             {
-                throw new global::System.NotSupportedException($"The configuration binding source generator does not support 'BinderOptions.BindNonPublicProperties'.");
+                throw new NotSupportedException($"The configuration binding source generator does not support 'BinderOptions.BindNonPublicProperties'.");
             }
         
             return binderOptions;
@@ -298,5 +388,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
             }
         }
+        #endregion Core binding extensions.
     }
 }

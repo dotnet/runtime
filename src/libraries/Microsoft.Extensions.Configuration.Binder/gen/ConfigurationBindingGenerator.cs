@@ -5,7 +5,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -15,7 +14,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [Generator]
     public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
-        internal const string ProjectName = "Microsoft.Extensions.Configuration.Binder.SourceGeneration";
+        private static readonly string ProjectName = Emitter.s_assemblyName.Name;
+
+        public bool EmitUniqueHelperNames { get; init; } = true;
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -42,10 +43,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
-        /// <summary>
-        /// Generates source code to optimize binding with ConfigurationBinder.
-        /// </summary>
-        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
+        private void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
         {
             if (inputCalls.IsDefaultOrEmpty)
             {
@@ -61,7 +59,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
             if (parser.GetSourceGenerationSpec() is SourceGenerationSpec spec)
             {
-                Emitter emitter = new(context, spec);
+                Emitter emitter = new(context, spec, EmitUniqueHelperNames);
                 emitter.Emit();
             }
         }
@@ -73,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public CompilationData(CSharpCompilation compilation)
             {
-                LanguageVersionIsSupported = compilation.LanguageVersion >= LanguageVersion.CSharp11;
+                LanguageVersionIsSupported = compilation.LanguageVersion >= LanguageVersion.Preview;
                 if (LanguageVersionIsSupported)
                 {
                     TypeSymbols = new KnownTypeSymbols(compilation);

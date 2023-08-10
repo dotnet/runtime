@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Options.Generators
 {
@@ -20,11 +21,11 @@ namespace Microsoft.Extensions.Options.Generators
         private const string StaticValidationResultType = "global::System.ComponentModel.DataAnnotations.ValidationResult";
         private const string StaticValidationAttributeType = "global::System.ComponentModel.DataAnnotations.ValidationAttribute";
 
-        private string _staticValidationAttributeHolderClassName = "__Attributes";
-        private string _staticValidatorHolderClassName = "__Validators";
-        private string _staticValidationAttributeHolderClassFQN;
-        private string _staticValidatorHolderClassFQN;
-        private string _modifier;
+        private readonly string _staticValidationAttributeHolderClassName = "__Attributes";
+        private readonly string _staticValidatorHolderClassName = "__Validators";
+        private readonly string _staticValidationAttributeHolderClassFQN;
+        private readonly string _staticValidatorHolderClassFQN;
+        private readonly string _modifier;
 
         private sealed record StaticFieldInfo(string FieldTypeFQN, int FieldOrder, string FieldName, IList<string> InstantiationLines);
 
@@ -37,9 +38,8 @@ namespace Microsoft.Extensions.Options.Generators
             else
             {
                 _modifier = "internal";
-                string suffix = $"_{new Random().Next():X8}";
-                _staticValidationAttributeHolderClassName += suffix;
-                _staticValidatorHolderClassName += suffix;
+                GeneratorHelpers.MakeNameUnique(ref _staticValidationAttributeHolderClassName);
+                GeneratorHelpers.MakeNameUnique(ref _staticValidatorHolderClassName);
             }
 
             _staticValidationAttributeHolderClassFQN = $"global::{StaticFieldHolderClassesNamespace}.{_staticValidationAttributeHolderClassName}";
