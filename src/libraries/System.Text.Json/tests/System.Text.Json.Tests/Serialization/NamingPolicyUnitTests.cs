@@ -12,9 +12,6 @@ namespace System.Text.Json.Serialization.Tests
     public static class NamingPolicyUnitTests
     {
         private readonly static CamelCaseNamingStrategy s_newtonsoftCamelCaseNamingStrategy = new();
-        private readonly static SnakeCaseNamingStrategy s_newtonsoftSnakeCaseNamingStrategy = new();
-        private readonly static KebabCaseNamingStrategy s_newtonsoftKebabCaseNamingStrategy = new();
-
         [Theory]
         // These test cases were copied from Json.NET.
         [InlineData("urlValue", "URLValue")]
@@ -64,12 +61,16 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData("xml_http_request", "XMLHttpRequest")]
+        [InlineData("sha512_hash_algorithm", "SHA512HashAlgorithm")]
+        [InlineData("i18n", "i18n")]
+        [InlineData("i18n_policy", "I18nPolicy")]
+        [InlineData("7samurai", "7samurai")]
         [InlineData("camel_case", "camelCase")]
         [InlineData("camel_case", "CamelCase")]
         [InlineData("snake_case", "snake_case")]
         [InlineData("snake_case", "SNAKE_CASE")]
         [InlineData("kebab-case", "kebab-case")]
-        [InlineData("keba_b-_case", "KEBAB-CASE")]
+        [InlineData("kebab-case", "KEBAB-CASE")]
         [InlineData("double_space", "double  space")]
         [InlineData("double__underscore", "double__underscore")]
         [InlineData("abc", "abc")]
@@ -80,21 +81,28 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("abc", "ABC")]
         [InlineData("abc123def456", "abc123def456")]
         [InlineData("abc123_def456", "abc123Def456")]
-        [InlineData("abc123_de_f456", "abc123DEF456")]
-        [InlineData("ab_c123_de_f456", "ABC123DEF456")]
-        [InlineData("ab_c123def456", "ABC123def456")]
+        [InlineData("abc123_def456", "abc123DEF456")]
+        [InlineData("abc123_def456", "ABC123DEF456")]
+        [InlineData("abc123def456", "ABC123def456")]
         [InlineData("abc123def456", "Abc123def456")]
         [InlineData("abc", "  abc")]
         [InlineData("abc", "abc  ")]
         [InlineData("abc", "  abc  ")]
+        [InlineData("abc", "  Abc  ")]
+        [InlineData("7ab7", "  7ab7  ")]
         [InlineData("abc_def", "  abc def  ")]
+        [InlineData("abc_7ef", "  abc 7ef  ")]
+        [InlineData("ab7_def", "  ab7 def  ")]
         [InlineData("_abc", "_abc")]
         [InlineData("a%", "a%")]
         [InlineData("_?#-", "_?#-")]
+        [InlineData("?!?", "? ! ?")]
         [InlineData("$type", "$type")]
         [InlineData("abc%def", "abc%def")]
         [InlineData("__abc__def__", "__abc__def__")]
         [InlineData("_abc_abc_abc", "_abcAbc_abc")]
+        [InlineData("abc???def", "ABC???def")]
+        [InlineData("ab_cd-_-de_f", "ABCd  - _ -   DE f")]
         [InlineData(
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
@@ -107,21 +115,24 @@ namespace System.Text.Json.Serialization.Tests
         public static void ToSnakeLowerCase(string expectedResult, string name)
         {
             JsonNamingPolicy policy = JsonNamingPolicy.SnakeCaseLower;
-            string newtonsoftResult = s_newtonsoftSnakeCaseNamingStrategy.GetPropertyName(name, hasSpecifiedName: false);
 
             string result = policy.ConvertName(name);
+
             Assert.Equal(expectedResult, result);
-            Assert.Equal(newtonsoftResult, result);
         }
 
         [Theory]
         [InlineData("XML_HTTP_REQUEST", "XMLHttpRequest")]
+        [InlineData("SHA512_HASH_ALGORITHM", "SHA512HashAlgorithm")]
+        [InlineData("I18N", "i18n")]
+        [InlineData("I18N_POLICY", "I18nPolicy")]
+        [InlineData("7SAMURAI", "7samurai")]
         [InlineData("CAMEL_CASE", "camelCase")]
         [InlineData("CAMEL_CASE", "CamelCase")]
         [InlineData("SNAKE_CASE", "snake_case")]
         [InlineData("SNAKE_CASE", "SNAKE_CASE")]
         [InlineData("KEBAB-CASE", "kebab-case")]
-        [InlineData("KEBA_B-_CASE", "KEBAB-CASE")]
+        [InlineData("KEBAB-CASE", "KEBAB-CASE")]
         [InlineData("DOUBLE_SPACE", "double  space")]
         [InlineData("DOUBLE__UNDERSCORE", "double__underscore")]
         [InlineData("ABC", "abc")]
@@ -132,21 +143,28 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ABC", "ABC")]
         [InlineData("ABC123DEF456", "abc123def456")]
         [InlineData("ABC123_DEF456", "abc123Def456")]
-        [InlineData("ABC123_DE_F456", "abc123DEF456")]
-        [InlineData("AB_C123_DE_F456", "ABC123DEF456")]
-        [InlineData("AB_C123DEF456", "ABC123def456")]
+        [InlineData("ABC123_DEF456", "abc123DEF456")]
+        [InlineData("ABC123_DEF456", "ABC123DEF456")]
+        [InlineData("ABC123DEF456", "ABC123def456")]
         [InlineData("ABC123DEF456", "Abc123def456")]
         [InlineData("ABC", "  ABC")]
-        [InlineData("AB_C", "ABC  ")]
-        [InlineData("AB_C", "  ABC  ")]
-        [InlineData("AB_C_DEF", "  ABC def  ")]
+        [InlineData("ABC", "ABC  ")]
+        [InlineData("ABC", "  ABC  ")]
+        [InlineData("ABC", "  Abc  ")]
+        [InlineData("7AB7", "  7ab7  ")]
+        [InlineData("ABC_DEF", "  ABC def  ")]
+        [InlineData("ABC_7EF", "  abc 7ef  ")]
+        [InlineData("AB7_DEF", "  ab7 def  ")]
         [InlineData("_ABC", "_abc")]
         [InlineData("A%", "a%")]
         [InlineData("_?#-", "_?#-")]
+        [InlineData("?!?", "? ! ?")]
         [InlineData("$TYPE", "$type")]
         [InlineData("ABC%DEF", "abc%def")]
         [InlineData("__ABC__DEF__", "__abc__def__")]
         [InlineData("_ABC_ABC_ABC", "_abcAbc_abc")]
+        [InlineData("ABC???DEF", "ABC???def")]
+        [InlineData("AB_CD-_-DE_F", "ABCd  - _ -   DE f")]
         [InlineData(
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
@@ -167,10 +185,14 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData("xml-http-request", "XMLHttpRequest")]
+        [InlineData("sha512-hash-algorithm", "SHA512HashAlgorithm")]
+        [InlineData("i18n", "i18n")]
+        [InlineData("i18n-policy", "I18nPolicy")]
+        [InlineData("7samurai", "7samurai")]
         [InlineData("camel-case", "camelCase")]
         [InlineData("camel-case", "CamelCase")]
         [InlineData("snake_case", "snake_case")]
-        [InlineData("snak-e_-case", "SNAKE_CASE")]
+        [InlineData("snake_case", "SNAKE_CASE")]
         [InlineData("kebab-case", "kebab-case")]
         [InlineData("kebab-case", "KEBAB-CASE")]
         [InlineData("double-space", "double  space")]
@@ -184,21 +206,28 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("abc", "ABC")]
         [InlineData("abc123def456", "abc123def456")]
         [InlineData("abc123-def456", "abc123Def456")]
-        [InlineData("abc123-de-f456", "abc123DEF456")]
-        [InlineData("ab-c123-de-f456", "ABC123DEF456")]
-        [InlineData("ab-c123def456", "ABC123def456")]
+        [InlineData("abc123-def456", "abc123DEF456")]
+        [InlineData("abc123-def456", "ABC123DEF456")]
+        [InlineData("abc123def456", "ABC123def456")]
         [InlineData("abc123def456", "Abc123def456")]
         [InlineData("abc", "  abc")]
         [InlineData("abc", "abc  ")]
         [InlineData("abc", "  abc  ")]
+        [InlineData("abc", "  Abc  ")]
+        [InlineData("7ab7", "  7ab7  ")]
         [InlineData("abc-def", "  abc def  ")]
+        [InlineData("abc-7ef", "  abc 7ef  ")]
+        [InlineData("ab7-def", "  ab7 def  ")]
         [InlineData("-abc", "-abc")]
         [InlineData("a%", "a%")]
         [InlineData("-?#_", "-?#_")]
+        [InlineData("?!?", "? ! ?")]
         [InlineData("$type", "$type")]
         [InlineData("abc%def", "abc%def")]
         [InlineData("--abc--def--", "--abc--def--")]
         [InlineData("-abc-abc-abc", "-abcAbc-abc")]
+        [InlineData("abc???def", "ABC???def")]
+        [InlineData("ab-cd-_-de-f", "ABCd  - _ -   DE f")]
         [InlineData(
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
@@ -206,25 +235,27 @@ namespace System.Text.Json.Serialization.Tests
             "a-haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "aHaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
         [InlineData(
-            "a-towel-it-says-is-about-the-most-massively-useful-thing-an-interstellar-hitchhiker-can-have_-partly-it-has-great-practical-value_-you-can-wrap-it-around-you-for-warmth-as-you-bound-across-the-cold-moons-of-jaglan-beta_-you-can-lie-on-it-on-the-brilliant-marble-sanded-beaches-of-santraginus-v-inhaling-the-heady-sea-vapors_-you-can-sleep-under-it-beneath-the-stars-which-shine-so-redly-on-the-desert-world-of-kakrafoon_-use-it-to-sail-a-miniraft-down-the-slow-heavy-river-moth_-wet-it-for-use-in-hand-to-hand-combat_-wrap-it-round-your-head-to-ward-off-noxious-fumes-or-avoid-the-gaze-of-the-ravenous-bugblatter-beast-of-traal-a-mind-bogglingly-stupid-animal_-it-assumes-that-if-you-cant-see-it-it-cant-see-you-daft-as-a-brush-but-very-very-ravenous_-you-can-wave-your-towel-in-emergencies-as-a-distress-signal-and-of-course-dry-yourself-of-with-it-if-it-still-seems-to-be-clean-enough",
+            "a-towel-it-says-is-about-the-most-massively-useful-thing-an-interstellar-hitchhiker-can-have_partly-it-has-great-practical-value_you-can-wrap-it-around-you-for-warmth-as-you-bound-across-the-cold-moons-of-jaglan-beta_you-can-lie-on-it-on-the-brilliant-marble-sanded-beaches-of-santraginus-v-inhaling-the-heady-sea-vapors_you-can-sleep-under-it-beneath-the-stars-which-shine-so-redly-on-the-desert-world-of-kakrafoon_use-it-to-sail-a-miniraft-down-the-slow-heavy-river-moth_wet-it-for-use-in-hand-to-hand-combat_wrap-it-round-your-head-to-ward-off-noxious-fumes-or-avoid-the-gaze-of-the-ravenous-bugblatter-beast-of-traal-a-mind-bogglingly-stupid-animal_it-assumes-that-if-you-cant-see-it-it-cant-see-you-daft-as-a-brush-but-very-very-ravenous_you-can-wave-your-towel-in-emergencies-as-a-distress-signal-and-of-course-dry-yourself-of-with-it-if-it-still-seems-to-be-clean-enough",
             "ATowelItSaysIsAboutTheMostMassivelyUsefulThingAnInterstellarHitchhikerCanHave_PartlyItHasGreatPracticalValue_YouCanWrapItAroundYouForWarmthAsYouBoundAcrossTheColdMoonsOfJaglanBeta_YouCanLieOnItOnTheBrilliantMarbleSandedBeachesOfSantraginusVInhalingTheHeadySeaVapors_YouCanSleepUnderItBeneathTheStarsWhichShineSoRedlyOnTheDesertWorldOfKakrafoon_UseItToSailAMiniraftDownTheSlowHeavyRiverMoth_WetItForUseInHandToHandCombat_WrapItRoundYourHeadToWardOffNoxiousFumesOrAvoidTheGazeOfTheRavenousBugblatterBeastOfTraalAMindBogglinglyStupidAnimal_ItAssumesThatIfYouCantSeeItItCantSeeYouDaftAsABrushButVeryVeryRavenous_YouCanWaveYourTowelInEmergenciesAsADistressSignalAndOfCourseDryYourselfOfWithItIfItStillSeemsToBeCleanEnough")]            
         public static void ToKebabLowerCase(string expectedResult, string name)
         {
             JsonNamingPolicy policy = JsonNamingPolicy.KebabCaseLower;
-            string newtonsoftResult = s_newtonsoftKebabCaseNamingStrategy.GetPropertyName(name, false);
 
             string value = policy.ConvertName(name);
 
             Assert.Equal(expectedResult, value);
-            Assert.Equal(newtonsoftResult, value);
         }
 
         [Theory]
         [InlineData("XML-HTTP-REQUEST", "XMLHttpRequest")]
+        [InlineData("SHA512-HASH-ALGORITHM", "SHA512HashAlgorithm")]
+        [InlineData("I18N", "i18n")]
+        [InlineData("I18N-POLICY", "I18nPolicy")]
+        [InlineData("7SAMURAI", "7samurai")]
         [InlineData("CAMEL-CASE", "camelCase")]
         [InlineData("CAMEL-CASE", "CamelCase")]
         [InlineData("SNAKE_CASE", "snake_case")]
-        [InlineData("SNAK-E_-CASE", "SNAKE_CASE")]
+        [InlineData("SNAKE_CASE", "SNAKE_CASE")]
         [InlineData("KEBAB-CASE", "kebab-case")]
         [InlineData("KEBAB-CASE", "KEBAB-CASE")]
         [InlineData("DOUBLE-SPACE", "double  space")]
@@ -238,21 +269,28 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ABC", "ABC")]
         [InlineData("ABC123DEF456", "abc123def456")]
         [InlineData("ABC123-DEF456", "abc123Def456")]
-        [InlineData("ABC123-DE-F456", "abc123DEF456")]
-        [InlineData("AB-C123-DE-F456", "ABC123DEF456")]
-        [InlineData("AB-C123DEF456", "ABC123def456")]
+        [InlineData("ABC123-DEF456", "abc123DEF456")]
+        [InlineData("ABC123-DEF456", "ABC123DEF456")]
+        [InlineData("ABC123DEF456", "ABC123def456")]
         [InlineData("ABC123DEF456", "Abc123def456")]
         [InlineData("ABC", "  ABC")]
-        [InlineData("AB-C", "ABC  ")]
-        [InlineData("AB-C", "  ABC  ")]
-        [InlineData("AB-C-DEF", "  ABC def  ")]
+        [InlineData("ABC", "ABC  ")]
+        [InlineData("ABC", "  ABC  ")]
+        [InlineData("ABC", "  Abc  ")]
+        [InlineData("7AB7", "  7ab7  ")]
+        [InlineData("ABC-DEF", "  ABC def  ")]
+        [InlineData("ABC-7EF", "  abc 7ef  ")]
+        [InlineData("AB7-DEF", "  ab7 def  ")]
         [InlineData("-ABC", "-abc")]
         [InlineData("A%", "a%")]
         [InlineData("-?#_", "-?#_")]
+        [InlineData("?!?", "? ! ?")]
         [InlineData("$TYPE", "$type")]
         [InlineData("ABC%DEF", "abc%def")]
         [InlineData("--ABC--DEF--", "--abc--def--")]
         [InlineData("-ABC-ABC-ABC", "-abcAbc-abc")]
+        [InlineData("ABC???DEF", "ABC???def")]
+        [InlineData("AB-CD-_-DE-F", "ABCd  - _ -   DE f")]
         [InlineData(
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
@@ -260,7 +298,7 @@ namespace System.Text.Json.Serialization.Tests
             "A-HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
             "aHaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
         [InlineData(
-            "A-TOWEL-IT-SAYS-IS-ABOUT-THE-MOST-MASSIVELY-USEFUL-THING-AN-INTERSTELLAR-HITCHHIKER-CAN-HAVE_-PARTLY-IT-HAS-GREAT-PRACTICAL-VALUE_-YOU-CAN-WRAP-IT-AROUND-YOU-FOR-WARMTH-AS-YOU-BOUND-ACROSS-THE-COLD-MOONS-OF-JAGLAN-BETA_-YOU-CAN-LIE-ON-IT-ON-THE-BRILLIANT-MARBLE-SANDED-BEACHES-OF-SANTRAGINUS-V-INHALING-THE-HEADY-SEA-VAPORS_-YOU-CAN-SLEEP-UNDER-IT-BENEATH-THE-STARS-WHICH-SHINE-SO-REDLY-ON-THE-DESERT-WORLD-OF-KAKRAFOON_-USE-IT-TO-SAIL-A-MINIRAFT-DOWN-THE-SLOW-HEAVY-RIVER-MOTH_-WET-IT-FOR-USE-IN-HAND-TO-HAND-COMBAT_-WRAP-IT-ROUND-YOUR-HEAD-TO-WARD-OFF-NOXIOUS-FUMES-OR-AVOID-THE-GAZE-OF-THE-RAVENOUS-BUGBLATTER-BEAST-OF-TRAAL-A-MIND-BOGGLINGLY-STUPID-ANIMAL_-IT-ASSUMES-THAT-IF-YOU-CANT-SEE-IT-IT-CANT-SEE-YOU-DAFT-AS-A-BRUSH-BUT-VERY-VERY-RAVENOUS_-YOU-CAN-WAVE-YOUR-TOWEL-IN-EMERGENCIES-AS-A-DISTRESS-SIGNAL-AND-OF-COURSE-DRY-YOURSELF-OF-WITH-IT-IF-IT-STILL-SEEMS-TO-BE-CLEAN-ENOUGH",
+            "A-TOWEL-IT-SAYS-IS-ABOUT-THE-MOST-MASSIVELY-USEFUL-THING-AN-INTERSTELLAR-HITCHHIKER-CAN-HAVE_PARTLY-IT-HAS-GREAT-PRACTICAL-VALUE_YOU-CAN-WRAP-IT-AROUND-YOU-FOR-WARMTH-AS-YOU-BOUND-ACROSS-THE-COLD-MOONS-OF-JAGLAN-BETA_YOU-CAN-LIE-ON-IT-ON-THE-BRILLIANT-MARBLE-SANDED-BEACHES-OF-SANTRAGINUS-V-INHALING-THE-HEADY-SEA-VAPORS_YOU-CAN-SLEEP-UNDER-IT-BENEATH-THE-STARS-WHICH-SHINE-SO-REDLY-ON-THE-DESERT-WORLD-OF-KAKRAFOON_USE-IT-TO-SAIL-A-MINIRAFT-DOWN-THE-SLOW-HEAVY-RIVER-MOTH_WET-IT-FOR-USE-IN-HAND-TO-HAND-COMBAT_WRAP-IT-ROUND-YOUR-HEAD-TO-WARD-OFF-NOXIOUS-FUMES-OR-AVOID-THE-GAZE-OF-THE-RAVENOUS-BUGBLATTER-BEAST-OF-TRAAL-A-MIND-BOGGLINGLY-STUPID-ANIMAL_IT-ASSUMES-THAT-IF-YOU-CANT-SEE-IT-IT-CANT-SEE-YOU-DAFT-AS-A-BRUSH-BUT-VERY-VERY-RAVENOUS_YOU-CAN-WAVE-YOUR-TOWEL-IN-EMERGENCIES-AS-A-DISTRESS-SIGNAL-AND-OF-COURSE-DRY-YOURSELF-OF-WITH-IT-IF-IT-STILL-SEEMS-TO-BE-CLEAN-ENOUGH",
             "ATowelItSaysIsAboutTheMostMassivelyUsefulThingAnInterstellarHitchhikerCanHave_PartlyItHasGreatPracticalValue_YouCanWrapItAroundYouForWarmthAsYouBoundAcrossTheColdMoonsOfJaglanBeta_YouCanLieOnItOnTheBrilliantMarbleSandedBeachesOfSantraginusVInhalingTheHeadySeaVapors_YouCanSleepUnderItBeneathTheStarsWhichShineSoRedlyOnTheDesertWorldOfKakrafoon_UseItToSailAMiniraftDownTheSlowHeavyRiverMoth_WetItForUseInHandToHandCombat_WrapItRoundYourHeadToWardOffNoxiousFumesOrAvoidTheGazeOfTheRavenousBugblatterBeastOfTraalAMindBogglinglyStupidAnimal_ItAssumesThatIfYouCantSeeItItCantSeeYouDaftAsABrushButVeryVeryRavenous_YouCanWaveYourTowelInEmergenciesAsADistressSignalAndOfCourseDryYourselfOfWithItIfItStillSeemsToBeCleanEnough")]
         public static void ToKebabUpperCase(string expectedResult, string name)
         {
@@ -277,24 +315,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             string newtonsoftResult = s_newtonsoftCamelCaseNamingStrategy.GetPropertyName(name, hasSpecifiedName: false);
             string stjResult = JsonNamingPolicy.CamelCase.ConvertName(name);
-            Assert.Equal(newtonsoftResult, stjResult);
-        }
-
-        [Theory, OuterLoop]
-        [MemberData(nameof(GetValidMemberNames))]
-        public static void SnakeCaseNamingPolicyMatchesNewtonsoftNamingStrategy(string name)
-        {
-            string newtonsoftResult = s_newtonsoftSnakeCaseNamingStrategy.GetPropertyName(name, hasSpecifiedName: false);
-            string stjResult = JsonNamingPolicy.SnakeCaseLower.ConvertName(name);
-            Assert.Equal(newtonsoftResult, stjResult);
-        }
-
-        [Theory, OuterLoop]
-        [MemberData(nameof(GetValidMemberNames))]
-        public static void KebabCaseNamingPolicyMatchesNewtonsoftNamingStrategy(string name)
-        {
-            string newtonsoftResult = s_newtonsoftKebabCaseNamingStrategy.GetPropertyName(name, hasSpecifiedName: false);
-            string stjResult = JsonNamingPolicy.KebabCaseLower.ConvertName(name);
             Assert.Equal(newtonsoftResult, stjResult);
         }
 

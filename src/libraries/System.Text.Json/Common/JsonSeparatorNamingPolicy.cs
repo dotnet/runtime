@@ -59,7 +59,7 @@ namespace System.Text.Json
                         case SeparatorState.NotStarted:
                             break;
 
-                        case SeparatorState.OtherCharacter:
+                        case SeparatorState.LowercaseLetterOrDigit:
                         case SeparatorState.SpaceSeparator:
                             // An uppercase letter following a sequence of lowercase letters or spaces
                             // denotes the start of a new grouping: emit a separator character.
@@ -69,17 +69,12 @@ namespace System.Text.Json
                         case SeparatorState.UppercaseLetter:
                             // We are reading through a sequence of two or more uppercase letters.
                             // Uppercase letters are grouped together with the exception of the
-                            // final letter, assuming it is followed by additional characters.
-                            // For example, the value 'XMLReader' should render as 'xml_reader'.
-                            if (i + 1 < chars.Length)
+                            // final letter, assuming it is followed by lowercase letters.
+                            // For example, the value 'XMLReader' should render as 'xml_reader',
+                            // however 'SHA512Hash' should render as 'sha512-hash'.
+                            if (i + 1 < chars.Length && char.IsLower(chars[i + 1]))
                             {
-                                char nextChar = chars[i + 1];
-                                if (!char.IsUpper(nextChar) && nextChar != separator)
-                                {
-                                    // This is the last uppercase letter in the sequence,
-                                    // emit a separator before handling it.
-                                    WriteChar(separator, ref destination);
-                                }
+                                WriteChar(separator, ref destination);
                             }
                             break;
 
@@ -94,24 +89,9 @@ namespace System.Text.Json
                     WriteChar(current, ref destination);
                     state = SeparatorState.UppercaseLetter;
                 }
-                else if (category is UnicodeCategory.SpaceSeparator)
+                else if (category is UnicodeCategory.LowercaseLetter or
+                                     UnicodeCategory.DecimalDigitNumber)
                 {
-                    // Space characters are trimmed from the start and end of the input string
-                    // but are normalized to separator characters if between letters.
-                    if (state != SeparatorState.NotStarted)
-                    {
-                        state = SeparatorState.SpaceSeparator;
-                    }
-                }
-                else if (current == separator)
-                {
-                    // Json.NET compat: reset state if the separator character is encountered in the input string.
-                    WriteChar(separator, ref destination);
-                    state = SeparatorState.NotStarted;
-                }
-                else
-                {
-                    // Handle all remaining character categories
                     if (state is SeparatorState.SpaceSeparator)
                     {
                         // Normalize preceding spaces to one separator.
@@ -122,7 +102,25 @@ namespace System.Text.Json
                         current = char.ToUpperInvariant(current);
 
                     WriteChar(current, ref destination);
-                    state = SeparatorState.OtherCharacter;
+                    state = SeparatorState.LowercaseLetterOrDigit;
+                }
+                else if (category is UnicodeCategory.SpaceSeparator)
+                {
+                    // Space characters are trimmed from the start and end of the input string
+                    // but are normalized to separator characters if between letters.
+                    if (state != SeparatorState.NotStarted)
+                    {
+                        state = SeparatorState.SpaceSeparator;
+                    }
+                }
+                else
+                {
+                    // Non-alphanumeric characters (including the separator character itself)
+                    // are written as-is to the output and reset the separator state.
+                    // E.g. 'ABC???def' maps to 'abc???def' in snake_case.
+
+                    WriteChar(current, ref destination);
+                    state = SeparatorState.NotStarted;
                 }
             }
 
@@ -168,8 +166,8 @@ namespace System.Text.Json
         {
             NotStarted,
             UppercaseLetter,
+            LowercaseLetterOrDigit,
             SpaceSeparator,
-            OtherCharacter,
         }
     }
 }
