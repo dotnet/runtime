@@ -66,6 +66,8 @@
 #include "interp/jiterpreter.h"
 #endif
 
+#include <dnmd.h>
+
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
@@ -492,9 +494,18 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	g_timer_start (timer);
 	if (mini_stats_fd)
 		fprintf (mini_stats_fd, "[");
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
+	
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor(image->metadata_handle, mdtid_MethodDef, &c, &count))
+		count = 0;
+
+	for (guint32 i = 0; i < count; ++i, md_cursor_next(&c)) {
 		ERROR_DECL (error);
-		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
+		guint32 token;
+		if (!md_cursor_to_token(c, &token))
+			g_assert_not_reached();
+		MonoMethod *method = mono_get_method_checked (image, token, NULL, NULL, error);
 		if (!method) {
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
@@ -622,10 +633,18 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		fprintf (mini_stats_fd, "[");
 	}
 
-	/* load the metadata */
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
+	/* load the metadata */	
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor(image->metadata_handle, mdtid_MethodDef, &c, &count))
+		count = 0;
+
+	for (guint32 i = 0; i < count; ++i, md_cursor_next(&c)) {
 		ERROR_DECL (error);
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
+		guint32 token;
+		if (!md_cursor_to_token(c, &token))
+			g_assert_not_reached();
+		method = mono_get_method_checked (image, token, NULL, NULL, error);
 		if (!method) {
 			mono_error_cleanup (error);
 			continue;
@@ -742,10 +761,18 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 
 	mini_get_interp_callbacks ()->invalidate_transformed ();
 
-	g_timer_start (timer);
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
+	g_timer_start (timer);	
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor(image->metadata_handle, mdtid_MethodDef, &c, &count))
+		count = 0;
+
+	for (guint32 i = 0; i < count; ++i, md_cursor_next(&c)) {
 		ERROR_DECL (error);
-		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
+		guint32 token;
+		if (!md_cursor_to_token(c, &token))
+			g_assert_not_reached();
+		MonoMethod *method = mono_get_method_checked (image, token, NULL, NULL, error);
 		if (!method) {
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
@@ -806,10 +833,18 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 	GTimer *timer = g_timer_new ();
 	int total;
 
-	/* load the metadata */
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
+	/* load the metadata */	
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor(image->metadata_handle, mdtid_MethodDef, &c, &count))
+		count = 0;
+
+	for (guint32 i = 0; i < count; ++i, md_cursor_next(&c)) {
 		ERROR_DECL (error);
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
+		guint32 token;
+		if (!md_cursor_to_token(c, &token))
+			g_assert_not_reached();
+		method = mono_get_method_checked (image, token, NULL, NULL, error);
 		if (!method) {
 			mono_error_cleanup (error);
 			continue;
@@ -1207,10 +1242,18 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 	MonoMethod *method;
 	MonoCompile *cfg;
 	int count = 0, fail_count = 0;
+	
+	mdcursor_t c;
+	uint32_t row_count;
+	if (!md_create_cursor(image->metadata_handle, mdtid_MethodDef, &c, &row_count))
+		row_count = 0;
 
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
+	for (guint32 i = 0; i < row_count; ++i, md_cursor_next(&c)) {
 		ERROR_DECL (error);
-		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		guint32 token;
+		if (!md_cursor_to_token(c, &token))
+			g_assert_not_reached();
+
 		MonoMethodSignature *sig;
 
 		if (mono_metadata_has_generic_params (image, token))

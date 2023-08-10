@@ -102,6 +102,8 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-tls-inline.h"
 
+#include <dnmd.h>
+
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 MonoMethodDesc *mono_stats_method_desc;
@@ -5318,10 +5320,20 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	if (mini_verbose > 0)
 		printf ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
 
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
+	mdcursor_t method_cursor;
+	uint32_t method_count;
+	if (!md_create_cursor(image->metadata_handle, mdtid_MethodDef, &method_cursor, &method_count)) {
+		method_count = 0;
+	}
+
+	for (guint32 i = 0; i < method_count; ++i, md_cursor_next(&method_cursor)) {
 		ERROR_DECL (error);
 
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
+		guint32 token;
+		if (!md_cursor_to_token(method_cursor, &token))
+			g_assert_not_reached();
+
+		method = mono_get_method_checked (image, token, NULL, NULL, error);
 		if (!method) {
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
@@ -5350,7 +5362,13 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	}
 
 	/* Load and precompile referenced assemblies as well */
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLYREF]); ++i) {
+	mdcursor_t assembly_ref_cursor;
+	uint32_t assembly_ref_count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_AssemblyRef, &assembly_ref_cursor, &assembly_ref_count)) {
+		assembly_ref_count = 0;
+	}
+
+	for (guint32 i = 0; i < assembly_ref_count; ++i) {
 		mono_assembly_load_reference (image, i);
 		if (image->references [i])
 			mono_precompile_assembly (image->references [i], assemblies);

@@ -32,6 +32,7 @@
 #include "coree.h"
 #include "coree-internals.h"
 #include <mono/utils/w32subset.h>
+#include <dnmd.h>
 
 gchar*
 mono_get_module_file_name (HMODULE module_handle)
@@ -118,7 +119,9 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		 * loader trampolines should be used and assembly loading should
 		 * probably be delayed until the first call to an exported function.
 		 */
-		if (table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY]) && image->image_info->cli_cli_header.ch_vtable_fixups.rva) {
+		mdcursor_t c;
+		uint32_t count;
+		if (md_create_cursor(image->metadata_handle, mdtid_Assembly, &c, &count) && image->image_info->cli_cli_header.ch_vtable_fixups.rva) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, alc);
 			assembly = mono_assembly_request_open (file_name, &req, NULL);
