@@ -2048,6 +2048,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS
             TraceSwitch ts = new(displayName: "TraceSwitch", description: "This switch is set via config.");
             ConfigurationBinder.Bind(config, "TraceSwitch", ts);
             Assert.Equal(TraceLevel.Info, ts.Level);
@@ -2055,6 +2056,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             // Value property is not publicly exposed in .NET Framework.
             Assert.Equal("Info", ts.Value);
 #endif // NETCOREAPP
+#endif // !BUILDING_SOURCE_GENERATOR_TESTS
         }
 
         private void ValidateGeolocation(IGeolocation location)

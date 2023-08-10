@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         private string _displayStringWithoutSpecialCharacters;
         public string DisplayStringWithoutSpecialCharacters =>
-            _displayStringWithoutSpecialCharacters ??= $"{MinimalDisplayString.Replace(".", string.Empty).Replace("<", string.Empty).Replace(">", string.Empty)}";
+            _displayStringWithoutSpecialCharacters ??= $"{DisplayString.Replace(".", string.Empty).Replace("<", string.Empty).Replace(">", string.Empty)}";
 
         public override bool NeedsMemberBinding => CanInitialize &&
             Properties.Values.Count > 0 &&

@@ -100,17 +100,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                if (GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
+                if (GetTargetTypeForRootInvocationCore(type, invocation.Location) is not null)
                 {
-                    Dictionary<MethodsToGen_ConfigurationBinder, HashSet<TypeSpec>> types = _sourceGenSpec.TypesForGen_ConfigurationBinder_BindMethods;
-
-                    if (!types.TryGetValue(overload, out HashSet<TypeSpec>? typeSpecs))
-                    {
-                        types[overload] = typeSpecs = new HashSet<TypeSpec>();
-                    }
-
-                    _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
-                    typeSpecs.Add(typeSpec);
+                    RegisterAsInterceptor(overload, invocation.Operation);
                 }
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
@@ -184,7 +176,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (GetTargetTypeForRootInvocation(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
+                    RegisterAsInterceptor(overload, invocation.Operation);
                     RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetCore, typeSpec);
                 }
 
@@ -253,9 +245,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (IsParsableFromString(effectiveType, out _) &&
                     GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
+                    RegisterAsInterceptor(overload, invocation.Operation);
                     RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetValueCore, typeSpec);
                 }
+            }
+
+            private void RegisterAsInterceptor(MethodsToGen_ConfigurationBinder overload, IInvocationOperation operation)
+            {
+                _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
+                RegisterGenMethodAsInterceptor(overload, operation);
             }
         }
     }
