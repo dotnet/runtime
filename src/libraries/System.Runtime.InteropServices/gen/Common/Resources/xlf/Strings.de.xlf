@@ -1226,7 +1226,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="new">Specified type is not supported by source-generated COM</target>
+        <target state="translated">Der angegebene Typ wird vom quellgenerierten COM nicht unterstützt.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
