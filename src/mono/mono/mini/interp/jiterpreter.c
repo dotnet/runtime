@@ -710,12 +710,18 @@ trace_info_allocate_segment (gint32 index) {
 
 	TraceInfo *segment = (TraceInfo *)g_malloc0 (sizeof(TraceInfo) * TRACE_SEGMENT_SIZE);
 	TraceInfo *expected = NULL;
+
+#ifdef DISABLE_THREADS
+	trace_segments[index] = segment;
+	return segment;
+#else
 	if (!atomic_compare_exchange_strong ((atomic_uintptr_t *)&trace_segments[index], (uintptr_t *)&expected, (uintptr_t)segment)) {
 		g_free (segment);
 		return expected;
 	} else {
-		return (TraceInfo *)segment;
+		return segment;
 	}
+#endif
 }
 
 static TraceInfo *
@@ -1204,7 +1210,15 @@ mono_jiterp_get_counter (int counter) {
 EMSCRIPTEN_KEEPALIVE double
 mono_jiterp_modify_counter (int counter, double delta) {
 	long actual_delta = (long)(delta * JITERP_COUNTER_UNIT);
-	long actual_result = atomic_fetch_add ((atomic_long *)mono_jiterp_get_counter_address (counter), actual_delta);
+	long *counter_address = mono_jiterp_get_counter_address (counter);
+
+#ifdef DISABLE_THREADS
+	long actual_result = *counter_address;
+	*counter_address = actual_result + actual_delta;
+#else
+	long actual_result = atomic_fetch_add ((atomic_long *)counter_address, actual_delta);
+#endif
+
 	return ((double)actual_result) / JITERP_COUNTER_UNIT;
 }
 
@@ -1269,13 +1283,24 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 		float scaled = (float)(cinfo.bailout_opcode_count - mono_opt_jiterpreter_trace_monitoring_short_distance)
 			/ (mono_opt_jiterpreter_trace_monitoring_long_distance - mono_opt_jiterpreter_trace_monitoring_short_distance);
 		int penalty = MIN ((int)((1.0f - scaled) * TRACE_PENALTY_LIMIT), TRACE_PENALTY_LIMIT);
+
+#ifdef DISABLE_THREADS
+		info->penalty_total += penalty;
+#else
 		atomic_fetch_add ((atomic_int *)&info->penalty_total, penalty);
+#endif
 
 		if (mono_opt_jiterpreter_trace_monitoring_log > 2)
 			g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", opcode->trace_index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
 	}
 
+#ifdef DISABLE_THREADS
+	gint64 hit_count = info->hit_count - mono_opt_jiterpreter_minimum_trace_hit_count;
+	info->hit_count += 1;
+#else
 	gint64 hit_count = atomic_fetch_add ((atomic_long *)&info->hit_count, 1) - mono_opt_jiterpreter_minimum_trace_hit_count;
+#endif
+
 	if (hit_count == mono_opt_jiterpreter_trace_monitoring_period) {
 		// Disable the monitoring point while we prepare to patch it
 		// This should never fail since we increment the hit count atomically
@@ -1288,8 +1313,14 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 			if ((int)thunk < mono_jiterp_first_trace_fn_ptr)
 				g_error ("thunk ptr %d below start of trace table %d\n", thunk, mono_jiterp_first_trace_fn_ptr);
 			guint16 zero = 0, new_relative_fn_ptr = (int)thunk - mono_jiterp_first_trace_fn_ptr;
+
+#ifdef DISABLE_THREADS
+			g_assert (opcode->relative_fn_ptr == 0);
+			opcode->relative_fn_ptr = new_relative_fn_ptr;
+#else
 			// atomically patch the relative fn ptr inside the opcode.
 			g_assert (atomic_compare_exchange_strong ((atomic_ushort *)&opcode->relative_fn_ptr, &zero, new_relative_fn_ptr));
+#endif
 			g_assert (mono_jiterp_patch_opcode (opcode, MINT_TIER_NOP_JITERPRETER, MINT_TIER_ENTER_JITERPRETER));
 
 			if (mono_opt_jiterpreter_trace_monitoring_log > 1)
@@ -1351,12 +1382,20 @@ int mono_jiterp_first_trace_fn_ptr = 0;
 
 static void
 atomically_set_value_once (gint32 *address, gint32 value) {
+#ifdef DISABLE_THREADS
+	if (*address == value)
+		return;
+	if (*address != 0)
+		g_error ("MONO_WASM: Jiterpreter table already initialized with a different value (expected %d, found %d)\n", value, *address);
+	*address = value;
+#else
 	gint32 expected = 0;
 	if (atomic_compare_exchange_strong ((atomic_int *)address, &expected, value))
 		return;
 	if (expected == value)
 		return;
 	g_error ("MONO_WASM: Jiterpreter table already initialized with a different value (expected %d, found %d)\n", value, expected);
+#endif
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -1370,8 +1409,13 @@ mono_jiterp_initialize_table (int type, int first_index, int last_index) {
 
 	// if we lose a race, someone else may have initialized next_index and then bumped it.
 	// that's totally fine though, so don't fail, just ensure it's initialized.
+#ifdef DISABLE_THREADS
+	if (table->next_index == 0)
+		table->next_index = first_index;
+#else
 	gint32 expected = 0;
 	atomic_compare_exchange_strong ((atomic_int *)&table->next_index, &expected, first_index);
+#endif
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -1379,10 +1423,18 @@ mono_jiterp_allocate_table_entry (int type) {
 	g_assert ((type >= 0) && (type <= JITERPRETER_TABLE_LAST));
 	JiterpreterTableInfo *table = &tables[type];
 	g_assert (table->first_index > 0);
+
 	// Handle extremely unlikely race condition (allocate_table_entry called while another thread is in initialize_table)
+#ifdef DISABLE_THREADS
+	if (table->next_index == 0)
+		table->next_index = table->first_index;
+	int index = table->next_index++;
+#else
 	gint32 expected = 0;
 	atomic_compare_exchange_strong ((atomic_int *)&table->next_index, &expected, table->first_index);
 	int index = atomic_fetch_add ((atomic_int *)&table->next_index, 1);
+#endif
+
 	if (index > table->last_index) {
 		if (index == (table->last_index + 1))
 			g_printf ("MONO_WASM: Jiterpreter table %d is out of space (%d entries allocated)\n", type, index - table->first_index + 1);
