@@ -13,12 +13,16 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class WorkloadRequiredTests : BlazorWasmTestBase
 {
+    /* Keep in sync with settings in wasm.proj, and WasmApp.Native.targets .
+     * The `triggerValue` here is opposite of the default used when building the runtime pack
+     * (see wasm.proj), and thus requiring a native build
+     */
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
         ("RunAOTCompilation", true),
         ("WasmEnableLegacyJsInterop", false),
-        ("WasmEnableSIMD", true),
-        ("WasmEnableExceptionHandling", true),
+        ("WasmEnableSIMD", false),
+        ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
         ("InvariantGlobalization", true),
         ("WasmNativeStrip", false)
@@ -54,8 +58,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: false)]
     public void WorkloadRequiredForPublish(string config, string extraProperties, bool workloadNeeded)
-        =>
-        CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: true);
+        => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: true);
 
     private void CheckWorkloadRequired(string config, string extraProperties, bool workloadNeeded, bool publish)
     {

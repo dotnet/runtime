@@ -39,17 +39,20 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
-    <!-- FIXME: is the blazor condition here correct? -->
     <!-- Keep in sync with WasmApp.Native.targets -->
-    <_WasmNativeWorkloadNeeded Condition="
-        '$(RunAOTCompilation)' == 'true' or
-        '$(WasmEnableSIMD)' == 'true' or
+    <_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded Condition="
         '$(WasmEnableLegacyJsInterop)' == 'false' or
-        '$(WasmEnableExceptionHandling)' == 'true' or
+        '$(WasmEnableSIMD)' == 'false' or
+        '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
         '$(InvariantGlobalization)' == 'true' or
-        '$(WasmNativeStrip)' == 'false' or
+        '$(WasmNativeStrip)' == 'false'">true</_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded>
+
+    <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
+    <!-- FIXME: is the blazor condition here correct? -->
+    <_WasmNativeWorkloadNeeded Condition="
+        '$(_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded)' == 'true' or
+        '$(RunAOTCompilation)' == 'true' or
         '$(WasmBuildNative)' == 'true' or
         '$(WasmGenerateAppBundle)' == 'true' or
         '$(_UsingBlazorOrWasmSdk)' != 'true'" >true</_WasmNativeWorkloadNeeded>
