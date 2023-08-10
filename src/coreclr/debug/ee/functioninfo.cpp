@@ -1566,7 +1566,6 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     }
     CONTRACTL_END;
     _ASSERTE(fd != NULL);
-
     // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
     if (fd->IsDynamicMethod())
     {
@@ -1579,10 +1578,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         if (startAddr == NULL)
         {
             startAddr = fd->GetNativeCodeReJITAware();
-            if (startAddr == NULL)
-            {
-                return NULL;
-            }
+            _ASSERTE(startAddr != NULL);
         }
     }
     else
@@ -1646,7 +1642,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
 
     _ASSERTE(fd != NULL);
 
-    // May or may-not be jitted, that's why we passed in the start addr & size explicitly.    
+    // May or may-not be jitted, that's why we passed in the start addr & size explicitly.
     _ASSERTE(startAddr != NULL);
 
     *jitInfoWasCreated = FALSE;

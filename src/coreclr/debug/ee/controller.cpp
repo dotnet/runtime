@@ -1247,7 +1247,7 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
             startAddr = (CORDB_ADDRESS_TYPE *) CORDB_ADDRESS_TO_PTR(patch->GetDJI()->m_addrOfCode);
             _ASSERTE(startAddr != NULL);
         }
-        //We  should never be calling this function with both a NULL startAddr and a DJI that doesn't have code.
+        //We should never be calling this function with both a NULL startAddr and a DJI that doesn't have code.
         _ASSERTE(startAddr != NULL);
     }
 
