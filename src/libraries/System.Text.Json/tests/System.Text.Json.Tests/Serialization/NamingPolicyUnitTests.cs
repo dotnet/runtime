@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -65,6 +65,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("i18n", "i18n")]
         [InlineData("i18n_policy", "I18nPolicy")]
         [InlineData("7samurai", "7samurai")]
+        [InlineData("άλφα_βήτα_γάμμα", "ΆλφαΒήταΓάμμα")]
         [InlineData("camel_case", "camelCase")]
         [InlineData("camel_case", "CamelCase")]
         [InlineData("snake_case", "snake_case")]
@@ -127,6 +128,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("I18N", "i18n")]
         [InlineData("I18N_POLICY", "I18nPolicy")]
         [InlineData("7SAMURAI", "7samurai")]
+        [InlineData("ΆΛΦΑ_ΒΉΤΑ_ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")]
         [InlineData("CAMEL_CASE", "camelCase")]
         [InlineData("CAMEL_CASE", "CamelCase")]
         [InlineData("SNAKE_CASE", "snake_case")]
@@ -189,6 +191,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("i18n", "i18n")]
         [InlineData("i18n-policy", "I18nPolicy")]
         [InlineData("7samurai", "7samurai")]
+        [InlineData("άλφα-βήτα-γάμμα", "ΆλφαΒήταΓάμμα")]
         [InlineData("camel-case", "camelCase")]
         [InlineData("camel-case", "CamelCase")]
         [InlineData("snake_case", "snake_case")]
@@ -252,6 +255,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("I18N", "i18n")]
         [InlineData("I18N-POLICY", "I18nPolicy")]
         [InlineData("7SAMURAI", "7samurai")]
+        [InlineData("ΆΛΦΑ-ΒΉΤΑ-ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")]
         [InlineData("CAMEL-CASE", "camelCase")]
         [InlineData("CAMEL-CASE", "CamelCase")]
         [InlineData("SNAKE_CASE", "snake_case")]
