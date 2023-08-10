@@ -544,48 +544,67 @@ namespace System
                     Vector512<byte> packedValue0 = Vector512.Create((byte)value0);
                     Vector512<byte> packedValue1 = Vector512.Create((byte)value1);
 
-                    if (length > 2 * Vector512<short>.Count)
+                    unsafe
                     {
-                        // Process the input in chunks of 64 characters (2 * Vector512<short>).
-                        // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
-                        // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
-                        ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
-
-                        do
+                        fixed (short *pSearchSpace = &searchSpace)
                         {
-                            Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
-                            Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
-                            Vector512<byte> packedSource = PackSources(source0, source1);
-                            Vector512<byte> result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource));
+                            short *pCurrentSearchSpace = pSearchSpace;
 
-                            if (result != Vector512<byte>.Zero)
+                            if (length > 2 * Vector512<short>.Count)
                             {
-                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
+
+                                // Process the input in chunks of 64 characters (2 * Vector512<short>).
+                                // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
+                                // Let the fallback below handle it instead. This is why the condition is
+                                // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                                short *pTwoVectorsAwayFromEnd = pSearchSpace + (length - (2 * Vector512<short>.Count));
+
+                                Vector512<short> source0 = Vector512.Load(pCurrentSearchSpace);
+                                Vector512<short> source1 = Vector512.Load(pCurrentSearchSpace + Vector512<short>.Count);
+                                Vector512<byte> packedSource = PackSources(source0, source1);
+                                Vector512<byte> result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource));
+
+                                if (result != Vector512<byte>.Zero)
+                                {
+                                    return ComputeFirstIndex(pSearchSpace, pCurrentSearchSpace, result);
+                                }
+
+                                pCurrentSearchSpace += 2 * Vector512<short>.Count;
+                                pCurrentSearchSpace = (short*)((nuint)(pCurrentSearchSpace) & ~(nuint)(Vector512.Size - 1));
+
+                                while(pCurrentSearchSpace < pTwoVectorsAwayFromEnd)
+                                {
+                                    source0 = Vector512.LoadAligned(pCurrentSearchSpace);
+                                    source1 = Vector512.LoadAligned(pCurrentSearchSpace + Vector512<short>.Count);
+                                    packedSource = PackSources(source0, source1);
+                                    result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource));
+
+                                    if (result != Vector512<byte>.Zero)
+                                    {
+                                        return ComputeFirstIndex(pSearchSpace, pCurrentSearchSpace, result);
+                                    }
+
+                                    pCurrentSearchSpace += 2 * Vector512<short>.Count;
+                                }
                             }
 
-                            currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
-                        }
-                        while (Unsafe.IsAddressLessThan(ref currentSearchSpace, ref twoVectorsAwayFromEnd));
-                    }
+                            // We have 1-64 characters remaining. Process the first and last vector in the search space.
+                            // They may overlap, but we'll handle that in the index calculation if we do get a match.
+                            {
+                                short *pOneVectorAwayFromEnd = pSearchSpace + (length - Vector512<short>.Count);
 
-                    // We have 1-32 characters remaining. Process the first and last vector in the search space.
-                    // They may overlap, but we'll handle that in the index calculation if we do get a match.
-                    {
-                        ref short oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector512<short>.Count);
+                                short *pFirstVector = (pCurrentSearchSpace > pOneVectorAwayFromEnd) ? pOneVectorAwayFromEnd : pCurrentSearchSpace;
 
-                        ref short firstVector = ref Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd)
-                            ? ref oneVectorAwayFromEnd
-                            : ref currentSearchSpace;
+                                Vector512<short> source0 = Vector512.Load(pFirstVector);
+                                Vector512<short> source1 = Vector512.Load(pOneVectorAwayFromEnd);
+                                Vector512<byte> packedSource = PackSources(source0, source1);
+                                Vector512<byte> result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource));
 
-                        Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
-                        Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
-                        Vector512<byte> packedSource = PackSources(source0, source1);
-                        Vector512<byte> result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource));
-
-                        if (result != Vector512<byte>.Zero)
-                        {
-                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                                if (result != Vector512<byte>.Zero)
+                                {
+                                    return ComputeFirstIndexOverlapped(pSearchSpace, pFirstVector, pOneVectorAwayFromEnd, result);
+                                }
+                            }
                         }
                     }
                 }
