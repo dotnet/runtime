@@ -11674,7 +11674,12 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                         unsigned numSlots = (structType.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
                         CQuickBytes gcPtrs;
                         BYTE* ptr = static_cast<BYTE*>(gcPtrs.AllocThrows(numSlots));
-                        CEEInfo::getClassGClayoutStatic(structType, ptr);
+
+                        // Switch to preemptive for getClassGClayoutStatic
+                        {
+                            GCX_PREEMP();
+                            CEEInfo::getClassGClayoutStatic(structType, ptr);
+                        }
 
                         _ASSERT(numSlots > 0);
 
