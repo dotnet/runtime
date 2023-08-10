@@ -14881,18 +14881,22 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 goto CNS_LONG;
 
                             case TYP_FLOAT:
+                            {
                                 if (tree->IsUnsigned())
                                 {
-                                    f1 = forceCastToFloat(UINT32(i1));
+                                    f1 = (float)UINT32(i1);
                                 }
                                 else
                                 {
-                                    f1 = forceCastToFloat(INT32(i1));
+                                    f1 = (float)INT32(i1);
                                 }
+
                                 d1 = f1;
                                 goto CNS_DOUBLE;
+                            }
 
                             case TYP_DOUBLE:
+                            {
                                 if (tree->IsUnsigned())
                                 {
                                     d1 = (double)UINT32(i1);
@@ -14902,6 +14906,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                     d1 = (double)INT32(i1);
                                 }
                                 goto CNS_DOUBLE;
+                            }
 
                             default:
                                 assert(!"Bad CastToType() in gtFoldExprConst() for a cast from int");
@@ -14982,7 +14987,26 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 goto CNS_LONG;
 
                             case TYP_FLOAT:
+                            {
+                                // `long -> double -> float` can produce different results from
+                                // `long -> float`, such as for 0x4000_0040_0000_0001L. So ensure
+                                // we handle this directly.
+
+                                if (tree->IsUnsigned() && (lval1 < 0))
+                                {
+                                    f1 = FloatingPointUtils::convertUInt64ToFloat((unsigned __int64)lval1);
+                                }
+                                else
+                                {
+                                    f1 = (float)lval1;
+                                }
+
+                                d1 = f1;
+                                goto CNS_DOUBLE;
+                            }
+
                             case TYP_DOUBLE:
+                            {
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
                                     d1 = FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1);
@@ -14991,13 +15015,8 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     d1 = (double)lval1;
                                 }
-
-                                if (tree->CastToType() == TYP_FLOAT)
-                                {
-                                    f1 = forceCastToFloat(d1); // truncate precision
-                                    d1 = f1;
-                                }
                                 goto CNS_DOUBLE;
+                            }
                             default:
                                 assert(!"Bad CastToType() in gtFoldExprConst() for a cast from long");
                                 return tree;
