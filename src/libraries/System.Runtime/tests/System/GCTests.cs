@@ -1088,16 +1088,16 @@ namespace System.Tests
             const int length = 100;
             var rng = new Random(0xAF);
 
-            var array = uninitialized ? GC.AllocateUninitializedArray<EmbeddedValueType<string>>(length, pinned: true) : GC.AllocateArray<EmbeddedValueType<string>>(length, pinned: true);
+            EmbeddedValueType<string>[] array = uninitialized ? GC.AllocateUninitializedArray<EmbeddedValueType<string>>(length, pinned: true) : GC.AllocateArray<EmbeddedValueType<string>>(length, pinned: true);
             byte* pointer = (byte*)Unsafe.AsPointer(ref array[0]);
             var size = Unsafe.SizeOf<EmbeddedValueType<string>>();
 
             for(int i = 0; i < length; ++i)
             {
-                var idx = rng.Next(length);
-                ref var evt = ref Unsafe.AsRef<EmbeddedValueType<string>>(pointer + size * idx);
+                int idx = rng.Next(length);
+                ref EmbeddedValueType<string> evt = ref Unsafe.AsRef<EmbeddedValueType<string>>(pointer + size * idx);
 
-                var stringValue = rng.NextSingle().ToString();
+                string stringValue = rng.NextSingle().ToString();
                 evt.Value = stringValue;
 
                 Assert.Equal(evt.Value, array[idx].Value);
