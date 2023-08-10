@@ -14,6 +14,11 @@
 #include <cstddef>
 #include <string.h>
 
+#ifdef TARGET_UNIX
+#include <pthread.h>
+#endif
+
+#include "rhassert.h"
 #include "sal.h"
 #include "gcenv.structs.h"
 #include "gcenv.interlocked.h"

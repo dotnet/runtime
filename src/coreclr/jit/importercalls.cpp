@@ -9574,7 +9574,6 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
                         result = NI_System_Math_Tanh;
                     }
                 }
-                result = NI_System_Math_Tan;
             }
             else if (strcmp(methodName, "Truncate") == 0)
             {

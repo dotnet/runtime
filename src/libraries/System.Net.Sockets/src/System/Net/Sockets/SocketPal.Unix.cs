@@ -842,12 +842,6 @@ namespace System.Net.Sockets
                 {
                     bytesReceived = received;
                     errorCode = SocketError.Success;
-                    if (socketAddress.Length > 0 && receivedSocketAddressLength == 0)
-                    {
-                        // We can fail to get peer address on TCP
-                        receivedSocketAddressLength = socketAddress.Length;
-                        SocketAddressPal.Clear(socketAddress);
-                    }
                     return true;
                 }
 
@@ -1089,13 +1083,9 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, byte[] buffer, int nameLen)
+        public static unsafe SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, ReadOnlySpan<byte> buffer)
         {
-            Interop.Error err;
-            fixed (byte* rawBuffer = buffer)
-            {
-                err = Interop.Sys.Bind(handle, socketProtocolType, rawBuffer, nameLen);
-            }
+            Interop.Error err = Interop.Sys.Bind(handle, socketProtocolType, buffer);
 
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
@@ -1277,7 +1267,7 @@ namespace System.Net.Sockets
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
-        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int count, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int count, ref SocketFlags socketFlags, SocketAddress socketAddress, out SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
         {
             int socketAddressLen;
 
@@ -1297,15 +1287,14 @@ namespace System.Net.Sockets
                 }
             }
 
-            socketAddress.InternalSize = socketAddressLen;
+            socketAddress.Size = socketAddressLen;
             receiveAddress = socketAddress;
             return errorCode;
         }
 
 
-        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, Span<byte> buffer, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, Span<byte> buffer, ref SocketFlags socketFlags, SocketAddress socketAddress, out SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
         {
-            byte[] socketAddressBuffer = socketAddress.InternalBuffer;
             int socketAddressLen;
 
             bool isIPv4, isIPv6;
@@ -1314,17 +1303,17 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (!handle.IsNonBlocking)
             {
-                errorCode = handle.AsyncContext.ReceiveMessageFrom(buffer, ref socketFlags, socketAddressBuffer, out socketAddressLen, isIPv4, isIPv6, handle.ReceiveTimeout, out ipPacketInformation, out bytesTransferred);
+                errorCode = handle.AsyncContext.ReceiveMessageFrom(buffer, ref socketFlags, socketAddress.Buffer, out socketAddressLen, isIPv4, isIPv6, handle.ReceiveTimeout, out ipPacketInformation, out bytesTransferred);
             }
             else
             {
-                if (!TryCompleteReceiveMessageFrom(handle, buffer, null, socketFlags, socketAddressBuffer, out socketAddressLen, isIPv4, isIPv6, out bytesTransferred, out socketFlags, out ipPacketInformation, out errorCode))
+                if (!TryCompleteReceiveMessageFrom(handle, buffer, null, socketFlags, socketAddress.Buffer, out socketAddressLen, isIPv4, isIPv6, out bytesTransferred, out socketFlags, out ipPacketInformation, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
             }
 
-            socketAddress.InternalSize = socketAddressLen;
+            socketAddress.Size = socketAddressLen;
             receiveAddress = socketAddress;
             return errorCode;
         }

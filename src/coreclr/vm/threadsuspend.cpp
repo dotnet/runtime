@@ -3956,7 +3956,9 @@ ThrowControlForThread(
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
     // Here we raise an exception.
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER
     RaiseComPlusException();
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)

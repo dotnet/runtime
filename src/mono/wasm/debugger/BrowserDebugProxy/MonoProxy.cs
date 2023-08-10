@@ -34,13 +34,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool JustMyCode { get; private set; }
         private PauseOnExceptionsKind _defaultPauseOnExceptions { get; set; }
 
-        protected readonly ProxyOptions _options;
-
-        public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
+        public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(options, logger, loggerId)
         {
             UrlSymbolServerList = new List<string>();
             RuntimeId = runtimeId;
-            _options = options;
             _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
             JustMyCode = options?.JustMyCode ?? false;
         }
@@ -148,7 +145,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Contexts.ClearContexts(sessionId);
                         return false;
                     }
-
+                case "Debugger.scriptParsed":
+                    {
+                        if (args["url"]?.ToString()?.Contains("/_framework/") == true) //is from dotnet runtime framework
+                        {
+                            if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                                context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
+                        }
+                        return false;
+                    }
                 case "Debugger.paused":
                     {
                         return await OnDebuggerPaused(sessionId, args, token);
@@ -237,11 +242,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 default:
                     {
-                        //avoid pausing when justMyCode is enabled and it's a wasm function
-                        if (JustMyCode && args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
+                        if (JustMyCode)
                         {
-                            await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
-                            return true;
+                            if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) || !context.IsRuntimeReady)
+                                return false;
+                            //avoid pausing when justMyCode is enabled and it's a wasm function
+                            if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
+                            {
+                                await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                                return true;
+                            }
+                            //avoid pausing when justMyCode is enabled and it's a framework function
+                            var scriptId = args?["callFrames"]?[0]?["location"]?["scriptId"]?.Value<int>();
+                            if (!context.IsSkippingHiddenMethod && !context.IsSteppingThroughMethod && scriptId is not null && context.FrameworkScriptList.Contains(scriptId.Value))
+                            {
+                                await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                                return true;
+                            }
                         }
                         break;
                     }

@@ -243,13 +243,13 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
-              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing/eventpipe/config;tracing/eventpipe/diagnosticport;tracing/eventpipe/reverse;tracing/eventpipe/processenvironment;tracing/eventpipe/simpleruntimeeventvalidation;tracing/eventpipe/processinfo2;" test tracing/eventcounter/runtimecounters.csproj /p:BuildNativeAotFrameworkObjects=true'
+              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing;" /p:BuildNativeAotFrameworkObjects=true'
               liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
@@ -472,8 +472,31 @@ extends:
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # Wasm.Build.Tests
-      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+      # For Wasm.Build.Tests - runtime pack builds
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          nameSuffix: SingleThreaded
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          publishArtifactsForWorkload: true
+          publishWBT: true
+
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          nameSuffix: MultiThreaded
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          publishArtifactsForWorkload: true
+          publishWBT: false
+
+      # Browser Wasm.Build.Tests
+      - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
         parameters:
           platforms:
             - browser_wasm
@@ -525,7 +548,7 @@ extends:
           scenarios:
             - normal
 
-      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+      - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
         parameters:
           platforms:
             - wasi_wasm
@@ -556,7 +579,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
             buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
-            timeoutInMinutes: 180
+            timeoutInMinutes: 480
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

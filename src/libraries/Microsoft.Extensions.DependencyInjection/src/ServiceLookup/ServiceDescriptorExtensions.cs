@@ -35,5 +35,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ? serviceDescriptor.KeyedImplementationType
                 : serviceDescriptor.ImplementationType;
         }
+
+        public static bool TryGetImplementationType(this ServiceDescriptor serviceDescriptor, out Type? type)
+        {
+            type = GetImplementationType(serviceDescriptor);
+            return type != null;
+        }
     }
 }

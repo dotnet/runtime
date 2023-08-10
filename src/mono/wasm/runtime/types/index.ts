@@ -64,6 +64,18 @@ export type MonoConfig = {
      */
     cacheBootResources?: boolean,
     /**
+     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
+     */
+    cachedResourcesPurgeDelay?: number,
+    /**
+     * Configures use of the `integrity` directive for fetching assets
+     */
+    disableIntegrityCheck?: boolean,
+    /**
+     * Configures use of the `no-cache` directive for fetching assets
+     */
+    disableNoCacheFetch?: boolean,
+    /**
     * Enables diagnostic log messages during startup
     */
     diagnosticTracing?: boolean
@@ -118,7 +130,7 @@ export interface ResourceGroups {
     jsModuleWorker?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
-    jsSymbols?: ResourceList;
+    wasmSymbols?: ResourceList;
     wasmNative: ResourceList;
     icu?: ResourceList;
 
@@ -143,16 +155,11 @@ export type ResourceList = { [name: string]: string | null | "" };
  * @param name The name of the resource to be loaded.
  * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
  * @param integrity The integrity string representing the expected content in the response.
- * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
+ * @param behavior The detailed behavior/type of the resource to be loaded.
+ * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior. 
+ * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-export type LoadBootResourceCallback = (type: AssetBehaviors | "manifest", name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
-
-export interface ResourceRequest {
-    name: string, // the name of the asset, including extension.
-    behavior: AssetBehaviors, // determines how the asset will be handled once loaded
-    resolvedUrl?: string; // this should be absolute url to the asset
-    hash?: string | null | ""; // the integrity hash of the asset (if any)
-}
+export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
 
 export interface LoadingResource {
     name: string;
@@ -161,7 +168,23 @@ export interface LoadingResource {
 }
 
 // Types of assets that can be in the _framework/blazor.boot.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
-export interface AssetEntry extends ResourceRequest {
+export interface AssetEntry {
+    /**
+     * the name of the asset, including extension.
+     */
+    name: string,
+    /**
+     * determines how the asset will be handled once loaded
+     */
+    behavior: AssetBehaviors,
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * the integrity hash of the asset (if any)
+     */
+    hash?: string | null | ""; // 
     /**
      * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
      */
@@ -196,17 +219,25 @@ export type SingleAssetBehaviors =
      */
     | "dotnetwasm"
     /**
+     * The javascript module for loader.
+     */
+    | "js-module-dotnet"
+    /**
      * The javascript module for threads.
      */
     | "js-module-threads"
     /**
-     * The javascript module for threads.
+     * The javascript module for runtime.
      */
     | "js-module-runtime"
     /**
-     * The javascript module for threads.
+     * The javascript module for emscripten.
      */
-    | "js-module-native";
+    | "js-module-native"
+    /**
+     * Typically blazor.boot.json
+     */
+    | "manifest";
 
 export type AssetBehaviors = SingleAssetBehaviors |
     /**
