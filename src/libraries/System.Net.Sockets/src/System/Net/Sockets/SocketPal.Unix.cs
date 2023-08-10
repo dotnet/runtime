@@ -152,10 +152,7 @@ namespace System.Net.Sockets
                     Count = (UIntPtr)buffer.Length
                 };
 
-                if (socketAddress.Length == 0)
-                {
-                    Debug.Assert(sockAddr == null);
-                }
+                Debug.Assert(socketAddress.Length != 0 || rawSocketAddress == null);
 
                 var messageHeader = new Interop.Sys.MessageHeader {
                     SocketAddress = sockAddr,
@@ -488,10 +485,7 @@ namespace System.Net.Sockets
                     Count = (UIntPtr)buffer.Length
                 };
 
-                if (socketAddress.Length == 0)
-                {
-                    Debug.Assert(rawSocketAddress == null);
-                }
+                Debug.Assert(socketAddress.Length != 0 || rawSocketAddress == null);
 
                 messageHeader = new Interop.Sys.MessageHeader {
                     SocketAddress = rawSocketAddress,
