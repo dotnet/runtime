@@ -12,14 +12,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         private readonly MeterListener _meterListener;
         private readonly IMetricsListener _metricsListener;
+        private readonly IMeterFactory _meterFactory;
         private readonly Dictionary<Instrument, object?> _instruments = new();
         private IList<InstrumentRule> _rules = Array.Empty<InstrumentRule>();
         private bool _disposed;
 
-        internal ListenerSubscription(IMetricsListener metricsListener)
+        internal ListenerSubscription(IMetricsListener metricsListener, IMeterFactory meterFactory)
         {
             _metricsListener = metricsListener;
-
+            _meterFactory = meterFactory;
             _meterListener = new MeterListener();
         }
 
@@ -129,7 +130,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             InstrumentRule? best = null;
             foreach (var rule in _rules)
             {
-                if (RuleMatches(rule, instrument, _metricsListener.Name)
+                if (RuleMatches(rule, instrument, _metricsListener.Name, _meterFactory)
                     && IsMoreSpecific(rule, best, isLocalScope: instrument.Meter.Scope != null))
                 {
                     best = rule;
@@ -140,7 +141,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         }
 
         // internal for testing
-        internal static bool RuleMatches(InstrumentRule rule, Instrument instrument, string listenerName)
+        internal static bool RuleMatches(InstrumentRule rule, Instrument instrument, string listenerName, IMeterFactory meterFactory)
         {
             // Exact match or empty
             if (!string.IsNullOrEmpty(rule.ListenerName)
@@ -157,7 +158,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             }
 
             if (!(rule.Scopes.HasFlag(MeterScope.Global) && instrument.Meter.Scope == null)
-                && !(rule.Scopes.HasFlag(MeterScope.Local) && instrument.Meter.Scope != null)) // TODO: What should we be comparing Scope to, the DefaultMeterFactory / IMeterFactory?
+                && !(rule.Scopes.HasFlag(MeterScope.Local) && instrument.Meter.Scope == meterFactory))
             {
                 return false;
             }

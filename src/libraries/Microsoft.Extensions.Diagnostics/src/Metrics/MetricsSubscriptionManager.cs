@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using Microsoft.Extensions.Options;
 
@@ -14,13 +15,13 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly IDisposable? _changeTokenRegistration;
         private bool _disposed;
 
-        public MetricsSubscriptionManager(IEnumerable<IMetricsListener> listeners, IOptionsMonitor<MetricsOptions> options)
+        public MetricsSubscriptionManager(IEnumerable<IMetricsListener> listeners, IOptionsMonitor<MetricsOptions> options, IMeterFactory meterFactory)
         {
             var list = listeners.ToList();
             _listeners = new ListenerSubscription[list.Count];
             for (int i = 0; i < _listeners.Length; i++)
             {
-                _listeners[i] = new ListenerSubscription(list[i]);
+                _listeners[i] = new ListenerSubscription(list[i], meterFactory);
             }
             _changeTokenRegistration = options.OnChange(UpdateRules);
             UpdateRules(options.CurrentValue);

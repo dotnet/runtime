@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                     measurementTcs.TrySetResult((int)measurement);
                 };
 
-                var subscription = new ListenerSubscription(fakeListener);
+                var subscription = new ListenerSubscription(fakeListener, new FakeMeterFactory());
                 Assert.Null(fakeListener.Source);
 
                 subscription.Initialize();
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                     measurementTcs.TrySetResult((int)measurement);
                 };
 
-                var subscription = new ListenerSubscription(fakeListener);
+                var subscription = new ListenerSubscription(fakeListener, factory);
                 Assert.Null(fakeListener.Source);
 
                 subscription.Initialize();
@@ -165,7 +165,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                     measurements.Add((int)measurement);
                 };
 
-                var subscription = new ListenerSubscription(fakeListener);
+                var subscription = new ListenerSubscription(fakeListener, factory);
                 Assert.Null(fakeListener.Source);
 
                 subscription.Initialize();
@@ -236,7 +236,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var rule = new InstrumentRule(m, i, l, MeterScope.Global, enable: true);
                 var meter = new Meter("Long.Silly.Meter.Name");
                 var instrument = meter.CreateCounter<int>("InstrumentName");
-                Assert.True(ListenerSubscription.RuleMatches(rule, instrument, "ListenerName"));
+                Assert.True(ListenerSubscription.RuleMatches(rule, instrument, "ListenerName", new FakeMeterFactory()));
             }, meterName, instrumentName, listenerName).Dispose();
         }
 
@@ -260,7 +260,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var rule = new InstrumentRule(m, i, l, MeterScope.Global, enable: true);
                 var meter = new Meter("Long.Silly.Meter.Name");
                 var instrument = meter.CreateCounter<int>("InstrumentName");
-                Assert.False(ListenerSubscription.RuleMatches(rule, instrument, "ListenerName"));
+                Assert.False(ListenerSubscription.RuleMatches(rule, instrument, "ListenerName", new FakeMeterFactory()));
             }, meterName, instrumentName, listenerName).Dispose();
         }
 
@@ -381,6 +381,12 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             public void MeasurementsCompleted(Instrument instrument, object? userState) => OnCompleted(instrument, userState);
             public void Initialize(IObservableInstrumentsSource source) => Source = source;
+        }
+
+        private class FakeMeterFactory : IMeterFactory
+        {
+            public Meter Create(MeterOptions options) => throw new NotImplementedException();
+            public void Dispose() => throw new NotImplementedException();
         }
     }
 }
