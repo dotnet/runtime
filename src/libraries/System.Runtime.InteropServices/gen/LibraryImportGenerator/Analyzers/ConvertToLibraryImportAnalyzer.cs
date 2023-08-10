@@ -21,7 +21,7 @@ namespace Microsoft.Interop.Analyzers
         private const string Category = "Interoperability";
 
         public static readonly DiagnosticDescriptor ConvertToLibraryImport =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConvertToLibraryImport,
                 GetResourceString(nameof(SR.ConvertToLibraryImportTitle)),
                 GetResourceString(nameof(SR.ConvertToLibraryImportMessage)),
