@@ -11,14 +11,14 @@ namespace System.Text.Json
     internal abstract class JsonSeparatorNamingPolicy : JsonNamingPolicy
     {
         private readonly bool _lowercase;
-        private readonly char _separator;
+        private readonly Rune _separator;
 
         internal JsonSeparatorNamingPolicy(bool lowercase, char separator)
         {
             Debug.Assert(char.IsPunctuation(separator));
 
             _lowercase = lowercase;
-            _separator = separator;
+            _separator = new Rune(separator);
         }
 
         public sealed override string ConvertName(string name)
@@ -31,7 +31,7 @@ namespace System.Text.Json
             return ConvertNameCore(_separator, _lowercase, name);
         }
 
-        private static string ConvertNameCore(char separator, bool lowercase, string name)
+        private static string ConvertNameCore(Rune separator, bool lowercase, string name)
         {
             Debug.Assert(name != null);
 
@@ -44,15 +44,15 @@ namespace System.Text.Json
                 ? stackalloc char[JsonConstants.StackallocCharThreshold]
                 : (rentedBuffer = ArrayPool<char>.Shared.Rent(initialBufferLength));
 
-            ReadOnlySpan<char> chars = name.AsSpan();
             SeparatorState state = SeparatorState.NotStarted;
             int charsWritten = 0;
 
-            for (int i = 0; i < chars.Length; i++)
+            for (int i = 0; i < name.Length;)
             {
-                char current = chars[i];
+                Rune current = Rune.GetRuneAt(name, i);
+                int charLength = current.Utf16SequenceLength;
 
-                switch (char.GetUnicodeCategory(current))
+                switch (Rune.GetUnicodeCategory(current))
                 {
                     case UnicodeCategory.UppercaseLetter:
 
@@ -65,7 +65,7 @@ namespace System.Text.Json
                             case SeparatorState.SpaceSeparator:
                                 // An uppercase letter following a sequence of lowercase letters or spaces
                                 // denotes the start of a new grouping: emit a separator character.
-                                WriteChar(separator, ref destination);
+                                Write(separator, ref destination);
                                 break;
 
                             case SeparatorState.UppercaseLetter:
@@ -74,10 +74,15 @@ namespace System.Text.Json
                                 // final letter, assuming it is followed by lowercase letters.
                                 // For example, the value 'XMLReader' should render as 'xml_reader',
                                 // however 'SHA512Hash' should render as 'sha512-hash'.
-                                if (i + 1 < chars.Length && char.IsLower(chars[i + 1]))
+                                if (i + charLength < name.Length)
                                 {
-                                    WriteChar(separator, ref destination);
+                                    Rune next = Rune.GetRuneAt(name, i + charLength);
+                                    if (Rune.GetUnicodeCategory(next) is UnicodeCategory.LowercaseLetter)
+                                    {
+                                        Write(separator, ref destination);
+                                    }
                                 }
+
                                 break;
 
                             default:
@@ -86,9 +91,11 @@ namespace System.Text.Json
                         }
 
                         if (lowercase)
-                            current = char.ToLowerInvariant(current);
+                        {
+                            current = Rune.ToLowerInvariant(current);
+                        }
 
-                        WriteChar(current, ref destination);
+                        Write(current, ref destination);
                         state = SeparatorState.UppercaseLetter;
                         break;
 
@@ -98,13 +105,15 @@ namespace System.Text.Json
                         if (state is SeparatorState.SpaceSeparator)
                         {
                             // Normalize preceding spaces to one separator.
-                            WriteChar(separator, ref destination);
+                            Write(separator, ref destination);
                         }
 
                         if (!lowercase)
-                            current = char.ToUpperInvariant(current);
+                        {
+                            current = Rune.ToUpperInvariant(current);
+                        }
 
-                        WriteChar(current, ref destination);
+                        Write(current, ref destination);
                         state = SeparatorState.LowercaseLetterOrDigit;
                         break;
 
@@ -122,10 +131,12 @@ namespace System.Text.Json
                         // are written as-is to the output and reset the separator state.
                         // E.g. 'ABC???def' maps to 'abc???def' in snake_case.
 
-                        WriteChar(current, ref destination);
+                        Write(current, ref destination);
                         state = SeparatorState.NotStarted;
                         break;
                 }
+
+                i += charLength;
             }
 
             name = destination.Slice(0, charsWritten).ToString();
@@ -139,14 +150,16 @@ namespace System.Text.Json
             return name;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            void WriteChar(char value, ref Span<char> destination)
+            void Write(Rune rune, ref Span<char> destination)
             {
-                if (charsWritten == destination.Length)
+                if (charsWritten + 2 > destination.Length)
                 {
                     ExpandBuffer(ref destination);
                 }
 
-                destination[charsWritten++] = value;
+                int written = rune.EncodeToUtf16(destination.Slice(charsWritten));
+                Debug.Assert(written == rune.Utf16SequenceLength);
+                charsWritten += written;
             }
 
             void ExpandBuffer(ref Span<char> destination)
@@ -166,6 +179,118 @@ namespace System.Text.Json
             }
         }
 
+#if !NETCOREAPP
+        // Provides a basic Rune polyfill that handles surrogate pairs
+        // TODO remove once https://github.com/dotnet/runtime/issues/52947 is complete.
+        private readonly struct Rune
+        {
+            private readonly char _first;
+            private readonly char? _lowSurrogate;
+            private readonly UnicodeCategory _category;
+
+            public int Utf16SequenceLength => _lowSurrogate.HasValue ? 2 : 1;
+
+            public static UnicodeCategory GetUnicodeCategory(Rune rune)
+                => rune._category;
+
+            public Rune(char ch) : this(ch, char.GetUnicodeCategory(ch))
+            {
+            }
+
+            private Rune(char ch, UnicodeCategory category)
+            {
+                Debug.Assert(!char.IsSurrogate(ch));
+                _first = ch;
+                _category = category;
+            }
+
+            private Rune(char highSurrogate, char lowSurrogate, UnicodeCategory category)
+            {
+                Debug.Assert(char.IsSurrogatePair(highSurrogate, lowSurrogate));
+                _first = highSurrogate;
+                _lowSurrogate = lowSurrogate;
+                _category = category;
+            }
+
+            public static Rune ToLowerInvariant(Rune value)
+            {
+                UnicodeCategory category = value._category;
+                if (category is UnicodeCategory.UppercaseLetter)
+                {
+                    category = UnicodeCategory.LowercaseLetter;
+                }
+
+                if (value._lowSurrogate is not char lowSurrogate)
+                {
+                    return new Rune(char.ToLowerInvariant(value._first), category);
+                }
+
+                ReadOnlySpan<char> source = stackalloc char[] { value._first, lowSurrogate };
+                Span<char> destination = stackalloc char[2];
+
+                source.ToLowerInvariant(destination);
+                return new Rune(destination[0], destination[1], category);
+            }
+
+            public static Rune ToUpperInvariant(Rune value)
+            {
+                UnicodeCategory category = value._category;
+                if (category is UnicodeCategory.LowercaseLetter)
+                {
+                    category = UnicodeCategory.UppercaseLetter;
+                }
+
+                if (value._lowSurrogate is not char lowSurrogate)
+                {
+                    return new Rune(char.ToUpperInvariant(value._first), category);
+                }
+
+                ReadOnlySpan<char> source = stackalloc char[] { value._first, lowSurrogate };
+                Span<char> destination = stackalloc char[2];
+
+                source.ToUpperInvariant(destination);
+                return new Rune(destination[0], destination[1], category);
+            }
+
+            public int EncodeToUtf16(Span<char> destination)
+            {
+                Debug.Assert(Utf16SequenceLength <= destination.Length);
+                destination[0] = _first;
+
+                if (_lowSurrogate is not char lowSurrogate)
+                {
+                    return 1;
+                }
+
+                destination[1] = lowSurrogate;
+                return 2;
+            }
+
+            public static Rune GetRuneAt(string input, int index)
+            {
+                char first = input[index];
+                UnicodeCategory category = char.GetUnicodeCategory(first);
+                if (category is UnicodeCategory.Surrogate)
+                {
+                    char lowSurrogate = default;
+                    if (index + 1 == input.Length ||
+                        !char.IsSurrogatePair(first, lowSurrogate = input[index + 1]))
+                    {
+                        // CharUnicodeInfo.GetUnicodeCategory does
+                        // not throw so we throw here instead.
+                        ThrowArgumentException();
+
+                        static void ThrowArgumentException() => throw new ArgumentException(nameof(input));
+                    }
+
+                    category = CharUnicodeInfo.GetUnicodeCategory(input, index);
+                    return new Rune(first, lowSurrogate, category);
+                }
+
+                return new Rune(first, category);
+            }
+        }
+#endif
         private enum SeparatorState
         {
             NotStarted,
