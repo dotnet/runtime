@@ -28,23 +28,20 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(name));
             }
 
-            return ConvertNameCore(_separator, _lowercase, name);
+            return ConvertNameCore(_separator, _lowercase, name.AsSpan());
         }
 
-        private static string ConvertNameCore(char separator, bool lowercase, string name)
+        private static string ConvertNameCore(char separator, bool lowercase, ReadOnlySpan<char> chars)
         {
-            Debug.Assert(name != null);
-
             char[]? rentedBuffer = null;
 
             // While we can't predict the expansion factor of the resultant string,
             // start with a buffer that is at least 20% larger than the input.
-            int initialBufferLength = (int)(1.2 * name.Length);
+            int initialBufferLength = (int)(1.2 * chars.Length);
             Span<char> destination = initialBufferLength <= JsonConstants.StackallocCharThreshold
                 ? stackalloc char[JsonConstants.StackallocCharThreshold]
                 : (rentedBuffer = ArrayPool<char>.Shared.Rent(initialBufferLength));
 
-            ReadOnlySpan<char> chars = name.AsSpan();
             SeparatorState state = SeparatorState.NotStarted;
             int charsWritten = 0;
 
@@ -132,7 +129,7 @@ namespace System.Text.Json
                 }
             }
 
-            name = destination.Slice(0, charsWritten).ToString();
+            string result = destination.Slice(0, charsWritten).ToString();
 
             if (rentedBuffer is not null)
             {
@@ -140,7 +137,7 @@ namespace System.Text.Json
                 ArrayPool<char>.Shared.Return(rentedBuffer);
             }
 
-            return name;
+            return result;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void WriteChar(char value, ref Span<char> destination)
