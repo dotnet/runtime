@@ -437,6 +437,16 @@
         <target state="translated">Das bereitgestellte Diagramm weist Zyklen auf und kann nicht topologisch sortiert werden.</target>
         <note />
       </trans-unit>
+      <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
+        <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
+        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
+        <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
+        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
         <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
         <target state="translated">Das [In]-Attribut wird nur unterstützt, wenn auch das [Out]-Attribut verwendet wird. Blittable-Arrays können nicht nur als "[In]" gemarshallt werden.</target>
