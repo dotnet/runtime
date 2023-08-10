@@ -5,9 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-#if NET
-using System.Runtime.CompilerServices;
-#endif
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
@@ -15,12 +12,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         private readonly MeterListener _meterListener;
         private readonly IMetricsListener _metricsListener;
-#if NET
-        private readonly ConditionalWeakTable<Instrument, InstrumentStatus> _instruments = new();
-#else
-        // TODO: Can't enumerate ConditionalWeakTable in .NET Standard 2.0. How do we clean up the instruments?
-        private readonly Dictionary<Instrument, InstrumentStatus> _instruments = new();
-#endif
+        private readonly Dictionary<Instrument, object?> _instruments = new();
         private IList<InstrumentRule> _rules = Array.Empty<InstrumentRule>();
         private bool _disposed;
 
@@ -43,8 +35,8 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
             _meterListener.SetMeasurementEventCallback(handlers.FloatHandler);
             _meterListener.SetMeasurementEventCallback(handlers.DoubleHandler);
             _meterListener.SetMeasurementEventCallback(handlers.DecimalHandler);
-            _meterListener.Start();
             _metricsListener.Initialize(this);
+            _meterListener.Start();
         }
 
         private void InstrumentPublished(Instrument instrument, MeterListener _)
@@ -56,19 +48,18 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     return;
                 }
 
-                if (_instruments.TryGetValue(instrument, out var _))
+                if (_instruments.ContainsKey(instrument))
                 {
-                    Debug.Assert(false, "InstrumentPublished called twice for the same instrument");
+                    Debug.Assert(false, "InstrumentPublished called for an instrument we're already listening to.");
                     return;
                 }
 
-                var status = new InstrumentStatus();
-                _instruments.Add(instrument, status);
-                RefreshInstrument(instrument, status);
+                RefreshInstrument(instrument);
             }
         }
 
-        // Called when we call DisableMeasurementEvents, like when a rule is disabled.
+        // Called when we call DisableMeasurementEvents, like when a rule is disabled,
+        // or when the meter/factory is disposed.
         private void MeasurementsCompleted(Instrument instrument, object? state)
         {
             lock (_instruments)
@@ -78,20 +69,11 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                     return;
                 }
 
-                if (!_instruments.TryGetValue(instrument, out var status))
+                if (_instruments.TryGetValue(instrument, out var listenerState))
                 {
-                    Debug.Assert(false, "MeasurementsCompleted called for an instrument that was never published");
-                    return;
-                }
-                status.Enabled = false;
-
-                if (status.Published)
-                {
-                    status.Published = false;
-                    if (status.ListenerEnabled)
-                    {
-                        _metricsListener.MeasurementsCompleted(instrument, status.State);
-                    }
+                    _instruments.Remove(instrument);
+                    _metricsListener.MeasurementsCompleted(instrument, listenerState);
+                    _meterListener.DisableMeasurementEvents(instrument);
                 }
             }
         }
@@ -107,17 +89,17 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 _rules = rules;
 
-                foreach (var instrumentPair in _instruments)
-                {
-                    RefreshInstrument(instrumentPair.Key, instrumentPair.Value);
-                }
+                // Get a fresh list of instruments to compare against the new rules.
+                using var tempListener = new MeterListener();
+                tempListener.InstrumentPublished = (instrument, _) => RefreshInstrument(instrument);
+                tempListener.Start();
             }
         }
 
         // Called under _instrument lock
-        private void RefreshInstrument(Instrument instrument, InstrumentStatus status)
+        private void RefreshInstrument(Instrument instrument)
         {
-            var alreadyEnabled = status.Enabled;
+            var alreadyEnabled = _instruments.TryGetValue(instrument, out var state);
             var enable = false;
             var rule = GetMostSpecificRule(instrument);
             if (rule != null)
@@ -127,24 +109,17 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
             if (!enable && alreadyEnabled)
             {
-                status.Enabled = false;
+                _instruments.Remove(instrument);
+                _metricsListener.MeasurementsCompleted(instrument, state);
                 _meterListener.DisableMeasurementEvents(instrument);
             }
             else if (enable && !alreadyEnabled)
             {
-                // The first time we enable an instrument, we need to call InstrumentPublished.
-                if (!status.Published)
+                // The listener gets a chance to decline the instrument.
+                if (_metricsListener.InstrumentPublished(instrument, out state))
                 {
-                    // However, a listener might decline to enable the instrument, remember that.
-                    status.Published = true;
-                    status.ListenerEnabled = _metricsListener.InstrumentPublished(instrument, out var state);
-                    status.State = state;
-                }
-
-                if (status.ListenerEnabled)
-                {
-                    _meterListener.EnableMeasurementEvents(instrument, status.State);
-                    status.Enabled = true;
+                    _instruments.Add(instrument, state);
+                    _meterListener.EnableMeasurementEvents(instrument, state);
                 }
             }
         }
@@ -311,14 +286,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         {
             _disposed = true;
             _meterListener.Dispose();
-        }
-
-        private sealed class InstrumentStatus
-        {
-            public object? State { get; set; }
-            public bool Published { get; set; }
-            public bool Enabled { get; set; }
-            public bool ListenerEnabled { get; set; }
         }
     }
 }
