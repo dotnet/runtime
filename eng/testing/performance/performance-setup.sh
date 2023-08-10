@@ -275,7 +275,7 @@ if [[ "$internal" == true ]]; then
     extra_benchmark_dotnet_arguments=
 
     if [[ "$logical_machine" == "perfiphone12mini" ]]; then
-        queue=OSX.1015.Amd64.Iphone.Perf
+        queue=OSX.13.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
         queue=Ubuntu.2004.Arm64.Perf
     elif [[ "$logical_machine" == "cloudvm" ]]; then
