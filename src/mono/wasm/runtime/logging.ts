@@ -151,7 +151,6 @@ export function parseSymbolMapFile(text: string) {
 }
 
 
-export function mono_wasm_symbolicate(funcNum: number) {
-    const name = wasm_func_map.get(Number(funcNum));
-    return name;   
+export function mono_wasm_get_symbols() {
+    return [...wasm_func_map.values()];
 }

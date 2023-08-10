@@ -1128,11 +1128,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (!context.DisableSymbolicate && function_name.StartsWith("$func", StringComparison.Ordinal) && int.TryParse(function_name.Remove(0, 5), out var funcId))
                     {
-                        Result funcNameSymbolicated = await SendMonoCommand(sessionId, MonoCommands.SymbolicateFunctionName(RuntimeId, funcId), token);
-                        if (funcNameSymbolicated.IsOk)
-                            frame["functionName"] = funcNameSymbolicated.Value?["result"]?["value"]?.Value<string>();
-                        else
-                            context.DisableSymbolicate = true;
+                        frame["functionName"] = await SymbolicateFunctionName(sessionId, context, funcId, token);
                     }
                     callFrames.Add(frame);
                 }
@@ -1155,6 +1151,30 @@ namespace Microsoft.WebAssembly.Diagnostics
             await SendEvent(sessionId, "Debugger.paused", o, token);
 
             return true;
+        }
+
+        private async Task<string> SymbolicateFunctionName(SessionId sessionId, ExecutionContext context, int funcId, CancellationToken token)
+        {
+            if (context.Symbols != null)
+            {
+                if (context.Symbols.Length > funcId)
+                    return context.Symbols[funcId];
+                return $"$func{funcId}";
+            }
+
+            Result getSymbols = await SendMonoCommand(sessionId, MonoCommands.GetSymbols(RuntimeId), token);
+            if (getSymbols.IsOk)
+            {
+                string[] symbols = getSymbols.Value?["result"]?["value"]?.ToObject<string[]>();
+                context.Symbols = symbols;
+                if (context.Symbols.Length > funcId)
+                    return context.Symbols[funcId];
+            }
+            else
+            {
+                context.Symbols = Array.Empty<string>();
+            }
+            return $"$func{funcId}";
         }
 
         internal virtual void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Task<Result> debuggerAgentBufferTask)
