@@ -62,36 +62,36 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     ld.d  $a1, $a1, 0
 #endif
 
-#ifdef WRITE_BARRIER_CHECK
-    la.local  $a2, g_GCShadow
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    la.local  $a2, g_sw_ww_table
     ld.d  $a2, $a2, 0
+#endif
+
+    la.local  $a3, g_ephemeral_low
+    ld.d  $a3, $a3, 0
+
+    la.local  $a4, g_ephemeral_high
+    ld.d  $a4, $a4, 0
+
+    beq  $t0, $zero, LOCAL_LABEL(EphemeralCheckEnabled)
+
+    ori  $a3, $zero, 0
+    addi.d  $a4, $zero, -1
+LOCAL_LABEL(EphemeralCheckEnabled):
+
+    la.local  $a5, g_lowest_address
+    ld.d  $a5, $a5, 0
+
+    la.local  $a6, g_highest_address
+    ld.d  $a6, $a6, 0
+
+#ifdef WRITE_BARRIER_CHECK
+    la.local  $a7, g_GCShadow
+    ld.d  $a7, $a7, 0
 
     la.local  $t3, g_GCShadowEnd
     ld.d  $t3, $t3, 0
 #endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    la.local  $a3, g_sw_ww_table
-    ld.d  $a3, $a3, 0
-#endif
-
-    la.local  $a4, g_ephemeral_low
-    ld.d  $a4, $a4, 0
-
-    la.local  $a5, g_ephemeral_high
-    ld.d  $a5, $a5, 0
-
-    beq  $t0, $zero, LOCAL_LABEL(EphemeralCheckEnabled)
-
-    ori  $a4, $zero, 0
-    addi.d  $a5, $zero, -1
-LOCAL_LABEL(EphemeralCheckEnabled):
-
-    la.local  $a6, g_lowest_address
-    ld.d  $a6, $a6, 0
-
-    la.local  $a7, g_highest_address
-    ld.d  $a7, $a7, 0
 
     // Update wbs state
     la.local  $t2, JIT_WriteBarrier_Table_Loc
@@ -171,10 +171,10 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 .Ltmp0:
     pcaddi $t3, 0
     .reloc .Ltmp0, R_LARCH_PCREL20_S2, wbs_card_table
-    // wbs_highest_address = wbs_card_table + 56
-    ld.d  $t1, $t3, 56
-    // wbs_lowest_address  = wbs_card_table + 48
-    ld.d  $t3, $t3, 48
+    // wbs_highest_address = wbs_card_table + 48
+    ld.d  $t1, $t3, 48
+    // wbs_lowest_address  = wbs_card_table + 40
+    ld.d  $t3, $t3, 40
     slt  $t4, $t6, $t3
 
     slt  $t0, $t1, $t6
@@ -215,16 +215,16 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 #ifdef WRITE_BARRIER_CHECK
     // Update GC Shadow Heap
 
-    // the wbs_GCShadow = $t3 + 16
-    ld.d $t1, $t3, 16
+    // the wbs_GCShadow = $t3 + 56
+    ld.d $t1, $t3, 56
 
     // Do not perform the work if g_GCShadow is 0
     beq  $t1, $zero, 22f //LOCAL_LABEL(ShadowUpdateDisabled)
 
     // Compute address of shadow heap location:
     //   pShadow = g_GCShadow + ($t6 - g_lowest_address)
-    // the wbs_lowest_address = $t3 + 48
-    ld.d $t0, $t3, 48
+    // the wbs_lowest_address = $t3 + 40
+    ld.d $t0, $t3, 40
 
     sub.d  $t0, $t6, $t0
     add.d  $t0, $t0, $t1
@@ -260,8 +260,8 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     // Update the write watch table if necessary
 
-    // the wbs_sw_ww_table = $t3 + 24
-    ld.d  $t4, $t3, 24
+    // the wbs_sw_ww_table = $t3 + 16
+    ld.d  $t4, $t3, 16
     beq  $t4, $zero, 1f //LOCAL_LABEL(CheckCardTable)
 
     srli.d  $t0, $t6, 0xc
@@ -275,13 +275,13 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 //LOCAL_LABEL(CheckCardTable):
 #endif
     // Branch to Exit if the reference is not in the Gen0 heap
-    // the wbs_ephemeral_low = $t3 + 32
-    ld.d  $t0, $t3, 32
+    // the wbs_ephemeral_low = $t3 + 24
+    ld.d  $t0, $t3, 24
     beq  $t0, $zero, LOCAL_LABEL(SkipEphemeralCheck)
 
     slt  $t4, $t7, $t0
-    // the wbs_ephemeral_high = $t3 + 40
-    ld.d  $t1, $t3, 40
+    // the wbs_ephemeral_high = $t3 + 32
+    ld.d  $t1, $t3, 32
     slt  $t0, $t1, $t7
     or  $t4, $t0, $t4
     bne  $t4, $zero, LOCAL_LABEL(Exit)
@@ -323,17 +323,17 @@ wbs_card_table:
     .quad 0
 //wbs_card_bundle_table: =wbs_card_table+8
     .quad 0
-//wbs_GCShadow:          =wbs_card_table+16
+//wbs_sw_ww_table:       =wbs_card_table+16
     .quad 0
-//wbs_sw_ww_table:       =wbs_card_table+24
+//wbs_ephemeral_low:     =wbs_card_table+24
     .quad 0
-//wbs_ephemeral_low:     =wbs_card_table+32
+//wbs_ephemeral_high:    =wbs_card_table+32
     .quad 0
-//wbs_ephemeral_high:    =wbs_card_table+40
+//wbs_lowest_address:    =wbs_card_table+40
     .quad 0
-//wbs_lowest_address:    =wbs_card_table+48
+//wbs_highest_address:   =wbs_card_table+48
     .quad 0
-//wbs_highest_address:   =wbs_card_table+56
+//wbs_GCShadow:          =wbs_card_table+56
     .quad 0
 //wbs_GCShadowEnd:       =wbs_card_table+64
     .quad 0
