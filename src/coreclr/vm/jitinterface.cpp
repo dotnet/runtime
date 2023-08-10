@@ -11590,6 +11590,8 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
 bool CEEInfo::getStaticObjRefContent(OBJECTREF obj, uint8_t* buffer, bool ignoreMovableObjects)
 {
     CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
