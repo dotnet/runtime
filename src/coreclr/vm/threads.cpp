@@ -7686,11 +7686,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     while (pFrame < pvLimitSP)
     {
         CONSISTENCY_CHECK(pFrame != PTR_NULL);
-#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
-        CONSISTENCY_CHECK(__asan_addr_is_in_fake_stack(m_fakeStack, pFrame, nullptr, nullptr) || (pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
-#else
-        CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
-#endif
+        CONSISTENCY_CHECK(IsStackPointerBefore(static_cast<Frame *>((LPVOID)GetCurrentSP()), pFrame));
         pFrame->ExceptionUnwind();
         pFrame = pFrame->Next();
     }

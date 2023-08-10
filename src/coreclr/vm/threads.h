@@ -2987,7 +2987,7 @@ public:
     BOOL IsAddressInStack (PTR_VOID addr) const
     {
 #if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
-        if (__asan_addr_is_in_fake_stack(m_fakeStack, addr, nullptr, nullptr))
+        if (__asan_addr_is_in_fake_stack(m_fakeStack, (void*)PTR_TO_TADDR(addr), nullptr, nullptr))
         {
             return TRUE;
         }
@@ -3009,7 +3009,7 @@ public:
         }
 
 #if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
-        if (__asan_addr_is_in_fake_stack(currentThread->m_fakeStack, addr, nullptr, nullptr))
+        if (__asan_addr_is_in_fake_stack(currentThread->m_fakeStack, (void*)PTR_TO_TADDR(addr), nullptr, nullptr))
         {
             return TRUE;
         }
