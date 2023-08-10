@@ -705,6 +705,29 @@ namespace System.IO
             RandomAccess.WriteAtOffset(fileHandle, bytes, fileOffset);
         }
 
+        public static Task AppendAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : Core(path, bytes, cancellationToken);
+
+            static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
+            {
+                using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Open, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
+
+                if (fileHandle.CanSeek == false)
+                {
+                    throw new NotSupportedException();
+                }
+
+                long fileOffset = RandomAccess.GetLength(fileHandle);
+                await RandomAccess.WriteAtOffsetAsync(fileHandle, bytes, fileOffset, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         public static string[] ReadAllLines(string path)
             => ReadAllLines(path, Encoding.UTF8);
 
