@@ -945,6 +945,12 @@ namespace System.Text
         /// </summary>
         public static unsafe void WidenLatin1ToUtf16(byte* pLatin1Buffer, char* pUtf16Buffer, nuint elementCount)
         {
+            if (((nuint)pUtf16Buffer & 1) != 0) 
+            {
+                // Input isn't char aligned, we won't be able to vectorize.
+                return WidenLatin1ToUtf16_MisalignedAddress(pLatin1Buffer, pUtf16Buffer, elementCount);
+            }
+            
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
             // code below. This has two benefits: (a) we can take advantage of specific instructions like
             // punpcklbw which we know are optimized, and (b) we can avoid downclocking the processor while
@@ -1104,6 +1110,20 @@ namespace System.Text
             {
                 pUtf16Buffer[currentOffset] = (char)pLatin1Buffer[currentOffset];
                 currentOffset++;
+            }
+        }
+
+        private static unsafe void WidenLatin1ToUtf16_MisalignedAddress(byte* pLatin1Buffer, char* pUtf16Buffer, nuint elementCount)
+        {
+            if (elementCount != 0)
+            {
+                do
+                {
+                    Unsafe.WriteUnaligned(pUtf16Buffer, (char)*pLatin1Buffer);
+                    pUtf16Buffer++;
+                    pLatin1Buffer++;
+                }
+                while (--elementCount != 0);
             }
         }
     }
