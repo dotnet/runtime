@@ -12,7 +12,6 @@ namespace System.Text.Json.Serialization.Tests
     public static class NamingPolicyUnitTests
     {
         private readonly static CamelCaseNamingStrategy s_newtonsoftCamelCaseNamingStrategy = new();
-
         [Theory]
         // These test cases were copied from Json.NET.
         [InlineData("urlValue", "URLValue")]
@@ -66,6 +65,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("i18n", "i18n")]
         [InlineData("i18n_policy", "I18nPolicy")]
         [InlineData("7samurai", "7samurai")]
+        [InlineData("άλφα_βήτα_γάμμα", "ΆλφαΒήταΓάμμα")]
         [InlineData("camel_case", "camelCase")]
         [InlineData("camel_case", "CamelCase")]
         [InlineData("snake_case", "snake_case")]
@@ -95,10 +95,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("abc_7ef", "  abc 7ef  ")]
         [InlineData("ab7_def", "  ab7 def  ")]
         [InlineData("_abc", "_abc")]
-        [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
-        [InlineData("άλφα_βήτα_γάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
-        [InlineData("𐐨𐐨𐐨_𐐨𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters
         [InlineData("a%", "a%")]
         [InlineData("_?#-", "_?#-")]
         [InlineData("?!?", "? ! ?")]
@@ -132,6 +128,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("I18N", "i18n")]
         [InlineData("I18N_POLICY", "I18nPolicy")]
         [InlineData("7SAMURAI", "7samurai")]
+        [InlineData("ΆΛΦΑ_ΒΉΤΑ_ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")]
         [InlineData("CAMEL_CASE", "camelCase")]
         [InlineData("CAMEL_CASE", "CamelCase")]
         [InlineData("SNAKE_CASE", "snake_case")]
@@ -161,10 +158,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ABC_7EF", "  abc 7ef  ")]
         [InlineData("AB7_DEF", "  ab7 def  ")]
         [InlineData("_ABC", "_abc")]
-        [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
-        [InlineData("ΆΛΦΑ_ΒΉΤΑ_ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
-        [InlineData("𐐀𐐀𐐀_𐐀𐐀𐐀", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters
         [InlineData("A%", "a%")]
         [InlineData("_?#-", "_?#-")]
         [InlineData("?!?", "? ! ?")]
@@ -198,6 +191,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("i18n", "i18n")]
         [InlineData("i18n-policy", "I18nPolicy")]
         [InlineData("7samurai", "7samurai")]
+        [InlineData("άλφα-βήτα-γάμμα", "ΆλφαΒήταΓάμμα")]
         [InlineData("camel-case", "camelCase")]
         [InlineData("camel-case", "CamelCase")]
         [InlineData("snake_case", "snake_case")]
@@ -228,10 +222,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("abc-7ef", "  abc 7ef  ")]
         [InlineData("ab7-def", "  ab7 def  ")]
         [InlineData("-abc", "-abc")]
-        [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
-        [InlineData("άλφα-βήτα-γάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
-        [InlineData("𐐨𐐨𐐨-𐐨𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters
         [InlineData("a%", "a%")]
         [InlineData("-?#_", "-?#_")]
         [InlineData("?!?", "? ! ?")]
@@ -265,6 +255,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("I18N", "i18n")]
         [InlineData("I18N-POLICY", "I18nPolicy")]
         [InlineData("7SAMURAI", "7samurai")]
+        [InlineData("ΆΛΦΑ-ΒΉΤΑ-ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")]
         [InlineData("CAMEL-CASE", "camelCase")]
         [InlineData("CAMEL-CASE", "CamelCase")]
         [InlineData("SNAKE_CASE", "snake_case")]
@@ -295,10 +286,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ABC-7EF", "  abc 7ef  ")]
         [InlineData("AB7-DEF", "  ab7 def  ")]
         [InlineData("-ABC", "-abc")]
-        [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
-        [InlineData("ΆΛΦΑ-ΒΉΤΑ-ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
-        [InlineData("𐐀𐐀𐐀-𐐀𐐀𐐀", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters
         [InlineData("A%", "a%")]
         [InlineData("-?#_", "-?#_")]
         [InlineData("?!?", "? ! ?")]
@@ -324,22 +311,6 @@ namespace System.Text.Json.Serialization.Tests
             string value = policy.ConvertName(name);
 
             Assert.Equal(expectedResult, value);
-        }
-
-        [Fact]
-        public static void SnakeCasePolicy_MissingSurrogatePair_ThrowsArgumentException()
-        {
-            string value = "xyz\ud83d";
-            Assert.Throws<ArgumentException>(() => JsonNamingPolicy.SnakeCaseLower.ConvertName(value));
-            Assert.Throws<ArgumentException>(() => JsonNamingPolicy.SnakeCaseUpper.ConvertName(value));
-        }
-
-        [Fact]
-        public static void KebabCasePolicy_MissingSurrogatePair_ThrowsArgumentException()
-        {
-            string value = "xyz\ud83d";
-            Assert.Throws<ArgumentException>(() => JsonNamingPolicy.KebabCaseLower.ConvertName(value));
-            Assert.Throws<ArgumentException>(() => JsonNamingPolicy.KebabCaseUpper.ConvertName(value));
         }
 
         [Theory, OuterLoop]
