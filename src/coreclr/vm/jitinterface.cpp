@@ -11701,11 +11701,8 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                 // ...unless we're interested in that GC slot's value itself
                                 if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize) && ptr[i] == TYPE_GC_REF)
                                 {
-                                    Object* gcSlotValue = nullptr;
-                                    memcpy(&gcSlotValue, (uint8_t*)baseAddr + gcSlotBegin, sizeof(Object*));
-
                                     _ASSERT((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE));
-                                    result = getStaticObjRefContent(ObjectToOBJECTREF(gcSlotValue), buffer, ignoreMovableObjects);
+                                    result = getStaticObjRefContent(ObjectToOBJECTREF(*(Object**)((uint8_t*)baseAddr + gcSlotBegin)), buffer, ignoreMovableObjects);
                                 }
 
                                 // We had an intersection with a gc slot - no point in looking futher.
