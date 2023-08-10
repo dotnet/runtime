@@ -35,7 +35,12 @@ namespace Microsoft.Interop.Analyzers
 
             foreach (var diagnostic in context.Diagnostics)
             {
-                foreach (var unmanagedType in diagnostic.Properties[GeneratorDiagnosticProperties.AddMarshalAsAttribute].Split(','))
+                if (!diagnostic.Properties.TryGetValue(GeneratorDiagnosticProperties.AddMarshalAsAttribute, out string? addMarshalAsAttribute))
+                {
+                    continue;
+                }
+
+                foreach (var unmanagedType in addMarshalAsAttribute.Split(','))
                 {
                     string unmanagedTypeName = unmanagedType.Trim();
                     context.RegisterCodeFix(
