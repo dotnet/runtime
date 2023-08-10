@@ -22,136 +22,95 @@ namespace System.Buffers.Tests
             bufferWriter.Advance(numBytes);
         }
 
-        [Fact]
-        public void WriteAndCopyToStream()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WriteAndCopyToStream(bool clearContent)
         {
-            var output = new ArrayBufferWriter<byte>();
+            ArrayBufferWriter<byte> output = new();
+            WriteData(output, 100);
+
+            using MemoryStream memStream = new(100);
+
+            Assert.Equal(100, output.WrittenCount);
+
+            ReadOnlySpan<byte> outputSpan = output.WrittenMemory.ToArray();
+
+            ReadOnlyMemory<byte> transientMemory = output.WrittenMemory;
+            ReadOnlySpan<byte> transientSpan = output.WrittenSpan;
+
+            Assert.True(transientSpan.SequenceEqual(transientMemory.Span));
+
+            Assert.True(transientSpan[0] != 0);
+            byte expectedFirstByte = transientSpan[0];
+
+            memStream.Write(transientSpan.ToArray(), 0, transientSpan.Length);
+            
+            if (clearContent)
             {
-                WriteData(output, 100);
-
-                using var memStream = new MemoryStream(100);
-
-                Assert.Equal(100, output.WrittenCount);
-
-                ReadOnlySpan<byte> outputSpan = output.WrittenMemory.ToArray();
-
-                ReadOnlyMemory<byte> transientMemory = output.WrittenMemory;
-                ReadOnlySpan<byte> transientSpan = output.WrittenSpan;
-
-                Assert.True(transientSpan.SequenceEqual(transientMemory.Span));
-
-                Assert.True(transientSpan[0] != 0);
-
-                memStream.Write(transientSpan.ToArray(), 0, transientSpan.Length);
+                expectedFirstByte = 0;
                 output.Clear();
-
-                Assert.True(transientSpan[0] == 0);
-                Assert.True(transientMemory.Span[0] == 0);
-
-                Assert.Equal(0, output.WrittenCount);
-                byte[] streamOutput = memStream.ToArray();
-
-                Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
-                Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenMemory.Span));
-                Assert.True(output.WrittenSpan.SequenceEqual(output.WrittenMemory.Span));
-
-                Assert.Equal(outputSpan.Length, streamOutput.Length);
-                Assert.True(outputSpan.SequenceEqual(streamOutput));
             }
+            else
             {
-                WriteData(output, 100);
-
-                using var memStream = new MemoryStream(100);
-
-                Assert.Equal(100, output.WrittenCount);
-
-                ReadOnlySpan<byte> outputSpan = output.WrittenMemory.ToArray();
-
-                ReadOnlyMemory<byte> transientMemory = output.WrittenMemory;
-                ReadOnlySpan<byte> transientSpan = output.WrittenSpan;
-
-                Assert.True(transientSpan.SequenceEqual(transientMemory.Span));
-
-                Assert.True(transientSpan[0] != 0);
-                byte t0 = transientSpan[0];
-
-                memStream.Write(transientSpan.ToArray(), 0, transientSpan.Length);
                 output.ResetWrittenCount();
-
-                Assert.True(transientSpan[0] == t0);
-                Assert.True(transientMemory.Span[0] == t0);
-
-                Assert.Equal(0, output.WrittenCount);
-                byte[] streamOutput = memStream.ToArray();
-
-                Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
-                Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenMemory.Span));
-                Assert.True(output.WrittenSpan.SequenceEqual(output.WrittenMemory.Span));
-
-                Assert.Equal(outputSpan.Length, streamOutput.Length);
-                Assert.True(outputSpan.SequenceEqual(streamOutput));
             }
+            
+            Assert.Equal(expectedFirstByte, transientSpan[0]);
+            Assert.Equal(expectedFirstByte, transientMemory.Span[0]);
+            
+            Assert.Equal(0, output.WrittenCount);
+            byte[] streamOutput = memStream.ToArray();
+
+            Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
+            Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenMemory.Span));
+            Assert.True(output.WrittenSpan.SequenceEqual(output.WrittenMemory.Span));
+
+            Assert.Equal(outputSpan.Length, streamOutput.Length);
+            Assert.True(outputSpan.SequenceEqual(streamOutput));
         }
 
-        [Fact]
-        public async Task WriteAndCopyToStreamAsync()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WriteAndCopyToStreamAsync(bool clearContent)
         {
-            var output = new ArrayBufferWriter<byte>();
+            ArrayBufferWriter<byte> output = new();
+            WriteData(output, 100);
+
+            using MemoryStream memStream = new(100);
+
+            Assert.Equal(100, output.WrittenCount);
+
+            ReadOnlyMemory<byte> outputMemory = output.WrittenMemory.ToArray();
+
+            ReadOnlyMemory<byte> transient = output.WrittenMemory;
+
+            Assert.True(transient.Span[0] != 0);
+            byte expectedFirstByte = transient.Span[0];
+
+            await memStream.WriteAsync(transient.ToArray(), 0, transient.Length);
+
+            if (clearContent)
             {
-                WriteData(output, 100);
-
-                using var memStream = new MemoryStream(100);
-
-                Assert.Equal(100, output.WrittenCount);
-
-                ReadOnlyMemory<byte> outputMemory = output.WrittenMemory.ToArray();
-
-                ReadOnlyMemory<byte> transient = output.WrittenMemory;
-
-                Assert.True(transient.Span[0] != 0);
-
-                await memStream.WriteAsync(transient.ToArray(), 0, transient.Length);
+                expectedFirstByte = 0;
                 output.Clear();
-
-                Assert.True(transient.Span[0] == 0);
-
-                Assert.Equal(0, output.WrittenCount);
-                byte[] streamOutput = memStream.ToArray();
-
-                Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
-                Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenMemory.Span));
-
-                Assert.Equal(outputMemory.Length, streamOutput.Length);
-                Assert.True(outputMemory.Span.SequenceEqual(streamOutput));
             }
+            else
             {
-                WriteData(output, 100);
-
-                using var memStream = new MemoryStream(100);
-
-                Assert.Equal(100, output.WrittenCount);
-
-                ReadOnlyMemory<byte> outputMemory = output.WrittenMemory.ToArray();
-
-                ReadOnlyMemory<byte> transient = output.WrittenMemory;
-
-                Assert.True(transient.Span[0] != 0);
-                byte t0 = transient.Span[0];
-
-                await memStream.WriteAsync(transient.ToArray(), 0, transient.Length);
                 output.ResetWrittenCount();
-
-                Assert.True(transient.Span[0] == t0);
-
-                Assert.Equal(0, output.WrittenCount);
-                byte[] streamOutput = memStream.ToArray();
-
-                Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
-                Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenMemory.Span));
-
-                Assert.Equal(outputMemory.Length, streamOutput.Length);
-                Assert.True(outputMemory.Span.SequenceEqual(streamOutput));
             }
+
+            Assert.True(transient.Span[0] == expectedFirstByte);
+
+            Assert.Equal(0, output.WrittenCount);
+            byte[] streamOutput = memStream.ToArray();
+
+            Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
+            Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenMemory.Span));
+
+            Assert.Equal(outputMemory.Length, streamOutput.Length);
+            Assert.True(outputMemory.Span.SequenceEqual(streamOutput));
         }
 
         // NOTE: GetMemory_ExceedMaximumBufferSize test is constrained to run on Windows and MacOSX because it causes
