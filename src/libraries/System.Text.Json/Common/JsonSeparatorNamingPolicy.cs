@@ -15,7 +15,7 @@ namespace System.Text.Json
 
         internal JsonSeparatorNamingPolicy(bool lowercase, char separator)
         {
-            Debug.Assert(!char.IsLetter(separator) && !char.IsWhiteSpace(separator));
+            Debug.Assert(char.IsPunctuation(separator));
 
             _lowercase = lowercase;
             _separator = separator;
@@ -37,8 +37,9 @@ namespace System.Text.Json
 
             char[]? rentedBuffer = null;
 
-            // Rented buffer 20% longer that the input.
-            int initialBufferLength = (12 * name.Length) / 10;
+            // While we can't predict the expansion factor of the resultant string,
+            // start with a buffer that is at least 20% larger than the input.
+            int initialBufferLength = (int)(1.2 * name.Length);
             Span<char> destination = initialBufferLength <= JsonConstants.StackallocCharThreshold
                 ? stackalloc char[JsonConstants.StackallocCharThreshold]
                 : (rentedBuffer = ArrayPool<char>.Shared.Rent(initialBufferLength));
