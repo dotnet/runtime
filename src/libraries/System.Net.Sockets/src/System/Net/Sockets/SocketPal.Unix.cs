@@ -152,6 +152,11 @@ namespace System.Net.Sockets
                     Count = (UIntPtr)buffer.Length
                 };
 
+                if (socketAddress.Length == 0)
+                {
+                    Debug.Assert(sockAddr == null);
+                }
+
                 var messageHeader = new Interop.Sys.MessageHeader {
                     SocketAddress = sockAddr,
                     SocketAddressLen = socketAddress.Length,
@@ -468,7 +473,6 @@ namespace System.Net.Sockets
         private static unsafe int SysReceiveMessageFrom(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, Span<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
             byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
@@ -483,6 +487,11 @@ namespace System.Net.Sockets
                     Base = b,
                     Count = (UIntPtr)buffer.Length
                 };
+
+                if (socketAddress.Length == 0)
+                {
+                    Debug.Assert(rawSocketAddress == null);
+                }
 
                 messageHeader = new Interop.Sys.MessageHeader {
                     SocketAddress = rawSocketAddress,
@@ -1234,7 +1243,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, null, out int _, out bytesTransferred, out _, out errorCode))
+                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, Span<byte>.Empty, out int _, out bytesTransferred, out _, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
