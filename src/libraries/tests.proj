@@ -301,6 +301,7 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'maccatalyst'">
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlFormatWriterGeneratorAOT/iOS.Simulator.XmlFormatWriterGeneratorAot.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/LibraryMode/iOS.Simulator.LibraryMode.Test.csproj" />
   </ItemGroup>
 
   <!-- Run only explicitly selected tests for Mac Catalyst in App Sandbox -->
