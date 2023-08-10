@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -126,11 +127,21 @@ namespace System.Threading.RateLimiting.Test
 #if DEBUG
         [Fact]
         public Task DoesNotDeadlockCleaningUpCanceledRequestedLease_Pre() =>
-            DoesNotDeadlockCleaningUpCanceledRequestedLease((limiter, hook) => limiter.ReleasePreHook += hook);
+            DoesNotDeadlockCleaningUpCanceledRequestedLease((limiter, hook) => SetReleasePreHook(limiter, hook));
 
         [Fact]
         public Task DoesNotDeadlockCleaningUpCanceledRequestedLease_Post() =>
-            DoesNotDeadlockCleaningUpCanceledRequestedLease((limiter, hook) => limiter.ReleasePostHook += hook);
+            DoesNotDeadlockCleaningUpCanceledRequestedLease((limiter, hook) => SetReleasePostHook(limiter, hook));
+
+        private void SetReleasePreHook(ConcurrencyLimiter limiter, Action hook)
+        {
+            typeof(ConcurrencyLimiter).GetEvent("ReleasePreHook", BindingFlags.NonPublic | BindingFlags.Instance).AddMethod.Invoke(limiter, new object[] { hook });
+        }
+
+        private void SetReleasePostHook(ConcurrencyLimiter limiter, Action hook)
+        {
+            typeof(ConcurrencyLimiter).GetEvent("ReleasePostHook", BindingFlags.NonPublic | BindingFlags.Instance).AddMethod.Invoke(limiter, new object[] { hook });
+        }
 
         private async Task DoesNotDeadlockCleaningUpCanceledRequestedLease(Action<ConcurrencyLimiter, Action> attachHook)
         {

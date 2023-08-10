@@ -365,7 +365,6 @@ namespace System.Threading.RateLimiting
                 if (_permitCount == _options.PermitLimit)
                 {
                     Debug.Assert(_idleSince is null);
-                    Debug.Assert(_queueCount == 0);
                     _idleSince = Stopwatch.GetTimestamp();
                 }
             }
