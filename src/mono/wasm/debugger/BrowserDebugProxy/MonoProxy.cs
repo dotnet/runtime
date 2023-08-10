@@ -1126,6 +1126,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                         function_name.StartsWith("_mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal) ||
                         function_name.StartsWith("mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal)))
                 {
+                    if (!context.DisableSymbolicate && function_name.StartsWith("$func", StringComparison.Ordinal) && int.TryParse(function_name.Remove(0, 5), out var funcId))
+                    {
+                        Result funcNameSymbolicated = await SendMonoCommand(sessionId, MonoCommands.SymbolicateFunctionName(RuntimeId, funcId), token);
+                        if (funcNameSymbolicated.IsOk)
+                            frame["functionName"] = funcNameSymbolicated.Value?["result"]?["value"]?.Value<string>();
+                        else
+                            context.DisableSymbolicate = true;
+                    }
                     callFrames.Add(frame);
                 }
             }

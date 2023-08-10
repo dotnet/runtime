@@ -149,3 +149,9 @@ export function parseSymbolMapFile(text: string) {
 
     mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
 }
+
+
+export function mono_wasm_symbolicate(funcNum: number) {
+    const name = wasm_func_map.get(Number(funcNum));
+    return name;   
+}
