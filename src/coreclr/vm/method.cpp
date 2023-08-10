@@ -934,7 +934,7 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
-PCODE MethodDesc::GetNativeCodeReJITAware()
+PCODE MethodDesc::GetNativeCodeAnyVersion()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;

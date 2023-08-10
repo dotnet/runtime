@@ -1577,7 +1577,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
         if (startAddr == NULL)
         {
-            startAddr = fd->GetNativeCodeReJITAware();
+            startAddr = fd->GetNativeCodeAnyVersion();
             _ASSERTE(startAddr != NULL);
         }
     }
