@@ -1114,7 +1114,7 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int o
         Emit32((DWORD)(0x00003003 | (Xt << 7) | (Xn << 15) | (offset << 20)));
     } else {
         // sd regNum, offset(Xn)
-        Emit32((DWORD)(0x00003023 | (Xt << 20) | (Xn << 15) | (offset & 0xF) << 7 | (((offset >> 4) & 0xFF) << 25)));
+        Emit32((DWORD)(0x00003023 | (Xt << 20) | (Xn << 15) | (offset & 0x1F) << 7 | (((offset >> 5) & 0x7F) << 25)));
     }
 }
 
