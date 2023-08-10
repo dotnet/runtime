@@ -214,6 +214,24 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
+        public void StatelessCallerAllocatedBufferMarshalling()
+        {
+            var obj = CreateWrapper<StatelessCallerAllocatedBufferMarshalling, IStatelessCallerAllocatedBufferMarshalling>();
+            var data = new StatelessCallerAllocatedBufferType() { I = 42 };
+
+            obj.Method(data);
+            Assert.Equal(42, data.I);
+            obj.MethodIn(in data);
+            Assert.Equal(42, data.I);
+            obj.MethodRef(ref data);
+            Assert.Equal(200, data.I);
+            obj.MethodOut(out data);
+            Assert.Equal(20, data.I);
+            Assert.Equal(201, obj.Return().I);
+            Assert.Equal(202, obj.ReturnPreserveSig().I);
+        }
+
+        [Fact]
         public void ICollectionMarshallingFails()
         {
             Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);

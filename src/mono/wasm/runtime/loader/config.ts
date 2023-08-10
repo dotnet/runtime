@@ -181,6 +181,10 @@ export function normalizeConfig() {
         config.debugLevel = -1;
     }
 
+    if (config.cachedResourcesPurgeDelay === undefined) {
+        config.cachedResourcesPurgeDelay = 10000;
+    }
+
     // Default values (when WasmDebugLevel is not set)
     // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
     // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
@@ -228,6 +232,10 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
 
         normalizeConfig();
 
+        // scripts need to be loaded before onConfigLoaded because Blazor calls `beforeStart` export in onConfigLoaded
+        await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
+        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
+
         if (module.onConfigLoaded) {
             try {
                 await module.onConfigLoaded(loaderHelpers.config, exportedRuntimeAPI);
@@ -239,8 +247,6 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             }
         }
 
-        await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
-        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
         normalizeConfig();
 
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);

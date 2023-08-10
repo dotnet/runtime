@@ -1839,7 +1839,51 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 		return result_ins;
 #elif defined(TARGET_AMD64)
-		return NULL;
+		int type = MONO_TYPE_I1;
+
+		switch (arg0_type) {
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2: {
+				if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) 
+					return NULL;
+					
+				type = type_enum_is_unsigned (arg0_type) ? MONO_TYPE_U1 : MONO_TYPE_I1;
+				MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+
+				guint64 shuffle_mask[2];
+				shuffle_mask[0] = 0x0F0D0B0907050301; // Place odd bytes in the lower half of vector
+				shuffle_mask[1] = 0x8080808080808080; // Zero the upper half
+
+				MonoInst* shuffle_vec = emit_xconst_v128 (cfg, arg_class, (guint8*)shuffle_mask);
+				shuffle_vec->klass = arg_class;
+
+				args [0] = emit_simd_ins (cfg, klass, OP_SSSE3_SHUFFLE, args [0]->dreg, shuffle_vec->dreg);
+				args [0]->inst_c1 = type;
+				break;
+			}
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_R4: {
+				type = MONO_TYPE_R4;
+				break;
+			}
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
+			case MONO_TYPE_U8:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_R8: {
+				type = MONO_TYPE_R8;
+				break;
+			}
+		}
+
+		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_MOVMSK, -1, type, fsig, args);
 #endif
 	}
 	case SN_GetElement: {

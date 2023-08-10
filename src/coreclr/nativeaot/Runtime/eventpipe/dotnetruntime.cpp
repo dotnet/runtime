@@ -6,9 +6,11 @@
 // @TODO: Audit native events in NativeAOT Runtime
 
 #include <common.h>
-#include "eventpipeadapter.h"
-#include "eventtrace_context.h"
-#include "gcheaputilities.h"
+#include <gcenv.h>
+
+#include <eventpipeadapter.h>
+#include <eventtrace_context.h>
+#include <gcheaputilities.h>
 
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
@@ -3011,7 +3013,7 @@ void InitDotNETRuntime(void)
 
 bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword)
 {
-    if (!EventPipeAdapter::Enabled())
+    if (!ep_enabled())
         return false;
 
     EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider;

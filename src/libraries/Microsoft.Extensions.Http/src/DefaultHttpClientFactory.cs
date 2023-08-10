@@ -18,12 +18,12 @@ namespace Microsoft.Extensions.Http
     internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
     {
         private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
-        private readonly ILogger _logger;
         private readonly IServiceProvider _services;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
         private readonly IHttpMessageHandlerBuilderFilter[] _filters;
         private readonly Func<string, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
+        private readonly Lazy<ILogger> _logger;
 
         // Default time of 10s for cleanup seems reasonable.
         // Quick math:
@@ -61,13 +61,11 @@ namespace Microsoft.Extensions.Http
         public DefaultHttpClientFactory(
             IServiceProvider services,
             IServiceScopeFactory scopeFactory,
-            ILoggerFactory loggerFactory,
             IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
             IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
         {
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(scopeFactory);
-            ThrowHelper.ThrowIfNull(loggerFactory);
             ThrowHelper.ThrowIfNull(optionsMonitor);
             ThrowHelper.ThrowIfNull(filters);
 
@@ -75,8 +73,6 @@ namespace Microsoft.Extensions.Http
             _scopeFactory = scopeFactory;
             _optionsMonitor = optionsMonitor;
             _filters = filters.ToArray();
-
-            _logger = loggerFactory.CreateLogger<DefaultHttpClientFactory>();
 
             // case-sensitive because named options is.
             _activeHandlers = new ConcurrentDictionary<string, Lazy<ActiveHandlerTrackingEntry>>(StringComparer.Ordinal);
@@ -93,6 +89,14 @@ namespace Microsoft.Extensions.Http
 
             _cleanupTimerLock = new object();
             _cleanupActiveLock = new object();
+
+            // We want to prevent a circular depencency between ILoggerFactory and IHttpClientFactory, in case
+            // any of ILoggerProvider instances use IHttpClientFactory to send logs to an external server.
+            // Logger will be created during the first ExpiryTimer_Tick execution. Lazy guarantees thread safety
+            // to prevent creation of unnecessary ILogger objects in case several handlers expired at the same time.
+            _logger = new Lazy<ILogger>(
+                () => _services.GetRequiredService<ILoggerFactory>().CreateLogger<DefaultHttpClientFactory>(),
+                LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         public HttpClient CreateClient(string name)
@@ -204,7 +208,7 @@ namespace Microsoft.Extensions.Http
             var expired = new ExpiredHandlerTrackingEntry(active);
             _expiredHandlers.Enqueue(expired);
 
-            Log.HandlerExpired(_logger, active.Name, active.Lifetime);
+            Log.HandlerExpired(_logger.Value, active.Name, active.Lifetime);
 
             StartCleanupTimer();
         }
@@ -262,7 +266,7 @@ namespace Microsoft.Extensions.Http
             try
             {
                 int initialCount = _expiredHandlers.Count;
-                Log.CleanupCycleStart(_logger, initialCount);
+                Log.CleanupCycleStart(_logger.Value, initialCount);
 
                 var stopwatch = ValueStopwatch.StartNew();
 
@@ -283,7 +287,7 @@ namespace Microsoft.Extensions.Http
                         }
                         catch (Exception ex)
                         {
-                            Log.CleanupItemFailed(_logger, entry.Name, ex);
+                            Log.CleanupItemFailed(_logger.Value, entry.Name, ex);
                         }
                     }
                     else
@@ -294,7 +298,7 @@ namespace Microsoft.Extensions.Http
                     }
                 }
 
-                Log.CleanupCycleEnd(_logger, stopwatch.GetElapsedTime(), disposedCount, _expiredHandlers.Count);
+                Log.CleanupCycleEnd(_logger.Value, stopwatch.GetElapsedTime(), disposedCount, _expiredHandlers.Count);
             }
             finally
             {
