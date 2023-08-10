@@ -476,7 +476,10 @@ namespace System.Net.Sockets
                     else
                     {
                         bool result = SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress.Span, out int socketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
-                        SocketAddress = SocketAddress.Slice(0, socketAddressLen);
+                        if (ErrorCode == SocketError.Success)
+                        {
+                            SocketAddress = SocketAddress.Slice(0, socketAddressLen);
+                        }
                         return result;
                     }
                 }
