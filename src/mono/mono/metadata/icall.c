@@ -75,6 +75,7 @@
 #include <mono/metadata/handle.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/metadata.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
@@ -4685,7 +4686,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceNames (MonoQCallA
 	MonoAssembly *assembly = assembly_h.assembly;
 	/* FIXME: metadata-update */
 	mdcursor_t c;
-	int rows = 0;
+	uint32_t rows = 0;
 	md_create_cursor(assembly->image->metadata_handle, mdtid_ManifestResource, &c, &rows);
 	MonoArrayHandle result = mono_array_new_handle (mono_defaults.string_class, rows, error);
 	return_if_nok (error);
@@ -4816,36 +4817,38 @@ void *
 ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoQCallAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoObjectHandleOnStack ref_module, MonoError *error)
 {
 	MonoAssembly *assembly = assembly_h.assembly;
-	MonoTableInfo *table = &assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
-	guint32 i;
-	guint32 cols [MONO_MANIFEST_SIZE];
 	guint32 impl, file_idx;
 	const char *val;
 	MonoImage *module;
+	uint32_t i;
 
 	char *n = mono_string_handle_to_utf8 (name, error);
 	return_val_if_nok (error, NULL);
 
 	/* FIXME: metadata update */
-	guint32 rows = table_info_get_rows (table);
-	for (i = 0; i < rows; ++i) {
-		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
-		val = mono_metadata_string_heap (assembly->image, cols [MONO_MANIFEST_NAME]);
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (assembly->image->metadata_handle, mdtid_ManifestResource, &c, &count))
+		return NULL;
+	
+	for (i = 0; i < count; i++, md_cursor_next (&c)) {
+		if (1 != md_get_column_value_as_utf8(c, mdtManifestResource_Name, 1, &val))
+			g_assert_not_reached();
+		
 		if (strcmp (val, n) == 0)
 			break;
 	}
 	g_free (n);
-	if (i == rows)
+
+	if (i == count)
 		return NULL;
-	/* FIXME */
-	impl = cols [MONO_MANIFEST_IMPLEMENTATION];
-	if (impl) {
-		/*
-		 * this code should only be called after obtaining the
-		 * ResourceInfo and handling the other cases.
-		 */
-		g_assert ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_FILE);
-		file_idx = impl >> MONO_IMPLEMENTATION_BITS;
+	
+	if (1 != md_get_column_value_as_token (c, mdtManifestResource_Implementation, 1, &impl))
+		g_assert_not_reached();
+	
+	file_idx = mono_metadata_token_index (impl);
+	if (file_idx) {
+		g_assert(mono_metadata_token_table (impl) == MONO_TABLE_FILE);
 
 		module = mono_image_load_file_for_image_checked (assembly->image, file_idx, error);
 		if (!is_ok (error) || !module)
@@ -4858,17 +4861,19 @@ ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoQCa
 	return_val_if_nok (error, NULL);
 	HANDLE_ON_STACK_SET (ref_module, MONO_HANDLE_RAW (rm));
 
-	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], (guint32*)size);
+	uint32_t offset;
+	if (1 != md_get_column_value_as_constant (c, mdtManifestResource_Offset, 1, &offset))
+		g_assert_not_reached();
+
+	return (void*)mono_image_get_resource (module, offset, (guint32*)size);
 }
+
 
 static gboolean
 get_manifest_resource_info_internal (MonoAssembly *assembly, MonoStringHandle name, MonoManifestResourceInfoHandle info, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	MonoTableInfo *table = &assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
-	int i;
-	guint32 cols [MONO_MANIFEST_SIZE];
-	guint32 file_cols [MONO_FILE_SIZE];
+	guint32 i;
 	const char *val;
 	char *n;
 
@@ -4877,36 +4882,56 @@ get_manifest_resource_info_internal (MonoAssembly *assembly, MonoStringHandle na
 	n = mono_string_handle_to_utf8 (name, error);
 	goto_if_nok (error, leave);
 
-	int rows = table_info_get_rows (table);
-	for (i = 0; i < rows; ++i) {
-		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
-		val = mono_metadata_string_heap (assembly->image, cols [MONO_MANIFEST_NAME]);
+	mdcursor_t manifest_cursor;
+	uint32_t manifest_count;
+	if (!md_create_cursor(assembly->image->metadata_handle, mdtid_ManifestResource, &manifest_cursor, &manifest_count)) {
+		manifest_count = 0;
+	}
+
+	for (i = 0; i < manifest_count; i++, md_cursor_next (&manifest_cursor)) {
+		if (1 != md_get_column_value_as_utf8 (manifest_cursor, mdtManifestResource_Name, 1, &val)) {
+			g_assert_not_reached();
+		}
 		if (strcmp (val, n) == 0)
 			break;
 	}
 	g_free (n);
-	if (i == rows)
+
+	if (i == manifest_count)
 		goto leave;
 
-	if (!cols [MONO_MANIFEST_IMPLEMENTATION]) {
+	guint32 impl;
+	if (1 != md_get_column_value_as_token (manifest_cursor, mdtManifestResource_Implementation, 1, &impl)) {
+		g_assert_not_reached();
+	}
+
+	if (mono_metadata_token_index(impl) == 0) {
 		MONO_HANDLE_SETVAL (info, location, guint32, RESOURCE_LOCATION_EMBEDDED | RESOURCE_LOCATION_IN_MANIFEST);
 	}
 	else {
-		switch (cols [MONO_MANIFEST_IMPLEMENTATION] & MONO_IMPLEMENTATION_MASK) {
-		case MONO_IMPLEMENTATION_FILE:
-			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
-			table = &assembly->image->tables [MONO_TABLE_FILE];
-			mono_metadata_decode_row (table, i - 1, file_cols, MONO_FILE_SIZE);
-			val = mono_metadata_string_heap (assembly->image, file_cols [MONO_FILE_NAME]);
+		mdcursor_t impl_cursor;
+		if (!md_token_to_cursor(assembly->image->metadata_handle, impl, &impl_cursor))
+			g_assert_not_reached();
+
+		switch (mono_metadata_token_table (impl)) {
+		case MONO_TABLE_FILE:
+			if (1 != md_get_column_value_as_utf8 (impl_cursor, mdtFile_Name, 1, &val)) {
+				g_assert_not_reached();
+			}
 			MONO_HANDLE_SET (info, filename, mono_string_new_handle (val, error));
-			if (file_cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA)
+			uint32_t flags;
+			if (1 != md_get_column_value_as_constant (impl_cursor, mdtFile_Flags, 1, &flags)) {
+				g_assert_not_reached();
+			}
+
+			if (flags & FILE_CONTAINS_NO_METADATA)
 				MONO_HANDLE_SETVAL (info, location, guint32, 0);
 			else
 				MONO_HANDLE_SETVAL (info, location, guint32, RESOURCE_LOCATION_EMBEDDED);
 			break;
-
-		case MONO_IMPLEMENTATION_ASSEMBLYREF:
-			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
+		
+		case MONO_TABLE_ASSEMBLYREF:
+			i = mono_metadata_token_index (impl);
 			mono_assembly_load_reference (assembly->image, i - 1);
 			if (assembly->image->references [i - 1] == REFERENCE_MISSING) {
 				mono_error_set_file_not_found (error, NULL, "Assembly %d referenced from assembly %s not found ", i - 1, assembly->image->name);
@@ -4925,8 +4950,9 @@ get_manifest_resource_info_internal (MonoAssembly *assembly, MonoStringHandle na
 			location |= RESOURCE_LOCATION_ANOTHER_ASSEMBLY;
 			MONO_HANDLE_SETVAL (info, location, guint32, location);
 			break;
-
-		case MONO_IMPLEMENTATION_EXP_TYPE:
+			break;
+		
+		case MONO_TABLE_EXPORTEDTYPE:
 			g_assert_not_reached ();
 			break;
 		}
@@ -4960,13 +4986,20 @@ leave:
 }
 
 static gboolean
-add_file_to_modules_array (MonoArrayHandle dest, int dest_idx, MonoImage *image, MonoTableInfo *table, int table_idx,  MonoError *error)
+add_file_to_modules_array (MonoArrayHandle dest, int dest_idx, MonoImage *image, mdcursor_t c,  MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 
-	guint32 cols [MONO_FILE_SIZE];
-	mono_metadata_decode_row (table, table_idx, cols, MONO_FILE_SIZE);
-	if (cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA) {
+	uint32_t flags;
+	if (1 != md_get_column_value_as_constant (c, mdtFile_Flags, 1, &flags))
+		g_assert_not_reached();
+
+	uint32_t token;
+	if (!md_cursor_to_token(c, &token))
+		g_assert_not_reached();
+	
+	uint32_t table_idx = mono_metadata_token_index (token) - 1;
+	if (flags & FILE_CONTAINS_NO_METADATA) {
 		MonoReflectionModuleHandle rm = mono_module_file_get_object_handle (image, table_idx, error);
 		goto_if_nok (error, leave);
 		MONO_HANDLE_ARRAY_SETREF (dest, dest_idx, rm);
@@ -4974,7 +5007,10 @@ add_file_to_modules_array (MonoArrayHandle dest, int dest_idx, MonoImage *image,
 		MonoImage *m = mono_image_load_file_for_image_checked (image, table_idx + 1, error);
 		goto_if_nok (error, leave);
 		if (!m) {
-			const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
+			const char *filename;
+			if (1 != md_get_column_value_as_utf8(c, mdtFile_Name, 1, &filename))
+				g_assert_not_reached();
+
 			mono_error_set_simple_file_not_found (error, filename);
 			goto leave;
 		}
@@ -4995,14 +5031,14 @@ ves_icall_System_Reflection_RuntimeAssembly_GetModulesInternal (MonoQCallAssembl
 	guint32 file_count = 0;
 	MonoImage **modules;
 	guint32 module_count, real_module_count;
-	MonoTableInfo *table;
 	MonoImage *image = assembly->image;
 
 	g_assert (image != NULL);
 	g_assert (!assembly_is_dynamic (assembly));
 
-	table = &image->tables [MONO_TABLE_FILE];
-	file_count = table_info_get_rows (table);
+	mdcursor_t file_cursor;
+	file_count = 0;
+	md_create_cursor(image->metadata_handle, mdtid_File, &file_cursor, &file_count);
 
 	modules = image->modules;
 	module_count = image->module_count;
@@ -5026,8 +5062,8 @@ ves_icall_System_Reflection_RuntimeAssembly_GetModulesInternal (MonoQCallAssembl
 		if (!add_module_to_modules_array (res, &j, modules[i], error))
 			return;
 
-	for (guint32 i = 0; i < file_count; ++i, ++j) {
-		if (!add_file_to_modules_array (res, j, image, table, i, error))
+	for (guint32 i = 0; i < file_count; ++i, md_cursor_next(&file_cursor), ++j) {
+		if (!add_file_to_modules_array (res, j, image, file_cursor, error))
 			return;
 	}
 
@@ -5190,11 +5226,17 @@ ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly *mass)
 }
 
 static gboolean
-mono_module_type_is_visible (MonoTableInfo *tdef, MonoImage *image, int type)
+mono_module_type_is_visible (MonoImage *image, int type)
 {
 	guint32 attrs, visibility;
+	mdcursor_t td;
 	do {
-		attrs = mono_metadata_decode_row_col (tdef, type - 1, MONO_TYPEDEF_FLAGS);
+		if (!md_token_to_cursor(image->metadata_handle, mono_metadata_make_token(MONO_TABLE_TYPEDEF, type), &td))
+			g_assert_not_reached();
+
+		if (1 != md_get_column_value_as_constant (td, mdtTypeDef_Flags, 1, &attrs))
+			g_assert_not_reached();
+
 		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		if (visibility != TYPE_ATTRIBUTE_PUBLIC && visibility != TYPE_ATTRIBUTE_NESTED_PUBLIC)
 			return FALSE;
@@ -5205,7 +5247,7 @@ mono_module_type_is_visible (MonoTableInfo *tdef, MonoImage *image, int type)
 }
 
 static void
-image_get_type (MonoImage *image, MonoTableInfo *tdef, int table_idx, int count, MonoArrayHandle res, MonoArrayHandle exceptions, MonoBoolean exportedOnly, MonoError *error)
+image_get_type (MonoImage *image, int table_idx, int count, MonoArrayHandle res, MonoArrayHandle exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (klass_error);
@@ -5226,15 +5268,16 @@ image_get_type (MonoImage *image, MonoTableInfo *tdef, int table_idx, int count,
 static MonoArrayHandle
 mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
-	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
-	guint32 rows = mono_metadata_table_num_rows (image, MONO_TABLE_TYPEDEF);
+	mdcursor_t c;
+	guint32 rows = 0;
 	guint32 count;
+	md_create_cursor(image->metadata_handle, mdtid_TypeDef, &c, &rows);
 
 	/* we start the count from 1 because we skip the special type <Module> */
 	if (exportedOnly) {
 		count = 0;
 		for (guint32 i = 1; i < rows; ++i) {
-			if (mono_module_type_is_visible (tdef, image, i + 1))
+			if (mono_module_type_is_visible (image, i + 1))
 				count++;
 		}
 	} else {
@@ -5247,8 +5290,8 @@ mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBool
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 	count = 0;
 	for (guint32 i = 1; i < rows; ++i) {
-		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i+1)) {
-			image_get_type (image, tdef, i + 1, count, res, exceptions, exportedOnly, error);
+		if (!exportedOnly || mono_module_type_is_visible (image, i+1)) {
+			image_get_type (image, i + 1, count, res, exceptions, exportedOnly, error);
 			return_val_if_nok (error, NULL_HANDLE_ARRAY);
 			count++;
 		}
@@ -5312,20 +5355,26 @@ ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes (MonoQCallAssemblyH
 
 	g_assert (!assembly_is_dynamic (assembly));
 	MonoImage *image = assembly->image;
-	MonoTableInfo *table = &image->tables [MONO_TABLE_FILE];
 	MonoArrayHandle res = mono_module_get_types (image, exceptions, TRUE, error);
 	return_if_nok (error);
 
 	/* Append data from all modules in the assembly */
-	int rows = table_info_get_rows (table);
-	for (i = 0; i < rows; ++i) {
-		if (!(mono_metadata_decode_row_col (table, i, MONO_FILE_FLAGS) & FILE_CONTAINS_NO_METADATA)) {
-			MonoImage *loaded_image = mono_assembly_load_module_checked (image->assembly, i + 1, error);
-			return_if_nok (error);
-
-			if (loaded_image) {
-				append_module_types (res, exceptions, loaded_image, TRUE, error);
+	mdcursor_t c;
+	uint32_t count;
+	if (md_create_cursor(image->metadata_handle, mdtid_File, &c, &count)) {
+		for (uint32_t i = 0; i < count; i++, md_cursor_next (&c)) {
+			uint32_t flags;
+			if (1 != md_get_column_value_as_constant (c, mdtFile_Flags, 1, &flags))
+				g_assert_not_reached();
+			
+			if (flags & FILE_CONTAINS_NO_METADATA) {
+				MonoImage *loaded_image = mono_assembly_load_module_checked (image->assembly, i + 1, error);
 				return_if_nok (error);
+
+				if (loaded_image) {
+					append_module_types (res, exceptions, loaded_image, TRUE, error);
+					return_if_nok (error);
+				}
 			}
 		}
 	}
@@ -5391,23 +5440,33 @@ ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes (MonoQCallAssemblyH
 	HANDLE_ON_STACK_SET (res_h, MONO_HANDLE_RAW (res));
 }
 
+
 static void
-get_top_level_forwarded_type (MonoImage *image, MonoTableInfo *table, int i, MonoArrayHandle types, MonoArrayHandle exceptions, int *aindex, int *exception_count)
+get_top_level_forwarded_type (MonoImage *image, mdcursor_t c, MonoArrayHandle types, MonoArrayHandle exceptions, int *aindex, int *exception_count)
 {
 	ERROR_DECL (local_error);
-	guint32 cols [MONO_EXP_TYPE_SIZE];
 	MonoClass *klass;
 	MonoReflectionTypeHandle rt;
 
-	mono_metadata_decode_row (table, i, cols, MONO_EXP_TYPE_SIZE);
-	if (!(cols [MONO_EXP_TYPE_FLAGS] & TYPE_ATTRIBUTE_FORWARDER))
+	uint32_t flags;
+	if (1 != md_get_column_value_as_constant (c, mdtExportedType_Flags, 1, &flags) || !(flags & TYPE_ATTRIBUTE_FORWARDER))
 		return;
-	guint32 impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
-	const char *name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
-	const char *nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
 
-	g_assert ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_ASSEMBLYREF);
-	guint32 assembly_idx = impl >> MONO_IMPLEMENTATION_BITS;
+	guint32 impl;
+	if (1 != md_get_column_value_as_token (c, mdtExportedType_Implementation, 1, &impl))
+		return;
+
+	const char *name;
+	const char *nspace;
+
+	if (1 != md_get_column_value_as_utf8(c, mdtExportedType_TypeName, 1, &name))
+		return;
+	
+	if (1 != md_get_column_value_as_utf8(c, mdtExportedType_TypeNamespace, 1, &nspace))
+		return;
+
+	g_assert(mono_metadata_token_table (impl) == MONO_TABLE_ASSEMBLYREF);
+	guint32 assembly_idx = mono_metadata_token_index (impl);
 
 	mono_assembly_load_reference (image, assembly_idx - 1);
 	g_assert (image->references [assembly_idx - 1]);
@@ -5456,11 +5515,18 @@ ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes (MonoQCall
 	int count = 0;
 
 	g_assert (!assembly_is_dynamic (assembly));
-	MonoTableInfo *table = &image->tables [MONO_TABLE_EXPORTEDTYPE];
-	int rows = table_info_get_rows (table);
-	for (int i = 0; i < rows; ++i) {
-		if (mono_metadata_decode_row_col (table, i, MONO_EXP_TYPE_FLAGS) & TYPE_ATTRIBUTE_FORWARDER)
-			count ++;
+	mdcursor_t exported_types;
+	uint32_t rows = 0;
+	if (md_create_cursor(image->metadata_handle, mdtid_ExportedType, &exported_types, &rows)) {
+		mdcursor_t c = exported_types;
+		for (uint32_t i = 0; i < rows; ++i, md_cursor_next(&c)) {
+			uint32_t flags;
+			if (1 != md_get_column_value_as_constant (c, mdtExportedType_Flags, 1, &flags))
+				g_assert_not_reached();
+			
+			if (flags & TYPE_ATTRIBUTE_FORWARDER)
+				count ++;
+		}
 	}
 
 	MonoArrayHandle types = mono_array_new_handle (mono_defaults.runtimetype_class, count, error);
@@ -5470,8 +5536,8 @@ ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes (MonoQCall
 
 	int aindex = 0;
 	int exception_count = 0;
-	for (int i = 0; i < rows; ++i)
-		get_top_level_forwarded_type (image, table, i, types, exceptions, &aindex, &exception_count);
+	for (int i = 0; i < rows; ++i, md_cursor_next(&exported_types))
+		get_top_level_forwarded_type (image, exported_types, types, exceptions, &aindex, &exception_count);
 
 	if (exception_count > 0) {
 		MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, NULL);
@@ -5623,17 +5689,16 @@ static gboolean
 mono_memberref_is_method (MonoImage *image, guint32 token)
 {
 	if (!image_is_dynamic (image)) {
-		uint32_t idx = mono_metadata_token_index (token);
-		if (idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MEMBERREF, idx)) {
+		mdcursor_t c;
+		if (!md_token_to_cursor(image->metadata_handle, token, &c))
 			return FALSE;
-		}
 
-		guint32 cols [MONO_MEMBERREF_SIZE];
-		const MonoTableInfo *table = &image->tables [MONO_TABLE_MEMBERREF];
-		mono_metadata_decode_row (table, idx - 1, cols, MONO_MEMBERREF_SIZE);
-		const char *sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
-		mono_metadata_decode_blob_size (sig, &sig);
-		return (*sig != 0x6);
+		uint8_t const* sig;
+		uint32_t sig_len;
+		if (1 != md_get_column_value_as_blob (c, mdtMemberRef_Signature, 1, &sig, &sig_len))
+			g_assert_not_reached();
+
+		return (*sig == 0x6);
 	} else {
 		ERROR_DECL (error);
 		MonoClass *handle_class;
@@ -5958,28 +6023,24 @@ ves_icall_System_Reflection_RuntimeModule_ResolveMemberToken (MonoImage *image, 
 MonoArrayHandle
 ves_icall_System_Reflection_RuntimeModule_ResolveSignature (MonoImage *image, guint32 token, MonoResolveTokenError *resolve_error, MonoError *error)
 {
-	int table = mono_metadata_token_table (token);
-	uint32_t idx = mono_metadata_token_index (token);
-	MonoTableInfo *tables = image->tables;
-	guint32 sig, len;
-	const char *ptr;
+	mdcursor_t c;
+	guint32 len;
+	const uint8_t *ptr;
 
 	*resolve_error = ResolveTokenError_OutOfRange;
 
 	/* FIXME: Support other tables ? */
-	if (table != MONO_TABLE_STANDALONESIG)
+	if (mono_metadata_token_table (token) != MONO_TABLE_STANDALONESIG)
 		return NULL_HANDLE_ARRAY;
 
 	if (image_is_dynamic (image))
 		return NULL_HANDLE_ARRAY;
 
-	if ((idx == 0) || mono_metadata_table_bounds_check (image, MONO_TABLE_STANDALONESIG, idx))
+	if (!md_token_to_cursor (image->metadata_handle, token, &c))
 		return NULL_HANDLE_ARRAY;
-
-	sig = mono_metadata_decode_row_col (&tables [MONO_TABLE_STANDALONESIG], idx - 1, 0);
-
-	ptr = mono_metadata_blob_heap (image, sig);
-	len = mono_metadata_decode_blob_size (ptr, &ptr);
+	
+	if (1 != md_get_column_value_as_blob(c, mdtStandAloneSig_Signature, 1, &ptr, &len))
+		return NULL_HANDLE_ARRAY;
 
 	MonoArrayHandle res = mono_array_new_handle (mono_defaults.byte_class, len, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
@@ -7222,6 +7283,7 @@ mono_lookup_icall_symbol (MonoMethod *m)
 typedef enum ICallSigType {
 	ICALL_SIG_TYPE_bool     = 0x00,
 	ICALL_SIG_TYPE_boolean  = ICALL_SIG_TYPE_bool,
+	ICALL_SIG_TYPE__Bool    = ICALL_SIG_TYPE_bool, // bool is sometimes a macro for _Bool, so sometimes the macro will be expanded as such and it will look for this member.
 	ICALL_SIG_TYPE_double   = 0x01,
 	ICALL_SIG_TYPE_float    = 0x02,
 	ICALL_SIG_TYPE_int      = 0x03,

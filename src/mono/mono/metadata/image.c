@@ -2593,13 +2593,12 @@ mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, Mono
 {
 	char *base_dir, *name;
 	MonoImage *res;
-	MonoTableInfo  *t = &image->tables [MONO_TABLE_FILE];
+	mdcursor_t cursor;
 	const char *fname;
-	guint32 fname_id;
 
 	error_init (error);
 
-	if (fileidx < 1 || fileidx > table_info_get_rows (t))
+	if (fileidx < 1 || !md_token_to_cursor(image->metadata_handle, mono_metadata_make_token(MONO_TABLE_FILE, fileidx), &cursor))
 		return NULL;
 
 	mono_image_lock (image);
@@ -2609,8 +2608,11 @@ mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, Mono
 	}
 	mono_image_unlock (image);
 
-	fname_id = mono_metadata_decode_row_col (t, fileidx - 1, MONO_FILE_NAME);
-	fname = mono_metadata_string_heap (image, fname_id);
+	if (1 != md_get_column_value_as_utf8(cursor, mdtFile_Name, 1, &fname)) {
+		mono_error_set_bad_image (error, image, "Corrupt row %d in file table", fileidx);
+		return NULL;
+	}
+
 	base_dir = g_path_get_dirname (image->name);
 	name = g_build_filename (base_dir, fname, (const char*)NULL);
 	res = mono_image_open (name, NULL);
@@ -2637,7 +2639,9 @@ mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, Mono
 		}
 
 		if (!image->files) {
-			guint32 n = table_info_get_rows (t);
+			mdcursor_t c;
+			guint32 n = 0;
+			md_create_cursor(image->metadata_handle, mdtid_File, &c, &n);
 			image->files = g_new0 (MonoImage*, n);
 			image->file_count = n;
 		}
