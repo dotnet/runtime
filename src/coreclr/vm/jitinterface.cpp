@@ -2413,11 +2413,7 @@ static unsigned MarkGCField(BYTE* gcPtrs, CorInfoGCType type)
 
 static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMT->IsValueType());
 
