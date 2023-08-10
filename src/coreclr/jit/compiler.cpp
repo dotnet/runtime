@@ -1078,7 +1078,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-                // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
 

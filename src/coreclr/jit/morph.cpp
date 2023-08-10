@@ -2464,6 +2464,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
 
                 passUsingFloatRegs = (floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
+
+#ifdef TARGET_RISCV64
+                passUsingFloatRegs = passUsingFloatRegs && ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) != floatFieldFlags);
+#endif // TARGET_RISCV64
+
                 comp->compFloatingPointUsed |= passUsingFloatRegs;
 
                 if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE)) != 0)
@@ -2475,7 +2480,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     // TODO-LoongArch64: fix "getPrimitiveTypeForStruct".
                     structBaseType = TYP_STRUCT;
                 }
-
+#ifdef TARGET_RISCV64
+                if ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) == floatFieldFlags) {
+                    size = 2;
+                }
+                else
+#endif // TARGET_RISCV64
                 if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO)) != 0)
                 {
                     size = 1;
@@ -2892,6 +2902,15 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         assert(size == 2);
                         intArgRegNum = maxRegArgs;
                     }
+#ifdef TARGET_RISCV64
+                    else if ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) == floatFieldFlags)
+                    {
+                        assert(!passUsingFloatRegs);
+                        arg.AbiInfo.StructFloatFieldType[0] = TYP_LONG;
+                        arg.AbiInfo.StructFloatFieldType[1] = TYP_LONG;
+                        intArgRegNum += size;
+                    }
+#endif // TARGET_RISCV64
                     else if ((floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) == 0x0)
                     {
                         if (passUsingFloatRegs)

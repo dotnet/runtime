@@ -882,6 +882,15 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                 argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
             }
+#ifdef TARGET_RISCV64
+            else if ((floatFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) == floatFlags)
+            {
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_LONG, 2);
+
+                argRegTypeInStruct1 = TYP_LONG;
+                argRegTypeInStruct2 = TYP_LONG;
+            }
+#endif // TARGET_RISCV64
             else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
             {
                 floatNum              = 1;
@@ -892,7 +901,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
 
+#ifndef TARGET_RISCV64
             assert((floatNum == 1) || (floatNum == 2));
+#endif // !TARGET_RISCV64
 
             if (!canPassArgInRegisters)
             {
