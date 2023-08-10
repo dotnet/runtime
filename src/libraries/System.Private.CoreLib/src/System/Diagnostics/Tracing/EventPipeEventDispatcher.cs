@@ -28,9 +28,12 @@ namespace System.Diagnostics.Tracing
 
         private ulong m_sessionID;
 
-        private bool m_stopDispatchTask;
+        private CancellationTokenSource? m_dispatchTaskCancellationSource;
         private Task? m_dispatchTask;
-        private ManualResetEvent m_stoppedEvent = new ManualResetEvent(true);
+
+        // We take this lock to synchronize access to the shared session state. It is important to never take the EventSource.EventListenersLock while
+        // holding this, or we can deadlock. Unfortunately calling in to EventSource at all can take the EventListenersLock in ways that are not obvious,
+        // so don't call in to EventSource or other EventListeners while holding this unless you are certain it can't take the EventListenersLock.
         private readonly object m_dispatchControlLock = new object();
         private readonly Dictionary<EventListener, EventListenerSubscription> m_subscriptions = new Dictionary<EventListener, EventListenerSubscription>();
 
@@ -44,39 +47,21 @@ namespace System.Diagnostics.Tracing
 
         internal void SendCommand(EventListener eventListener, EventCommand command, bool enable, EventLevel level, EventKeywords matchAnyKeywords)
         {
-            while (true)
+            lock (m_dispatchControlLock)
             {
-                if (m_stopDispatchTask)
+                if (command == EventCommand.Update && enable)
                 {
-                    m_stoppedEvent.WaitOne();
+                    // Add the new subscription.  This will overwrite an existing subscription for the listener if one exists.
+                    m_subscriptions[eventListener] = new EventListenerSubscription(matchAnyKeywords, level);
+                }
+                else if (command == EventCommand.Update && !enable)
+                {
+                    // Remove the event listener from the list of subscribers.
+                    m_subscriptions.Remove(eventListener);
                 }
 
-                lock (m_dispatchControlLock)
-                {
-                    if (m_stopDispatchTask)
-                    {
-                        // We happened to end up here after the task was marked as stopping, give up the lock and try again later
-                        continue;
-                    }
-
-                    Debug.Assert(!m_stopDispatchTask);
-                    if (command == EventCommand.Update && enable)
-                    {
-                        // Add the new subscription.  This will overwrite an existing subscription for the listener if one exists.
-                        m_subscriptions[eventListener] = new EventListenerSubscription(matchAnyKeywords, level);
-                    }
-                    else if (command == EventCommand.Update && !enable)
-                    {
-                        // Remove the event listener from the list of subscribers.
-                        m_subscriptions.Remove(eventListener);
-                    }
-
-                    // Commit the configuration change.
-                    CommitDispatchConfiguration();
-
-                    // We were successful, break out of the loop
-                    break;
-                }
+                // Commit the configuration change.
+                CommitDispatchConfiguration();
             }
         }
 
@@ -146,10 +131,10 @@ namespace System.Diagnostics.Tracing
         private void StartDispatchTask(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency)
         {
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
-            Debug.Assert(m_dispatchTask == null);
-            Debug.Assert(m_stopDispatchTask == false);
 
-            m_dispatchTask = Task.Factory.StartNew(() => DispatchEventsToEventListeners(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            m_dispatchTaskCancellationSource = new CancellationTokenSource();
+            Task? previousDispatchTask = m_dispatchTask;
+            m_dispatchTask = Task.Factory.StartNew(() => DispatchEventsToEventListeners(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency, previousDispatchTask, m_dispatchTaskCancellationSource.Token), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         private void SetStopDispatchTask()
@@ -158,22 +143,22 @@ namespace System.Diagnostics.Tracing
 
             if (m_dispatchTask != null)
             {
-                m_stoppedEvent.Reset();
-                m_stopDispatchTask = true;
+                m_dispatchTaskCancellationSource?.Cancel();
                 EventPipeInternal.SignalSession(m_sessionID);
             }
         }
 
-        private unsafe void DispatchEventsToEventListeners(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency)
+        private unsafe void DispatchEventsToEventListeners(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency, Task? previousDispatchTask, CancellationToken token)
         {
+            previousDispatchTask?.Wait(CancellationToken.None);
+
             // Struct to fill with the call to GetNextEvent.
             EventPipeEventInstanceData instanceData;
-
-            while (!m_stopDispatchTask)
+            while (!token.IsCancellationRequested)
             {
                 bool eventsReceived = false;
                 // Get the next event.
-                while (!m_stopDispatchTask && EventPipeInternal.GetNextEvent(sessionID, &instanceData))
+                while (!token.IsCancellationRequested && EventPipeInternal.GetNextEvent(sessionID, &instanceData))
                 {
                     eventsReceived = true;
 
@@ -188,7 +173,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // Wait for more events.
-                if (!m_stopDispatchTask)
+                if (!token.IsCancellationRequested)
                 {
                     if (!eventsReceived)
                     {
@@ -198,11 +183,6 @@ namespace System.Diagnostics.Tracing
                     Thread.Sleep(10);
                 }
             }
-
-            m_dispatchTask = null;
-            m_stopDispatchTask = false;
-            // Signal to threads that they can stop waiting since we are done
-            m_stoppedEvent.Set();
 
             // Disable the old session. This can happen asynchronously since we aren't using the old session anymore
             EventPipeInternal.Disable(sessionID);
