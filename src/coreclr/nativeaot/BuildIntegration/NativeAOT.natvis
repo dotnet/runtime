@@ -61,10 +61,15 @@
         </Expand>
     </Type>
     <Type Name="__ThreadStaticHelper&lt;*&gt;">
-        <Intrinsic Name="HasModuleStorage" Expression="TypeManagerSlot-&gt;ModuleIndex &lt; tls_CurrentThread.m_numThreadLocalModuleStatics"/>
-        <Intrinsic Name="GetStorage" Expression="*(__Array&lt;Object&gt;**)tls_CurrentThread.m_pThreadLocalModuleStatics[TypeManagerSlot-&gt;ModuleIndex]"/>
-        <Intrinsic Name="Get" Expression="*($T1**)(&amp;(*GetStorage()).values)[ClassIndex]"/>
-        <Intrinsic Name="IsInit" Expression="HasModuleStorage() &amp;&amp; GetStorage() != nullptr &amp;&amp; ClassIndex &lt; GetStorage()-&gt;count &amp;&amp; Get() != nullptr"/>
+        <Intrinsic Name="GetPerThreadStorage" Expression="(Array*)tls_CurrentThread.m_pThreadLocalStatics"/>
+        <Intrinsic Name="GetPerModuleStorage" Expression="((Array**)((char*)GetPerThreadStorage() + sizeof(Array)))[TypeManagerSlot-&gt;ModuleIndex]"/>
+        <Intrinsic Name="GetPerTypeStorage" Expression="((Object**)((char*)GetPerModuleStorage() + sizeof(Array)))[ClassIndex]"/>
+        <Intrinsic Name="Get" Expression="($T1*)GetPerTypeStorage()"/>
+
+        <Intrinsic Name="IsInit" Expression="
+                   GetPerThreadStorage() != nullptr &amp;&amp; GetPerModuleStorage()-&gt;m_Length &gt; TypeManagerSlot-&gt;ModuleIndex &amp;&amp; 
+                   GetPerModuleStorage() != nullptr &amp;&amp; GetPerModuleStorage()-&gt;m_Length &gt; ClassIndex &amp;&amp; 
+                   GetPerTypeStorage() != nullptr "/>
 
         <DisplayString  Condition="!IsInit()">Null</DisplayString>
         <DisplayString  Condition="IsInit()">{*Get()}</DisplayString>
