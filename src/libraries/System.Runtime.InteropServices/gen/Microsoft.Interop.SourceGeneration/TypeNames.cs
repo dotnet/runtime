@@ -1,8 +1,118 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+
 namespace Microsoft.Interop
 {
+    public static class NameSyntaxes
+    {
+        private static NameSyntax? _DllImportAttribute;
+        public static NameSyntax DllImportAttribute => _DllImportAttribute ??= ParseName("global::" + TypeNames.DllImportAttribute);
+
+        private static NameSyntax? _LibraryImportAttribute;
+        public static NameSyntax LibraryImportAttribute => _LibraryImportAttribute ??= ParseName("global::" + TypeNames.LibraryImportAttribute);
+
+        private static NameSyntax? _System_Runtime_CompilerServices_Unsafe;
+        public static NameSyntax System_Runtime_CompilerServices_Unsafe => _System_Runtime_CompilerServices_Unsafe ??= ParseName("global::" + TypeNames.System_Runtime_CompilerServices_Unsafe);
+
+        private static NameSyntax? _System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute;
+        public static NameSyntax System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute => _System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute ??= ParseName("global::" + TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute);
+
+        private static NameSyntax? _System_Runtime_InteropServices_MarshalAsAttribute;
+        public static NameSyntax System_Runtime_InteropServices_MarshalAsAttribute => _System_Runtime_InteropServices_MarshalAsAttribute ??= ParseName("global::" + TypeNames.System_Runtime_InteropServices_MarshalAsAttribute);
+
+        private static NameSyntax? _DefaultDllImportSearchPathsAttribute;
+        public static NameSyntax DefaultDllImportSearchPathsAttribute => _DefaultDllImportSearchPathsAttribute ??= ParseName("global::" + TypeNames.DefaultDllImportSearchPathsAttribute);
+
+        private static NameSyntax? _SuppressGCTransitionAttribute;
+        public static NameSyntax SuppressGCTransitionAttribute => _SuppressGCTransitionAttribute ??= ParseName("global::" + TypeNames.SuppressGCTransitionAttribute);
+
+        private static NameSyntax? _UnmanagedCallConvAttribute;
+        public static NameSyntax UnmanagedCallConvAttribute => _UnmanagedCallConvAttribute ??= ParseName("global::" + TypeNames.UnmanagedCallConvAttribute);
+
+        private static NameSyntax? _System_Runtime_CompilerServices_SkipLocalsInitAttribute;
+        public static NameSyntax System_Runtime_CompilerServices_SkipLocalsInitAttribute => _System_Runtime_CompilerServices_SkipLocalsInitAttribute ??= ParseName("global::" + TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute);
+
+        private static NameSyntax? _System_CodeDom_Compiler_GeneratedCodeAttribute;
+        public static NameSyntax System_CodeDom_Compiler_GeneratedCodeAttribute => _System_CodeDom_Compiler_GeneratedCodeAttribute ??= ParseName("global::" + TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute);
+
+        private static NameSyntax? _UnmanagedCallersOnlyAttribute;
+        public static NameSyntax UnmanagedCallersOnlyAttribute => _UnmanagedCallersOnlyAttribute ??= ParseName("global::" + TypeNames.UnmanagedCallersOnlyAttribute);
+    }
+
+    public static class TypeSyntaxes
+    {
+        private static TypeSyntax? _StringMarshalling;
+        public static TypeSyntax StringMarshalling => _StringMarshalling ??= ParseTypeName("global::" + TypeNames.StringMarshalling);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry;
+        public static TypeSyntax System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry => _System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry ??= ParseTypeName("global::" + TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_NativeMemory;
+        public static TypeSyntax System_Runtime_InteropServices_NativeMemory => _System_Runtime_InteropServices_NativeMemory ??= ParseTypeName("global::" + TypeNames.System_Runtime_InteropServices_NativeMemory);
+
+        private static TypeSyntax? _StrategyBasedComWrappers;
+        public static TypeSyntax StrategyBasedComWrappers => _StrategyBasedComWrappers ??= ParseTypeName("global::" + TypeNames.StrategyBasedComWrappers);
+
+        private static TypeSyntax? _IUnmanagedVirtualMethodTableProvider;
+        public static TypeSyntax IUnmanagedVirtualMethodTableProvider => _IUnmanagedVirtualMethodTableProvider ??= ParseTypeName("global::" + TypeNames.IUnmanagedVirtualMethodTableProvider);
+
+        private static TypeSyntax? _IIUnknownInterfaceType;
+        public static TypeSyntax IIUnknownInterfaceType => _IIUnknownInterfaceType ??= ParseTypeName("global::" + TypeNames.IIUnknownInterfaceType);
+
+        private static TypeSyntax? _IIUnknownDerivedDetails;
+        public static TypeSyntax IIUnknownDerivedDetails => _IIUnknownDerivedDetails ??= ParseTypeName("global::" + TypeNames.IIUnknownDerivedDetails);
+
+        private static TypeSyntax? _UnmanagedObjectUnwrapper;
+        public static TypeSyntax UnmanagedObjectUnwrapper => _UnmanagedObjectUnwrapper ??= ParseTypeName("global::" + TypeNames.UnmanagedObjectUnwrapper);
+
+        private static TypeSyntax? _IComExposedClass;
+        public static TypeSyntax IComExposedClass => _IComExposedClass ??= ParseTypeName("global::" + TypeNames.IComExposedClass);
+
+        private static TypeSyntax? _UnreachableException;
+        public static TypeSyntax UnreachableException => _UnreachableException ??= ParseTypeName("global::" + TypeNames.UnreachableException);
+
+        private static TypeSyntax? _System_Runtime_CompilerServices_RuntimeHelpers;
+        public static TypeSyntax System_Runtime_CompilerServices_RuntimeHelpers => _System_Runtime_CompilerServices_RuntimeHelpers ??= ParseTypeName("global::" + TypeNames.System_Runtime_CompilerServices_RuntimeHelpers);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_ComWrappers;
+        public static TypeSyntax System_Runtime_InteropServices_ComWrappers => _System_Runtime_InteropServices_ComWrappers ??= ParseTypeName("global::" + TypeNames.System_Runtime_InteropServices_ComWrappers);
+
+        private static TypeSyntax? _System_IntPtr;
+        public static TypeSyntax System_IntPtr => _System_IntPtr ??= ParseTypeName("global::" + TypeNames.System_IntPtr);
+
+        private static TypeSyntax? _System_Guid;
+        public static TypeSyntax System_Guid => _System_Guid ??= ParseTypeName("global::" + TypeNames.System_Guid);
+
+        private static TypeSyntax? _DllImportSearchPath;
+        public static TypeSyntax DllImportSearchPath => _DllImportSearchPath ??= ParseTypeName("global::" + TypeNames.DllImportSearchPath);
+
+        private static TypeSyntax? _System_Type;
+        public static TypeSyntax System_Type => _System_Type ??= ParseTypeName("global::" + TypeNames.System_Type);
+
+        private static TypeSyntax? _System_Activator;
+        public static TypeSyntax System_Activator => _System_Activator ??= ParseTypeName("global::" + TypeNames.System_Activator);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_Marshal;
+        public static TypeSyntax System_Runtime_InteropServices_Marshal => _System_Runtime_InteropServices_Marshal ??= ParseTypeName("global::" + TypeNames.System_Runtime_InteropServices_Marshal);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_UnmanagedType;
+        public static TypeSyntax System_Runtime_InteropServices_UnmanagedType => _System_Runtime_InteropServices_UnmanagedType ??= ParseTypeName("global::" + TypeNames.System_Runtime_InteropServices_UnmanagedType);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_MemoryMarshal;
+        public static TypeSyntax System_Runtime_InteropServices_MemoryMarshal => _System_Runtime_InteropServices_MemoryMarshal ??= ParseTypeName("global::" + TypeNames.System_Runtime_InteropServices_MemoryMarshal);
+
+        private static TypeSyntax? _System_Exception;
+        public static TypeSyntax System_Exception => _System_Exception ??= ParseTypeName("global::" + TypeNames.System_Exception);
+
+        private static TypeSyntax? _System_GC;
+        public static TypeSyntax System_GC => _System_GC ??= ParseTypeName("global::" + TypeNames.System_GC);
+
+        private static TypeSyntax? _System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch;
+        public static TypeSyntax System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch => _System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch ??= ParseTypeName("global::" + TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch);
+    }
     public static class TypeNames
     {
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
@@ -94,9 +204,7 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_InAttribute = "System.Runtime.InteropServices.InAttribute";
 
-        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute_WithGlobal = "global::System.Runtime.CompilerServices.SkipLocalsInitAttribute";
-
-        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
+        public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
 
         public const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
 
@@ -106,7 +214,7 @@ namespace Microsoft.Interop
 
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
 
-        public const string System_CodeDom_Compiler_GeneratedCodeAttribute_WithGlobal = "global::System.CodeDom.Compiler.GeneratedCodeAttribute";
+        public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
 
         public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
 
