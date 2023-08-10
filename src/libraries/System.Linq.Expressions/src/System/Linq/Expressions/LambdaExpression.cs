@@ -134,11 +134,15 @@ namespace System.Linq.Expressions
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public Delegate Compile()
         {
             if (CanCompileToIL)
             {
+#pragma warning disable IL3050
+                // Analyzer doesn't yet understand feature switches
                 return Compiler.LambdaCompiler.Compile(this);
+#pragma warning restore IL3050
             }
             else
             {
@@ -152,6 +156,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="preferInterpretation">A <see cref="bool"/> that indicates if the expression should be compiled to an interpreted form, if available.</param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public Delegate Compile(bool preferInterpretation)
         {
             if (CanInterpret && preferInterpretation)
@@ -185,6 +190,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="debugInfoGenerator">Debugging information generator used by the compiler to mark sequence points and annotate local variables.</param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public Delegate Compile(DebugInfoGenerator debugInfoGenerator)
         {
             return Compile();
@@ -214,11 +220,15 @@ namespace System.Linq.Expressions
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public new TDelegate Compile()
         {
             if (CanCompileToIL)
             {
+#pragma warning disable IL3050
+                // Analyzer doesn't yet understand feature switches
                 return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
+#pragma warning restore IL3050
             }
             else
             {
@@ -232,6 +242,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="preferInterpretation">A <see cref="bool"/> that indicates if the expression should be compiled to an interpreted form, if available.</param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public new TDelegate Compile(bool preferInterpretation)
         {
             if (CanInterpret && preferInterpretation)
@@ -326,6 +337,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="debugInfoGenerator">Debugging information generator used by the compiler to mark sequence points and annotate local variables.</param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public new TDelegate Compile(DebugInfoGenerator debugInfoGenerator)
         {
             return Compile();
@@ -607,6 +619,8 @@ namespace System.Linq.Expressions
         /// Creates an Expression{T} given the delegate type. Caches the
         /// factory method to speed up repeated creations for the same T.
         /// </summary>
+        [UnconditionalSuppressMessage("DynamicCode", "IL3050",
+            Justification = "MakeGenericType is only used for a Type that should be a delegate type, which are always reference types.")]
         internal static LambdaExpression CreateLambda(Type delegateType, Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {
             // Get or create a delegate to the public Expression.Lambda<T>
@@ -621,7 +635,10 @@ namespace System.Linq.Expressions
                 MethodInfo create;
                 if (LambdaExpression.CanCompileToIL)
                 {
+#pragma warning disable IL3050
+                    // Analyzer doesn't yet understand feature switches
                     create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
+#pragma warning restore IL3050
                 }
                 else
                 {
