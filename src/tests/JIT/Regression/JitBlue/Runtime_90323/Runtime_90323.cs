@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -12,18 +13,22 @@ public class Runtime_90323
     [Fact]
     public static int TestEntryPoint()
     {
+        bool passed = true;
+
         long value = 0x4000_0040_0000_0001L;
 
         if (ConvertToSingle(value) != (float)(value))
         {
-            return 0;
+            Console.WriteLine($"Mismatch between codegen and constant folding: {ConvertToSingle(value)} != {(float)(value)}");
+            passed = false;
         }
 
-        if ((float)(value) != 4.6116866E+18f)
+        if (BitConverter.SingleToUInt32Bits((float)(value)) != 0x5E80_0001) // 4.6116866E+18f
         {
-            return 0;
+            Console.WriteLine($"Mismatch between constant folding and expected value: {(float)(value)} != 4.6116866E+18f; {BitConverter.SingleToUInt32Bits((float)(value))} != 0x5E80_0001");
+            passed = false;
         }
 
-        return 100;
+        return passed ? 100 : 0;
     }
 }
