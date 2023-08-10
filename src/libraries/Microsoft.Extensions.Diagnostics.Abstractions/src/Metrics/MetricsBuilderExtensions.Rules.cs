@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     /// <summary>
-    /// Extension methods for <see cref="IMetricsBuilder"/> to enable or disable metrics.
+    /// Extension methods for <see cref="IMetricsBuilder"/> to add or clear <see cref="IMetricsListener"/> registrations, and to enable or disable metrics.
     /// </summary>
     public static partial class MetricsBuilderExtensions
     {

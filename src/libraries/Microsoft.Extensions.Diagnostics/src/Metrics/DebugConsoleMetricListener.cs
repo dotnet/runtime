@@ -13,18 +13,26 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     internal sealed class DebugConsoleMetricListener : IMetricsListener, IDisposable
     {
         private readonly Timer _timer;
-        internal TextWriter _textWriter = Console.Out;
+        private int _timerStarted;
         private IObservableInstrumentsSource? _source;
+        // For testing
+        internal TextWriter? _textWriter;
 
         public DebugConsoleMetricListener()
         {
-            _timer = new Timer(OnTimer, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            _timer = new Timer(OnTimer, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         public string Name => ConsoleMetrics.DebugListenerName;
 
         public bool InstrumentPublished(Instrument instrument, out object? userState)
         {
+            // Start the timer if this is the first observable instrument.
+            if (instrument.IsObservable && Interlocked.Exchange(ref _timerStarted, 1) == 0)
+            {
+                _timer.Change(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            }
+
             WriteLine($"{instrument.Meter.Name}-{instrument.Name} Started; Description: {instrument.Description}.");
             userState = this;
             return true;
@@ -57,9 +65,10 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         private void WriteLine(string output)
         {
-            lock (_textWriter)
+            var writer = _textWriter ?? Console.Out;
+            lock (writer)
             {
-                _textWriter.WriteLine(output);
+                writer.WriteLine(output);
             }
         }
 

@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly MeterListener _meterListener;
         private readonly IMetricsListener _metricsListener;
         private readonly IMeterFactory _meterFactory;
-        private readonly Dictionary<Instrument, object?> _instruments = new();
+        private readonly Dictionary<Instrument, object?> _instruments = new(ReferenceEqualityComparer.Instance);
         private IList<InstrumentRule> _rules = Array.Empty<InstrumentRule>();
         private bool _disposed;
 
@@ -184,26 +184,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 return true;
             }
 
-            // Rule "System.Net.Http" doesn't match meter "System.Net"
-            if (ruleMeterName.Length > instrument.Meter.Name.Length)
-            {
-                return false;
-            }
-
-            // Exact match +/- ".*"
-            if (ruleMeterName.Equals(instrument.Meter.Name.AsSpan(), StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            // Rule "System.Data" doesn't match meter "System.Net"
-            if (!instrument.Meter.Name.AsSpan().StartsWith(ruleMeterName, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            // Only allow StartsWith on segment boundaries
-            return instrument.Meter.Name[ruleMeterName.Length] == '.';
+            // "System.Net" matches "System.Net" and "System.Net.Http"
+            return instrument.Meter.Name.AsSpan().StartsWith(ruleMeterName, StringComparison.OrdinalIgnoreCase)
+                // Exact match +/- ".*"
+                && (ruleMeterName.Length == instrument.Meter.Name.Length
+                    // Only allow StartsWith on segment boundaries
+                    || ruleMeterName[instrument.Meter.Name.Length] == '.');
         }
 
         // Everything must already match the Instrument and listener, or be blank.
