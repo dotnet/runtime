@@ -11587,6 +11587,27 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
+bool CEEInfo::getStaticObjRefContent(OBJECTREF obj, uint8_t* buffer, bool ignoreMovableObjects)
+{
+    CONTRACTL {
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    if (obj == NULL)
+    {
+        // GC handle is null
+        memset(buffer, 0, sizeof(CORINFO_OBJECT_HANDLE));
+        return true;
+    }
+    else if (!ignoreMovableObjects || GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(OBJECTREFToObject(obj)))
+    {
+        CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(obj);
+        memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
+        return true;
+    }
+    return false;
+}
+
 bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
@@ -11625,33 +11646,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
             _ASSERT(valueOffset == 0); // there is no point in returning a chunk of a gc handle
             _ASSERT((UINT)bufferSize == field->GetSize());
 
-            OBJECTREF fieldObj = field->GetStaticOBJECTREF();
-            if (fieldObj != NULL)
-            {
-                Object* obj = OBJECTREFToObject(fieldObj);
-                CORINFO_OBJECT_HANDLE handle;
-
-                if (ignoreMovableObjects)
-                {
-                    if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
-                    {
-                        handle = getJitHandleForObject(fieldObj, true);
-                        memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
-                        result = true;
-                    }
-                }
-                else
-                {
-                    handle = getJitHandleForObject(fieldObj);
-                    memcpy(buffer, &handle, sizeof(CORINFO_OBJECT_HANDLE));
-                    result = true;
-                }
-            }
-            else
-            {
-                memset(buffer, 0, sizeof(intptr_t));
-                result = true;
-            }
+            result = getStaticObjRefContent(field->GetStaticOBJECTREF(), buffer, ignoreMovableObjects);
         }
         else
         {
@@ -11701,27 +11696,11 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                 // ...unless we're interested in that GC slot's value itself
                                 if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize) && ptr[i] == TYPE_GC_REF)
                                 {
-                                    _ASSERT((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE));
-
-                                    GCX_COOP();
-
-                                    // Read field's value under COOP mode
                                     Object* gcSlotValue = nullptr;
                                     memcpy(&gcSlotValue, (uint8_t*)baseAddr + gcSlotBegin, sizeof(CORINFO_OBJECT_HANDLE));
 
-                                    if (gcSlotValue == nullptr)
-                                    {
-                                        // GC handle is null
-                                        memset(buffer, 0, bufferSize);
-                                        result = true;
-                                    }
-                                    else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(gcSlotValue))
-                                    {
-                                        // GC handle is a frozen (nongc) object
-                                        CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(ObjectToOBJECTREF(gcSlotValue), /*knownFrozen*/ true);
-                                        memcpy(buffer, &handle, bufferSize);
-                                        result = true;
-                                    }
+                                    _ASSERT((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE));
+                                    result = getStaticObjRefContent(ObjectToOBJECTREF(gcSlotValue), buffer, ignoreMovableObjects);
                                 }
 
                                 // We had an intersection with a gc slot - no point in looking futher.
