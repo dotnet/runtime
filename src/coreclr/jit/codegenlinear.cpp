@@ -1211,24 +1211,25 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // Reset spilled flag, since we are going to load a local variable from its home location.
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
-            GenTreeLclVar* lcl       = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl);
-            var_types      spillType = varDsc->GetRegisterType(lcl);
-            assert(spillType != TYP_UNDEF);
+            GenTreeLclVar* lcl    = unspillTree->AsLclVar();
+            LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
 
-// TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // Load local variable from its home location.
-            // Never allow truncating the locals here, otherwise a subsequent
-            // use of the local with a wider type would see the truncated
-            // value. We do allow wider loads as those can be efficient even
-            // when unaligned and might be smaller encoding wise (on xarch).
-            var_types lclLoadType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
-            assert(lclLoadType != TYP_UNDEF);
-            if (genTypeSize(spillType) < genTypeSize(lclLoadType))
-            {
-                spillType = lclLoadType;
-            }
+            // Pick type to reload register from stack with. Note that for
+            // normalize-on-load variables the type of 'lcl' does not have any
+            // relation to the type of 'varDsc':
+            // * It is wider under normal circumstances, where morph has added a cast on top
+            // * It is the same in many circumstances, e.g. when morph tries to
+            // guess via a subrange assertion that the upper bits are going to
+            // be zero.
+            // * It is narrower in some cases, e.g. when lowering optimizes to
+            // use a byte `cmp`
+            //
+            // For unspilling purposes we should always make sure we get a
+            // normalized value in the register, so use the type from the
+            // varDsc.
+
+            var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetRegisterType(lcl);
+            assert(unspillType != TYP_UNDEF);
 
 #if defined(TARGET_LOONGARCH64)
             if (varTypeIsFloating(spillType) && emitter::isGeneralRegister(tree->GetRegNum()))
@@ -1236,14 +1237,10 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 spillType = spillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
             }
 #endif
-#elif defined(TARGET_ARM)
-// No normalizing for ARM
-#else
-            NYI("Unspilling not implemented for this target architecture.");
-#endif
+
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
-            genUnspillLocal(lcl->GetLclNum(), spillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
+            genUnspillLocal(lcl->GetLclNum(), unspillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
         }
         else if (unspillTree->IsMultiRegLclVar())
         {
