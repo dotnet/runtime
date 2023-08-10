@@ -534,10 +534,7 @@ namespace System.Runtime.InteropServices
                     }
                 }
 
-                if (Interop.Ole32.CoGetContextToken(out _contextToken) != 0)
-                {
-                    _contextToken = 0;
-                }
+                _contextToken = GetContextToken();
 
                 // If this is an aggregation scenario and the identity object
                 // is a managed object wrapper, we need to call Release() to
@@ -1146,7 +1143,7 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
-            Interop.Ole32.CoGetContextToken(out IntPtr contextToken);
+            IntPtr contextToken = GetContextToken();
 
             List<object> objects = new List<object>();
             foreach (GCHandle weakNativeObjectWrapperHandle in s_nativeObjectWrapperCache)
@@ -1432,6 +1429,16 @@ namespace System.Runtime.InteropServices
             vftbl[7] = (IntPtr)(delegate* unmanaged<IntPtr, long, int>)&ComWrappers.IReferenceTrackerHost_AddMemoryPressure;
             vftbl[8] = (IntPtr)(delegate* unmanaged<IntPtr, long, int>)&ComWrappers.IReferenceTrackerHost_RemoveMemoryPressure;
             return (IntPtr)vftbl;
+        }
+
+        private static IntPtr GetContextToken()
+        {
+#if TARGET_WINDOWS
+            Interop.Ole32.CoGetContextToken(out IntPtr contextToken);
+            return contextToken;
+#else
+            return IntPtr.Zero;
+#endif
         }
     }
 }

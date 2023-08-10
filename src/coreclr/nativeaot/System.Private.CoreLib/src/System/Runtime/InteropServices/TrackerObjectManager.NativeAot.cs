@@ -452,7 +452,11 @@ namespace System.Runtime.InteropServices
             if (_pHandles == null)
             {
                 _capacity = DefaultCapacity;
+#if TARGET_WINDOWS
                 _pHandles = (IntPtr*)Interop.Ucrtbase.calloc((nuint)_capacity, (nuint)sizeof(IntPtr));
+#else
+                _pHandles = (IntPtr*)Interop.Sys.Calloc((nuint)_capacity, (nuint)sizeof(IntPtr));
+#endif
 
                 return _pHandles != null;
             }
@@ -506,7 +510,11 @@ namespace System.Runtime.InteropServices
             }
 
             // Shrink the size of the memory
+#if TARGET_WINDOWS
             IntPtr* pNewHandles = (IntPtr*)Interop.Ucrtbase.realloc(_pHandles, (nuint)(newCapacity * sizeof(IntPtr)));
+#else
+            IntPtr* pNewHandles = (IntPtr*)Interop.Sys.Realloc(_pHandles, (nuint)(newCapacity * sizeof(IntPtr)));
+#endif
             if (pNewHandles == null)
                 return false;
 
@@ -519,7 +527,11 @@ namespace System.Runtime.InteropServices
         private bool Grow()
         {
             int newCapacity = _capacity * 2;
+#if TARGET_WINDOWS
             IntPtr* pNewHandles = (IntPtr*)Interop.Ucrtbase.realloc(_pHandles, (nuint)(newCapacity * sizeof(IntPtr)));
+#else
+            IntPtr* pNewHandles = (IntPtr*)Interop.Sys.Realloc(_pHandles, (nuint)(newCapacity * sizeof(IntPtr)));
+#endif
             if (pNewHandles == null)
                 return false;
 
