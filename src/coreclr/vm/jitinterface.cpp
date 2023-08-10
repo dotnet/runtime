@@ -2413,7 +2413,11 @@ static unsigned MarkGCField(BYTE* gcPtrs, CorInfoGCType type)
 
 static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    } CONTRACTL_END;
 
     _ASSERTE(pMT->IsValueType());
 
@@ -2483,6 +2487,12 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
 unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
 {
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    } CONTRACTL_END;
+
     unsigned result = 0;
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
