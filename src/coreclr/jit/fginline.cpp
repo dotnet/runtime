@@ -25,7 +25,6 @@
 //
 unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 {
-    BYTE*          candidateCode = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
     InlineContext* inlineContext = inlineInfo->inlineCandidateInfo->inlinersContext;
     InlineResult*  inlineResult  = inlineInfo->inlineResult;
 
@@ -36,7 +35,6 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
     {
-        assert(inlineContext->GetCode() != nullptr);
         depth++;
 
         if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
