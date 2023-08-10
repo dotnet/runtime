@@ -62,7 +62,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Stdcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Thiscall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Fastcall))]
-        [ActiveIssue("TBD", TestRuntimes.Mono)] // TODO: Fix FPTR equality
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
         public static unsafe void CallingConvention_Unmodified(string methodName1, string methodName2)
         {
             Type t = typeof(FunctionPointerHolder).Project();

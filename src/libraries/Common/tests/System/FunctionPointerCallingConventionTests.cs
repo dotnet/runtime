@@ -68,7 +68,7 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("TBD", TestRuntimes.Mono)] // TODO: Fix FPTR equality
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
         public static unsafe void UnmanagedCallConvs_Return_Unmodified()
         {
             Type t = typeof(FunctionPointerHolder).Project();
