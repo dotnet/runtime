@@ -50,77 +50,80 @@ namespace System.Text.Json
             for (int i = 0; i < chars.Length; i++)
             {
                 char current = chars[i];
-                UnicodeCategory category = char.GetUnicodeCategory(current);
 
-                if (category is UnicodeCategory.UppercaseLetter)
+                switch (char.GetUnicodeCategory(current))
                 {
-                    switch (state)
-                    {
-                        case SeparatorState.NotStarted:
-                            break;
+                    case UnicodeCategory.UppercaseLetter:
 
-                        case SeparatorState.LowercaseLetterOrDigit:
-                        case SeparatorState.SpaceSeparator:
-                            // An uppercase letter following a sequence of lowercase letters or spaces
-                            // denotes the start of a new grouping: emit a separator character.
-                            WriteChar(separator, ref destination);
-                            break;
+                        switch (state)
+                        {
+                            case SeparatorState.NotStarted:
+                                break;
 
-                        case SeparatorState.UppercaseLetter:
-                            // We are reading through a sequence of two or more uppercase letters.
-                            // Uppercase letters are grouped together with the exception of the
-                            // final letter, assuming it is followed by lowercase letters.
-                            // For example, the value 'XMLReader' should render as 'xml_reader',
-                            // however 'SHA512Hash' should render as 'sha512-hash'.
-                            if (i + 1 < chars.Length && char.IsLower(chars[i + 1]))
-                            {
+                            case SeparatorState.LowercaseLetterOrDigit:
+                            case SeparatorState.SpaceSeparator:
+                                // An uppercase letter following a sequence of lowercase letters or spaces
+                                // denotes the start of a new grouping: emit a separator character.
                                 WriteChar(separator, ref destination);
-                            }
-                            break;
+                                break;
 
-                        default:
-                            Debug.Fail($"Unexpected state {state}");
-                            break;
-                    }
+                            case SeparatorState.UppercaseLetter:
+                                // We are reading through a sequence of two or more uppercase letters.
+                                // Uppercase letters are grouped together with the exception of the
+                                // final letter, assuming it is followed by lowercase letters.
+                                // For example, the value 'XMLReader' should render as 'xml_reader',
+                                // however 'SHA512Hash' should render as 'sha512-hash'.
+                                if (i + 1 < chars.Length && char.IsLower(chars[i + 1]))
+                                {
+                                    WriteChar(separator, ref destination);
+                                }
+                                break;
 
-                    if (lowercase)
-                        current = char.ToLowerInvariant(current);
+                            default:
+                                Debug.Fail($"Unexpected state {state}");
+                                break;
+                        }
 
-                    WriteChar(current, ref destination);
-                    state = SeparatorState.UppercaseLetter;
-                }
-                else if (category is UnicodeCategory.LowercaseLetter or
-                                     UnicodeCategory.DecimalDigitNumber)
-                {
-                    if (state is SeparatorState.SpaceSeparator)
-                    {
-                        // Normalize preceding spaces to one separator.
-                        WriteChar(separator, ref destination);
-                    }
+                        if (lowercase)
+                            current = char.ToLowerInvariant(current);
 
-                    if (!lowercase)
-                        current = char.ToUpperInvariant(current);
+                        WriteChar(current, ref destination);
+                        state = SeparatorState.UppercaseLetter;
+                        break;
 
-                    WriteChar(current, ref destination);
-                    state = SeparatorState.LowercaseLetterOrDigit;
-                }
-                else if (category is UnicodeCategory.SpaceSeparator)
-                {
-                    // Space characters are trimmed from the start and end of the input string
-                    // but are normalized to separator characters if between letters.
-                    if (state != SeparatorState.NotStarted)
-                    {
-                        state = SeparatorState.SpaceSeparator;
-                    }
-                }
-                else
-                {
-                    // Non-alphanumeric characters (including the separator character itself)
-                    // are written as-is to the output and reset the separator state.
-                    // E.g. 'ABC???def' maps to 'abc???def' in snake_case.
+                    case UnicodeCategory.LowercaseLetter:
+                    case UnicodeCategory.DecimalDigitNumber:
 
-                    WriteChar(current, ref destination);
-                    state = SeparatorState.NotStarted;
+                        if (state is SeparatorState.SpaceSeparator)
+                        {
+                            // Normalize preceding spaces to one separator.
+                            WriteChar(separator, ref destination);
+                        }
+
+                        if (!lowercase)
+                            current = char.ToUpperInvariant(current);
+
+                        WriteChar(current, ref destination);
+                        state = SeparatorState.LowercaseLetterOrDigit;
+                        break;
+
+                    case UnicodeCategory.SpaceSeparator:
+                        // Space characters are trimmed from the start and end of the input string
+                        // but are normalized to separator characters if between letters.
+                        if (state != SeparatorState.NotStarted)
+                        {
+                            state = SeparatorState.SpaceSeparator;
+                        }
+                        break;
+
+                    default:
+                        // Non-alphanumeric characters (including the separator character itself)
+                        // are written as-is to the output and reset the separator state.
+                        // E.g. 'ABC???def' maps to 'abc???def' in snake_case.
+
+                        WriteChar(current, ref destination);
+                        state = SeparatorState.NotStarted;
+                        break;
                 }
             }
 
