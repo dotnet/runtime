@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly MeterListener _meterListener;
         private readonly IMetricsListener _metricsListener;
         private readonly IMeterFactory _meterFactory;
-        private readonly Dictionary<Instrument, object?> _instruments = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<Instrument, object?> _instruments = new();
         private IList<InstrumentRule> _rules = Array.Empty<InstrumentRule>();
         private bool _disposed;
 
@@ -189,7 +189,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 // Exact match +/- ".*"
                 && (ruleMeterName.Length == instrument.Meter.Name.Length
                     // Only allow StartsWith on segment boundaries
-                    || ruleMeterName[instrument.Meter.Name.Length] == '.');
+                    || instrument.Meter.Name[ruleMeterName.Length] == '.');
         }
 
         // Everything must already match the Instrument and listener, or be blank.

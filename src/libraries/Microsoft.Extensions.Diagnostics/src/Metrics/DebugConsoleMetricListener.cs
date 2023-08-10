@@ -15,8 +15,9 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly Timer _timer;
         private int _timerStarted;
         private IObservableInstrumentsSource? _source;
-        // For testing
-        internal TextWriter? _textWriter;
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+        internal TextWriter? _textWriter; // For testing
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
         public DebugConsoleMetricListener()
         {
