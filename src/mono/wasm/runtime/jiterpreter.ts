@@ -287,7 +287,6 @@ function getTraceImports() {
         importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
         ["a_elesize", "array_rank", getRawCwrap("mono_jiterp_get_array_element_size")],
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
-        // importDef("transfer", getRawCwrap("mono_jiterp_trace_transfer")),
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
         importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
@@ -652,18 +651,6 @@ function initialize_builder(builder: WasmBuilder) {
             "oldVal": WasmValtype.i32,
         },
         WasmValtype.void, true
-    );
-    builder.defineType(
-        "transfer",
-        {
-            "displacement": WasmValtype.i32,
-            "trace": WasmValtype.i32,
-            "frame": WasmValtype.i32,
-            "locals": WasmValtype.i32,
-            "cinfo": WasmValtype.i32,
-            // FIXME: ip
-        },
-        WasmValtype.i32, true
     );
     builder.defineType(
         "stelem_ref",

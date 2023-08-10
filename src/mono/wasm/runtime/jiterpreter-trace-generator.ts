@@ -56,41 +56,6 @@ import {
 import { mono_log_error, mono_log_info } from "./logging";
 import { mono_assert } from "./globals";
 
-/*
-struct MonoVTable {
-    MonoClass  *klass; // 0
-    MonoGCDescriptor gc_descr; // 4
-    MonoDomain *domain; // 8
-    gpointer    type; // 12
-    guint8     *interface_bitmap; // 16
-    guint32     max_interface_id; // 20
-    guint8      rank; // 21
-    guint8      initialized; // 22
-    guint8      flags;
-*/
-
-/*
-struct InterpFrame {
-    InterpFrame    *parent; // 0
-    InterpMethod   *imethod; // 4
-    stackval       *retval; // 8
-    stackval       *stack; // 12
-    InterpFrame    *next_free; // 16
-    InterpState state; // 20
-};
-
-struct InterpMethod {
-       MonoMethod *method;
-       InterpMethod *next_jit_code_hash;
-
-       // Sort pointers ahead of integers to minimize padding for alignment.
-
-       unsigned short *code;
-       MonoPIFunc func;
-       MonoExceptionClause *clauses; // num_clauses
-       void **data_items;
-*/
-
 // indexPlusOne so that ip[1] in the interpreter becomes getArgU16(ip, 1)
 function getArgU16(ip: MintOpcodePtr, indexPlusOne: number) {
     return getU16(<any>ip + (2 * indexPlusOne));
@@ -104,13 +69,6 @@ function getArgI32(ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
     return getI32_unaligned(src);
 }
-
-/*
-function getArgU32(ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = <any>ip + (2 * indexPlusOne);
-    return getU32_unaligned(src);
-}
-*/
 
 function getArgF32(ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
