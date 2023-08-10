@@ -47,7 +47,7 @@ LEAF_END GetCurrentSP, _TEXT
 //
 WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 
-    // $a0-$a7 will contain intended new state
+    // $a0-$a7,$t3 will contain intended new state
     // $t0 will preserve skipEphemeralCheck
     // $t2 will be used for pointers
 
@@ -65,6 +65,9 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #ifdef WRITE_BARRIER_CHECK
     la.local  $a2, g_GCShadow
     ld.d  $a2, $a2, 0
+
+    la.local  $t3, g_GCShadowEnd
+    ld.d  $t3, $t3, 0
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -103,6 +106,7 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     st.d  $a5, $t2, 40
     st.d  $a6, $t2, 48
     st.d  $a7, $t2, 56
+    st.d  $t3, $t2, 64
 
     EPILOG_RETURN
 
@@ -225,9 +229,9 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     sub.d  $t0, $t6, $t0
     add.d  $t0, $t0, $t1
 
-    // if (pShadow >= g_GCShadowEnd) goto end
-    la.local $t1, g_GCShadowEnd
-    ld.d  $t1, $t1, 0
+    // if (pShadow >= g_GCShadowEnd) goto end.
+    // load the wbs_GCShadowEnd = $t3 + 64
+    ld.d $t1, $t3, 64
 
     slt  $t4, $t0, $t1
     beq  $t4, $zero, 22f //LOCAL_LABEL(ShadowUpdateEnd)
@@ -330,6 +334,8 @@ wbs_card_table:
 //wbs_lowest_address:    =wbs_card_table+48
     .quad 0
 //wbs_highest_address:   =wbs_card_table+56
+    .quad 0
+//wbs_GCShadowEnd:       =wbs_card_table+64
     .quad 0
 WRITE_BARRIER_END JIT_WriteBarrier_Table
 
