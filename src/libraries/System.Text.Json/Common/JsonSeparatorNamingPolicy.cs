@@ -86,7 +86,9 @@ namespace System.Text.Json
                         }
 
                         if (lowercase)
+                        {
                             current = char.ToLowerInvariant(current);
+                        }
 
                         WriteChar(current, ref destination);
                         state = SeparatorState.UppercaseLetter;
@@ -102,7 +104,9 @@ namespace System.Text.Json
                         }
 
                         if (!lowercase)
+                        {
                             current = char.ToUpperInvariant(current);
+                        }
 
                         WriteChar(current, ref destination);
                         state = SeparatorState.LowercaseLetterOrDigit;
