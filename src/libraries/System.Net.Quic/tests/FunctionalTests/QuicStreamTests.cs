@@ -1218,7 +1218,9 @@ namespace System.Net.Quic.Tests
         public static IEnumerable<object[]> PayloadSizeAndTwoBools()
         {
             var boolValues = new [] { true, false };
-            var payloadValues = new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload };
+            var payloadValues = PlatformDetection.IsIntMaxValueArrayIndexSupported ?
+                                    new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload } :
+                                    new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload };
             return
                 from payload in payloadValues
                 from bool1 in boolValues

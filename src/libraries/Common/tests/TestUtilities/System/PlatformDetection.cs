@@ -195,6 +195,7 @@ namespace System
 
         public static bool IsRareEnumsSupported => !IsNativeAot;
 
+        public static bool IsIntMaxValueArrayIndexSupported => !s_largeArrayIsNotSupported.Value;
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
