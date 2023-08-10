@@ -47,7 +47,7 @@ LEAF_END GetCurrentSP, _TEXT
 //
 WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 
-    // $a0-$a7 will contain intended new state
+    // $a0-$a7,$t3 will contain intended new state
     // $t0 will preserve skipEphemeralCheck
     // $t2 will be used for pointers
 
@@ -62,33 +62,36 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     ld.d  $a1, $a1, 0
 #endif
 
-#ifdef WRITE_BARRIER_CHECK
-    la.local  $a2, g_GCShadow
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    la.local  $a2, g_sw_ww_table
     ld.d  $a2, $a2, 0
 #endif
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    la.local  $a3, g_sw_ww_table
+    la.local  $a3, g_ephemeral_low
     ld.d  $a3, $a3, 0
-#endif
 
-    la.local  $a4, g_ephemeral_low
+    la.local  $a4, g_ephemeral_high
     ld.d  $a4, $a4, 0
-
-    la.local  $a5, g_ephemeral_high
-    ld.d  $a5, $a5, 0
 
     beq  $t0, $zero, LOCAL_LABEL(EphemeralCheckEnabled)
 
-    ori  $a4, $zero, 0
-    addi.d  $a5, $zero, -1
+    ori  $a3, $zero, 0
+    addi.d  $a4, $zero, -1
 LOCAL_LABEL(EphemeralCheckEnabled):
 
-    la.local  $a6, g_lowest_address
+    la.local  $a5, g_lowest_address
+    ld.d  $a5, $a5, 0
+
+    la.local  $a6, g_highest_address
     ld.d  $a6, $a6, 0
 
-    la.local  $a7, g_highest_address
+#ifdef WRITE_BARRIER_CHECK
+    la.local  $a7, g_GCShadow
     ld.d  $a7, $a7, 0
+
+    la.local  $t3, g_GCShadowEnd
+    ld.d  $t3, $t3, 0
+#endif
 
     // Update wbs state
     la.local  $t2, JIT_WriteBarrier_Table_Loc
@@ -103,6 +106,7 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     st.d  $a5, $t2, 40
     st.d  $a6, $t2, 48
     st.d  $a7, $t2, 56
+    st.d  $t3, $t2, 64
 
     EPILOG_RETURN
 
@@ -163,12 +167,16 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
-    la.local  $t3, wbs_lowest_address
-    ld.d  $t3, $t3, 0
+    // load the address wbs_card_table to $t3
+.Ltmp0:
+    pcaddi $t3, 0
+    .reloc .Ltmp0, R_LARCH_PCREL20_S2, wbs_card_table
+    // wbs_highest_address = wbs_card_table + 48
+    ld.d  $t1, $t3, 48
+    // wbs_lowest_address  = wbs_card_table + 40
+    ld.d  $t3, $t3, 40
     slt  $t4, $t6, $t3
 
-    la.local  $t1, wbs_highest_address
-    ld.d  $t1, $t1, 0
     slt  $t0, $t1, $t6
     or  $t4, $t0, $t4
     beq  $t4, $zero, C_FUNC(JIT_WriteBarrier)
@@ -197,28 +205,35 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
     st.d  $t7, $t6, 0
 
+    // load the address wbs_card_table to the $t3
+    // and will cache the wbs_card_table by $t3 within the JIT_WriteBarrier.
+    // So please DONT'T overwrite the $t3 within the JIT_WriteBarrier !!!
+.Ltmp1:
+    pcaddi $t3, 0
+    .reloc .Ltmp1, R_LARCH_PCREL20_S2, wbs_card_table
+
 #ifdef WRITE_BARRIER_CHECK
     // Update GC Shadow Heap
 
-    // Do not perform the work if g_GCShadow is 0
-    la.local $t1, wbs_GCShadow
-    ld.d $t1, $t1, 0
+    // the wbs_GCShadow = $t3 + 56
+    ld.d $t1, $t3, 56
 
+    // Do not perform the work if g_GCShadow is 0
     beq  $t1, $zero, 22f //LOCAL_LABEL(ShadowUpdateDisabled)
 
     // Compute address of shadow heap location:
     //   pShadow = g_GCShadow + ($t6 - g_lowest_address)
-    la.local  $t3, wbs_lowest_address
-    ld.d $t3, $t3, 0
+    // the wbs_lowest_address = $t3 + 40
+    ld.d $t0, $t3, 40
 
-    sub.d  $t3, $t6, $t3
-    add.d  $t0, $t3, $t1
+    sub.d  $t0, $t6, $t0
+    add.d  $t0, $t0, $t1
 
-    // if (pShadow >= g_GCShadowEnd) goto end
-    la.local $t3, g_GCShadowEnd
-    ld.d  $t3, $t3, 0
+    // if (pShadow >= g_GCShadowEnd) goto end.
+    // load the wbs_GCShadowEnd = $t3 + 64
+    ld.d $t1, $t3, 64
 
-    slt  $t4, $t0, $t3
+    slt  $t4, $t0, $t1
     beq  $t4, $zero, 22f //LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = $t7
@@ -229,14 +244,14 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     dbar 0
 
     // if (*$t6 == $t7) goto end
-    ld.d  $t3, $t6, 0
-    beq  $t3, $t7, 22f //LOCAL_LABEL(ShadowUpdateEnd)
+    ld.d  $t1, $t6, 0
+    beq  $t1, $t7, 22f //LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = INVALIDGCVALUE (0xcccccccd)
-    //lu12i.w  $t3, 0xccccc
-    lu12i.w  $t3, -209716
-    ori  $t3, $t3, 0xccd
-    st.d $t3, $t0, 0
+    //lu12i.w  $t1, 0xccccc
+    lu12i.w  $t1, -209716
+    ori  $t1, $t1, 0xccd
+    st.d $t1, $t0, 0
 22:
 //LOCAL_LABEL(ShadowUpdateEnd):
 //LOCAL_LABEL(ShadowUpdateDisabled):
@@ -245,38 +260,37 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     // Update the write watch table if necessary
 
-    la.local  $t3, wbs_sw_ww_table
-    ld.d  $t3, $t3, 0
-    beq  $t3, $zero, 1f //LOCAL_LABEL(CheckCardTable)
+    // the wbs_sw_ww_table = $t3 + 16
+    ld.d  $t4, $t3, 16
+    beq  $t4, $zero, 1f //LOCAL_LABEL(CheckCardTable)
 
-    srli.d  $t4, $t6, 0xc
-    add.d  $t3, $t3, $t4  // SoftwareWriteWatch::AddressToTableByteIndexShift
-    ld.b  $t4, $t3, 0
-    bne  $t4, $zero, 1f //LOCAL_LABEL(CheckCardTable)
+    srli.d  $t0, $t6, 0xc
+    add.d  $t4, $t4, $t0  // SoftwareWriteWatch::AddressToTableByteIndexShift
+    ld.b  $t0, $t4, 0
+    bne  $t0, $zero, 1f //LOCAL_LABEL(CheckCardTable)
 
     ori  $t4, $zero, 0xFF
-    st.b  $t4, $t3, 0
+    st.b  $t4, $t4, 0
 1:
 //LOCAL_LABEL(CheckCardTable):
 #endif
     // Branch to Exit if the reference is not in the Gen0 heap
-    la.local  $t3, wbs_ephemeral_low
-    ld.d  $t3, $t3, 0
-    beq  $t3, $zero, 2f //LOCAL_LABEL(SkipEphemeralCheck)
+    // the wbs_ephemeral_low = $t3 + 24
+    ld.d  $t0, $t3, 24
+    beq  $t0, $zero, LOCAL_LABEL(SkipEphemeralCheck)
 
-    slt  $t4, $t7, $t3
-    la.local  $t3, wbs_ephemeral_high
-    ld.d  $t3, $t3, 0
-    slt  $t1, $t3, $t7
-    or  $t4, $t1, $t4
+    slt  $t4, $t7, $t0
+    // the wbs_ephemeral_high = $t3 + 32
+    ld.d  $t1, $t3, 32
+    slt  $t0, $t1, $t7
+    or  $t4, $t0, $t4
     bne  $t4, $zero, LOCAL_LABEL(Exit)
-2:
-//LOCAL_LABEL(SkipEphemeralCheck):
+LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table
-    la.local  $t3, wbs_card_table
-    ld.d  $t3, $t3, 0
+    // the wbs_card_table = $t3
+    ld.d  $t0, $t3, 0
     srli.d  $t4, $t6, 11
-    add.d  $t7, $t3, $t4
+    add.d  $t7, $t0, $t4
     ld.bu  $t1, $t7, 0
     ori  $t4, $zero, 0xFF
     beq  $t1, $t4, LOCAL_LABEL(Exit)
@@ -285,14 +299,14 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     // Check if we need to update the card bundle table
-    la.local  $t3, wbs_card_bundle_table
-    ld.d  $t3, $t3, 0
+    // the wbs_card_bundle_table = $t3 + 8
+    ld.d  $t0, $t3, 8
     srli.d  $t4, $t6, 21
-    add.d  $t7, $t3, $t4
+    add.d  $t7, $t0, $t4
 
-    ld.bu  $t3, $t7, 0
+    ld.bu  $t1, $t7, 0
     ori  $t4, $zero, 0xFF
-    beq  $t3, $t4, LOCAL_LABEL(Exit)
+    beq  $t1, $t4, LOCAL_LABEL(Exit)
 
     st.b  $t4, $t7, 0
 #endif
@@ -307,19 +321,21 @@ WRITE_BARRIER_END JIT_WriteBarrier
 WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
 wbs_card_table:
     .quad 0
-wbs_card_bundle_table:
+//wbs_card_bundle_table: =wbs_card_table+8
     .quad 0
-wbs_GCShadow:
+//wbs_sw_ww_table:       =wbs_card_table+16
     .quad 0
-wbs_sw_ww_table:
+//wbs_ephemeral_low:     =wbs_card_table+24
     .quad 0
-wbs_ephemeral_low:
+//wbs_ephemeral_high:    =wbs_card_table+32
     .quad 0
-wbs_ephemeral_high:
+//wbs_lowest_address:    =wbs_card_table+40
     .quad 0
-wbs_lowest_address:
+//wbs_highest_address:   =wbs_card_table+48
     .quad 0
-wbs_highest_address:
+//wbs_GCShadow:          =wbs_card_table+56
+    .quad 0
+//wbs_GCShadowEnd:       =wbs_card_table+64
     .quad 0
 WRITE_BARRIER_END JIT_WriteBarrier_Table
 
