@@ -19,7 +19,7 @@ public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
                 IsPublish: options.IsPublish,
                 TargetFramework: options.TargetFramework,
                 BinFrameworkDir: FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework),
-                 GlobalizationMode: options.GlobalizationMode,
+                GlobalizationMode: options.GlobalizationMode,
                 PredefinedIcudt: options.PredefinedIcudt,
                 ExpectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
                 ExpectedFileType: options.ExpectedFileType,

@@ -6,9 +6,11 @@
 // @TODO: Audit native events in NativeAOT Runtime
 
 #include <common.h>
-#include "eventpipeadapter.h"
-#include "eventtrace_context.h"
-#include "gcheaputilities.h"
+#include <gcenv.h>
+
+#include <eventpipeadapter.h>
+#include <eventtrace_context.h>
+#include <gcheaputilities.h>
 
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
@@ -2993,6 +2995,7 @@ void InitDotNETRuntime(void)
     EventPipeEventThreadPoolWorkerThreadAdjustmentStats = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,56,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventThreadPoolIOEnqueue = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,63,2147549184,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventThreadPoolIODequeue = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,64,2147549184,0,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventThreadPoolIOPack = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,65,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventThreadPoolWorkingThreadCount = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,60,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventGCAllocationTick_V4 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,10,1,4,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventGCHeapStats_V2 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,4,1,2,EP_EVENT_LEVEL_INFORMATIONAL,false);
@@ -3010,7 +3013,7 @@ void InitDotNETRuntime(void)
 
 bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword)
 {
-    if (!EventPipeAdapter::Enabled())
+    if (!ep_enabled())
         return false;
 
     EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider;

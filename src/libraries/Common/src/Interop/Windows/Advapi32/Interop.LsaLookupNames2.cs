@@ -31,6 +31,15 @@ internal static partial class Interop
             [CustomMarshaller(typeof(MARSHALLED_UNICODE_STRING), MarshalMode.ElementIn, typeof(Marshaller))]
             public static class Marshaller
             {
+                public static MARSHALLED_UNICODE_STRING ConvertToManaged(Native unmanaged)
+                {
+                    MARSHALLED_UNICODE_STRING m;
+                    m.Length = unmanaged.Length;
+                    m.MaximumLength = unmanaged.MaximumLength;
+                    m.Buffer = Marshal.PtrToStringUni(unmanaged.Buffer)!;
+                    return m;
+                }
+
                 public static Native ConvertToUnmanaged(MARSHALLED_UNICODE_STRING managed)
                 {
                     Native n;

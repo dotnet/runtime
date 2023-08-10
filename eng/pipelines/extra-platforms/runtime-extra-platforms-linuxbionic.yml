@@ -40,7 +40,7 @@ jobs:
       targetRid: linux-bionic-x64
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-      timeoutInMinutes: 240
+      timeoutInMinutes: 480
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:

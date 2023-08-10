@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -52,9 +53,11 @@ namespace Microsoft.Interop
                 _marshallers,
                 _context,
                 methodToInvoke);
+            Debug.Assert(statements.CleanupCalleeAllocated.IsEmpty);
+
             bool shouldInitializeVariables =
                 !statements.GuaranteedUnmarshal.IsEmpty
-                || !statements.Cleanup.IsEmpty
+                || !statements.CleanupCallerAllocated.IsEmpty
                 || !statements.ManagedExceptionCatchClauses.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
@@ -69,15 +72,15 @@ namespace Microsoft.Interop
             tryStatements.Add(statements.InvokeStatement);
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
-            tryStatements.AddRange(statements.PinnedMarshal);
             tryStatements.AddRange(statements.Marshal);
+            tryStatements.AddRange(statements.PinnedMarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = new();
 
             SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 
-            finallyStatements.AddRange(statements.Cleanup);
+            finallyStatements.AddRange(statements.CleanupCallerAllocated);
             if (finallyStatements.Count > 0)
             {
                 allStatements.Add(
