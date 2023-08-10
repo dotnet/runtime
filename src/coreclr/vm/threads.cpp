@@ -7686,7 +7686,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     while (pFrame < pvLimitSP)
     {
         CONSISTENCY_CHECK(pFrame != PTR_NULL);
-        CONSISTENCY_CHECK(IsStackPointerBefore(static_cast<Frame *>((LPVOID)GetCurrentSP()), pFrame));
+        CONSISTENCY_CHECK(IsStackPointerBefore(reinterpret_cast<TADDR>(static_cast<Frame *>((LPVOID)GetCurrentSP())), reinterpret_cast<TADDR>(pFrame)));
         pFrame->ExceptionUnwind();
         pFrame = pFrame->Next();
     }
