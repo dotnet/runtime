@@ -2013,7 +2013,7 @@ ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type (MonoP
 }
 
 static MonoType*
-get_generic_argument_type (MonoType* type, int generic_argument_position)
+get_generic_argument_type (MonoType* type, unsigned int generic_argument_position)
 {
 	g_assert (type->type == MONO_TYPE_GENERICINST);
 	g_assert (type->data.generic_class->context.class_inst->type_argc > generic_argument_position);
@@ -2028,8 +2028,8 @@ ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionFieldHandl
 	MonoType *type = mono_field_get_type_checked (field, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
-	if (generic_argument_position != -1)
-		type = get_generic_argument_type (type, generic_argument_position);
+	if (generic_argument_position > -1)
+		type = get_generic_argument_type (type, (unsigned int)generic_argument_position);
 
 	return type_array_from_modifiers (type, optional, error);
 }
@@ -6580,8 +6580,8 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 	else
 		type = sig->params [position];
 
-	if (generic_argument_position != -1)
-		type = get_generic_argument_type (type, generic_argument_position);
+	if (generic_argument_position > -1)
+		type = get_generic_argument_type (type, (unsigned int)generic_argument_position);
 
 	return type_array_from_modifiers (type, optional, error);
 }
@@ -6609,8 +6609,8 @@ ves_icall_RuntimePropertyInfo_GetTypeModifiers (MonoReflectionPropertyHandle pro
 	if (!type)
 		return NULL_HANDLE_ARRAY;
 
-	if (generic_argument_position != -1)
-		type = get_generic_argument_type (type, generic_argument_position);
+	if (generic_argument_position > -1)
+		type = get_generic_argument_type (type, (unsigned int)generic_argument_position);
 
 	return type_array_from_modifiers (type, optional, error);
 }
