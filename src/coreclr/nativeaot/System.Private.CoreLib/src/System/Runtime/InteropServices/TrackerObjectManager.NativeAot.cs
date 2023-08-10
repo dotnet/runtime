@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            Debug.Assert(s_HasTrackingStarted == false);
+            Debug.Assert(!s_HasTrackingStarted);
             Debug.Assert(s_IsGlobalPeggingOn);
 
             s_HasTrackingStarted = true;
@@ -269,7 +269,6 @@ namespace System.Runtime.InteropServices
         {
             DetachNonPromotedObjects();
         }
-
     }
 
     // Wrapper for IReferenceTrackerManager
@@ -344,15 +343,10 @@ namespace System.Runtime.InteropServices
         [UnmanagedCallersOnly]
         private static unsafe int IFindReferenceTargetsCallback_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
         {
-            if (pThis == IntPtr.Zero)
-            {
-                return HResults.E_POINTER;
-            }
-
             if (*guid == IID_IFindReferenceTargetsCallback || *guid == IID_IUnknown)
             {
                 *ppObject = pThis;
-                return 0;
+                return HResults.S_OK;
             }
             else
             {
@@ -389,10 +383,10 @@ namespace System.Runtime.InteropServices
 
         internal static unsafe IntPtr CreateFindReferenceTargetsCallback()
         {
-            IntPtr wrapperMem = (IntPtr)NativeMemory.Alloc(2 * (nuint)sizeof(IntPtr));
-            *(IntPtr*)(wrapperMem) = CreateDefaultIFindReferenceTargetsCallbackVftbl();
-            *(IntPtr*)(wrapperMem + sizeof(IntPtr)) = wrapperMem;
-            return wrapperMem;
+            IntPtr* wrapperMem = (IntPtr*)NativeMemory.Alloc(2 * (nuint)sizeof(IntPtr));
+            wrapperMem[0] = CreateDefaultIFindReferenceTargetsCallbackVftbl();
+            wrapperMem[1] = (IntPtr)wrapperMem;
+            return (IntPtr)wrapperMem;
         }
     }
 

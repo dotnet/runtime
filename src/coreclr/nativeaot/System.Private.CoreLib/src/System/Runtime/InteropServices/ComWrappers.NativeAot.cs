@@ -490,7 +490,7 @@ namespace System.Runtime.InteropServices
             internal readonly bool _fromTrackerRuntime;
             private IntPtr _trackerObject;
             private readonly bool _releaseTrackerObject;
-            private int _trackerObjectDisconnected;
+            private int _trackerObjectDisconnected; // Atomic boolean, so using int.
 
             internal readonly IntPtr _contextToken;
 
@@ -506,7 +506,7 @@ namespace System.Runtime.InteropServices
                 // We have a separate handle tracking resurrection as we want to make sure
                 // we clean up the NativeObjectWrapper only after the RCW has been finalized
                 // due to it can access the native object in the finalizer. At the same time,
-                // we want other callers which are using _proxyHandle such as the rcw cache to
+                // we want other callers which are using _proxyHandle such as the RCW cache to
                 // see the object as not alive once it is eligible for finalization.
                 _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
 
@@ -1184,7 +1184,7 @@ namespace System.Runtime.InteropServices
                     }
                 }
             }
-            catch (Exception)
+            catch
             {
                 // Report that we failed while walking.
                 TrackerObjectManager.s_IsGlobalPeggingOn = true;
