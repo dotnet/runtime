@@ -137,28 +137,30 @@ export function replace_linker_placeholders(imports: WebAssembly.Imports) {
     }
 
     // the import names could be minified by applyImportAndExportNameChanges in emcc
-    // but the stubs are not, so we can use the stub names to find the short names
+    // we call each stub function to get the runtime_idx, which is the index into the wasmImports array
     const indexToNameMap: string[] = new Array(wasmImports.length);
     for (const shortName in env) {
-        const fn = env[shortName] as Function;
-        if (typeof fn === "function" && fn.toString().indexOf("runtime_idx") !== -1) {
+        const stub_fn = env[shortName] as Function;
+        if (typeof stub_fn === "function" && stub_fn.toString().indexOf("runtime_idx") !== -1) {
             try {
-                const { runtime_idx } = fn();
+                const { runtime_idx } = stub_fn();
+                if (indexToNameMap[runtime_idx] !== undefined) throw new Error(`Duplicate runtime_idx ${runtime_idx}`);
                 indexToNameMap[runtime_idx] = shortName;
             } catch {
                 // no-action
             }
         }
+    }
 
-        let idx = 0;
-        for (const fn of wasmImports) {
-            const shortName = indexToNameMap[idx];
-            // if it's not found it means the emcc linker didn't include it, which is fine
-            if (shortName) {
-                env[shortName] = fn;
-                mono_log_debug(`Replaced WASM import ${shortName} with ${fn.name}`);
-            }
-            idx++;
+    for (const [idx, realFn] of wasmImports.entries()) {
+        const shortName = indexToNameMap[idx];
+        // if it's not found it means the emcc linker didn't include it, which is fine
+        if (shortName !== undefined) {
+            const stubFn = env[shortName];
+            if (typeof stubFn !== "function") throw new Error(`Expected ${shortName} to be a function`);
+            env[shortName] = realFn;
+            mono_log_debug(`Replaced WASM import ${shortName} stub ${stubFn.name} with ${realFn.name}`);
         }
     }
+
 }

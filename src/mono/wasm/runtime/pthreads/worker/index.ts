@@ -55,9 +55,12 @@ export let pthread_self: PThreadSelf = null as any as PThreadSelf;
 ///    currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, (ev: WorkerThreadEvent) => {
 ///       mono_trace("thread created on worker with id", ev.pthread_ptr);
 ///    });
-export const currentWorkerThreadEvents: WorkerThreadEventTarget =
-    MonoWasmThreads ? new EventTarget() : null as any as WorkerThreadEventTarget; // treeshake if threads are disabled
+export let currentWorkerThreadEvents: WorkerThreadEventTarget = undefined as any;
 
+export function initWorkerThreadEvents() {
+    // treeshake if threads are disabled
+    currentWorkerThreadEvents = MonoWasmThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
+}
 
 // this is the message handler for the worker that receives messages from the main thread
 // extend this with new cases as needed

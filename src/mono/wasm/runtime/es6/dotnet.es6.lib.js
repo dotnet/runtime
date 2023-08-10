@@ -79,27 +79,27 @@ const DotnetSupportLib = {
     icudt68_dat: function () { throw new Error('dummy link symbol') },
 };
 
+function createWasmImportStubsFrom(collection) {
+    for (let functionName in collection) {
+        if (functionName in DotnetSupportLib) throw new Error(`Function ${functionName} is already defined`);
+        const runtime_idx = collection[functionName]
+        const stub_fn = new Function(`return {runtime_idx:${runtime_idx}};//${functionName}`);
+        DotnetSupportLib[functionName] = stub_fn;
+    }
+}
+
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 // we generate simple stub for each exported function so that emcc will include them in the final output
 // we will replace them with the real implementation in replace_linker_placeholders
 function createWasmImportStubs() {
-    for (let functionName in methodIndexByName.mono_wasm_imports) {
-        const idx = methodIndexByName.mono_wasm_imports[functionName];
-        DotnetSupportLib[functionName] = new Function(`return {runtime_idx:${idx}};//${functionName}`);
-    }
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
 
     #if USE_PTHREADS
-    for (let functionName in methodIndexByName.mono_wasm_threads_imports) {
-        const idx = methodIndexByName.mono_wasm_threads_imports[functionName];
-        DotnetSupportLib[functionName] = new Function(`return {runtime_idx:${idx}};//${functionName}`);
-    }
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
     #endif
 
     if (!DISABLE_LEGACY_JS_INTEROP) {
-        for (let functionName in methodIndexByName.mono_wasm_legacy_interop_imports) {
-            const idx = methodIndexByName.mono_wasm_legacy_interop_imports[functionName];
-            DotnetSupportLib[functionName] = new Function(`return {runtime_idx:${idx}};//${functionName}`);
-        }
+        createWasmImportStubsFrom(methodIndexByName.mono_wasm_legacy_interop_imports);
     }
 
     autoAddDeps(DotnetSupportLib, "$DOTNET");
