@@ -324,5 +324,51 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
         }
+
+        [Fact]
+        public async Task HResultLikeType_MarshalsAsError()
+        {
+            string source = """
+               using System.Runtime.InteropServices;
+
+               [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+               public interface [|I|]
+               {
+                   [PreserveSig]
+                   HResult Foo();
+               }
+
+               [StructLayout(LayoutKind.Sequential)]
+               public struct HResult
+               {
+                  public int Value;
+               }
+               """;
+
+            string fixedSource = """
+               using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
+
+               [GeneratedComInterface]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+               public partial interface I
+               {
+                   [PreserveSig]
+                   [return: MarshalAs(UnmanagedType.Error)]
+                   HResult Foo();
+               }
+               
+               [StructLayout(LayoutKind.Sequential)]
+               public struct HResult
+               {
+                  public int Value;
+               }
+               """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
+        }
     }
 }

@@ -1947,7 +1947,8 @@ HRESULT Debugger::Startup(void)
         if (FAILED(hr))
         {
             ShutdownTransport();
-            ThrowHR(hr);
+            STRESS_LOG0(LF_CORDB, LL_ERROR, "D::S: The debugger pipe failed to initialize in /tmp or $TMPDIR.\n");
+            return S_OK; // we do not want debugger IPC to block runtime initialization
         }
     #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
