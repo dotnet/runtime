@@ -321,7 +321,7 @@ int
 mono_interp_type_size (MonoType *type, int mt, int *align_p);
 
 gboolean
-interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig);
+interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only);
 
 #if HOST_BROWSER
 

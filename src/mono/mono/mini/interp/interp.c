@@ -8628,7 +8628,7 @@ interp_sufficient_stack (gsize size)
 }
 
 gboolean
-interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig)
+interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
 {
 	if (sig->param_count > 10)
 		return FALSE;
@@ -8638,7 +8638,7 @@ interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig)
 		return FALSE;
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 		return FALSE;
-	if (!mono_llvm_only && method->is_inflated)
+	if (!is_llvm_only && method->is_inflated)
 		return FALSE;
 	if (method->string_ctor)
 		return FALSE;

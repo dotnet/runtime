@@ -1213,7 +1213,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
-	if (!interp_jit_call_can_be_supported (method, sig))
+	if (!interp_jit_call_can_be_supported (method, sig, mono_llvm_only))
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {

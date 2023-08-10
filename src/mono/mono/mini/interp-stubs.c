@@ -253,7 +253,7 @@ stub_compile_interp_method (MonoMethod *method, MonoError *error)
 }
 
 static gboolean
-stub_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig)
+stub_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
 {
 	return TRUE;
 }
