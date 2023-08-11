@@ -123,6 +123,12 @@ internal sealed class GCListener : EventListener
     {
         return $"{GetType().Name}({sourceName}, {Level.GetType().Name}.{Level,-13}, {Events.Count,3});";
     }
+    public override void Dispose()
+    {
+        Console.WriteLine($"\n{this}\n\\\nDisposing...");
+        base.Dispose();
+        Console.WriteLine("Disposed");
+    }
 
     protected override void OnEventSourceCreated(EventSource source)
     {
