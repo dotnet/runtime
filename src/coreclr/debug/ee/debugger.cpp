@@ -10452,7 +10452,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             DebuggerJitInfo * pDJI =  NULL;
             if ((pMethodDesc != NULL) && (pDMI != NULL))
             {
-                pDJI = pDMI->FindOrCreateInitAndAddJitInfo(pMethodDesc, NULL /* startAddr */);
+                pDJI = pDMI->FindOrCreateInitAndAddJitInfo(pMethodDesc, pEvent->BreakpointData.codeStartAddress);
             }
 
             {
