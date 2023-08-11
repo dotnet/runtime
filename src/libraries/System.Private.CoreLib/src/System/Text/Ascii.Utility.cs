@@ -103,12 +103,13 @@ namespace System.Text
 
             if (!Vector512.IsHardwareAccelerated &&
                 !Vector256.IsHardwareAccelerated &&
-                (Sse2.IsSupported || (AdvSimd.IsSupported && BitConverter.IsLittleEndian)))
+                (Sse2.IsSupported || AdvSimd.IsSupported))
             {
                 return GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength);
             }
             else
             {
+                // Handles Vector512, Vector256, Vector128, and scalar.
                 return GetIndexOfFirstNonAsciiByte_Vector(pBuffer, bufferLength);
             }
         }
@@ -716,12 +717,13 @@ namespace System.Text
 
             if (!Vector512.IsHardwareAccelerated &&
                 !Vector256.IsHardwareAccelerated &&
-                (Sse2.IsSupported || (AdvSimd.IsSupported && BitConverter.IsLittleEndian)))
+                (Sse2.IsSupported || AdvSimd.IsSupported))
             {
                 return GetIndexOfFirstNonAsciiChar_Intrinsified(pBuffer, bufferLength);
             }
             else
             {
+                // Handles Vector512, Vector256, Vector128, and scalar.
                 return GetIndexOfFirstNonAsciiChar_Vector(pBuffer, bufferLength);
             }
         }
