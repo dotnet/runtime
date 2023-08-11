@@ -64,17 +64,25 @@
         <Intrinsic Name="GetPerThreadStorage" Expression="(Array*)tls_CurrentThread.m_pThreadLocalStatics"/>
         <Intrinsic Name="GetPerModuleStorage" Expression="((Array**)((char*)GetPerThreadStorage() + sizeof(Array)))[TypeManagerSlot-&gt;ModuleIndex]"/>
         <Intrinsic Name="GetPerTypeStorage" Expression="((Object**)((char*)GetPerModuleStorage() + sizeof(Array)))[ClassIndex]"/>
-        <Intrinsic Name="Get" Expression="($T1*)GetPerTypeStorage()"/>
 
         <Intrinsic Name="IsInit" Expression="
                    GetPerThreadStorage() != nullptr &amp;&amp; GetPerModuleStorage()-&gt;m_Length &gt; TypeManagerSlot-&gt;ModuleIndex &amp;&amp; 
                    GetPerModuleStorage() != nullptr &amp;&amp; GetPerModuleStorage()-&gt;m_Length &gt; ClassIndex &amp;&amp; 
                    GetPerTypeStorage() != nullptr "/>
 
-        <DisplayString  Condition="!IsInit()">Null</DisplayString>
-        <DisplayString  Condition="IsInit()">{*Get()}</DisplayString>
+        <Intrinsic Name="GetPerThreadStorageInlined" Expression="tls_CurrentThread.m_pInlinedThreadLocalStatics ? tls_CurrentThread.m_pInlinedThreadLocalStatics->m_threadStaticsBase : nullptr"/>
+        <Intrinsic Name="GetPerTypeStorageInlined" Expression="GetPerThreadStorageInlined() ? (Object*)((char*)GetPerThreadStorageInlined() - sizeof(char*) - ClassIndex) : nullptr"/>
+
+        <Intrinsic Name="IsInlined" Expression="ClassIndex &lt; 0"/>
+        <Intrinsic Name="GetUninlined" Expression="IsInit() ? ($T1*)GetPerTypeStorage() : nullptr"/>
+        <Intrinsic Name="GetInlined" Expression="($T1*)GetPerTypeStorageInlined()"/>
+
+        <Intrinsic Name="Get" Expression="IsInlined() ? GetInlined() : GetUninlined()"/>
+
+        <DisplayString  Condition="Get() == nullptr">Null</DisplayString>
+        <DisplayString  Condition="Get() != nullptr">{*Get()}</DisplayString>
         <Expand>
-            <ExpandedItem Condition="IsInit()">Get()</ExpandedItem>
+            <ExpandedItem Condition="Get() != nullptr">Get()</ExpandedItem>
         </Expand>
     </Type>
     <Type Name="Object" Inheritable="false">
