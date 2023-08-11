@@ -459,7 +459,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal static async Task<List<string>> GetVariableDefinitions(MemberReferenceResolver resolver, List<(string idName, JObject obj, string definition)> variableDefinitions, bool callToString, CancellationToken token)
         {
             var variableDef = new List<string>();
-            foreach ( var definition in variableDefinitions )
+            foreach (var definition in variableDefinitions)
             {
                 if (!callToString || definition.obj?["type"]?.Value<string>() != "object")
                 {
@@ -473,7 +473,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     variableDef.Add($"string {definition.idName} = \"{toString}\";");
                 }
                 else
+                {
                     variableDef.Add(definition.definition);
+                }
             }
             return variableDef;
         }
