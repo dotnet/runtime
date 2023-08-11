@@ -930,6 +930,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// It is set just before property is configured and does not change afterward.
         /// It is not equivalent to index on the properties list
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal int RequiredPropertyIndex
         {
             get

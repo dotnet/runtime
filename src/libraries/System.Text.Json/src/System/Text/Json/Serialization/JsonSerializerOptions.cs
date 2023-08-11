@@ -662,6 +662,7 @@ namespace System.Text.Json
         /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal bool CanUseFastPathSerializationLogic
         {
             get
