@@ -13,7 +13,7 @@ namespace SelfValidation
     public class FirstModel : IValidatableObject
     {
         [Required]
-        public string P1 = string.Empty;
+        public string P1 { get; set; } = string.Empty;
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

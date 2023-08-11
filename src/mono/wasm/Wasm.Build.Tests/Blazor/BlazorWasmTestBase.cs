@@ -58,9 +58,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
+        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
-        AssertBundle(res.Output, options with { IsPublish = false });
+        if (options.ExpectSuccess)
+            AssertBundle(res.Output, options with { IsPublish = false });
 
         return (res, logPath);
     }
@@ -70,25 +71,29 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
-        AssertBundle(res.Output, options with { IsPublish = true });
+        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
-        if (options.ExpectedFileType == NativeFilesType.AOT)
+        if (options.ExpectSuccess)
         {
-            // check for this too, so we know the format is correct for the negative
-            // test for jsinterop.webassembly.dll
-            Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Output);
+            AssertBundle(res.Output, options with { IsPublish = true });
 
-            // make sure this assembly gets skipped
-            Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Output);
+            if (options.ExpectedFileType == NativeFilesType.AOT)
+            {
+                // check for this too, so we know the format is correct for the negative
+                // test for jsinterop.webassembly.dll
+                Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Output);
+
+                // make sure this assembly gets skipped
+                Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Output);
+            }
+
+            string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework!, "wasm", "for-build");
+            // Check that we linked only for publish
+            if (options.ExpectRelinkDirWhenPublishing)
+                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
+            else
+                Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected files in {objBuildDir}, which gets created when relinking during Build");
         }
-
-        string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework!, "wasm", "for-build");
-        // Check that we linked only for publish
-        if (options.ExpectRelinkDirWhenPublishing)
-            Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
-        else
-            Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected files in {objBuildDir}, which gets created when relinking during Build");
 
         return (res, logPath);
     }
@@ -98,6 +103,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         string config,
         bool publish = false,
         bool setWasmDevel = true,
+        bool expectSuccess = true,
         params string[] extraArgs)
     {
         try
@@ -105,7 +111,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             return BuildProjectWithoutAssert(
                         id,
                         config,
-                        new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish),
+                        new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish, ExpectSuccess: expectSuccess),
                         extraArgs.Concat(new[]
                         {
                             "-p:BlazorEnableCompression=false",

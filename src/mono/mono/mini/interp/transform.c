@@ -1213,23 +1213,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
-	if (sig->param_count > 10)
-		return FALSE;
-	if (sig->pinvoke)
-		return FALSE;
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-		return FALSE;
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-		return FALSE;
-	if (!mono_llvm_only && method->is_inflated)
-		return FALSE;
-	if (method->string_ctor)
-		return FALSE;
-	if (method->wrapper_type != MONO_WRAPPER_NONE)
-		return FALSE;
-
-	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
-		/* Used to mark methods containing StackCrawlMark locals */
+	if (!interp_jit_call_can_be_supported (method, sig, mono_llvm_only))
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
@@ -2990,6 +2974,10 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	MonoMethodSignature *csignature = mono_method_signature_internal (target_method);
 	int nargs = csignature->param_count + !!csignature->hasthis;
 	InterpInst *prev_last_ins;
+
+	if (header->code_size == 0)
+		/* IL stripped */
+		return FALSE;
 
 	if (csignature->is_inflated)
 		generic_context = mono_method_get_context (target_method);

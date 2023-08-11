@@ -354,11 +354,11 @@ namespace System.Runtime
         internal static extern void RhCheckArrayStore(object array, object? obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
-        private static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
+        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfAny")]
+        private static extern unsafe object IsInstanceOfAny(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
-            => IsInstanceOf(pTargetType.ToPointer(), obj);
+            => IsInstanceOfAny(pTargetType.ToPointer(), obj);
 
         //
         // calls to runtime for allocation
