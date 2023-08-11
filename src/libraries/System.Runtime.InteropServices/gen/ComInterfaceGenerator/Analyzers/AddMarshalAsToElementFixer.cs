@@ -1,12 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -53,10 +49,10 @@ namespace Microsoft.Interop.Analyzers
                                     SyntaxGenerator gen = editor.Generator;
 
                                     SyntaxNode marshalAsAttribute = gen.Attribute(
-                                                TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
+                                                TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
                                                 gen.AttributeArgument(
                                                     gen.MemberAccessExpression(
-                                                        gen.DottedName(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                                                        gen.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
                                                         gen.IdentifierName(unmanagedTypeName.Trim()))));
 
                                     if (node.IsKind(SyntaxKind.MethodDeclaration))

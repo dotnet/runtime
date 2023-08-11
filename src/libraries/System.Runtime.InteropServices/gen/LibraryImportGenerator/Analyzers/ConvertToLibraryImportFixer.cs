@@ -602,7 +602,7 @@ namespace Microsoft.Interop.Analyzers
                 return false;
             }
 
-            unmanagedCallConvAttribute = generator.Attribute(TypeNames.GlobalAlias + TypeNames.UnmanagedCallConvAttribute,
+            unmanagedCallConvAttribute = generator.Attribute(TypeNames.UnmanagedCallConvAttribute,
                 generator.AttributeArgument("CallConvs",
                     generator.ArrayCreationExpression(
                         generator.TypeExpression(editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.System_Type)),

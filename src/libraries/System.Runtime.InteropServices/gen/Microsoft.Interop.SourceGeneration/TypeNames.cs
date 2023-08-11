@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -115,7 +114,7 @@ namespace Microsoft.Interop
         private static TypeSyntax? _System_Runtime_CompilerServices_Unsafe;
         public static TypeSyntax System_Runtime_CompilerServices_Unsafe => _System_Runtime_CompilerServices_Unsafe ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.System_Runtime_CompilerServices_Unsafe);
 
-        private static TypeSyntax? _CallConvCDecl;
+        private static TypeSyntax? _CallConvCdecl;
         private static TypeSyntax? _CallConvFastcall;
         private static TypeSyntax? _CallConvMemberFunction;
         private static TypeSyntax? _CallConvStdcall;
@@ -125,7 +124,7 @@ namespace Microsoft.Interop
         {
             return callConv switch
             {
-                "CDecl" => _CallConvCDecl ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvCDeclName),
+                "Cdecl" => _CallConvCdecl ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvCdeclName),
                 "Fastcall" => _CallConvFastcall ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvFastcallName),
                 "MemberFunction" => _CallConvMemberFunction ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvMemberFunctionName),
                 "Stdcall" => _CallConvStdcall ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvStdcallName),
@@ -295,7 +294,7 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_NFloat = "System.Runtime.InteropServices.NFloat";
 
-        public const string CallConvCDeclName = "System.Runtime.CompilerServices.CallConvCDecl";
+        public const string CallConvCdeclName = "System.Runtime.CompilerServices.CallConvCdecl";
         public const string CallConvFastcallName = "System.Runtime.CompilerServices.CallConvFastcall";
         public const string CallConvStdcallName = "System.Runtime.CompilerServices.CallConvStdcall";
         public const string CallConvThiscallName = "System.Runtime.CompilerServices.CallConvThiscall";

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -61,8 +59,8 @@ namespace Microsoft.Interop
                 // No marshalling info was computed, but a character encoding was provided.
                 return _defaultMarshallingInfo.CharEncoding switch
                 {
-                    CharEncoding.Utf16 => CreateStringMarshallingInfo(_compilation, type, TypeNames.GlobalAlias + TypeNames.Utf16StringMarshaller),
-                    CharEncoding.Utf8 => CreateStringMarshallingInfo(_compilation, type, TypeNames.GlobalAlias + TypeNames.Utf8StringMarshaller),
+                    CharEncoding.Utf16 => CreateStringMarshallingInfo(_compilation, type, TypeNames.Utf16StringMarshaller),
+                    CharEncoding.Utf8 => CreateStringMarshallingInfo(_compilation, type, TypeNames.Utf8StringMarshaller),
                     _ => throw new InvalidOperationException()
                 };
             }
