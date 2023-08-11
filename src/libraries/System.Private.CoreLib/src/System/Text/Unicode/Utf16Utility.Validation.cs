@@ -343,7 +343,7 @@ namespace System.Text.Unicode
                         Vector128<ushort> utf16Data = Vector128.Load((ushort*)pInputBuffer);
                         Vector128<ushort> twoOrMoreUtf8Bytes = Vector128.GreaterThanOrEqual(utf16Data, vector0080);
                         Vector128<ushort> threeOrMoreUtf8Bytes = Vector128.GreaterThanOrEqual(utf16Data, vector0800);
-                        Vector128<nuint> sumVector = Vector128.As<ushort, nuint>(Vector128<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
+                        Vector128<nuint> sumVector = (Vector128<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes).AsNUInt();
 
                         // We'll try summing by a natural word (rather than a 16-bit word) at a time,
                         // which should halve the number of operations we must perform.
