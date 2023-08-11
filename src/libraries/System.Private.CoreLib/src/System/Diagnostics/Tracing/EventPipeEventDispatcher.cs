@@ -143,6 +143,7 @@ namespace System.Diagnostics.Tracing
 
             if (m_dispatchTask != null)
             {
+                Debug.Assert(m_dispatchTaskCancellationSource != null);
                 m_dispatchTaskCancellationSource?.Cancel();
                 EventPipeInternal.SignalSession(m_sessionID);
             }
