@@ -8,7 +8,7 @@
 #define UNW_STEP_SUCCESS 1
 #define UNW_STEP_END     0
 
-#ifdef __APPLE__
+#if defined(TARGET_APPLE)
 #include <mach-o/getsect.h>
 #endif
 
@@ -883,3 +883,29 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
     uc.getInfo(procInfo);
     return true;
 }
+
+#if defined(TARGET_APPLE)
+bool _dyld_find_unwind_sections(void* addr, dyld_unwind_sections* info)
+{
+    // Find mach-o image containing address.
+    Dl_info dlinfo;
+    if (!dladdr(addr, &dlinfo))
+      return false;
+
+    const struct mach_header_64 *mh = (const struct mach_header_64 *)dlinfo.dli_fbase;
+
+    // Initialize the return struct
+    info->mh = (const struct mach_header *)mh;
+    info->dwarf_section = getsectiondata(mh, "__TEXT", "__eh_frame", &info->dwarf_section_length);
+    info->compact_unwind_section = getsectiondata(mh, "__TEXT", "__unwind_info", &info->compact_unwind_section_length);
+
+    if (!info->dwarf_section) {
+        info->dwarf_section_length = 0;
+    }
+    if (!info->compact_unwind_section) {
+        info->compact_unwind_section_length = 0;
+    }
+
+    return true;
+}
+#endif
