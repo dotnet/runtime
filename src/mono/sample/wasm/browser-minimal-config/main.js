@@ -43,7 +43,7 @@ const assets = [
     {
         name: "Wasm.Browser.Config.Sample.wasm",
         // demo buffer promise
-        buffer: await fetchBinary("./_framework/Wasm.Browser.Config.Sample.wasm"),
+        buffer: fetchBinary("./_framework/Wasm.Browser.Config.Sample.wasm"),
         behavior: "assembly"
     },
     {
