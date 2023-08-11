@@ -235,5 +235,8 @@ namespace ILLink.Shared
 				>= 3050 and <= 6000 => DiagnosticCategory.AOT,
 				_ => throw new ArgumentException ($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
 			};
+
+		public static string GetHelpUri(this DiagnosticId diagnosticId) =>
+			$"https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-warnings/il{(int) diagnosticId}";
 	}
 }
