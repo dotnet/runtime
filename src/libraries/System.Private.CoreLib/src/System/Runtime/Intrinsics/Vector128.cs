@@ -13,7 +13,7 @@ namespace System.Runtime.Intrinsics
 {
     // We mark certain methods with AggressiveInlining to ensure that the JIT will
     // inline them. The JIT would otherwise not inline the method since it, at the
-    // point it tries to determine inline profability, currently cannot determine
+    // point it tries to determine inline profitability, currently cannot determine
     // that most of the code-paths will be optimized away as "dead code".
     //
     // We then manually inline cases (such as certain intrinsic code-paths) that
