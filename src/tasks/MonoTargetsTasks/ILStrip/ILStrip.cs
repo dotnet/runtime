@@ -119,7 +119,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         string assemblyFilePathArg = assemblyItem.ItemSpec;
         string methodTokenFile = assemblyItem.GetMetadata("MethodTokenFile");
 
-        // FIXME: temporary workaround for Android apps
+        // FIXME: temporary workaround for Android apps.
+        // This should be removed when https://github.com/dotnet/runtime/issues/90403 is resolved.
         if (assemblyFilePathArg.Contains("Mono.Android.dll"))
             return true;
 
