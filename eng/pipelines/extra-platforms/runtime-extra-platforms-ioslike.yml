@@ -99,9 +99,17 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: coreclr
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - ios_arm64
       - tvos_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: coreclrContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_NativeAOT
