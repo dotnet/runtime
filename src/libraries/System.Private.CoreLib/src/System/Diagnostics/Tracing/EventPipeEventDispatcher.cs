@@ -131,6 +131,7 @@ namespace System.Diagnostics.Tracing
         private void StartDispatchTask(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency)
         {
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
+            Debug.Assert(sessionID != 0);
 
             m_dispatchTaskCancellationSource = new CancellationTokenSource();
             Task? previousDispatchTask = m_dispatchTask;
@@ -151,6 +152,7 @@ namespace System.Diagnostics.Tracing
 
         private unsafe void DispatchEventsToEventListeners(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency, Task? previousDispatchTask, CancellationToken token)
         {
+            Debug.Assert(sessionID != 0);
             previousDispatchTask?.Wait(CancellationToken.None);
 
             // Struct to fill with the call to GetNextEvent.
@@ -178,7 +180,7 @@ namespace System.Diagnostics.Tracing
                 {
                     if (!eventsReceived)
                     {
-                        EventPipeInternal.WaitForSessionSignal(m_sessionID, Timeout.Infinite);
+                        EventPipeInternal.WaitForSessionSignal(sessionID, Timeout.Infinite);
                     }
 
                     Thread.Sleep(10);

@@ -665,7 +665,7 @@ disable_helper (EventPipeSessionID id)
 		ep_provider_callback_data_queue_fini (provider_callback_data_queue);
 
 #ifdef EP_CHECKED_BUILD
-		if (ep_volatile_load_number_of_sessions () == 0)
+		if (ep_volatile_load_number_of_sessions () == 0 && ep_volatile_load_eventpipe_state () != EP_STATE_SHUTTING_DOWN)
 			EP_ASSERT (ep_rt_providers_validate_all_disabled ());
 #endif
 
