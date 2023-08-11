@@ -4,12 +4,16 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
+import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
 import { localHeapViewU8, localHeapViewU32 } from "./memory";
 import { utf8ToString } from "./strings";
+import {
+    JiterpNumberMode, BailoutReason, JiterpreterTable,
+    JiterpCounter, JiterpMember
+} from "./jiterpreter-enums";
 
 export const maxFailures = 2,
     maxMemsetSize = 64,
@@ -20,154 +24,6 @@ export const maxFailures = 2,
 export declare interface MintOpcodePtr extends NativePointer {
     __brand: "MintOpcodePtr"
 }
-
-export const enum JiterpCounter {
-    TraceCandidates = 0,
-    TracesCompiled,
-    EntryWrappersCompiled,
-    JitCallsCompiled,
-    DirectJitCallsCompiled,
-    Failures,
-    BytesGenerated,
-    NullChecksEliminated,
-    NullChecksFused,
-    BackBranchesEmitted,
-    BackBranchesNotEmitted,
-    ElapsedGenerationMs,
-    ElapsedCompilationMs,
-}
-
-export const enum JiterpMember {
-    VtableInitialized = 0,
-    ArrayData = 1,
-    StringLength = 2,
-    StringData = 3,
-    Imethod = 4,
-    DataItems = 5,
-    Rmethod = 6,
-    SpanLength = 7,
-    SpanData = 8,
-    ArrayLength = 9,
-    BackwardBranchOffsets = 10,
-    BackwardBranchOffsetsCount = 11,
-    ClauseDataOffsets = 12,
-    ParamsCount = 13,
-    VTable = 14,
-    VTableKlass = 15,
-    ClassRank = 16,
-    ClassElementClass = 17,
-    BoxedValueData = 18,
-}
-
-export const enum JiterpNumberMode {
-    U32 = 0,
-    I32 = 1,
-    F32 = 2,
-    F64 = 3
-}
-
-export const enum JiterpreterTable {
-    Trace,
-    DoJitCall,
-    JitCall,
-    InterpEntryStatic0,
-    InterpEntryStatic1,
-    InterpEntryStatic2,
-    InterpEntryStatic3,
-    InterpEntryStatic4,
-    InterpEntryStatic5,
-    InterpEntryStatic6,
-    InterpEntryStatic7,
-    InterpEntryStatic8,
-    InterpEntryStaticRet0,
-    InterpEntryStaticRet1,
-    InterpEntryStaticRet2,
-    InterpEntryStaticRet3,
-    InterpEntryStaticRet4,
-    InterpEntryStaticRet5,
-    InterpEntryStaticRet6,
-    InterpEntryStaticRet7,
-    InterpEntryStaticRet8,
-    InterpEntryInstance0,
-    InterpEntryInstance1,
-    InterpEntryInstance2,
-    InterpEntryInstance3,
-    InterpEntryInstance4,
-    InterpEntryInstance5,
-    InterpEntryInstance6,
-    InterpEntryInstance7,
-    InterpEntryInstance8,
-    InterpEntryInstanceRet0,
-    InterpEntryInstanceRet1,
-    InterpEntryInstanceRet2,
-    InterpEntryInstanceRet3,
-    InterpEntryInstanceRet4,
-    InterpEntryInstanceRet5,
-    InterpEntryInstanceRet6,
-    InterpEntryInstanceRet7,
-    InterpEntryInstanceRet8,
-    LAST = InterpEntryInstanceRet8,
-}
-
-export const enum BailoutReason {
-    Unknown,
-    InterpreterTiering,
-    NullCheck,
-    VtableNotInitialized,
-    Branch,
-    BackwardBranch,
-    ConditionalBranch,
-    ConditionalBackwardBranch,
-    ComplexBranch,
-    ArrayLoadFailed,
-    ArrayStoreFailed,
-    StringOperationFailed,
-    DivideByZero,
-    Overflow,
-    Return,
-    Call,
-    Throw,
-    AllocFailed,
-    SpanOperationFailed,
-    CastFailed,
-    SafepointBranchTaken,
-    UnboxFailed,
-    CallDelegate,
-    Debugging,
-    Icall,
-    UnexpectedRetIp,
-    LeaveCheck,
-}
-
-export const BailoutReasonNames = [
-    "Unknown",
-    "InterpreterTiering",
-    "NullCheck",
-    "VtableNotInitialized",
-    "Branch",
-    "BackwardBranch",
-    "ConditionalBranch",
-    "ConditionalBackwardBranch",
-    "ComplexBranch",
-    "ArrayLoadFailed",
-    "ArrayStoreFailed",
-    "StringOperationFailed",
-    "DivideByZero",
-    "Overflow",
-    "Return",
-    "Call",
-    "Throw",
-    "AllocFailed",
-    "SpanOperationFailed",
-    "CastFailed",
-    "SafepointBranchTaken",
-    "UnboxFailed",
-    "CallDelegate",
-    "Debugging",
-    "Icall",
-    "UnexpectedRetIp",
-    "LeaveCheck",
-];
 
 type FunctionType = [
     index: FunctionTypeIndex,
@@ -1576,15 +1432,6 @@ class Cfg {
         const result = this.builder._pop(false)!;
         return result;
     }
-}
-
-export const enum WasmValtype {
-    void = 0x40,
-    i32 = 0x7F,
-    i64 = 0x7E,
-    f32 = 0x7D,
-    f64 = 0x7C,
-    v128 = 0x7B,
 }
 
 let wasmTable: WebAssembly.Table | undefined;

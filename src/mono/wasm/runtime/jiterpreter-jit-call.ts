@@ -8,14 +8,15 @@ import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
-import { WasmOpcode } from "./jiterpreter-opcodes";
+import { WasmOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import {
-    WasmValtype, WasmBuilder, addWasmFunctionPointer,
+    WasmBuilder, addWasmFunctionPointer,
     _now, getWasmFunctionTable, applyOptions,
-    recordFailure, getOptions, JiterpreterTable,
-    getCounter, modifyCounter, JiterpCounter,
+    recordFailure, getOptions,
+    getCounter, modifyCounter,
     jiterpreter_allocate_tables
 } from "./jiterpreter-support";
+import { JiterpreterTable, JiterpCounter } from "./jiterpreter-enums";
 import {
     compileDoJitCall
 } from "./jiterpreter-feature-detect";
@@ -305,11 +306,14 @@ export function mono_jiterp_do_jit_call_indirect(
     }
 
     if (failed) {
+        // This means that either wasm EH is unavailable or we failed to JIT the handler somehow
         try {
             // HACK: It's not safe to use Module.addFunction in a multithreaded scenario
             if (MonoWasmThreads) {
+                // Use mono_llvm_cpp_catch_exception instead
                 cwraps.mono_jiterp_update_jit_call_dispatcher(0);
             } else {
+                // Use the JS helper function defined up above
                 const result = Module.addFunction(do_jit_call_indirect_js, "viii");
                 cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             }
@@ -476,6 +480,8 @@ export function mono_interp_flush_jitcall_queue(): void {
 
             info.result = idx;
             if (idx > 0) {
+                // We successfully registered a function pointer for this thunk,
+                //  so now register it as the thunk for each call site in the queue
                 cwraps.mono_jiterp_register_jit_call_thunk(<any>info.cinfo, idx);
                 for (let j = 0; j < info.queue.length; j++)
                     cwraps.mono_jiterp_register_jit_call_thunk(<any>info.queue[j], idx);
@@ -484,6 +490,8 @@ export function mono_interp_flush_jitcall_queue(): void {
                     modifyCounter(JiterpCounter.DirectJitCallsCompiled, 1);
                 modifyCounter(JiterpCounter.JitCallsCompiled, 1);
             }
+            // If we failed to register a function pointer we just continue, since it
+            //  means that the table is full
 
             info.queue.length = 0;
             rejected = false;

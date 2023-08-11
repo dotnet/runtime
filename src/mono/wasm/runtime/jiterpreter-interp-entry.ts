@@ -10,14 +10,18 @@ import {
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 import {
-    WasmValtype, WasmBuilder, addWasmFunctionPointer,
+    WasmBuilder, addWasmFunctionPointer,
     _now, getRawCwrap, importDef,
     getWasmFunctionTable, recordFailure, getOptions,
-    JiterpreterOptions, getMemberOffset, JiterpMember,
-    JiterpreterTable, getCounter, modifyCounter, JiterpCounter,
+    JiterpreterOptions, getMemberOffset,
+    getCounter, modifyCounter,
 } from "./jiterpreter-support";
+import { WasmValtype } from "./jiterpreter-opcodes";
 import { mono_log_error, mono_log_info } from "./logging";
 import { utf8ToString } from "./strings";
+import {
+    JiterpreterTable, JiterpCounter, JiterpMember
+} from "./jiterpreter-enums";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;

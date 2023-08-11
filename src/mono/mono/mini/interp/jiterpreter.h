@@ -46,6 +46,7 @@ __attribute__ ((__packed__, __aligned__(2)))
 #pragma pack(pop)
 #endif
 
+// Keep in sync with JiterpreterTable in jiterpreter-enums.ts
 enum {
 	JITERPRETER_TABLE_TRACE = 0,
 	JITERPRETER_TABLE_DO_JIT_CALL = 1,

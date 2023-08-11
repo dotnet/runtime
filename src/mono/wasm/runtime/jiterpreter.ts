@@ -5,17 +5,20 @@ import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { getU16, getU32_unaligned, localHeapViewU8 } from "./memory";
-import { WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
+import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import {
-    MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
+    MintOpcodePtr, WasmBuilder, addWasmFunctionPointer,
     _now, isZeroPageReserved,
     getRawCwrap, importDef, JiterpreterOptions, getOptions, recordFailure,
-    JiterpMember, getMemberOffset, BailoutReasonNames, BailoutReason,
-    JiterpreterTable, getCounter, modifyCounter, JiterpCounter,
+    getMemberOffset, getCounter, modifyCounter,
     simdFallbackCounters, getWasmFunctionTable
 } from "./jiterpreter-support";
+import {
+    JiterpMember, BailoutReasonNames, BailoutReason,
+    JiterpreterTable, JiterpCounter,
+} from "./jiterpreter-enums";
 import {
     generateWasmBody
 } from "./jiterpreter-trace-generator";

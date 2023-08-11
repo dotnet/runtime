@@ -8,8 +8,8 @@ import {
     getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned, localHeapViewU8,
 } from "./memory";
 import {
-    WasmOpcode, WasmSimdOpcode,
-    getOpcodeName, OpcodeInfoType,
+    WasmOpcode, WasmSimdOpcode, WasmValtype,
+    getOpcodeName,
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
@@ -17,13 +17,16 @@ import {
 } from "./mintops";
 import cwraps from "./cwraps";
 import {
-    MintOpcodePtr, WasmValtype, WasmBuilder,
+    OpcodeInfoType, JiterpMember, BailoutReason,
+    JiterpCounter,
+} from "./jiterpreter-enums";
+import {
+    MintOpcodePtr, WasmBuilder,
     append_memset_dest, append_bailout, append_exit,
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, getOpcodeTableValue,
-    getMemberOffset, JiterpMember, BailoutReason,
-    isZeroPageReserved, CfgBranchType, append_safepoint,
-    modifyCounter, JiterpCounter, simdFallbackCounters,
+    getMemberOffset, isZeroPageReserved, CfgBranchType,
+    append_safepoint, modifyCounter, simdFallbackCounters,
 } from "./jiterpreter-support";
 import { compileSimdFeatureDetect } from "./jiterpreter-feature-detect";
 import {
