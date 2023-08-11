@@ -1316,12 +1316,6 @@ namespace System.Text.Json
             _parent.WriteElementTo(_idx, writer);
         }
 
-        /// <summary>
-        /// Write the property name of this <see cref="JsonElement"/> to a <see cref="Utf8JsonWriter"/>
-        /// in an allocation-less way, if the name is shorter than <see cref="JsonConstants.StackallocByteThreshold"/>
-        /// or it doesn't require unescaping, and the underlying buffer is long enough.
-        /// </summary>
-        /// <param name="writer">Utf8JsonWriter to write</param>
         internal void WritePropertyNameTo(Utf8JsonWriter writer)
         {
             CheckValidInstance();

@@ -880,6 +880,7 @@ namespace System.Text.Json
 
             WritePropertyName(_parsedData.Get(index - DbRow.Size), writer);
         }
+
         private void WritePropertyNameNew(in DbRow row, Utf8JsonWriter writer)
         {
             // To be determined.
