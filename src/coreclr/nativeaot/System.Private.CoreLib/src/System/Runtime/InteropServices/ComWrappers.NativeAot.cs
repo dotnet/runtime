@@ -518,6 +518,14 @@ namespace System.Runtime.InteropServices
 
             public IntPtr TrackerObject => (_trackerObject == IntPtr.Zero || _trackerObjectDisconnected == 1) ? IntPtr.Zero : _trackerObject;
 
+            static NativeObjectWrapper()
+            {
+                // Set to true to indicate we have RCW objects created
+                // which enables the weak reference support to consult
+                // ComWrappers when weak references are created for RCWs.
+                ComAwareWeakReference.ComWrappersRcwInitialized = true;
+            }
+
             public NativeObjectWrapper(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
             {
                 _externalComObject = externalComObject;
