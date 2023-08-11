@@ -74,6 +74,7 @@
 #include "llvmonly-runtime.h"
 
 #include <mono/metadata/components.h>
+#include <dnmd.h>
 
 #ifndef DISABLE_AOT
 
@@ -2047,7 +2048,9 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		if (!sofile) {
 			// Maybe do these on more platforms ?
 #ifndef HOST_WASM
-			if (mono_aot_only && !mono_use_interpreter && table_info_get_rows (&assembly->image->tables [MONO_TABLE_METHOD])) {
+			mdcursor_t c;
+			uint32_t count;
+			if (mono_aot_only && !mono_use_interpreter && md_create_cursor(assembly->image->metadata_handle, mdtid_MethodDef, &c, &count)) {
 				aot_name = g_strdup_printf ("%s%s", assembly->image->name, MONO_SOLIB_EXT);
 				g_error ("Failed to load AOT module '%s' ('%s') in aot-only mode.\n", aot_name, assembly->image->name);
 				g_free (aot_name);
@@ -2627,8 +2630,6 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	char full_name_buf [1024];
 	char *full_name;
 	const char *name2, *name_space2;
-	MonoTableInfo  *t;
-	guint32 cols [MONO_TYPEDEF_SIZE];
 	GHashTable *nspace_table;
 #ifdef DEBUG_AOT_NAME_TABLE
 	char *debug_full_name;
@@ -2681,19 +2682,22 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	entry = &table [hash * 2];
 
 	if (entry [0] != 0) {
-		t = &image->tables [MONO_TABLE_TYPEDEF];
 
 		while (TRUE) {
 			guint32 index = entry [0];
 			guint32 next = entry [1];
 			guint32 token = mono_metadata_make_token (MONO_TABLE_TYPEDEF, index);
+			mdcursor_t c;
+			if (!md_token_to_cursor (image->metadata_handle, token, &c))
+				g_error ("Could not find token 0x%08x in metadata", token);
 
 			name_table_accesses ++;
 
-			mono_metadata_decode_row (t, index - 1, cols, MONO_TYPEDEF_SIZE);
-
-			name2 = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
-			name_space2 = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+			if (1 != md_get_column_value_as_utf8 (c, mdtTypeDef_TypeName, 1, &name2))
+				g_error ("Could not get name for token 0x%08x", token);
+			
+			if (1 != md_get_column_value_as_utf8 (c, mdtTypeDef_TypeNamespace, 1, &name_space2))
+				g_error ("Could not get namespace for token 0x%08x", token);
 
 			if (!strcmp (name, name2) && !strcmp (name_space, name_space2)) {
 				ERROR_DECL (error);
@@ -3685,7 +3689,9 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		}
 
 		if (!method) {
-			if (GINT_TO_UINT32(method_index) >= table_info_get_rows (&image->tables [MONO_TABLE_METHOD])) {
+			mdcursor_t c;
+			token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
+			if (!md_token_to_cursor(image->metadata_handle, token, &c)) {
 				/*
 				 * This is hit for extra methods which are called directly, so they are
 				 * not in amodule->extra_methods.
@@ -3717,7 +3723,6 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 					/* Happens when a random address is passed in which matches a not-yey called wrapper encoded using its name */
 					return NULL;
 			} else {
-				token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
 				method = mono_get_method_checked (image, token, NULL, NULL, error);
 				if (!method)
 					g_error ("AOT runtime could not load method due to %s", mono_error_get_message (error)); /* FIXME don't swallow the error */
