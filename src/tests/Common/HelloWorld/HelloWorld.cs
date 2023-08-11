@@ -5,6 +5,6 @@ internal class HelloWorld
     static int Main(string[] args)
     {
         Console.WriteLine("Hello World!");
-        return 512;
+        return 0;
     }
 }

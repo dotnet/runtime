@@ -4,21 +4,13 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Xunit;
 
 public class JittedMethodsCounter
 {
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
-        // Let's draft what we need to do for this test in plain terms.
-        //
-        // ! 1) We need to build and publish the HelloWorld app. (MSBuild maybe?)
-        // * 2) We need to run the HelloWorld app's executable.
-        // * 3) We need to capture its output.
-        // * 4) We need to read said output. More precisely, the last line.
-        // * 5) We need to parse the last line to get the last JIT'd method's number.
-        // * 6) We need to compare this number against a preset expected result.
-        // * 7) From there, decide whether the test passed or not.
-
         string appName = "HelloWorld";
         string jitOutputFile = "jits.txt";
         int testReturnCode = 0;
