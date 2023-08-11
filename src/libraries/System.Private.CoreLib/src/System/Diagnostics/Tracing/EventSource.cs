@@ -4078,7 +4078,6 @@ namespace System.Diagnostics.Tracing
 
 #if FEATURE_PERFTRACING
             // Remove the listener from the EventPipe dispatcher. EventCommand.Update with enable==false removes it.
-            // Have to send outside of EventListenersLock, or we risk deadlocks.
             EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, false, EventLevel.LogAlways, (EventKeywords)0);
 #endif // FEATURE_PERFTRACING
         }
