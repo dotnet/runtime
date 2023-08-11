@@ -1170,7 +1170,7 @@ namespace System.Runtime.InteropServices
         {
             if (s_globalInstanceForTrackerSupport == null)
             {
-                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
+                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperTrackerInstance);
             }
 
             object obj = s_globalInstanceForTrackerSupport.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.TrackerObject);
@@ -1181,7 +1181,7 @@ namespace System.Runtime.InteropServices
         {
             if (s_globalInstanceForTrackerSupport == null)
             {
-                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
+                throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperTrackerInstance);
             }
 
             IntPtr contextToken = GetContextToken();
