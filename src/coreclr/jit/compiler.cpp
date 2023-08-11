@@ -4718,7 +4718,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         // Tail merge
         //
-        DoPhase(this, PHASE_TAIL_MERGE, &Compiler::fgTailMerge);
+        DoPhase(this, PHASE_TAIL_MERGE, [this]() { return fgTailMerge(true); });
 
         // Merge common throw blocks
         //
@@ -4835,7 +4835,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Second pass of tail merge
         //
-        DoPhase(this, PHASE_TAIL_MERGE2, &Compiler::fgTailMerge);
+        DoPhase(this, PHASE_TAIL_MERGE2, [this]() { return fgTailMerge(false); });
 
         // Compute reachability sets and dominators.
         //

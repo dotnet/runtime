@@ -6657,6 +6657,121 @@ void Compiler::fgCompDominatedByExceptionalEntryBlocks()
     }
 }
 
+bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred)
+{
+    if (!pred->HasTerminator())
+    {
+        return true;
+    }
+
+    GenTree* tree1 = pred->lastStmt()->GetRootNode();
+    GenTree* tree2 = firstStmt->GetRootNode();
+
+    GenTreeFlags tree1Flags = tree1->gtFlags;
+    GenTreeFlags tree2Flags = tree2->gtFlags;
+
+    if (early)
+    {
+        tree1Flags |= gtHasLocalsWithAddrOp(tree1) ? GTF_GLOB_REF : GTF_EMPTY;
+        tree2Flags |= gtHasLocalsWithAddrOp(tree2) ? GTF_GLOB_REF : GTF_EMPTY;
+    }
+
+    // We do not support embedded statements in the terminator node.
+    if ((tree1Flags & GTF_ASG) != 0)
+    {
+        JITDUMP("  no; terminator contains embedded store\n");
+        return false;
+    }
+    if ((tree2Flags & GTF_ASG) != 0)
+    {
+        // Handle common case where the second statement is a top-level store.
+        if (!tree2->OperIsLocalStore())
+        {
+            JITDUMP("  cannot reorder with GTF_ASG without top-level store");
+            return false;
+        }
+
+        GenTreeLclVarCommon* lcl = tree2->AsLclVarCommon();
+        if ((lcl->Data()->gtFlags & GTF_ASG) != 0)
+        {
+            JITDUMP("  cannot reorder with embedded store");
+            return false;
+        }
+
+        LclVarDsc* dsc = lvaGetDesc(tree2->AsLclVarCommon());
+        if ((tree1Flags & GTF_ALL_EFFECT) != 0)
+        {
+            if (early ? dsc->lvHasLdAddrOp : dsc->IsAddressExposed())
+            {
+                JITDUMP("  cannot reorder store to exposed local with any side effect\n");
+                return false;
+            }
+        }
+
+        if (gtHasRef(tree1, lcl->GetLclNum()))
+        {
+            JITDUMP("  cannot reorder with interfering use\n");
+            return false;
+        }
+
+        if (dsc->lvIsStructField && gtHasRef(tree1, dsc->lvParentLcl))
+        {
+            JITDUMP("  cannot reorder with interferring use of parent struct local\n");
+            return false;
+        }
+
+        if (dsc->lvPromoted)
+        {
+            for (int i = 0; i < dsc->lvFieldCnt; i++)
+            {
+                if (gtHasRef(tree1, dsc->lvFieldLclStart + i))
+                {
+                    JITDUMP("  cannot reorder with interferring use of struct field\n");
+                    return false;
+                }
+            }
+        }
+
+        // We've validated that the store does not interfere. Get rid of the
+        // flag for the future checks.
+        tree2Flags &= ~GTF_ASG;
+    }
+
+    if (((tree1Flags & GTF_CALL) != 0) && ((tree2Flags & GTF_ALL_EFFECT) != 0))
+    {
+        JITDUMP("  cannot reorder call with any side effect\n");
+        return false;
+    }
+    if (((tree1Flags & GTF_GLOB_REF) != 0) && ((tree2Flags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    {
+        JITDUMP("  cannot reorder global reference with persistent side effects\n");
+        return false;
+    }
+    if ((tree1Flags & GTF_ORDER_SIDEEFF) != 0)
+    {
+        if ((tree2Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0)
+        {
+            JITDUMP("  cannot reorder ordering side effect\n");
+            return false;
+        }
+    }
+    if ((tree2Flags & GTF_ORDER_SIDEEFF) != 0)
+    {
+        if ((tree1Flags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0)
+        {
+            JITDUMP("  cannot reorder ordering side effect\n");
+            return false;
+        }
+    }
+    if (((tree1Flags & GTF_EXCEPT) != 0) && ((tree2Flags & GTF_SIDE_EFFECT) != 0))
+    {
+        JITDUMP("  cannot reorder exception with side effect\n");
+        return false;
+    }
+
+    return true;
+}
+
 //------------------------------------------------------------------------
 // fgTailMerge: merge common sequences of statements in block predecessors
 //
@@ -6680,7 +6795,7 @@ void Compiler::fgCompDominatedByExceptionalEntryBlocks()
 //   incurring too much TP overhead. It's possible to make the merging
 //   more efficient and if so it might be worth revising this value.
 //
-PhaseStatus Compiler::fgTailMerge()
+PhaseStatus Compiler::fgTailMerge(bool early)
 {
     bool      madeChanges = false;
     int const mergeLimit  = 50;
@@ -7029,6 +7144,149 @@ PhaseStatus Compiler::fgTailMerge()
     while (retryBlocks.Height() > 0)
     {
         iterateTailMerge(retryBlocks.Pop());
+    }
+
+    // Try head merging a block.
+    // If return value is true, retry.
+    // May also add to retryBlocks.
+    //
+    auto headMerge = [&](BasicBlock* block) -> bool {
+
+        if (block->NumSucc(this) < 2)
+        {
+            // Nothing to merge here
+            return false;
+        }
+
+        matchedPredInfo.Reset();
+
+        // Find the subset of preds that reach along non-critical edges
+        // and populate predInfo.
+        //
+        for (BasicBlock* const succBlock : block->Succs(this))
+        {
+            if (succBlock->GetUniquePred(this) != block)
+            {
+                return false;
+            }
+
+            if (!BasicBlock::sameEHRegion(block, succBlock))
+            {
+                return false;
+            }
+
+            Statement* firstStmt = nullptr;
+            // Walk past any GT_NOPs.
+            //
+            for (Statement* stmt : succBlock->Statements())
+            {
+                if (stmt->GetRootNode()->OperIs(GT_NOP))
+                {
+                    continue;
+                }
+
+                firstStmt = stmt;
+                break;
+            }
+
+            // Block might be effectively empty.
+            //
+            if (firstStmt == nullptr)
+            {
+                return false;
+            }
+
+            // Cannot move terminator statement.
+            //
+            if ((firstStmt == succBlock->lastStmt()) && succBlock->HasTerminator())
+            {
+                return false;
+            }
+
+            if (firstStmt->GetRootNode()->IsCall() && firstStmt->GetRootNode()->AsCall()->CanTailCall())
+            {
+                return false;
+            }
+
+            if ((matchedPredInfo.Height() == 0) ||
+                GenTree::Compare(firstStmt->GetRootNode(), matchedPredInfo.BottomRef(0).m_stmt->GetRootNode()))
+            {
+                matchedPredInfo.Emplace(succBlock, firstStmt);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        Statement* firstStmt = matchedPredInfo.TopRef(0).m_stmt;
+        JITDUMP("All succs of " FMT_BB " start with the same tree\n", block->bbNum);
+        DISPSTMT(firstStmt);
+
+        JITDUMP("Checking if we can move it into the predecessor...\n");
+
+        if (!fgCanMoveFirstStatementIntoPred(early, firstStmt, block))
+        {
+            return false;
+        }
+
+        JITDUMP("Moving statement\n");
+
+        for (int i = 0; i < matchedPredInfo.Height(); i++)
+        {
+            PredInfo&         info      = matchedPredInfo.TopRef(i);
+            Statement* const  stmt      = info.m_stmt;
+            BasicBlock* const succBlock = info.m_block;
+
+            fgUnlinkStmt(succBlock, stmt);
+
+            // Add one of the matching stmts to block, and
+            // update its flags.
+            //
+            if (i == 0)
+            {
+                fgInsertStmtNearEnd(block, stmt);
+                block->bbFlags |= succBlock->bbFlags & BBF_COPY_PROPAGATE;
+            }
+
+            madeChanges = true;
+        }
+
+        return true;
+    };
+
+    auto iterateHeadMerge = [&](BasicBlock* block) -> void {
+
+        int  numOpts = 0;
+        bool retry   = true;
+
+        while (retry)
+        {
+            retry = headMerge(block);
+            if (retry)
+            {
+                numOpts++;
+            }
+        }
+
+        if (numOpts > 0)
+        {
+            JITDUMP("Did %d head merges in " FMT_BB "\n", numOpts, block->bbNum);
+        }
+    };
+
+    // Visit each block
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        iterateHeadMerge(block);
+    }
+
+    // Work through any retries
+    //
+    while (retryBlocks.Height() > 0)
+    {
+        iterateHeadMerge(retryBlocks.Pop());
     }
 
     // If we altered flow, reset fgModified. Given where we sit in the
