@@ -294,11 +294,8 @@
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
-    <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
-      <NativeDependencies Condition="$(NativeDependencies) == ''">%(ManagedBinary.IlcOutputFile)</NativeDependencies>
-    </PropertyGroup>
-
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+      <NativeDependencies Condition="$(NativeDependencies) == ''" Include="%(ManagedBinary.IlcOutputFile)" />
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
