@@ -519,66 +519,6 @@ int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t 
     return read_in;
 }
 
-typedef int32_t(*md_bcompare_t)(void const* key, void const* row, void*);
-
-// Since MSVC doesn't have a C11 compatible bsearch_s, defining one below.
-// Ideally we would use the one in the standard so the signature is designed
-// to match what should eventually exist.
-static void const* md_bsearch(
-    void const* key,
-    void const* base,
-    rsize_t count,
-    rsize_t element_size,
-    md_bcompare_t cmp,
-    void* cxt)
-{
-    assert(key != NULL && base != NULL);
-    while (count > 0)
-    {
-        void const* row = (uint8_t const*)base + (element_size * (count / 2));
-        int32_t res = cmp(key, row, cxt);
-        if (res == 0)
-            return row;
-
-        if (count == 1)
-        {
-            break;
-        }
-        else if (res < 0)
-        {
-            count /= 2;
-        }
-        else
-        {
-            base = row;
-            count -= count / 2;
-        }
-    }
-    return NULL;
-}
-
-static void const* md_lsearch(
-    void const* key,
-    void const* base,
-    rsize_t count,
-    rsize_t element_size,
-    md_bcompare_t cmp,
-    void* cxt)
-{
-    assert(key != NULL && base != NULL);
-    void const* row = base;
-    for (rsize_t i = 0; i < count; ++i)
-    {
-        int32_t res = cmp(key, row, cxt);
-        if (res == 0)
-            return row;
-
-        // Onto the next row.
-        row = (uint8_t const*)row + element_size;
-    }
-    return NULL;
-}
-
 typedef struct _find_cxt_t
 {
     uint32_t col_offset;
@@ -642,6 +582,17 @@ static int32_t col_compare_4bytes(void const* key, void const* row, void* cxt)
         : 1;
 }
 
+typedef int32_t(*md_bcompare_t)(void const* key, void const* row, void*);
+
+// Define all 2 and 4 byte search functions
+#define SEARCH_COMPARE(...) col_compare_2bytes(__VA_ARGS__)
+#define SEARCH_FUNC_NAME(n) n ## _2bytes
+#include "search.template.h"
+
+#define SEARCH_COMPARE(...) col_compare_4bytes(__VA_ARGS__)
+#define SEARCH_FUNC_NAME(n) n ## _4bytes
+#include "search.template.h"
+
 static void const* cursor_to_row_bytes(mdcursor_t* c)
 {
     assert(c != NULL && (CursorRow(c) > 0));
@@ -673,11 +624,14 @@ static bool find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t* va
 
     // Compute the starting row.
     void const* starting_row = cursor_to_row_bytes(&begin);
-    md_bcompare_t cmp_func = fcxt.data_len == 2 ? col_compare_2bytes : col_compare_4bytes;
     // Add +1 for inclusive count - use binary search if sorted, otherwise linear.
     void const* row_maybe = (table->is_sorted)
-        ? md_bsearch(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, cmp_func, &fcxt)
-        : md_lsearch(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, cmp_func, &fcxt);
+        ? ((fcxt.data_len == 2)
+            ? md_bsearch_2bytes(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, &fcxt)
+            : md_bsearch_4bytes(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, &fcxt))
+        : ((fcxt.data_len == 2)
+            ? md_lsearch_2bytes(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, &fcxt)
+            : md_lsearch_4bytes(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, &fcxt));
     if (row_maybe == NULL)
         return false;
 
@@ -703,7 +657,7 @@ md_range_result_t md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, u
     mdtable_t* table = CursorTable(&begin);
     if (!table->is_sorted)
         return MD_RANGE_NOT_SUPPORTED;
-        
+
     md_key_info const* keys;
     uint8_t keys_count = get_table_keys(table->table_id, &keys);
     if (keys_count == 0)
@@ -759,47 +713,6 @@ md_range_result_t md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, u
     // Compute the row delta
     *count = CursorRow(&end) - CursorRow(start);
     return MD_RANGE_FOUND;
-}
-
-// Modeled after C11's bsearch_s. This API performs a binary search
-// and instead of returning NULL if the value isn't found, the last
-// compare result and row is returned.
-static int32_t mdtable_bsearch_closest(
-    void const* key,
-    mdtable_t* table,
-    find_cxt_t* fcxt,
-    uint32_t* found_row)
-{
-    assert(table != NULL && found_row != NULL);
-    void const* base = table->data.ptr;
-    rsize_t count = table->row_count;
-    rsize_t element_size = table->row_size_bytes;
-
-    int32_t res = 0;
-    void const* row = base;
-    md_bcompare_t cmp_func = fcxt->data_len == 2 ? col_compare_2bytes : col_compare_4bytes;
-    while (count > 0)
-    {
-        row = (uint8_t const*)base + (element_size * (count / 2));
-        res = cmp_func(key, row, fcxt);
-        if (res == 0 || count == 1)
-            break;
-
-        if (res < 0)
-        {
-            count /= 2;
-        }
-        else
-        {
-            base = row;
-            count -= count / 2;
-        }
-    }
-
-    // Compute the found row.
-    // Indices into tables begin at 1 - see II.22.
-    *found_row = (uint32_t)(((intptr_t)row - (intptr_t)table->data.ptr) / element_size) + 1;
-    return res;
 }
 
 #ifdef DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
@@ -902,7 +815,7 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
         mdcursor_t indir_row;
         if (!find_row_from_cursor(indir_table_cursor, indir_col, &row, &indir_row))
             return false;
-        
+
         // Now that we've found the indirection cell, we can look in the target table for the
         // element that contains the indirection cell in its range.
         row = CursorRow(&indir_row);
@@ -913,7 +826,9 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
         return false;
 
     uint32_t found_row;
-    int32_t last_cmp = mdtable_bsearch_closest(&row, tgt_table, &fcxt, &found_row);
+    int32_t last_cmp = (fcxt.data_len == 2)
+        ? mdtable_bsearch_closest_2bytes(&row, tgt_table, &fcxt, &found_row)
+        : mdtable_bsearch_closest_4bytes(&row, tgt_table, &fcxt, &found_row);
 
     // The three result cases are handled as follows.
     // If last < 0, then the cursor is greater than the value so we must move back one.
