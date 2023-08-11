@@ -414,8 +414,49 @@ namespace System.Net.Sockets
             saea.SetBuffer(buffer);
             saea.SocketFlags = socketFlags;
             saea.RemoteEndPoint = remoteEndPoint;
+            saea._socketAddress = new SocketAddress(AddressFamily);
+            if (remoteEndPoint!.AddressFamily != AddressFamily && AddressFamily == AddressFamily.InterNetworkV6 && IsDualMode)
+            {
+                saea.RemoteEndPoint = s_IPEndPointIPv6;
+            }
             saea.WrapExceptionsForNetworkStream = false;
             return saea.ReceiveFromAsync(this, cancellationToken);
+        }
+
+        /// <summary>
+        /// Receives data and returns the endpoint of the sending host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="receivedAddress">An <see cref="SocketAddress"/>, that will be updated with value of the remote peer.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveFromResult"/> containing the number of bytes received and the endpoint of the sending host.</returns>
+        public ValueTask<int> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, SocketAddress receivedAddress, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(receivedAddress, nameof(receivedAddress));
+
+            if (receivedAddress.Size < SocketAddress.GetMaximumAddressSize(AddressFamily))
+            {
+                throw new ArgumentOutOfRangeException(nameof(receivedAddress), SR.net_sockets_address_small);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(buffer);
+            saea.SocketFlags = socketFlags;
+            saea.RemoteEndPoint = null;
+            saea._socketAddress = receivedAddress;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.ReceiveFromSocketAddressAsync(this, cancellationToken);
         }
 
         /// <summary>
@@ -636,7 +677,38 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
+            saea._socketAddress = null;
             saea.RemoteEndPoint = remoteEP;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.SendToAsync(this, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends data to the specified remote host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <param name="socketAddress">The remote host to which to send the data.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
+        public ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, SocketAddress socketAddress, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(socketAddress);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
+            saea.SocketFlags = socketFlags;
+            saea._socketAddress = socketAddress;
             saea.WrapExceptionsForNetworkStream = false;
             return saea.SendToAsync(this, cancellationToken);
         }
@@ -677,8 +749,8 @@ namespace System.Net.Sockets
 
             if (!IsConnectionOriented)
             {
-                var soex = new SocketException((int)SocketError.NotConnected);
-                return ValueTask.FromException(soex);
+                var ex = new NotSupportedException(SR.net_notconnected);
+                return ValueTask.FromException(ex);
             }
 
             int packetsCount = 0;
@@ -1017,6 +1089,24 @@ namespace System.Net.Sockets
                 return error == SocketError.Success ?
                     new ValueTask<SocketReceiveFromResult>(new SocketReceiveFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint }) :
                     ValueTask.FromException<SocketReceiveFromResult>(CreateException(error));
+            }
+
+            internal ValueTask<int> ReceiveFromSocketAddressAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                if (socket.ReceiveFromAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask<int>(this, _mrvtsc.Version);
+                }
+
+                int bytesTransferred = BytesTransferred;
+                SocketError error = SocketError;
+
+                ReleaseForSyncCompletion();
+
+                return error == SocketError.Success ?
+                    new ValueTask<int>(bytesTransferred) :
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket socket, CancellationToken cancellationToken)

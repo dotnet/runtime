@@ -45,7 +45,7 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=x64 /p:AotHostOS=linux
         nameSuffix: AOT
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
@@ -293,7 +293,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
       buildConfig: release
-      runtimeFlavor: aot
+      runtimeFlavor: mono
       platforms:
       - linux_x64
       jobParameters:

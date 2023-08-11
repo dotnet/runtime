@@ -6037,16 +6037,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 
 				if (is_simd) {
-					g_assert (lhs);
 					retval = LLVMConstNull(ret_type);
 
-					int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
-					for (int i = 0; i < len; i++)
-					{
-						elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
-						retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
+					if (lhs) {
+						int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
+						for (int i = 0; i < len; i++) {
+							elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
+							retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
+						}
 					}
-				} else{
+				} else {
 					g_assert (addresses [ins->sreg1]);
 					retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
 				}

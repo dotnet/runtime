@@ -347,54 +347,6 @@ namespace System.Text
 
             byte* pOriginalBuffer = pBuffer;
 
-            // Before we drain off byte-by-byte, try a generic vectorized loop.
-            // Only run the loop if we have at least two vectors we can pull out.
-            // Note use of SBYTE instead of BYTE below; we're using the two's-complement
-            // representation of negative integers to act as a surrogate for "is ASCII?".
-
-            if (Vector.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector<sbyte>.Count)
-            {
-                uint SizeOfVectorInBytes = (uint)Vector<sbyte>.Count; // JIT will make this a const
-
-                if (Vector.GreaterThanOrEqualAll(Unsafe.ReadUnaligned<Vector<sbyte>>(pBuffer), Vector<sbyte>.Zero))
-                {
-                    // The first several elements of the input buffer were ASCII. Bump up the pointer to the
-                    // next aligned boundary, then perform aligned reads from here on out until we find non-ASCII
-                    // data or we approach the end of the buffer. It's possible we'll reread data; this is ok.
-
-                    byte* pFinalVectorReadPos = pBuffer + bufferLength - SizeOfVectorInBytes;
-                    pBuffer = (byte*)(((nuint)pBuffer + SizeOfVectorInBytes) & ~(nuint)(SizeOfVectorInBytes - 1));
-
-#if DEBUG
-                    long numBytesRead = pBuffer - pOriginalBuffer;
-                    Debug.Assert(0 < numBytesRead && numBytesRead <= SizeOfVectorInBytes, "We should've made forward progress of at least one byte.");
-                    Debug.Assert((nuint)numBytesRead <= bufferLength, "We shouldn't have read past the end of the input buffer.");
-#endif
-
-                    Debug.Assert(pBuffer <= pFinalVectorReadPos, "Should be able to read at least one vector.");
-
-                    do
-                    {
-                        Debug.Assert((nuint)pBuffer % SizeOfVectorInBytes == 0, "Vector read should be aligned.");
-                        if (Vector.LessThanAny(Unsafe.Read<Vector<sbyte>>(pBuffer), Vector<sbyte>.Zero))
-                        {
-                            break; // found non-ASCII data
-                        }
-
-                        pBuffer += SizeOfVectorInBytes;
-                    } while (pBuffer <= pFinalVectorReadPos);
-
-                    // Adjust the remaining buffer length for the number of elements we just consumed.
-
-                    bufferLength -= (nuint)pBuffer;
-                    bufferLength += (nuint)pOriginalBuffer;
-                }
-            }
-
-            // At this point, the buffer length wasn't enough to perform a vectorized search, or we did perform
-            // a vectorized search and encountered non-ASCII data. In either case go down a non-vectorized code
-            // path to drain any remaining ASCII bytes.
-            //
             // We're going to perform unaligned reads, so prefer 32-bit reads instead of 64-bit reads.
             // This also allows us to perform more optimized bit twiddling tricks to count the number of ASCII bytes.
 
@@ -1616,7 +1568,7 @@ namespace System.Text
             uint utf16Data32BitsHigh = 0, utf16Data32BitsLow = 0;
             ulong utf16Data64Bits = 0;
 
-            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && elementCount >= 2 * (uint)Vector128<byte>.Count)
+            if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector128<byte>.Count)
             {
                 // Since there's overhead to setting up the vectorized code path, we only want to
                 // call into it after a quick probe to ensure the next immediate characters really are ASCII.
@@ -1650,56 +1602,6 @@ namespace System.Text
                 else
                 {
                     currentOffset = NarrowUtf16ToAscii_Intrinsified(pUtf16Buffer, pAsciiBuffer, elementCount);
-                }
-            }
-            else if (Vector.IsHardwareAccelerated)
-            {
-                uint SizeOfVector = (uint)sizeof(Vector<byte>); // JIT will make this a const
-
-                // Only bother vectorizing if we have enough data to do so.
-                if (elementCount >= 2 * SizeOfVector)
-                {
-                    // Since there's overhead to setting up the vectorized code path, we only want to
-                    // call into it after a quick probe to ensure the next immediate characters really are ASCII.
-                    // If we see non-ASCII data, we'll jump immediately to the draining logic at the end of the method.
-
-                    if (IntPtr.Size >= 8)
-                    {
-                        utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer);
-                        if (!AllCharsInUInt64AreAscii(utf16Data64Bits))
-                        {
-                            goto FoundNonAsciiDataIn64BitRead;
-                        }
-                    }
-                    else
-                    {
-                        utf16Data32BitsHigh = Unsafe.ReadUnaligned<uint>(pUtf16Buffer);
-                        utf16Data32BitsLow = Unsafe.ReadUnaligned<uint>(pUtf16Buffer + 4 / sizeof(char));
-                        if (!AllCharsInUInt32AreAscii(utf16Data32BitsHigh | utf16Data32BitsLow))
-                        {
-                            goto FoundNonAsciiDataIn64BitRead;
-                        }
-                    }
-
-                    Vector<ushort> maxAscii = new Vector<ushort>(0x007F);
-
-                    nuint finalOffsetWhereCanLoop = elementCount - 2 * SizeOfVector;
-                    do
-                    {
-                        Vector<ushort> utf16VectorHigh = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset);
-                        Vector<ushort> utf16VectorLow = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count);
-
-                        if (Vector.GreaterThanAny(Vector.BitwiseOr(utf16VectorHigh, utf16VectorLow), maxAscii))
-                        {
-                            break; // found non-ASCII data
-                        }
-
-                        // TODO: Is the below logic also valid for big-endian platforms?
-                        Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
-                        Unsafe.WriteUnaligned(pAsciiBuffer + currentOffset, asciiVector);
-
-                        currentOffset += SizeOfVector;
-                    } while (currentOffset <= finalOffsetWhereCanLoop);
                 }
             }
 
@@ -2453,35 +2355,6 @@ namespace System.Text
                         currentOffset += (nuint)Vector128<byte>.Count;
                         pCurrentWriteAddress += (nuint)Vector128<byte>.Count;
                     } while (currentOffset <= finalOffsetWhereCanRunLoop);
-                }
-            }
-            else if (Vector.IsHardwareAccelerated)
-            {
-                uint SizeOfVector = (uint)sizeof(Vector<byte>); // JIT will make this a const
-
-                // Only bother vectorizing if we have enough data to do so.
-                if (elementCount >= SizeOfVector)
-                {
-                    // Note use of SBYTE instead of BYTE below; we're using the two's-complement
-                    // representation of negative integers to act as a surrogate for "is ASCII?".
-
-                    nuint finalOffsetWhereCanLoop = elementCount - SizeOfVector;
-                    do
-                    {
-                        Vector<sbyte> asciiVector = Unsafe.ReadUnaligned<Vector<sbyte>>(pAsciiBuffer + currentOffset);
-                        if (Vector.LessThanAny(asciiVector, Vector<sbyte>.Zero))
-                        {
-                            break; // found non-ASCII data
-                        }
-
-                        Vector.Widen(Vector.AsVectorByte(asciiVector), out Vector<ushort> utf16LowVector, out Vector<ushort> utf16HighVector);
-
-                        // TODO: Is the below logic also valid for big-endian platforms?
-                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset, utf16LowVector);
-                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
-
-                        currentOffset += SizeOfVector;
-                    } while (currentOffset <= finalOffsetWhereCanLoop);
                 }
             }
 

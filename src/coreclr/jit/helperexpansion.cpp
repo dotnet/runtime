@@ -665,7 +665,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         //
         // Code sequence to access thread local variable on linux/riscv64:
         //
-        //      mov targetReg, $tp, 0
+        //      mov targetReg, $tp
         //      ld rd, targetReg(cns)
         tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
 #else

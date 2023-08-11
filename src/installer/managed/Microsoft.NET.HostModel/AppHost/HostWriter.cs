@@ -66,24 +66,6 @@ namespace Microsoft.NET.HostModel.AppHost
                 }
             }
 
-            void UpdateResources()
-            {
-                if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
-                {
-                    if (ResourceUpdater.IsSupportedOS())
-                    {
-                        // Copy resources from managed dll to the apphost
-                        new ResourceUpdater(appHostDestinationFilePath)
-                            .AddResourcesFromPEImage(assemblyToCopyResourcesFrom)
-                            .Update();
-                    }
-                    else
-                    {
-                        throw new AppHostCustomizationUnsupportedOSException();
-                    }
-                }
-            }
-
             try
             {
                 RetryUtil.RetryOnIOError(() =>
@@ -115,6 +97,13 @@ namespace Microsoft.NET.HostModel.AppHost
                             {
                                 MachOUtils.RemoveSignature(fileStream);
                             }
+
+                            if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                            {
+                                using var updater = new ResourceUpdater(fileStream, true);
+                                updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
+                                updater.Update();
+                            }
                         }
                     }
                     finally
@@ -124,8 +113,6 @@ namespace Microsoft.NET.HostModel.AppHost
                         appHostSourceStream?.Dispose();
                     }
                 });
-
-                RetryUtil.RetryOnWin32Error(UpdateResources);
 
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {

@@ -64,9 +64,14 @@ namespace Microsoft.Interop
             NotifyForSuccessfulInvoke,
 
             /// <summary>
-            /// Perform any cleanup required
+            /// Perform any cleanup required on caller allocated resources
             /// </summary>
-            Cleanup,
+            CleanupCallerAllocated,
+
+            /// <summary>
+            /// Perform any cleanup required on callee allocated resources
+            /// </summary>
+            CleanupCalleeAllocated,
 
             /// <summary>
             /// Convert native data to managed data even in the case of an exception during
