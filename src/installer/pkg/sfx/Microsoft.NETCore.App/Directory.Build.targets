@@ -10,7 +10,6 @@
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'">
     <PackageReference Condition="'$(SkipInstallersPackageReference)' != 'true'" Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
 
   <UsingTask TaskName="GenerateFileFromTemplate" AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
