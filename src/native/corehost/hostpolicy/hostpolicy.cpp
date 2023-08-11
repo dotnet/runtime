@@ -287,13 +287,8 @@ int HOSTPOLICY_CALLTYPE run_app(const int argc, const pal::char_t *argv[])
 
 void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
 {
-    trace::info(_X("--- Invoked hostpolicy [commit hash: %s] [%s,%s,%s][%s] %s = {"),
-        _STRINGIFY(REPO_COMMIT_HASH),
-        _STRINGIFY(HOST_POLICY_PKG_NAME),
-        _STRINGIFY(HOST_POLICY_PKG_VER),
-        _STRINGIFY(HOST_POLICY_PKG_REL_DIR),
-        get_current_arch_name(),
-        entryPointName.c_str());
+    if (trace::is_enabled())
+        trace::info(_X("--- Invoked hostpolicy [version: %s] %s = {"), get_host_version_description().c_str(), entryPointName.c_str());
 }
 
 //
