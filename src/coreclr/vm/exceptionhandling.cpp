@@ -4566,6 +4566,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
 
     } while (Thread::IsAddressInCurrentStack(sp) && (establisherFrame != ex.TargetFrameSp));
 
+#ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
     if ((establisherFrame == ex.TargetFrameSp) && (ex.TargetIp != 0))
     {
 #ifdef HOST_AMD64
@@ -4586,6 +4587,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
         }
         ExceptionTracker::ResumeExecution(currentFrameContext);
     }
+#endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 
     _ASSERTE(!"UnwindManagedExceptionPass2: Unwinding failed. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
