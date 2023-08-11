@@ -65,7 +65,7 @@ namespace Microsoft.Interop.Analyzers
                 syntaxRoot,
                 editor.Generator.AddAttributes(
                     syntaxRoot,
-                    editor.Generator.Attribute(editor.Generator.DottedName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute))));
+                    editor.Generator.Attribute(editor.Generator.DottedName(TypeNames.GlobalAlias + TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute))));
 
             return editor.GetChangedDocument().Project.Solution;
 

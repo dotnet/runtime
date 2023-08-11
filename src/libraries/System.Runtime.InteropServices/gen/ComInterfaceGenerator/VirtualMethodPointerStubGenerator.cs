@@ -132,7 +132,7 @@ namespace Microsoft.Interop
             {
                 elements.Add(
                     new TypePositionInfo(
-                        new ReferenceTypeInfo($"global::{TypeNames.System_Exception}", TypeNames.System_Exception),
+                        new ReferenceTypeInfo(TypeNames.GlobalAlias + TypeNames.System_Exception, TypeNames.System_Exception),
                         methodStub.ExceptionMarshallingInfo)
                     {
                         InstanceIdentifier = "__exception",

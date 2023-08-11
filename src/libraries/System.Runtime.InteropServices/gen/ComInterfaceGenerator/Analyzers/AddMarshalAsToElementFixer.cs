@@ -53,10 +53,10 @@ namespace Microsoft.Interop.Analyzers
                                     SyntaxGenerator gen = editor.Generator;
 
                                     SyntaxNode marshalAsAttribute = gen.Attribute(
-                                                TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
+                                                TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
                                                 gen.AttributeArgument(
                                                     gen.MemberAccessExpression(
-                                                        gen.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                                                        gen.DottedName(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_UnmanagedType),
                                                         gen.IdentifierName(unmanagedTypeName.Trim()))));
 
                                     if (node.IsKind(SyntaxKind.MethodDeclaration))

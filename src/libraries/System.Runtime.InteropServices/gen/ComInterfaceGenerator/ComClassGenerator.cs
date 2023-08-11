@@ -104,7 +104,7 @@ namespace Microsoft.Interop
 
         private static readonly AttributeSyntax s_comExposedClassAttributeTemplate =
             Attribute(
-                GenericName(TypeNames.ComExposedClassAttribute)
+                GenericName(TypeNames.GlobalAlias + TypeNames.ComExposedClassAttribute)
                     .AddTypeArgumentListArguments(
                         IdentifierName(ClassInfoTypeName)));
         private static MemberDeclarationSyntax GenerateClassInfoAttributeOnUserType(ContainingSyntaxContext containingSyntaxContext, ContainingSyntax classSyntax) =>

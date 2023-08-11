@@ -162,10 +162,10 @@ namespace Microsoft.Interop
         {
             string? marshallerName = unmanagedType switch
             {
-                UnmanagedType.BStr => TypeNames.BStrStringMarshaller,
-                UnmanagedType.LPStr => TypeNames.AnsiStringMarshaller,
-                UnmanagedType.LPTStr or UnmanagedType.LPWStr => TypeNames.Utf16StringMarshaller,
-                MarshalAsInfo.UnmanagedType_LPUTF8Str => TypeNames.Utf8StringMarshaller,
+                UnmanagedType.BStr => TypeNames.GlobalAlias + TypeNames.BStrStringMarshaller,
+                UnmanagedType.LPStr => TypeNames.GlobalAlias + TypeNames.AnsiStringMarshaller,
+                UnmanagedType.LPTStr or UnmanagedType.LPWStr => TypeNames.GlobalAlias + TypeNames.Utf16StringMarshaller,
+                MarshalAsInfo.UnmanagedType_LPUTF8Str => TypeNames.GlobalAlias + TypeNames.Utf8StringMarshaller,
                 _ => null
             };
 

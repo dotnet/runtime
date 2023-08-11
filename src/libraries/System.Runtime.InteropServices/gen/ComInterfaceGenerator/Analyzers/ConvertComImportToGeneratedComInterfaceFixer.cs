@@ -69,7 +69,7 @@ namespace Microsoft.Interop.Analyzers
                     generatedComInterfaceAttribute,
                     new[]
                     {
-                       gen.AttributeArgument("StringMarshalling", gen.MemberAccessExpression(gen.DottedName(TypeNames.StringMarshalling), gen.IdentifierName(nameof(StringMarshalling.Custom)))),
+                       gen.AttributeArgument("StringMarshalling", gen.MemberAccessExpression(gen.DottedName(TypeNames.GlobalAlias + TypeNames.StringMarshalling), gen.IdentifierName(nameof(StringMarshalling.Custom)))),
                        gen.AttributeArgument("StringMarshallingCustomType", gen.TypeOfExpression(gen.TypeExpression(comp.GetTypeByMetadataName(TypeNames.BStrStringMarshaller))))
                     });
             }

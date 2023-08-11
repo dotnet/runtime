@@ -117,7 +117,9 @@ namespace Microsoft.Interop
 
         private static TypeSyntax? _CallConvCDecl;
         private static TypeSyntax? _CallConvFastcall;
+        private static TypeSyntax? _CallConvMemberFunction;
         private static TypeSyntax? _CallConvStdcall;
+        private static TypeSyntax? _CallConvSuppressGCTransition;
         private static TypeSyntax? _CallConvThiscall;
         public static TypeSyntax CallConv(string callConv)
         {
@@ -125,9 +127,11 @@ namespace Microsoft.Interop
             {
                 "CDecl" => _CallConvCDecl ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvCDeclName),
                 "Fastcall" => _CallConvFastcall ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvFastcallName),
+                "MemberFunction" => _CallConvMemberFunction ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvMemberFunctionName),
                 "Stdcall" => _CallConvStdcall ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvStdcallName),
+                "SuppressGCTransition" => _CallConvSuppressGCTransition ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvSuppressGCTransitionName),
                 "Thiscall" => _CallConvThiscall ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.CallConvThiscallName),
-                _ => throw new ArgumentException("Unexpected CallConv")
+                _ => throw new ArgumentException($"Unexpected CallConv: {callConv}")
             };
         }
     }
@@ -295,5 +299,7 @@ namespace Microsoft.Interop
         public const string CallConvFastcallName = "System.Runtime.CompilerServices.CallConvFastcall";
         public const string CallConvStdcallName = "System.Runtime.CompilerServices.CallConvStdcall";
         public const string CallConvThiscallName = "System.Runtime.CompilerServices.CallConvThiscall";
+        public const string CallConvSuppressGCTransitionName = "System.Runtime.CompilerServices.CallConvSuppressGCTransition";
+        public const string CallConvMemberFunctionName = "System.Runtime.CompilerServices.CallConvMemberFunction";
     }
 }

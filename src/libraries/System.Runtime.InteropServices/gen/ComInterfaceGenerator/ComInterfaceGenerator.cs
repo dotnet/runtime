@@ -199,7 +199,7 @@ namespace Microsoft.Interop
 
         private static readonly AttributeSyntax s_iUnknownDerivedAttributeTemplate =
             Attribute(
-                GenericName(TypeNames.IUnknownDerivedAttribute)
+                GenericName(TypeNames.GlobalAlias + TypeNames.IUnknownDerivedAttribute)
                     .AddTypeArgumentListArguments(
                         IdentifierName("InterfaceInformation"),
                         IdentifierName("InterfaceImplementation")));
