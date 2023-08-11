@@ -37,17 +37,15 @@ namespace System.Runtime.InteropServices
         internal static readonly Guid IID_IReferenceTrackerManager = new Guid(0x3cf184b4, 0x7ccb, 0x4dda, 0x84, 0x55, 0x7e, 0x6c, 0xe9, 0x9a, 0x32, 0x98);
         internal static readonly Guid IID_IFindReferenceTargetsCallback = new Guid(0x04b3486c, 0x4687, 0x4229, 0x8d, 0x14, 0x50, 0x5a, 0xb5, 0x84, 0xdd, 0x88);
 
+        private static readonly Guid IID_IInspectable = new Guid(0xAF86E2E0, 0xB12D, 0x4c6a, 0x9C, 0x5A, 0xD7, 0xAA, 0x65, 0x10, 0x1E, 0x90);
+        private static readonly Guid IID_IWeakReferenceSource = new Guid(0x00000038, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
+
         private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
         private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
         private readonly Lock _lock = new Lock();
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
-
-        internal static bool IsRcwObject(object obj)
-        {
-            return s_rcwTable.TryGetValue(obj, out _);
-        }
 
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out bool isAggregated, out long wrapperId)
         {
@@ -510,10 +508,10 @@ namespace System.Runtime.InteropServices
 
             static NativeObjectWrapper()
             {
-                // Set to true to indicate we have RCW objects created
-                // which enables the weak reference support to consult
-                // ComWrappers when weak references are created for RCWs.
-                ComAwareWeakReference.ComWrappersRcwInitialized = true;
+                // Registering the weak reference support callbacks to enable
+                // consulting ComWrappers when weak references are created
+                // for RCWs.
+                ComAwareWeakReference.InitializeCallbacks(&ComWeakRefToObject, &PossiblyComObject, &ObjectToComWeakRef);
             }
 
             public static NativeObjectWrapper Create(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
@@ -1519,6 +1517,79 @@ namespace System.Runtime.InteropServices
 #else
             return IntPtr.Zero;
 #endif
+        }
+
+        // Wrapper for IWeakReference
+        private static unsafe class IWeakReference
+        {
+            public static int Resolve(IntPtr pThis, Guid guid, out IntPtr inspectable)
+            {
+                fixed (IntPtr* inspectablePtr = &inspectable)
+                    return (*(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>**)pThis)[3](pThis, &guid, inspectablePtr);
+            }
+        }
+
+        // Wrapper for IWeakReferenceSource
+        private static unsafe class IWeakReferenceSource
+        {
+            public static int GetWeakReference(IntPtr pThis, out IntPtr weakReference)
+            {
+                fixed (IntPtr* weakReferencePtr = &weakReference)
+                    return (*(delegate* unmanaged<IntPtr, IntPtr*, int>**)pThis)[3](pThis, weakReferencePtr);
+            }
+        }
+
+        private static object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId)
+        {
+            if (wrapperId == 0)
+            {
+                return null;
+            }
+
+            // Using the IWeakReference*, get ahold of the target native COM object's IInspectable*.  If this resolve fails or
+            // returns null, then we assume that the underlying native COM object is no longer alive, and thus we cannot create a
+            // new RCW for it.
+            if (IWeakReference.Resolve(pComWeakRef, IID_IInspectable, out IntPtr targetPtr) == HResults.S_OK &&
+                targetPtr != IntPtr.Zero)
+            {
+                using ComHolder target = new ComHolder(targetPtr);
+                if (Marshal.QueryInterface(target.Ptr, in IID_IUnknown, out IntPtr targetIdentityPtr) == HResults.S_OK)
+                {
+                    using ComHolder targetIdentity = new ComHolder(targetIdentityPtr);
+                    return GetOrCreateObjectFromWrapper(wrapperId, targetIdentity.Ptr);
+                }
+            }
+
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe bool PossiblyComObject(object target)
+        {
+            return s_rcwTable.TryGetValue(target, out _);
+        }
+
+        private static unsafe IntPtr ObjectToComWeakRef(object target, long* wrapperId)
+        {
+            if (TryGetComInstanceForIID(
+                target,
+                IID_IWeakReferenceSource,
+                out IntPtr weakReferenceSourcePtr,
+                out bool isAggregated,
+                out *wrapperId))
+            {
+                // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
+                // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
+                // by a COM weak reference.
+                using ComHolder weakReferenceSource = new ComHolder(weakReferenceSourcePtr);
+                if (!isAggregated && IWeakReferenceSource.GetWeakReference(weakReferenceSource.Ptr, out IntPtr weakReference) == HResults.S_OK)
+                {
+                    return weakReference;
+                }
+            }
+
+            *wrapperId = 0;
+            return IntPtr.Zero;
         }
     }
 }
