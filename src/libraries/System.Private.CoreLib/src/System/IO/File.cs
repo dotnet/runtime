@@ -695,12 +695,6 @@ namespace System.IO
             ArgumentNullException.ThrowIfNull(bytes);
 
             using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Open, FileAccess.Write, FileShare.Read);
-
-            if (fileHandle.CanSeek == false)
-            {
-                throw new NotSupportedException();
-            }
-
             long fileOffset = RandomAccess.GetLength(fileHandle);
             RandomAccess.WriteAtOffset(fileHandle, bytes, fileOffset);
         }
@@ -717,12 +711,6 @@ namespace System.IO
             static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
             {
                 using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Open, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
-
-                if (fileHandle.CanSeek == false)
-                {
-                    throw new NotSupportedException();
-                }
-
                 long fileOffset = RandomAccess.GetLength(fileHandle);
                 await RandomAccess.WriteAtOffsetAsync(fileHandle, bytes, fileOffset, cancellationToken).ConfigureAwait(false);
             }
