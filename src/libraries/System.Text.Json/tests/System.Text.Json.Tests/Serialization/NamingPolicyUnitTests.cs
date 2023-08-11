@@ -23,6 +23,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("😀葛🀄", "😀葛🀄")] // Surrogate pairs
         [InlineData("άλφαΒήταΓάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
+        [InlineData("\ude00\ud83d", "\ude00\ud83d")] // Unpaired surrogates
         [InlineData("person", "Person")]
         [InlineData("iPhone", "iPhone")]
         [InlineData("iPhone", "IPhone")]
@@ -115,6 +116,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("άλφα_βήτα_γάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
         [InlineData("𐐀abc_def𐐨abc😀def𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
+        [InlineData("\ude00\ud83d", "\ude00\ud83d")] // Unpaired surrogates
         [InlineData("a%", "a%")]
         [InlineData("_?#-", "_?#-")]
         [InlineData("?!?", "? ! ?")]
@@ -185,6 +187,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ΆΛΦΑ_ΒΉΤΑ_ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
         [InlineData("𐐀ABC_DEF𐐨ABC😀DEF𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
+        [InlineData("\ude00\ud83d", "\ude00\ud83d")] // Unpaired surrogates
         [InlineData("A%", "a%")]
         [InlineData("_?#-", "_?#-")]
         [InlineData("?!?", "? ! ?")]
@@ -255,6 +258,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("άλφα-βήτα-γάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
         [InlineData("𐐀abc-def𐐨abc😀def𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
+        [InlineData("\ude00\ud83d", "\ude00\ud83d")] // Unpaired surrogates
         [InlineData("a%", "a%")]
         [InlineData("-?#_", "-?#_")]
         [InlineData("?!?", "? ! ?")]
@@ -325,6 +329,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ΆΛΦΑ-ΒΉΤΑ-ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
         [InlineData("𐐀ABC-DEF𐐨ABC😀DEF𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
+        [InlineData("\ude00\ud83d", "\ude00\ud83d")] // Unpaired surrogates
         [InlineData("A%", "a%")]
         [InlineData("-?#_", "-?#_")]
         [InlineData("?!?", "? ! ?")]
