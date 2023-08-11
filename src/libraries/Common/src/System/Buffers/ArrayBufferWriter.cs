@@ -147,6 +147,7 @@ namespace System.Buffers
         /// </para>
         /// <para>
         /// There is no guarantee that successive calls will return the same buffer or the same-sized buffer.
+        /// </para>
         /// <para>
         /// You must request a new buffer after calling Advance to continue writing more data and cannot write to a previously acquired buffer.
         /// </para>
