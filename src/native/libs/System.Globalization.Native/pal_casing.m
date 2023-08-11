@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 /**
  * Is this code unit a lead surrogate (U+d800..U+dbff)?

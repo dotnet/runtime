@@ -2319,6 +2319,12 @@ get_num_major_sections (void)
 	return num_major_sections;
 }
 
+static size_t
+get_num_empty_blocks (void)
+{
+	return num_empty_blocks;
+}
+
 /*
  * Returns the number of bytes in blocks that were present when the last sweep was
  * initiated, and were not freed during the sweep.  They are the basis for calculating the
@@ -2880,6 +2886,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->ptr_is_from_pinned_alloc = ptr_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+	collector->get_num_empty_blocks = get_num_empty_blocks;
 	collector->get_bytes_survived_last_sweep = get_bytes_survived_last_sweep;
 	collector->handle_gc_param = major_handle_gc_param;
 	collector->print_gc_param_usage = major_print_gc_param_usage;

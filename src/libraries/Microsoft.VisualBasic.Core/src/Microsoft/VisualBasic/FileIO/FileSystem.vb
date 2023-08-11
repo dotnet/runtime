@@ -2223,7 +2223,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
                 ' If user wants to ignore case, convert new string to lower case. m_SearchText was converted in constructor.
                 If m_IgnoreCase Then
-                    Return New String(CharBuffer).ToUpper(CultureInfo.CurrentCulture).Contains(m_SearchText)
+                    Return New String(CharBuffer).Contains(m_SearchText, StringComparison.OrdinalIgnoreCase)
                 Else
                     Return New String(CharBuffer).Contains(m_SearchText)
                 End If

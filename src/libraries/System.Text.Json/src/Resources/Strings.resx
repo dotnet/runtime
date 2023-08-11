@@ -660,6 +660,9 @@
   <data name="JsonSerializerOptionsNoTypeInfoResolverSpecified" xml:space="preserve">
     <value>JsonSerializerOptions instance must specify a TypeInfoResolver setting before being marked as read-only.</value>
   </data>
+  <data name="JsonSerializerIsReflectionDisabled" xml:space="preserve">
+    <value>Reflection-based serialization has been disabled for this application. Either use the source generator APIs or explicitly configure the 'JsonSerializerOptions.TypeInfoResolver' property.</value>
+  </data>
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
   </data>

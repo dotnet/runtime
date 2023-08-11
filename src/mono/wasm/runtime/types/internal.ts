@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI } from ".";
-import type { BootJsonData } from "./blazor";
+import type { AssetBehaviors, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI } from ".";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -69,6 +68,8 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 
 // when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
+    linkerEnabled?: boolean,
+    assets?: AssetEntryInternal[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
@@ -92,8 +93,10 @@ export type RunArguments = {
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    // this is almost the same as pendingDownload, but it could have multiple values in time, because of re-try download logic
+    // this could have multiple values in time, because of re-try download logic
     pendingDownloadInternal?: LoadingResource
+    noCache?: boolean
+    useCredentials?: boolean
 }
 
 export type LoaderHelpers = {
@@ -133,16 +136,18 @@ export type LoaderHelpers = {
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
     assertIsControllablePromise: <T>(promise: Promise<T>) => asserts promise is ControllablePromise<T>,
     mono_download_assets: () => Promise<void>,
-    resolve_asset_path: (behavior: AssetBehaviours) => AssetEntryInternal,
+    resolve_single_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
-    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
     out(message: string): void;
     err(message: string): void;
-    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
-    hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
+    hasDebuggingEnabled(config: MonoConfig): boolean,
+    retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    logDownloadStatsToConsole: () => void;
+    purgeUnusedCacheEntriesAsync: () => Promise<void>;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
@@ -150,6 +155,10 @@ export type LoaderHelpers = {
 
     isChromium: boolean,
     isFirefox: boolean
+
+    // from wasm-feature-detect npm package
+    exceptions: () => Promise<boolean>,
+    simd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
     config: MonoConfigInternal;
@@ -170,7 +179,7 @@ export type RuntimeHelpers = {
     ExitStatus: ExitStatusError;
     quit: Function,
     mono_wasm_exit?: (code: number) => void,
-    mono_wasm_abort?: () => void,
+    abort: (reason: any) => void,
     javaScriptExports: JavaScriptExports,
     storeMemorySnapshotPending: boolean,
     memorySnapshotCacheKey: string,
@@ -180,8 +189,6 @@ export type RuntimeHelpers = {
     jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 
-    runtimeModuleUrl: string
-    nativeModuleUrl: string
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     memorySnapshotSkippedOrDone: PromiseAndController<void>,
@@ -266,6 +273,8 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 export type EmscriptenInternals = {
     isPThread: boolean,
     linkerDisableLegacyJsInterop: boolean,
+    linkerWasmEnableSIMD: boolean,
+    linkerWasmEnableEH: boolean,
     linkerEnableAotProfiler: boolean,
     linkerEnableBrowserProfiler: boolean,
     quit_: Function,

@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace System.Speech.Recognition
 {
     [Serializable]
-    [DebuggerDisplay("Text: {Text}")]
+    [DebuggerDisplay("Text = {Text}")]
 
     public class RecognizedWordUnit
     {

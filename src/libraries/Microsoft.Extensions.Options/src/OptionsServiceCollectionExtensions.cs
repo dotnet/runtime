@@ -32,6 +32,47 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Adds services required for using options and enforces options validation check on start rather than in runtime.
+        /// </summary>
+        /// <remarks>
+        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// </remarks>
+        /// <typeparam name="TOptions">The options type to be configured.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
+        /// <param name="name">The name of the options instance.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        public static OptionsBuilder<TOptions> AddOptionsWithValidateOnStart<
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(
+            this IServiceCollection services,
+            string? name = null)
+            where TOptions : class
+        {
+            return new OptionsBuilder<TOptions>(services, name ?? Options.Options.DefaultName).ValidateOnStart();
+        }
+
+        /// <summary>
+        /// Adds services required for using options and enforces options validation check on start rather than in runtime.
+        /// </summary>
+        /// <remarks>
+        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// </remarks>
+        /// <typeparam name="TOptions">The options type to be configured.</typeparam>
+        /// <typeparam name="TValidateOptions">The <see cref="IValidateOptions{TOptions}"/> validator type.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
+        /// <param name="name">The name of the options instance.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        public static OptionsBuilder<TOptions> AddOptionsWithValidateOnStart<
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>(
+            this IServiceCollection services,
+            string? name = null)
+            where TOptions : class
+            where TValidateOptions : class, IValidateOptions<TOptions>
+        {
+            services.AddOptions().TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<TOptions>, TValidateOptions>());
+            return new OptionsBuilder<TOptions>(services, name ?? Options.Options.DefaultName).ValidateOnStart();
+        }
+        /// <summary>
         /// Registers an action used to configure a particular type of options.
         /// Note: These are run before all <seealso cref="PostConfigure{TOptions}(IServiceCollection, Action{TOptions})"/>.
         /// </summary>

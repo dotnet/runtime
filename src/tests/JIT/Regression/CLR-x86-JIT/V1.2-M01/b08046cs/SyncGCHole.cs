@@ -2,12 +2,18 @@
 // src\tests\JIT\Regression\CLR-x86-JIT\V1.2-M01\b08046\SyncGCHole.il
 //
 // Changes:
-// - Remove the [Fact] from Main because it eventually leads to
-//   "CS7022 The entry point of the program is global code; ignoring 'Main()' entry point."
-//   [Fact] will be added again as part of the test merging work.
-// - Remove the Environment.Exit call at the end of Main.  Exit doesn't wait
+// - Rename Main to TestEntryPoint (standard change for merged test groups).
+// - Remove the Environment.Exit call at the end of Main. Exit doesn't wait
 //   for foreground threads to complete, so the test becomes a race that is
 //   typically lost.
+// - Write a local static instead of Environment.ExitCode for compatibility
+//   with merged test groups.
+// - Don't allow a successful thread to overwrite the exit value of a failing
+//   one. Retain the writes for successes (to 'Ignored') to keep the shape of
+//   the code as similar to the original as possible. It is unclear what
+//   aspect of the code caused the original problem.
+// - Don't bother catching the exception in the outer method as the test
+//   infrastructure will handle it.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -29,26 +35,26 @@ class ExternalClass
 
 public class ExternalException : Exception
 {
-    public static void Main()
+    public static int ExitCode { get; set; }
+    public static int Ignored { get; set; }
+
+    [Fact]
+    public static int TestEntryPoint()
     {
+        ExitCode = 100;
+
         ExternalException v1 = new ExternalException();
 
         for (int v2 = 0; v2 < 10; v2++)
         {
             Thread v0 = new Thread(new ThreadStart(v1.runtest));
-
-            try
-            {
-                v0.Start();
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("Exception was caught in main");
-            }
+            v0.Start();
         }
+
+        return ExitCode;
     }
 
-    public void runtest()
+    private void runtest()
     {
         int v0 = 0;
 
@@ -86,22 +92,22 @@ public class ExternalException : Exception
         {
             lock(this)
             {
-                Console.WriteLine("TryCatch Test Passed");
-                Environment.ExitCode = 100;
+                Console.WriteLine("TryCatch Thread Passed");
+                ExternalException.Ignored = 100;
             }
         }
         else
         {
             lock(this)
             {
-                Console.WriteLine("TryCatch Test Failed");
+                Console.WriteLine("TryCatch Thread Failed");
                 Console.WriteLine(0);
-                Environment.ExitCode = 1;
+                ExternalException.ExitCode = 1;
             }
         }
     }
 
-    public void recurse(int counter)
+    private void recurse(int counter)
     {
         char[] v0 = new char[100];
 

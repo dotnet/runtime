@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS</DefineConstants>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <IsPackable>true</IsPackable>
     <SuggestedBindingRedirectsPackageFile>$(BaseIntermediateOutputPath)SuggestedBindingRedirects.targets</SuggestedBindingRedirectsPackageFile>
     <BeforePack>$(BeforePack);GeneratePackageTargetsFile</BeforePack>
@@ -15,6 +16,8 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Resources\ResourceWriter.cs"
              Link="System\Resources\Extensions\ResourceWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PinnedBufferMemoryStream.cs"
@@ -50,7 +53,8 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
 
   <Target Name="GeneratePackageTargetsFile" 
           Inputs="$(MSBuildAllProjects)"
-          Outputs="$(SuggestedBindingRedirectsPackageFile)">
+          Outputs="$(SuggestedBindingRedirectsPackageFile)"
+          Condition="'$(NetFrameworkMinimum)' != ''">
     <PropertyGroup>
       <SuggestedBindingRedirectsPackageFileContent><![CDATA[<Project>
   <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,

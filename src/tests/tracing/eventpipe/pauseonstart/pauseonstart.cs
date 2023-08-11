@@ -64,12 +64,16 @@ namespace Tracing.Tests.PauseOnStartValidation
                     IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                     Logger.logger.Log(advertise.ToString());
 
+                    // Native AOT doesn't use the private provider / EEStartupStart event, so the subprocess
+                    // writes a sentinel event to signal that the runtime has resumed and run the application 
+                    Provider provider = TestLibrary.Utilities.IsNativeAot ? new Provider(nameof(SentinelEventSource)) : new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose);
                     var config = new SessionConfiguration(
                         circularBufferSizeMB: 1000,
                         format: EventPipeSerializationFormat.NetTrace,
                         providers: new List<Provider> { 
-                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose)
+                            provider
                         });
+
                     Logger.logger.Log("Starting EventPipeSession over standard connection");
                     using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
                     Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
@@ -96,7 +100,14 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var source = new EventPipeEventSource(memoryStream);
             var parser = new ClrPrivateTraceEventParser(source);
             bool isStartupEventPresent= false;
-            parser.StartupEEStartupStart += (eventData) => isStartupEventPresent = true;
+            if (TestLibrary.Utilities.IsNativeAot)
+            {
+                source.Dynamic.All += (eventData) => isStartupEventPresent = true;
+            }
+            else
+            {
+                parser.StartupEEStartupStart += (eventData) => isStartupEventPresent = true;
+            }
             source.Process();
 
             Logger.logger.Log($"isStartupEventPresent: {isStartupEventPresent}");
@@ -122,11 +133,14 @@ namespace Tracing.Tests.PauseOnStartValidation
                     IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                     Logger.logger.Log(advertise.ToString());
 
+                    // Native AOT doesn't use the private provider / EEStartupStart event, so the subprocess
+                    // writes a sentinel event to signal that the runtime has resumed and run the application 
+                    Provider provider = TestLibrary.Utilities.IsNativeAot ? new Provider(nameof(SentinelEventSource)) : new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose);
                     var config = new SessionConfiguration(
                         circularBufferSizeMB: 1000,
                         format: EventPipeSerializationFormat.NetTrace,
                         providers: new List<Provider> { 
-                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose)
+                            provider
                         });
 
                     Logger.logger.Log("Starting EventPipeSession over standard connection");
@@ -172,7 +186,18 @@ namespace Tracing.Tests.PauseOnStartValidation
             using (var source = new EventPipeEventSource(memoryStream1))
             {
                 var parser = new ClrPrivateTraceEventParser(source);
-                parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                if (TestLibrary.Utilities.IsNativeAot)
+                {
+                    source.Dynamic.All += (eventData) => 
+                    {
+                        if(eventData.EventName.Equals("SentinelEvent"))
+                            nStartupEventsSeen++;
+                    };
+                }
+                else
+                {
+                    parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                }
                 source.Process();
             }
 
@@ -180,7 +205,18 @@ namespace Tracing.Tests.PauseOnStartValidation
             using (var source = new EventPipeEventSource(memoryStream2))
             {
                 var parser = new ClrPrivateTraceEventParser(source);
-                parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                if (TestLibrary.Utilities.IsNativeAot)
+                {
+                    source.Dynamic.All += (eventData) => 
+                    {
+                        if(eventData.EventName.Equals("SentinelEvent"))
+                            nStartupEventsSeen++;
+                    };
+                }
+                else
+                {
+                    parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                }
                 source.Process();
             }
 
@@ -188,7 +224,18 @@ namespace Tracing.Tests.PauseOnStartValidation
             using (var source = new EventPipeEventSource(memoryStream3))
             {
                 var parser = new ClrPrivateTraceEventParser(source);
-                parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                if (TestLibrary.Utilities.IsNativeAot)
+                {
+                    source.Dynamic.All += (eventData) => 
+                    {
+                        if(eventData.EventName.Equals("SentinelEvent"))
+                            nStartupEventsSeen++;
+                    };
+                }
+                else
+                {
+                    parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                }
                 source.Process();
             }
 
@@ -306,10 +353,21 @@ namespace Tracing.Tests.PauseOnStartValidation
             return fSuccess;
         }
 
+        public sealed class SentinelEventSource : EventSource
+        {
+            private SentinelEventSource() {}
+            public static SentinelEventSource Log = new SentinelEventSource();
+            public void SentinelEvent() { WriteEvent(1, nameof(SentinelEvent)); }
+        }
+
         public static async Task<int> Main(string[] args)
         {
             if (args.Length >= 1)
             {
+                // Native AOT test uses this event source as a signal that the runtime has resumed and gone on to run the application 
+                if (TestLibrary.Utilities.IsNativeAot)
+                    SentinelEventSource.Log.SentinelEvent();
+
                 Console.Out.WriteLine("Subprocess started!  Waiting for input...");
                 var input = Console.In.ReadLine(); // will block until data is sent across stdin
                 Console.Out.WriteLine($"Received '{input}'.  Exiting...");

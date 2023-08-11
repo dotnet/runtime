@@ -9,7 +9,7 @@ set(CMAKE_EXECUTABLE_SUFFIX ".js")
 add_executable(dotnet.native corebindings.c driver.c pinvoke.c)
 
 target_include_directories(dotnet.native PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
-target_compile_options(dotnet.native PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DGEN_PINVOKE=1)
+target_compile_options(dotnet.native PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DGEN_PINVOKE=1 ${CONFIGURATION_COMPILE_OPTIONS})
 
 set_target_properties(dotnet.native PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
 
@@ -38,7 +38,7 @@ set_target_properties(dotnet.native PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")
-set(ignoreMeWasmOptAdditionalFlags "${WASM_OPT_ADDITIONAL_FLAGS}")
+set(ignoreMeWasmOptAdditionalFlags "${CONFIGURATION_COMPILE_OPTIONS}")
 set(ignoreMeEmsdkPath "${EMSDK_PATH}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
