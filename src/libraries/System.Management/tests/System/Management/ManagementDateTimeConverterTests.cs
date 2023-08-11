@@ -23,6 +23,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "30128 is not fixed in NetFX")]
         public void DateTime_MinValue_RoundTrip()
         {
             string dmtfFromDateTimeMinValue = ManagementDateTimeConverter.ToDmtfDateTime(DateTime.MinValue);
