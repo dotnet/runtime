@@ -136,7 +136,7 @@ namespace System
             Buffer.Memmove(
                 len: (uint)result.Length * sizeof(char), // derefing Length now allows JIT to prove 'result' not null below
                 dest: ref Unsafe.As<char, byte>(ref result._firstChar),
-                src: ref Unsafe.AsRef<byte>(ptr));
+                src: ref *(byte*)ptr);
 
             return result;
         }
@@ -170,7 +170,7 @@ namespace System
             Buffer.Memmove(
                 len: (uint)result.Length * sizeof(char), // derefing Length now allows JIT to prove 'result' not null below
                 dest: ref Unsafe.As<char, byte>(ref result._firstChar),
-                src: ref Unsafe.AsRef<byte>(pStart));
+                src: ref *(byte*)pStart);
 
             return result;
         }
