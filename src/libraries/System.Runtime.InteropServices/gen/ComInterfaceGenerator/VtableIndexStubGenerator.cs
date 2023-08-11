@@ -413,9 +413,6 @@ namespace Microsoft.Interop
 
             // Verify there is an [UnmanagedObjectUnwrapperAttribute<TMapper>]
             if (!method.ContainingType.GetAttributes().Any(att => att.AttributeClass.IsOfType(TypeNames.UnmanagedObjectUnwrapperAttribute)))
-            //!method.ContainingType.GetAttributes().Any(att =>
-            //att.AttributeClass.MetadataName == TypeNames.UnmanagedObjectUnwrapperAttribute.Substring(TypeNames.UnmanagedObjectUnwrapperAttribute.LastIndexOf('.') + 1)
-            //&& att.AttributeClass.OriginalDefinition.ToDisplayString().Substring(0, att.AttributeClass.OriginalDefinition.ToDisplayString().LastIndexOf(att.AttributeClass.ToDisplayString())) == TypeNames.UnmanagedObjectUnwrapperAttribute.Substring(0, TypeNames.UnmanagedObjectUnwrapperAttribute.LastIndexOf('.'))))
             {
                 return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute, methodSyntax.Identifier.GetLocation(), method.Name);
             }
@@ -429,7 +426,7 @@ namespace Microsoft.Interop
                 InterfaceDeclaration("Native")
                 .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.PartialKeyword)))
                 .WithBaseList(BaseList(SingletonSeparatedList((BaseTypeSyntax)SimpleBaseType(IdentifierName(context.ContainingSyntax[0].Identifier)))))
-                .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute))))));
+                .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute)))));
         }
 
         private static MemberDeclarationSyntax GeneratePopulateVTableMethod(IGrouping<ContainingSyntaxContext, IncrementalMethodStubGenerationContext> vtableMethods)
