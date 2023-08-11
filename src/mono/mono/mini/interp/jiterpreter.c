@@ -711,12 +711,12 @@ trace_info_allocate_segment (gint32 index) {
 	g_assert (index < MAX_TRACE_SEGMENTS);
 
 	TraceInfo *segment = (TraceInfo *)g_malloc0 (sizeof(TraceInfo) * TRACE_SEGMENT_SIZE);
-	TraceInfo *expected = NULL;
 
 #ifdef DISABLE_THREADS
 	trace_segments[index] = segment;
 	return segment;
 #else
+	TraceInfo *expected = NULL;
 	if (!atomic_compare_exchange_strong ((atomic_uintptr_t *)&trace_segments[index], (uintptr_t *)&expected, (uintptr_t)segment)) {
 		g_free (segment);
 		return expected;
@@ -1324,12 +1324,13 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 		if (average_penalty <= threshold) {
 			if ((int)thunk < mono_jiterp_first_trace_fn_ptr)
 				g_error ("thunk ptr %d below start of trace table %d\n", thunk, mono_jiterp_first_trace_fn_ptr);
-			guint16 zero = 0, new_relative_fn_ptr = (int)thunk - mono_jiterp_first_trace_fn_ptr;
+			guint16 new_relative_fn_ptr = (int)thunk - mono_jiterp_first_trace_fn_ptr;
 
 #ifdef DISABLE_THREADS
 			g_assert (opcode->relative_fn_ptr == 0);
 			opcode->relative_fn_ptr = new_relative_fn_ptr;
 #else
+			guint16 zero = 0;
 			// atomically patch the relative fn ptr inside the opcode.
 			g_assert (atomic_compare_exchange_strong ((atomic_ushort *)&opcode->relative_fn_ptr, &zero, new_relative_fn_ptr));
 #endif
