@@ -168,10 +168,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Warning Condition="'$(BlazorWebAssemblyLoadAllGlobalizationData)' == 'true' AND '$(BlazorIcuDataFileName)' != ''" Text="%24(BlazorIcuDataFileName) has no effect when %24(BlazorWebAssemblyLoadAllGlobalizationData) is set to true." />
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(BlazorIcuDataFileName)' != '' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(BlazorIcuDataFileName) is set." />
+    <FindInList CaseSensitive="true" List="@(ReferenceCopyLocalPaths)" MatchFileNameOnly="true" ItemSpecToFind="dotnet.js">
+      <Output TaskParameter="ItemFound" ItemName="DotnetJsFileFromRuntimePackPath"/>
+    </FindInList>
     <PropertyGroup>
+      <RuntimePackPath>%(DotnetJsFileFromRuntimePackPath.RelativeDir)</RuntimePackPath>
       <_LoadCustomIcuData>false</_LoadCustomIcuData>
       <_LoadCustomIcuData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
-      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true'">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
+      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND Exists('$(BlazorIcuDataFileName)')">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
+      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(BlazorIcuDataFileName)')">$(RuntimePackPath)$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
       <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' != 'true' AND '$(_LoadCustomIcuData)' != 'true'">$(HybridGlobalization)</_IsHybridGlobalization>
       <_IsHybridGlobalization Condition="'$(_IsHybridGlobalization)' == ''">false</_IsHybridGlobalization>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>

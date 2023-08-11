@@ -28,7 +28,7 @@ public class IcuShardingTests : BlazorWasmTestBase
     [InlineData("Release", "icudt_no_CJK.dat")]
     [InlineData("Debug", "icudt_CJK.dat")]
     [InlineData("Release", "icudt_CJK.dat")]
-    public async Task CustomIcuFileFromRuntimePackAbsolutePath(string config, string fileName)
+    public async Task CustomIcuFileFromRuntimePack(string config, string fileName)
     {
         string id = $"blz_customFromRuntimePack_{config}_{GetRandomId()}";
         string projectFile = CreateBlazorWasmTemplateProject(id);
@@ -39,26 +39,19 @@ public class IcuShardingTests : BlazorWasmTestBase
                 GlobalizationMode: GlobalizationMode.PredefinedIcu,
                 PredefinedIcudt: fileName
             );
-        string icuFilePath = GetAbsolutePathToIcuFromRuntimePack(fileName, buildOptions);
         AddItemsPropertiesToProject(
             projectFile,
             extraProperties: 
-                $"<BlazorIcuDataFileName>{icuFilePath}</BlazorIcuDataFileName>");
+                $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
         (CommandResult res, string logPath) = BlazorBuild(buildOptions);
         await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
-    private string GetAbsolutePathToIcuFromRuntimePack(string icuFileName, BlazorBuildOptions options)
-    {
-        string runtimePackPath = ProjectProviderBase.GetExpectedRuntimePackDir(options.TargetFramework ?? DefaultTargetFramework);
-        return Path.Combine(runtimePackPath, "runtimes", "browser-wasm", "native", icuFileName);
-    }
-
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public async Task NonExistingCustomFileAssertError(string config)
+    public void NonExistingCustomFileAssertError(string config)
     {
         string id = $"blz_invalidCustomIcu_{config}_{GetRandomId()}";
         string fileName = "nonexisting.dat";
@@ -87,7 +80,7 @@ public class IcuShardingTests : BlazorWasmTestBase
         {
             throw new Exception("Unexpected exception in test scenario.");
         }
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        // we expect build error, so there is not point in running the app
     }
 
     [Theory]
