@@ -1575,6 +1575,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     if (startAddr == NULL)
     {
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
+        //Test failure requires the below workaround, not sure how startAddr could be null
         if (startAddr == NULL)
         {
             startAddr = fd->GetNativeCodeAnyVersion();
