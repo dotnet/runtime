@@ -185,6 +185,7 @@
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
       <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke.g.h</_WasmInterpToNativeTablePath>
+      <_WasmM2NCachePath>$(_WasmIntermediateOutputPath)m2n_cache.txt</_WasmM2NCachePath>
       <_WasmPInvokeHPath>$(_WasmRuntimePackIncludeDir)wasm\pinvoke.h</_WasmPInvokeHPath>
       <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
       <DisableParallelAot Condition="'$(DisableParallelAot)' == ''">false</DisableParallelAot>
@@ -335,7 +336,8 @@
       IcallOutputPath="$(_WasmICallTablePath)"
       PInvokeModules="@(_WasmPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
-      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)">
+      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
+      CacheFilePath="$(_WasmM2NCachePath)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
