@@ -249,7 +249,7 @@ namespace System.Runtime
         internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
 
         [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void RhAllocateNewArray(IntPtr pArrayEEType, uint numElements, uint flags, void* pResult);
+        internal static unsafe partial void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
 
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);

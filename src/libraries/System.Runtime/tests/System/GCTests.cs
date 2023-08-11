@@ -1058,11 +1058,60 @@ namespace System.Tests
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue, pinned: true));
         }
 
-        [Fact]
-        private static void AllocateArrayRefType()
+        [StructLayout(LayoutKind.Sequential)]
+        struct EmbeddedValueType<T>
         {
-            GC.AllocateUninitializedArray<string>(100);
-            Assert.Throws<ArgumentException>(() => GC.AllocateUninitializedArray<string>(100, pinned: true));
+            // There's a few extra fields here to ensure any reads and writes to Value reasonably are not just offset 0.
+            // This is a low-level smoke check that can give a bit of confidence in pointer arithmetic.
+            // The CLR is permitted to reorder fields and ignore the sequential consistency of value types if they contain
+            // managed references, but it will never hurt the test.
+            object _1;
+            byte _2;
+            public T Value;
+            int _3;
+            string _4;
+        }
+
+        [Theory]
+        [InlineData(false), InlineData(true)]
+        private static void AllocateArray_UninitializedOrNot_WithManagedType_DoesNotThrow(bool pinned)
+        {
+            void TryType<T>()
+            {
+                GC.AllocateUninitializedArray<T>(100, pinned);
+                GC.AllocateArray<T>(100, pinned);
+
+                GC.AllocateArray<EmbeddedValueType<T>>(100, pinned);
+                GC.AllocateUninitializedArray<EmbeddedValueType<T>>(100, pinned);
+            }
+
+            TryType<string>();
+            TryType<object>();
+        }
+
+        [Theory]
+        [InlineData(false), InlineData(true)]
+        private unsafe static void AllocateArrayPinned_ManagedValueType_CanRoundtripThroughPointer(bool uninitialized)
+        {
+            const int length = 100;
+            var rng = new Random(0xAF);
+
+            EmbeddedValueType<string>[] array = uninitialized ? GC.AllocateUninitializedArray<EmbeddedValueType<string>>(length, pinned: true) : GC.AllocateArray<EmbeddedValueType<string>>(length, pinned: true);
+            byte* pointer = (byte*)Unsafe.AsPointer(ref array[0]);
+            var size = Unsafe.SizeOf<EmbeddedValueType<string>>();
+
+            for(int i = 0; i < length; ++i)
+            {
+                int idx = rng.Next(length);
+                ref EmbeddedValueType<string> evt = ref Unsafe.AsRef<EmbeddedValueType<string>>(pointer + size * idx);
+
+                string stringValue = rng.NextSingle().ToString();
+                evt.Value = stringValue;
+
+                Assert.Equal(evt.Value, array[idx].Value);
+            }
+
+            GC.KeepAlive(array);
         }
 
         [Fact]
