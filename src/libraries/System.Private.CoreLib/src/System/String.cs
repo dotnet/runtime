@@ -134,7 +134,7 @@ namespace System
             string result = FastAllocateString(count);
 
             Buffer.Memmove(
-                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                elementCount: (uint)result.Length * sizeof(char), // derefing Length now allows JIT to prove 'result' not null below
                 destination: ref Unsafe.As<char, byte>(ref result._firstChar),
                 source: ref Unsafe.AsRef<byte>(ptr));
 
@@ -168,7 +168,7 @@ namespace System
             string result = FastAllocateString(length);
 
             Buffer.Memmove(
-                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                elementCount: (uint)result.Length * sizeof(char), // derefing Length now allows JIT to prove 'result' not null below
                 destination: ref Unsafe.As<char, byte>(ref result._firstChar),
                 source: ref Unsafe.AsRef<byte>(pStart));
 
