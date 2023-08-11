@@ -118,6 +118,7 @@ namespace System.Text.Json.Serialization
             return _list.GetEnumerator();
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"Count = {Count}, IsReadOnly = {IsReadOnly}";
 
         private sealed class ConfigurationListDebugView(ConfigurationList<TItem> collection)
