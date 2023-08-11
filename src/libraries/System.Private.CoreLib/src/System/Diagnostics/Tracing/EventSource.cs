@@ -3197,10 +3197,6 @@ namespace System.Diagnostics.Tracing
                     for (int i = 0; i < methods.Length; i++)
                     {
                         MethodInfo method = methods[i];
-                        ParameterInfo[] args = method.GetParameters();
-
-                        // Get the EventDescriptor (from the Custom attributes)
-                        EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
 
                         // Compat: until v4.5.1 we ignored any non-void returning methods as well as virtual methods for
                         // the only reason of limiting the number of methods considered to be events. This broke a common
@@ -3211,6 +3207,9 @@ namespace System.Diagnostics.Tracing
                         {
                             continue;
                         }
+
+                        // Get the EventDescriptor (from the Custom attributes)
+                        EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
 
                         if (eventSourceType.IsAbstract)
                         {
@@ -3311,6 +3310,8 @@ namespace System.Diagnostics.Tracing
                                 }
                             }
                         }
+
+                        ParameterInfo[] args = method.GetParameters();
 
                         bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
                         if (!(source != null && source.SelfDescribingEvents))
