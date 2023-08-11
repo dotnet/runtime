@@ -24,7 +24,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
-        ("InvariantGlobalization", true),
+        //("InvariantGlobalization", true), - not applicable for blazor
         ("WasmNativeStrip", false)
     };
 
@@ -59,6 +59,14 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: false)]
     public void WorkloadRequiredForPublish(string config, string extraProperties, bool workloadNeeded)
         => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: true);
+
+    [Theory, TestCategory("no-workload")]
+    [InlineData("Debug", "<InvariantGlobalization>true</InvariantGlobalization>", /*workloadNeeded*/ false, /*publish*/ false)]
+    [InlineData("Debug", "<InvariantGlobalization>false</InvariantGlobalization>", /*workloadNeeded*/ false, /*publish*/ false)]
+    [InlineData("Release", "<InvariantGlobalization>true</InvariantGlobalization>", /*workloadNeeded*/ false, /*publish*/ true)]
+    [InlineData("Release", "<InvariantGlobalization>false</InvariantGlobalization>", /*workloadNeeded*/ false, /*publish*/ true)]
+    public void WorkloadNotRequiredForInvariantGlobalization(string config, string extraProperties, bool workloadNeeded, bool publish)
+        => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: publish);
 
     private void CheckWorkloadRequired(string config, string extraProperties, bool workloadNeeded, bool publish)
     {

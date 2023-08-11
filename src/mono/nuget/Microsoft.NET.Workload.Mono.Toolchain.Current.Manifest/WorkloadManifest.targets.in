@@ -45,7 +45,7 @@
         '$(WasmEnableSIMD)' == 'false' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
-        '$(InvariantGlobalization)' == 'true' or
+        ('$(_UsingBlazorOrWasmSdk)' != 'true' and '$(InvariantGlobalization)' == 'true') or
         '$(WasmNativeStrip)' == 'false'">true</_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded>
 
     <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
