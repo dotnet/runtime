@@ -8,11 +8,11 @@
     <ItemGroup>
       <WorkloadPublishProperties Include="TargetPlatformIdentifier" Value="$(TargetPlatformIdentifier)" />
       <WorkloadPublishProperties Include="RuntimeIdentifier" Value="$(RuntimeIdentifier)" />
-      <WorkloadPublishProperties Include="UseMaui" Value="$(UseMaui)" />
       <WorkloadPublishProperties Include="BlazorWasm" Value="$(_WorkloadUsesBlazorWasm)" />
       <WorkloadPublishProperties Include="WasmSDK" Value="$(_WorkloadUsesWasmSDK)" />
-      <WorkloadPublishProperties Include="Avalonia" Value="$(_WorkloadUsesAvalonia)" />
-      <WorkloadPublishProperties Include="Uno" Value="$(_WorkloadUsesUno)" />
+      <WorkloadPublishProperties Include="UsesMaui" Value="$(UseMaui)" />
+      <WorkloadPublishProperties Include="UsesMobileSDKOnly" Value="$(_WorkloadUsesMobileSDKOnly)" />
+      <WorkloadPublishProperties Include="UsesOtherMobileSDK" Value="$(_WorkloadUsesOther)" />
       <WorkloadPublishProperties Include="MonoAOT" Value="$(_WorkloadUsesMonoAOT)" />
       <WorkloadPublishProperties Include="NativeAOT" Value="$(_WorkloadUsesNativeAOT)" />
       <WorkloadPublishProperties Include="Interp" Value="$(_WorkloadUsesInterpreter)" />
@@ -38,8 +38,9 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_WorkloadUsesAvalonia Condition="'$([System.IO.Path]::GetFileName(%(ReferencePath.Identity)).ToLower())' == 'avalonia.dll'">true</_WorkloadUsesAvalonia>
-      <_WorkloadUsesUno Condition="'$([System.IO.Path]::GetFileName(%(ReferencePath.Identity)).ToLower())' == 'uno.dll'">true</_WorkloadUsesUno>
+      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(%(ReferencePath.Identity)).ToLower())' == 'avalonia.dll'">true</_WorkloadUsesOther>
+      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(%(ReferencePath.Identity)).ToLower())' == 'uno.dll'">true</_WorkloadUsesOther>
+      <_WorkloadUsesMobileSDKOnly Condition="'$(RuntimeIdentifier)' != 'browser-wasm' and '$(UseMaui)' != 'true' and '$(_WorkloadUsesOther)' != 'true'">true</_WorkloadUsesMobileSDKOnly>
     </PropertyGroup>
   </Target>
 </Project>
