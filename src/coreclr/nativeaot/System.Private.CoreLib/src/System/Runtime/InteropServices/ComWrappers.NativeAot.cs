@@ -44,6 +44,28 @@ namespace System.Runtime.InteropServices
         private readonly Lock _lock = new Lock();
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
 
+        internal static bool IsRcwObject(object obj)
+        {
+            return s_rcwTable.TryGetValue(obj, out _);
+        }
+
+        internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out bool isAggregated, out long wrapperId)
+        {
+            unknown = IntPtr.Zero;
+            isAggregated = false;
+            wrapperId = 0;
+
+            if (obj == null
+                || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
+            {
+                return false;
+            }
+
+            isAggregated = wrapper._aggregatedManagedObjectWrapper;
+            wrapperId = wrapper._comWrappers.id;
+            return Marshal.QueryInterface(wrapper._externalComObject, in iid, out unknown) == HResults.S_OK;
+        }
+
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             unknown = IntPtr.Zero;
@@ -53,7 +75,7 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
-            return Marshal.QueryInterface(wrapper._externalComObject, in IID_IUnknown, out unknown) == 0;
+            return Marshal.QueryInterface(wrapper._externalComObject, in IID_IUnknown, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -481,12 +503,12 @@ namespace System.Runtime.InteropServices
         {
             internal IntPtr _externalComObject;
             private IntPtr _inner;
-            private ComWrappers _comWrappers;
+            internal ComWrappers _comWrappers;
             internal GCHandle _proxyHandle;
             internal GCHandle _proxyHandleTrackingResurrection;
             internal GCHandle _nativeObjectWrapperWeakHandle;
 
-            private readonly bool _aggregatedManagedObjectWrapper;
+            internal readonly bool _aggregatedManagedObjectWrapper;
             internal readonly bool _fromTrackerRuntime;
             private IntPtr _trackerObject;
             private readonly bool _releaseTrackerObject;
@@ -514,7 +536,7 @@ namespace System.Runtime.InteropServices
 
                 if (flags.HasFlag(CreateObjectFlags.TrackerObject))
                 {
-                    if (Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == 0)
+                    if (Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
                     {
                         _fromTrackerRuntime = true;
                         _trackerObject = trackerObject;
@@ -631,6 +653,25 @@ namespace System.Runtime.InteropServices
         /// Globally registered instance of the ComWrappers class for marshalling.
         /// </summary>
         private static ComWrappers? s_globalInstanceForMarshalling;
+
+        private static long s_instanceCounter;
+        private readonly long id = Interlocked.Increment(ref s_instanceCounter);
+
+        internal static object? GetOrCreateObjectFromWrapper(long wrapperId, IntPtr externalComObject)
+        {
+            if (s_globalInstanceForTrackerSupport != null && s_globalInstanceForTrackerSupport.id == wrapperId)
+            {
+                return s_globalInstanceForTrackerSupport.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.TrackerObject);
+            }
+            else if (s_globalInstanceForMarshalling != null && s_globalInstanceForMarshalling.id == wrapperId)
+            {
+                return ComObjectForInterface(externalComObject);
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         /// <summary>
         /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
@@ -823,7 +864,7 @@ namespace System.Runtime.InteropServices
             bool refTrackerInnerScenario = flags.HasFlag(CreateObjectFlags.TrackerObject)
                 && flags.HasFlag(CreateObjectFlags.Aggregation);
             if (refTrackerInnerScenario &&
-                Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == 0)
+                Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == HResults.S_OK)
             {
                 // We are checking the supplied external value
                 // for IReferenceTracker since in .NET 5 API usage scenarios
@@ -1175,7 +1216,7 @@ namespace System.Runtime.InteropServices
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
                     FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper._proxyHandle;
-                    if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, TrackerObjectManager.s_findReferencesTargetCallback) != 0)
+                    if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, TrackerObjectManager.s_findReferencesTargetCallback) != HResults.S_OK)
                     {
                         walkFailed = true;
                         FindReferenceTargetsCallback.s_currentRootObjectHandle = default;

@@ -16,9 +16,9 @@ namespace System.Runtime.InteropServices
         XAML_REFERENCETRACKER_DISCONNECT_SUSPEND = 0x00000001
     };
 
-    internal struct HostServices
+    internal static class HostServices
     {
-        internal static IntPtr s_globalHostServices = CreateHostServices();
+        internal static readonly IntPtr s_globalHostServices = CreateHostServices();
 
         private static unsafe IntPtr CreateHostServices()
         {
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
 
         public static void NotifyEndOfReferenceTrackingOnThread()
         {
-            ComWrappers.ReleaseExternalObjectsFromCurrentThread();
+            ReleaseExternalObjectsFromCurrentThread();
         }
 
         // Creates a proxy object (managed object wrapper) that points to the given IUnknown.
@@ -56,6 +56,7 @@ namespace System.Runtime.InteropServices
         //   2. Forwards data binding requests.
         //
         // For example:
+        // NoCW = Native Object Com Wrapper also known as RCW
         //
         // Grid <---- NoCW             Grid <-------- NoCW
         // | ^                         |              ^
@@ -78,14 +79,14 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException();
             }
 
-            if (Marshal.QueryInterface(punk, in IID_IUnknown, out IntPtr ppv) != 0)
+            if (Marshal.QueryInterface(punk, in IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
             {
                 throw new InvalidCastException();
             }
 
             using ComHolder identity = new ComHolder(ppv);
             using ComHolder trackerTarget = new ComHolder(GetOrCreateTrackerTarget(identity.Ptr));
-            if (Marshal.QueryInterface(trackerTarget.Ptr, in IID_IReferenceTrackerTarget, out ppNewReference) != 0)
+            if (Marshal.QueryInterface(trackerTarget.Ptr, in IID_IReferenceTrackerTarget, out ppNewReference) != HResults.S_OK)
             {
                 throw new InvalidCastException();
             }
@@ -333,7 +334,7 @@ namespace System.Runtime.InteropServices
     }
 
     // Callback implementation of IFindReferenceTargetsCallback
-    internal unsafe struct FindReferenceTargetsCallback
+    internal static unsafe class FindReferenceTargetsCallback
     {
         internal static GCHandle s_currentRootObjectHandle;
 
