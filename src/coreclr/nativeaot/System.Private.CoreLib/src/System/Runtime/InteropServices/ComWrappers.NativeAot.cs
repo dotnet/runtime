@@ -1236,9 +1236,9 @@ namespace System.Runtime.InteropServices
 
         internal static void DetachNonPromotedObjects()
         {
-            for (int idx = 0; idx < s_nativeObjectWrapperCache.Count; idx++)
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_nativeObjectWrapperCache)
             {
-                NativeObjectWrapper? nativeObjectWrapper = Unsafe.As<NativeObjectWrapper?>(s_nativeObjectWrapperCache[idx].Target);
+                NativeObjectWrapper? nativeObjectWrapper = Unsafe.As<NativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
                     !RuntimeImports.RhIsPromoted(nativeObjectWrapper._proxyHandle.Target))
