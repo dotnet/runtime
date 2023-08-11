@@ -414,7 +414,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <NativeDependencies>$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o</NativeDependencies>
       <DevTeamProvisioning>-</DevTeamProvisioning>
       <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
       <GenerateXcodeProject>true</GenerateXcodeProject>
@@ -422,6 +421,10 @@
       <RunAOTCompilation>false</RunAOTCompilation>
       <MonoForceInterpreter>false</MonoForceInterpreter>
     </PropertyGroup>
+
+    <ItemGroup>
+      <NativeDependencies Include="$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o" />
+    </ItemGroup>
 
     <ItemGroup>
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />

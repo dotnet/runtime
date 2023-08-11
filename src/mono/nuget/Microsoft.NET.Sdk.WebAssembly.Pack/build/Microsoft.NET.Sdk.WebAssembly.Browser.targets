@@ -163,15 +163,17 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_ResolveGlobalizationConfiguration">
     <Error Condition="'$(BlazorIcuDataFileName)' != '' AND !$([System.IO.Path]::GetFileName('$(BlazorIcuDataFileName)').StartsWith('icudt'))" Text="File name in %24(BlazorIcuDataFileName) has to start with 'icudt'." />
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' == 'true'" Text="%24(BlazorWebAssemblyLoadAllGlobalizationData) has no effect when %24(InvariantGlobalization) is set to true." />
+    <Warning Condition="'$(HybridGlobalization)' == 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' == 'true'" Text="%24(BlazorWebAssemblyLoadAllGlobalizationData) has no effect when %24(HybridGlobalization) is set to true." />
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(BlazorIcuDataFileName)' != ''" Text="%24(BlazorIcuDataFileName) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(BlazorWebAssemblyLoadAllGlobalizationData)' == 'true' AND '$(BlazorIcuDataFileName)' != ''" Text="%24(BlazorIcuDataFileName) has no effect when %24(BlazorWebAssemblyLoadAllGlobalizationData) is set to true." />
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(BlazorIcuDataFileName)' != '' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(BlazorIcuDataFileName) is set." />
     <PropertyGroup>
       <HybridGlobalization Condition="'$(BlazorIcuDataFileName)' != ''">false</HybridGlobalization>
-      <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
+      <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(_BlazorWebAssemblyLoadAllGlobalizationData)' == ''">false</_BlazorWebAssemblyLoadAllGlobalizationData>
-      <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' == 'true'"></_IsHybridGlobalization>
+      <_IsHybridGlobalization>$(HybridGlobalization)</_IsHybridGlobalization>
+      <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' == 'true' OR '$(HybridGlobalization)' == ''">false</_IsHybridGlobalization>
       <_BlazorIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
       <_LoadCustomIcuData>false</_LoadCustomIcuData>
       <_LoadCustomIcuData Condition="'$(_BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
@@ -240,6 +242,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       ProjectSatelliteAssemblies="@(IntermediateSatelliteAssembliesWithTargetPath)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
       InvariantGlobalization="$(_WasmInvariantGlobalization)"
+      HybridGlobalization="$(_IsHybridGlobalization)"
+      LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
       DotNetJsVersion="$(_WasmRuntimePackVersion)"
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
@@ -366,7 +370,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
       IsHybridGlobalization="$(_IsHybridGlobalization)"
-      LoadAllICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
+      LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
       StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
@@ -414,6 +418,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       PublishPath="$(PublishDir)"
       WasmAotAssets="@(WasmNativeAsset)"
       InvariantGlobalization="$(_WasmInvariantGlobalization)"
+      HybridGlobalization="$(_IsHybridGlobalization)"
+      LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       DotNetJsVersion="$(_WasmRuntimePackVersion)"
@@ -557,7 +563,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
       IsHybridGlobalization="$(_IsHybridGlobalization)"
-      LoadAllICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
+      LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
       StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"

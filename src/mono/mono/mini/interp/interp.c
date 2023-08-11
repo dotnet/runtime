@@ -4081,7 +4081,39 @@ main_loop:
 			}
 			ip += 5;
 
-			goto call;
+			InterpMethodCodeType code_type = cmethod->code_type;
+
+			g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
+			          code_type == IMETHOD_CODE_INTERP ||
+			          code_type == IMETHOD_CODE_COMPILED);
+
+			if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
+				// FIXME push/pop LMF
+				MonoMethodSignature *sig = mono_method_signature_internal (cmethod->method);
+				if (mono_interp_jit_call_supported (cmethod->method, sig))
+					code_type = IMETHOD_CODE_COMPILED;
+				else
+					code_type = IMETHOD_CODE_INTERP;
+				cmethod->code_type = code_type;
+			}
+
+			if (code_type == IMETHOD_CODE_INTERP) {
+
+				goto call;
+
+			} else if (code_type == IMETHOD_CODE_COMPILED) {
+				frame->state.ip = ip;
+				error_init_reuse (error);
+				do_jit_call (context, (stackval*)(locals + return_offset), (stackval*)(locals + call_args_offset), frame, cmethod, error);
+				if (!is_ok (error)) {
+					MonoException *call_ex = interp_error_convert_to_exception (frame, error, ip);
+					THROW_EX (call_ex, ip);
+				}
+
+				CHECK_RESUME_STATE (context);
+			}
+
+			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			gboolean need_unbox;
@@ -8593,6 +8625,31 @@ interp_sufficient_stack (gsize size)
 	ThreadContext *context = get_context ();
 
 	return (context->stack_pointer + size) < (context->stack_start + INTERP_STACK_SIZE);
+}
+
+gboolean
+interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
+{
+	if (sig->param_count > 10)
+		return FALSE;
+	if (sig->pinvoke)
+		return FALSE;
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		return FALSE;
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return FALSE;
+	if (!is_llvm_only && method->is_inflated)
+		return FALSE;
+	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
+	return TRUE;
 }
 
 static void

@@ -20,17 +20,51 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        private readonly SocketsHttpHandler? _socketHandler;
+        private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods = new();
+
         private readonly HttpMessageHandler? _nativeHandler;
-        private MetricsHandler? _metricsHandler;
+        private IMeterFactory? _nativeMeterFactory;
+        private MetricsHandler? _nativeMetricsHandler;
 
-        private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
-            new ConcurrentDictionary<string, MethodInfo?>();
+        private readonly SocketsHttpHandler? _socketHandler;
 
-        private IMeterFactory? _meterFactory;
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
+
+        private HttpMessageHandler Handler
+        {
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    if (_nativeMetricsHandler is null)
+                    {
+                        // We only setup these handlers for the native handler. SocketsHttpHandler already does this internally.
+                        HttpMessageHandler handler = _nativeHandler!;
+
+                        if (DiagnosticsHandler.IsGloballyEnabled())
+                        {
+                            handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+                        }
+
+                        MetricsHandler metricsHandler = new MetricsHandler(handler, _nativeMeterFactory, out _);
+
+                        // Ensure a single handler is used for all requests.
+                        if (Interlocked.CompareExchange(ref _nativeMetricsHandler, metricsHandler, null) != null)
+                        {
+                            handler.Dispose();
+                        }
+                    }
+
+                    return _nativeMetricsHandler;
+                }
+                else
+                {
+                    return _socketHandler!;
+                }
+            }
+        }
 
         public HttpClientHandler()
         {
@@ -67,15 +101,34 @@ namespace System.Net.Http
         [CLSCompliant(false)]
         public IMeterFactory? MeterFactory
         {
-            get => _meterFactory;
+            get
+            {
+                if (IsNativeHandlerEnabled)
+                {
+                    return _nativeMeterFactory;
+                }
+                else
+                {
+                    return _socketHandler!.MeterFactory;
+                }
+            }
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
-                if (_metricsHandler != null)
+
+                if (IsNativeHandlerEnabled)
                 {
-                    throw new InvalidOperationException(SR.net_http_operation_started);
+                    if (_nativeMetricsHandler is not null)
+                    {
+                        throw new InvalidOperationException(SR.net_http_operation_started);
+                    }
+
+                    _nativeMeterFactory = value;
                 }
-                _meterFactory = value;
+                else
+                {
+                    _socketHandler!.MeterFactory = value;
+                }
             }
         }
 
@@ -720,8 +773,7 @@ namespace System.Net.Http
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            MetricsHandler handler = _metricsHandler ?? SetupHandlerChain();
-            return handler.SendAsync(request, cancellationToken);
+            return Handler.SendAsync(request, cancellationToken);
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
@@ -735,23 +787,6 @@ namespace System.Net.Http
                 Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
                 s_dangerousAcceptAnyServerCertificateValidator;
             }
-        }
-
-        private MetricsHandler SetupHandlerChain()
-        {
-            HttpMessageHandler handler = IsNativeHandlerEnabled ? _nativeHandler! : _socketHandler!;
-            if (DiagnosticsHandler.IsGloballyEnabled())
-            {
-                handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
-            }
-            MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory, out _);
-
-            // Ensure a single handler is used for all requests.
-            if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
-            {
-                handler.Dispose();
-            }
-            return _metricsHandler;
         }
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
