@@ -480,6 +480,7 @@ async function instantiate_wasm_module(
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
         assetToLoad.buffer = null as any; // GC
+        assetToLoad.moduleExports = null as any; // GC
 
         mono_log_debug("instantiate_wasm_module done");
 
