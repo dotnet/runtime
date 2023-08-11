@@ -1,3 +1,5 @@
+// TODO: Add the Microsoft License header here.
+
 using System;
 
 internal class HelloWorld
