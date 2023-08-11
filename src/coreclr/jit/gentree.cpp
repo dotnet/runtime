@@ -15019,7 +15019,8 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    f1 = forceCastToFloat(FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1));
+                                    f1 = forceCastToFloat(
+                                        FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1));
                                 }
                                 else
                                 {

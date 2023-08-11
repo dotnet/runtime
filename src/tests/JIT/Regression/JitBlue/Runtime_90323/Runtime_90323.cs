@@ -11,7 +11,7 @@ public class Runtime_90323
     private static float ConvertToSingle(long value) => (float)value;
 
     // 32-bit currently performs a 2-step conversion which causes a different result to be produced
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
     public static int TestEntryPoint()
     {
         bool passed = true;
