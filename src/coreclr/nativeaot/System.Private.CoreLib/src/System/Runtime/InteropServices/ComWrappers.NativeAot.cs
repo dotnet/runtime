@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
         internal static readonly Guid IID_IFindReferenceTargetsCallback = new Guid(0x04b3486c, 0x4687, 0x4229, 0x8d, 0x14, 0x50, 0x5a, 0xb5, 0x84, 0xdd, 0x88);
 
         private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
-        private static readonly List<GCHandle> s_nativeObjectWrapperCache = new List<GCHandle>();
+        private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
         private readonly Lock _lock = new Lock();
@@ -419,7 +419,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal unsafe class ManagedObjectWrapperHolder
+        internal sealed unsafe class ManagedObjectWrapperHolder
         {
             static ManagedObjectWrapperHolder()
             {
@@ -459,7 +459,7 @@ namespace System.Runtime.InteropServices
             public uint AddRef() => _wrapper->AddRef();
         }
 
-        internal unsafe class ManagedObjectWrapperReleaser
+        internal sealed unsafe class ManagedObjectWrapperReleaser
         {
             private ManagedObjectWrapper* _wrapper;
 
@@ -504,19 +504,9 @@ namespace System.Runtime.InteropServices
             internal IntPtr _externalComObject;
             private IntPtr _inner;
             internal ComWrappers _comWrappers;
-            internal GCHandle _proxyHandle;
-            internal GCHandle _proxyHandleTrackingResurrection;
-            internal GCHandle _nativeObjectWrapperWeakHandle;
-
+            internal readonly GCHandle _proxyHandle;
+            internal readonly GCHandle _proxyHandleTrackingResurrection;
             internal readonly bool _aggregatedManagedObjectWrapper;
-            internal readonly bool _fromTrackerRuntime;
-            private IntPtr _trackerObject;
-            private readonly bool _releaseTrackerObject;
-            private int _trackerObjectDisconnected; // Atomic boolean, so using int.
-
-            internal readonly IntPtr _contextToken;
-
-            public IntPtr TrackerObject => (_trackerObject == IntPtr.Zero || _trackerObjectDisconnected == 1) ? IntPtr.Zero : _trackerObject;
 
             static NativeObjectWrapper()
             {
@@ -524,6 +514,19 @@ namespace System.Runtime.InteropServices
                 // which enables the weak reference support to consult
                 // ComWrappers when weak references are created for RCWs.
                 ComAwareWeakReference.ComWrappersRcwInitialized = true;
+            }
+
+            public static NativeObjectWrapper Create(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
+            {
+                if (flags.HasFlag(CreateObjectFlags.TrackerObject) &&
+                    Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
+                {
+                    return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
+                }
+                else
+                {
+                    return new NativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags);
+                }
             }
 
             public NativeObjectWrapper(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
@@ -540,32 +543,6 @@ namespace System.Runtime.InteropServices
                 // see the object as not alive once it is eligible for finalization.
                 _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
 
-                _nativeObjectWrapperWeakHandle = GCHandle.Alloc(this, GCHandleType.Weak);
-
-                if (flags.HasFlag(CreateObjectFlags.TrackerObject))
-                {
-                    if (Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
-                    {
-                        _fromTrackerRuntime = true;
-                        _trackerObject = trackerObject;
-                        _releaseTrackerObject = true;
-
-                        TrackerObjectManager.OnIReferenceTrackerFound(_trackerObject);
-                        TrackerObjectManager.AfterWrapperCreated(_trackerObject);
-
-                        if (flags.HasFlag(CreateObjectFlags.Aggregation))
-                        {
-                            // Aggregation with an IReferenceTracker instance creates an extra AddRef()
-                            // on the outer (e.g. MOW) so we clean up that issue here.
-                            _releaseTrackerObject = false;
-                            IReferenceTracker.ReleaseFromTrackerSource(_trackerObject); // IReferenceTracker
-                            Marshal.Release(_trackerObject);
-                        }
-                    }
-                }
-
-                _contextToken = GetContextToken();
-
                 // If this is an aggregation scenario and the identity object
                 // is a managed object wrapper, we need to call Release() to
                 // indicate this external object isn't rooted. In the event the
@@ -578,7 +555,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            public void Release()
+            public virtual void Release()
             {
                 if (_comWrappers != null)
                 {
@@ -595,15 +572,6 @@ namespace System.Runtime.InteropServices
                 {
                     _proxyHandleTrackingResurrection.Free();
                 }
-
-                // Remove the entry from the cache that keeps track of the active NativeObjectWrappers.
-                if (_nativeObjectWrapperWeakHandle.IsAllocated)
-                {
-                    s_nativeObjectWrapperCache.Remove(_nativeObjectWrapperWeakHandle);
-                    _nativeObjectWrapperWeakHandle.Free();
-                }
-
-                DisconnectTracker();
 
                 // If the inner was supplied, we need to release our reference.
                 if (_inner != IntPtr.Zero)
@@ -628,6 +596,62 @@ namespace System.Runtime.InteropServices
 
                 Release();
             }
+        }
+
+        internal sealed class ReferenceTrackerNativeObjectWrapper : NativeObjectWrapper
+        {
+            private IntPtr _trackerObject;
+            private readonly bool _releaseTrackerObject;
+            private int _trackerObjectDisconnected; // Atomic boolean, so using int.
+            internal readonly IntPtr _contextToken;
+            internal readonly GCHandle _nativeObjectWrapperWeakHandle;
+
+            public IntPtr TrackerObject => (_trackerObject == IntPtr.Zero || _trackerObjectDisconnected == 1) ? IntPtr.Zero : _trackerObject;
+
+            public ReferenceTrackerNativeObjectWrapper(
+                nint externalComObject,
+                nint inner,
+                ComWrappers comWrappers,
+                object comProxy,
+                CreateObjectFlags flags,
+                IntPtr trackerObject)
+                : base(externalComObject, inner, comWrappers, comProxy, flags)
+            {
+                Debug.Assert(flags.HasFlag(CreateObjectFlags.TrackerObject));
+                Debug.Assert(trackerObject != IntPtr.Zero);
+
+                _trackerObject = trackerObject;
+                _releaseTrackerObject = true;
+
+                TrackerObjectManager.OnIReferenceTrackerFound(_trackerObject);
+                TrackerObjectManager.AfterWrapperCreated(_trackerObject);
+
+                if (flags.HasFlag(CreateObjectFlags.Aggregation))
+                {
+                    // Aggregation with an IReferenceTracker instance creates an extra AddRef()
+                    // on the outer (e.g. MOW) so we clean up that issue here.
+                    _releaseTrackerObject = false;
+                    IReferenceTracker.ReleaseFromTrackerSource(_trackerObject); // IReferenceTracker
+                    Marshal.Release(_trackerObject);
+                }
+
+                _contextToken = GetContextToken();
+                _nativeObjectWrapperWeakHandle = GCHandle.Alloc(this, GCHandleType.Weak);
+            }
+
+            public override void Release()
+            {
+                // Remove the entry from the cache that keeps track of the active NativeObjectWrappers.
+                if (_nativeObjectWrapperWeakHandle.IsAllocated)
+                {
+                    s_referenceTrackerNativeObjectWrapperCache.Remove(_nativeObjectWrapperWeakHandle);
+                    _nativeObjectWrapperWeakHandle.Free();
+                }
+
+                DisconnectTracker();
+
+                base.Release();
+            }
 
             public void DisconnectTracker()
             {
@@ -648,7 +672,6 @@ namespace System.Runtime.InteropServices
                     Marshal.Release(_trackerObject);
                     _trackerObject = IntPtr.Zero;
                 }
-
             }
         }
 
@@ -983,7 +1006,7 @@ namespace System.Runtime.InteropServices
                     if (wrapperMaybe is not null)
                     {
                         retValue = wrapperMaybe;
-                        NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                        NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
                             identity,
                             inner,
                             this,
@@ -995,7 +1018,10 @@ namespace System.Runtime.InteropServices
                             throw new NotSupportedException();
                         }
                         _rcwCache.Add(identity, wrapper._proxyHandle);
-                        s_nativeObjectWrapperCache.Add(wrapper._nativeObjectWrapperWeakHandle);
+                        if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
+                        {
+                            s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                        }
                         return true;
                     }
                 }
@@ -1010,7 +1036,7 @@ namespace System.Runtime.InteropServices
 
             if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
                     identity,
                     inner,
                     null, // No need to cache NativeObjectWrapper for unique instances. They are not cached.
@@ -1021,7 +1047,10 @@ namespace System.Runtime.InteropServices
                     wrapper.Release();
                     throw new NotSupportedException();
                 }
-                s_nativeObjectWrapperCache.Add(wrapper._nativeObjectWrapperWeakHandle);
+                if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
+                {
+                    s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                }
                 return true;
             }
 
@@ -1045,7 +1074,7 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                    NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
                         identity,
                         inner,
                         this,
@@ -1057,7 +1086,10 @@ namespace System.Runtime.InteropServices
                         throw new NotSupportedException();
                     }
                     _rcwCache.Add(identity, wrapper._proxyHandle);
-                    s_nativeObjectWrapperCache.Add(wrapper._nativeObjectWrapperWeakHandle);
+                    if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
+                    {
+                        s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                    }
                 }
             }
 
@@ -1195,11 +1227,10 @@ namespace System.Runtime.InteropServices
             IntPtr contextToken = GetContextToken();
 
             List<object> objects = new List<object>();
-            foreach (GCHandle weakNativeObjectWrapperHandle in s_nativeObjectWrapperCache)
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                NativeObjectWrapper? nativeObjectWrapper = Unsafe.As<NativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
-                    nativeObjectWrapper._fromTrackerRuntime &&
                     nativeObjectWrapper._contextToken == contextToken)
                 {
                     objects.Add(nativeObjectWrapper._proxyHandle.Target);
@@ -1217,9 +1248,9 @@ namespace System.Runtime.InteropServices
         {
             bool walkFailed = false;
 
-            foreach (GCHandle weakNativeObjectWrapperHandle in s_nativeObjectWrapperCache)
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                NativeObjectWrapper? nativeObjectWrapper = Unsafe.As<NativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
@@ -1244,9 +1275,9 @@ namespace System.Runtime.InteropServices
 
         internal static void DetachNonPromotedObjects()
         {
-            foreach (GCHandle weakNativeObjectWrapperHandle in s_nativeObjectWrapperCache)
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                NativeObjectWrapper? nativeObjectWrapper = Unsafe.As<NativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
                     !RuntimeImports.RhIsPromoted(nativeObjectWrapper._proxyHandle.Target))
