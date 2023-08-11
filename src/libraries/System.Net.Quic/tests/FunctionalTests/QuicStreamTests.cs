@@ -1218,7 +1218,7 @@ namespace System.Net.Quic.Tests
         public static IEnumerable<object[]> PayloadSizeAndTwoBools()
         {
             var boolValues = new [] { true, false };
-            var payloadValues = PlatformDetection.IsIntMaxValueArrayIndexSupported ?
+            var payloadValues = !PlatformDetection.IsInHelix ?
                                     new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload } :
                                     new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload };
             return
@@ -1232,6 +1232,7 @@ namespace System.Net.Quic.Tests
         [MemberData(nameof(PayloadSizeAndTwoBools))]
         public async Task ReadsClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool useDispose)
         {
+            //using var logger = new TestUtilities.TestEventListener(Console.Out, "Private.InternalDiagnostics.System.Net.Quic");
             using SemaphoreSlim serverSem = new SemaphoreSlim(0);
             using SemaphoreSlim clientSem = new SemaphoreSlim(0);
 
@@ -1243,6 +1244,11 @@ namespace System.Net.Quic.Tests
 
                     await using QuicStream stream = await connection.AcceptInboundStreamAsync();
                     await stream.WriteAsync(new byte[payloadSize], completeWrites: true);
+                    // Make sure the data gets received by the peer if we expect the reading side to get buffered including FIN.
+                    if (payloadSize <= BufferPayload)
+                    {
+                        await stream.WritesClosed;
+                    }
                     serverSem.Release();
                     await clientSem.WaitAsync();
 
@@ -1260,15 +1266,7 @@ namespace System.Net.Quic.Tests
                         }
                     }
 
-                    var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.ReadsClosed);
-                    if (expectedError == QuicError.OperationAborted)
-                    {
-                        Assert.Null(ex.ApplicationErrorCode);
-                    }
-                    else
-                    {
-                        Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
-                    }
+                    await CheckReadsClosed(stream, expectedError, expectedErrorCode);
                 },
                 clientFunction: async connection =>
                 {
@@ -1277,6 +1275,10 @@ namespace System.Net.Quic.Tests
 
                     await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     await stream.WriteAsync(new byte[payloadSize], completeWrites: true);
+                    if (payloadSize <= BufferPayload)
+                    {
+                        await stream.WritesClosed;
+                    }
                     clientSem.Release();
                     await serverSem.WaitAsync();
 
@@ -1294,6 +1296,23 @@ namespace System.Net.Quic.Tests
                         }
                     }
 
+                    await CheckReadsClosed(stream, expectedError, expectedErrorCode);
+                }
+            );
+
+            async ValueTask CheckReadsClosed(QuicStream stream, QuicError expectedError, long expectedErrorCode)
+            {
+                // All data should be buffered if they fit in the internal buffer, reading should still pass.
+                if (payloadSize <= BufferPayload)
+                {
+                    Assert.False(stream.ReadsClosed.IsCompleted);
+                    var buffer = new byte[BufferPayload];
+                    var length = await ReadAll(stream, buffer);
+                    Assert.True(stream.ReadsClosed.IsCompletedSuccessfully);
+                    Assert.Equal(payloadSize, length);
+                }
+                else
+                {
                     var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.ReadsClosed);
                     if (expectedError == QuicError.OperationAborted)
                     {
@@ -1304,7 +1323,7 @@ namespace System.Net.Quic.Tests
                         Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
                     }
                 }
-            );
+            }
         }
 
         [Theory]
@@ -1339,15 +1358,7 @@ namespace System.Net.Quic.Tests
                         }
                     }
 
-                    var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.WritesClosed);
-                    if (expectedError == QuicError.OperationAborted)
-                    {
-                        Assert.Null(ex.ApplicationErrorCode);
-                    }
-                    else
-                    {
-                        Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
-                    }
+                    await CheckWritesClosed(stream, expectedError, expectedErrorCode);
                 },
                 clientFunction: async connection =>
                 {
@@ -1373,17 +1384,22 @@ namespace System.Net.Quic.Tests
                         }
                     }
 
-                    var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.WritesClosed);
-                    if (expectedError == QuicError.OperationAborted)
-                    {
-                        Assert.Null(ex.ApplicationErrorCode);
-                    }
-                    else
-                    {
-                        Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
-                    }
+                    await CheckWritesClosed(stream, expectedError, expectedErrorCode);
                 }
             );
+
+            async ValueTask CheckWritesClosed(QuicStream stream, QuicError expectedError, long expectedErrorCode)
+            {
+                var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.WritesClosed);
+                if (expectedError == QuicError.OperationAborted)
+                {
+                    Assert.Null(ex.ApplicationErrorCode);
+                }
+                else
+                {
+                    Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
+                }
+            }
         }
 
         [Theory]

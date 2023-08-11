@@ -12,7 +12,6 @@ internal struct ReceiveBuffers
     private readonly object _syncRoot;
     private MultiArrayBuffer _buffer;
     private bool _final;
-    private int _lastReceiveSize;
 
     public ReceiveBuffers()
     {
@@ -48,7 +47,6 @@ internal struct ReceiveBuffers
             }
 
             _final = final;
-            _lastReceiveSize = totalLength;
             _buffer.EnsureAvailableSpace(totalLength);
 
             int totalCopied = 0;
@@ -68,7 +66,7 @@ internal struct ReceiveBuffers
         }
     }
 
-    public int CopyTo(Memory<byte> buffer, out bool completed, out bool empty, out int lastReceiveSize)
+    public int CopyTo(Memory<byte> buffer, out bool completed, out bool empty)
     {
         lock (_syncRoot)
         {
@@ -83,7 +81,6 @@ internal struct ReceiveBuffers
 
             completed = _buffer.IsEmpty && _final;
             empty = _buffer.IsEmpty;
-            lastReceiveSize = _lastReceiveSize;
 
             return copied;
         }
