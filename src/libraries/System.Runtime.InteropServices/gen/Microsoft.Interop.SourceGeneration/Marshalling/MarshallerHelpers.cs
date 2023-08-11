@@ -327,7 +327,7 @@ namespace Microsoft.Interop
                 return ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            NameSyntaxes.System_Runtime_CompilerServices_Unsafe,
+                            TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
                             IdentifierName("SkipInit")))
                     .WithArgumentList(
                         ArgumentList(SingletonSeparatedList(

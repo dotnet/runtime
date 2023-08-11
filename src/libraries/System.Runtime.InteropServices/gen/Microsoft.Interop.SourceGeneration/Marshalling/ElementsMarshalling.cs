@@ -379,7 +379,7 @@ namespace Microsoft.Interop
                                     Argument(
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                NameSyntaxes.System_Runtime_CompilerServices_Unsafe,
+                                                TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
                                                 IdentifierName("AsRef")),
                                             ArgumentList(SingletonSeparatedList(
                                                 Argument(
@@ -503,7 +503,7 @@ namespace Microsoft.Interop
                                     Argument(
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                NameSyntaxes.System_Runtime_CompilerServices_Unsafe,
+                                                TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
                                                 IdentifierName("AsRef")),
                                             ArgumentList(SingletonSeparatedList(
                                                 Argument(

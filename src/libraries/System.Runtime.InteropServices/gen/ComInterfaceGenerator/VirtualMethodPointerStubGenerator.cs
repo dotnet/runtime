@@ -94,7 +94,7 @@ namespace Microsoft.Interop
                         ImplicitArrayCreationExpression(
                             InitializerExpression(SyntaxKind.CollectionInitializerExpression,
                                 SeparatedList<ExpressionSyntax>(
-                                    methodStub.CallingConvention.Array.Select(callConv => TypeOfExpression(ParseName($"global::System.Runtime.CompilerServices.CallConv{callConv.Name.ValueText}")))))))
+                                    methodStub.CallingConvention.Array.Select(callConv => TypeOfExpression(TypeSyntaxes.CallConv(callConv.Name.ValueText)))))))
                     .WithNameEquals(NameEquals(IdentifierName("CallConvs"))));
             }
 

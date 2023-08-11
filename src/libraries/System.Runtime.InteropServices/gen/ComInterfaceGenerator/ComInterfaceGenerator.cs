@@ -193,7 +193,7 @@ namespace Microsoft.Interop
 
             context.RegisterSourceOutput(filesToGenerate, (context, data) =>
             {
-                context.AddSource(data.TypeName.Replace("global::", ""), data.Source);
+                context.AddSource(data.TypeName.Replace(TypeNames.GlobalAlias, ""), data.Source);
             });
         }
 
