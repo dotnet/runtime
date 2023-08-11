@@ -258,16 +258,16 @@ namespace System.Text.Unicode
                     pInputBuffer -= Vector128<ushort>.Count;
                 }
             }
-            else if (Vector.IsHardwareAccelerated)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                if (inputLength >= Vector<ushort>.Count)
+                if (inputLength >= Vector128<ushort>.Count)
                 {
-                    Vector<ushort> vector0080 = new Vector<ushort>(0x0080);
-                    Vector<ushort> vector0400 = new Vector<ushort>(0x0400);
-                    Vector<ushort> vector0800 = new Vector<ushort>(0x0800);
-                    Vector<ushort> vectorD800 = new Vector<ushort>(0xD800);
+                    Vector128<ushort> vector0080 = Vector128.Create<ushort>(0x0080);
+                    Vector128<ushort> vector0400 = Vector128.Create<ushort>(0x0400);
+                    Vector128<ushort> vector0800 = Vector128.Create<ushort>(0x0800);
+                    Vector128<ushort> vectorD800 = Vector128.Create<ushort>(0xD800);
 
-                    char* pHighestAddressWhereCanReadOneVector = pEndOfInputBuffer - Vector<ushort>.Count;
+                    char* pHighestAddressWhereCanReadOneVector = pEndOfInputBuffer - Vector128<ushort>.Count;
                     Debug.Assert(pHighestAddressWhereCanReadOneVector >= pInputBuffer);
 
                     do
@@ -287,16 +287,16 @@ namespace System.Text.Unicode
                         // performed by the SSE2 code path. This will overcount surrogates, but we'll
                         // handle that shortly.
 
-                        Vector<ushort> utf16Data = Unsafe.ReadUnaligned<Vector<ushort>>(pInputBuffer);
-                        Vector<ushort> twoOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0080);
-                        Vector<ushort> threeOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0800);
-                        Vector<nuint> sumVector = (Vector<nuint>)(Vector<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
+                        Vector128<ushort> utf16Data = Vector128.Load((ushort*)pInputBuffer);
+                        Vector128<ushort> twoOrMoreUtf8Bytes = Vector128.GreaterThanOrEqual(utf16Data, vector0080);
+                        Vector128<ushort> threeOrMoreUtf8Bytes = Vector128.GreaterThanOrEqual(utf16Data, vector0800);
+                        Vector128<nuint> sumVector = (Vector128<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes).AsNUInt();
 
                         // We'll try summing by a natural word (rather than a 16-bit word) at a time,
                         // which should halve the number of operations we must perform.
 
                         nuint popcnt = 0;
-                        for (int i = 0; i < Vector<nuint>.Count; i++)
+                        for (int i = 0; i < Vector128<nuint>.Count; i++)
                         {
                             popcnt += (nuint)sumVector[i];
                         }
@@ -315,16 +315,16 @@ namespace System.Text.Unicode
                         // Now check for surrogates.
 
                         utf16Data -= vectorD800;
-                        Vector<ushort> surrogateChars = Vector.LessThan(utf16Data, vector0800);
-                        if (surrogateChars != Vector<ushort>.Zero)
+                        Vector128<ushort> surrogateChars = Vector128.LessThan(utf16Data, vector0800);
+                        if (surrogateChars != Vector128<ushort>.Zero)
                         {
                             // There's at least one surrogate (high or low) UTF-16 code unit in
                             // the vector. We'll build up additional vectors: 'highSurrogateChars'
                             // and 'lowSurrogateChars', where the elements are 0xFFFF iff the original
                             // UTF-16 code unit was a high or low surrogate, respectively.
 
-                            Vector<ushort> highSurrogateChars = Vector.LessThan(utf16Data, vector0400);
-                            Vector<ushort> lowSurrogateChars = Vector.AndNot(surrogateChars, highSurrogateChars);
+                            Vector128<ushort> highSurrogateChars = Vector128.LessThan(utf16Data, vector0400);
+                            Vector128<ushort> lowSurrogateChars = Vector128.AndNot(surrogateChars, highSurrogateChars);
 
                             // We want to make sure that each high surrogate code unit is followed by
                             // a low surrogate code unit and each low surrogate code unit follows a
@@ -339,7 +339,7 @@ namespace System.Text.Unicode
                             }
 
                             ushort surrogatePairsCount = 0;
-                            for (int i = 0; i < Vector<ushort>.Count - 1; i++)
+                            for (int i = 0; i < Vector128<ushort>.Count - 1; i++)
                             {
                                 surrogatePairsCount -= highSurrogateChars[i]; // turns into +1 or +0
                                 if (highSurrogateChars[i] != lowSurrogateChars[i + 1])
@@ -348,7 +348,7 @@ namespace System.Text.Unicode
                                 }
                             }
 
-                            if (highSurrogateChars[Vector<ushort>.Count - 1] != 0)
+                            if (highSurrogateChars[Vector128<ushort>.Count - 1] != 0)
                             {
                                 // There was a standalone high surrogate at the end of the vector.
                                 // We'll adjust our counters so that we don't consider this char consumed.
@@ -373,7 +373,7 @@ namespace System.Text.Unicode
                         }
 
                         tempUtf8CodeUnitCountAdjustment += popcnt32;
-                        pInputBuffer += Vector<ushort>.Count;
+                        pInputBuffer += Vector128<ushort>.Count;
                     } while (pInputBuffer <= pHighestAddressWhereCanReadOneVector);
                 }
             }
