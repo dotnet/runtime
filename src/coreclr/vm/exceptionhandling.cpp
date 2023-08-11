@@ -4569,13 +4569,13 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
 #ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
     if ((establisherFrame == ex.TargetFrameSp) && (ex.TargetIp != 0))
     {
-#ifdef HOST_AMD64
+#ifdef TARGET_AMD64
 #define RETURN_REG Rax
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
 #define RETURN_REG X0
-#elif defined(HOST_ARM)
+#elif defined(TARGET_ARM)
 #define RETURN_REG R0
-#elif defined(HOST_X86)
+#elif defined(TARGET_X86)
 #define RETURN_REG Eax
 #else
 #error Missing definition of RETURN_REG for the current architecture
