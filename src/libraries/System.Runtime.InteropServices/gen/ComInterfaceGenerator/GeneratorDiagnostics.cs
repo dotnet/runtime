@@ -474,6 +474,16 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true);
 
+        /// <inheritdoc cref="SR.HResultTypeWillBeTreatedAsStructMessage"/>
+        public static readonly DiagnosticDescriptor HResultTypeWillBeTreatedAsStruct =
+            new DiagnosticDescriptor(
+                Ids.NotRecommendedGeneratedComInterfaceUsage,
+                GetResourceString(nameof(SR.HResultTypeWillBeTreatedAsStructTitle)),
+                GetResourceString(nameof(SR.HResultTypeWillBeTreatedAsStructMessage)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true);
+
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
         /// </summary>

@@ -883,4 +883,10 @@
   <data name="ComMethodReturningIntWillBeOutParameterTitle" xml:space="preserve">
     <value>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</value>
   </data>
+  <data name="HResultTypeWillBeTreatedAsStructMessage" xml:space="preserve">
+    <value>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</value>
+  </data>
+  <data name="HResultTypeWillBeTreatedAsStructTitle" xml:space="preserve">
+    <value>This type will be treated as a struct in the native signature, not as a native HRESULT</value>
+  </data>
 </root>

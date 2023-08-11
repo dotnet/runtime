@@ -666,9 +666,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/*">
             <Issue>https://github.com/dotnet/runtime/issues/43461</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/poison/*">
-            <Issue>https://github.com/dotnet/runtime/issues/56148</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 x86 specific excludes -->
@@ -1032,9 +1029,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/200</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventlistener/EventListenerThreadPool/**">
-            <Issue>https://github.com/dotnet/runtime/issues/83051: Waiting for PR_88894 to be merged</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
             <Issue>https://github.com/dotnet/runtime/issues/83051: not supported in net8</Issue>

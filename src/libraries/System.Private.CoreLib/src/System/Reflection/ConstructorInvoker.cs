@@ -46,21 +46,61 @@ namespace System.Reflection
             Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
         }
 
-        public object Invoke() => Invoke(null, null, null, null);
-        public object Invoke(object? arg1) => Invoke(arg1, null, null, null);
-        public object Invoke(object? arg1, object? arg2) => Invoke(arg1, arg2, null, null);
-        public object Invoke(object? arg1, object? arg2, object? arg3) => Invoke(arg1, arg2, arg3, null);
+        public object Invoke()
+        {
+            if (_argCount != 0)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(null, null, null, null);
+        }
+
+        public object Invoke(object? arg1)
+        {
+            if (_argCount != 1)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(arg1, null, null, null);
+        }
+
+        public object Invoke(object? arg1, object? arg2)
+        {
+            if (_argCount != 2)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(arg1, arg2, null, null);
+        }
+
+        public object Invoke(object? arg1, object? arg2, object? arg3)
+        {
+            if (_argCount !=3)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(arg1, arg2, arg3, null);
+        }
+
         public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
+        {
+            if (_argCount != 4)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(arg1, arg2, arg3, arg4);
+        }
+
+        private object InvokeImpl(object? arg1, object? arg2, object? arg3, object? arg4)
         {
             if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
             {
                 _method.ThrowNoInvokeException();
-            }
-
-            // Allow additional non-used arguments to simplify caller's logic.
-            if (_argCount > MaxStackAllocArgCount)
-            {
-                MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
             switch (_argCount)
@@ -99,21 +139,27 @@ namespace System.Reflection
 
         public object Invoke(Span<object?> arguments)
         {
+            int argLen = arguments.Length;
+            if (argLen != _argCount)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
             if (!_needsByRefStrategy)
             {
                 // Switch to fast path if possible.
                 switch (_argCount)
                 {
                     case 0:
-                        return Invoke(null, null, null, null);
+                        return InvokeImpl(null, null, null, null);
                     case 1:
-                        return Invoke(arguments[0], null, null, null);
+                        return InvokeImpl(arguments[0], null, null, null);
                     case 2:
-                        return Invoke(arguments[0], arguments[1], null, null);
+                        return InvokeImpl(arguments[0], arguments[1], null, null);
                     case 3:
-                        return Invoke(arguments[0], arguments[1], arguments[2], null);
+                        return InvokeImpl(arguments[0], arguments[1], arguments[2], null);
                     case 4:
-                        return Invoke(arguments[0], arguments[1], arguments[2], arguments[3]);
+                        return InvokeImpl(arguments[0], arguments[1], arguments[2], arguments[3]);
                     default:
                         break;
                 }
@@ -124,12 +170,7 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            if (arguments.Length != _argCount)
-            {
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
-            }
-
-            if (arguments.Length > MaxStackAllocArgCount)
+            if (argLen > MaxStackAllocArgCount)
             {
                 return InvokeWithManyArgs(arguments);
             }
