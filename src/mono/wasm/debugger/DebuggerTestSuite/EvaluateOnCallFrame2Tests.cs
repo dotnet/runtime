@@ -693,10 +693,10 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                   //("localString.Length", TNumber(5)),
+                   ("localString.Length", TNumber(5)),
                    ("localString[1]", TChar('B'))
-                   //("instance.str.Length", TNumber(5)),
-                   //("instance.str[3]", TChar('c'))
+                   ("instance.str.Length", TNumber(5)),
+                   ("instance.str[3]", TChar('c'))
                 );
            });
         

@@ -366,7 +366,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, List<(string, JObject, string)> variableDefinitions, CancellationToken token)
+        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, List<VariableDefinition> variableDefinitions, CancellationToken token)
         {
             try
             {
@@ -416,7 +416,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var eaExpressionFormatted = elementAccessStrExpression.Replace('.', '_'); // instance_str
                             variableDefinitions.Add(new (eaExpressionFormatted, rootObject, ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject)));
                             var eaFormatted = elementAccessStr.Replace('.', '_'); // instance_str[1]
-                            var variableDef = await ExpressionEvaluator.GetVariableDefinitions(this, variableDefinitions, false, token);
+                            var variableDef = await ExpressionEvaluator.GetVariableDefinitions(this, variableDefinitions, invokeToStringInObject: false, token);
                             return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDef, logger, token);
                         }
                         if (indexObject is null && elementIdxInfo.IndexingExpression is null)
@@ -504,7 +504,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     else
                     {
                         string expression = arg.ToString();
-                        var variableDef = await ExpressionEvaluator.GetVariableDefinitions(this, variableDefinitions, false, token);
+                        var variableDef = await ExpressionEvaluator.GetVariableDefinitions(this, variableDefinitions, invokeToStringInObject: false, token);
                         indexObject = await ExpressionEvaluator.EvaluateSimpleExpression(this, expression, expression, variableDef, logger, token);
                         string idxType = indexObject["type"].Value<string>();
                         if (idxType != "number")
