@@ -38,13 +38,15 @@
 #define ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_UNIX
+VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartContext);
+#else
 void NOINLINE
 ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord,
                  UINT_PTR          ReturnValue,
                  UINT_PTR          TargetIP,
                  UINT_PTR          TargetFrameSp);
-#endif // !TARGET_UNIX
+#endif // TARGET_UNIX
 
 #ifdef USE_CURRENT_CONTEXT_IN_FILTER
 inline void CaptureNonvolatileRegisters(PKNONVOLATILE_CONTEXT pNonvolatileContext, PCONTEXT pContext)
@@ -4192,9 +4194,6 @@ void ExceptionTracker::MakeCallbacksRelatedToHandler(
 // Notes:
 //    If the exception is intercepted, this function never returns.
 //
-#ifdef HOST_UNIX
-VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartContext);
-#endif // HOST_UNIX
 
 EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_REGISTRATION_RECORD* pCurrentEstablisherFrame)
                                                       EXCEPTION_RECORD* pExceptionRecord)
@@ -4213,7 +4212,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
                                                            (PBYTE*)&uInterceptStackFrame,
                                                            NULL, NULL);
 
-#ifdef HOST_UNIX
+#ifdef TARGET_UNIX
     CONTEXT *pContext = pThread->GetExceptionState()->GetContextRecord();
     PAL_SEHException ex(pThread->GetExceptionState()->GetExceptionRecord(), pContext, /* onStack */ false);
     ex.TargetIp = INVALID_RESUME_ADDRESS;

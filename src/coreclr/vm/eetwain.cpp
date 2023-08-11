@@ -1005,7 +1005,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
 
     LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
 
-#if defined(TARGET_AMD64) && defined(HOST_WINDOWS)
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     // win-x64: SP == FP before localloc
     if (oldStackBase != GetFP(&oldCtx))
     {
@@ -1246,7 +1246,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         _ASSERTE( frameHeaderSize <= oldInfo.stackSize );
         _ASSERTE( GetSizeOfFrameHeaderForEnC( &oldInfo ) == frameHeaderSize );
 
-#elif defined(TARGET_AMD64) && defined(HOST_WINDOWS)
+#elif defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
 
         // Next few statements zero out all registers that may end up holding new variables.
 
