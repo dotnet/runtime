@@ -253,9 +253,6 @@
 /* Reduce runtime requirements (and capabilities) */
 #cmakedefine MONO_SMALL_CONFIG 1
 
-/* String of disabled features */
-#define DISABLED_FEATURES @DISABLED_FEATURES@
-
 /* Disable AOT Compiler */
 #cmakedefine DISABLE_AOT 1
 
