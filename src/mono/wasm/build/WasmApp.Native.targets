@@ -354,7 +354,6 @@
       <FileWrites Include="$(_EmccCompileRsp)" />
     </ItemGroup>
 
-    <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
     <ItemGroup>
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" Dependencies="%(_WasmRuntimePackSrcFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileRsp)" />
@@ -364,6 +363,7 @@
           Arguments='"@$(_EmccDefaultFlagsRsp)" $(_EmccDefaultFlags) "@$(_EmccCompileRsp)"'
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
+          MessageToIndicateCompiling="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..."
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
@@ -380,12 +380,12 @@
       <_BitCodeFile Dependencies="%(_BitCodeFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)" />
     </ItemGroup>
 
-    <Message Text="Compiling assembly bitcode files with $(EmccLinkOptimizationFlag) ..." Importance="High" Condition="@(_BitCodeFile->Count()) > 0" />
     <EmccCompile
           SourceFiles="@(_BitCodeFile)"
           Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; $(_EmccDefaultFlags) &quot;@$(_EmccCompileBitcodeRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
+          MessageToIndicateCompiling="Compiling assembly bitcode files with $(EmccLinkOptimizationFlag) ..."
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
