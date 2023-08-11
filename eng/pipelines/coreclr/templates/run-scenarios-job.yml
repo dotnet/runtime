@@ -49,9 +49,6 @@ jobs:
 
     - IsInternal: ''
     - HelixApiAccessToken: ''
-    - ${{ if eq( parameters.osGroup, 'windows') }}:
-      - name: TargetsWindowsParam
-        value: '--target-windows'
     - SharedHelixPreCommands: ''
     - AdditionalHelixPreCommands: ''
     - AdditionalHelixPostCommands: ''
@@ -139,10 +136,10 @@ jobs:
         displayName: Ensure pip is installed
     - script: $(Python) -m pip install --user dataclasses
       displayName: Install dataclasses library used in ci_setup.py
-    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)\machine-setup $(TargetsWindowsParam)
+    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)\machine-setup.cmd
       displayName: Run ci setup script (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)/machine-setup $(TargetsWindowsParam)
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)/machine-setup.sh
       displayName: Run ci setup script (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm

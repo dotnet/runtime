@@ -55,9 +55,6 @@ jobs:
 
     - IsInternal: ''
     - HelixApiAccessToken: ''
-    - ${{ if eq( parameters.osGroup, 'windows') }}:
-      - name: TargetsWindowsParam
-        value: '--target-windows'
     - ${{ if and(eq(parameters.runtimeType, 'wasm'), in(variables['Build.Reason'], 'PullRequest')) }}:
       - HelixPerfUploadTokenValue: ''
     - ${{ if and(notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.osGroup, 'windows')) }}:
@@ -170,7 +167,7 @@ jobs:
         displayName: Ensure pip is installed
     - script: $(Python) -m pip install --user dataclasses
       displayName: Install dataclasses library used in ci_setup.py
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) ${{ parameters.additionalSetupParameters }} $(TargetsWindowsParam)
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) ${{ parameters.additionalSetupParameters }}
       displayName: Run ci setup script
       # Run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
