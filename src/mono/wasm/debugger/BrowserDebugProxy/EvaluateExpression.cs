@@ -52,7 +52,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             private int visitCount;
             public bool hasMethodCalls;
             public bool hasElementAccesses;
-            public bool hasExpressionStatement;
+            public bool hasStringExpressionStatement;
             internal List<VariableDefinition> variableDefinitions = new ();
 
             public void VisitInternal(SyntaxNode node)
@@ -99,7 +99,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 if (node is BinaryExpressionSyntax)
-                    hasExpressionStatement = true;
+                {
+                    var binaryExpression = node as BinaryExpressionSyntax;
+                    if (binaryExpression.Left.Kind() == SyntaxKind.StringLiteralExpression || binaryExpression.Right.Kind() == SyntaxKind.StringLiteralExpression)
+                        hasStringExpressionStatement = true;
+                }
 
                 if (node is AssignmentExpressionSyntax)
                     throw new Exception("Assignment is not implemented yet");
@@ -457,7 +461,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
-            var variableDef = await GetVariableDefinitions(resolver, replacer.variableDefinitions, invokeToStringInObject: replacer.hasExpressionStatement, token);
+            var variableDef = await GetVariableDefinitions(resolver, replacer.variableDefinitions, invokeToStringInObject: replacer.hasStringExpressionStatement, token);
             return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, variableDef, logger, token);
         }
 
@@ -471,11 +475,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                     variableDefStrings.Add(definition.Definition);
                     continue;
                 }
+
+                if (definition.Obj["subtype"]?.Value<string>()?.Equals("null") == true)
+                {
+                    variableDefStrings.Add($"string {definition.IdName} = \"\";");
+                    continue;
+                }
+
                 if (DotnetObjectId.TryParse(definition.Obj?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var typeIds = await resolver.GetContext().SdbAgent.GetTypeIdsForObject(objectId.Value, withParents: true, token);
-                    var toString = await resolver.GetContext().SdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId.Value, BindingFlags.DeclaredOnly, invokeToStringInObject: true, token);
-                    variableDefStrings.Add($"string {definition.IdName} = \"{toString}\";");
+                    if (objectId.IsValueType)
+                    {
+                        variableDefStrings.Add($"string {definition.IdName} = \"{definition.Obj["description"].Value<string>()}\";");
+                    }
+                    else
+                    {
+                        var typeIds = await resolver.GetContext().SdbAgent.GetTypeIdsForObject(objectId.Value, withParents: true, token);
+                        var toString = await resolver.GetContext().SdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId.Value, BindingFlags.DeclaredOnly, invokeToStringInObject: true, token);
+                        variableDefStrings.Add($"string {definition.IdName} = \"{toString}\";");
+                    }
                 }
                 else
                 {

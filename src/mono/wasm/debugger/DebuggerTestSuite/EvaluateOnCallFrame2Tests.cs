@@ -694,7 +694,7 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
                    ("localString.Length", TNumber(5)),
-                   ("localString[1]", TChar('B'))
+                   ("localString[1]", TChar('B')),
                    ("instance.str.Length", TNumber(5)),
                    ("instance.str[3]", TChar('c'))
                 );
@@ -714,13 +714,21 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateSumBetweenObjectAndString() => await CheckInspectLocalsAtBreakpointSite(
-             $"DebuggerTests.SumObjectAndString", "run", 3, "DebuggerTests.SumObjectAndString.run",
+             $"DebuggerTests.SumObjectAndString", "run", 7, "DebuggerTests.SumObjectAndString.run",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.SumObjectAndString:run'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                   ("myList+\"asd\"", TString("System.Collections.Generic.List`1[System.Int32]asd"))
+                   ("myList+\"asd\"", TString("System.Collections.Generic.List`1[System.Int32]asd")),
+                   ("dt+\"asd\"", TString("1/1/0001 12:00:00 AMasd")),
+                   ("myClass+\"asd\"", TString("OverridenToStringasd")),
+                   ("listNull+\"asd\"", TString("asd"))
+                );
+                await CheckEvaluateFail(id,
+                    ("myClass+dt", "Cannot evaluate '(myClass+dt\n)': (3,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'object'"),
+                    ("myClass+1", "Cannot evaluate '(myClass+1\n)': (2,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'int'"),
+                    ("dt+1", "Cannot evaluate '(dt+1\n)': (2,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'int'")
                 );
            });
     }
