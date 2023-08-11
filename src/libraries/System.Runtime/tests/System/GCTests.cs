@@ -1058,12 +1058,13 @@ namespace System.Tests
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue, pinned: true));
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         struct EmbeddedValueType<T>
         {
             // There's a few extra fields here to ensure any reads and writes to Value reasonably are not just offset 0.
             // This is a low-level smoke check that can give a bit of confidence in pointer arithmetic.
-            // This isn't a guarantee since CoreCLR reorders fields and ignores the implicit sequential consistency of
-            // structs, but it will never hurt the test.
+            // The CLR is permitted to reorder fields and ignore the sequential consistency of value types if they contain
+            // managed references, but it will never hurt the test.
             object _1;
             byte _2;
             public T Value;
