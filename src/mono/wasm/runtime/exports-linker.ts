@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_imports, mono_wasm_legacy_interop_imports, mono_wasm_threads_imports } from "./exports-binding";
+import gitHash from "consts:gitHash";
 
 export function export_linker_indexes_as_code(): string {
     const indexByName: any = {
@@ -23,8 +24,9 @@ export function export_linker_indexes_as_code(): string {
         idx++;
     }
     return `
+    var gitHash = "${gitHash}";
     var methodIndexByName = ${JSON.stringify(indexByName, null, 2)};
-    createWasmImportStubs();
+    injectDependencies();
     `;
 }
 

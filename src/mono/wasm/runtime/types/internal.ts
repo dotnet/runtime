@@ -100,6 +100,7 @@ export interface AssetEntryInternal extends AssetEntry {
 }
 
 export type LoaderHelpers = {
+    gitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 
@@ -161,6 +162,8 @@ export type LoaderHelpers = {
     simd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
+    gitHash: string,
+    moduleGitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 
@@ -279,6 +282,7 @@ export type EmscriptenInternals = {
     linkerEnableBrowserProfiler: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
+    gitHash: string,
 };
 export type GlobalObjects = {
     mono: any,

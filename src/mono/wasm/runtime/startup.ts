@@ -342,6 +342,13 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 
     mono_log_debug("mono_wasm_pre_init_essential");
 
+    if (loaderHelpers.gitHash !== runtimeHelpers.gitHash) {
+        mono_log_warn("The version of dotnet.runtime.js is different from the version of dotnet.js!");
+    }
+    if (loaderHelpers.gitHash !== runtimeHelpers.moduleGitHash) {
+        mono_log_warn("The version of dotnet.native.js is different from the version of dotnet.js!");
+    }
+
     init_c_exports();
     runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
     runtimeHelpers.abort = (reason: any) => {

@@ -13,6 +13,7 @@ const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
 var methodIndexByName = undefined;
+var gitHash = undefined;
 
 function setup(linkerSetup) {
     const pthreadReplacements = {};
@@ -63,19 +64,8 @@ function setup(linkerSetup) {
     #endif
 }
 
-const postset = `
-    DOTNET.setup({ `+
-    `linkerDisableLegacyJsInterop: ${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"},` +
-    `linkerWasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
-    `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
-    `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
-    `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}` +
-    `});
-`;
-
 const DotnetSupportLib = {
     $DOTNET: { setup },
-    $DOTNET__postset: postset,
     icudt68_dat: function () { throw new Error('dummy link symbol') },
 };
 
@@ -91,7 +81,7 @@ function createWasmImportStubsFrom(collection) {
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 // we generate simple stub for each exported function so that emcc will include them in the final output
 // we will replace them with the real implementation in replace_linker_placeholders
-function createWasmImportStubs() {
+function injectDependencies() {
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
 
     #if USE_PTHREADS
@@ -101,6 +91,15 @@ function createWasmImportStubs() {
     if (!DISABLE_LEGACY_JS_INTEROP) {
         createWasmImportStubsFrom(methodIndexByName.mono_wasm_legacy_interop_imports);
     }
+
+    DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
+        `linkerDisableLegacyJsInterop: ${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"},` +
+        `linkerWasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
+        `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
+        `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
+        `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `gitHash: "${gitHash}", ` +
+        `});`;
 
     autoAddDeps(DotnetSupportLib, "$DOTNET");
     mergeInto(LibraryManager.library, DotnetSupportLib);

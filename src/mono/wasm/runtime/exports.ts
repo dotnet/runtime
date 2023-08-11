@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import GitHash from "consts:gitHash";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 import type { RuntimeAPI } from "./types";
@@ -55,7 +54,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         Module: module,
         runtimeBuildInfo: {
             productVersion: ProductVersion,
-            gitHash: GitHash,
+            gitHash: runtimeHelpers.gitHash,
             buildConfiguration: BuildConfiguration
         },
         ...API,
