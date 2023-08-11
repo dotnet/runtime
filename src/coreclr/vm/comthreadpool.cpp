@@ -60,6 +60,8 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
         case 18: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_SampleIntervalHigh, false, W("System.Threading.ThreadPool.HillClimbing.SampleIntervalHigh"))) { return 19; } FALLTHROUGH;
         case 19: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_GainExponent, false, W("System.Threading.ThreadPool.HillClimbing.GainExponent"))) { return 20; } FALLTHROUGH;
 
+        case 20: if (TryGetConfig(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, false, W("System.Threading.Thread.UseAllCpuGroups"))) { return 21; } FALLTHROUGH;
+
         default:
             *configValueRef = 0;
             *isBooleanRef = false;
