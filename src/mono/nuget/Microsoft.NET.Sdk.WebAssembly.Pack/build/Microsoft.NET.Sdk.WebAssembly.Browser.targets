@@ -182,10 +182,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(_BlazorWebAssemblyLoadAllGlobalizationData)' == ''">false</_BlazorWebAssemblyLoadAllGlobalizationData>
     </PropertyGroup>
-    <ItemGroup Condition="'$(_LoadCustomIcuData)' == 'true'">
-      <!-- First make sure we do not have the duplicate of this file (might happen if it's from the runtime pack). Then, add it. -->
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-                               Condition="@(WasmNativeAsset->Count()) > 0 and '%(FileName)' == $([System.IO.Path]::GetFileName('$(BlazorIcuDataFileName)')) and '%(Extension)' == $([System.IO.Path]::GetExtension('$(BlazorIcuDataFileName)'))" />      
+    <FindInList Condition="'$(_LoadCustomIcuData)' == 'true'" CaseSensitive="true" List="@(ReferenceCopyLocalPaths)" ItemSpecToFind="$(_BlazorIcuDataFileName)">
+      <Output TaskParameter="ItemFound" ItemName="CustomIcuFileFromRuntimePack"/>
+    </FindInList>
+    <ItemGroup Condition="'$(_LoadCustomIcuData)' == 'true' AND '$(CustomIcuFileFromRuntimePack)' == ''">
+      <!-- we're using CustomIcuFileFromRuntimePack to avoid including duplicates -->
       <ReferenceCopyLocalPaths Include="$(_BlazorIcuDataFileName)" />
     </ItemGroup>
   </Target>

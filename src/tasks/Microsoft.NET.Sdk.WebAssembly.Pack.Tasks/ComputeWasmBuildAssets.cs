@@ -85,7 +85,8 @@ public class ComputeWasmBuildAssets : Task
 
             if (!AssetsComputingHelper.TryGetAssetFilename(CustomIcuCandidate, out string customIcuCandidateFilename))
             {
-                Log.LogMessage("Failed getting custom icu asset file name");
+                // if it's not empty then it's already in Candidates and will get filtered by ShouldFilterCandidate if needed
+                Log.LogMessage("Custom icu asset was passed as empty.");
             }
 
             for (int i = 0; i < Candidates.Length; i++)

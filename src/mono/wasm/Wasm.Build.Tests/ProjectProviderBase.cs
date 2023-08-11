@@ -329,14 +329,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (!match.Success || match.Groups.Count != 2)
             throw new XunitException($"Could not find the pattern in the build output: '{s_runtimePackPathPattern}'.{Environment.NewLine}Build output: {buildOutput}");
 
-        string expectedRuntimePackDir = GetExpectedRuntimePackDir(targetFramework, runtimeType);
+        string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework, runtimeType);
         string actualPath = match.Groups[1].Value;
         if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
     }
-
-    public static string GetExpectedRuntimePackDir(string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded) =>
-        BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework, runtimeType);
 
     public static void AssertDotNetJsSymbols(AssertBundleOptionsBase assertOptions)
     {
