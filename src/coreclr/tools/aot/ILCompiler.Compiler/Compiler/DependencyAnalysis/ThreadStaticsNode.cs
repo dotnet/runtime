@@ -143,5 +143,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return comparer.Compare(_type, ((ThreadStaticsNode)other)._type);
         }
+
+        internal int GetTypeStorageOffset(MetadataType type) => _inlined.GetOffsets()[type];
     }
 }
