@@ -20,8 +20,7 @@ using GCListener verbose = GCListener.Create(EventLevel.Verbose);
 using GCListener logAlways = GCListener.Create(EventLevel.LogAlways);
 
 Stopwatch stopwatch = Stopwatch.StartNew();
-
-while (stopwatch.Elapsed.TotalSeconds < 3d)
+do
 {
     for (long i1 = 0, i2 = stopwatch.ElapsedMilliseconds; i1 < i2; i1++)
     {
@@ -30,12 +29,13 @@ while (stopwatch.Elapsed.TotalSeconds < 3d)
     GC.AddMemoryPressure(1L);
     GC.RemoveMemoryPressure(1L);
 
-    if ((informational.Events.Count > 0) &&
-        verbose.Events.Any(e => e.Level is EventLevel.Verbose))
+    if ((informational.Events.Count > 0) && verbose.Events.Any(e => e.Level is EventLevel.Verbose))
     {
         break;
     }
 }
+while (stopwatch.Elapsed.TotalSeconds <= 0.25d);
+
 informational.DumpEvents();
 verbose.DumpEvents();
 logAlways.DumpEvents();
