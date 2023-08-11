@@ -63,6 +63,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(policy.ConvertName(null));
         }
 
+        [Theory, OuterLoop]
+        [MemberData(nameof(GetValidMemberNames))]
+        public static void CamelCaseNamingPolicyMatchesNewtonsoftNamingStrategy(string name)
+        {
+            string newtonsoftResult = s_newtonsoftCamelCaseNamingStrategy.GetPropertyName(name, hasSpecifiedName: false);
+            string stjResult = JsonNamingPolicy.CamelCase.ConvertName(name);
+            Assert.Equal(newtonsoftResult, stjResult);
+        }
+
         [Theory]
         [InlineData("xml_http_request", "XMLHttpRequest")]
         [InlineData("sha512_hash_algorithm", "SHA512HashAlgorithm")]
@@ -77,6 +86,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("kebab-case", "KEBAB-CASE")]
         [InlineData("double_space", "double  space")]
         [InlineData("double__underscore", "double__underscore")]
+        [InlineData("double--dash", "double--dash")]
         [InlineData("abc", "abc")]
         [InlineData("ab_c", "abC")]
         [InlineData("a_bc", "aBc")]
@@ -95,6 +105,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("abc", "  Abc  ")]
         [InlineData("7ab7", "  7ab7  ")]
         [InlineData("abc_def", "  abc def  ")]
+        [InlineData("abc_def", "  abc  def  ")]
+        [InlineData("abc_def", "  abc   def  ")]
         [InlineData("abc_7ef", "  abc 7ef  ")]
         [InlineData("ab7_def", "  ab7 def  ")]
         [InlineData("_abc", "_abc")]
@@ -143,6 +155,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("KEBAB-CASE", "KEBAB-CASE")]
         [InlineData("DOUBLE_SPACE", "double  space")]
         [InlineData("DOUBLE__UNDERSCORE", "double__underscore")]
+        [InlineData("DOUBLE--DASH", "double--dash")]
         [InlineData("ABC", "abc")]
         [InlineData("AB_C", "abC")]
         [InlineData("A_BC", "aBc")]
@@ -161,6 +174,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ABC", "  Abc  ")]
         [InlineData("7AB7", "  7ab7  ")]
         [InlineData("ABC_DEF", "  ABC def  ")]
+        [InlineData("ABC_DEF", "  abc  def  ")]
+        [InlineData("ABC_DEF", "  abc   def  ")]
         [InlineData("ABC_7EF", "  abc 7ef  ")]
         [InlineData("AB7_DEF", "  ab7 def  ")]
         [InlineData("_ABC", "_abc")]
@@ -228,6 +243,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("abc", "  Abc  ")]
         [InlineData("7ab7", "  7ab7  ")]
         [InlineData("abc-def", "  abc def  ")]
+        [InlineData("abc-def", "  abc  def  ")]
+        [InlineData("abc-def", "  abc   def  ")]
         [InlineData("abc-7ef", "  abc 7ef  ")]
         [InlineData("ab7-def", "  ab7 def  ")]
         [InlineData("-abc", "-abc")]
@@ -295,6 +312,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ABC", "  Abc  ")]
         [InlineData("7AB7", "  7ab7  ")]
         [InlineData("ABC-DEF", "  ABC def  ")]
+        [InlineData("ABC-DEF", "  abc  def  ")]
+        [InlineData("ABC-DEF", "  abc   def  ")]
         [InlineData("ABC-7EF", "  abc 7ef  ")]
         [InlineData("AB7-DEF", "  ab7 def  ")]
         [InlineData("-ABC", "-abc")]
@@ -327,15 +346,6 @@ namespace System.Text.Json.Serialization.Tests
             string value = policy.ConvertName(name);
 
             Assert.Equal(expectedResult, value);
-        }
-
-        [Theory, OuterLoop]
-        [MemberData(nameof(GetValidMemberNames))]
-        public static void CamelCaseNamingPolicyMatchesNewtonsoftNamingStrategy(string name)
-        {
-            string newtonsoftResult = s_newtonsoftCamelCaseNamingStrategy.GetPropertyName(name, hasSpecifiedName: false);
-            string stjResult = JsonNamingPolicy.CamelCase.ConvertName(name);
-            Assert.Equal(newtonsoftResult, stjResult);
         }
 
         public static IEnumerable<object[]> GetValidMemberNames()

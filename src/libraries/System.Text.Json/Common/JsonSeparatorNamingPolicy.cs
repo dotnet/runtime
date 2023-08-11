@@ -47,9 +47,13 @@ namespace System.Text.Json
 
             for (int i = 0; i < chars.Length; i++)
             {
-                char current = chars[i];
+                // NB this implementation ignores surrogate pairs
+                // cf. https://github.com/dotnet/runtime/issues/90352
 
-                switch (char.GetUnicodeCategory(current))
+                char current = chars[i];
+                UnicodeCategory category = char.GetUnicodeCategory(current);
+
+                switch (category)
                 {
                     case UnicodeCategory.UppercaseLetter:
 
@@ -100,7 +104,7 @@ namespace System.Text.Json
                             WriteChar(separator, ref destination);
                         }
 
-                        if (!lowercase)
+                        if (!lowercase && category is UnicodeCategory.LowercaseLetter)
                         {
                             current = char.ToUpperInvariant(current);
                         }
