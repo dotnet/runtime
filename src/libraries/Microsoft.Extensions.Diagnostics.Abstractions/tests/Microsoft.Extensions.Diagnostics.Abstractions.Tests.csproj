@@ -3,17 +3,10 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\src\Metrics\Configuration\MetricsConfigureOptions.cs" />
-    <Compile Include="..\src\Metrics\DebugConsoleMetricListener.cs" />
-    <Compile Include="..\src\Metrics\ListenerSubscription.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Extensions.Diagnostics.csproj" />
+    <ProjectReference Include="..\src\Microsoft.Extensions.Diagnostics.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
   </ItemGroup>
 
