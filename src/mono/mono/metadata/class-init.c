@@ -34,6 +34,7 @@
 #include <mono/metadata/class-private-definition.h>
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
+#include <dnmd.h>
 
 #define FEATURE_COVARIANT_RETURNS
 
@@ -463,22 +464,19 @@ mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char
 MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error)
 {
-	MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 	MonoClass *klass, *parent = NULL;
-	guint32 cols [MONO_TYPEDEF_SIZE];
-	guint32 cols_next [MONO_TYPEDEF_SIZE];
-	guint32 tidx = mono_metadata_token_index (type_token);
 	MonoGenericContext *context = NULL;
 	const char *name, *nspace;
 	guint icount = 0;
 	MonoClass **interfaces;
-	guint32 field_last, method_last;
 	guint32 nesting_tokeen;
 
 	error_init (error);
 
+	mdcursor_t c;
+
 	/* FIXME: metadata-update - this function needs extensive work */
-	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEDEF, tidx)) {
+	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || !md_token_to_cursor(image->metadata_handle, type_token, &c)) {
 		mono_error_set_bad_image (error, image, "Invalid typedef token %x", type_token);
 		return NULL;
 	}
@@ -490,10 +488,13 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		return klass;
 	}
 
-	mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
+	if (1 != md_get_column_value_as_utf8(c, mdtTypeDef_TypeName, 1, &name)) {
+		g_assert_not_reached ();
+	}
 
-	name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
-	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+	if (1 != md_get_column_value_as_utf8(c, mdtTypeDef_TypeNamespace, 1, &nspace)) {
+		g_assert_not_reached ();
+	}
 
 	if (mono_metadata_has_generic_params (image, type_token)) {
 		klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassGtd));
@@ -514,7 +515,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	klass->image = image;
 	klass->type_token = type_token;
-	mono_class_set_flags (klass, cols [MONO_TYPEDEF_FLAGS]);
+
+	uint32_t flags;
+	if (1 != md_get_column_value_as_constant(c, mdtTypeDef_Flags, 1, &flags)) {
+		g_assert_not_reached ();
+	}
+	mono_class_set_flags (klass, flags);
 
 	mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), klass);
 
@@ -531,9 +537,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		enable_gclass_recording ();
 	}
 
-	if (cols [MONO_TYPEDEF_EXTENDS]) {
+	guint32 parent_token;
+	if (1 != md_get_column_value_as_token (c, mdtTypeDef_Extends, 1, &parent_token)) {
+		g_assert_not_reached ();
+	}
+	if (mono_metadata_token_index(parent_token)) {
 		MonoClass *tmp;
-		guint32 parent_token = mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]);
 
 		if (mono_metadata_token_table (parent_token) == MONO_TABLE_TYPESPEC) {
 			/*WARNING: this must satisfy mono_metadata_type_hash*/
@@ -663,28 +672,27 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	 * methods are added using the EnCLog AddMethod or AddField functions that will be added to
 	 * MonoClassMetadataUpdateInfo
 	 */
-	if (G_LIKELY (cols [MONO_TYPEDEF_FIELD_LIST] != 0 || cols [MONO_TYPEDEF_METHOD_LIST] != 0)) {
-		int first_field_idx;
-		first_field_idx = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
-		mono_class_set_first_field_idx (klass, first_field_idx);
-		int first_method_idx;
-		first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
-		mono_class_set_first_method_idx (klass, first_method_idx);
-		if (table_info_get_rows (tt) > tidx) {
-			mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
-			field_last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
-			method_last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
-		} else {
-			field_last  = table_info_get_rows (&image->tables [MONO_TABLE_FIELD]);
-			method_last = table_info_get_rows (&image->tables [MONO_TABLE_METHOD]);
-		}
+	mdcursor_t field_list, method_list;
+	uint32_t field_count, method_count;
+	if (!md_get_column_value_as_range (c, mdtTypeDef_FieldList, &field_list, &field_count)) {
+		g_assert_not_reached ();
+	}
+	if (md_get_column_value_as_range (c, mdtTypeDef_MethodList, &method_list, &method_count)) {
+		g_assert_not_reached ();
+	}
 
-		if (cols [MONO_TYPEDEF_FIELD_LIST] &&
-		    cols [MONO_TYPEDEF_FIELD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_FIELD]))
-			mono_class_set_field_count (klass, field_last - first_field_idx);
-		if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
-			mono_class_set_method_count (klass, method_last - first_method_idx);
-	} else if (G_UNLIKELY (cols [MONO_TYPEDEF_FIELD_LIST] == 0 && cols [MONO_TYPEDEF_METHOD_LIST] == 0 && image->has_updates)) {
+	// TODO-DNMD: Had to change these conditions. When I update hot reload to use DNMD, I should revisit this and see what needs to be done.
+	// My guess would be that I'll get to just use the if block and drop the else block, but we'll see how it goes.
+	if (G_LIKELY (!image->has_updates)) {
+		uint32_t first_field_token;
+		md_cursor_to_token(field_list, &first_field_token);
+		mono_class_set_first_field_idx (klass, mono_metadata_token_index(first_field_token));
+		mono_class_set_field_count (klass, field_count);
+		uint32_t first_method_token;
+		md_cursor_to_token(method_list, &first_method_token);
+		mono_class_set_first_method_idx (klass, mono_metadata_token_index(first_method_token));
+		mono_class_set_method_count (klass, method_count);
+	} else {
 		uint32_t first_field_idx, first_method_idx, field_count, method_count;
 		if (mono_metadata_update_get_typedef_skeleton (image, type_token, &first_method_idx, &method_count, &first_field_idx, &field_count)) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Creating class '%s.%s' from skeleton (first_method_idx = 0x%08x, count = 0x%08x, first_field_idx = 0x%08x, count=0x%08x)", nspace, name, first_method_idx, method_count, first_field_idx, field_count);

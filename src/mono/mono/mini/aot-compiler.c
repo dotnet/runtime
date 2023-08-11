@@ -6433,13 +6433,13 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, PInvokeImportData 
 	scope_import_data = (PInvokeImportData *) g_new0 (PInvokeImportData, 1);
 	scope_import_data->module = module_ref_basename;
 
+	const char* import_name;
+	if (1 != md_get_column_value_as_utf8 (implmap, mdtImplMap_ImportName, 1, &import_name)) {
+		return FALSE;
+	}
 #ifdef TARGET_WIN32
 	uint32_t flags;
 	if (1 != md_get_column_value_as_constant (implmap, mdtImplMap_MappingFlags, 1, &flags)) {
-		return FALSE;
-	}
-	const char* import_name;
-	if (1 != md_get_column_value_as_utf8 (implmap, mdtImplMap_ImportName, 1, &import_name)) {
 		return FALSE;
 	}
 	if (!(flags & PINVOKE_ATTRIBUTE_NO_MANGLE)) {
@@ -13066,7 +13066,6 @@ should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
 static gboolean
 collect_methods (MonoAotCompile *acfg)
 {
-	int mindex, i;
 	MonoImage *image = acfg->image;
 
 	/* Collect methods */
@@ -13134,7 +13133,7 @@ collect_methods (MonoAotCompile *acfg)
 
 	/* gsharedvt methods */
 	c = methods;
-	for (mindex = 0; mindex < rows; ++mindex, md_cursor_next (&c)) {
+	for (uint32_t mindex = 0; mindex < rows; ++mindex, md_cursor_next (&c)) {
 		ERROR_DECL (error);
 		MonoMethod *method;
 		guint32 token;
