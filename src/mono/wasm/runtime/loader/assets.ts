@@ -201,7 +201,7 @@ export async function mono_download_assets(): Promise<void> {
                 const asset = await downloadPromise;
                 if (asset.buffer) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like or promise of it");
+                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
                         mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
                         const url = asset.resolvedUrl!;
                         const buffer = await asset.buffer;
