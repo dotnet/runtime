@@ -1234,7 +1234,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 #if defined(TARGET_LOONGARCH64)
             if (varTypeIsFloating(spillType) && emitter::isGeneralRegister(tree->GetRegNum()))
             {
-                spillType = spillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
+                unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
             }
 #endif
 
