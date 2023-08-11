@@ -1616,7 +1616,7 @@ namespace System.Text
             uint utf16Data32BitsHigh = 0, utf16Data32BitsLow = 0;
             ulong utf16Data64Bits = 0;
 
-            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && elementCount >= 2 * (uint)Vector128<byte>.Count)
+            if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector128<byte>.Count)
             {
                 // Since there's overhead to setting up the vectorized code path, we only want to
                 // call into it after a quick probe to ensure the next immediate characters really are ASCII.
@@ -1652,7 +1652,7 @@ namespace System.Text
                     currentOffset = NarrowUtf16ToAscii_Intrinsified(pUtf16Buffer, pAsciiBuffer, elementCount);
                 }
             }
-            else if (Vector.IsHardwareAccelerated)
+            else if (!BitConverter.IsLittleEndian && Vector.IsHardwareAccelerated)
             {
                 uint SizeOfVector = (uint)sizeof(Vector<byte>); // JIT will make this a const
 
@@ -2455,7 +2455,7 @@ namespace System.Text
                     } while (currentOffset <= finalOffsetWhereCanRunLoop);
                 }
             }
-            else if (Vector.IsHardwareAccelerated)
+            else if (!BitConverter.IsLittleEndian && Vector.IsHardwareAccelerated)
             {
                 uint SizeOfVector = (uint)sizeof(Vector<byte>); // JIT will make this a const
 
