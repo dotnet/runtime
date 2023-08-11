@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("id", "ID")]
         [InlineData("i", "I")]
         [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
+        [InlineData("😀葛🀄", "😀葛🀄")] // Surrogate pairs
         [InlineData("άλφαΒήταΓάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
         [InlineData("person", "Person")]
@@ -111,9 +111,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ab7_def", "  ab7 def  ")]
         [InlineData("_abc", "_abc")]
         [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
+        [InlineData("😀葛🀄", "😀葛🀄")] // Surrogate pairs
         [InlineData("άλφα_βήτα_γάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
+        [InlineData("𐐀abc_def𐐨abc😀def𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
         [InlineData("a%", "a%")]
         [InlineData("_?#-", "_?#-")]
         [InlineData("?!?", "? ! ?")]
@@ -180,9 +181,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("AB7_DEF", "  ab7 def  ")]
         [InlineData("_ABC", "_abc")]
         [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
+        [InlineData("😀葛🀄", "😀葛🀄")] // Surrogate pairs
         [InlineData("ΆΛΦΑ_ΒΉΤΑ_ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
+        [InlineData("𐐀ABC_DEF𐐨ABC😀DEF𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
         [InlineData("A%", "a%")]
         [InlineData("_?#-", "_?#-")]
         [InlineData("?!?", "? ! ?")]
@@ -249,9 +251,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ab7-def", "  ab7 def  ")]
         [InlineData("-abc", "-abc")]
         [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
+        [InlineData("😀葛🀄", "😀葛🀄")] // Surrogate pairs
         [InlineData("άλφα-βήτα-γάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
+        [InlineData("𐐀abc-def𐐨abc😀def𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
         [InlineData("a%", "a%")]
         [InlineData("-?#_", "-?#_")]
         [InlineData("?!?", "? ! ?")]
@@ -318,9 +321,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("AB7-DEF", "  ab7 def  ")]
         [InlineData("-ABC", "-abc")]
         [InlineData("", "")]
-        [InlineData("😀", "😀")] // Surrogate pairs
+        [InlineData("😀葛🀄", "😀葛🀄")] // Surrogate pairs
         [InlineData("ΆΛΦΑ-ΒΉΤΑ-ΓΆΜΜΑ", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
         [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
+        [InlineData("𐐀ABC-DEF𐐨ABC😀DEF𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
         [InlineData("A%", "a%")]
         [InlineData("-?#_", "-?#_")]
         [InlineData("?!?", "? ! ?")]

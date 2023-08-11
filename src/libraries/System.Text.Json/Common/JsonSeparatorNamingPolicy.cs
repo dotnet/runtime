@@ -47,7 +47,7 @@ namespace System.Text.Json
 
             for (int i = 0; i < chars.Length; i++)
             {
-                // NB this implementation ignores surrogate pairs
+                // NB this implementation does not handle surrogate pair letters
                 // cf. https://github.com/dotnet/runtime/issues/90352
 
                 char current = chars[i];
@@ -123,7 +123,7 @@ namespace System.Text.Json
                         break;
 
                     default:
-                        // Non-alphanumeric characters (including the separator character itself)
+                        // Non-alphanumeric characters (including the separator character and surrogates)
                         // are written as-is to the output and reset the separator state.
                         // E.g. 'ABC???def' maps to 'abc???def' in snake_case.
 
