@@ -952,6 +952,6 @@ namespace System.Text.Json.Serialization.Metadata
             => MemberName == other.MemberName && DeclaringType.IsAssignableFrom(other.DeclaringType);
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Name = {Name}, Type = {PropertyType}";
+        private string DebuggerDisplay => $"Name = {Name}, PropertyType = {PropertyType}";
     }
 }
