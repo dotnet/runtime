@@ -109,6 +109,8 @@ public sealed partial class QuicStream
         }
     };
     private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
+    private int _sendLocked;
+    private Exception? _sendException;
 
     private readonly long _defaultErrorCode;
 
@@ -362,7 +364,7 @@ public sealed partial class QuicStream
 
         // Register cancellation if the token can be cancelled and the task is not completed yet.
         CancellationTokenRegistration cancellationRegistration = default;
-        bool aborted = false;
+        bool canceled = false;
         try
         {
             if (cancellationToken.CanBeCanceled)
@@ -372,8 +374,8 @@ public sealed partial class QuicStream
                     try
                     {
                         QuicStream stream = (QuicStream)obj!;
+                        Volatile.Write(ref canceled, true);
                         stream.Abort(QuicAbortDirection.Write, stream._defaultErrorCode);
-                        aborted = true;
                     }
                     catch (ObjectDisposedException)
                     {
@@ -403,19 +405,36 @@ public sealed partial class QuicStream
                 return;
             }
 
-            unsafe
+            // We own the lock, abort might happen, but exception will get stored instead.
+            if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0 && !_sendTcs.IsCompleted)
             {
-                _sendBuffers.Initialize(buffer);
-                int status = MsQuicApi.Api.StreamSend(
-                    _handle,
-                    _sendBuffers.Buffers,
-                    (uint)_sendBuffers.Count,
-                    completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                    null);
-                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+                unsafe
                 {
-                    _sendBuffers.Reset();
-                    _sendTcs.TrySetException(exception, final: true);
+                    _sendBuffers.Initialize(buffer);
+                    int status = MsQuicApi.Api.StreamSend(
+                        _handle,
+                        _sendBuffers.Buffers,
+                        (uint)_sendBuffers.Count,
+                        completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
+                        null);
+                    // No SEND_COMPLETE expected
+                    if (StatusFailed(status))
+                    {
+                        // Release buffer and unlock
+                        _sendBuffers.Reset();
+                        Volatile.Write(ref _sendLocked, 0);
+
+                        // There might be stored exception from when we held the lock
+                        if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+                        {
+                            Interlocked.CompareExchange(ref _sendException, exception, null);
+                        }
+                        exception = Volatile.Read(ref _sendException);
+                        if (exception is not null)
+                        {
+                            _sendTcs.TrySetException(exception, final: true);
+                        }
+                    }
                 }
             }
 
@@ -424,7 +443,7 @@ public sealed partial class QuicStream
         finally
         {
             cancellationRegistration.Dispose();
-            if (aborted)
+            if (Volatile.Read(ref canceled))
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
@@ -481,7 +500,13 @@ public sealed partial class QuicStream
         }
         if (abortDirection.HasFlag(QuicAbortDirection.Write))
         {
-            _sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted), final: true);
+            var exception = ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted);
+            Interlocked.CompareExchange(ref _sendException, exception, null);
+            if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0)
+            {
+                _sendTcs.TrySetException(_sendException, final: true);
+                Volatile.Write(ref _sendLocked, 0);
+            }
         }
     }
 
@@ -557,6 +582,13 @@ public sealed partial class QuicStream
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE_DATA data)
     {
         _sendBuffers.Reset();
+        Volatile.Write(ref _sendLocked, 0);
+
+        Exception? exception = Volatile.Read(ref _sendException);
+        if (exception is not null)
+        {
+            _sendTcs.TrySetException(exception, final: true);
+        }
         if (data.Canceled == 0)
         {
             _sendTcs.TrySetResult();
