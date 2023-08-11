@@ -2462,7 +2462,11 @@ static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
 
 unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
     unsigned result = 0;
 
@@ -11593,6 +11597,7 @@ bool CEEInfo::getStaticObjRefContent(OBJECTREF obj, uint8_t* buffer, bool ignore
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
+
     if (obj == NULL)
     {
         // GC handle is null
@@ -11639,9 +11644,10 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
 
     if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
     {
-        GCX_COOP();
         if (field->IsObjRef())
         {
+            GCX_COOP();
+
             _ASSERT(!field->IsRVA());
             _ASSERT(valueOffset == 0); // there is no point in returning a chunk of a gc handle
             _ASSERT((UINT)bufferSize == field->GetSize());
@@ -11650,37 +11656,35 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
         }
         else
         {
-            // Either RVA, primitive or struct (or even part of that struct)
-            size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
             UINT size = field->GetSize();
-            _ASSERTE(baseAddr > 0);
             _ASSERTE(size > 0);
 
             if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
             {
+                bool useMemcpy = false;
+
                 // For structs containing GC pointers we want to make sure those GC pointers belong to FOH
                 // so we expect valueOffset to be a real field offset (same for bufferSize)
                 if (!field->IsRVA() && field->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
                 {
                     TypeHandle structType = field->GetFieldTypeHandleThrowing();
                     PTR_MethodTable structTypeMT = structType.AsMethodTable();
-                    if (structTypeMT->ContainsPointers())
+                    if (!structTypeMT->ContainsPointers())
+                    {
+                        // Fast-path: no GC pointers in the struct, we can use memcpy
+                        useMemcpy = true;
+                    }
+                    else
                     {
                         // The struct contains GC pointer(s), but we still can use memcpy if we don't intersect with them.
                         unsigned numSlots = (structType.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
                         CQuickBytes gcPtrs;
                         BYTE* ptr = static_cast<BYTE*>(gcPtrs.AllocThrows(numSlots));
-
-                        // Switch to preemptive for getClassGClayoutStatic
-                        {
-                            GCX_PREEMP();
-                            CEEInfo::getClassGClayoutStatic(structType, ptr);
-                        }
+                        CEEInfo::getClassGClayoutStatic(structType, ptr);
 
                         _ASSERT(numSlots > 0);
 
-                        bool seenGcSlot = false;
-                        bool canUseMemcpy = true;
+                        useMemcpy = true;
                         for (unsigned i = 0; i < numSlots; i++)
                         {
                             if (ptr[i] == TYPE_GC_NONE)
@@ -11688,7 +11692,6 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                 // Not a GC slot
                                 continue;
                             }
-                            seenGcSlot = true;
 
                             const unsigned gcSlotBegin = i * TARGET_POINTER_SIZE;
                             const unsigned gcSlotEnd = gcSlotBegin + TARGET_POINTER_SIZE;
@@ -11696,11 +11699,15 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                             if (gcSlotBegin >= (unsigned)valueOffset && gcSlotEnd <= (unsigned)(valueOffset + bufferSize))
                             {
                                 // GC slot intersects with our valueOffset + bufferSize - we can't use memcpy...
-                                canUseMemcpy = false;
+                                useMemcpy = false;
 
                                 // ...unless we're interested in that GC slot's value itself
                                 if (gcSlotBegin == (unsigned)valueOffset && gcSlotEnd == (unsigned)(valueOffset + bufferSize) && ptr[i] == TYPE_GC_REF)
                                 {
+                                    GCX_COOP();
+
+                                    size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
+
                                     _ASSERT((UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE));
                                     result = getStaticObjRefContent(ObjectToOBJECTREF(*(Object**)((uint8_t*)baseAddr + gcSlotBegin)), buffer, ignoreMovableObjects);
                                 }
@@ -11709,27 +11716,22 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                                 break;
                             }
                         }
-
-                        _ASSERT(seenGcSlot); // otherwise, why struct is marked as ContainsPointers?
-
-                        if (canUseMemcpy)
-                        {
-                            memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
-                            result = true;
-                        }
-                    }
-                    else if (!structTypeMT->ContainsPointers())
-                    {
-                        // No gc pointers in the struct
-                        memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
-                        result = true;
                     }
                 }
                 else
                 {
-                    // Primitive or RVA
-                    memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                    // RVA data, no gc pointers
+                    useMemcpy = true;
+                }
+
+                if (useMemcpy)
+                {
+                    _ASSERT(!result);
                     result = true;
+                    GCX_COOP();
+                    size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
+                    _ASSERT(baseAddr != 0);
+                    memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
                 }
             }
         }
