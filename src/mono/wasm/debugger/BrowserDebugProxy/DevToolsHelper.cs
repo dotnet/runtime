@@ -323,7 +323,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands ReleaseObject(int runtimeId, DotnetObjectId objectId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_release_object('{objectId}')");
 
-        public static MonoCommands GetSymbols(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_symbols()");
+        public static MonoCommands GetWasmFunctionIds(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_func_id_to_name_mappings()");
     }
 
     internal enum MonoErrorCodes
@@ -475,9 +475,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return store;
             }
         }
-
-        public bool DisableSymbolicate { get; internal set; }
-        public string[] Symbols { get; internal set; }
+        public string[] GetWasmFunctionIds { get; internal set; }
 
         public PerScopeCache GetCacheForScope(int scopeId)
         {

@@ -1126,7 +1126,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         function_name.StartsWith("_mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal) ||
                         function_name.StartsWith("mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal)))
                 {
-                    if (!context.DisableSymbolicate && function_name.StartsWith("$func", StringComparison.Ordinal) && int.TryParse(function_name.Remove(0, 5), out var funcId))
+                    if (function_name.StartsWith("$func", StringComparison.Ordinal) && int.TryParse(function_name.Remove(0, 5), out var funcId))
                     {
                         frame["functionName"] = await SymbolicateFunctionName(sessionId, context, funcId, token);
                     }
@@ -1155,26 +1155,20 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<string> SymbolicateFunctionName(SessionId sessionId, ExecutionContext context, int funcId, CancellationToken token)
         {
-            if (context.Symbols != null)
+            if (context.GetWasmFunctionIds is null)
             {
-                if (context.Symbols.Length > funcId)
-                    return context.Symbols[funcId];
-                return $"$func{funcId}";
+                Result getSymbols = await SendMonoCommand(sessionId, MonoCommands.GetWasmFunctionIds(RuntimeId), token);
+                if (getSymbols.IsOk)
+                {
+                    string[] symbols = getSymbols.Value?["result"]?["value"]?.ToObject<string[]>();
+                    context.GetWasmFunctionIds = symbols;
+                }
+                else
+                {
+                    context.GetWasmFunctionIds = Array.Empty<string>();
+                }
             }
-
-            Result getSymbols = await SendMonoCommand(sessionId, MonoCommands.GetSymbols(RuntimeId), token);
-            if (getSymbols.IsOk)
-            {
-                string[] symbols = getSymbols.Value?["result"]?["value"]?.ToObject<string[]>();
-                context.Symbols = symbols;
-                if (context.Symbols.Length > funcId)
-                    return context.Symbols[funcId];
-            }
-            else
-            {
-                context.Symbols = Array.Empty<string>();
-            }
-            return $"$func{funcId}";
+            return context.GetWasmFunctionIds.Length > funcId ? context.GetWasmFunctionIds[funcId] : $"$func{funcId}";
         }
 
         internal virtual void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Task<Result> debuggerAgentBufferTask)
