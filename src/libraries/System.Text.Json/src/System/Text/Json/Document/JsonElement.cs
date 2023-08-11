@@ -1165,18 +1165,6 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///  Gets the property name exactly as it is in the underlying <see cref="JsonDocument"/>.
-        /// </summary>
-        internal ReadOnlySpan<byte> GetRawPropertyName()
-        {
-            // TODO: Related to issue #77666 "Add JsonElement.ValueSpan" (https://github.com/dotnet/runtime/issues/77666)
-
-            CheckValidInstance();
-
-            return _parent.GetRawNameOfPropertyValue(_idx);
-        }
-
-        /// <summary>
         ///   Gets the original input data backing this value, returning it as a <see cref="string"/>.
         /// </summary>
         /// <returns>
@@ -1337,45 +1325,9 @@ namespace System.Text.Json
         /// <param name="writer">Utf8JsonWriter to write</param>
         internal void WritePropertyNameTo(Utf8JsonWriter writer)
         {
-            ReadOnlySpan<byte> rawName = GetRawPropertyName();
-            int firstBackSlashIndex = rawName.IndexOf(JsonConstants.BackSlash);
+            CheckValidInstance();
 
-            if (firstBackSlashIndex >= 0)
-            {
-                // If the name needs unescaping
-
-                // Equivalent to writer.WritePropertyName(JsonReaderHelper.GetUnescapedSpan(rawName))
-                // Method is inlined here to avoid .ToArray() allocation for short names.
-
-                int length = rawName.Length;
-                byte[]? pooledName = null;
-
-                Span<byte> utf8Unescaped = length <= JsonConstants.StackallocByteThreshold ?
-                    stackalloc byte[JsonConstants.StackallocByteThreshold] :
-                    (pooledName = ArrayPool<byte>.Shared.Rent(length));
-
-                JsonReaderHelper.Unescape(rawName, utf8Unescaped, firstBackSlashIndex, out int written);
-                Debug.Assert(written > 0);
-
-                ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written);
-                Debug.Assert(!propertyName.IsEmpty);
-
-                writer.WritePropertyName(propertyName);
-
-                if (pooledName != null)
-                {
-                    new Span<byte>(pooledName, 0, written).Clear();
-                    ArrayPool<byte>.Shared.Return(pooledName);
-                }
-            }
-            else
-            {
-                // Note we cannot just write it out by WriteStringByOptionsPropertyName.
-                // Because there might be plain Unicode chars in the original JsonDocument,
-                // which should be escaped if it is written out.
-
-                writer.WritePropertyName(rawName);
-            }
+            _parent.WritePropertyName(_idx, writer);
         }
 
         /// <summary>

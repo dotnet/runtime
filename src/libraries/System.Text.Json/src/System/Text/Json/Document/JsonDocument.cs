@@ -283,22 +283,6 @@ namespace System.Text.Json
                 : JsonReaderHelper.TranscodeHelper(segment);
         }
 
-        internal ReadOnlySpan<byte> GetRawSpan(int index, JsonTokenType expectedType)
-        {
-            CheckNotDisposed();
-
-            DbRow row = _parsedData.Get(index);
-
-            JsonTokenType tokenType = row.TokenType;
-
-            Debug.Assert(tokenType == expectedType);
-
-            ReadOnlySpan<byte> data = _utf8Json.Span;
-            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
-
-            return segment;
-        }
-
         internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
         {
             CheckNotDisposed();
@@ -377,12 +361,6 @@ namespace System.Text.Json
         {
             // The property name is one row before the property value
             return GetString(index - DbRow.Size, JsonTokenType.PropertyName)!;
-        }
-
-        internal ReadOnlySpan<byte> GetRawNameOfPropertyValue(int index)
-        {
-            // The property name is one row before the property value
-            return GetRawSpan(index - DbRow.Size, JsonTokenType.PropertyName)!;
         }
 
         internal bool TryGetValue(int index, [NotNullWhen(true)] out byte[]? value)
@@ -896,6 +874,53 @@ namespace System.Text.Json
             }
         }
 
+        internal void WritePropertyName(int index, Utf8JsonWriter writer)
+        {
+            CheckNotDisposed();
+
+            WritePropertyName(_parsedData.Get(index - DbRow.Size), writer);
+        }
+        private void WritePropertyNameNew(in DbRow row, Utf8JsonWriter writer)
+        {
+            // To be determined.
+            // This method is ~10% faster than the original WritePropertyName
+            // when the property name contains escaped/Unicode characters.
+
+            Debug.Assert(row.TokenType == JsonTokenType.PropertyName);
+            int loc = row.Location;
+            int length = row.SizeOrLength;
+            ReadOnlySpan<byte> rawName = _utf8Json.Slice(loc, length).Span;
+
+            int firstBackSlashIndex = rawName.IndexOf(JsonConstants.BackSlash);
+
+            if (firstBackSlashIndex < 0)
+            {
+                writer.WritePropertyName(rawName);
+                return;
+            }
+
+            // If the name needs unescaping
+
+            ArraySegment<byte> rented = default;
+
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
+                (rented = new ArraySegment<byte>(ArrayPool<byte>.Shared.Rent(length), 0, length));
+
+            try
+            {
+                int written = 0;
+
+                JsonReaderHelper.Unescape(rawName, utf8Unescaped, firstBackSlashIndex, out written);
+                ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written);
+
+                writer.WritePropertyName(propertyName);
+            }
+            finally
+            {
+                ClearAndReturn(rented);
+            }
+        }
         private void WritePropertyName(in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;
@@ -909,7 +934,6 @@ namespace System.Text.Json
                 ClearAndReturn(rented);
             }
         }
-
         private void WriteString(in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;
