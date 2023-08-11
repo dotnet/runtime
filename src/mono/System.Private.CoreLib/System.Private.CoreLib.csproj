@@ -33,7 +33,8 @@
     <!-- Override InformationalVersion during servicing as it's returned via public api. -->
     <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
-    <NoWarn>$(NoWarn),0419,0649</NoWarn>
+    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
+    <NoWarn>$(NoWarn),0419,0649,AD0001</NoWarn>
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
