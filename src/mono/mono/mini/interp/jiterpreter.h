@@ -226,10 +226,10 @@ gboolean
 mono_jiterp_patch_opcode (volatile JiterpreterOpcode *ip, guint16 old_opcode, guint16 new_opcode);
 
 int
-mono_jiterp_dummy_trace (void *frame, void *pLocals, JiterpreterCallInfo *cinfo, const guint16 *ip);
+mono_jiterp_placeholder_trace (void *frame, void *pLocals, JiterpreterCallInfo *cinfo, const guint16 *ip);
 
 void
-mono_jiterp_dummy_jit_call (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
+mono_jiterp_placeholder_jit_call (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 
 void *
 mono_jiterp_get_interp_entry_func (int table);

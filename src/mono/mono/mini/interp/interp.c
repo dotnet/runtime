@@ -8902,7 +8902,7 @@ mono_jiterp_get_opcode_info (int opcode, int type)
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_dummy_trace (void *_frame, void *pLocals, JiterpreterCallInfo *cinfo, const guint16 *ip)
+mono_jiterp_placeholder_trace (void *_frame, void *pLocals, JiterpreterCallInfo *cinfo, const guint16 *ip)
 {
 	// If this is hit it most likely indicates that a trace is being invoked from a thread
 	//  that has not jitted it yet. We want to jit it on this thread and install it at the
@@ -8914,7 +8914,7 @@ mono_jiterp_dummy_trace (void *_frame, void *pLocals, JiterpreterCallInfo *cinfo
 		MonoMethod *method = frame->imethod->method;
 		const guint16 *start_of_body = frame->imethod->jinfo->code_start;
 		int size_of_body = frame->imethod->jinfo->code_size;
-		// g_printf ("mono_jiterp_dummy_trace index=%d fn_ptr=%d ip=%x\n", opcode->trace_index, fn_ptr, ip);
+		// g_printf ("mono_jiterp_placeholder_trace index=%d fn_ptr=%d ip=%x\n", opcode->trace_index, fn_ptr, ip);
 		mono_interp_tier_prepare_jiterpreter (
 			frame, method, ip, (gint32)opcode->trace_index,
 			start_of_body, size_of_body, frame->imethod->is_verbose,
@@ -8926,9 +8926,9 @@ mono_jiterp_dummy_trace (void *_frame, void *pLocals, JiterpreterCallInfo *cinfo
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_dummy_jit_call (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown)
+mono_jiterp_placeholder_jit_call (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown)
 {
-	// g_print ("mono_jiterp_dummy_jit_call\n");
+	// g_print ("mono_jiterp_placeholder_jit_call\n");
 	*thrown = 999;
 }
 
