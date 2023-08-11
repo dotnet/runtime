@@ -883,9 +883,9 @@ namespace System.Text.Json
 
         private void WritePropertyNameNew(in DbRow row, Utf8JsonWriter writer)
         {
-            // To be determined.
-            // This method is ~10% faster than the original WritePropertyName
-            // when the property name contains escaped/Unicode characters.
+            // To be determined whether to use this or the original WritePropertyName.
+            // This method is ~10% faster than the original one
+            // when the property name contains escaped characters.
 
             Debug.Assert(row.TokenType == JsonTokenType.PropertyName);
             int loc = row.Location;
