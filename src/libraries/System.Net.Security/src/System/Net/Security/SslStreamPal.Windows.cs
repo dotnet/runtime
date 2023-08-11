@@ -129,7 +129,6 @@ namespace System.Net.Security
                 ref resultBuffer,
                 ref unusedAttributes);
 
-            //outputBuffer = resultBuffer.token;
             ProtocolToken token;
             token.Payload = resultBuffer.token;
             token.Size = resultBuffer.size;

@@ -203,8 +203,9 @@ namespace System.Net.Security
                 {
                     await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                     await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
-                    token.Clear();
                 }
+
+                token.ReleasePayload();
 
                 if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
                 {
@@ -226,8 +227,8 @@ namespace System.Net.Security
                     {
                         await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
-                        token.Clear();
                     }
+                    token.ReleasePayload();
                 }
                 while (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
@@ -240,10 +241,7 @@ namespace System.Net.Security
                     _buffer.ReturnBuffer();
                 }
 
-                if (token.Payload != null)
-                {
-                    token.Clear();
-                }
+                token.ReleasePayload();
 
                 _nestedRead = StreamNotInUse;
                 _nestedWrite = StreamNotInUse;
@@ -279,10 +277,9 @@ namespace System.Net.Security
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                         if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Log.SentFrame(this, message.Payload);
-
-                        message.Clear();
-
                     }
+
+                    message.ReleasePayload();
 
                     if (message.Failed)
                     {
@@ -327,10 +324,7 @@ namespace System.Net.Security
                             NetEventSource.Log.SentFrame(this, payload.Span);
                     }
 
-                    if (message.Payload != null)
-                    {
-                        message.Clear();
-                    }
+                    message.ReleasePayload();
 
                     if (message.Failed)
                     {
@@ -362,10 +356,7 @@ namespace System.Net.Security
                     _isRenego = false;
                 }
 
-                if (message.Payload != null)
-                {
-                    message.Clear();
-                }
+                message.ReleasePayload();
             }
 
             if (NetEventSource.Log.IsEnabled())
@@ -628,14 +619,14 @@ namespace System.Net.Security
 
             if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                token.Clear();
+                token.ReleasePayload();
                 return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(token.Status))));
             }
 
             ValueTask t = TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken);
             if (t.IsCompletedSuccessfully)
             {
-                token.Clear();
+                token.ReleasePayload();
                 return t;
             }
             else
@@ -654,7 +645,7 @@ namespace System.Net.Security
                     EncryptData(buffer, out token);
                     if (token.Status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                     {
-                        token.Clear();
+                        token.ReleasePayload();
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
                         await WriteSingleChunk<TIOAdapter>(buffer, cancellationToken).ConfigureAwait(false);
@@ -670,7 +661,7 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    token.Clear();
+                    token.ReleasePayload();
                 }
             }
 
@@ -682,8 +673,7 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    token.Clear();
-                    //ArrayPool<byte>.Shared.Return(bufferToReturn);
+                    token.ReleasePayload();
                 }
             }
         }

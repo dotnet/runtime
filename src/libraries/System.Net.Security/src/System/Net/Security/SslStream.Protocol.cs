@@ -1328,8 +1328,9 @@ namespace System.Net.Security
 
         internal ReadOnlyMemory<byte> AsMemory() => new ReadOnlyMemory<byte>(Payload, 0, Size);
 
-        internal void Clear()
+        internal void ReleasePayload()
         {
+            Debug.Assert(Payload != null || Size == 0);
             if (Payload != null)
             {
                 ArrayPool<byte>.Shared.Return(Payload);
