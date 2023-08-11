@@ -3099,6 +3099,11 @@ namespace System.Diagnostics.Tracing
             EventSource? source,
             EventManifestOptions flags = EventManifestOptions.None)
         {
+            if (source is NativeRuntimeEventSource)
+            {
+                return null;
+            }
+
             ManifestBuilder? manifest = null;
             bool bNeedsManifest = source != null ? !source.SelfDescribingEvents : true;
             Exception? exception = null; // exception that might get raised during validation b/c we couldn't/didn't recover from a previous error
@@ -3126,20 +3131,11 @@ namespace System.Diagnostics.Tracing
                 if (eventSourceAttrib != null && eventSourceAttrib.LocalizationResources != null)
                     resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly);
 
-                if (source?.GetType() == typeof(NativeRuntimeEventSource))
-                {
-                    // Don't emit nor generate the manifest for NativeRuntimeEventSource i.e., Microsoft-Windows-DotNETRuntime.
-                    manifest = new ManifestBuilder(resources, flags);
-                    bNeedsManifest = false;
-                }
-                else
-                {
-                    // Try to get name and GUID directly from the source. Otherwise get it from the Type's attribute.
-                    string providerName = source?.Name ?? GetName(eventSourceType, flags);
-                    Guid providerGuid = source?.Guid ?? GetGuid(eventSourceType);
+                // Try to get name and GUID directly from the source. Otherwise get it from the Type's attribute.
+                string providerName = source?.Name ?? GetName(eventSourceType, flags);
+                Guid providerGuid = source?.Guid ?? GetGuid(eventSourceType);
 
-                    manifest = new ManifestBuilder(providerName, providerGuid, eventSourceDllName, resources, flags);
-                }
+                manifest = new ManifestBuilder(providerName, providerGuid, eventSourceDllName, resources, flags);
 
                 // Add an entry unconditionally for event ID 0 which will be for a string message.
                 manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
