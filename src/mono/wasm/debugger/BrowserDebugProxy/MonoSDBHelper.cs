@@ -587,7 +587,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             switch (type)
             {
-                case ElementType.U1:
+                case ElementType.I1:
                 case ElementType.I2:
                 case ElementType.I4:
                     Write((ElementType)type, (int)value);
@@ -604,7 +604,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         intBoolVal = (bool)value ? 1 : 0;
                     Write((ElementType)type, intBoolVal);
                     return true;
-                case ElementType.I1:
+                case ElementType.U1:
                 case ElementType.U2:
                 case ElementType.U4:
                     Write((ElementType)type, (uint)value);
@@ -722,12 +722,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "number":
                 {
                     var expected = expectedType is not null ? expectedType.Value : ElementType.I4;
-                    if (expected == ElementType.R4)
-                        Write(expected, objValue["value"].Value<float>());
-                    else if (expected == ElementType.R8)
-                        Write(expected, objValue["value"].Value<double>());
-                    else
-                        Write(expected, objValue["value"].Value<int>());
+                    switch (expected)
+                    {
+                        case ElementType.I1:
+                        case ElementType.I2:
+                        case ElementType.I4:
+                            Write(expected, objValue["value"].Value<int>());
+                            break;
+                        case ElementType.U1:
+                        case ElementType.U2:
+                        case ElementType.U4:
+                            Write(expected, objValue["value"].Value<uint>());
+                            break;
+                        case ElementType.I8:
+                            Write(expected, objValue["value"].Value<long>());
+                            break;
+                        case ElementType.U8:
+                            Write(expected, objValue["value"].Value<ulong>());
+                            break;
+                        case ElementType.R4:
+                            Write(expected, objValue["value"].Value<float>());
+                            break;
+                        case ElementType.R8:
+                            Write(expected, objValue["value"].Value<double>());
+                            break;
+                        default:
+                            objValue["value"].Value<int>();
+                            break;
+                    };
                     return true;
                 }
                 case "symbol":

@@ -545,17 +545,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private static bool CheckParametersCompatibility(ElementType? typeCode, JObject value)
+        private static bool CheckParametersCompatibility(ElementType? paramTypeCode, JObject value)
         {
-            if (!typeCode.HasValue)
+            if (!paramTypeCode.HasValue)
                 return true;
-            var parameterType = value["type"]?.Value<string>();
-            var parameterClassName = value["className"]?.Value<string>();
+            var argumentType = value["type"]?.Value<string>();
+            var argumentClassName = value["className"]?.Value<string>();
 
-            switch (typeCode.Value)
+            switch (paramTypeCode.Value)
             {
                 case ElementType.Object:
-                    if (parameterType != "object")
+                    if (argumentType != "object")
                         return false;
                     break;
                 case ElementType.I2:
@@ -566,25 +566,27 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.U2:
                 case ElementType.U4:
                 case ElementType.U8:
-                    if (parameterType != "number")
+                    if (argumentType != "number")
                         return false;
-                    if (parameterType == "object")
+                    if (argumentType == "object")
                         return false;
                     break;
                 case ElementType.Char:
-                    if (parameterType != "string" && parameterType != "symbol")
+                    if (argumentType != "string" && argumentType != "symbol")
+                        return false;
+                    if (argumentType == "object")
                         return false;
                     break;
                 case ElementType.Boolean:
-                    if (parameterType == "boolean")
+                    if (argumentType == "boolean")
                         return true;
-                    if (parameterType == "number" && (parameterClassName == "Single" || parameterClassName == "Double"))
+                    if (argumentType == "number" && (argumentClassName == "Single" || argumentClassName == "Double"))
                         return false;
-                    if (parameterType == "object")
+                    if (argumentType == "object")
                         return false;
                     break;
                 case ElementType.String:
-                    if (parameterType != "string")
+                    if (argumentType != "string")
                         return false;
                     break;
                 default:
