@@ -12,20 +12,28 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
+        //const object[][] LocalAddresses = Configuration.Sockets.LocalAddresses();
+        public static IEnumerable<object[]> LocalAddresses = Configuration.Sockets.LocalAddresses();
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task TestConnect(bool ipv6)
+        //[InlineData(false)]
+        //[InlineData(true)]
+        [MemberData(nameof(LocalAddresses))]
+        public async Task TestConnect(IPAddress address)
         {
-            await using QuicListener listener = await CreateQuicListener(ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback);
+            await using QuicListener listener = await CreateQuicListener(address);
+
+            Assert.Equal(address, listener.LocalEndPoint.Address);
+            Console.WriteLine("Created Listened with {0} -> {1}", address, listener.LocalEndPoint);
 
             var options = CreateQuicClientOptions(listener.LocalEndPoint);
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(options);
@@ -36,9 +44,13 @@ namespace System.Net.Quic.Tests
             await using QuicConnection clientConnection = connectTask.Result;
 
             IgnoreScopeIdIPEndpointComparer endPointComparer = new();
-            Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint, endPointComparer);
-            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint, endPointComparer);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint, endPointComparer);
+            Console.WriteLine("LocalEndPoint {0} Remote {1}", listener.LocalEndPoint, serverConnection.LocalEndPoint);
+            Console.WriteLine("Client {0} {1}", clientConnection.LocalEndPoint, clientConnection.RemoteEndPoint);
+            Console.WriteLine("Server {0} {1}", serverConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+
+            Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
+            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
