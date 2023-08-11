@@ -72,8 +72,13 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MetadataType target = (MetadataType)Target;
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
-                        if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
+                        if (index is TypeThreadStaticIndexNode ti && ti.IsInlined)
                         {
+                            // REVIEW: how to keep a node around?
+                            // we will not use the index node, but need to keep the node around for natvis.
+                            // emit a junk MOV for now
+                            encoder.EmitMOV(encoder.TargetRegister.Result, index);
+
                             if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                             {
                                 EmitInlineTLSAccess(factory, ref encoder);
