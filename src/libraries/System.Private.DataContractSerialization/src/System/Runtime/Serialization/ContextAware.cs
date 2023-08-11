@@ -73,18 +73,26 @@ namespace System.Runtime.Serialization
             // Null and non-collectible load contexts use the default table
             if (alc == null || !alc.IsCollectible)
             {
-                return _fastDictionary.GetOrAdd(t, f);
+                // The create delegate here could be quite expensive. ConcurrentDictionary semantics would let use
+                // do this without a lock and not corrupt the dictionary, but the delegate still might be called multiple
+                // times. So we use a lock to ensure the delegate is only called once. Keep the lock off the hot path.
+                if (!_fastDictionary.TryGetValue(t, out ret))
+                {
+                    lock (_fastDictionary)
+                    {
+                        return _fastDictionary.GetOrAdd(t, f);
+                    }
+                }
             }
 
             // Collectible load contexts should use the ConditionalWeakTable so they can be unloaded
             else
             {
-                lock (_collectibleTable)
+                if (!_collectibleTable.TryGetValue(t, out ret))
                 {
-                    if (!_collectibleTable.TryGetValue(t, out ret))
+                    lock (_collectibleTable)
                     {
-                        ret = f(t);
-                        _collectibleTable.AddOrUpdate(t, ret);
+                        return _collectibleTable.GetValue(t, k => f(k));
                     }
                 }
             }
