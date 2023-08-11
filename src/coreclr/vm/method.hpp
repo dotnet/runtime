@@ -1437,7 +1437,7 @@ public:
     PCODE GetNativeCode();
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
-    // is a non-default IL code version and returns that.
+    // is a non-default code version that is populated with a code body and returns that.
     // Perf warning: takes the CodeVersionManagerLock on every call
     PCODE GetNativeCodeAnyVersion();
 
