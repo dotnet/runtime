@@ -78,7 +78,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls12))]
         [OuterLoop("Uses external servers")]
         [InlineData("api.nuget.org")]
-        [InlineData("www.microsoft.com.")]
+        [InlineData("www.github.com.")]
         [InlineData("")]
         public async Task DefaultConnect_EndToEnd_Ok(string host)
         {

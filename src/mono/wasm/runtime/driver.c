@@ -54,7 +54,9 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
+#ifndef INVARIANT_TIMEZONE
 extern void mono_register_timezones_bundle (void);
+#endif /* INVARIANT_TIMEZONE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 static void mono_wasm_init_finalizer_thread (void);
 
@@ -247,6 +249,8 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_setenv (const char *name, const char *value)
 {
+	assert (name);
+	assert (value);
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
@@ -473,7 +477,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+#ifndef INVARIANT_TIMEZONE
 	mono_register_timezones_bundle ();
+#endif /* INVARIANT_TIMEZONE */
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
@@ -1181,6 +1187,12 @@ mono_wasm_exit (int exit_code)
 {
 	mono_jit_cleanup (root_domain);
 	exit (exit_code);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_abort ()
+{
+	abort ();
 }
 
 EMSCRIPTEN_KEEPALIVE void

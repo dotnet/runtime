@@ -8,6 +8,7 @@
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <SelfContained>true</SelfContained>
 
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
@@ -30,9 +31,9 @@
 
   <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
   <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
-    <PropertyGroup>
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
+    <ItemGroup>
+      <RuntimeComponents Include="diagnostics_tracing" />
+    </ItemGroup>
   </Target>
 
   <Target Name="RunAppBundle"

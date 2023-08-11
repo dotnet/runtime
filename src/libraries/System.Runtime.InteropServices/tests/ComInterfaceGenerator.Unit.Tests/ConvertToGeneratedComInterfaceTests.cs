@@ -9,7 +9,6 @@ using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ConvertToGeneratedComInterfaceTests
     {
         [Fact]
@@ -322,6 +321,52 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar(short a);
                 }
                 """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task HResultLikeType_MarshalsAsError()
+        {
+            string source = """
+               using System.Runtime.InteropServices;
+
+               [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+               public interface [|I|]
+               {
+                   [PreserveSig]
+                   HResult Foo();
+               }
+
+               [StructLayout(LayoutKind.Sequential)]
+               public struct HResult
+               {
+                  public int Value;
+               }
+               """;
+
+            string fixedSource = """
+               using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
+
+               [GeneratedComInterface]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+               public partial interface I
+               {
+                   [PreserveSig]
+                   [return: MarshalAs(UnmanagedType.Error)]
+                   HResult Foo();
+               }
+               
+               [StructLayout(LayoutKind.Sequential)]
+               public struct HResult
+               {
+                  public int Value;
+               }
+               """;
 
             await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
         }

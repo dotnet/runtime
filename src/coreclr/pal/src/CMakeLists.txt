@@ -106,7 +106,6 @@ set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
   arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
   arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
-  arch/${PAL_ARCH_SOURCES_DIR}/processor.cpp
 )
 
 if(NOT CLR_CMAKE_TARGET_OSX)
@@ -152,7 +151,7 @@ set(SOURCES
   loader/module.cpp
   locale/unicode.cpp
   locale/unicodedata.cpp
-  locale/utf8.cpp
+  ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
@@ -162,7 +161,6 @@ set(SOURCES
   misc/error.cpp
   misc/errorstrings.cpp
   misc/fmtmessage.cpp
-  misc/jitsupport.cpp
   misc/miscpalapi.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp

@@ -67,7 +67,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     ///   - LlvmObjectFile (if using LLVM)
     ///   - LlvmBitcodeFile (if using LLVM-only)
     ///   - ExportsFile (used in LibraryMode only)
-    ///   - MethodTokenFile (when using CollectCompiledMethods=true)
+    ///   - MethodTokenFile (when using CollectTrimmingEligibleMethods=true)
     /// </summary>
     [Output]
     public ITaskItem[]? CompiledAssemblies { get; set; }
@@ -156,12 +156,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// Instructs the AOT compiler to print the list of aot compiled methods
     /// </summary>
-    public bool CollectCompiledMethods { get; set; }
+    public bool CollectTrimmingEligibleMethods { get; set; }
 
     /// <summary>
-    /// Directory to store the aot output when using switch compiled-methods-outfile
+    /// Directory to store the aot output when using switch trimming-eligible-methods-outfile
     /// </summary>
-    public string? CompiledMethodsOutputDirectory { get; set; }
+    public string? TrimmingEligibleMethodsOutputDirectory { get; set; }
 
     /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
@@ -230,6 +230,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// Prepends a prefix to the name of tools ran by the AOT compiler, i.e. 'as'/'ld'.
     /// </summary>
     public string? ToolPrefix { get; set; }
+
+    /// <summary>
+    /// Prepends a prefix to the name of the assembler (as) tool ran by the AOT compiler.
+    /// </summary>
+    public string? AsPrefix { get; set; }
 
     /// <summary>
     /// Path to the directory where msym artifacts are stored.
@@ -408,7 +413,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new LogAsErrorException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.");
         }
 
-        if (!string.IsNullOrEmpty(AotModulesTablePath))
+        if (!string.IsNullOrEmpty(AotModulesTablePath) || parsedOutputType == MonoAotOutputType.ObjectFile)
         {
             // AOT modules for static linking, needs the aot modules table
             UseStaticLinking = true;
@@ -448,14 +453,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new LogAsErrorException($"Could not find {fullPath} to AOT");
         }
 
-        if (CollectCompiledMethods)
+        if (CollectTrimmingEligibleMethods)
         {
-            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
-                throw new LogAsErrorException($"{nameof(CompiledMethodsOutputDirectory)} is empty. When {nameof(CollectCompiledMethods)} is set to true, the user needs to provide a directory for {nameof(CompiledMethodsOutputDirectory)}.");
+            if (string.IsNullOrEmpty(TrimmingEligibleMethodsOutputDirectory))
+                throw new LogAsErrorException($"{nameof(TrimmingEligibleMethodsOutputDirectory)} is empty. When {nameof(CollectTrimmingEligibleMethods)} is set to true, the user needs to provide a directory for {nameof(TrimmingEligibleMethodsOutputDirectory)}.");
 
-            if (!Directory.Exists(CompiledMethodsOutputDirectory))
+            if (!Directory.Exists(TrimmingEligibleMethodsOutputDirectory))
             {
-                Directory.CreateDirectory(CompiledMethodsOutputDirectory);
+                Directory.CreateDirectory(TrimmingEligibleMethodsOutputDirectory);
             }
         }
 
@@ -723,6 +728,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"tool-prefix={ToolPrefix}");
         }
 
+        if (!string.IsNullOrEmpty(AsPrefix))
+        {
+            aotArgs.Add($"as-prefix={AsPrefix}");
+        }
+
         string assemblyFilename = Path.GetFileName(assembly);
 
         if (isDedup)
@@ -734,20 +744,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add("dedup-skip");
         }
 
-        if (CollectCompiledMethods)
+        if (CollectTrimmingEligibleMethods)
         {
             string assemblyName = assemblyFilename.Replace(".", "_");
             string outputFileName = assemblyName + "_compiled_methods.txt";
             string outputFilePath;
-            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+            if (string.IsNullOrEmpty(TrimmingEligibleMethodsOutputDirectory))
             {
                 outputFilePath = outputFileName;
             }
             else
             {
-                outputFilePath = Path.Combine(CompiledMethodsOutputDirectory, outputFileName);
+                outputFilePath = Path.Combine(TrimmingEligibleMethodsOutputDirectory, outputFileName);
             }
-            aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
+            aotArgs.Add($"trimming-eligible-methods-outfile={outputFilePath}");
             aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
         }
 
@@ -845,8 +855,26 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 ProxyFile proxyFile = _cache.NewFile(llvmObjectFile);
                 proxyFiles.Add(proxyFile);
                 aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
-                aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
+
+                if (UseStaticLinking)
+                {
+                    aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
+                }
             }
+        }
+
+        if (!string.IsNullOrEmpty(TempPath))
+        {
+            aotArgs.Add($"temp-path={TempPath}");
+        }
+        else if (!string.IsNullOrEmpty(IntermediateOutputPath))
+        {
+            string aotTmpPath = Path.Combine(IntermediateOutputPath, assemblyFilename + ".tmp");
+            if (!Directory.Exists(aotTmpPath))
+            {
+                Directory.CreateDirectory(aotTmpPath);
+            }
+            aotArgs.Add($"temp-path={aotTmpPath}");
         }
 
         if (EnableUnmanagedCallersOnlyMethodsExport)
@@ -882,7 +910,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-
         if (AotProfilePath?.Length > 0)
         {
             aotArgs.Add("profile-only");
@@ -904,11 +931,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!string.IsNullOrEmpty(AotArguments))
         {
             aotArgs.Add(AotArguments);
-        }
-
-        if (!string.IsNullOrEmpty(TempPath))
-        {
-            aotArgs.Add($"temp-path={TempPath}");
         }
 
         if (!string.IsNullOrEmpty(LdName))
@@ -1084,7 +1106,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 {
                     writer.WriteLine($"extern void *{symbol};");
                 }
-                writer.WriteLine("void register_aot_modules ()");
+                writer.WriteLine("void register_aot_modules (void);");
+                writer.WriteLine("void register_aot_modules (void)");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)
                 {
@@ -1120,6 +1143,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     writer.WriteLine($"extern void *{symbol};");
                 }
 
+                writer.WriteLine("void register_aot_modules (void);");
                 writer.WriteLine("void register_aot_modules (void)");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)

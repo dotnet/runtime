@@ -49,9 +49,14 @@ namespace Microsoft.Interop
                         ImmutableArray<string>.Builder names = ImmutableArray.CreateBuilder<string>();
                         foreach (INamedTypeSymbol iface in type.AllInterfaces)
                         {
-                            if (iface.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
+                            AttributeData? generatedComInterfaceAttribute = iface.GetAttributes().FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute);
+                            if (generatedComInterfaceAttribute is not null)
                             {
-                                names.Add(iface.ToDisplayString());
+                                var attributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComInterfaceAttribute);
+                                if (attributeData.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
+                                {
+                                    names.Add(iface.ToDisplayString());
+                                }
                             }
                         }
 

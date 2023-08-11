@@ -46,7 +46,7 @@ LEAF_END GetCurrentSP, _TEXT
 // and each entry can be written atomically
 //
 WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
-    // a0-a7 will contain intended new state
+    // a0-a7 and t3 will contain intended new state
     // t0 will preserve skipEphemeralCheck
     // t2 will be used for pointers
 
@@ -64,30 +64,33 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #ifdef WRITE_BARRIER_CHECK
     lla  a2, g_GCShadow
     ld  a2, 0(a2)
-#endif
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    lla  a3, g_sw_ww_table
+    lla a3, g_GCShadowEnd
     ld  a3, 0(a3)
 #endif
 
-    lla  a4, g_ephemeral_low
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    lla  a4, g_sw_ww_table
     ld  a4, 0(a4)
+#endif
 
-    lla  a5, g_ephemeral_high
+    lla  a5, g_ephemeral_low
     ld  a5, 0(a5)
+
+    lla  a6, g_ephemeral_high
+    ld  a6, 0(a6)
 
     beq  t0, zero, LOCAL_LABEL(EphemeralCheckEnabled)
 
-    ori  a4, zero, 0
-    addi  a5, zero, -1
+    ori  a5, zero, 0
+    addi  a6, zero, -1
 LOCAL_LABEL(EphemeralCheckEnabled):
 
-    lla  a6, g_lowest_address
-    ld  a6, 0(a6)
-
-    lla  a7, g_highest_address
+    lla  a7, g_lowest_address
     ld  a7, 0(a7)
+
+    lla  t3, g_highest_address
+    ld  t3, 0(t3)
 
     // Update wbs state
     lla  t2, JIT_WriteBarrier_Table_Loc
@@ -102,6 +105,7 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     sd  a5, 40(t2)
     sd  a6, 48(t2)
     sd  a7, 56(t2)
+    sd  t3, 64(t2)
 
     EPILOG_RETURN
 
@@ -190,7 +194,6 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   t3  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
-
     // TODO: sync_release (runtime detection required)
     fence rw, rw
 
@@ -214,7 +217,7 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     add  t0, t6, t1
 
     // if (pShadow >= g_GCShadowEnd) goto end
-    lla  t6, g_GCShadowEnd
+    lla t6, wbs_GCShadowEnd
     ld  t6, 0(t6)
 
     slt  t6, t0, t6
@@ -245,13 +248,13 @@ LOCAL_LABEL(ShadowUpdateDisabled):
     ld  t6, 0(t6)
     beq  t6, zero, LOCAL_LABEL(CheckCardTable)
 
-    srli  t4, t3, 0xc
-    add  t6, t6, t4  // SoftwareWriteWatch::AddressToTableByteIndexShift
-    lb  t4, 0(t6)
-    bne  t4, zero, LOCAL_LABEL(CheckCardTable)
+    srli  t0, t3, 0xc
+    add  t6, t6, t0  // SoftwareWriteWatch::AddressToTableByteIndexShift
+    lb  t0, 0(t6)
+    bne  t0, zero, LOCAL_LABEL(CheckCardTable)
 
-    ori  t4, zero, 0xFF
-    sb  t4, 0(t6)
+    ori  t0, zero, 0xFF
+    sb  t0, 0(t6)
 
 LOCAL_LABEL(CheckCardTable):
 #endif
@@ -306,6 +309,8 @@ wbs_card_table:
 wbs_card_bundle_table:
     .quad 0
 wbs_GCShadow:
+    .quad 0
+wbs_GCShadowEnd:
     .quad 0
 wbs_sw_ww_table:
     .quad 0
@@ -366,7 +371,6 @@ LOCAL_LABEL(NoRestore_\reg):
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
-    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     addi  a1, METHODDESC_REGISTER, 0 // pMethodDesc
 
@@ -375,7 +379,6 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
     EPILOG_BRANCH_REG  t4
 NESTED_END ThePreStub, _TEXT
 
@@ -610,7 +613,6 @@ NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
 NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
-    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     addi  a2, t2, 0                 // DispatchToken
     addi  a0, sp, __PWTB_TransitionBlock        // pTransitionBlock
@@ -621,7 +623,6 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
 
     EPILOG_BRANCH_REG  t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
@@ -835,7 +836,6 @@ NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
 C_FUNC(DelayLoad_MethodCall):
     .global C_FUNC(DelayLoad_MethodCall)
     PROLOG_WITH_TRANSITION_BLOCK
-    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     addi  a1, t5, 0      // Indirection cell
     addi  a2, t0, 0      // sectionIndex
@@ -846,7 +846,6 @@ C_FUNC(DelayLoad_MethodCall):
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
     PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   t4
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
@@ -858,7 +857,6 @@ DelayLoad_Helper\suffix:
     .global DelayLoad_Helper\suffix
 
     PROLOG_WITH_TRANSITION_BLOCK
-    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     //DynamicHelperWorker(TransitionBlock * pTransitionBlock, TADDR * pCell,
     //                    DWORD sectionIndex, Module * pModule, INT frameFlags)
@@ -874,12 +872,10 @@ DelayLoad_Helper\suffix:
 
     ld  a0, __PWTB_ArgumentRegisters(sp)
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
-    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
 
 LOCAL_LABEL(FakeProlog\suffix\()_0):
     addi t4, a0, 0
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
     EPILOG_BRANCH_REG  t4
 
 NESTED_END DelayLoad_Helper\suffix\()_FakeProlog, _TEXT
@@ -952,7 +948,6 @@ GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
-    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     addi  a0, sp, __PWTB_TransitionBlock // TransitionBlock *
     addi  a1, t3, 0 // stub-identifying token
@@ -960,8 +955,16 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
     EPILOG_BRANCH_REG t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+// ------------------------------------------------------------------
+// size_t GetThreadStaticsVariableOffset()
+
+// Load offset of native thread local variable `t_ThreadStatics` in TCB and return it in `a0` register.
+LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
+    la.tls.ie   a0, t_ThreadStatics
+    EPILOG_RETURN
+LEAF_END GetThreadStaticsVariableOffset, _TEXT

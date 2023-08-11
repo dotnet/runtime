@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.14.5)
+cmake_minimum_required(VERSION 3.20)
 
-if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
-  cmake_policy(SET CMP0091 NEW)
-endif()
+cmake_policy(SET CMP0091 NEW)
 
 project(mono)
 
@@ -13,6 +11,10 @@ include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
+
+  if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+    add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+  endif()
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -73,6 +75,7 @@ if(ENABLE_MINIMAL)
 endif()
 
 set(DISABLE_COM 1)
+set(DISABLE_DLLMAP 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
@@ -199,8 +202,9 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "ios" OR CLR_CMAKE_HOST_OS STREQUAL "tvos")
   # control cross-compiling to ios
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
-  set(HOST_IOS 1)
-  if(CLR_CMAKE_HOST_OS STREQUAL "tvos")
+  if(CLR_CMAKE_HOST_OS STREQUAL "ios")
+    set(HOST_IOS 1)
+  elseif(CLR_CMAKE_HOST_OS STREQUAL "tvos")
     set(HOST_TVOS 1)
   endif()
   set(PTHREAD_POINTER_ID 1)
@@ -310,6 +314,7 @@ if(NOT TARGET_SYSTEM_NAME)
 endif()
 
 if(TARGET_SYSTEM_NAME STREQUAL "darwin")
+  set(TARGET_UNIX 1)
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
   set(TARGET_DARWIN 1)
@@ -317,16 +322,25 @@ if(TARGET_SYSTEM_NAME STREQUAL "darwin")
     set(TARGET_MACCAT 1)
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "ios" OR TARGET_SYSTEM_NAME STREQUAL "tvos")
+  set(TARGET_UNIX 1)
   set(TARGET_MACH 1)
-  set(TARGET_IOS 1)
   set(TARGET_DARWIN 1)
-  if(TARGET_SYSTEM_NAME STREQUAL "tvos")
+  set(TARGET_APPLE_MOBILE 1)
+  if(TARGET_SYSTEM_NAME STREQUAL "ios")
+    set(TARGET_IOS 1)
+  elseif(TARGET_SYSTEM_NAME STREQUAL "tvos")
     set(TARGET_TVOS 1)
   endif()
-  set(TARGET_APPLE_MOBILE 1)
-elseif(TARGET_SYSTEM_NAME STREQUAL "linux" OR TARGET_SYSTEM_NAME STREQUAL "alpine")
+elseif(TARGET_SYSTEM_NAME STREQUAL "linux")
+  set(TARGET_UNIX 1)
   set(TARGET_LINUX 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "alpine")
+  set(TARGET_UNIX 1)
+  set(TARGET_LINUX 1)
+  set(TARGET_LINUX_MUSL 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "android")
+  set(TARGET_UNIX 1)
+  set(TARGET_LINUX_BIONIC 1)
   set(TARGET_ANDROID 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-O2)
@@ -344,9 +358,12 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "wasi")
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "windows")
   set(TARGET_WIN32 1)
+  set(TARGET_WINDOWS 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "sunos")
+  set(TARGET_UNIX 1)
   set(TARGET_SOLARIS 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "freebsd")
+  set(TARGET_UNIX 1)
   set(TARGET_FREEBSD 1)
 else()
   message(FATAL_ERROR "Target '${TARGET_SYSTEM_NAME}' not supported.")
@@ -545,6 +562,12 @@ if(GCC)
     set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
   endif()
 
+  # Check for sometimes suppressed warnings
+  check_c_compiler_flag(-Wreserved-identifier COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  if(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+    add_compile_definitions(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  endif()
+
   if(HOST_WASI)
     # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
     # code (e.g., mono-rand.c:315) to be rejected
@@ -590,27 +613,58 @@ if(LLVM_PREFIX)
   set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
   if(${llvm_api_version} LESS 1200)
     set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMOrcError" "LLVMDebugInfoMSF")
-  else()
+  elseif(${llvm_api_version} LESS 1600)
     set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMDebugInfoDWARF")
+  else()
+    set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMIRPrinter" "LLVMCodeGen" "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMWindowsDriver" "LLVMOption" "LLVMOrcTargetProcess" "LLVMOrcShared"  "LLVMSymbolize" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMTargetParser")
   endif()
 
   # llvm-config --libs x86codegen
   set(MONO_llvm_extra_libs_x86codegen "LLVMX86CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
+  if(${llvm_api_version} GREATER_EQUAL 1600)
+    set(MONO_llvm_extra_libs_x86codegen ${MONO_llvm_extra_libs_x86codegen} "LLVMInstrumentation" "LLVMObjCARCOpts" "LLVMSymbolize" "LLVMDebugInfoPDB" "LLVMIRReader" "LLVMAsmParser" "LLVMTargetParser")
+  endif()
 
   # llvm-config --libs armcodegen
   set(MONO_llvm_extra_libs_armcodegen "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
+  if(${llvm_api_version} GREATER_EQUAL 1600)
+    set(MONO_llvm_extra_libs_armcodegen ${MONO_llvm_extra_libs_armcodegen} "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMObjCARCOpts" "LLVMSymbolize" "LLVMDebugInfoPDB"  "LLVMIRReader" "LLVMAsmParser" "LLVMTargetParser")
+  endif()
 
   # llvm-config --libs aarch64codegen
   set(MONO_llvm_extra_libs_aarch64codegen "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
+  if(${llvm_api_version} GREATER_EQUAL 1600)
+    set(MONO_llvm_extra_libs_aarch64codegen ${MONO_llvm_extra_libs_aarch64codegen} "LLVMObjCARCOpts" "LLVMSymbolize" "LLVMDebugInfoPDB"  "LLVMIRReader" "LLVMAsmParser" "LLVMTargetParser")
+  endif()
+
+  if(HOST_LINUX AND NOT HOST_WASM AND NOT HOST_WASI AND ${llvm_api_version} GREATER_EQUAL 1600)
+    set(MONO_stdlib "-stdlib=libc++")
+    set(MONO_cxx_lib "-L${LLVM_PREFIX}/lib -lc++")
+    set(MONO_cxx_include "-I${LLVM_PREFIX}/include/c++/v1")
+  endif()
+
+  if(${llvm_api_version} GREATER_EQUAL 1600)
+    if(HOST_WIN32)
+      set(MONO_cxx_std_version "/std:c++17")
+    else()
+      set(MONO_cxx_std_version "-std=c++17")
+    endif()
+  else()
+    if(HOST_WIN32)
+      set(MONO_cxx_std_version "/std:c++14")
+    else()
+      set(MONO_cxx_std_version "-std=c++14")
+    endif()
+  endif()
 
   # llvm-config --cflags
   set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-  set(llvm_cxxflags "-I${LLVM_PREFIX}/include -std=c++14 -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
   if(HOST_LINUX)
     # llvm-config --system-libs
-    set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
+    set(llvm_system_libs ${MONO_cxx_lib} "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
   elseif(HOST_OSX)
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lm")
@@ -682,7 +736,7 @@ elseif(HOST_BROWSER)
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
-elseif(HOST_IOS OR HOST_MACCAT)
+elseif(HOST_IOS OR HOST_TVOS OR HOST_MACCAT)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
@@ -887,12 +941,6 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
-  # FIXME: the mobile products use mono_dllmap_insert so allow this
-  unset(DISABLE_DLLMAP)
-else()
-  set(DISABLE_DLLMAP 1)
-endif()
 
 if(CLR_CMAKE_HOST_ALPINE_LINUX)
   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
@@ -901,6 +949,15 @@ if(CLR_CMAKE_HOST_ALPINE_LINUX)
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif()
+
+if(CLR_CMAKE_HOST_APPLE)
+  # TODO: this is already set by configurecompiler.cmake, remove this once mono uses that
+  check_c_compiler_flag(-fno-objc-msgsend-selector-stubs COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+  if(COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+    set(CLR_CMAKE_COMMON_OBJC_FLAGS "${CLR_CMAKE_COMMON_OBJC_FLAGS} -fno-objc-msgsend-selector-stubs")
+  endif()
+endif()
+
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
@@ -911,7 +968,7 @@ endif()
 add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
 add_subdirectory(mono)
-if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_TVOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)
 endif()
 

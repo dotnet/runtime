@@ -174,10 +174,15 @@ namespace Tests.System
             Assert.Equal(stamp2 - stamp1, fastClock.GetElapsedTime(stamp1, stamp2).Ticks);
         }
 
+        public class DerivedTimeProvider : TimeProvider
+        {
+        }
+
         public static IEnumerable<object[]> TimersProvidersListData()
         {
             yield return new object[] { TimeProvider.System };
             yield return new object[] { new FastClock() };
+            yield return new object[] { new DerivedTimeProvider() };
         }
 
         public static IEnumerable<object[]> TimersProvidersWithTaskFactorData()

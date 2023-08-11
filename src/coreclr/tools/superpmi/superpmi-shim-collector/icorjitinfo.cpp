@@ -68,8 +68,9 @@ void interceptor_ICJI::getMethodSig(CORINFO_METHOD_HANDLE ftn,         /* IN  */
 // return information about a method private to the implementation
 //      returns false if method is not IL, or is otherwise unavailable.
 //      This method is used to fetch data needed to inline functions
-bool interceptor_ICJI::getMethodInfo(CORINFO_METHOD_HANDLE ftn, /* IN  */
-                                     CORINFO_METHOD_INFO*  info /* OUT */
+bool interceptor_ICJI::getMethodInfo(CORINFO_METHOD_HANDLE  ftn,    /* IN  */
+                                     CORINFO_METHOD_INFO*   info,   /* OUT */
+                                     CORINFO_CONTEXT_HANDLE context /* IN  */
                                      )
 {
     bool temp  = false;
@@ -78,11 +79,11 @@ bool interceptor_ICJI::getMethodInfo(CORINFO_METHOD_HANDLE ftn, /* IN  */
     [&]()
     {
         mc->cr->AddCall("getMethodInfo");
-        temp = original_ICorJitInfo->getMethodInfo(ftn, info);
+        temp = original_ICorJitInfo->getMethodInfo(ftn, info, context);
     },
     [&](DWORD exceptionCode)
     {
-        this->mc->recGetMethodInfo(ftn, info, temp, exceptionCode);
+        this->mc->recGetMethodInfo(ftn, info, context, temp, exceptionCode);
     });
 
     return temp;
@@ -624,6 +625,17 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::getFieldInClass(CORINFO_CLASS_HANDLE clsH
     return temp;
 }
 
+GetTypeLayoutResult interceptor_ICJI::getTypeLayout(
+    CORINFO_CLASS_HANDLE typeHnd,
+    CORINFO_TYPE_LAYOUT_NODE* nodes,
+    size_t* numNodes)
+{
+    mc->cr->AddCall("getTypeLayout");
+    GetTypeLayoutResult result = original_ICorJitInfo->getTypeLayout(typeHnd, nodes, numNodes);
+    mc->recGetTypeLayout(result, typeHnd, nodes, *numNodes);
+    return result;
+}
+
 bool interceptor_ICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
 {
     mc->cr->AddCall("checkMethodModifier");
@@ -633,14 +645,29 @@ bool interceptor_ICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 }
 
 // returns the "NEW" helper optimized for "newCls."
-CorInfoHelpFunc interceptor_ICJI::getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                               CORINFO_METHOD_HANDLE   callerHandle,
+CorInfoHelpFunc interceptor_ICJI::getNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                                                bool* pHasSideEffects)
 {
-    mc->cr->AddCall("getNewHelper");
-    CorInfoHelpFunc temp = original_ICorJitInfo->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
-    mc->recGetNewHelper(pResolvedToken, callerHandle, pHasSideEffects, temp);
-    return temp;
+    CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
+    bool hasSideEffects = false;
+
+    RunWithErrorExceptionCodeCaptureAndContinue(
+        [&]()
+        {
+            mc->cr->AddCall("getNewHelper");
+            result = original_ICorJitInfo->getNewHelper(classHandle, &hasSideEffects);
+        },
+        [&](DWORD exceptionCode)
+        {
+            mc->recGetNewHelper(classHandle, hasSideEffects, result, exceptionCode);
+        });
+
+    if (pHasSideEffects != nullptr)
+    {
+        *pHasSideEffects = hasSideEffects;
+    }
+
+    return result;
 }
 
 // returns the newArr (1-Dim array) helper optimized for "arrayCls."

@@ -128,6 +128,46 @@ namespace ILCompiler
 
         public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
+            if (declMethod.OwningType.IsInterface)
+            {
+                // The virtual method resolution algorithm in the managed type system is not implemented to work correctly
+                // in the presence of calling type equivalent interfaces.
+                // Notably:
+                // If the decl is to a interface equivalent to, but not equal to any interface implemented on the
+                // owning type, then the logic for matching up methods by method index is not present.
+                // AND
+                // If the owningType implements multiple different type equivalent interfaces that are all mutually
+                // equivalent, the implementation for finding the correct implementation method requires walking the
+                // type hierarchy and searching for exact and equivalent matches at each level (much like variance)
+                // This logic is also currently unimplemented.
+                // NOTE: We do not currently have tests in the runtime suite which cover these cases
+                if (declMethod.OwningType.HasTypeEquivalence)
+                {
+                    // To protect against this, require that the implType implement exactly the right interface, and
+                    // no additional interfaces that are equivalent
+                    bool foundExactMatch = false;
+                    bool foundEquivalentMatch = false;
+                    foreach (var @interface in implType.RuntimeInterfaces)
+                    {
+                        if (@interface == declMethod.OwningType)
+                        {
+                            foundExactMatch = true;
+                            continue;
+                        }
+                        if (@interface.IsEquivalentTo(declMethod.OwningType))
+                        {
+                            foundEquivalentMatch = true;
+                        }
+                    }
+
+                    if (!foundExactMatch || foundEquivalentMatch)
+                    {
+                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE;
+                        return null;
+                    }
+                }
+            }
+
             return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
         }
 

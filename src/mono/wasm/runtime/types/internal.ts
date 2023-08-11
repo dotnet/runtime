@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI, WebAssemblyStartOptions } from ".";
+import type { AssetBehaviors, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI } from ".";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -66,17 +66,22 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
         return ptr as T;
 }
 
+// when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
+    linkerEnabled?: boolean,
+    assets?: AssetEntryInternal[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
+    assertAfterExit?: boolean // default true for shell/nodeJS
+    interopCleanupOnExit?: boolean
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
-    exitAfterSnapshot?: number,
-    startupOptions?: Partial<WebAssemblyStartOptions>
+    exitAfterSnapshot?: number
+    loadAllSatelliteResources?: boolean
 };
 
 export type RunArguments = {
@@ -88,8 +93,10 @@ export type RunArguments = {
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    // this is almost the same as pendingDownload, but it could have multiple values in time, because of re-try download logic
+    // this could have multiple values in time, because of re-try download logic
     pendingDownloadInternal?: LoadingResource
+    noCache?: boolean
+    useCredentials?: boolean
 }
 
 export type LoaderHelpers = {
@@ -98,12 +105,16 @@ export type LoaderHelpers = {
 
     maxParallelDownloads: number;
     enableDownloadRetry: boolean;
+    assertAfterExit: boolean;
+
+    exitCode: number | undefined;
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
+    loadedAssemblies: string[],
     scriptDirectory: string
     scriptUrl: string
-    assetUniqueQuery?: string
+    modulesUniqueQuery?: string
     preferredIcuAsset: string | null,
     invariantMode: boolean,
 
@@ -117,23 +128,37 @@ export type LoaderHelpers = {
     wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
     runtimeModuleLoaded: PromiseAndController<void>,
 
-    abort_startup: (reason: any, should_exit: boolean) => void,
+    is_exited: () => boolean,
+    is_runtime_running: () => boolean,
+    assert_runtime_running: () => void,
     mono_exit: (exit_code: number, reason?: any) => void,
     createPromiseController: <T>(afterResolve?: () => void, afterReject?: () => void) => PromiseAndController<T>,
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
     assertIsControllablePromise: <T>(promise: Promise<T>) => asserts promise is ControllablePromise<T>,
     mono_download_assets: () => Promise<void>,
-    resolve_asset_path: (behavior: AssetBehaviours) => AssetEntryInternal,
+    resolve_single_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
-    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
     out(message: string): void;
     err(message: string): void;
-    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
+
+    hasDebuggingEnabled(config: MonoConfig): boolean,
+    retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    logDownloadStatsToConsole: () => void;
+    purgeUnusedCacheEntriesAsync: () => Promise<void>;
+
+    loadBootResource?: LoadBootResourceCallback;
+    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
+    libraryInitializers?: { scriptName: string, exports: any }[];
 
     isChromium: boolean,
-    isFirefox: boolean,
+    isFirefox: boolean
+
+    // from wasm-feature-detect npm package
+    exceptions: () => Promise<boolean>,
+    simd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
     config: MonoConfigInternal;
@@ -153,16 +178,17 @@ export type RuntimeHelpers = {
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
+    mono_wasm_exit?: (code: number) => void,
+    abort: (reason: any) => void,
     javaScriptExports: JavaScriptExports,
     storeMemorySnapshotPending: boolean,
     memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 
-    runtimeModuleUrl: string
-    nativeModuleUrl: string
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     memorySnapshotSkippedOrDone: PromiseAndController<void>,
@@ -179,6 +205,7 @@ export type RuntimeHelpers = {
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (x: boolean) => string,
+    forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
 }
 
 export type AOTProfilerOptions = {
@@ -246,6 +273,8 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 export type EmscriptenInternals = {
     isPThread: boolean,
     linkerDisableLegacyJsInterop: boolean,
+    linkerWasmEnableSIMD: boolean,
+    linkerWasmEnableEH: boolean,
     linkerEnableAotProfiler: boolean,
     linkerEnableBrowserProfiler: boolean,
     quit_: Function,
@@ -318,6 +347,12 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
+
+    // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
+    load_satellite_assembly(dll: Uint8Array): void;
+
+    // the marshaled signature is: void LoadLazyAssembly(byte[] dll, byte[] pdb)
+    load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): void;
 }
 
 export type MarshalerToJs = (arg: JSMarshalerArgument, element_type?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;

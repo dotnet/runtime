@@ -24,6 +24,8 @@ namespace System.Runtime.InteropServices.JavaScript
         public readonly IntPtr TargetThreadId;
         private readonly WorkItemQueueType Queue;
 
+        internal static JSSynchronizationContext? MainJSSynchronizationContext;
+
         [ThreadStatic]
         internal static JSSynchronizationContext? CurrentJSSynchronizationContext;
         internal SynchronizationContext? previousSynchronizationContext;
@@ -51,6 +53,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 )
             )
         {
+        }
+
+        internal static void AssertWebWorkerContext()
+        {
+#if FEATURE_WASM_THREADS
+            if (CurrentJSSynchronizationContext == null)
+            {
+                throw new InvalidOperationException("Please use dedicated worker for working with JavaScript interop. See https://aka.ms/dotnet-JS-interop-threads");
+            }
+#endif
         }
 
         private JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId, WorkItemQueueType queue)

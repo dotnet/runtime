@@ -2202,8 +2202,10 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_CONTROL_C_EVENT_RESULT:
     case DB_IPCE_BEFORE_GARBAGE_COLLECTION:
     case DB_IPCE_AFTER_GARBAGE_COLLECTION:
+    case DB_IPCE_DISABLE_OPTS_RESULT:
         cbAdditionalSize = 0;
         break;
+
     case DB_IPCE_DATA_BREAKPOINT:
         cbAdditionalSize = sizeof(pEvent->DataBreakpointData);
         break;
@@ -2495,6 +2497,8 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_CUSTOM_NOTIFICATION:
         cbAdditionalSize = sizeof(pEvent->CustomNotification);
         break;
+
+    case DB_IPCE_DISABLE_OPTS:
 
     default:
         printf("Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));

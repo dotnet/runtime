@@ -13,6 +13,10 @@ namespace System
     {
         internal const int MaxDateTimeNumberDigits = 8;
 
+        internal const char TimeDelimiter = ':';
+        internal const char TimeFractionDelimiterComma = ',';
+        internal const char TimeFractionDelimiterDot = '.';
+
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = default; // The buffer to store the parsing result.
@@ -521,7 +525,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 str.ConsumeSubString(sub);
                 // See if we have minutes
                 sub = str.GetSubString();
-                if (sub.length == 1 && sub[0] == ':')
+                if (sub.length == 1 && sub[0] == TimeDelimiter)
                 {
                     // Parsing "+8:00" or "+08:00"
                     str.ConsumeSubString(sub);
@@ -642,7 +646,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         if (str.Index < str.Length - 1)
                         {
                             char nextCh = str.Value[str.Index];
-                            if (nextCh == '.')
+                            if ((nextCh == TimeFractionDelimiterDot)
+                                || (nextCh == TimeFractionDelimiterComma))
                             {
                                 // While ParseFraction can fail, it just means that there were no digits after
                                 // the dot. In this case ParseFraction just removes the dot. This is actually
@@ -1901,14 +1906,30 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     result.flags |= ParseFlags.HaveDate;
                     return true; // MD + Year
                 }
-            }
-            else
-            {
-                if (SetDateYMD(ref result, raw.year, n2, n1))
+#if TARGET_BROWSER
+                // if we are parsing the datetime string with custom format then the CultureInfo format `order`
+                // does not matter and DM + Year is also possible for NNY
+                if (GlobalizationMode.Hybrid && SetDateYDM(ref result, raw.year, n1, n2))
                 {
                     result.flags |= ParseFlags.HaveDate;
                     return true; // DM + Year
                 }
+#endif
+            }
+            else
+            {
+                if (SetDateYDM(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // DM + Year
+                }
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid && SetDateYMD(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // MD + Year
+                }
+#endif
             }
             result.SetBadDateTimeFailure();
             return false;
@@ -2961,7 +2982,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
             str.SkipWhiteSpaces();
-            if (!str.Match(':'))
+            if (!str.Match(TimeDelimiter))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -2973,7 +2994,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
             str.SkipWhiteSpaces();
-            if (str.Match(':'))
+            if (str.Match(TimeDelimiter))
             {
                 str.SkipWhiteSpaces();
                 if (!ParseDigits(ref str, 2, out second))
@@ -2981,7 +3002,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     result.SetBadDateTimeFailure();
                     return false;
                 }
-                if (str.Match('.'))
+                if ((str.Match(TimeFractionDelimiterDot))
+                    || (str.Match(TimeFractionDelimiterComma)))
                 {
                     if (!ParseFraction(ref str, out partSecond))
                     {

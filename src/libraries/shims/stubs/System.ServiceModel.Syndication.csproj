@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ForwardedType Include="System.ServiceModel.Syndication.Atom10FeedFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.Atom10FeedFormatter&lt;T&gt;" />
+    <ForwardedType Include="System.ServiceModel.Syndication.Atom10ItemFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.Atom10ItemFormatter&lt;T&gt;" />
+    <ForwardedType Include="System.ServiceModel.Syndication.AtomPub10CategoriesDocumentFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.AtomPub10ServiceDocumentFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.AtomPub10ServiceDocumentFormatter&lt;T&gt;" />
+    <ForwardedType Include="System.ServiceModel.Syndication.CategoriesDocument" />
+    <ForwardedType Include="System.ServiceModel.Syndication.CategoriesDocumentFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.InlineCategoriesDocument" />
+    <ForwardedType Include="System.ServiceModel.Syndication.ReferencedCategoriesDocument" />
+    <ForwardedType Include="System.ServiceModel.Syndication.ResourceCollectionInfo" />
+    <ForwardedType Include="System.ServiceModel.Syndication.Rss20FeedFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.Rss20FeedFormatter&lt;T&gt;" />
+    <ForwardedType Include="System.ServiceModel.Syndication.Rss20ItemFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.Rss20ItemFormatter&lt;T&gt;" />
+    <ForwardedType Include="System.ServiceModel.Syndication.ServiceDocument" />
+    <ForwardedType Include="System.ServiceModel.Syndication.ServiceDocumentFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationCategory" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationContent" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationElementExtension" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationElementExtensionCollection" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationFeed" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationFeedFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationItem" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationItemFormatter" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationLink" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationPerson" />
+    <ForwardedType Include="System.ServiceModel.Syndication.SyndicationVersions" />
+    <ForwardedType Include="System.ServiceModel.Syndication.TextSyndicationContent" />
+    <ForwardedType Include="System.ServiceModel.Syndication.TextSyndicationContentKind" />
+    <ForwardedType Include="System.ServiceModel.Syndication.UrlSyndicationContent" />
+    <ForwardedType Include="System.ServiceModel.Syndication.Workspace" />
+    <ForwardedType Include="System.ServiceModel.Syndication.XmlSyndicationContent" />
+  </ItemGroup>
+
+</Project>
+

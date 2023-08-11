@@ -25,6 +25,7 @@
 #include "contractimpl.h"
 #include "generics.h"
 #include "gcinfotypes.h"
+#include "enum_class_flags.h"
 
 /*
  * Forward Declarations
@@ -62,6 +63,28 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
+
+enum class ResolveVirtualStaticMethodFlags
+{
+    None = 0,
+    AllowNullResult = 1,
+    VerifyImplemented = 2,
+    AllowVariantMatches = 4,
+    InstantiateResultOverFinalMethodDesc = 8,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
+
+
+enum class FindDefaultInterfaceImplementationFlags
+{
+    None,
+    AllowVariance = 1,
+    ThrowOnConflict = 2,
+    InstantiateFoundMethodDesc = 4,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
 
 //============================================================================
 // This is the in-memory structure of a class and it will evolve.
@@ -543,7 +566,6 @@ public:
 
 public:
     PTR_Module GetModule();
-    PTR_Module GetModule_NoLogging();
     Assembly *GetAssembly();
 
     PTR_Module GetModuleIfLoaded();
@@ -853,17 +875,11 @@ public:
 
     void SetIsRestored();
 
-    inline BOOL IsRestored_NoLogging()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return !(GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
-    }
     inline BOOL IsRestored()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return IsRestored_NoLogging();
+        return !(GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
     }
 
     //-------------------------------------------------------------------
@@ -889,7 +905,7 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
 
         InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
     }
@@ -905,7 +921,7 @@ public:
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
     }
 
     // If canCompare is true, this method ensure an atomic operation for setting
@@ -916,7 +932,7 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
+            InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags,
                 MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
         }
         else
@@ -928,13 +944,13 @@ public:
     inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -948,7 +964,7 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored_NoLogging());
+        PRECONDITION(IsRestored());
 
         InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
     }
@@ -1382,13 +1398,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNumVirtuals_NoLogging();
-    }
-
-    inline WORD GetNumVirtuals_NoLogging()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
         return m_wNumVirtuals;
     }
 
@@ -1784,7 +1793,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_pParentMethodTable = pParentMethodTable;
 #ifdef _DEBUG
-        GetWriteableDataForWrite_NoLogging()->SetParentMethodTablePointerValid();
+        GetWriteableDataForWrite()->SetParentMethodTablePointerValid();
 #endif
     }
 #endif // !DACCESS_COMPILE
@@ -1797,8 +1806,6 @@ public:
     // Note that it is not generally the case that GetClass.GetMethodTable() == t.
 
     PTR_EEClass GetClass();
-
-    inline PTR_EEClass GetClass_NoLogging();
 
     PTR_EEClass GetClassWithPossibleAV();
 
@@ -2084,7 +2091,6 @@ public:
     MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk);
 #endif // FEATURE_COMINTEROP
 
-
     // Resolve virtual static interface method pInterfaceMD on this type.
     //
     // Specify allowNullResult to return NULL instead of throwing if the there is no implementation
@@ -2096,9 +2102,7 @@ public:
     MethodDesc *ResolveVirtualStaticMethod(
         MethodTable* pInterfaceType,
         MethodDesc* pInterfaceMD,
-        BOOL allowNullResult,
-        BOOL verifyImplemented = FALSE,
-        BOOL allowVariantMatches = TRUE,
+        ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags,
         BOOL *uniqueResolution = NULL,
         ClassLoadLevel level = CLASS_LOADED);
 
@@ -2178,8 +2182,7 @@ public:
         MethodDesc *pInterfaceMD,
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod,
-        BOOL allowVariance,
-        BOOL throwOnConflict,
+        FindDefaultInterfaceImplementationFlags findDefaultImplementationFlags,
         ClassLoadLevel level = CLASS_LOADED);
 #endif // DACCESS_COMPILE
 
@@ -2219,7 +2222,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);
@@ -2539,18 +2542,11 @@ public:
 
     // Get the RID/token for the metadata for the corresponding type declaration
     unsigned GetTypeDefRid();
-    unsigned GetTypeDefRid_NoLogging();
 
     inline mdTypeDef GetCl()
     {
         LIMITED_METHOD_CONTRACT;
         return TokenFromRid(GetTypeDefRid(), mdtTypeDef);
-    }
-
-    inline mdTypeDef GetCl_NoLogging()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return TokenFromRid(GetTypeDefRid_NoLogging(), mdtTypeDef);
     }
 
     void SetCl(mdTypeDef token);
@@ -2730,22 +2726,10 @@ public:
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetWriteableData_NoLogging();
-    }
-
-    inline PTR_Const_MethodTableWriteableData GetWriteableData_NoLogging() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
         return MethodTable::m_pWriteableData;
     }
 
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetWriteableDataForWrite_NoLogging();
-    }
-
-    inline PTR_MethodTableWriteableData GetWriteableDataForWrite_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return MethodTable::m_pWriteableData;

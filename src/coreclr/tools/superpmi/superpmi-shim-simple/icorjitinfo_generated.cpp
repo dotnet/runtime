@@ -41,9 +41,10 @@ void interceptor_ICJI::getMethodSig(
 
 bool interceptor_ICJI::getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_INFO* info)
+          CORINFO_METHOD_INFO* info,
+          CORINFO_CONTEXT_HANDLE context)
 {
-    return original_ICorJitInfo->getMethodInfo(ftn, info);
+    return original_ICorJitInfo->getMethodInfo(ftn, info, context);
 }
 
 CorInfoInline interceptor_ICJI::canInline(
@@ -398,6 +399,14 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::getFieldInClass(
     return original_ICorJitInfo->getFieldInClass(clsHnd, num);
 }
 
+GetTypeLayoutResult interceptor_ICJI::getTypeLayout(
+          CORINFO_CLASS_HANDLE typeHnd,
+          CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+          size_t* numTreeNodes)
+{
+    return original_ICorJitInfo->getTypeLayout(typeHnd, treeNodes, numTreeNodes);
+}
+
 bool interceptor_ICJI::checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           const char* modifier,
@@ -407,11 +416,10 @@ bool interceptor_ICJI::checkMethodModifier(
 }
 
 CorInfoHelpFunc interceptor_ICJI::getNewHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CLASS_HANDLE classHandle,
           bool* pHasSideEffects)
 {
-    return original_ICorJitInfo->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+    return original_ICorJitInfo->getNewHelper(classHandle, pHasSideEffects);
 }
 
 CorInfoHelpFunc interceptor_ICJI::getNewArrHelper(

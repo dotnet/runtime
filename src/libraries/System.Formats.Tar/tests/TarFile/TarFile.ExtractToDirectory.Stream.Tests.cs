@@ -90,7 +90,7 @@ namespace System.Formats.Tar.Tests
 
             using TempDirectory root = new TempDirectory();
 
-            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(archive, root.Path, overwriteFiles: false));
+            Assert.ThrowsAny<IOException>(() => TarFile.ExtractToDirectory(archive, root.Path, overwriteFiles: false));
 
             Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
         }
@@ -123,19 +123,20 @@ namespace System.Formats.Tar.Tests
         {
             using TempDirectory root = new TempDirectory();
 
-            string baseDir = string.IsNullOrEmpty(subfolder) ? root.Path : Path.Join(root.Path, subfolder);
+            string baseDir = root.Path;
             Directory.CreateDirectory(baseDir);
 
             string linkName = "link";
             string targetName = "target";
-            string targetPath = Path.Join(baseDir, targetName);
-
-            File.Create(targetPath).Dispose();
+            string targetPath = string.IsNullOrEmpty(subfolder) ? targetName : Path.Join(subfolder, targetName);
 
             using MemoryStream archive = new MemoryStream();
             using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
             {
-                TarEntry entry= InvokeTarEntryCreationConstructor(format, entryType, linkName);
+                TarEntry fileEntry = InvokeTarEntryCreationConstructor(format, TarEntryType.RegularFile, targetPath);
+                writer.WriteEntry(fileEntry);
+
+                TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, linkName);
                 entry.LinkName = targetPath;
                 writer.WriteEntry(entry);
             }
@@ -267,6 +268,7 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetExactRootDirMatchCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88049", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws(TarEntryFormat format, TarEntryType entryType, string fileName)
         {
             ExtractToDirectory_ExactRootDirMatch_RegularFile_And_Directory_Throws_Internal(format, entryType, fileName, inverted: false);
@@ -300,6 +302,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88049", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ExtractToDirectory_ExactRootDirMatch_HardLinks_Throws(TarEntryFormat format)
         {
             ExtractToDirectory_ExactRootDirMatch_Links_Throws(format, TarEntryType.HardLink, inverted: false);

@@ -34,7 +34,7 @@ between procedure names and ordinary labels.  Furthermore, if symbol
 information has been stripped from a program, procedure names may be
 completely unavailable or may be limited to those exported via a
 dynamic symbol table.  In such cases, \Func{unw\_get\_proc\_name}()
-may return the name of a label or a preceeding (nearby) procedure.
+may return the name of a label or a preceding (nearby) procedure.
 However, the offset returned through \Var{offp} is always relative to
 the returned name, which ensures that the value (address) of the
 returned name plus the returned offset will always be equal to the

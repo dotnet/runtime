@@ -114,6 +114,9 @@ namespace Microsoft.Quic
         [NativeTypeName("#define QUIC_STATUS_CERT_NO_CERT QUIC_STATUS_CERT_ERROR(3)")]
         public const int QUIC_STATUS_CERT_NO_CERT = ((int)(3) + 512 + 200000000);
 
+        [NativeTypeName("#define QUIC_STATUS_ADDRESS_NOT_AVAILABLE ((QUIC_STATUS)EADDRNOTAVAIL)")]
+        public const int QUIC_STATUS_ADDRESS_NOT_AVAILABLE = ((int)(0x31));
+
         public const int QUIC_ADDRESS_FAMILY_UNSPEC = 0;
         public const int QUIC_ADDRESS_FAMILY_INET = 2;
         public const int QUIC_ADDRESS_FAMILY_INET6 = 30;

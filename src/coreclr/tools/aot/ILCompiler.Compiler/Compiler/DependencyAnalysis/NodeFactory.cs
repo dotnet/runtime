@@ -985,9 +985,6 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
-            // We track reflectability at canonical method body level
-            method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
             return _reflectedMethods.GetOrAdd(method);
         }
 
@@ -1041,7 +1038,8 @@ namespace ILCompiler.DependencyAnalysis
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnNonGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnThreadStaticBase" },
-            new string[] { "Internal.Runtime", "ThreadStatics", "GetThreadStaticBaseForType" }
+            new string[] { "Internal.Runtime", "ThreadStatics", "GetThreadStaticBaseForType" },
+            new string[] { "Internal.Runtime", "ThreadStatics", "GetInlinedThreadStaticBaseSlow" },
         };
 
         private ISymbolNode[] _helperEntrypointSymbols;
@@ -1288,6 +1286,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
+        protected internal TlsRootNode TlsRoot = new TlsRootNode();
+
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             ReadyToRunHeader = new ReadyToRunHeaderNode();
@@ -1306,6 +1306,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_inlinedThreadStatics.IsComputed())
             {
                 graph.AddRoot(_inlinedThreadStatiscNode, "Inlined threadstatics are used if present");
+                graph.AddRoot(TlsRoot, "Inlined threadstatics are used if present");
             }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion);

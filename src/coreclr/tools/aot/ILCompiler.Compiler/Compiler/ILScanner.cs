@@ -636,6 +636,11 @@ namespace ILCompiler
                     {
                         TypeDesc type = eetypeNode.Type;
                         _constructedTypes.Add(type);
+
+                        // It's convenient to also see Array<T> as constructed for each T[]
+                        DefType closestDefType = type.GetClosestDefType();
+                        if (closestDefType != type)
+                            _constructedTypes.Add(closestDefType);
                     }
                 }
             }
@@ -718,12 +723,6 @@ namespace ILCompiler
                         // do not inline storage for shared generics
                         if (t.ConvertToCanonForm(CanonicalFormKind.Specific) != t)
                             continue;
-
-#if DEBUG
-                        // do not inline storage for some types in debug - for test coverage
-                        if (i % 8 == 0)
-                            continue;
-#endif
 
                         types.Add(t);
 

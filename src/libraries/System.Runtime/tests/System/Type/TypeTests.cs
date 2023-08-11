@@ -55,7 +55,7 @@ namespace System.Tests
                 new object().GetType().GetType()
             };
 
-            if (PlatformDetection.IsWindows)
+            if (PlatformDetection.IsBuiltInComEnabled)
             {
                 NonArrayBaseTypes.Add(Type.GetTypeFromCLSID(default(Guid)));
             }
@@ -545,7 +545,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
@@ -744,7 +744,7 @@ namespace System.Tests
                 yield return new object[] { typeof(IEnumerable<>) };
                 yield return new object[] { 3.GetType().GetType() };  // This yields a reflection-blocked type on .NET Native - which is implemented separately
 
-                if (PlatformDetection.IsWindows)
+                if (PlatformDetection.IsBuiltInComEnabled)
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)) };
             }
         }
@@ -797,7 +797,7 @@ namespace System.Tests
                 yield return new object[] { typeof(int[]), false };
                 yield return new object[] { typeof(int[,]), false };
                 yield return new object[] { typeof(object), false };
-                if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
+                if (PlatformDetection.IsBuiltInComEnabled) // GetTypeFromCLSID = built-in COM
                 {
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false };
                 }
@@ -840,7 +840,7 @@ namespace System.Tests
                 yield return new object[] { typeof(int).MakePointerType(), false, false, false };
                 yield return new object[] { typeof(DummyGenericClassForTypeTests<>), false, false, false };
                 yield return new object[] { typeof(DummyGenericClassForTypeTests<int>), false, false, false };
-                if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
+                if (PlatformDetection.IsBuiltInComEnabled) // GetTypeFromCLSID = built-in COM
                 {
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false, false, false };
                 }
@@ -1077,7 +1077,7 @@ namespace System.Tests
             };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/861", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89157", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)

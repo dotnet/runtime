@@ -10,6 +10,7 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
+#include <generatedumpflags.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
@@ -150,7 +151,11 @@ bool
 ds_rt_config_value_get_enable (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics) != 0;
+	if (CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
+	{
+		return false;
+	}
+    return CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics_IPC) != 0;
 }
 
 static
@@ -347,6 +352,10 @@ ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
 		// but waits for the EE to be started so that the startup hook can be loaded
 		// and executed.
 		IfFailRet(EnsureEEStarted());
+
+		// Ensure runtime thread for diagnostic server thread
+		SetupThreadNoThrow(&hr);
+		IfFailRet(hr);
 
 		EX_TRY {
 			GCX_COOP();

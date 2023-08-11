@@ -391,110 +391,6 @@ namespace Enumeration
         }
     }
 }
-namespace Fields
-{
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    internal sealed partial class __ThirdModelValidator__
-    {
-        /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
-        /// </summary>
-        /// <param name="name">The name of the options instance being validated.</param>
-        /// <param name="options">The options instance.</param>
-        /// <returns>Validation result.</returns>
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-        public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Fields.ThirdModel options)
-        {
-            var baseName = (string.IsNullOrEmpty(name) ? "ThirdModel" : name) + ".";
-            var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
-            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
-
-            context.MemberName = "P5";
-            context.DisplayName = baseName + "P5";
-            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
-            {
-                builder.AddResults(validationResults);
-            }
-
-            return builder.Build();
-        }
-    }
-}
-namespace Fields
-{
-    partial struct FirstValidator
-    {
-        /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
-        /// </summary>
-        /// <param name="name">The name of the options instance being validated.</param>
-        /// <param name="options">The options instance.</param>
-        /// <returns>Validation result.</returns>
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-        public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Fields.FirstModel options)
-        {
-            var baseName = (string.IsNullOrEmpty(name) ? "FirstModel" : name) + ".";
-            var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
-            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
-
-            context.MemberName = "P1";
-            context.DisplayName = baseName + "P1";
-            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
-            {
-                builder.AddResults(validationResults);
-            }
-
-            if (options.P2 is not null)
-            {
-                builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V3.Validate(baseName + "P2", options.P2));
-            }
-
-            builder.AddResult(global::Fields.__ThirdModelValidator__.Validate(baseName + "P3", options.P3));
-
-            return builder.Build();
-        }
-    }
-}
-namespace Fields
-{
-    partial struct SecondValidator
-    {
-        /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
-        /// </summary>
-        /// <param name="name">The name of the options instance being validated.</param>
-        /// <param name="options">The options instance.</param>
-        /// <returns>Validation result.</returns>
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-        public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Fields.SecondModel options)
-        {
-            var baseName = (string.IsNullOrEmpty(name) ? "SecondModel" : name) + ".";
-            var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
-            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
-            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
-
-            context.MemberName = "P4";
-            context.DisplayName = baseName + "P4";
-            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
-            {
-                builder.AddResults(validationResults);
-            }
-
-            return builder.Build();
-        }
-    }
-}
 namespace FileScopedNamespace
 {
     partial struct FirstValidator
@@ -658,7 +554,7 @@ namespace MultiModelValidator
 
             if (options.P2 is not null)
             {
-                builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V4.Validate(baseName + "P2", options.P2));
+                builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V3.Validate(baseName + "P2", options.P2));
             }
 
             return builder.Build();
@@ -793,14 +689,14 @@ namespace Nested
 
                     if (options.P2 is not null)
                     {
-                        builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V5.Validate(baseName + "P2", options.P2));
+                        builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V4.Validate(baseName + "P2", options.P2));
                     }
 
                     builder.AddResult(global::Nested.__ThirdModelValidator__.Validate(baseName + "P3", options.P3));
 
                     if (options.P4 is not null)
                     {
-                        builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V6.Validate(baseName + "P4", options.P4));
+                        builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V5.Validate(baseName + "P4", options.P4));
                     }
 
                     return builder.Build();
@@ -1015,12 +911,12 @@ namespace RecordTypes
 
             if (options.P2 is not null)
             {
-                builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V7.Validate(baseName + "P2", options.P2));
+                builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V6.Validate(baseName + "P2", options.P2));
             }
 
             if (options.P3 is not null)
             {
-                builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V8.Validate(baseName + "P3", options.P3));
+                builder.AddResult(global::__OptionValidationStaticInstances.__Validators.V7.Validate(baseName + "P3", options.P3));
             }
 
             builder.AddResult(global::RecordTypes.__ThirdModelValidator__.Validate(baseName + "P4", options.P4));
@@ -1968,7 +1864,7 @@ namespace ValueTypes
 namespace __OptionValidationStaticInstances
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    internal static class __Attributes
+    file static class __Attributes
     {
         internal static readonly global::System.ComponentModel.DataAnnotations.RequiredAttribute A1 = new global::System.ComponentModel.DataAnnotations.RequiredAttribute();
 
@@ -2059,22 +1955,20 @@ namespace __OptionValidationStaticInstances
 namespace __OptionValidationStaticInstances
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    internal static class __Validators
+    file static class __Validators
     {
         internal static readonly global::SecondValidatorNoNamespace V1 = new global::SecondValidatorNoNamespace();
 
         internal static readonly global::Enumeration.SecondValidator V2 = new global::Enumeration.SecondValidator();
 
-        internal static readonly global::Fields.SecondValidator V3 = new global::Fields.SecondValidator();
+        internal static readonly global::MultiModelValidator.MultiValidator V3 = new global::MultiModelValidator.MultiValidator();
 
-        internal static readonly global::MultiModelValidator.MultiValidator V4 = new global::MultiModelValidator.MultiValidator();
+        internal static readonly global::Nested.Container2.Container3.SecondValidator V4 = new global::Nested.Container2.Container3.SecondValidator();
 
-        internal static readonly global::Nested.Container2.Container3.SecondValidator V5 = new global::Nested.Container2.Container3.SecondValidator();
+        internal static readonly global::Nested.Container4.Container5.ThirdValidator V5 = new global::Nested.Container4.Container5.ThirdValidator();
 
-        internal static readonly global::Nested.Container4.Container5.ThirdValidator V6 = new global::Nested.Container4.Container5.ThirdValidator();
+        internal static readonly global::RecordTypes.SecondValidator V6 = new global::RecordTypes.SecondValidator();
 
-        internal static readonly global::RecordTypes.SecondValidator V7 = new global::RecordTypes.SecondValidator();
-
-        internal static readonly global::RecordTypes.ThirdValidator V8 = new global::RecordTypes.ThirdValidator();
+        internal static readonly global::RecordTypes.ThirdValidator V7 = new global::RecordTypes.ThirdValidator();
     }
 }

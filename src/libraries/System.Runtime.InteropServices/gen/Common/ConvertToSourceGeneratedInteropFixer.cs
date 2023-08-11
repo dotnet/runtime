@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -258,6 +259,35 @@ namespace Microsoft.Interop.Analyzers
                          generator.MemberAccessExpression(
                              generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
                              generator.IdentifierName(unmanagedTypeMemberIdentifier))));
+        }
+
+        protected static SyntaxNode AddHResultStructAsErrorMarshalling(SyntaxGenerator generator, IMethodSymbol methodSymbol, SyntaxNode generatedDeclaration)
+        {
+            if (methodSymbol.ReturnType is { TypeKind: TypeKind.Struct }
+                && IsHResultLikeType(methodSymbol.ReturnType)
+                && !methodSymbol.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+            {
+                generatedDeclaration = generator.AddReturnAttributes(generatedDeclaration,
+                    GeneratedMarshalAsUnmanagedTypeErrorAttribute(generator));
+            }
+
+            return generatedDeclaration;
+
+
+            static bool IsHResultLikeType(ITypeSymbol type)
+            {
+                string typeName = type.Name;
+                return typeName.Equals("hr", StringComparison.OrdinalIgnoreCase)
+                    || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // MarshalAs(UnmanagedType.Error)
+            static SyntaxNode GeneratedMarshalAsUnmanagedTypeErrorAttribute(SyntaxGenerator generator)
+                 => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
+                     generator.AttributeArgument(
+                         generator.MemberAccessExpression(
+                             generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                             generator.IdentifierName(nameof(UnmanagedType.Error)))));
         }
     }
 }

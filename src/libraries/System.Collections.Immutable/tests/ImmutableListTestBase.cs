@@ -91,7 +91,7 @@ namespace System.Collections.Immutable.Tests
         public void FindAllTest()
         {
             Assert.True(this.GetListQuery(ImmutableList<int>.Empty).FindAll(n => true).IsEmpty);
-            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
             ImmutableList<int> actual = this.GetListQuery(list).FindAll(n => n % 2 == 1);
             List<int> expected = list.ToList().FindAll(n => n % 2 == 1);
             Assert.Equal<int>(expected, actual.ToList());
@@ -101,7 +101,7 @@ namespace System.Collections.Immutable.Tests
         public void FindTest()
         {
             Assert.Equal(0, this.GetListQuery(ImmutableList<int>.Empty).Find(n => true));
-            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
             Assert.Equal(3, this.GetListQuery(list).Find(n => (n % 2) == 1));
         }
 
@@ -109,7 +109,7 @@ namespace System.Collections.Immutable.Tests
         public void FindLastTest()
         {
             Assert.Equal(0, this.GetListQuery(ImmutableList<int>.Empty).FindLast(n => { throw new ShouldNotBeInvokedException(); }));
-            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
             Assert.Equal(5, this.GetListQuery(list).FindLast(n => (n % 2) == 1));
         }
 

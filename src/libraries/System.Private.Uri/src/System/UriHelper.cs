@@ -10,6 +10,17 @@ namespace System
 {
     internal static class UriHelper
     {
+        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        {
+#pragma warning disable CS8500 // takes address of managed type
+            return string.Create(span.Length, (IntPtr)(&span), static (buffer, spanPtr) =>
+            {
+                int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
+                Debug.Assert(charsWritten == buffer.Length);
+            });
+#pragma warning restore CS8500
+        }
+
         // http://host/Path/Path/File?Query is the base of
         //      - http://host/Path/Path/File/ ...    (those "File" words may be different in semantic but anyway)
         //      - http://host/Path/Path/#Fragment
@@ -269,7 +280,7 @@ namespace System
                 UnescapeString(pStr, start, end, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
             }
         }
-        internal static unsafe void UnescapeString(ReadOnlySpan<char> input, ref ValueStringBuilder dest,
+        internal static unsafe void UnescapeString(scoped ReadOnlySpan<char> input, scoped ref ValueStringBuilder dest,
            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
         {
             fixed (char* pStr = &MemoryMarshal.GetReference(input))

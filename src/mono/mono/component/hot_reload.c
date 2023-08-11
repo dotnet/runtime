@@ -325,6 +325,9 @@ struct _BaselineInfo {
 /* See Note: Suppressed Columns */
 static guint16 m_SuppressedDeltaColumns [MONO_TABLE_NUM];
 
+static int
+hot_reload_update_enabled_slow_check (char **env_invalid_val_out);
+
 /**
  * mono_metadata_update_enable:
  * \param modifiable_assemblies_out: set to MonoModifiableAssemblies value
@@ -343,31 +346,58 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 	static gboolean inited = FALSE;
 	static int modifiable = MONO_MODIFIABLE_ASSM_NONE;
 
+	gboolean result = FALSE;
 	if (!inited) {
-		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
-		if (val && !g_strcasecmp (val, "debug")) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
-			modifiable
-				= MONO_MODIFIABLE_ASSM_DEBUG;
-		}
-		g_free (val);
+		modifiable = hot_reload_update_enabled_slow_check (NULL);
 		inited = TRUE;
+		result = (modifiable != MONO_MODIFIABLE_ASSM_NONE);
+		if (result) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
+		}
 	}
 	if (modifiable_assemblies_out)
 		*modifiable_assemblies_out = modifiable;
-	return modifiable != MONO_MODIFIABLE_ASSM_NONE;
+	return result;
+}
+
+/**
+ * checks the DOTNET_MODIFIABLE_ASSEMBLIES environment value.  if it is recognized returns the
+ * aporporiate MONO_MODIFIABLE_ASSM_ enum value.  if it is unset or uncrecognized returns
+ * MONO_MODIFIABLE_ASSM_NONE and writes the value to \c env_invalid_val_out, if it is non-NULL;
+ */
+static int
+hot_reload_update_enabled_slow_check (char **env_invalid_val_out)
+{
+	int modifiable = MONO_MODIFIABLE_ASSM_NONE;
+	char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
+	if (val && !g_strcasecmp (val, "debug")) {
+		modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+	} else {
+		/* unset or unrecognized value */
+		if (env_invalid_val_out != NULL) {
+			*env_invalid_val_out = val;
+		} else {
+			g_free (val);
+		}
+	}
+	return modifiable;
 }
 
 static gboolean
-assembly_update_supported (MonoAssembly *assm)
+assembly_update_supported (MonoImage *image_base, MonoError *error)
 {
 	int modifiable = 0;
-	if (!hot_reload_update_enabled (&modifiable))
+	char *invalid_env_val = NULL;
+	modifiable = hot_reload_update_enabled_slow_check (&invalid_env_val);
+	if (modifiable == MONO_MODIFIABLE_ASSM_NONE) {
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'Debug'", image_base->name, invalid_env_val);
+		g_free (invalid_env_val);
 		return FALSE;
-	if (modifiable == MONO_MODIFIABLE_ASSM_DEBUG &&
-	    mono_assembly_is_jit_optimizer_disabled (assm))
-		return TRUE;
-	return FALSE;
+	} else if (!mono_assembly_is_jit_optimizer_disabled (image_base->assembly)) {
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because it does not have a System.Diagnostics.DebuggableAttribute with the DebuggingModes.DisableOptimizations flag (editing Release build assemblies is not supported)", image_base->name);
+		return FALSE;
+	}
+	return TRUE;
 }
 
 /**
@@ -1638,7 +1668,13 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				i++; /* skip the next record */
 				continue;
 			}
-			/* fallthru */
+			// don't expect to see any other func codes with this table
+			g_assert (func_code == ENC_FUNC_DEFAULT);
+			// If it's an addition, it's an added type definition, continue.
+
+			// If it's a modification, Roslyn sometimes sends this when a custom
+			// attribute is deleted from a type definition.
+			break;
 		}
 		default:
 			if (!is_addition) {
@@ -2249,16 +2285,42 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					 * especially since from the next generation's point of view
 					 * that's what adding a field/method will be. */
 					break;
-				case ENC_FUNC_ADD_EVENT:
-					g_assert_not_reached (); /* FIXME: implement me */
 				default:
 					g_assert_not_reached (); /* unknown func_code */
 				}
 				break;
+			} else {
+				switch (func_code) {
+				case ENC_FUNC_DEFAULT:
+					// Roslyn sends this sometimes when it deletes a custom
+					// attribute.  In this case no rows of the table def have
+					// should have changed from the previous generation.
+
+					// Note: we may want to check that Parent and Interfaces
+					// haven't changed.  But note that's tricky to do: we can't
+					// just compare tokens: the parent could be a TypeRef token,
+					// and roslyn does send a new typeref row (that ends up
+					// referencing the same type definition).  But we also don't
+					// want to convert to a `MonoClass*` too eagerly - if the
+					// class hasn't been used yet we don't want to kick off
+					// class initialization (which could mention the current
+					// class thanks to generic arguments - see class-init.c)
+					// Same with Interfaces.  Fields and Methods in an EnC
+					// updated row are zero.  So that only really leaves
+					// Attributes as the only column we can compare, which
+					// wouldn't tell us much (and perhaps in the future Roslyn
+					// could allow changing visibility, so we wouldn't want to
+					// compare for equality, anyway) So... we're done.
+					break;
+				case ENC_FUNC_ADD_METHOD:
+				case ENC_FUNC_ADD_FIELD:
+					/* modifying an existing class by adding a method or field, etc. */
+					break;
+				default:
+					/* not expecting anything else */
+					g_assert_not_reached ();
+				}
 			}
-			/* modifying an existing class by adding a method or field, etc. */
-			g_assert (!is_addition);
-			g_assert (func_code != ENC_FUNC_DEFAULT);
 			break;
 		}
 		case MONO_TABLE_NESTEDCLASS: {
@@ -2509,8 +2571,7 @@ dump_methodbody (MonoImage *image)
 void
 hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
 {
-	if (!assembly_update_supported (image_base->assembly)) {
-		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
+	if (!assembly_update_supported (image_base, error)) {
 		return;
 	}
 

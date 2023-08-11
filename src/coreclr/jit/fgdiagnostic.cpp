@@ -941,6 +941,49 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 }
             }
 
+            // Optionally show GC Heap Mem SSA state and Memory Phis
+            //
+            if ((JitConfig.JitDumpFgMemorySsa() != 0) && (fgSsaPassesCompleted > 0))
+            {
+                fprintf(fgxFile, "\\n");
+
+                MemoryKind     k      = MemoryKind::GcHeap;
+                const unsigned ssaIn  = block->bbMemorySsaNumIn[k];
+                const unsigned ssaOut = block->bbMemorySsaNumOut[k];
+
+                if (ssaIn != SsaConfig::RESERVED_SSA_NUM)
+                {
+                    ValueNum                  vnIn   = GetMemoryPerSsaData(ssaIn)->m_vnPair.GetLiberal();
+                    BasicBlock::MemoryPhiArg* memPhi = block->bbMemorySsaPhiFunc[k];
+                    if ((memPhi != nullptr) && (memPhi != BasicBlock::EmptyMemoryPhiDef))
+                    {
+                        fprintf(fgxFile, "MI %d " FMT_VN " = PHI(", ssaIn, vnIn);
+                        bool first = true;
+                        for (; memPhi != nullptr; memPhi = memPhi->m_nextArg)
+                        {
+                            ValueNum phiVN = GetMemoryPerSsaData(memPhi->GetSsaNum())->m_vnPair.GetLiberal();
+                            fprintf(fgxFile, "%s%d " FMT_VN, first ? "" : ",", memPhi->m_ssaNum, phiVN);
+                            first = false;
+                        }
+                        fprintf(fgxFile, ")");
+                    }
+                    else
+                    {
+                        ValueNum vn = GetMemoryPerSsaData(block->bbMemorySsaNumIn[k])->m_vnPair.GetLiberal();
+                        fprintf(fgxFile, "MI %d " FMT_VN, block->bbMemorySsaNumIn[k], vn);
+                    }
+                    fprintf(fgxFile, "\\n");
+
+                    if (block->bbMemoryHavoc != 0)
+                    {
+                        fprintf(fgxFile, "** HAVOC **\\n");
+                    }
+
+                    ValueNum vnOut = GetMemoryPerSsaData(ssaOut)->m_vnPair.GetLiberal();
+                    fprintf(fgxFile, "MO %d " FMT_VN, ssaOut, vnOut);
+                }
+            }
+
             if (block->bbJumpKind == BBJ_COND)
             {
                 fprintf(fgxFile, "\\n");

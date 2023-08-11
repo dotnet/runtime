@@ -51,10 +51,11 @@ void WrapICorJitInfo::getMethodSig(
 
 bool WrapICorJitInfo::getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_INFO* info)
+          CORINFO_METHOD_INFO* info,
+          CORINFO_CONTEXT_HANDLE context)
 {
     API_ENTER(getMethodInfo);
-    bool temp = wrapHnd->getMethodInfo(ftn, info);
+    bool temp = wrapHnd->getMethodInfo(ftn, info, context);
     API_LEAVE(getMethodInfo);
     return temp;
 }
@@ -548,6 +549,17 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::getFieldInClass(
     return temp;
 }
 
+GetTypeLayoutResult WrapICorJitInfo::getTypeLayout(
+          CORINFO_CLASS_HANDLE typeHnd,
+          CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+          size_t* numTreeNodes)
+{
+    API_ENTER(getTypeLayout);
+    GetTypeLayoutResult temp = wrapHnd->getTypeLayout(typeHnd, treeNodes, numTreeNodes);
+    API_LEAVE(getTypeLayout);
+    return temp;
+}
+
 bool WrapICorJitInfo::checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           const char* modifier,
@@ -560,12 +572,11 @@ bool WrapICorJitInfo::checkMethodModifier(
 }
 
 CorInfoHelpFunc WrapICorJitInfo::getNewHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CLASS_HANDLE classHandle,
           bool* pHasSideEffects)
 {
     API_ENTER(getNewHelper);
-    CorInfoHelpFunc temp = wrapHnd->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+    CorInfoHelpFunc temp = wrapHnd->getNewHelper(classHandle, pHasSideEffects);
     API_LEAVE(getNewHelper);
     return temp;
 }

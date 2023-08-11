@@ -279,6 +279,24 @@ namespace System.Reflection.Tests
             Assert.Null(Type.GetType("ExtraComma, , System.Runtime"));
             Assert.Throws<FileLoadException>(() => Type.GetType("System.Object, System.Runtime, Version=x.y"));
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
+        public void TestTypeIdentifierAttribute()
+        {
+            string typeName = $"{typeof(EquivalentValueType).FullName},{typeof(TestAssembly.ClassToInvoke).Assembly.GetName().Name}";
+            Type otherEquivalentValueType = Type.GetType(typeName);
+            Assert.True(otherEquivalentValueType.IsEquivalentTo(typeof(EquivalentValueType)));
+
+            var mi = typeof(MyNamespace1.ClassForTypeIdentifier).GetMethod("MyMethod");
+
+            // Sanity check.
+            object[] args = new object[1] { Activator.CreateInstance(typeof(EquivalentValueType)) };
+            Assert.Equal(42, mi.Invoke(null, args));
+
+            // Ensure we can invoke with an arg type that is duplicated in another assembly but having [TypeIdentifier].
+            args = new object[1] { Activator.CreateInstance(otherEquivalentValueType) };
+            Assert.Equal(42, mi.Invoke(null, args));
+        }
     }
 
     namespace MyNamespace1
@@ -322,6 +340,11 @@ namespace System.Reflection.Tests
         namespace MyNamEspace3
         {
             public class Foo { }
+        }
+
+        public class ClassForTypeIdentifier
+        {
+            public static int MyMethod(EquivalentValueType v) => 42;
         }
     }
 

@@ -204,6 +204,25 @@ struct Agnostic_GetStaticFieldCurrentClass
     bool      isSpeculative;
 };
 
+struct Agnostic_CORINFO_TYPE_LAYOUT_NODE
+{
+    DWORDLONG simdTypeHnd;
+    DWORDLONG diagFieldHnd;
+    DWORD parent;
+    DWORD offset;
+    DWORD size;
+    DWORD numFields;
+    BYTE type;
+    bool hasSignificantPadding;
+};
+
+struct Agnostic_GetTypeLayoutResult
+{
+    DWORD result;
+    DWORD nodesBuffer;
+    DWORD numNodes;
+};
+
 struct Agnostic_CORINFO_RESOLVED_TOKEN
 {
     Agnostic_CORINFO_RESOLVED_TOKENin inValue;
@@ -442,12 +461,6 @@ struct Agnostic_FindCallSiteSig
     DWORDLONG context;
 };
 
-struct Agnostic_GetNewHelper
-{
-    DWORDLONG hClass;
-    DWORDLONG callerHandle;
-};
-
 struct Agnostic_GetCastingHelper
 {
     DWORDLONG hClass;
@@ -511,10 +524,13 @@ struct Agnostic_GetProfilingHandle
 struct Agnostic_GetThreadLocalStaticBlocksInfo
 {
     Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
-    UINT                          offsetOfThreadLocalStoragePointer;
-    UINT                          offsetOfMaxThreadStaticBlocks;
-    UINT                          offsetOfThreadStaticBlocks;
-    UINT                          offsetOfGCDataPointer;
+    DWORDLONG                     tlsGetAddrFtnPtr;
+    DWORDLONG                     tlsIndexObject;
+    DWORDLONG                     threadVarsSection;
+    DWORD                         offsetOfThreadLocalStoragePointer;
+    DWORD                         offsetOfMaxThreadStaticBlocks;
+    DWORD                         offsetOfThreadStaticBlocks;
+    DWORD                         offsetOfGCDataPointer;
 };
 
 struct Agnostic_GetThreadLocalFieldInfo

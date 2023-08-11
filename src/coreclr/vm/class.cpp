@@ -146,12 +146,16 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 
         if (pDelegateEEClass->m_pStaticCallStub)
         {
+            // Collect data to remove stub entry from StubManager if
+            // stub is deleted.
+            BYTE* entry = (BYTE*)pDelegateEEClass->m_pStaticCallStub->GetEntryPoint();
+            UINT length = pDelegateEEClass->m_pStaticCallStub->GetNumCodeBytes();
+
             ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pStaticCallStub, sizeof(Stub));
             BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
-
             if (fStubDeleted)
             {
-                DelegateInvokeStubManager::g_pManager->RemoveStub(pDelegateEEClass->m_pStaticCallStub);
+                StubLinkStubManager::g_pManager->RemoveStubRange(entry, length);
             }
         }
         if (pDelegateEEClass->m_pInstRetBuffCallStub)
@@ -2086,7 +2090,7 @@ TypeHandle MethodTable::SetupCoClassForInterface()
         CoClassType = TypeName::GetTypeReferencedByCustomAttribute(ss.GetUnicode(), GetAssembly());
 
         // Cache the coclass type
-        GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
+        GetClass()->SetCoClassForInterface(CoClassType);
     }
     return CoClassType;
 }
@@ -2452,7 +2456,7 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     }
 
     // Cache the interface type
-    GetClass_NoLogging()->SetComInterfaceType(ItfType);
+    GetClass()->SetComInterfaceType(ItfType);
 
     return ItfType;
 }
@@ -2538,14 +2542,14 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
             {
                 FieldDesc *pFD = &GetClass()->GetFieldDescList()[i];
 #ifdef DEBUG_LAYOUT
-                printf("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset_NoLogging(), pFD->GetName());
+                printf("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset(), pFD->GetName());
 #endif
                 if(debug) {
-                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
+                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset(), pFD->GetName());
                     OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else {
-                    LOG((LF_CLASSLOADER, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName()));
+                    LOG((LF_CLASSLOADER, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset(), pFD->GetName()));
                 }
             }
         }
@@ -2617,13 +2621,13 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
             {
                 FieldDesc *pFD = GetClass()->GetFieldDescList() + ((GetNumInstanceFields()-cParentInstanceFields) + i);
                 if(debug) {
-                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
+                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset(), pFD->GetName());
                     OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else
                 {
                     //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
-                    LOG((LF_ALWAYS, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName()));
+                    LOG((LF_ALWAYS, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset(), pFD->GetName()));
                 }
             }
         }
