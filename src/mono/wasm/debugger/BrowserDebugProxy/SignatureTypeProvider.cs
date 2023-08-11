@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 
-namespace Microsoft.WebAssembly.Diagnostics
+namespace Microsoft.WebAssembly.Diagnostics;
 {
     internal sealed class SignatureTypeProvider : ISignatureTypeProvider<ElementType, object>
     {
