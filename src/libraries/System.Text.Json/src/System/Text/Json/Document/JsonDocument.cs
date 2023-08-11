@@ -921,6 +921,7 @@ namespace System.Text.Json
                 ClearAndReturn(rented);
             }
         }
+
         private void WritePropertyName(in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;
@@ -934,6 +935,7 @@ namespace System.Text.Json
                 ClearAndReturn(rented);
             }
         }
+
         private void WriteString(in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;
