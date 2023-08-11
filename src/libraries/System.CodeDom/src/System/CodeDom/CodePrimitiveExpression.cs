@@ -7,11 +7,11 @@ namespace System.CodeDom
     {
         public CodePrimitiveExpression() { }
 
-        public CodePrimitiveExpression(object value)
+        public CodePrimitiveExpression(object? value)
         {
             Value = value;
         }
 
-        public object Value { get; set; }
+        public object? Value { get; set; }
     }
 }
