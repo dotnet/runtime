@@ -14882,6 +14882,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                             case TYP_FLOAT:
                             {
+#if defined(TARGET_64BIT)
                                 if (tree->IsUnsigned())
                                 {
                                     f1 = (float)UINT32(i1);
@@ -14890,6 +14891,20 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     f1 = (float)INT32(i1);
                                 }
+#else
+                                // 32-bit currently does a 2-step conversion, which is incorrect
+                                // but which we are going to take a breaking change around early
+                                // in a release cycle.
+
+                                if (tree->IsUnsigned())
+                                {
+                                    f1 = forceCastToFloat(UINT32(i1));
+                                }
+                                else
+                                {
+                                    f1 = forceCastToFloat(INT32(i1));
+                                }
+#endif
 
                                 d1 = f1;
                                 goto CNS_DOUBLE;
@@ -14988,10 +15003,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                             case TYP_FLOAT:
                             {
-                                // `long -> double -> float` can produce different results from
-                                // `long -> float`, such as for 0x4000_0040_0000_0001L. So ensure
-                                // we handle this directly.
-
+#if defined(TARGET_64BIT)
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
                                     f1 = FloatingPointUtils::convertUInt64ToFloat((unsigned __int64)lval1);
@@ -15000,6 +15012,20 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     f1 = (float)lval1;
                                 }
+#else
+                                // 32-bit currently does a 2-step conversion, which is incorrect
+                                // but which we are going to take a breaking change around early
+                                // in a release cycle.
+
+                                if (tree->IsUnsigned() && (lval1 < 0))
+                                {
+                                    f1 = forceCastToFloat(FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1));
+                                }
+                                else
+                                {
+                                    f1 = forceCastToFloat((double)lval1);
+                                }
+#endif
 
                                 d1 = f1;
                                 goto CNS_DOUBLE;

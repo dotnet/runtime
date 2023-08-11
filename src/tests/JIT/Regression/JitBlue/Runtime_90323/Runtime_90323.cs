@@ -10,7 +10,8 @@ public class Runtime_90323
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static float ConvertToSingle(long value) => (float)value;
 
-    [Fact]
+    // 32-bit currently performs a 2-step conversion which causes a different result to be produced
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
     public static int TestEntryPoint()
     {
         bool passed = true;
@@ -25,7 +26,7 @@ public class Runtime_90323
 
         if (BitConverter.SingleToUInt32Bits((float)(value)) != 0x5E80_0001) // 4.6116866E+18f
         {
-            Console.WriteLine($"Mismatch between constant folding and expected value: {(float)(value)} != 4.6116866E+18f; {BitConverter.SingleToUInt32Bits((float)(value))} != 0x5E80_0001");
+            Console.WriteLine($"Mismatch between constant folding and expected value: {(float)(value)} != 4.6116866E+18f; 0x{BitConverter.SingleToUInt32Bits((float)(value)):X8} != 0x5E800001");
             passed = false;
         }
 
