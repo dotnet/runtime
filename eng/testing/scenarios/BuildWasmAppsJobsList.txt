@@ -13,6 +13,7 @@ Wasm.Build.Tests.Blazor.MiscTests2
 Wasm.Build.Tests.Blazor.MiscTests3
 Wasm.Build.Tests.Blazor.NativeTests
 Wasm.Build.Tests.Blazor.NoopNativeRebuildTest
+Wasm.Build.Tests.Blazor.WorkloadRequiredTests
 Wasm.Build.Tests.Blazor.IcuTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.ConfigSrcTests
