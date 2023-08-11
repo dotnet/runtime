@@ -146,19 +146,19 @@ namespace System.Net.Quic.Tests
             {
                 if (useCancellationToken)
                 {
-                    var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(QuicDefaults.ConnectionHandshakeTimeout + TimeSpan.FromSeconds(1), cancellationToken));
+                    var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(QuicDefaults.HandshakeTimeout + TimeSpan.FromSeconds(1), cancellationToken));
                     Assert.True(cancellationToken.IsCancellationRequested);
                     Assert.Equal(cancellationToken, oce.CancellationToken);
                     ExceptionDispatchInfo.Throw(oce);
                 }
-                await Task.Delay(QuicDefaults.ConnectionHandshakeTimeout + TimeSpan.FromSeconds(1));
+                await Task.Delay(QuicDefaults.HandshakeTimeout + TimeSpan.FromSeconds(1));
                 return CreateQuicServerOptions();
             };
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
             Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await listener.AcceptConnectionAsync());
-            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.ConnectionHandshakeTimeout), exception.Message);
+            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), exception.Message);
 
             // Connect attempt should be stopped with "UserCanceled".
             var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
