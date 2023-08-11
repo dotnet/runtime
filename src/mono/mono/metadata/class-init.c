@@ -3654,8 +3654,6 @@ void
 mono_class_setup_properties (MonoClass *klass)
 {
 	guint startm, endm;
-	guint32 cols [MONO_PROPERTY_SIZE];
-	MonoTableInfo *msemt = &klass->image->tables [MONO_TABLE_METHODSEMANTICS];
 	MonoProperty *properties;
 	guint32 first, last, count;
 	MonoClassPropertyInfo *info;
@@ -3712,28 +3710,46 @@ mono_class_setup_properties (MonoClass *klass)
 
 		properties = (MonoProperty *)mono_class_alloc0 (klass, sizeof (MonoProperty) * count);
 		for (guint32 i = first; i < last; ++i) {
-			mono_metadata_decode_table_row (klass->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
+			mdcursor_t c;
+			md_token_to_cursor(klass->image->metadata_handle, mono_metadata_make_token(MONO_TABLE_PROPERTY, i), &c);
+
+			uint32_t flags;
+			if (1 != md_get_column_value_as_constant(c, mdtProperty_Flags, 1, &flags))
+				g_assert_not_reached ();
+			
+			const char *name;
+			if (1 != md_get_column_value_as_utf8(c, mdtProperty_Name, 1, &name))
+				g_assert_not_reached ();
+
 			properties [i - first].parent = klass;
-			properties [i - first].attrs = cols [MONO_PROPERTY_FLAGS];
-			properties [i - first].name = mono_metadata_string_heap (klass->image, cols [MONO_PROPERTY_NAME]);
+			properties [i - first].attrs = flags;
+			properties [i - first].name = name;
 
 			startm = mono_metadata_methods_from_property (klass->image, i, &endm);
 			int first_idx = mono_class_get_first_method_idx (klass);
 			for (guint j = startm; j < endm; ++j) {
 				MonoMethod *method;
 
-				mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+				mdcursor_t semantic;
+				md_token_to_cursor(klass->image->metadata_handle, mono_metadata_make_token(MONO_TABLE_METHODSEMANTICS, j), &semantic);
+				guint32 method_tok;
+				if (1 != md_get_column_value_as_token(semantic, mdtMethodSemantics_Method, 1, &method_tok))
+					g_assert_not_reached ();
 
 				if (klass->image->uncompressed_metadata) {
 					ERROR_DECL (error);
 					/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
-					method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], klass, NULL, error);
+					method = mono_get_method_checked (klass->image, method_tok, klass, NULL, error);
 					mono_error_cleanup (error); /* FIXME don't swallow this error */
 				} else {
-					method = klass->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - first_idx];
+					method = klass->methods [mono_metadata_token_index(method_tok) - 1 - first_idx];
 				}
 
-				switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
+				uint32_t semantic_type;
+				if (1 != md_get_column_value_as_constant(semantic, mdtMethodSemantics_Semantics, 1, &semantic_type))
+					g_assert_not_reached ();
+
+				switch (semantic_type) {
 				case METHOD_SEMANTIC_SETTER:
 					properties [i - first].set = method;
 					break;
@@ -3783,8 +3799,6 @@ mono_class_setup_events (MonoClass *klass)
 {
 	guint32 first, last, count;
 	guint startm, endm;
-	guint32 cols [MONO_EVENT_SIZE];
-	MonoTableInfo *msemt = &klass->image->tables [MONO_TABLE_METHODSEMANTICS];
 	MonoEvent *events;
 
 	MonoClassEventInfo *info = mono_class_get_event_info (klass);
@@ -3843,28 +3857,46 @@ mono_class_setup_events (MonoClass *klass)
 		for (guint32 i = first; i < last; ++i) {
 			MonoEvent *event = &events [i - first];
 
-			mono_metadata_decode_table_row (klass->image, MONO_TABLE_EVENT, i, cols, MONO_EVENT_SIZE);
+			mdcursor_t event_cursor;
+			md_token_to_cursor(klass->image->metadata_handle, mono_metadata_make_token(MONO_TABLE_EVENT, i), &event_cursor);
+
+			guint32 flags;
+			if (1 != md_get_column_value_as_constant(event_cursor, mdtEvent_EventFlags, 1, &flags))
+				g_assert_not_reached ();
+
+			const char *name;
+			if (1 != md_get_column_value_as_utf8(event_cursor, mdtEvent_Name, 1, &name))
+				g_assert_not_reached ();
+
 			event->parent = klass;
-			event->attrs = cols [MONO_EVENT_FLAGS];
-			event->name = mono_metadata_string_heap (klass->image, cols [MONO_EVENT_NAME]);
+			event->attrs = flags;
+			event->name = name;
 
 			startm = mono_metadata_methods_from_event (klass->image, i, &endm);
 			int first_idx = mono_class_get_first_method_idx (klass);
 			for (guint j = startm; j < endm; ++j) {
 				MonoMethod *method;
 
-				mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+				mdcursor_t semantic;
+				md_token_to_cursor(klass->image->metadata_handle, mono_metadata_make_token(MONO_TABLE_METHODSEMANTICS, j), &semantic);
+				guint32 method_tok;
+				if (1 != md_get_column_value_as_token(semantic, mdtMethodSemantics_Method, 1, &method_tok))
+					g_assert_not_reached ();
 
 				if (klass->image->uncompressed_metadata) {
 					ERROR_DECL (error);
 					/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
-					method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], klass, NULL, error);
+					method = mono_get_method_checked (klass->image, method_tok, klass, NULL, error);
 					mono_error_cleanup (error); /* FIXME don't swallow this error */
 				} else {
-					method = klass->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - first_idx];
+					method = klass->methods [mono_metadata_token_index(method_tok) - 1 - first_idx];
 				}
 
-				switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
+				uint32_t semantic_type;
+				if (1 != md_get_column_value_as_constant(semantic, mdtMethodSemantics_Semantics, 1, &semantic_type))
+					g_assert_not_reached ();
+
+				switch (semantic_type) {
 				case METHOD_SEMANTIC_ADD_ON:
 					event->add = method;
 					break;
@@ -4164,9 +4196,14 @@ mono_class_setup_nested_types (MonoClass *klass)
 	classes = NULL;
 	while (i) {
 		MonoClass* nclass;
-		guint32 cols [MONO_NESTED_CLASS_SIZE];
-		mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-		nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED], error);
+		guint32 token = mono_metadata_make_token (MONO_TABLE_NESTEDCLASS, i);
+		mdcursor_t nested_class_cursor;
+		md_token_to_cursor(klass->image->metadata_handle, token, &nested_class_cursor);
+		guint32 nested_token;
+		if (1 != md_get_column_value_as_token(nested_class_cursor, mdtNestedClass_NestedClass, 1, &nested_token))
+			g_assert_not_reached ();
+
+		nclass = mono_class_create_from_typedef (klass->image, nested_token, error);
 		if (!is_ok (error)) {
 			/*FIXME don't swallow the error message*/
 			mono_error_cleanup (error);
