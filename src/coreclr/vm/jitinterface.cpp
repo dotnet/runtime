@@ -10614,6 +10614,39 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         }
 #endif
 
+        // Array element accessors are more perf sensitive than other managed helpers and indirection
+        // costs introduced by PreStub could be noticeable (7% to 30% depending on platform).
+        // Other helpers are either more complex, less common, or have their trivial case inlined by the JIT.
+        //
+        // So if these helpers already reached Tier1 somewhere, we can safely skip the PreStub indirection.
+        if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_ARRADDR_ST || dynamicFtnNum == DYNAMIC_CORINFO_HELP_LDELEMA_REF)
+        {
+            Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
+            _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+
+            MethodDesc* helperMD = pPrecode->GetMethodDesc();
+            _ASSERT(helperMD != nullptr);
+
+            NativeCodeVersion::OptimizationTier tier;
+
+            {
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
+                NativeCodeVersion activeCodeVersion = helperMD->GetCodeVersionManager()->GetActiveILCodeVersion(helperMD)
+                    .GetActiveNativeCodeVersion(helperMD);
+                tier = activeCodeVersion.GetOptimizationTier();
+            }
+
+            if (tier == NativeCodeVersion::OptimizationTier::OptimizationTier1 ||
+                tier == NativeCodeVersion::OptimizationTier::OptimizationTierOptimized)
+            {
+                return (LPVOID)GetEEFuncEntryPoint(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
+            }
+
+            // Not in the final tier yet, fallback to the indirection.
+            *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+            return NULL;
+        }
+
         if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFINTERFACE ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFANY ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFARRAY ||
