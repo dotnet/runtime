@@ -42,6 +42,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
             if (PlatformDetection.IsWindows && address.IsIPv6LinkLocal)
             {
+                // https://github.com/microsoft/msquic/issues/3813
                 Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
             }
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());

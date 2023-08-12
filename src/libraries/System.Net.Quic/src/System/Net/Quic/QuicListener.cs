@@ -158,10 +158,6 @@ public sealed partial class QuicListener : IAsyncDisposable
         // Get the actual listening endpoint.
         address = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS);
         LocalEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&address, options.ListenEndPoint.AddressFamily);
-        if (options.ListenEndPoint.Address.IsIPv6LinkLocal && LocalEndPoint.Address.ScopeId == 0)
-        {
-            LocalEndPoint.Address.ScopeId =  options.ListenEndPoint.Address.ScopeId;
-        }
     }
 
     /// <summary>
