@@ -726,6 +726,8 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     // call the <cinit>
     OBJECTREF Throwable = NULL;
 
+    OBJECTREF obj = NULL;
+
     MethodTable * pDeclMT = NULL;
     if (!declaringType.IsNull())
     {
@@ -905,10 +907,17 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         MethodTable *pMT = fldTH.AsMethodTable();
         {
             void* pFieldData;
+            fldTH.AsMethodTable()->EnsureActive();
+            obj = fldTH.AsMethodTable()->Allocate();
+            GCPROTECT_BEGIN(obj);
             if (pField->IsStatic())
                 pFieldData = pField->GetCurrentStaticAddress();
             else
-                pFieldData = (*((BYTE**)target)) + pField->GetOffset() + sizeof(Object);
+            {
+                OBJECTREF objRef = ObjectToOBJECTREF(obj);
+                pFieldData = pField->GetAddress(OBJECTREFToObject(objRef));
+            }
+            GCPROTECT_END();
 
             if (*valueObj == NULL)
                 InitValueClass(pFieldData, pMT);
@@ -1051,7 +1060,8 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         if (pField->IsStatic())
             p = pField->GetCurrentStaticAddress();
         else {
-                p = (*((BYTE**)target)) + pField->GetOffset() + sizeof(Object);
+            OBJECTREF objRef = ObjectToOBJECTREF(obj);
+            p = pField->GetAddress(OBJECTREFToObject(objRef));
         }
         GCPROTECT_END();
 
