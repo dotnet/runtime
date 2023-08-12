@@ -14,43 +14,37 @@ namespace System
         // In addition we don't want a direct reference to ComWrappers to allow for better
         // trimming.  So we instead make use of delegates that ComWrappers registers when
         // it is used.
-        private static unsafe delegate*<IntPtr, long, object?> ComWeakRefToObjectCallback;
-        private static unsafe delegate*<object, bool> PossiblyComObjectCallback;
-        private static unsafe delegate*<object, long*, IntPtr> ObjectToComWeakRefCallback;
+        private static unsafe volatile delegate*<IntPtr, long, object?> s_comWeakRefToObjectCallback;
+        private static unsafe volatile delegate*<object, bool> s_possiblyComObjectCallback;
+        private static unsafe volatile delegate*<object, out long, IntPtr> s_objectToComWeakRefCallback;
 
         internal static unsafe void InitializeCallbacks(
             delegate*<IntPtr, long, object?> comWeakRefToObject,
             delegate*<object, bool> possiblyComObject,
-            delegate*<object, long*, IntPtr> objectToComWeakRef)
+            delegate*<object, out long, IntPtr> objectToComWeakRef)
         {
-            // PossiblyComObjectCallback is initialized last to avoid any potential races
-            // where functions are being called while initialization is happening.
-            ComWeakRefToObjectCallback = comWeakRefToObject;
-            ObjectToComWeakRefCallback = objectToComWeakRef;
-            PossiblyComObjectCallback = possiblyComObject;
+            // PossiblyComObjectCallback is initialized last to avoid any potential race
+            // conditions where functions are being called while initialization is happening.
+            s_comWeakRefToObjectCallback = comWeakRefToObject;
+            s_objectToComWeakRefCallback = objectToComWeakRef;
+            s_possiblyComObjectCallback = possiblyComObject;
         }
 
         internal static unsafe object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId)
         {
-            return ComWeakRefToObjectCallback != null ? ComWeakRefToObjectCallback(pComWeakRef, wrapperId) : null;
+            return s_comWeakRefToObjectCallback != null ? s_comWeakRefToObjectCallback(pComWeakRef, wrapperId) : null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool PossiblyComObject(object target)
         {
-            return PossiblyComObjectCallback != null ? PossiblyComObjectCallback(target) : false;
+            return s_possiblyComObjectCallback != null ? s_possiblyComObjectCallback(target) : false;
         }
 
         internal static unsafe IntPtr ObjectToComWeakRef(object target, out long wrapperId)
         {
             wrapperId = 0;
-            if (ObjectToComWeakRefCallback != null)
-            {
-                fixed (long* id = &wrapperId)
-                    return ObjectToComWeakRefCallback(target, id);
-            }
-
-            return IntPtr.Zero;
+            return s_objectToComWeakRefCallback != null ? s_objectToComWeakRefCallback(target, out wrapperId) : IntPtr.Zero;
         }
     }
 }

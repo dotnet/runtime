@@ -1563,20 +1563,19 @@ namespace System.Runtime.InteropServices
             return null;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe bool PossiblyComObject(object target)
         {
             return s_rcwTable.TryGetValue(target, out _);
         }
 
-        private static unsafe IntPtr ObjectToComWeakRef(object target, long* wrapperId)
+        private static unsafe IntPtr ObjectToComWeakRef(object target, out long wrapperId)
         {
             if (TryGetComInstanceForIID(
                 target,
                 IID_IWeakReferenceSource,
                 out IntPtr weakReferenceSourcePtr,
                 out bool isAggregated,
-                out *wrapperId))
+                out wrapperId))
             {
                 // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
                 // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
@@ -1588,7 +1587,6 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            *wrapperId = 0;
             return IntPtr.Zero;
         }
     }
