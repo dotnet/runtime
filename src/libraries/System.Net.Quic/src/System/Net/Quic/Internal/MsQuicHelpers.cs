@@ -43,7 +43,6 @@ internal static class MsQuicHelpers
         {
             SocketAddressPal.SetAddressFamily(addressBytes, (AddressFamily)addressFamilyOverride!);
         }
-
         return IPEndPointExtensions.CreateIPEndPoint(addressBytes);
     }
 
