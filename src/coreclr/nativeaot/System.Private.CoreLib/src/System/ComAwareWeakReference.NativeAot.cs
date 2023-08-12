@@ -14,17 +14,15 @@ namespace System
         // In addition we don't want a direct reference to ComWrappers to allow for better
         // trimming.  So we instead make use of delegates that ComWrappers registers when
         // it is used.
-        private static unsafe volatile delegate*<IntPtr, long, object?> s_comWeakRefToObjectCallback;
-        private static unsafe volatile delegate*<object, bool> s_possiblyComObjectCallback;
-        private static unsafe volatile delegate*<object, out long, IntPtr> s_objectToComWeakRefCallback;
+        private static unsafe delegate*<IntPtr, long, object?> s_comWeakRefToObjectCallback;
+        private static unsafe delegate*<object, bool> s_possiblyComObjectCallback;
+        private static unsafe delegate*<object, out long, IntPtr> s_objectToComWeakRefCallback;
 
         internal static unsafe void InitializeCallbacks(
             delegate*<IntPtr, long, object?> comWeakRefToObject,
             delegate*<object, bool> possiblyComObject,
             delegate*<object, out long, IntPtr> objectToComWeakRef)
         {
-            // PossiblyComObjectCallback is initialized last to avoid any potential race
-            // conditions where functions are being called while initialization is happening.
             s_comWeakRefToObjectCallback = comWeakRefToObject;
             s_objectToComWeakRefCallback = objectToComWeakRef;
             s_possiblyComObjectCallback = possiblyComObject;
