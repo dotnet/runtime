@@ -34,15 +34,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         [InterceptsLocationAttribute(@"src-0.cs", 12, 20)]
         public static void Bind_ProgramMyClass(this IConfiguration configuration, string key, object? obj)
         {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
+            ArgumentNullException.ThrowIfNull(obj);
 
             var typedObj = (Program.MyClass)obj;
             BindCore(configuration.GetSection(key), ref typedObj, binderOptions: null);

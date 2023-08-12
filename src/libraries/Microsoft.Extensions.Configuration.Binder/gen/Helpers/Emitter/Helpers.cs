@@ -213,12 +213,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitCheckForNullArgument_WithBlankLine(string paramName)
             {
-                _writer.WriteLine($$"""
+                if (_sourceGenSpec.EmitThrowIfNullMethod)
+                {
+                    _writer.WriteLine($"ArgumentNullException.ThrowIfNull({paramName});");
+                }
+                else
+                {
+                    _writer.WriteLine($$"""
                     if ({{paramName}} is null)
                     {
                         throw new ArgumentNullException(nameof({{paramName}}));
                     }
                     """);
+                }
 
                 _writer.WriteLine();
             }

@@ -42,10 +42,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
         public static OptionsBuilder<TOptions> Bind<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration configuration, Action<BinderOptions>? configureOptions) where TOptions : class
         {
-            if (optionsBuilder is null)
-            {
-                throw new ArgumentNullException(nameof(optionsBuilder));
-            }
+            ArgumentNullException.ThrowIfNull(optionsBuilder);
 
             Configure<TOptions>(optionsBuilder.Services, optionsBuilder.Name, configuration, configureOptions);
             return optionsBuilder;
@@ -56,15 +53,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
         public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, IConfiguration configuration, Action<BinderOptions>? configureOptions) where TOptions : class
         {
-            if (services is null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(configuration);
 
             OptionsServiceCollectionExtensions.AddOptions(services);
             services.AddSingleton<IOptionsChangeTokenSource<TOptions>>(new ConfigurationChangeTokenSource<TOptions>(name, configuration));
@@ -77,10 +67,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCoreMain(IConfiguration configuration, object obj, Type type, Action<BinderOptions>? configureOptions)
         {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             if (obj is null)
             {

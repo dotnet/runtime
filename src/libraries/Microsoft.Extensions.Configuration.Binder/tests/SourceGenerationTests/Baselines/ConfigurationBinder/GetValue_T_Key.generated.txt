@@ -37,10 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region Core binding extensions.
         public static object? GetValueCore(this IConfiguration configuration, Type type, string key)
         {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             IConfigurationSection section = configuration.GetSection(key);
 

@@ -40,10 +40,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             BinderOptions? binderOptions = GetBinderOptions(configureOptions);
 

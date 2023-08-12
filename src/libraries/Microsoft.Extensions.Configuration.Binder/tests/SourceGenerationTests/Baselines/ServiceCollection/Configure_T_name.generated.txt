@@ -63,10 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCoreMain(IConfiguration configuration, object obj, Type type, Action<BinderOptions>? configureOptions)
         {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             if (obj is null)
             {

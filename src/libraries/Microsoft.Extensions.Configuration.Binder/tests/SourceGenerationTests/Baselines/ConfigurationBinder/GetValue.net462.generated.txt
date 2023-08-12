@@ -2,19 +2,21 @@
 #nullable enable
 #pragma warning disable CS0612, CS0618 // Suppress warnings about [Obsolete] member usage in generated code.
 
-namespace System.Runtime.CompilerServices
+/// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>
+[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
+internal static class GeneratedConfigurationBinder
 {
-    using System;
-    using System.CodeDom.Compiler;
+    /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
+    public static T? GetValue<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, string key) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.CoreBindingHelper.GetValueCore(configuration, typeof(T), key) ?? default(T));
 
-    [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    file sealed class InterceptsLocationAttribute : Attribute
-    {
-        public InterceptsLocationAttribute(string filePath, int line, int column)
-        {
-        }
-    }
+    /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
+    public static T? GetValue<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, string key, T defaultValue) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.CoreBindingHelper.GetValueCore(configuration, typeof(T), key) ?? defaultValue);
+
+    /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
+    public static object? GetValue(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Type type, string key) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.CoreBindingHelper.GetValueCore(configuration, type, key);
+
+    /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
+    public static object? GetValue(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Type type, string key, object? defaultValue) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.CoreBindingHelper.GetValueCore(configuration, type, key) ?? defaultValue;
 }
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -23,33 +25,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     using System;
     using System.CodeDom.Compiler;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
 
+    /// <summary>Provide core binding logic.</summary>
     [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
-    file static class BindingExtensions
+    file static class CoreBindingHelper
     {
-        #region IConfiguration extensions.
-        /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 13, 18)]
-        public static T? GetValue<T>(this IConfiguration configuration, string key) => (T?)(BindingExtensions.GetValueCore(configuration, typeof(T), key) ?? default(T));
-
-        /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 16, 24)]
-        public static T? GetValue<T>(this IConfiguration configuration, string key, T defaultValue) => (T?)(BindingExtensions.GetValueCore(configuration, typeof(T), key) ?? defaultValue);
-
-        /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 14, 24)]
-        public static object? GetValue(this IConfiguration configuration, Type type, string key) => BindingExtensions.GetValueCore(configuration, type, key);
-
-        /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 17, 24)]
-        public static object? GetValue(this IConfiguration configuration, Type type, string key, object? defaultValue) => BindingExtensions.GetValueCore(configuration, type, key) ?? defaultValue;
-        #endregion IConfiguration extensions.
-
-        #region Core binding extensions.
         public static object? GetValueCore(this IConfiguration configuration, Type type, string key)
         {
-            ArgumentNullException.ThrowIfNull(configuration);
+            if (configuration is null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
 
             IConfigurationSection section = configuration.GetSection(key);
 
@@ -62,15 +48,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 return ParseInt(value, () => section.Path);
             }
-            else if (type == typeof(bool?))
+
+            if (type == typeof(bool?))
             {
                 return ParseBool(value, () => section.Path);
             }
-            else if (type == typeof(byte[]))
+
+            if (type == typeof(byte[]))
             {
                 return ParseByteArray(value, () => section.Path);
             }
-            else if (type == typeof(CultureInfo))
+
+            if (type == typeof(CultureInfo))
             {
                 return ParseCultureInfo(value, () => section.Path);
             }
@@ -125,6 +114,5 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(CultureInfo)}'.", exception);
             }
         }
-        #endregion Core binding extensions.
     }
 }

@@ -41,15 +41,20 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             public class MyClass2 { }
         }";
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [InlineData(LanguageVersion.Preview)]
         public async Task Bind(LanguageVersion langVersion) =>
             await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, langVersion, extType: ExtensionClassType.ConfigurationBinder);
 
-        [Fact]
-        public async Task Bind_Instance()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        [InlineData(LanguageVersion.Preview)]
+        [InlineData(LanguageVersion.CSharp11)]
+        public async Task Bind_NetFwk(LanguageVersion langVersion) =>
+            await VerifyAgainstBaselineUsingFile("Bind.net462.generated.txt", BindCallSampleCode, langVersion, extType: ExtensionClassType.ConfigurationBinder);
+
+        private string Bind_Instance_Sources()
         {
-            string source = """
+            return """
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -76,14 +81,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             public class MyClass2 { }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Bind_Instance()
+        {
+            string source = Bind_Instance_Sources();
 
             await VerifyAgainstBaselineUsingFile("Bind_Instance.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task Bind_Instance_BinderOptions()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task Bind_Instance_Fwk()
         {
-            string source = """
+            string source = Bind_Instance_Sources();
+
+            await VerifyAgainstBaselineUsingFile("Bind_Instance.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string Bind_Instance_BinderOptions_Sources()
+        {
+            return """
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -110,14 +128,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             public class MyClass2 { }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Bind_Instance_BinderOptions()
+        {
+            string source = Bind_Instance_BinderOptions_Sources();
 
             await VerifyAgainstBaselineUsingFile("Bind_Instance_BinderOptions.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task Bind_Key_Instance()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task Bind_Instance_BinderOptions_NetFwk()
         {
-            string source = """
+            string source = Bind_Instance_BinderOptions_Sources();
+
+            await VerifyAgainstBaselineUsingFile("Bind_Instance_BinderOptions.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string Bind_Key_Sources()
+        {
+            return """
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -144,14 +175,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             public class MyClass2 { }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Bind_Key_Instance()
+        {
+            string source = Bind_Key_Sources();
 
             await VerifyAgainstBaselineUsingFile("Bind_Key_Instance.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task Get()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task Bind_Key_Instance_NetFwk()
         {
-            string source = @"
+            string source = Bind_Key_Sources();
+
+            await VerifyAgainstBaselineUsingFile("Bind_Key_Instance.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string GetSources()
+        {
+            return @"
         using System.Collections.Generic;
         using Microsoft.Extensions.Configuration;
 
@@ -192,14 +236,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 public int MyInt { get; set; }
             }
         }";
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Get()
+        {
+            string source = GetSources();
 
             await VerifyAgainstBaselineUsingFile("Get.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task Get_T()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task Get_NetFwk()
         {
-            string source = """
+            string source = GetSources();
+
+            await VerifyAgainstBaselineUsingFile("Get.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string Get_T_Sources()
+        {
+            return """
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -238,14 +295,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Get_T()
+        {
+            string source = Get_T_Sources();
 
             await VerifyAgainstBaselineUsingFile("Get_T.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task Get_T_BinderOptions()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task Get_T_NetFwk()
         {
-            string source = """
+            string source = Get_T_Sources();
+
+            await VerifyAgainstBaselineUsingFile("Get_T.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string Get_T_BinderOptions_Sources()
+        {
+            return """
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -284,14 +354,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Get_T_BinderOptions()
+        {
+            string source = Get_T_BinderOptions_Sources();
 
             await VerifyAgainstBaselineUsingFile("Get_T_BinderOptions.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task Get_TypeOf()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task Get_T_BinderOptions_NetFwk()
         {
-            string source = """
+            string source = Get_T_BinderOptions_Sources();
+
+            await VerifyAgainstBaselineUsingFile("Get_T_BinderOptions.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string Get_TypeOf_Sources()
+        {
+            return """
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -330,14 +413,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Get_TypeOf()
+        {
+            string source = Get_TypeOf_Sources();
 
             await VerifyAgainstBaselineUsingFile("Get_TypeOf.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task Get_TypeOf_BinderOptions()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task Get_TypeOf_NetFwk()
         {
-            string source = """
+            string source = Get_TypeOf_Sources();
+
+            await VerifyAgainstBaselineUsingFile("Get_TypeOf.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string Get_TypeOf_BinderOptions_Sources()
+        {
+            return """
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -376,14 +472,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Get_TypeOf_BinderOptions()
+        {
+            string source = Get_TypeOf_BinderOptions_Sources();
 
             await VerifyAgainstBaselineUsingFile("Get_TypeOf_BinderOptions.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task GetValue()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task Get_TypeOf_BinderOptions_NetFwk()
         {
-            string source = @"
+            string source = Get_TypeOf_BinderOptions_Sources();
+
+            await VerifyAgainstBaselineUsingFile("Get_TypeOf_BinderOptions.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string GetValue_Sources()
+        {
+            return @"
         using System.Collections.Generic;
         using System.Globalization;
         using Microsoft.Extensions.Configuration;
@@ -411,14 +520,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         		public Dictionary<string, string> MyDictionary { get; set; }
         	}
         }";
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task GetValue()
+        {
+            string source = GetValue_Sources();
 
             await VerifyAgainstBaselineUsingFile("GetValue.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task GetValue_T_Key()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task GetValue_NetFwk()
         {
-            string source = """
+            string source = GetValue_Sources();
+
+            await VerifyAgainstBaselineUsingFile("GetValue.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string GetValue_T_Key_Sources()
+        {
+            return """
                         using Microsoft.Extensions.Configuration;
 
                         public class Program
@@ -432,14 +554,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task GetValue_T_Key()
+        {
+            string source = GetValue_T_Key_Sources();
 
             await VerifyAgainstBaselineUsingFile("GetValue_T_Key.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task GetValue_T_Key_DefaultValue()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task GetValue_T_Key_NetFwk()
         {
-            string source = """
+            string source = GetValue_T_Key_Sources();
+
+            await VerifyAgainstBaselineUsingFile("GetValue_T_Key.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string GetValue_T_Key_DefaultValue_Sources()
+        {
+            return """
                         using System.Collections.Generic;
                         using System.Globalization;
                         using Microsoft.Extensions.Configuration;
@@ -455,14 +590,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task GetValue_T_Key_DefaultValue()
+        {
+            string source = GetValue_T_Key_DefaultValue_Sources();
 
             await VerifyAgainstBaselineUsingFile("GetValue_T_Key_DefaultValue.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task GetValue_TypeOf_Key()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task GetValue_T_Key_DefaultValue_NetFwk()
         {
-            string source = """
+            string source = GetValue_T_Key_DefaultValue_Sources();
+
+            await VerifyAgainstBaselineUsingFile("GetValue_T_Key_DefaultValue.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string GetValue_TypeOf_Key_Sources()
+        {
+            return """
                         using Microsoft.Extensions.Configuration;
 
                         public class Program
@@ -476,14 +624,27 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task GetValue_TypeOf_Key()
+        {
+            string source = GetValue_TypeOf_Key_Sources();
 
             await VerifyAgainstBaselineUsingFile("GetValue_TypeOf_Key.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
-        [Fact]
-        public async Task GetValue_TypeOf_Key_DefaultValue()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task GetValue_TypeOf_Key_NetFwk()
         {
-            string source = """
+            string source = GetValue_TypeOf_Key_Sources();
+
+            await VerifyAgainstBaselineUsingFile("GetValue_TypeOf_Key.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        private string GetValue_TypeOf_Key_DefaultValue_Sources()
+        {
+            return """
                         using System.Globalization;
                         using Microsoft.Extensions.Configuration;
 
@@ -498,8 +659,22 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                     """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task GetValue_TypeOf_Key_DefaultValue()
+        {
+            string source = GetValue_TypeOf_Key_DefaultValue_Sources();
 
             await VerifyAgainstBaselineUsingFile("GetValue_TypeOf_Key_DefaultValue.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task GetValue_TypeOf_Key_DefaultValue_NetFwk()
+        {
+            string source = GetValue_TypeOf_Key_DefaultValue_Sources();
+
+            await VerifyAgainstBaselineUsingFile("GetValue_TypeOf_Key_DefaultValue.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
         [Fact]
@@ -541,10 +716,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Empty(d);
         }
 
-        [Fact]
-        public async Task Primitives()
+        private string GetPrimitivesSource()
         {
-            string source = """
+            return """
                         using System;
                         using System.Globalization;
                         using Microsoft.Extensions.Configuration;
@@ -596,14 +770,26 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                         """;
+        }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Primitives()
+        {
+            string source = GetPrimitivesSource();
             await VerifyAgainstBaselineUsingFile("Primitives.generated.txt", source);
         }
 
-        [Fact]
-        public async Task Collections()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task PrimitivesNetFwk()
         {
-            string source = """
+            string source = GetPrimitivesSource();
+
+            await VerifyAgainstBaselineUsingFile($"Primitives.net462.generated.txt", source);
+        }
+
+        private string GetCollectionsSource()
+        {
+            return """
                 using System.Collections.Generic;
                 using Microsoft.Extensions.Configuration;
 
@@ -646,9 +832,28 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     }
                 }
                 """;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Collections()
+        {
+            string source = GetCollectionsSource();
 
             await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, assessDiagnostics: (d) =>
             {
+                Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+                Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task CollectionsFwk()
+        {
+            string source = GetCollectionsSource();
+
+            await VerifyAgainstBaselineUsingFile("Collections.net462.generated.txt", source, assessDiagnostics: (d) =>
+            {
+                Console.WriteLine((d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count(), d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count()));
                 Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
                 Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
             });

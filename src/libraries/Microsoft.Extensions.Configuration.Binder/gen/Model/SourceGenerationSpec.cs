@@ -29,5 +29,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public MethodsToGen_Extensions_ServiceCollection MethodsToGen_ServiceCollectionExt { get; set; }
 
         public bool EmitEnumParseMethod { get; set; }
+
+        public bool EmitGenericParseEnum { get; set; }
+
+        public bool EmitThrowIfNullMethod { get; set; }
     }
 }

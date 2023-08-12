@@ -63,14 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                foreach (var typeSymbol in _createdSpecs.Keys)
-                {
-                    if (IsEnum(typeSymbol))
-                    {
-                        _sourceGenSpec.EmitEnumParseMethod = true;
-                        break;
-                    }
-                }
+                _sourceGenSpec.EmitThrowIfNullMethod = !_typeSymbols.ArgumentNullException.GetMembers("ThrowIfNull").IsEmpty;
 
                 return _sourceGenSpec;
             }
@@ -135,7 +128,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     ParsableFromStringSpec stringParsableSpec = new(type) { StringParsableTypeKind = specialTypeKind };
 
-                    if (stringParsableSpec.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue && stringParsableSpec.StringParsableTypeKind != StringParsableTypeKind.Enum)
+                    if (specialTypeKind is StringParsableTypeKind.Enum)
+                    {
+                        if (!_sourceGenSpec.EmitEnumParseMethod)
+                        {
+                            _sourceGenSpec.EmitEnumParseMethod = true;
+                            _sourceGenSpec.EmitGenericParseEnum = _typeSymbols.Enum.GetMembers("Parse").Any(m => m is IMethodSymbol methodSymbol && methodSymbol.IsGenericMethod);
+                        }
+                    }
+                    else if (specialTypeKind is not StringParsableTypeKind.AssignFromSectionValue)
                     {
                         _sourceGenSpec.PrimitivesForHelperGen.Add(stringParsableSpec);
                     }

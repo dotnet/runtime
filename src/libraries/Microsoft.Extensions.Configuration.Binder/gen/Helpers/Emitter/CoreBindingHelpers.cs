@@ -513,16 +513,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof(T)}}");
 
+                string parseEnumCall = _sourceGenSpec.EmitGenericParseEnum ? "Enum.Parse<T>(value, ignoreCase: true)" : "(T)Enum.Parse(typeof(T), value, ignoreCase: true)";
                 _writer.WriteLine($$"""
                     public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
                     {
                         try
                         {
-                            #if NETFRAMEWORK || NETSTANDARD2_0
-                                return (T)Enum.Parse(typeof(T), value, ignoreCase: true);
-                            #else
-                                return Enum.Parse<T>(value, ignoreCase: true);
-                            #endif
+                            return {{parseEnumCall}};
                         }
                         catch ({{Identifier.Exception}} {{Identifier.exception}})
                         {
