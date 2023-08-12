@@ -9,99 +9,10 @@ using static System.Runtime.InteropServices.ComWrappers;
 
 namespace System.Runtime.InteropServices
 {
-    internal static class HostServices
-    {
-        internal static readonly IntPtr s_globalHostServices = CreateHostServices();
-
-        private static unsafe IntPtr CreateHostServices()
-        {
-            IntPtr* wrapperMem = (IntPtr*)NativeMemory.Alloc((nuint)sizeof(IntPtr));
-            wrapperMem[0] = CreateDefaultIReferenceTrackerHostVftbl();
-            return (IntPtr)wrapperMem;
-        }
-
-        public static void DisconnectUnusedReferenceSources(uint flags)
-        {
-            // Defined in windows.ui.xaml.hosting.referencetracker.h.
-            const uint XAML_REFERENCETRACKER_DISCONNECT_SUSPEND = 0x00000001;
-
-            if ((flags & XAML_REFERENCETRACKER_DISCONNECT_SUSPEND) != 0)
-            {
-                RuntimeImports.RhCollect(2, InternalGCCollectionMode.Blocking | InternalGCCollectionMode.Optimized, true);
-            }
-            else
-            {
-                GC.Collect();
-            }
-        }
-
-        public static void ReleaseDisconnectedReferenceSources()
-        {
-            GC.WaitForPendingFinalizers();
-        }
-
-        public static void NotifyEndOfReferenceTrackingOnThread()
-        {
-            ReleaseExternalObjectsFromCurrentThread();
-        }
-
-        // Creates a proxy object (managed object wrapper) that points to the given IUnknown.
-        // The proxy represents the following:
-        //   1. Has a managed reference pointing to the external object
-        //      and therefore forms a cycle that can be resolved by GC.
-        //   2. Forwards data binding requests.
-        //
-        // For example:
-        // NoCW = Native Object Com Wrapper also known as RCW
-        //
-        // Grid <---- NoCW             Grid <-------- NoCW
-        // | ^                         |              ^
-        // | |             Becomes     |              |
-        // v |                         v              |
-        // Rectangle                  Rectangle ----->Proxy
-        //
-        // Arguments
-        //   obj        - An IUnknown* where a NoCW points to (Grid, in this case)
-        //                    Notes:
-        //                    1. We can either create a new NoCW or get back an old one from the cache.
-        //                    2. This obj could be a regular tracker runtime object for data binding.
-        //  ppNewReference  - The IReferenceTrackerTarget* for the proxy created
-        //                    The tracker runtime will call IReferenceTrackerTarget to establish a reference.
-        //
-        public static void GetTrackerTarget(IntPtr punk, out IntPtr ppNewReference)
-        {
-            if (punk == IntPtr.Zero)
-            {
-                throw new ArgumentException();
-            }
-
-            if (Marshal.QueryInterface(punk, in IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
-            {
-                throw new InvalidCastException();
-            }
-
-            using ComHolder identity = new ComHolder(ppv);
-            using ComHolder trackerTarget = new ComHolder(GetOrCreateTrackerTarget(identity.Ptr));
-            if (Marshal.QueryInterface(trackerTarget.Ptr, in IID_IReferenceTrackerTarget, out ppNewReference) != HResults.S_OK)
-            {
-                throw new InvalidCastException();
-            }
-        }
-
-        public static void AddMemoryPressure(long bytesAllocated)
-        {
-            GC.AddMemoryPressure(bytesAllocated);
-        }
-
-        public static void RemoveMemoryPressure(long bytesAllocated)
-        {
-            GC.RemoveMemoryPressure(bytesAllocated);
-        }
-    }
-
     internal static class TrackerObjectManager
     {
         internal static readonly IntPtr s_findReferencesTargetCallback = FindReferenceTargetsCallback.CreateFindReferenceTargetsCallback();
+        internal static readonly IntPtr s_globalHostServices = CreateHostServices();
 
         internal static volatile IntPtr s_trackerManager;
         internal static volatile bool s_hasTrackingStarted;
@@ -109,6 +20,7 @@ namespace System.Runtime.InteropServices
 
         internal static DependentHandleList s_referenceCache;
 
+        // Used during GC callback
         // Indicates if walking the external objects is needed.
         // (i.e. Have any IReferenceTracker instances been found?)
         public static bool ShouldWalkExternalObjects()
@@ -131,7 +43,7 @@ namespace System.Runtime.InteropServices
             // If set, the ownership of referenceTrackerManager has been transferred
             if (Interlocked.CompareExchange(ref s_trackerManager, referenceTrackerManager, IntPtr.Zero) == IntPtr.Zero)
             {
-                IReferenceTrackerManager.SetReferenceTrackerHost(s_trackerManager, HostServices.s_globalHostServices);
+                IReferenceTrackerManager.SetReferenceTrackerHost(s_trackerManager, s_globalHostServices);
 
                 // Our GC callbacks are used only for reference walk of tracker objects, so register it here
                 // when we find our first tracker object.
@@ -159,6 +71,7 @@ namespace System.Runtime.InteropServices
             IReferenceTracker.AddRefFromTrackerSource(referenceTracker); // IReferenceTracker
         }
 
+        // Used during GC callback
         // Called before wrapper is about to be finalized (the same lifetime as short weak handle).
         public static void BeforeWrapperFinalized(IntPtr referenceTracker)
         {
@@ -171,6 +84,7 @@ namespace System.Runtime.InteropServices
             IReferenceTracker.DisconnectFromTrackerSource(referenceTracker);
         }
 
+        // Used during GC callback
         // Begin the reference tracking process for external objects.
         public static void BeginReferenceTracking()
         {
@@ -199,6 +113,7 @@ namespace System.Runtime.InteropServices
             WalkExternalTrackerObjects();
         }
 
+        // Used during GC callback
         // End the reference tracking process for external object.
         public static void EndReferenceTracking()
         {
@@ -238,6 +153,7 @@ namespace System.Runtime.InteropServices
             return s_referenceCache.AddDependentHandle(target, foundReference);
         }
 
+        // Used during GC callback
         [UnmanagedCallersOnly]
         private static void GCStartCollection(int condemnedGeneration)
         {
@@ -249,6 +165,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        // Used during GC callback
         [UnmanagedCallersOnly]
         private static void GCStopCollection(int condemnedGeneration)
         {
@@ -258,26 +175,37 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        // Used during GC callback
         [UnmanagedCallersOnly]
         private static void GCAfterMarkPhase(int condemnedGeneration)
         {
             DetachNonPromotedObjects();
+        }
+
+        private static unsafe IntPtr CreateHostServices()
+        {
+            IntPtr* wrapperMem = (IntPtr*)NativeMemory.Alloc((nuint)sizeof(IntPtr));
+            wrapperMem[0] = CreateDefaultIReferenceTrackerHostVftbl();
+            return (IntPtr)wrapperMem;
         }
     }
 
     // Wrapper for IReferenceTrackerManager
     internal static unsafe class IReferenceTrackerManager
     {
+        // Used during GC callback
         public static int ReferenceTrackingStarted(IntPtr pThis)
         {
             return (*(delegate* unmanaged<IntPtr, int>**)pThis)[3](pThis);
         }
 
+        // Used during GC callback
         public static int FindTrackerTargetsCompleted(IntPtr pThis, bool walkFailed)
         {
             return (*(delegate* unmanaged<IntPtr, bool, int>**)pThis)[4](pThis, walkFailed);
         }
 
+        // Used during GC callback
         public static int ReferenceTrackingCompleted(IntPtr pThis)
         {
             return (*(delegate* unmanaged<IntPtr, int>**)pThis)[5](pThis);
@@ -297,11 +225,13 @@ namespace System.Runtime.InteropServices
             Marshal.ThrowExceptionForHR((*(delegate* unmanaged<IntPtr, int>**)pThis)[3](pThis));
         }
 
+        // Used during GC callback
         public static int DisconnectFromTrackerSource(IntPtr pThis)
         {
             return (*(delegate* unmanaged<IntPtr, int>**)pThis)[4](pThis);
         }
 
+        // Used during GC callback
         public static int FindTrackerTargets(IntPtr pThis, IntPtr findReferenceTargetsCallback)
         {
             return (*(delegate* unmanaged<IntPtr, IntPtr, int>**)pThis)[5](pThis, findReferenceTargetsCallback);

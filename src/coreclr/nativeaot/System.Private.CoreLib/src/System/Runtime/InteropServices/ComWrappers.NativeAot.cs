@@ -1239,6 +1239,7 @@ namespace System.Runtime.InteropServices
             s_globalInstanceForTrackerSupport.ReleaseObjects(objects);
         }
 
+        // Used during GC callback
         internal static unsafe void WalkExternalTrackerObjects()
         {
             bool walkFailed = false;
@@ -1268,6 +1269,7 @@ namespace System.Runtime.InteropServices
             IReferenceTrackerManager.FindTrackerTargetsCompleted(TrackerObjectManager.s_trackerManager, walkFailed);
         }
 
+        // Used during GC callback
         internal static void DetachNonPromotedObjects()
         {
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
@@ -1383,7 +1385,17 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                HostServices.DisconnectUnusedReferenceSources(flags);
+                // Defined in windows.ui.xaml.hosting.referencetracker.h.
+                const uint XAML_REFERENCETRACKER_DISCONNECT_SUSPEND = 0x00000001;
+
+                if ((flags & XAML_REFERENCETRACKER_DISCONNECT_SUSPEND) != 0)
+                {
+                    RuntimeImports.RhCollect(2, InternalGCCollectionMode.Blocking | InternalGCCollectionMode.Optimized, true);
+                }
+                else
+                {
+                    GC.Collect();
+                }
                 return HResults.S_OK;
             }
             catch (Exception e)
@@ -1398,7 +1410,7 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                HostServices.ReleaseDisconnectedReferenceSources();
+                GC.WaitForPendingFinalizers();
                 return HResults.S_OK;
             }
             catch (Exception e)
@@ -1412,7 +1424,7 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                HostServices.NotifyEndOfReferenceTrackingOnThread();
+                ReleaseExternalObjectsFromCurrentThread();
                 return HResults.S_OK;
             }
             catch (Exception e)
@@ -1422,13 +1434,47 @@ namespace System.Runtime.InteropServices
 
         }
 
+        // Creates a proxy object (managed object wrapper) that points to the given IUnknown.
+        // The proxy represents the following:
+        //   1. Has a managed reference pointing to the external object
+        //      and therefore forms a cycle that can be resolved by GC.
+        //   2. Forwards data binding requests.
+        //
+        // For example:
+        // NoCW = Native Object Com Wrapper also known as RCW
+        //
+        // Grid <---- NoCW             Grid <-------- NoCW
+        // | ^                         |              ^
+        // | |             Becomes     |              |
+        // v |                         v              |
+        // Rectangle                  Rectangle ----->Proxy
+        //
+        // Arguments
+        //   obj        - An IUnknown* where a NoCW points to (Grid, in this case)
+        //                    Notes:
+        //                    1. We can either create a new NoCW or get back an old one from the cache.
+        //                    2. This obj could be a regular tracker runtime object for data binding.
+        //  ppNewReference  - The IReferenceTrackerTarget* for the proxy created
+        //                    The tracker runtime will call IReferenceTrackerTarget to establish a reference.
+        //
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_GetTrackerTarget(IntPtr pThis, IntPtr punk, IntPtr* ppNewReference)
         {
+            if (punk == IntPtr.Zero)
+            {
+                return HResults.E_INVALIDARG;
+            }
+
+            if (Marshal.QueryInterface(punk, in IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
+            {
+                return HResults.COR_E_INVALIDCAST;
+            }
+
             try
             {
-                HostServices.GetTrackerTarget(punk, out *ppNewReference);
-                return HResults.S_OK;
+                using ComHolder identity = new ComHolder(ppv);
+                using ComHolder trackerTarget = new ComHolder(GetOrCreateTrackerTarget(identity.Ptr));
+                return Marshal.QueryInterface(trackerTarget.Ptr, in IID_IReferenceTrackerTarget, out *ppNewReference);
             }
             catch (Exception e)
             {
@@ -1441,7 +1487,7 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                HostServices.AddMemoryPressure(bytesAllocated);
+                GC.AddMemoryPressure(bytesAllocated);
                 return HResults.S_OK;
             }
             catch (Exception e)
@@ -1455,7 +1501,7 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                HostServices.RemoveMemoryPressure(bytesAllocated);
+                GC.RemoveMemoryPressure(bytesAllocated);
                 return HResults.S_OK;
             }
             catch (Exception e)
@@ -1482,7 +1528,7 @@ namespace System.Runtime.InteropServices
         {
             if (*guid == IID_IReferenceTrackerHost || *guid == IID_IUnknown)
             {
-                *ppObject = HostServices.s_globalHostServices;
+                *ppObject = pThis;
                 return 0;
             }
             else
@@ -1491,7 +1537,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static unsafe IntPtr CreateDefaultIReferenceTrackerHostVftbl()
+        internal static unsafe IntPtr CreateDefaultIReferenceTrackerHostVftbl()
         {
             IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 9 * sizeof(IntPtr));
             vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IReferenceTrackerHost_QueryInterface;
