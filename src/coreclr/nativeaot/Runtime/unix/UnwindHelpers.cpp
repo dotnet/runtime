@@ -885,6 +885,12 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
 }
 
 #if defined(TARGET_APPLE)
+// Apple considers _dyld_find_unwind_sections to be private API that cannot be used
+// by apps submitted to App Store and TestFlight, both for iOS-like and macOS platforms.
+// We reimplement it using public API surface.
+//
+// Ref: https://github.com/apple-oss-distributions/dyld/blob/ce1cc2088ef390df1c48a1648075bbd51c5bbc6a/dyld/DyldAPIs.cpp#L1859-L1884
+// Ref: https://github.com/llvm/llvm-project/blob/c37145cab12168798a603e22af6b6bf6f606b705/libunwind/src/AddressSpace.hpp#L67-L93
 bool _dyld_find_unwind_sections(void* addr, dyld_unwind_sections* info)
 {
     // Find mach-o image containing address.
