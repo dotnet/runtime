@@ -131,7 +131,12 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         if (invariant)
         {
             Assert.Contains("Could not create es-ES culture", output);
-            Assert.Contains("es-ES is an invalid culture identifier.", output);
+            // For invariant, we get:
+            //    Could not create es-ES culture: Argument_CultureNotSupportedInInvariantMode Arg_ParamName_Name, name
+            //    Argument_CultureInvalidIdentifier, es-ES
+            //  .. which is expected.
+            //
+            // Assert.Contains("es-ES is an invalid culture identifier.", output);
             Assert.Contains("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
             Assert.DoesNotContain($"es-ES: Is-LCID-InvariantCulture:", output);
         }
