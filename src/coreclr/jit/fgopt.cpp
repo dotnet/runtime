@@ -7282,13 +7282,6 @@ PhaseStatus Compiler::fgTailMerge(bool early)
         iterateHeadMerge(block);
     }
 
-    // Work through any retries
-    //
-    while (retryBlocks.Height() > 0)
-    {
-        iterateHeadMerge(retryBlocks.Pop());
-    }
-
     // If we altered flow, reset fgModified. Given where we sit in the
     // phase list, flow-dependent side data hasn't been built yet, so
     // nothing needs invalidation.
