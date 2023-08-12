@@ -67,7 +67,7 @@ namespace System.Reflection
                         break;
                 }
 
-                if (parameterType.IsPointer || parameterType.IsIntPtrBasedFunctionPointer)
+                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
                 {
                     Unbox(il, typeof(IntPtr));
                 }
@@ -124,7 +124,7 @@ namespace System.Reflection
                 il.Emit(OpCodes.Call, Methods.Span_get_Item());
                 il.Emit(OpCodes.Ldind_Ref);
 
-                if (parameterType.IsPointer || parameterType.IsIntPtrBasedFunctionPointer)
+                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
                 {
                     Unbox(il, typeof(IntPtr));
                 }
@@ -186,7 +186,7 @@ namespace System.Reflection
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (!parameterType.IsByRef)
                 {
-                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer || parameterType.IsIntPtrBasedFunctionPointer ? typeof(IntPtr) : parameterType);
+                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer || parameterType.IsFunctionPointer ? typeof(IntPtr) : parameterType);
                 }
             }
 
@@ -269,7 +269,7 @@ namespace System.Reflection
                     il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                     il.Emit(OpCodes.Call, Methods.Pointer_Box());
                 }
-                else if (returnType.IsIntPtrBasedFunctionPointer)
+                else if (returnType.IsFunctionPointer)
                 {
                     il.Emit(OpCodes.Box, typeof(IntPtr));
                 }
@@ -297,7 +297,7 @@ namespace System.Reflection
                         il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                         il.Emit(OpCodes.Call, Methods.Pointer_Box());
                     }
-                    else if (elementType.IsIntPtrBasedFunctionPointer)
+                    else if (elementType.IsFunctionPointer)
                     {
                         il.Emit(OpCodes.Box, typeof(IntPtr));
                     }

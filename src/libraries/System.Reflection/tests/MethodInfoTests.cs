@@ -895,35 +895,22 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        private static unsafe void TestFunctionPointersWithFunctionPointerArgs()
+        private static unsafe void TestFunctionPointerDirect()
         {
-            void* fn = FunctionPointerMethods.GetFunctionPointer();
-            MethodInfo m;
-
-            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_FP));
-            Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
-            Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
-
-            // Verify return type; currently returned as a boxed IntPtr.
-            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.GetFunctionPointer));
-            object ret = m.Invoke(null, null);
-            Assert.IsType<IntPtr>(ret);
-            Assert.True((IntPtr)ret != 0);
-        }
-
-        [Fact]
-        private static unsafe void TestFunctionPointersWithIntPtrArgs()
-        {
-            void* fn = FunctionPointerMethods.GetFunctionPointer();
-
             // Sanity checks for direct invocation.
+            void* fn = FunctionPointerMethods.GetFunctionPointer();
             Assert.True(FunctionPointerMethods.GetFunctionPointer()(42));
             Assert.True(FunctionPointerMethods.CallFcnPtr_IntPtr((IntPtr)fn, 42));
             Assert.True(FunctionPointerMethods.CallFcnPtr_Void(fn, 42));
             Assert.False(FunctionPointerMethods.GetFunctionPointer()(41));
             Assert.False(FunctionPointerMethods.CallFcnPtr_IntPtr((IntPtr)fn, 41));
             Assert.False(FunctionPointerMethods.CallFcnPtr_Void(fn, 41));
+        }
+
+        [Fact]
+        private static unsafe void TestFunctionPointerAsIntPtrArgType()
+        {
+            void* fn = FunctionPointerMethods.GetFunctionPointer();
 
             MethodInfo m;
 
@@ -934,6 +921,40 @@ namespace System.Reflection.Tests
             m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_Void));
             Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
             Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
+        }
+
+        [Fact]
+        private static unsafe void TestFunctionPointerAsUIntPtrArgType()
+        {
+            void* fn = FunctionPointerMethods.GetFunctionPointer();
+
+            MethodInfo m;
+
+            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_UIntPtr));
+            Assert.True((bool)m.Invoke(null, new object[] { (UIntPtr)fn, 42 }));
+            Assert.False((bool)m.Invoke(null, new object[] { (UIntPtr)fn, 41 }));
+
+            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_Void));
+            Assert.True((bool)m.Invoke(null, new object[] { (UIntPtr)fn, 42 }));
+            Assert.False((bool)m.Invoke(null, new object[] { (UIntPtr)fn, 41 }));
+        }
+
+        [Fact]
+        private static unsafe void TestFunctionPointerAsArgType()
+        {
+            void* fn = FunctionPointerMethods.GetFunctionPointer();
+            MethodInfo m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_FP));
+            Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
+            Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
+        }
+
+        [Fact]
+        private static unsafe void TestFunctionPointerAsReturnType()
+        {
+            MethodInfo m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.GetFunctionPointer));
+            object ret = m.Invoke(null, null);
+            Assert.IsType<IntPtr>(ret);
+            Assert.True((IntPtr)ret != 0);
         }
 
         //Methods for Reflection Metadata
@@ -1348,6 +1369,11 @@ namespace System.Reflection.Tests
         }
 
         public static unsafe bool CallFcnPtr_IntPtr(IntPtr fn, int value)
+        {
+            return ((delegate*<int, bool>)fn)(value);
+        }
+
+        public static unsafe bool CallFcnPtr_UIntPtr(UIntPtr fn, int value)
         {
             return ((delegate*<int, bool>)fn)(value);
         }

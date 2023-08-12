@@ -15,7 +15,7 @@ namespace System.Reflection
         {
             object dstObject;
 
-            if (dstType.IsPointer || dstType.IsIntPtrBasedFunctionPointer)
+            if (dstType.IsPointer || dstType.IsFunctionPointer)
             {
                 if (TryConvertPointer(srcObject, out object? dstPtr))
                 {
