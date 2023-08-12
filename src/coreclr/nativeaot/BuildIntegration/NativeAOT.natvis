@@ -70,12 +70,23 @@
                    GetPerModuleStorage() != nullptr &amp;&amp; GetPerModuleStorage()-&gt;m_Length &gt; ClassIndex &amp;&amp; 
                    GetPerTypeStorage() != nullptr "/>
 
-        <Intrinsic Name="GetPerThreadStorageInlined" Expression="tls_CurrentThread.m_pInlinedThreadLocalStatics ? tls_CurrentThread.m_pInlinedThreadLocalStatics->m_threadStaticsBase : nullptr"/>
-        <Intrinsic Name="GetPerTypeStorageInlined" Expression="GetPerThreadStorageInlined() ? (Object*)((char*)GetPerThreadStorageInlined() - sizeof(char*) - ClassIndex) : nullptr"/>
+        <Intrinsic Name="GetPerThreadStorageInlined" Expression="
+                   root == nullptr ?
+                        nullptr :
+                        root-&gt;m_typeManager == (TypeManager*)TypeManagerSlot-&gt;TypeManager._handleValue ?
+                            root-&gt;m_threadStaticsBase :
+                            nullptr">
+
+            <Parameter Name="root" Type="InlinedThreadStaticRoot*"/>
+        </Intrinsic>
+
+        <Intrinsic Name="GetPerTypeStorageInlined" Expression="GetPerThreadStorageInlined(root) ? (Object*)((char*)GetPerThreadStorageInlined(root) - sizeof(char*) - ClassIndex) : nullptr">
+            <Parameter Name="root" Type="InlinedThreadStaticRoot*"/>
+        </Intrinsic>
 
         <Intrinsic Name="IsInlined" Expression="ClassIndex &lt; 0"/>
         <Intrinsic Name="GetUninlined" Expression="IsInit() ? ($T1*)GetPerTypeStorage() : nullptr"/>
-        <Intrinsic Name="GetInlined" Expression="($T1*)GetPerTypeStorageInlined()"/>
+        <Intrinsic Name="GetInlined" Expression="($T1*)GetPerTypeStorageInlined(tls_CurrentThread.m_pInlinedThreadLocalStatics))"/>
 
         <Intrinsic Name="Get" Expression="IsInlined() ? GetInlined() : GetUninlined()"/>
 
