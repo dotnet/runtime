@@ -160,8 +160,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         LocalEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&address, options.ListenEndPoint.AddressFamily);
         if (options.ListenEndPoint.Address.IsIPv6LinkLocal && LocalEndPoint.Address.ScopeId == 0)
         {
- 
-//            LocalEndPoint.Address.ScopeId =  options.ListenEndPoint.Address.ScopeId;
+            LocalEndPoint.Address.ScopeId =  options.ListenEndPoint.Address.ScopeId;
         }
     }
 

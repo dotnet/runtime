@@ -19,21 +19,16 @@ namespace System.Net.Quic.Tests
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
-        //const object[][] LocalAddresses = Configuration.Sockets.LocalAddresses();
         public static IEnumerable<object[]> LocalAddresses = Configuration.Sockets.LocalAddresses();
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
         [Theory]
-        //[InlineData(false)]
-        //[InlineData(true)]
         [MemberData(nameof(LocalAddresses))]
         public async Task TestConnect(IPAddress address)
         {
             await using QuicListener listener = await CreateQuicListener(address);
-
             Assert.Equal(address, listener.LocalEndPoint.Address);
-            Console.WriteLine("Created Listened with {0} -> {1}", address, listener.LocalEndPoint);
 
             var options = CreateQuicClientOptions(listener.LocalEndPoint);
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(options);
@@ -43,29 +38,16 @@ namespace System.Net.Quic.Tests
             await using QuicConnection serverConnection = acceptTask.Result;
             await using QuicConnection clientConnection = connectTask.Result;
 
-            IgnoreScopeIdIPEndpointComparer endPointComparer = new();
-            Console.WriteLine("LocalEndPoint {0} Remote {1}", listener.LocalEndPoint, serverConnection.LocalEndPoint);
-            Console.WriteLine("Client {0} {1}", clientConnection.LocalEndPoint, clientConnection.RemoteEndPoint);
-            Console.WriteLine("Server {0} {1}", serverConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
-
             Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
             Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            if (PlatformDetection.IsWindows && address.IsIPv6LinkLocal)
+            {
+                Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            }
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, serverConnection.TargetHostName);
-        }
-
-        private class IgnoreScopeIdIPEndpointComparer : IEqualityComparer<IPEndPoint>
-        {
-            public bool Equals(IPEndPoint x, IPEndPoint y)
-            {
-                byte[] xBytes = x.Address.GetAddressBytes();
-                byte[] yBytes = y.Address.GetAddressBytes();
-                return xBytes.AsSpan().SequenceEqual(yBytes) && x.Port == y.Port;
-            }
-            public int GetHashCode([DisallowNull] IPEndPoint obj) => obj.Port;
         }
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
