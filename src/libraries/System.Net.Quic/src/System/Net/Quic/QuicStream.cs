@@ -76,6 +76,7 @@ public sealed partial class QuicStream
                 if (target is QuicStream stream)
                 {
                     stream.Abort(QuicAbortDirection.Read, stream._defaultErrorCode);
+                    stream._receiveTcs.TrySetResult();
                 }
             }
             catch (ObjectDisposedException)
@@ -357,97 +358,64 @@ public sealed partial class QuicStream
         }
 
         // Concurrent call, this one lost the race.
-        if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, default))
+        if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
             throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
         }
 
-        // Register cancellation if the token can be cancelled and the task is not completed yet.
-        CancellationTokenRegistration cancellationRegistration = default;
-        bool canceled = false;
-        try
+        // No need to call anything since we already have a result, most likely an exception.
+        if (valueTask.IsCompleted)
         {
-            if (cancellationToken.CanBeCanceled)
-            {
-                cancellationRegistration = cancellationToken.UnsafeRegister((obj, cancellationToken) =>
-                {
-                    try
-                    {
-                        QuicStream stream = (QuicStream)obj!;
-                        Volatile.Write(ref canceled, true);
-                        stream.Abort(QuicAbortDirection.Write, stream._defaultErrorCode);
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // We collided with a Dispose in another thread. This can happen
-                        // when using CancellationTokenSource.CancelAfter.
-                        // Ignore the exception
-                    }
-                }, this);
-            }
-
-            // No need to call anything since we already have a result, most likely an exception.
-            if (valueTask.IsCompleted)
-            {
-                await valueTask.ConfigureAwait(false);
-                return;
-            }
-
-            // For an empty buffer complete immediately, close the writing side of the stream if necessary.
-            if (buffer.IsEmpty)
-            {
-                _sendTcs.TrySetResult();
-                if (completeWrites)
-                {
-                    CompleteWrites();
-                }
-                await valueTask.ConfigureAwait(false);
-                return;
-            }
-
-            // We own the lock, abort might happen, but exception will get stored instead.
-            if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0 && !_sendTcs.IsCompleted)
-            {
-                unsafe
-                {
-                    _sendBuffers.Initialize(buffer);
-                    int status = MsQuicApi.Api.StreamSend(
-                        _handle,
-                        _sendBuffers.Buffers,
-                        (uint)_sendBuffers.Count,
-                        completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                        null);
-                    // No SEND_COMPLETE expected
-                    if (StatusFailed(status))
-                    {
-                        // Release buffer and unlock
-                        _sendBuffers.Reset();
-                        Volatile.Write(ref _sendLocked, 0);
-
-                        // There might be stored exception from when we held the lock
-                        if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
-                        {
-                            Interlocked.CompareExchange(ref _sendException, exception, null);
-                        }
-                        exception = Volatile.Read(ref _sendException);
-                        if (exception is not null)
-                        {
-                            _sendTcs.TrySetException(exception, final: true);
-                        }
-                    }
-                }
-            }
-
             await valueTask.ConfigureAwait(false);
+            return;
         }
-        finally
+
+        // For an empty buffer complete immediately, close the writing side of the stream if necessary.
+        if (buffer.IsEmpty)
         {
-            cancellationRegistration.Dispose();
-            if (Volatile.Read(ref canceled))
+            _sendTcs.TrySetResult();
+            if (completeWrites)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                CompleteWrites();
+            }
+            await valueTask.ConfigureAwait(false);
+            return;
+        }
+
+        // We own the lock, abort might happen, but exception will get stored instead.
+        if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0 && !_sendTcs.IsCompleted)
+        {
+            unsafe
+            {
+                _sendBuffers.Initialize(buffer);
+                int status = MsQuicApi.Api.StreamSend(
+                    _handle,
+                    _sendBuffers.Buffers,
+                    (uint)_sendBuffers.Count,
+                    completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
+                    null);
+                // No SEND_COMPLETE expected, release buffer and unlock.
+                if (StatusFailed(status))
+                {
+                    _sendBuffers.Reset();
+                    Volatile.Write(ref _sendLocked, 0);
+
+                    // There might be stored exception from when we held the lock
+                    if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+                    {
+                        Interlocked.CompareExchange(ref _sendException, exception, null);
+                    }
+                    exception = Volatile.Read(ref _sendException);
+                    if (exception is not null)
+                    {
+                        _sendTcs.TrySetException(exception, final: true);
+                    }
+                }
+                // SEND_COMPLETE expected, buffer and lock will be released then.
             }
         }
+
+        await valueTask.ConfigureAwait(false);
     }
 
     /// <summary>
@@ -743,9 +711,8 @@ public sealed partial class QuicStream
             await valueTask.ConfigureAwait(false);
         }
         Debug.Assert(_startedTcs.IsCompleted);
-        // TODO: Revisit this with https://github.com/dotnet/runtime/issues/79818 and https://github.com/dotnet/runtime/issues/79911
-        Debug.Assert(_receiveTcs.KeepAliveReleased);
-        Debug.Assert(_sendTcs.KeepAliveReleased);
+        Debug.Assert(_receiveTcs.IsCompleted);
+        Debug.Assert(_sendTcs.IsCompleted);
         _handle.Dispose();
 
         // TODO: memory leak if not disposed
