@@ -57,6 +57,7 @@ public:
 public:
     static bool TryScheduleBackgroundWorkerWithoutGCTrigger_Locked();
     static void CreateBackgroundWorker();
+    static bool IsBackgroundWorkerActive();
 private:
     static DWORD WINAPI BackgroundWorkerBootstrapper0(LPVOID args);
     static void BackgroundWorkerBootstrapper1(LPVOID args);

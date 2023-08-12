@@ -79,7 +79,6 @@ GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 #endif
 
 GPTR_IMPL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
-GPTR_IMPL(MethodTable,      g_pCastHelpers);
 
 #ifdef FEATURE_ICASTABLE
 GPTR_IMPL(MethodTable,      g_pICastableInterface);
@@ -106,6 +105,8 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
 GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
+
+MethodTable* g_pCastHelpers;
 
 #ifndef DACCESS_COMPILE
 

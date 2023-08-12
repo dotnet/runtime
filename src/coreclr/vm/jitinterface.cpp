@@ -10645,21 +10645,25 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             // so we no longer need to use indirections and can emit a direct call instead.
             NativeCodeVersion::OptimizationTier tier;
 
+            // Avoid taking the lock for foreground jit compilations
+            if (TieredCompilationManager::IsBackgroundWorkerActive())
             {
-                CodeVersionManager::LockHolder codeVersioningLockHolder;
-                NativeCodeVersion activeCodeVersion = helperMD->GetCodeVersionManager()->GetActiveILCodeVersion(helperMD)
-                    .GetActiveNativeCodeVersion(helperMD);
-                tier = activeCodeVersion.GetOptimizationTier();
-            }
+                {
+                    CodeVersionManager::LockHolder codeVersioningLockHolder;
+                    NativeCodeVersion activeCodeVersion = helperMD->GetCodeVersionManager()->GetActiveILCodeVersion(helperMD)
+                        .GetActiveNativeCodeVersion(helperMD);
+                    tier = activeCodeVersion.GetOptimizationTier();
+                }
 
-            if (tier == NativeCodeVersion::OptimizationTier::OptimizationTier1 ||
-                tier == NativeCodeVersion::OptimizationTier::OptimizationTierOptimized)
-            {
-                finalTierAddr = (LPVOID)GetEEFuncEntryPoint(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
-                _ASSERT(finalTierAddr != NULL);
-                // Cache it for future uses to avoid taking the lock again.
-                hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
-                return finalTierAddr;
+                if (tier == NativeCodeVersion::OptimizationTier::OptimizationTier1 ||
+                    tier == NativeCodeVersion::OptimizationTier::OptimizationTierOptimized)
+                {
+                    finalTierAddr = (LPVOID)GetEEFuncEntryPoint(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
+                    _ASSERT(finalTierAddr != NULL);
+                    // Cache it for future uses to avoid taking the lock again.
+                    hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
+                    return finalTierAddr;
+                }
             }
 
             *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
