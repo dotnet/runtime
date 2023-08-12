@@ -383,7 +383,7 @@ public sealed partial class QuicStream
         }
 
         // We own the lock, abort might happen, but exception will get stored instead.
-        if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0 && !_sendTcs.IsCompleted)
+        if (Interlocked.CompareExchange(ref _sendLocked, 1, 0) == 0)
         {
             unsafe
             {
@@ -400,7 +400,7 @@ public sealed partial class QuicStream
                     _sendBuffers.Reset();
                     Volatile.Write(ref _sendLocked, 0);
 
-                    // There might be stored exception from when we held the lock
+                    // There might be stored exception from when we held the lock.
                     if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
                     {
                         Interlocked.CompareExchange(ref _sendException, exception, null);
@@ -549,9 +549,11 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE_DATA data)
     {
+        // Release buffer and unlock.
         _sendBuffers.Reset();
         Volatile.Write(ref _sendLocked, 0);
 
+        // There might be stored exception from when we held the lock.
         Exception? exception = Volatile.Read(ref _sendException);
         if (exception is not null)
         {

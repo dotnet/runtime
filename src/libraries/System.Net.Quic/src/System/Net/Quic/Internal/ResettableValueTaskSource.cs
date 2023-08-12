@@ -121,6 +121,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 state == State.Ready ||
                 state == State.Completed)
             {
+                // Remember that the value task with the current version is being given out.
                 _hasWaiter = true;
                 valueTask = new ValueTask(this, _valueTaskSource.Version);
                 return true;
@@ -146,16 +147,14 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
 
     private bool TryComplete(Exception? exception, bool final)
     {
+        // Dispose the cancellation registration before completing the task, so that it cannot run after the awaiting method returned.
+        // Dispose must be done outside of lock since it will wait on pending cancellation callbacks that can hold the lock from another thread.
         CancellationTokenRegistration cancellationRegistration = default;
         lock (this)
         {
-            // Swap the cancellation registration so the one that's been registered gets disposed outside of the lock.
-            // If the callbacks kicks in, it tries to take the lock held by this thread leading to deadlock.
             cancellationRegistration = _cancellationRegistration;
             _cancellationRegistration = default;
         }
-        // Dispose the cancellation if registered.
-        // Must be done outside of lock since Dispose will wait on pending cancellation callbacks which require taking the lock.
         cancellationRegistration.Dispose();
 
         lock (this)
@@ -170,6 +169,8 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     return false;
                 }
 
+                // The task was non-finally completed without having anyone awaiting on it.
+                // In such case, discard the temporary result and replace it with this final completion.
                 if (state == State.Ready && !_hasWaiter && final)
                 {
                     _valueTaskSource.Reset();
@@ -194,19 +195,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     {
                         _valueTaskSource.SetException(exception);
                     }
-                    if (final)
-                    {
-                        if (_finalTaskSource.TryComplete(exception))
-                        {
-                            if (state != State.Ready)
-                            {
-                                _finalTaskSource.TrySignal(out _);
-                            }
-                            return true;
-                        }
-                        return false;
-                    }
-                    return state != State.Ready;
                 }
                 else
                 {
@@ -215,20 +203,22 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     {
                         _valueTaskSource.SetResult(final);
                     }
-                    if (final)
-                    {
-                        if (_finalTaskSource.TryComplete(exception))
-                        {
-                            if (state != State.Ready)
-                            {
-                                _finalTaskSource.TrySignal(out _);
-                            }
-                            return true;
-                        }
-                        return false;
-                    }
-                    return state != State.Ready;
                 }
+                if (final)
+                {
+                    if (_finalTaskSource.TryComplete(exception))
+                    {
+                        // Signal the final task only if we don't have another result in the value task source.
+                        // In that case, the final task will be signalled after the value task result is retrieved.
+                        if (state != State.Ready)
+                        {
+                            _finalTaskSource.TrySignal(out _);
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+                return state != State.Ready;
             }
             finally
             {
@@ -314,16 +304,22 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         }
     }
 
+    /// <summary>
+    /// It remembers the result from <see cref="TryComplete"/> and propagates it to <see cref="_finalTaskSource"/> only after <see cref="TrySignal"/> is called.
+    /// Effectively allowing to separate setting of the result from task completion, which is necessary when the resettable portion of the value task source needs to consumed first.
+    /// </summary>
     private struct FinalTaskSource
     {
         private TaskCompletionSource? _finalTaskSource;
         private bool _isCompleted;
+        private bool _isSignaled;
         private Exception? _exception;
 
         public FinalTaskSource()
         {
             _finalTaskSource = null;
             _isCompleted = false;
+            _isSignaled = false;
             _exception = null;
         }
 
@@ -332,13 +328,17 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
             if (_finalTaskSource is null)
             {
                 _finalTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                if (!TrySignal(out _))
+                if (!_isCompleted)
                 {
                     GCHandle handle = GCHandle.Alloc(keepAlive);
                     _finalTaskSource.Task.ContinueWith(static (_, state) =>
                     {
                         ((GCHandle)state!).Free();
                     }, handle, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
+                if (_isSignaled)
+                {
+                    TrySignal(out _);
                 }
             }
             return _finalTaskSource.Task;
@@ -374,6 +374,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
             }
 
             exception = _exception;
+            _isSignaled = true;
             return true;
         }
     }

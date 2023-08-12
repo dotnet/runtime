@@ -1232,7 +1232,6 @@ namespace System.Net.Quic.Tests
         [MemberData(nameof(PayloadSizeAndTwoBools))]
         public async Task ReadsClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool useDispose)
         {
-            //using var logger = new TestUtilities.TestEventListener(Console.Out, "Private.InternalDiagnostics.System.Net.Quic");
             using SemaphoreSlim serverSem = new SemaphoreSlim(0);
             using SemaphoreSlim clientSem = new SemaphoreSlim(0);
 
