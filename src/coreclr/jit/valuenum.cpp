@@ -11130,8 +11130,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     if (isExact && (handle != NO_CLASS_HANDLE))
                     {
                         JITDUMP("IND(obj) is actually a class handle for %s\n", eeGetClassName(handle));
-                        // Filter out all shared generic instantiations
-                        if ((info.compCompHnd->getClassAttribs(handle) & CORINFO_FLG_SHAREDINST) == 0)
+                        uint32_t attrs = info.compCompHnd->getClassAttribs(handle);
+
+                        // Filter out all shared generic instantiations and non-exact arrays
+                        if (((attrs & CORINFO_FLG_SHAREDINST) == 0) &&
+                            (((attrs & CORINFO_FLG_ARRAY) == 0) || impIsClassExact(handle)))
                         {
                             void* pEmbedClsHnd;
                             void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
