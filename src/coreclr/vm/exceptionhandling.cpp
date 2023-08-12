@@ -46,9 +46,9 @@ ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord,
                  UINT_PTR          TargetFrameSp);
 #endif // !TARGET_UNIX
 
-#ifdef HOST_UNIX
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartContext);
-#endif // HOST_UNIX
+#endif // TARGET_UNIX && !DACCESS_COMPILE
 
 #ifdef USE_CURRENT_CONTEXT_IN_FILTER
 inline void CaptureNonvolatileRegisters(PKNONVOLATILE_CONTEXT pNonvolatileContext, PCONTEXT pContext)
