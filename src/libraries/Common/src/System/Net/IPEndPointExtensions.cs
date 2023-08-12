@@ -17,8 +17,9 @@ namespace System.Net.Sockets
                 Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
                 uint scope;
                 SocketAddressPal.GetIPv6Address(socketAddressBuffer, address, out scope);
-                // Clear scope if set for anything byt LLA
-                return new IPAddress(address, ((address[0] & 0xFFC0) == 0xFE80) ? (long)scope : 0);
+
+                // Clear scope if set for anything but LLA
+                return new IPAddress(address, (address[0] == 0xFE && (address[1] & 0xC0) == 0x80) ? (long)scope : 0);
             }
             else if (family == AddressFamily.InterNetwork)
             {
