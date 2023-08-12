@@ -4223,7 +4223,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
     UnwindManagedExceptionPass2(ex, pContext);
 #else // TARGET_UNIX
     ClrUnwindEx(pExceptionRecord, (UINT_PTR)pThread, INVALID_RESUME_ADDRESS, uInterceptStackFrame);
-#endif // HOST_UNIX
+#endif // TARGET_UNIX
 
     UNREACHABLE();
 }
