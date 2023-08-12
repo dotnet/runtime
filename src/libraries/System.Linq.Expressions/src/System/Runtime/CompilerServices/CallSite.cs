@@ -359,8 +359,6 @@ namespace System.Runtime.CompilerServices
             return supported;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "CallSiteOps methods don't have trimming annotations.")]
         [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         private T CreateCustomUpdateDelegate(MethodInfo invoke)
         {
