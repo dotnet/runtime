@@ -417,6 +417,7 @@ namespace ComInterfaceGenerator.Tests
                 private TUnmanaged* _originalUnmanaged;
                 private TUnmanaged* _unmanaged;
                 private TManaged[] _managed;
+                private TUnmanaged* Unmanaged => _unmanaged == null ? _unmanaged = (TUnmanaged*)Marshal.AllocCoTaskMem(sizeof(TUnmanaged) * _managed.Length) : _unmanaged;
 
                 public void FromUnmanaged(TUnmanaged* unmanaged)
                 {
@@ -451,7 +452,7 @@ namespace ComInterfaceGenerator.Tests
 
                 public TUnmanaged* ToUnmanaged()
                 {
-                    return _unmanaged = (TUnmanaged*)Marshal.AllocCoTaskMem(sizeof(TUnmanaged) * _managed.Length); 
+                    return Unmanaged;
                 }
 
                 public ReadOnlySpan<TManaged> GetManagedValuesSource()
@@ -461,7 +462,7 @@ namespace ComInterfaceGenerator.Tests
 
                 public Span<TUnmanaged> GetUnmanagedValuesDestination()
                 {
-                    return new(_unmanaged, _managed.Length);
+                    return new(Unmanaged, _managed.Length);
                 }
             }
         }

@@ -201,9 +201,6 @@ public class AppleAppBuilderTask : Task
             if (!string.IsNullOrEmpty(MainLibraryFileName))
                 throw new ArgumentException($"Property \"{nameof(MainLibraryFileName)}\" is not supported with NativeAOT runtime and will be ignored.");
 
-            if (UseConsoleUITemplate)
-                throw new ArgumentException($"Property \"{nameof(UseConsoleUITemplate)}\" is not supported with NativeAOT runtime and will be ignored.");
-
             if (ForceInterpreter)
                 throw new ArgumentException($"Property \"{nameof(ForceInterpreter)}\" is not supported with NativeAOT runtime and will be ignored.");
 

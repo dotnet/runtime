@@ -385,6 +385,12 @@ namespace System.Reflection.PortableExecutable
                 Interlocked.CompareExchange(ref _lazyPESectionBlocks, new AbstractMemoryBlock[PEHeaders.SectionHeaders.Length], null);
             }
 
+            AbstractMemoryBlock? existingBlock = Volatile.Read(ref _lazyPESectionBlocks[index]);
+            if (existingBlock != null)
+            {
+                return existingBlock;
+            }
+
             AbstractMemoryBlock newBlock;
             if (IsLoadedImage)
             {

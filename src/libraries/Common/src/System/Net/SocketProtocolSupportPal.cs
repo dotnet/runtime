@@ -14,8 +14,6 @@ namespace System.Net
         public static bool OSSupportsIPv4 { get; } = IsSupported(AddressFamily.InterNetwork);
         public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix);
 
-        private const int DgramSocketType = 2;
-
         private static bool IsIPv6Disabled()
         {
             // First check for the AppContext switch, giving it priority over the environment variable.

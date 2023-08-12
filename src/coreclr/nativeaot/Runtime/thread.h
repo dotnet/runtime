@@ -4,10 +4,8 @@
 #ifndef __thread_h__
 #define __thread_h__
 
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
-
-#include "forward_declarations.h"
+#include "slist.h" // DefaultSListTraits
 
 struct gc_alloc_context;
 class RuntimeInstance;

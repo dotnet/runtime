@@ -249,7 +249,7 @@ namespace System.Runtime
         internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
 
         [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void RhAllocateNewArray(IntPtr pArrayEEType, uint numElements, uint flags, void* pResult);
+        internal static unsafe partial void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
 
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
@@ -354,11 +354,11 @@ namespace System.Runtime
         internal static extern void RhCheckArrayStore(object array, object? obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
-        private static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
+        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfAny")]
+        private static extern unsafe object IsInstanceOfAny(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
-            => IsInstanceOf(pTargetType.ToPointer(), obj);
+            => IsInstanceOfAny(pTargetType.ToPointer(), obj);
 
         //
         // calls to runtime for allocation

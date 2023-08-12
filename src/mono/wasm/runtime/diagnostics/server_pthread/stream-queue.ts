@@ -35,7 +35,7 @@ type SyncSendClose = () => void;
 const STREAM_CLOSE_SENTINEL = -1;
 
 export class StreamQueue {
-    readonly workAvailable: EventTarget = new EventTarget();
+    readonly workAvailable: EventTarget = new globalThis.EventTarget();
     readonly signalWorkAvailable = this.signalWorkAvailableImpl.bind(this);
 
     constructor(readonly queue_addr: VoidPtr, readonly syncSendBuffer: SyncSendBuffer, readonly syncSendClose: SyncSendClose) {
