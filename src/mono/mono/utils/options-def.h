@@ -146,8 +146,8 @@ DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-e
 // In degenerate cases the jiterpreter could end up generating lots of WASM, so shut off jitting once it reaches this limit
 // Each wasm byte likely maps to multiple bytes of native code, so it's important for this limit not to be too high
 DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
-DEFINE_INT(jiterpreter_table_size, "jiterpreter-table-size", 8192, "Size of the jiterpreter trace function table")
-DEFINE_INT(jiterpreter_aot_table_size, "jiterpreter-aot-table-size", 4096, "Size of the jiterpreter AOT trampoline function tables")
+DEFINE_INT(jiterpreter_table_size, "jiterpreter-table-size", 8 * 1024, "Size of the jiterpreter trace function table")
+DEFINE_INT(jiterpreter_aot_table_size, "jiterpreter-aot-table-size", 5 * 1024, "Size of the jiterpreter AOT trampoline function tables")
 #endif // HOST_BROWSER
 
 #if defined(TARGET_WASM) || defined(TARGET_IOS)  || defined(TARGET_TVOS) || defined (TARGET_MACCAT)

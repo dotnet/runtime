@@ -1377,7 +1377,11 @@ mono_jiterp_boost_back_branch_target (const JiterpreterOpcode *ip) {
 
 	// Atomically update the hit count. We may lose a race here, but that's not a big
 	//  problem since losing the race indicates that the trace entry point is probably hot.
+#ifdef DISABLE_THREADS
+	trace_info->hit_count = new_hit_count;
+#else
 	mono_atomic_cas_i64 (&trace_info->hit_count, new_hit_count, old_hit_count);
+#endif
 }
 
 EMSCRIPTEN_KEEPALIVE int
