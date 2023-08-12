@@ -894,6 +894,7 @@ namespace System.Reflection.Tests
             Assert.Contains("TestAssembly", asm.ToString());
         }
 
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         private static unsafe void TestFunctionPointersWithFunctionPointerArgs()
         {
@@ -911,7 +912,6 @@ namespace System.Reflection.Tests
             Assert.True((IntPtr)ret != 0);
         }
 
-        // Mono will throw System.ArgumentException : Object of type 'System.IntPtr' cannot be converted to type 'System.Boolean(System.Int32)'.
         [Fact]
         private static unsafe void TestFunctionPointersWithIntPtrArgs()
         {
