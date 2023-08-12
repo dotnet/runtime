@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
-using static System.Runtime.InteropServices.ComWrappers;
 
 namespace System.Runtime.InteropServices
 {
@@ -27,7 +26,6 @@ namespace System.Runtime.InteropServices
         internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();
         internal static IntPtr TaggedImplVftblPtr { get; } = CreateTaggedImplVftbl();
         internal static IntPtr DefaultIReferenceTrackerTargetVftblPtr { get; } = CreateDefaultIReferenceTrackerTargetVftbl();
-        internal static IntPtr DefaultIReferenceTrackerHostVftblPtr { get; } = CreateDefaultIReferenceTrackerHostVftbl();
 
         internal static readonly Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
         internal static readonly Guid IID_IReferenceTrackerTarget = new Guid(0x64bd43f8, 0xbfee, 0x4ec4, 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21);
@@ -49,13 +47,12 @@ namespace System.Runtime.InteropServices
 
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out bool isAggregated, out long wrapperId)
         {
-            unknown = IntPtr.Zero;
-            isAggregated = false;
-            wrapperId = 0;
-
             if (obj == null
                 || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
             {
+                unknown = IntPtr.Zero;
+                isAggregated = false;
+                wrapperId = 0;
                 return false;
             }
 

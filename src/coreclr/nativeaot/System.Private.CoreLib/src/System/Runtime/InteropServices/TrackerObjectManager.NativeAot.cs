@@ -9,13 +9,6 @@ using static System.Runtime.InteropServices.ComWrappers;
 
 namespace System.Runtime.InteropServices
 {
-    // Defined in windows.ui.xaml.hosting.referencetracker.h.
-    internal enum XAML_REFERENCETRACKER_DISCONNECT
-    {
-        // Indicates the disconnect is during a suspend and a GC can be trigger.
-        XAML_REFERENCETRACKER_DISCONNECT_SUSPEND = 0x00000001
-    };
-
     internal static class HostServices
     {
         internal static readonly IntPtr s_globalHostServices = CreateHostServices();
@@ -23,13 +16,16 @@ namespace System.Runtime.InteropServices
         private static unsafe IntPtr CreateHostServices()
         {
             IntPtr* wrapperMem = (IntPtr*)NativeMemory.Alloc((nuint)sizeof(IntPtr));
-            wrapperMem[0] = DefaultIReferenceTrackerHostVftblPtr;
+            wrapperMem[0] = CreateDefaultIReferenceTrackerHostVftbl();
             return (IntPtr)wrapperMem;
         }
 
         public static void DisconnectUnusedReferenceSources(uint flags)
         {
-            if ((((XAML_REFERENCETRACKER_DISCONNECT)flags) & XAML_REFERENCETRACKER_DISCONNECT.XAML_REFERENCETRACKER_DISCONNECT_SUSPEND) != 0)
+            // Defined in windows.ui.xaml.hosting.referencetracker.h.
+            const uint XAML_REFERENCETRACKER_DISCONNECT_SUSPEND = 0x00000001;
+
+            if ((flags & XAML_REFERENCETRACKER_DISCONNECT_SUSPEND) != 0)
             {
                 RuntimeImports.RhCollect(2, InternalGCCollectionMode.Blocking | InternalGCCollectionMode.Optimized, true);
             }
@@ -393,13 +389,11 @@ namespace System.Runtime.InteropServices
 
         internal readonly IntPtr Ptr => _ptr;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ComHolder(IntPtr ptr)
         {
             _ptr = ptr;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void Dispose()
         {
             Marshal.Release(_ptr);
