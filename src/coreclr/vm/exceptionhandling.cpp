@@ -4221,7 +4221,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
     ex.TargetFrameSp = uInterceptStackFrame;
     ex.ReturnValue = (UINT_PTR)pThread;
     UnwindManagedExceptionPass2(ex, pContext);
-#else // HOST_UNIX
+#else // TARGET_UNIX
     ClrUnwindEx(pExceptionRecord, (UINT_PTR)pThread, INVALID_RESUME_ADDRESS, uInterceptStackFrame);
 #endif // HOST_UNIX
 
