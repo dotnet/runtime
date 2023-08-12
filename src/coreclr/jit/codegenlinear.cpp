@@ -1211,8 +1211,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // Reset spilled flag, since we are going to load a local variable from its home location.
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
-            GenTreeLclVar* lcl    = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
+            GenTreeLclVar* lcl         = unspillTree->AsLclVar();
+            LclVarDsc*     varDsc      = compiler->lvaGetDesc(lcl);
             var_types      unspillType = varDsc->GetRegisterType(lcl);
             assert(unspillType != TYP_UNDEF);
 
@@ -1228,7 +1228,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // cases it is the same, when morph has used a subrange assertion
             // to avoid normalizing.
             //
-            // * For all locals it can be narrower in some cases, when 
+            // * For all locals it can be narrower in some cases, when
             // lowering optimizes to use a smaller typed `cmp` (e.g. 32-bit cmp
             // for 64-bit local, or 8-bit cmp for 16-bit local).
             //
