@@ -1213,29 +1213,59 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 
             GenTreeLclVar* lcl    = unspillTree->AsLclVar();
             LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
+            var_types      unspillType = varDsc->GetRegisterType(lcl);
+            assert(unspillType != TYP_UNDEF);
+
+// TODO-Cleanup: The following code could probably be further merged and cleaned up.
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
             // Pick type to reload register from stack with. Note that in
             // general, the type of 'lcl' does not have any relation to the
             // type of 'varDsc':
             //
-            // * For NOL locals it is wider under normal circumstances, where
-            // morph has added a cast on top
-            // * For all locals it can be narrower narrower in some cases, e.g.
-            // when lowering optimizes to use a smaller typed `cmp` (e.g.
-            // 32-bit cmp for 64-bit local, or 8-bit cmp for 16-bit local).
+            // * For normalize-on-load (NOL) locals it is wider under normal
+            // circumstances, where morph has added a cast on top. In some
+            // cases it is the same, when morph has used a subrange assertion
+            // to avoid normalizing.
             //
-            // Thus, we should always pick the type from varDsc. For NOL locals
-            // we further want to make sure we always leave a normalized value
-            // in the register.
-
-            var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
-            assert(unspillType != TYP_UNDEF);
+            // * For all locals it can be narrower in some cases, when 
+            // lowering optimizes to use a smaller typed `cmp` (e.g. 32-bit cmp
+            // for 64-bit local, or 8-bit cmp for 16-bit local).
+            //
+            // * For byrefs it can differ in GC-ness (TYP_I_IMPL vs TYP_BYREF).
+            //
+            // In the NOL case the potential use of subrange assertions means
+            // we always have to normalize, even if 'lcl' is wide; we could
+            // have a GTF_SPILLED LCL_VAR<int>(NOL local) with a future
+            // LCL_VAR<ushort>(same NOL local), where the latter local then
+            // relies on the normalization to have happened here as part of
+            // unspilling.
+            //
+            if (varDsc->lvNormalizeOnLoad())
+            {
+                unspillType = varDsc->TypeGet();
+            }
+            else
+            {
+                // Potentially narrower -- see if we should widen.
+                var_types lclLoadType = varDsc->GetStackSlotHomeType();
+                assert(lclLoadType != TYP_UNDEF);
+                if (genTypeSize(unspillType) < genTypeSize(lclLoadType))
+                {
+                    unspillType = lclLoadType;
+                }
+            }
 
 #if defined(TARGET_LOONGARCH64)
             if (varTypeIsFloating(spillType) && emitter::isGeneralRegister(tree->GetRegNum()))
             {
                 unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
             }
+#endif
+#elif defined(TARGET_ARM)
+// No normalizing for ARM
+#else
+            NYI("Unspilling not implemented for this target architecture.");
 #endif
 
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
