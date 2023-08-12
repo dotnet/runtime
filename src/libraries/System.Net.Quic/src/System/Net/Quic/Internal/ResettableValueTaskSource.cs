@@ -26,22 +26,21 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     }
 
     private State _state;
+    private bool _hasWaiter;
     private ManualResetValueTaskSourceCore<bool> _valueTaskSource;
     private CancellationTokenRegistration _cancellationRegistration;
     private Action<object?>? _cancellationAction;
     private GCHandle _keepAlive;
-    private bool _finalContinuationRegistered;
+    private FinalTaskSource _finalTaskSource;
 
-    private readonly TaskCompletionSource _finalTaskSource;
-
-    public ResettableValueTaskSource(bool runContinuationsAsynchronously = true)
+    public ResettableValueTaskSource()
     {
         _state = State.None;
-        _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
+        _hasWaiter = false;
+        _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = true };
         _cancellationRegistration = default;
         _keepAlive = default;
-        _finalContinuationRegistered = false;
-        _finalTaskSource = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+        _finalTaskSource = new FinalTaskSource();
     }
 
     /// <summary>
@@ -115,11 +114,12 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
 
                 _state = State.Awaiting;
             }
-            // None, Completed, Final: return the current task.
+            // None, Ready, Completed: return the current task.
             if (state == State.None ||
                 state == State.Ready ||
                 state == State.Completed)
             {
+                _hasWaiter = true;
                 valueTask = new ValueTask(this, _valueTaskSource.Version);
                 return true;
             }
@@ -136,23 +136,9 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     /// <returns>The <see cref="Task"/> that will transition to a completed state with the last transition of this source.</returns>
     public Task GetFinalTask(object? keepAlive)
     {
-        if (_finalContinuationRegistered || keepAlive is null)
-        {
-            return _finalTaskSource.Task;
-        }
-
         lock (this)
         {
-            if (!_finalContinuationRegistered)
-            {
-                GCHandle handle = GCHandle.Alloc(keepAlive);
-                _finalTaskSource.Task.ContinueWith(static (_, state) =>
-                {
-                    ((GCHandle)state!).Free();
-                }, handle, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                _finalContinuationRegistered = true;
-            }
-            return _finalTaskSource.Task;
+            return _finalTaskSource.GetTask(keepAlive);
         }
     }
 
@@ -171,6 +157,12 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     if (state == State.Completed)
                     {
                         return false;
+                    }
+
+                    if (state == State.Ready && !_hasWaiter && final)
+                    {
+                        _valueTaskSource.Reset();
+                        state = State.None;
                     }
 
                     // If the _valueTaskSource has already been set, we don't want to lose the result by overwriting it.
@@ -198,7 +190,15 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                         }
                         if (final)
                         {
-                            return _finalTaskSource.TrySetException(exception);
+                            if (_finalTaskSource.TryComplete(exception))
+                            {
+                                if (state != State.Ready)
+                                {
+                                    _finalTaskSource.TrySignal(out _);
+                                }
+                                return true;
+                            }
+                            return false;
                         }
                         return state != State.Ready;
                     }
@@ -211,7 +211,15 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                         }
                         if (final)
                         {
-                            return _finalTaskSource.TrySetResult();
+                            if (_finalTaskSource.TryComplete(exception))
+                            {
+                                if (state != State.Ready)
+                                {
+                                    _finalTaskSource.TrySignal(out _);
+                                }
+                                return true;
+                            }
+                            return false;
                         }
                         return state != State.Ready;
                     }
@@ -265,11 +273,9 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
 
     void IValueTaskSource.GetResult(short token)
     {
-        bool successful = false;
         try
         {
             _valueTaskSource.GetResult(token);
-            successful = true;
         }
         finally
         {
@@ -280,31 +286,93 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 if (state == State.Ready)
                 {
                     _valueTaskSource.Reset();
+                    _hasWaiter = false;
                     _state = State.None;
 
                     // Propagate the _finalTaskSource result into _valueTaskSource if completed.
-                    if (_finalTaskSource.Task.IsCompleted)
+                    if (_finalTaskSource.TrySignal(out Exception? exception))
                     {
                         _state = State.Completed;
-                        if (_finalTaskSource.Task.IsCompletedSuccessfully)
+
+                        if (exception is not null)
                         {
-                            _valueTaskSource.SetResult(true);
+                            _valueTaskSource.SetException(exception);
                         }
                         else
                         {
-                            // We know it's always going to be a single exception since we're the ones setting it.
-                            _valueTaskSource.SetException(_finalTaskSource.Task.Exception?.InnerException!);
+                            _valueTaskSource.SetResult(true);
                         }
-
-                        // In case the _valueTaskSource was successful, we want the potential error from _finalTaskSource to surface immediately.
-                        // In other words, if _valueTaskSource was set with success while final exception arrived, this will throw that exception right away.
-                        if (successful)
-                        {
-                            _valueTaskSource.GetResult(_valueTaskSource.Version);
-                        }
+                    }
+                    else
+                    {
+                        _state = State.None;
                     }
                 }
             }
+        }
+    }
+
+    private struct FinalTaskSource
+    {
+        private TaskCompletionSource? _finalTaskSource;
+        private bool _isCompleted;
+        private Exception? _exception;
+
+        public FinalTaskSource()
+        {
+            _finalTaskSource = null;
+            _isCompleted = false;
+            _exception = null;
+        }
+
+        public Task GetTask(object? keepAlive)
+        {
+            if (_finalTaskSource is null)
+            {
+                _finalTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                if (!TrySignal(out _))
+                {
+                    GCHandle handle = GCHandle.Alloc(keepAlive);
+                    _finalTaskSource.Task.ContinueWith(static (_, state) =>
+                    {
+                        ((GCHandle)state!).Free();
+                    }, handle, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
+            }
+            return _finalTaskSource.Task;
+        }
+
+        public bool TryComplete(Exception? exception = null)
+        {
+            if (_isCompleted)
+            {
+                return false;
+            }
+
+            _exception = exception;
+            _isCompleted = true;
+            return true;
+        }
+
+        public bool TrySignal(out Exception? exception)
+        {
+            if (!_isCompleted)
+            {
+                exception = default;
+                return false;
+            }
+
+            if (_exception is not null)
+            {
+                _finalTaskSource?.SetException(_exception);
+            }
+            else
+            {
+                _finalTaskSource?.SetResult();
+            }
+
+            exception = _exception;
+            return true;
         }
     }
 }
