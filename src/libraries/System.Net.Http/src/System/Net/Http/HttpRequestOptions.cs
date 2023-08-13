@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
@@ -9,6 +10,8 @@ namespace System.Net.Http
     /// <summary>
     /// Represents a collection of options for an HTTP request.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(HttpRequestOptionsDebugView))]
     public sealed class HttpRequestOptions : IDictionary<string, object?>, IReadOnlyDictionary<string, object?>
     {
         private Dictionary<string, object?> Options { get; } = new Dictionary<string, object?>();
@@ -79,6 +82,34 @@ namespace System.Net.Http
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value)
         {
             Options[key.Key] = value;
+        }
+
+        private string DebuggerToString()
+        {
+            return $"Count = {Options.Count}";
+        }
+
+        private sealed class HttpRequestOptionsDebugView(HttpRequestOptions options)
+        {
+            private readonly Dictionary<string, object?> _collection = options.Options;
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public KeyValuePair<string, string?>[] Items
+            {
+                get
+                {
+                    var kvpArr = new KeyValuePair<string, string?>[_collection.Count];
+                    int i = 0;
+
+                    foreach (var kvp in _collection)
+                    {
+                        kvpArr[i] = new KeyValuePair<string, string?>(kvp.Key, kvp.Value?.ToString());
+                        i++;
+                    }
+
+                    return kvpArr;
+                }
+            }
         }
     }
 }
