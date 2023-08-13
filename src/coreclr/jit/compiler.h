@@ -3034,6 +3034,8 @@ public:
                               GenTreeFlags GenTreeFlags = GTF_SIDE_EFFECT,
                               bool         ignoreRoot   = false);
 
+    GenTree* gtWrapWithSideEffects(GenTree* treeToCheckForSideEffects, GenTree* returnValue);
+
     bool gtSplitTree(
         BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
 
