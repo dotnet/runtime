@@ -13,7 +13,8 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Operation is not supported when dynamic code generation is not available."
         /// </summary>
-        internal static string LiftingInExpressionRequiresDynamicCode => SR.LiftingInExpressionRequiresDynamicCode;
+        internal static string LiftingInExpressionRequiresDynamicCode(Type type)
+                => SR.Format(SR.LiftingInExpressionRequiresDynamicCode, type.FullName);
 
         /// <summary>
         /// A string like "reducible nodes must override Expression.Reduce()"

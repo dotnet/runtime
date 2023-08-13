@@ -98,7 +98,23 @@ namespace System.Dynamic.Utils
             {
                 return typeof(char?);
             }
-            throw new NotSupportedException(Strings.LiftingInExpressionRequiresDynamicCode);
+            else if (type == typeof(decimal))
+            {
+                return typeof(decimal?);
+            }
+            else if (type == typeof(DateTime))
+            {
+                return typeof(DateTime?);
+            }
+            else if (type == typeof(DateTimeOffset))
+            {
+                return typeof(DateTimeOffset?);
+            }
+            else if (type == typeof(TimeSpan))
+            {
+                return typeof(TimeSpan?);
+            }
+            throw new NotSupportedException(Strings.LiftingInExpressionRequiresDynamicCode(type));
         }
 
         public static ConstructorInfo GetNullableConstructor(Type nullableType)
