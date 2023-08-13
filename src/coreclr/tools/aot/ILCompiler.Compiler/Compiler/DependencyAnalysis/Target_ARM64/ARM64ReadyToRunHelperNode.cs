@@ -74,11 +74,6 @@ namespace ILCompiler.DependencyAnalysis
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
                         if (index is TypeThreadStaticIndexNode ti && ti.IsInlined)
                         {
-                            // REVIEW: how to keep a node around?
-                            // we do not need the index node to run our code, but need to keep the node around for natvis.
-                            // emit a junk MOV for now
-                            encoder.EmitMOV(encoder.TargetRegister.Result, index);
-
                             if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                             {
                                 EmitInlineTLSAccess(factory, ref encoder);
@@ -99,6 +94,11 @@ namespace ILCompiler.DependencyAnalysis
                                 encoder.EmitJNE(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                                 EmitInlineTLSAccess(factory, ref encoder);
                             }
+
+                            // REVIEW: how to keep a node around?
+                            // we do not need the index node to run our code, but need to keep the node around for natvis.
+                            // emit a junk MOV for now  (this code is unreachable)
+                            encoder.EmitMOV(encoder.TargetRegister.Result, index);
                         }
                         else
                         {
