@@ -12,7 +12,7 @@ namespace Microsoft.Interop
 {
     public static class MarshallerHelpers
     {
-        public static readonly TypeSyntax SystemIntPtrType = ParseTypeName(TypeNames.System_IntPtr);
+        public static readonly TypeSyntax SystemIntPtrType = TypeSyntaxes.System_IntPtr;
 
         public static ForStatementSyntax GetForLoop(ExpressionSyntax lengthExpression, string indexerIdentifier)
         {
@@ -96,7 +96,7 @@ namespace Microsoft.Interop
             if (spanElementTypeSyntax is PointerTypeSyntax)
             {
                 // Pointers cannot be passed to generics, so use IntPtr for this case.
-                spanElementTypeSyntax = SystemIntPtrType;
+                spanElementTypeSyntax = TypeSyntaxes.System_IntPtr;
             }
             return spanElementTypeSyntax;
         }
@@ -108,7 +108,7 @@ namespace Microsoft.Interop
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                         IdentifierName("SetLastSystemError")),
                     ArgumentList(SingletonSeparatedList(
                         Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode)))))));
@@ -122,7 +122,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                         IdentifierName("GetLastSystemError")))));
 
         // Marshal.SetLastPInvokeError(<lastError>);
@@ -131,7 +131,7 @@ namespace Microsoft.Interop
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                         IdentifierName("SetLastPInvokeError")),
                     ArgumentList(SingletonSeparatedList(
                         Argument(IdentifierName(lastErrorIdentifier))))));
@@ -327,7 +327,7 @@ namespace Microsoft.Interop
                 return ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                            TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
                             IdentifierName("SkipInit")))
                     .WithArgumentList(
                         ArgumentList(SingletonSeparatedList(

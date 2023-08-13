@@ -14,7 +14,6 @@ namespace System.Tests.Types
         private const BindingFlags Bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void TypeMembers()
         {
             // Get an arbitrary function pointer
@@ -116,7 +115,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void NonFunctionPointerThrows()
         {
             Assert.Throws<InvalidOperationException>(() => typeof(int).GetFunctionPointerCallingConventions());
@@ -125,7 +123,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void TestToString()
         {
             // Function pointer types are inline in metadata and can't be loaded independently so they do not support the
@@ -146,7 +143,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void FunctionPointerReturn()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -163,7 +159,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void RequiredModifiers()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -188,7 +183,6 @@ namespace System.Tests.Types
             "Double",
             "System.Double(System.String, System.Boolean*&, System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass, System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyStruct&)",
             "String", "Boolean*&", "MyClass", "MyStruct&")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void MethodInfo(
             string methodName,
             string methodToStringPostfix,
@@ -216,7 +210,6 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Prop_Int), "System.Int32()")]
         [InlineData(nameof(FunctionPointerHolder.Prop_MyClass), "System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass()")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void Property(string name, string expectedToString)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -235,7 +228,6 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Field_Int), "System.Int32()")]
         [InlineData(nameof(FunctionPointerHolder.Field_MyClass), "System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass()")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void Field(string name, string expectedToString)
         {
             Type t = typeof(FunctionPointerHolder).Project();

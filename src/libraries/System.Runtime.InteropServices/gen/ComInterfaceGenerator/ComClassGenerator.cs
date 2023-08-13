@@ -104,7 +104,7 @@ namespace Microsoft.Interop
 
         private static readonly AttributeSyntax s_comExposedClassAttributeTemplate =
             Attribute(
-                GenericName(TypeNames.ComExposedClassAttribute)
+                GenericName(TypeNames.GlobalAlias + TypeNames.ComExposedClassAttribute)
                     .AddTypeArgumentListArguments(
                         IdentifierName(ClassInfoTypeName)));
         private static MemberDeclarationSyntax GenerateClassInfoAttributeOnUserType(ContainingSyntaxContext containingSyntaxContext, ContainingSyntax classSyntax) =>
@@ -124,12 +124,11 @@ namespace Microsoft.Interop
                     Token(SyntaxKind.FileKeyword),
                     Token(SyntaxKind.SealedKeyword),
                     Token(SyntaxKind.UnsafeKeyword))
-                .AddBaseListTypes(SimpleBaseType(ParseTypeName(TypeNames.IComExposedClass)))
+                .AddBaseListTypes(SimpleBaseType(TypeSyntaxes.IComExposedClass))
                 .AddMembers(
                     FieldDeclaration(
                         VariableDeclaration(
-                            PointerType(
-                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
+                            PointerType(TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
                             SingletonSeparatedList(VariableDeclarator(vtablesField))))
                     .AddModifiers(
                         Token(SyntaxKind.PrivateKeyword),
@@ -140,31 +139,29 @@ namespace Microsoft.Interop
                 // ComInterfaceEntry* vtables = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<ClassInfoTypeName>), sizeof(ComInterfaceEntry) * <numInterfaces>);
                 LocalDeclarationStatement(
                     VariableDeclaration(
-                            PointerType(
-                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
+                            PointerType(TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
                             SingletonSeparatedList(
                                 VariableDeclarator(vtablesLocal)
                                     .WithInitializer(EqualsValueClause(
                                         CastExpression(
-                                            PointerType(
-                                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
+                                            PointerType(TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseTypeName(TypeNames.System_Runtime_CompilerServices_RuntimeHelpers),
+                                                TypeSyntaxes.System_Runtime_CompilerServices_RuntimeHelpers,
                                                 IdentifierName("AllocateTypeAssociatedMemory")))
                                         .AddArgumentListArguments(
                                             Argument(TypeOfExpression(IdentifierName(ClassInfoTypeName))),
                                             Argument(
                                                 BinaryExpression(
                                                     SyntaxKind.MultiplyExpression,
-                                                    SizeOfExpression(ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
+                                                    SizeOfExpression(TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
                                                     LiteralExpression(
                                                         SyntaxKind.NumericLiteralExpression,
                                                         Literal(implementedInterfaces.Length))))))))))),
                 // IIUnknownDerivedDetails details;
                 LocalDeclarationStatement(
                     VariableDeclaration(
-                        ParseTypeName(TypeNames.IIUnknownDerivedDetails),
+                        TypeSyntaxes.IIUnknownDerivedDetails,
                         SingletonSeparatedList(
                             VariableDeclarator(detailsTempLocal))))
             };
@@ -180,7 +177,7 @@ namespace Microsoft.Interop
                             InvocationExpression(
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseTypeName(TypeNames.StrategyBasedComWrappers),
+                                        TypeSyntaxes.StrategyBasedComWrappers,
                                         IdentifierName("DefaultIUnknownInterfaceDetailsStrategy")),
                                     IdentifierName("GetIUnknownDerivedDetails")),
                                 ArgumentList(
@@ -253,7 +250,7 @@ namespace Microsoft.Interop
                 // { body }
                 MethodDeclaration(
                     PointerType(
-                        ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
+                        TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry),
                     "GetComInterfaceEntries")
                     .AddParameterListParameters(
                         Parameter(Identifier(countIdentifier))

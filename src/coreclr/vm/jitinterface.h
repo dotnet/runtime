@@ -465,6 +465,8 @@ public:
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
 
+    bool getStaticObjRefContent(OBJECTREF obj, uint8_t* buffer, bool ignoreMovableObjects);
+
     // This normalizes EE type information into the form expected by the JIT.
     //
     // If typeHnd contains exact type information, then *clsRet will contain

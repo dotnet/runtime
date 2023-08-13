@@ -45,7 +45,7 @@
         '$(WasmEnableSIMD)' == 'false' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
-        '$(InvariantGlobalization)' == 'true' or
+        ('$(_UsingBlazorOrWasmSdk)' != 'true' and '$(InvariantGlobalization)' == 'true') or
         '$(WasmNativeStrip)' == 'false'">true</_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded>
 
     <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
@@ -204,4 +204,7 @@
     BeforeTargets="Build">
     <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads or WasmEnablePerfTracing to true, but not both." />
   </Target>
+
+  <Import Condition="'$(TargetsCurrent)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" 
+          Project="$(MSBuildThisFileDirectory)WorkloadTelemetry.targets" />
 </Project>
