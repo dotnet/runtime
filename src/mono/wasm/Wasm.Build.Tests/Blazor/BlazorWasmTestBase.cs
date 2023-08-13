@@ -119,6 +119,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
         _provider.AssertBundle(blazorBuildOptions);
 
+        if (!blazorBuildOptions.IsPublish)
+            return;
+
+        // Publish specific checks
+
         if (blazorBuildOptions.ExpectedFileType == NativeFilesType.AOT)
         {
             // check for this too, so we know the format is correct for the negative
@@ -134,7 +139,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (blazorBuildOptions.ExpectRelinkDirWhenPublishing)
             Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
         else
-            Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected files in {objBuildDir}, which gets created when relinking during Build");
+            Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected `emcc-link.rsp` in {objBuildDir}, which gets created when relinking during Build.");
     }
 
     protected string CreateProjectWithNativeReference(string id)
