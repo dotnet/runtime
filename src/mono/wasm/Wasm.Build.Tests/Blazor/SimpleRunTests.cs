@@ -22,7 +22,7 @@ public class SimpleRunTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public async Task BlazorBuildRunTest(string config)

@@ -179,7 +179,7 @@ namespace Wasm.Build.Tests
                             IsBrowserProject: false));
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug", false)]
         [InlineData("Debug", true)]
         [InlineData("Release", false)]
@@ -187,7 +187,7 @@ namespace Wasm.Build.Tests
         public void ConsoleBuildAndRunDefault(string config, bool relinking)
             => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("Debug", "-f net7.0", "net7.0")]
         [InlineData("Debug", "-f net8.0", "net8.0")]
@@ -253,7 +253,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
             => await (forConsole
@@ -354,7 +354,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [MemberData(nameof(TestDataForConsolePublishAndRun))]
         public void ConsolePublishAndRun(string config, bool aot, bool relinking)
         {
@@ -406,7 +406,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
         [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
