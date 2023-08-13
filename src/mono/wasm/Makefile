@@ -83,7 +83,7 @@ app-builder:
 	$(DOTNET) build $(TOP)/src/tasks/WasmAppBuilder
 
 build-tasks:
-	$(DOTNET) build $(TOP)/src/tasks/tasks.proj /p:Configuration=$(CONFIG)
+	$(DOTNET) build $(TOP)/src/tasks/tasks.proj /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
 build-packages:
 	rm $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
