@@ -13,18 +13,20 @@ import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
-import * as pthreads_worker from "./pthreads/worker";
 import { strings_init, utf8ToString } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
 import { instantiate_wasm_asset, wait_for_all_assets } from "./assets";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
-import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
-import { export_linker } from "./exports-linker";
+import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
 import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
+
+// threads
+import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
+import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
 import { getBrowserThreadID } from "./pthreads/shared";
 
 // legacy
@@ -136,7 +138,7 @@ async function instantiateWasmWorker(
     // wait for the config to arrive by message from the main thread
     await loaderHelpers.afterConfigLoaded.promise;
 
-    replace_linker_placeholders(imports, export_linker());
+    replace_linker_placeholders(imports);
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
@@ -166,9 +168,6 @@ function preInit(userPreInit: (() => void)[]) {
         try {
             // - init the rest of the polyfills
             await mono_wasm_pre_init_essential_async();
-
-            // - start download assets like DLLs
-            await mono_wasm_pre_init_full();
 
             endMeasure(mark, MeasuredBlock.preInit);
         } catch (err) {
@@ -272,7 +271,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (loaderHelpers.config.debugLevel !== 0 && loaderHelpers.config.cacheBootResources) {
             loaderHelpers.logDownloadStatsToConsole();
         }
-        loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+
+        setTimeout(() => {
+            loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        }, loaderHelpers.config.cachedResourcesPurgeDelay);
 
         // call user code
         try {
@@ -340,6 +342,13 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 
     mono_log_debug("mono_wasm_pre_init_essential");
 
+    if (loaderHelpers.gitHash !== runtimeHelpers.gitHash) {
+        mono_log_warn("The version of dotnet.runtime.js is different from the version of dotnet.js!");
+    }
+    if (loaderHelpers.gitHash !== runtimeHelpers.moduleGitHash) {
+        mono_log_warn("The version of dotnet.native.js is different from the version of dotnet.js!");
+    }
+
     init_c_exports();
     runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
     runtimeHelpers.abort = (reason: any) => {
@@ -380,15 +389,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
-}
-
-async function mono_wasm_pre_init_full(): Promise<void> {
-    mono_log_debug("mono_wasm_pre_init_full");
-    Module.addRunDependency("mono_wasm_pre_init_full");
-
-    await loaderHelpers.mono_download_assets();
-
-    Module.removeRunDependency("mono_wasm_pre_init_full");
 }
 
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
@@ -451,22 +451,6 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
 }
 
-function replace_linker_placeholders(
-    imports: WebAssembly.Imports,
-    realFunctions: any
-) {
-    // the output from emcc contains wrappers for these linker imports which add overhead,
-    //  but now we have what we need to replace them with the actual functions
-    const env = imports.env;
-    for (const k in realFunctions) {
-        const v = realFunctions[k];
-        if (typeof (v) !== "function")
-            continue;
-        if (k in env)
-            env[k] = v;
-    }
-}
-
 async function instantiate_wasm_module(
     imports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback,
@@ -490,12 +474,13 @@ async function instantiate_wasm_module(
         await runtimeHelpers.beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
 
-        replace_linker_placeholders(imports, export_linker());
+        replace_linker_placeholders(imports);
         const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
         assetToLoad.buffer = null as any; // GC
+        assetToLoad.moduleExports = null as any; // GC
 
         mono_log_debug("instantiate_wasm_module done");
 
@@ -657,8 +642,8 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 2. Emscripten does not run any event but preInit in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 export async function configureWorkerStartup(module: DotnetModuleInternal): Promise<void> {
-    // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
-    pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
+    initWorkerThreadEvents();
+    currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, (ev) => {
         mono_log_debug("pthread created 0x" + ev.pthread_self.pthreadId.toString(16));
     });
 

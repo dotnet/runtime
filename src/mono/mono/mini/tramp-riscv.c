@@ -363,7 +363,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 			if (item->check_target_idx || fail_case) {
 				buf_len += 5 * 4;
 				if (item->has_target_code) {
-					NOT_IMPLEMENTED;
 					buf_len += 5 * 4;
 				} else {
 					buf_len += 6 * 4;

@@ -1414,7 +1414,7 @@ main_thread_handler (gpointer user_data)
 				MonoImage *img;
 
 				img = mono_image_open (main_args->argv [i], &status);
-				if (img && strcmp (img->name, assembly->image->name)) {
+				if (img && g_strcasecmp (img->name, assembly->image->name)) {
 					fprintf (stderr, "Error: Loaded assembly '%s' doesn't match original file name '%s'. Set MONO_PATH to the assembly's location.\n", assembly->image->name, img->name);
 					exit (1);
 				}
@@ -1688,7 +1688,6 @@ mono_get_version_info (void)
 #endif
 
 	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
-	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
 
 	g_string_append_printf (output, "\tMisc:          ");
 #ifdef MONO_SMALL_CONFIG

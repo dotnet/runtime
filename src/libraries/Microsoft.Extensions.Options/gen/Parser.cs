@@ -276,7 +276,7 @@ namespace Microsoft.Extensions.Options.Generators
                 var memberInfo = GetMemberInfo(member, speculate, location, validatorType);
                 if (memberInfo is not null)
                 {
-                    if (member.DeclaredAccessibility != Accessibility.Public && member.DeclaredAccessibility != Accessibility.Internal)
+                    if (member.DeclaredAccessibility != Accessibility.Public)
                     {
                         Diag(DiagDescriptors.MemberIsInaccessible, member.Locations.First(), member.Name);
                         continue;
@@ -297,6 +297,8 @@ namespace Microsoft.Extensions.Options.Generators
                 case IPropertySymbol prop:
                     memberType = prop.Type;
                     break;
+
+                /* The runtime doesn't support fields validation yet. If we allow that in the future, we need to add the following code back.
                 case IFieldSymbol field:
                     if (field.AssociatedSymbol is not null)
                     {
@@ -306,6 +308,7 @@ namespace Microsoft.Extensions.Options.Generators
 
                     memberType = field.Type;
                     break;
+                */
                 default:
                     // we only care about properties and fields
                     return null;

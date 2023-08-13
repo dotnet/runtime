@@ -62,7 +62,7 @@ namespace Microsoft.Interop
                 yield return ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                             IdentifierName("ThrowExceptionForHR")),
                         ArgumentList(
                             SingletonSeparatedList(Argument(IdentifierName(managedIdentifier))))));
@@ -83,7 +83,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
-                if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
+                if (context.CurrentStage != StubCodeContext.Stage.NotifyForSuccessfulInvoke)
                 {
                     yield break;
                 }

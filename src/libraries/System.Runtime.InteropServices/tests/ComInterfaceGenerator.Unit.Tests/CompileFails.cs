@@ -742,18 +742,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithLocation(1)
                     .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
-            var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
+
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "int[]", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeNotSupportedOnPinnedParameter
+                inAttributeIsDefaultDiagnostic
             }};
-            // blittable arrays don't support [In] only. Different diagnostics are issued because we can pin in one direction (managed->unmanaged)
-            // but not the other direction.
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                new DiagnosticResult[] { inAttributeNotSupportedOnPinnedParameter, inAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
 
             // bools that are marshalled into a new array are in by default
@@ -773,21 +769,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                 new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
 
-            // [In, Out] is default
-            var inOutAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(1)
-                    .WithLocation(2)
-                    .WithArguments(SR.InOutAttributes, paramName, SR.PinnedMarshallingIsInOutByDefault);
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { }
             };
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { }
             };
 
             yield return new object[] {
@@ -1073,7 +1063,8 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static IEnumerable<object[]> IntAndEnumReturnTypeSnippets()
         {
-            var diagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable).WithLocation(0);
+            var managedReturnWillBeOutDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable).WithLocation(0);
+            var hresultReturnStructWillBeStructDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.HResultTypeWillBeTreatedAsStruct).WithLocation(0);
             var enumDecl = $$"""
                 internal enum Err
                 {
@@ -1100,22 +1091,22 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 enumReturn,
-                new DiagnosticResult[] { diagnostic }
+                new DiagnosticResult[] { managedReturnWillBeOutDiagnostic }
             };
             yield return new object[] {
                 ID(),
                 intReturn,
-                new DiagnosticResult[] { diagnostic }
+                new DiagnosticResult[] { managedReturnWillBeOutDiagnostic }
             };
             yield return new object[] {
                 ID(),
                 structHrReturn,
-                new DiagnosticResult[] { diagnostic }
+                new DiagnosticResult[] { managedReturnWillBeOutDiagnostic }
             };
             yield return new object[] {
                 ID(),
                 structHResultReturn,
-                new DiagnosticResult[] { diagnostic }
+                new DiagnosticResult[] { managedReturnWillBeOutDiagnostic }
             };
             yield return new object[] {
                 ID(),
@@ -1140,12 +1131,19 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 structHrPreserveSig,
-                new DiagnosticResult[] {  }
+                new DiagnosticResult[] { hresultReturnStructWillBeStructDiagnostic.WithArguments("HR") }
             };
             yield return new object[] {
                 ID(),
                 structHResultPreserveSig,
-                new DiagnosticResult[] {  }
+                new DiagnosticResult[] { hresultReturnStructWillBeStructDiagnostic.WithArguments("HResult") }
+            };
+
+            var structHResultPreserveSigWithMarshalAs = Template("HResult", structDeclHResult, "[PreserveSig][return:MarshalAs(UnmanagedType.Error)]");
+            yield return new object[] {
+                ID(),
+                structHResultPreserveSigWithMarshalAs,
+                new DiagnosticResult[] { }
             };
 
             var intReturnMarshalAs = Template("int", "", "[return: MarshalAs(UnmanagedType.I4)]");
@@ -1171,9 +1169,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                     """;
             }
         }
+
         [Theory]
         [MemberData(nameof(IntAndEnumReturnTypeSnippets))]
-        async Task ValidateIntReturnTypeShowsInfo(string id, string source, DiagnosticResult[] diagnostics)
+        public async Task ValidateReturnTypeInfoDiagnostics(string id, string source, DiagnosticResult[] diagnostics)
         {
             _ = id;
 

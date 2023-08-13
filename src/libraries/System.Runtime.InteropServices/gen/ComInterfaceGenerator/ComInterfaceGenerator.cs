@@ -193,13 +193,13 @@ namespace Microsoft.Interop
 
             context.RegisterSourceOutput(filesToGenerate, (context, data) =>
             {
-                context.AddSource(data.TypeName.Replace("global::", ""), data.Source);
+                context.AddSource(data.TypeName.Replace(TypeNames.GlobalAlias, ""), data.Source);
             });
         }
 
         private static readonly AttributeSyntax s_iUnknownDerivedAttributeTemplate =
             Attribute(
-                GenericName(TypeNames.IUnknownDerivedAttribute)
+                GenericName(TypeNames.GlobalAlias + TypeNames.IUnknownDerivedAttribute)
                     .AddTypeArgumentListArguments(
                         IdentifierName("InterfaceInformation"),
                         IdentifierName("InterfaceImplementation")));
@@ -210,6 +210,13 @@ namespace Microsoft.Interop
                     .WithModifiers(context.ContainingSyntax.Modifiers)
                     .WithTypeParameterList(context.ContainingSyntax.TypeParameters)
                     .AddAttributeLists(AttributeList(SingletonSeparatedList(s_iUnknownDerivedAttributeTemplate))));
+
+        private static bool IsHResultLikeType(ManagedTypeInfo type)
+        {
+            string typeName = type.FullTypeName.Split('.', ':')[^1];
+            return typeName.Equals("hr", StringComparison.OrdinalIgnoreCase)
+                || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
+        }
 
         private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
         {
@@ -280,7 +287,7 @@ namespace Microsoft.Interop
                         {
                             if ((returnSwappedSignatureElements[i].ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 or SpecialType.System_Enum } or EnumTypeInfo
                                     && returnSwappedSignatureElements[i].MarshallingAttributeInfo.Equals(NoMarshallingInfo.Instance))
-                                || (returnSwappedSignatureElements[i].ManagedType.FullTypeName.Split('.', ':').LastOrDefault()?.ToLowerInvariant() is "hr" or "hresult"))
+                                || (IsHResultLikeType(returnSwappedSignatureElements[i].ManagedType)))
                             {
                                 generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable, symbol.Locations[0]));
                             }
@@ -310,6 +317,23 @@ namespace Microsoft.Interop
                         })
                 };
             }
+            else
+            {
+                // If our method is PreserveSig, we will notify the user if they are returning a type that may be an HRESULT type
+                // that is defined as a structure. These types used to work with built-in COM interop, but they do not work with
+                // source-generated interop as we now use the MemberFunction calling convention, which is more correct.
+                TypePositionInfo? managedReturnInfo = signatureContext.ElementTypeInformation.FirstOrDefault(e => e.IsManagedReturnPosition);
+                if (managedReturnInfo is { MarshallingAttributeInfo: UnmanagedBlittableMarshallingInfo, ManagedType: ValueTypeInfo valueType }
+                    && IsHResultLikeType(valueType))
+                {
+                    generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(
+                        GeneratorDiagnostics.HResultTypeWillBeTreatedAsStruct,
+                        symbol.Locations[0],
+                        ImmutableDictionary<string, string>.Empty.Add(GeneratorDiagnosticProperties.AddMarshalAsAttribute, "Error"),
+                        valueType.DiagnosticFormattedName));
+                }
+            }
+
             var direction = GetDirectionFromOptions(generatedComInterfaceAttributeData.Options);
 
             // Ensure the size of collections are known at marshal / unmarshal in time.
@@ -428,7 +452,7 @@ namespace Microsoft.Interop
                         .Select(ctx => ctx.Stub.Node)
                         .Concat(shadowImplementations)
                         .Concat(inheritedStubs)))
-                .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute)))));
+                .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute))));
         }
 
         private static InterfaceDeclarationSyntax GenerateImplementationVTableMethods(ComInterfaceAndMethodsContext comInterfaceAndMethods, CancellationToken _)
@@ -472,7 +496,7 @@ namespace Microsoft.Interop
                                     CastExpression(VoidStarStarSyntax,
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseTypeName(TypeNames.System_Runtime_CompilerServices_RuntimeHelpers),
+                                                TypeSyntaxes.System_Runtime_CompilerServices_RuntimeHelpers,
                                                 IdentifierName("AllocateTypeAssociatedMemory")))
                                         .AddArgumentListArguments(
                                             Argument(TypeOfExpression(interfaceType.Syntax)),
@@ -501,7 +525,7 @@ namespace Microsoft.Interop
                         ExpressionStatement(
                             InvocationExpression(
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers),
+                                    TypeSyntaxes.System_Runtime_InteropServices_ComWrappers,
                                     IdentifierName("GetIUnknownImpl")))
                             .AddArgumentListArguments(
                                 Argument(IdentifierName("v0"))
@@ -562,7 +586,7 @@ namespace Microsoft.Interop
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseTypeName(TypeNames.System_Runtime_InteropServices_NativeMemory),
+                                    TypeSyntaxes.System_Runtime_InteropServices_NativeMemory,
                                     IdentifierName("Copy")))
                             .WithArgumentList(
                                 ArgumentList(
@@ -577,7 +601,7 @@ namespace Microsoft.Interop
                                                             SyntaxKind.SimpleMemberAccessExpression,
                                                             MemberAccessExpression(
                                                                 SyntaxKind.SimpleMemberAccessExpression,
-                                                                ParseTypeName(TypeNames.StrategyBasedComWrappers),
+                                                                TypeSyntaxes.StrategyBasedComWrappers,
                                                                 IdentifierName("DefaultIUnknownInterfaceDetailsStrategy")),
                                                             IdentifierName("GetIUnknownDerivedDetails")))
                                                     .WithArgumentList(
@@ -619,14 +643,14 @@ namespace Microsoft.Interop
         private static readonly ClassDeclarationSyntax InterfaceInformationTypeTemplate =
             ClassDeclaration("InterfaceInformation")
             .AddModifiers(Token(SyntaxKind.FileKeyword), Token(SyntaxKind.UnsafeKeyword))
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(TypeNames.IIUnknownInterfaceType)));
+            .AddBaseListTypes(SimpleBaseType(TypeSyntaxes.IIUnknownInterfaceType));
 
         private static ClassDeclarationSyntax GenerateInterfaceInformation(ComInterfaceInfo context, CancellationToken _)
         {
             ClassDeclarationSyntax interfaceInformationType = InterfaceInformationTypeTemplate
                 .AddMembers(
                     // public static System.Guid Iid { get; } = new(<embeddedDataBlob>);
-                    PropertyDeclaration(ParseTypeName(TypeNames.System_Guid), "Iid")
+                    PropertyDeclaration(TypeSyntaxes.System_Guid, "Iid")
                         .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                         .AddAccessorListAccessors(
                             AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(Token(SyntaxKind.SemicolonToken)))

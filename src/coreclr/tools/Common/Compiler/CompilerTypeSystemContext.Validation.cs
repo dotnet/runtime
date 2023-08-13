@@ -19,6 +19,13 @@ namespace ILCompiler
         private readonly ValidTypeHashTable _validTypes = new ValidTypeHashTable();
 
         /// <summary>
+        /// Once the type check stack is this deep, we declare the type being scanned as
+        /// recursive. In practice, for recursive types, stack overflow happens when the type
+        /// load stack is approximately twice as deep (1800~1900).
+        /// </summary>
+        private const int MaximumTypeLoadCheckStackDepth = 1024;
+
+        /// <summary>
         /// Ensures that the type can be fully loaded. The method will throw one of the type system
         /// exceptions if the type is not loadable.
         /// </summary>
@@ -102,6 +109,12 @@ namespace ILCompiler
         private static bool PushTypeLoadInProgress(TypeDesc type)
         {
             t_typeLoadCheckInProgressStack ??= new List<TypeLoadabilityCheckInProgress>();
+
+            if (t_typeLoadCheckInProgressStack.Count >= MaximumTypeLoadCheckStackDepth)
+            {
+                // Extreme stack depth typically indicates infinite recursion in recursive descent into the type
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+            }
 
             // Walk stack to see if the specified type is already in the process of being type checked.
             int typeLoadCheckInProgressStackOffset = -1;

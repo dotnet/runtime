@@ -10,7 +10,7 @@ using System.Xml;
 namespace System.Speech.Recognition.SrgsGrammar
 {
     [Serializable]
-    [DebuggerDisplay("Rule={_id.ToString()} Scope={_scope.ToString()}")]
+    [DebuggerDisplay("Rule = {_id.ToString()}, Scope = {_scope.ToString()}")]
     [DebuggerTypeProxy(typeof(SrgsRuleDebugDisplay))]
     public class SrgsRule : IRule
     {

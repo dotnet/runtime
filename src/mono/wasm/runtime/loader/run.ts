@@ -9,13 +9,13 @@ import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExports
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
-import { setup_proxy_console, mono_log_info } from "./logging";
-import { resolve_single_asset_path, start_asset_download } from "./assets";
+import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
+import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, start_asset_download } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
-import { invokeLibraryInitializers } from "./libraryInitializers";
+import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { initCacheToUseIfEnabled } from "./assetsCache";
 
 const module = globalObjectsRoot.module;
@@ -428,14 +428,29 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         : createEmscriptenMain();
 }
 
+// in the future we can use feature detection to load different flavors
 function importModules() {
-    runtimeHelpers.runtimeModuleUrl = resolve_single_asset_path("js-module-runtime").resolvedUrl!;
-    runtimeHelpers.nativeModuleUrl = resolve_single_asset_path("js-module-native").resolvedUrl!;
-    return [
-        // keep js module names dynamic by using config, in the future we can use feature detection to load different flavors
-        import(/* webpackIgnore: true */runtimeHelpers.runtimeModuleUrl),
-        import(/* webpackIgnore: true */runtimeHelpers.nativeModuleUrl),
-    ];
+    const jsModuleRuntimeAsset = resolve_single_asset_path("js-module-runtime");
+    const jsModuleNativeAsset = resolve_single_asset_path("js-module-native");
+
+    let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
+    let jsModuleNativePromise: Promise<NativeModuleExportsInternal>;
+
+    if (typeof jsModuleRuntimeAsset.moduleExports === "object") {
+        jsModuleRuntimePromise = jsModuleRuntimeAsset.moduleExports;
+    } else {
+        mono_log_debug(`Attempting to import '${jsModuleRuntimeAsset.resolvedUrl}' for ${jsModuleRuntimeAsset.name}`);
+        jsModuleRuntimePromise = import(/* webpackIgnore: true */jsModuleRuntimeAsset.resolvedUrl!);
+    }
+
+    if (typeof jsModuleNativeAsset.moduleExports === "object") {
+        jsModuleNativePromise = jsModuleNativeAsset.moduleExports;
+    } else {
+        mono_log_debug(`Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
+        jsModuleNativePromise = import(/* webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
+    }
+
+    return [jsModuleRuntimePromise, jsModuleNativePromise];
 }
 
 async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
@@ -466,6 +481,8 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     // download config
     await mono_wasm_load_config(module);
 
+    prepareAssets();
+
     const promises = importModules();
 
     await initCacheToUseIfEnabled();
@@ -479,13 +496,18 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     init_globalization();
 
-    // TODO call mono_download_assets(); here in parallel ?
+    setTimeout(() => {
+        mono_download_assets(); // intentionally not awaited
+    }, 0);
+
     const es6Modules = await Promise.all(promises);
+
     await initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
 
-    await invokeLibraryInitializers("onRuntimeReady", [globalObjectsRoot.api], "modulesAfterRuntimeReady");
+    await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterRuntimeReady);
+    await invokeLibraryInitializers("onRuntimeReady", [globalObjectsRoot.api]);
 
     return exportedRuntimeAPI;
 }
@@ -494,6 +516,8 @@ async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
     setupPreloadChannelToMainThread();
 
     await loaderHelpers.afterConfigLoaded.promise;
+
+    prepareAssetsWorker();
 
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
