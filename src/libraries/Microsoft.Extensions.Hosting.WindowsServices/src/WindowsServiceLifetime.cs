@@ -47,6 +47,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         {
             ThrowHelper.ThrowIfNull(environment);
             ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(loggerFactory);
             ThrowHelper.ThrowIfNull(optionsAccessor);
             ThrowHelper.ThrowIfNull(windowsServiceOptionsAccessor);
 

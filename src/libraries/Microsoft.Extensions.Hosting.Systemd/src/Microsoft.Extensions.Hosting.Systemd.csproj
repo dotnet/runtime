@@ -6,10 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
-
-    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
