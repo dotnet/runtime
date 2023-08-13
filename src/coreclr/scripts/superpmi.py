@@ -539,10 +539,6 @@ class AsyncSubprocessHelper:
         self.verbose = verbose
         self.subproc_count_queue = None
 
-        if 'win32' in sys.platform:
-            # Windows specific event-loop policy & cmd
-            asyncio.set_event_loop(asyncio.ProactorEventLoop())
-
     async def __get_item__(self, item, index, size, async_callback, *extra_args):
         """ Wrapper to the async callback which will schedule based on the queue
         """
@@ -600,7 +596,21 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        loop = asyncio.get_event_loop()
+
+        try:
+            if sys.version_info[:2] >= (3, 7):
+                loop = asyncio.get_running_loop()
+            else:
+                loop = asyncio.get_event_loop()
+        except RuntimeError:
+            if 'win32' in sys.platform:
+                # Windows specific event-loop policy & cmd
+                loop = asyncio.ProactorEventLoop()
+            else:
+                loop = asyncio.new_event_loop()
+
+            asyncio.set_event_loop(loop)
+            
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.clear()
         os.environ.update(reset_env)
@@ -642,7 +652,9 @@ class SuperPMICollect:
 
         self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
 
-        self.jit_path = os.path.join(coreclr_args.core_root, get_jit_name(coreclr_args))
+        jit_name = get_jit_name(coreclr_args)
+        self.jit_path = os.path.join(coreclr_args.core_root, jit_name)
+
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
 
@@ -728,6 +740,23 @@ class SuperPMICollect:
 
                 self.temp_location = temp_location
 
+                if self.coreclr_args.crossgen2:
+                    jit_name = os.path.basename(self.jit_path)
+                    # There are issues when running SuperPMI and crossgen2 when using the same JIT binary. 
+                    # Therefore, we produce a copy of the JIT binary for SuperPMI to use. 
+                    jit_name_ext = os.path.splitext(jit_name)[1]
+                    jit_name_without_ext = os.path.splitext(jit_name)[0]
+                    try:
+                        self.superpmi_jit_path = os.path.join(self.temp_location, jit_name_without_ext + "_superpmi" + jit_name_ext)
+                        shutil.copyfile(self.jit_path, self.superpmi_jit_path)
+                    except Exception:
+                        # Fallback to original JIT path if we are not able to make a copy.
+                        self.superpmi_jit_path = self.jit_path
+                else:
+                    self.superpmi_jit_path = self.jit_path
+
+                logging.info("SuperPMI JIT Path: %s", self.superpmi_jit_path)
+
                 # If we have passed temp_dir, then we have a few flags we need
                 # to check to see where we are in the collection process. Note that this
                 # functionality exists to help not lose progress during a SuperPMI collection.
@@ -790,7 +819,7 @@ class SuperPMICollect:
 
             root_env = {}
             root_env["SuperPMIShimLogPath"] = self.temp_location
-            root_env["SuperPMIShimPath"] = self.jit_path
+            root_env["SuperPMIShimPath"] = self.superpmi_jit_path
 
             dotnet_env = {}
             dotnet_env["EnableExtraSuperPmiQueries"] = "1"

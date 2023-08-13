@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Mono.Options;
 
@@ -37,8 +38,8 @@ internal sealed class BrowserArguments
             ForwardConsoleOutput = forwardConsoleElement.GetBoolean();
     }
 
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Needs to validate instance members")]
     public void Validate()
     {
-        CommonConfiguration.CheckPathOrInAppPath(CommonConfig.AppPath, HTMLPath, "html-path");
     }
 }

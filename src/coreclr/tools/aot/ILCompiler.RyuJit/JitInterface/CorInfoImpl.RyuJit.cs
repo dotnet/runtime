@@ -694,10 +694,11 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY:
+                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTARRAY:
                     id = ReadyToRunHelper.CheckCastAny;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY:
-                    id = ReadyToRunHelper.CheckInstanceAny;
+                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTINTERFACE:
+                    id = ReadyToRunHelper.CheckCastInterface;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS:
                     id = ReadyToRunHelper.CheckCastClass;
@@ -705,20 +706,16 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS_SPECIAL:
                     id = ReadyToRunHelper.CheckCastClassSpecial;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS:
-                    id = ReadyToRunHelper.CheckInstanceClass;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTARRAY:
-                    id = ReadyToRunHelper.CheckCastArray;
-                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY:
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFARRAY:
-                    id = ReadyToRunHelper.CheckInstanceArray;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTINTERFACE:
-                    id = ReadyToRunHelper.CheckCastInterface;
+                    id = ReadyToRunHelper.CheckInstanceAny;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFINTERFACE:
                     id = ReadyToRunHelper.CheckInstanceInterface;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS:
+                    id = ReadyToRunHelper.CheckInstanceClass;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER:
@@ -1096,9 +1093,9 @@ namespace Internal.JitInterface
             return helper;
         }
 
-        private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref bool pHasSideEffects)
+        private CorInfoHelpFunc getNewHelper(CORINFO_CLASS_STRUCT_* classHandle, ref bool pHasSideEffects)
         {
-            TypeDesc type = HandleToObject(pResolvedToken.hClass);
+            TypeDesc type = HandleToObject(classHandle);
 
             Debug.Assert(!type.IsString && !type.IsArray && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
 

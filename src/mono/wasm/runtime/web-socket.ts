@@ -11,6 +11,7 @@ import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
 import { viewOrCopy, utf8ToStringRelaxed, stringToUTF8 } from "./strings";
+import { IDisposable } from "./marshal";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -21,6 +22,7 @@ const wasm_ws_pending_open_promise = Symbol.for("wasm ws_pending_open_promise");
 const wasm_ws_pending_close_promises = Symbol.for("wasm ws_pending_close_promises");
 const wasm_ws_pending_send_promises = Symbol.for("wasm ws_pending_send_promises");
 const wasm_ws_is_aborted = Symbol.for("wasm ws_is_aborted");
+const wasm_ws_on_closed = Symbol.for("wasm ws_on_closed");
 const wasm_ws_receive_status_ptr = Symbol.for("wasm ws_receive_status_ptr");
 let mono_wasm_web_socket_close_warning = false;
 const ws_send_buffer_blocking_threshold = 65536;
@@ -32,8 +34,8 @@ function verifyEnvironment() {
     }
     if (typeof globalThis.WebSocket !== "function") {
         const message = ENVIRONMENT_IS_NODE
-            ? "Please install `ws` npm package to enable networking support."
-            : "This browser doesn't support WebSocket API. Please use a modern browser.";
+            ? "Please install `ws` npm package to enable networking support. See also https://aka.ms/dotnet-wasm-features"
+            : "This browser doesn't support WebSocket API. Please use a modern browser. See also https://aka.ms/dotnet-wasm-features";
         throw new Error(message);
     }
 }
@@ -41,6 +43,7 @@ function verifyEnvironment() {
 export function ws_wasm_create(uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr, onClosed: (code: number, reason: string) => void): WebSocketExtension {
     verifyEnvironment();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
+    mono_assert(typeof onClosed === "function", () => `ERR12: Invalid onClosed ${typeof onClosed}`);
 
     const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
     const { promise_control: open_promise_control } = createPromiseController<WebSocketExtension>();
@@ -51,6 +54,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     ws[wasm_ws_pending_send_promises] = [];
     ws[wasm_ws_pending_close_promises] = [];
     ws[wasm_ws_receive_status_ptr] = receive_status_ptr;
+    ws[wasm_ws_on_closed] = onClosed as any;
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
         if (ws[wasm_ws_is_aborted]) return;
@@ -65,10 +69,11 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     const local_on_close = (ev: CloseEvent) => {
         ws.removeEventListener("message", local_on_message);
         if (ws[wasm_ws_is_aborted]) return;
-        if (onClosed) onClosed(ev.code, ev.reason);
+
+        onClosed(ev.code, ev.reason);
 
         // this reject would not do anything if there was already "open" before it.
-        open_promise_control.reject(ev.reason);
+        open_promise_control.reject(new Error(ev.reason));
 
         for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
             close_promise_control.resolve();
@@ -82,14 +87,28 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
             setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
             receive_promise_control.resolve();
         });
+
+        // cleanup the delegate proxy
+        ws[wasm_ws_on_closed].dispose();
     };
     const local_on_error = (ev: any) => {
-        open_promise_control.reject(ev.message || "WebSocket error");
+        if (ws[wasm_ws_is_aborted]) return;
+        ws.removeEventListener("message", local_on_message);
+        const error = new Error(ev.message || "WebSocket error");
+        mono_log_warn("WebSocket error", error);
+        reject_promises(ws, error);
     };
     ws.addEventListener("message", local_on_message);
     ws.addEventListener("open", local_on_open, { once: true });
     ws.addEventListener("close", local_on_close, { once: true });
     ws.addEventListener("error", local_on_error, { once: true });
+    ws.dispose = () => {
+        ws.removeEventListener("message", local_on_message);
+        ws.removeEventListener("open", local_on_open);
+        ws.removeEventListener("close", local_on_close);
+        ws.removeEventListener("error", local_on_error);
+        ws_wasm_abort(ws);
+    };
 
     return ws;
 }
@@ -177,23 +196,34 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
     mono_assert(!!ws, "ERR18: expected ws instance");
 
     ws[wasm_ws_is_aborted] = true;
+    reject_promises(ws, new Error("OperationCanceledException"));
+
+    // cleanup the delegate proxy
+    ws[wasm_ws_on_closed]?.dispose();
+
+    try {
+        // this is different from Managed implementation
+        ws.close(1000, "Connection was aborted.");
+    } catch (error) {
+        mono_log_warn("WebSocket error while aborting", error);
+    }
+}
+
+function reject_promises(ws: WebSocketExtension, error: Error) {
     const open_promise_control = ws[wasm_ws_pending_open_promise];
     if (open_promise_control) {
-        open_promise_control.reject(new Error("OperationCanceledException"));
+        open_promise_control.reject(error);
     }
     for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
-        close_promise_control.reject(new Error("OperationCanceledException"));
+        close_promise_control.reject(error);
     }
     for (const send_promise_control of ws[wasm_ws_pending_send_promises]) {
-        send_promise_control.reject(new Error("OperationCanceledException"));
+        send_promise_control.reject(error);
     }
 
     ws[wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
-        receive_promise_control.reject(new Error("OperationCanceledException"));
+        receive_promise_control.reject(error);
     });
-
-    // this is different from Managed implementation
-    ws.close(1000, "Connection was aborted.");
 }
 
 // send and return promise
@@ -224,7 +254,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
             if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
                 // only reject if the data were not sent
                 // bufferedAmount does not reset to zero once the connection closes
-                promise_control.reject(`InvalidState: ${readyState} The WebSocket is not connected.`);
+                promise_control.reject(new Error(`InvalidState: ${readyState} The WebSocket is not connected.`));
             }
             else if (!promise_control.isDone) {
                 globalThis.setTimeout(polling_check, nextDelay);
@@ -372,10 +402,12 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_send_promises]: PromiseController<void>[]
     [wasm_ws_pending_close_promises]: PromiseController<void>[]
     [wasm_ws_is_aborted]: boolean
+    [wasm_ws_on_closed]: IDisposable
     [wasm_ws_receive_status_ptr]: VoidPtr
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
     [wasm_ws_pending_send_buffer]: Uint8Array | null
+    dispose(): void
 }
 
 type ReceivePromiseControl = PromiseController<void> & {

@@ -56,6 +56,7 @@ parameters:
         PATENTS.TXT
         THIRD-PARTY-NOTICES.TXT
         src/workloads/*
+        src/mono/wasm/sln/*
     ]
 
 jobs:
@@ -125,12 +126,16 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
 
     - subset: runtimetests
+      combined: true
       include:
       - src/tests/*
+      exclude:
+      - ${{ parameters._const_paths._wasm_specific_only }}
 
     - subset: tools_illink
       include:
       - src/tools/illink/*
+      - global.json
 
     - subset: installer
       include:
@@ -177,6 +182,7 @@ jobs:
       include:
       - eng/Version.Details.xml
       - eng/Versions.props
+        eng/testing/ProvisioningVersions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*

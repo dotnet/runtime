@@ -30,6 +30,13 @@ try {
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
         // It is preferred to use specific 'with***' methods instead in all other cases.
+        .withConfig({
+            resources: {
+                modulesAfterConfigLoaded: {
+                    "advanced-sample.lib.module.js": ""
+                }
+            }
+        })
         .withModuleConfig({
             configSrc: "./blazor.boot.json",
             onConfigLoaded: (config) => {
@@ -51,6 +58,10 @@ try {
                 console.log('user code Module.onDotnetReady');
             },
             postRun: () => { console.log('user code Module.postRun'); },
+        })
+        .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
+            return name;
         })
         .create();
 

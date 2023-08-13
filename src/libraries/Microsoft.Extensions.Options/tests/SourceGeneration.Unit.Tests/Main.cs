@@ -143,7 +143,7 @@ namespace __OptionValidationStaticInstances
             public class SecondModel
             {
                 [Required]
-                public string? P3;
+                public string? P3 { get; set; }
             }
 
             [OptionsValidator]
@@ -205,7 +205,7 @@ namespace __OptionValidationStaticInstances
                 public const string? P1;
 
                 [ValidateObjectMembers]
-                public static SecondModel P2 = new();
+                public static SecondModel P2 { get; set; } = new();
 
                 [ValidateEnumeratedItems]
                 public static System.Collections.Generic.IList<SecondModel>? P3 { get; set; }
@@ -217,7 +217,7 @@ namespace __OptionValidationStaticInstances
             public class SecondModel
             {
                 [Required]
-                public string? P3;
+                public string? P3 { get; set; }
             }
 
             [OptionsValidator]
@@ -226,7 +226,7 @@ namespace __OptionValidationStaticInstances
             }
         ");
 
-        Assert.Equal(4, d.Count);
+        Assert.Equal(3, d.Count);
         Assert.All(d, x => Assert.Equal(DiagDescriptors.CantValidateStaticOrConstMember.Id, x.Id));
         Assert.All(d, x => Assert.Equal(DiagnosticSeverity.Warning, x.DefaultSeverity));
     }
@@ -259,13 +259,13 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [Required]
-                public string? P1;
+                public string? P1 { get; set; }
             }
 
             public class SecondModel
             {
                 [Required]
-                public string? P2;
+                public string? P2 { get; set; }
             }
 
             [OptionsValidator]
@@ -290,13 +290,13 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [ValidateObjectMembers(typeof(SecondValidator)]
-                public SecondModel? P1;
+                public SecondModel? P1 { get; set; }
             }
 
             public class SecondModel
             {
                 [Required]
-                public string? P2;
+                public string? P2 { get; set; }
             }
 
             [OptionsValidator]
@@ -320,16 +320,16 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [Required]
-                public string? P1;
+                public string? P1 { get; set; }
 
                 [ValidateObjectMembers(typeof(SecondValidator)]
-                public SecondModel? P2;
+                public SecondModel? P2 { get; set; }
             }
 
             public class SecondModel
             {
                 [Required]
-                public string? P3;
+                public string? P3 { get; set; }
             }
 
             [OptionsValidator]
@@ -358,13 +358,13 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [ValidateObjectMembers(null!)]
-                public SecondModel? P1;
+                public SecondModel? P1 { get; set; }
             }
 
             public class SecondModel
             {
                 [Required]
-                public string? P2;
+                public string? P2 { get; set; }
             }
 
             [OptionsValidator]
@@ -389,16 +389,16 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [Required]
-                public string? P1;
+                public string? P1 { get; set; }
 
                 [ValidateObjectMembers(typeof(SecondValidator)]
-                public SecondModel? P2;
+                public SecondModel? P2 { get; set; }
             }
 
             public class SecondModel
             {
                 [Required]
-                public string? P3;
+                public string? P3 { get; set; }
             }
 
             [OptionsValidator]
@@ -426,7 +426,7 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [Required]
-                public string P1;
+                public string P1 { get; set; }
             }
 
             [OptionsValidator]
@@ -461,15 +461,15 @@ namespace __OptionValidationStaticInstances
             {
                 [Required]
                 [ValidateObjectMembers]
-                public T? P1;
+                public T? P1 { get; set; }
 
                 [ValidateObjectMembers]
                 [Required]
-                public T[]? P2;
+                public T[]? P2 { get; set; }
 
                 [ValidateObjectMembers]
                 [Required]
-                public System.Collections.Generics.IList<T> P3 = null!;
+                public System.Collections.Generics.IList<T> P3 { get; set;} = null!;
             }
 
             [OptionsValidator]
@@ -492,19 +492,19 @@ namespace __OptionValidationStaticInstances
             {
                 [Required]
                 [ValidateObjectMembers]
-                public T? P1;
+                public T? P1 { get; set; }
 
                 [ValidateObjectMembers]
                 [Required]
-                public T[]? P2;
+                public T[]? P2 { get; set; }
 
                 [ValidateObjectMembers]
                 [Required]
-                public int[]? P3;
+                public int[]? P3 { get; set; }
 
                 [ValidateObjectMembers]
                 [Required]
-                public System.Collections.Generics.IList<T>? P4;
+                public System.Collections.Generics.IList<T>? P4 { get; set; }
             }
 
             [OptionsValidator]
@@ -528,12 +528,12 @@ namespace __OptionValidationStaticInstances
             {
                 [Required]
                 [ValidateObjectMembers]
-                public SecondModel? P1;
+                public SecondModel? P1 { get; set; }
             }
 
             public class SecondModel
             {
-                public string P2;
+                public string P2 { get; set; };
             }
 
             [OptionsValidator]
@@ -1078,13 +1078,13 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [ValidateEnumeratedItems(typeof(SecondValidator)]
-                public SecondModel[]? P1;
+                public SecondModel[]? P1 { get; set; }
             }
 
             public class SecondModel
             {
                 [Required]
-                public string? P2;
+                public string? P2 { get; set; }
             }
 
             [OptionsValidator]
@@ -1108,13 +1108,13 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [ValidateEnumeratedItems(null!)]
-                public SecondModel[]? P1;
+                public SecondModel[]? P1 { get; set; }
             }
 
             public class SecondModel
             {
                 [Required]
-                public string? P2;
+                public string? P2 { get; set; }
             }
 
             [OptionsValidator]
@@ -1139,16 +1139,16 @@ namespace __OptionValidationStaticInstances
             public class FirstModel
             {
                 [Required]
-                public string? P1;
+                public string? P1 { get; set; }
 
                 [ValidateEnumeratedItems(typeof(SecondValidator)]
-                public SecondModel[]? P2;
+                public SecondModel[]? P2 { get; set; }
             }
 
             public class SecondModel
             {
                 [Required]
-                public string? P3;
+                public string? P3 { get; set; }
             }
 
             [OptionsValidator]
@@ -1507,15 +1507,15 @@ namespace __OptionValidationStaticInstances
             {
                 [Required]
                 [ValidateEnumeratedItems]
-                public T[]? P1;
+                public T[]? P1 { get; set; }
 
                 [ValidateEnumeratedItems]
                 [Required]
-                public T[]? P2;
+                public T[]? P2 { get; set; }
 
                 [ValidateEnumeratedItems]
                 [Required]
-                public System.Collections.Generic.IList<T> P3 = null!;
+                public System.Collections.Generic.IList<T> P3 { get; set; } = null!;
             }
 
             [OptionsValidator]
@@ -1538,15 +1538,15 @@ namespace __OptionValidationStaticInstances
             {
                 [ValidateEnumeratedItems]
                 [Required]
-                public T[]? P1;
+                public T[]? P1 { get; set; }
 
                 [ValidateEnumeratedItems]
                 [Required]
-                public int[]? P2;
+                public int[]? P2 { get; set; }
 
                 [ValidateEnumeratedItems]
                 [Required]
-                public System.Collections.Generic.IList<T>? P3;
+                public System.Collections.Generic.IList<T>? P3 { get; set; }
             }
 
             [OptionsValidator]
@@ -1569,7 +1569,7 @@ namespace __OptionValidationStaticInstances
             {
                 [Required]
                 [ValidateEnumeratedItems]
-                public int P1;
+                public int P1 { get; set; }
             }
 
             [OptionsValidator]

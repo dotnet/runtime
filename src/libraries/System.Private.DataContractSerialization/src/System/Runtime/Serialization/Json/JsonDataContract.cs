@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -151,8 +152,7 @@ namespace System.Runtime.Serialization.Json
             private static JsonDataContract[] s_dataContractCache = new JsonDataContract[32];
             private static int s_dataContractID;
 
-            private static readonly TypeHandleRef s_typeHandleRef = new TypeHandleRef();
-            private static readonly Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
+            private static readonly ConcurrentDictionary<nint, int> s_typeToIDCache = new();
             private DataContractDictionary? _knownDataContracts;
             private readonly DataContract _traditionalDataContract;
             private readonly string _typeName;
@@ -188,34 +188,26 @@ namespace System.Runtime.Serialization.Json
 
             internal static int GetId(RuntimeTypeHandle typeHandle)
             {
+                if (s_typeToIDCache.TryGetValue(typeHandle.Value, out int id))
+                    return id;
+
                 lock (s_cacheLock)
                 {
-                    IntRef? id;
-                    s_typeHandleRef.Value = typeHandle;
-                    if (!s_typeToIDCache.TryGetValue(s_typeHandleRef, out id))
+                    return s_typeToIDCache.GetOrAdd(typeHandle.Value, static _ =>
                     {
-                        int value = s_dataContractID++;
-                        if (value >= s_dataContractCache.Length)
+                        int nextId = s_dataContractID++;
+                        if (nextId >= s_dataContractCache.Length)
                         {
-                            int newSize = (value < int.MaxValue / 2) ? value * 2 : int.MaxValue;
-                            if (newSize <= value)
+                            int newSize = (nextId < int.MaxValue / 2) ? nextId * 2 : int.MaxValue;
+                            if (newSize <= nextId)
                             {
                                 Debug.Fail("DataContract cache overflow");
                                 throw new SerializationException(SR.DataContractCacheOverflow);
                             }
                             Array.Resize<JsonDataContract>(ref s_dataContractCache, newSize);
                         }
-                        id = new IntRef(value);
-                        try
-                        {
-                            s_typeToIDCache.Add(new TypeHandleRef(typeHandle), id);
-                        }
-                        catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
-                        {
-                            throw new Exception(ex.Message, ex);
-                        }
-                    }
-                    return id.Value;
+                        return nextId;
+                    });
                 }
             }
 

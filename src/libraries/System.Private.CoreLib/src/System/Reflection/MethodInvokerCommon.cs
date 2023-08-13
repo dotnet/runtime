@@ -107,12 +107,11 @@ namespace System.Reflection
             }
             else
             {
-#if !MONO // Temporary until Mono can unbox a true Nullable<T>
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
                     invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method, backwardsCompat);
                 }
-#endif
+
                 strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
             }
         }
@@ -136,12 +135,11 @@ namespace System.Reflection
             }
             else
             {
-#if !MONO // Temporary until Mono can unbox a true Nullable<T>
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
                     invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method, backwardsCompat);
                 }
-#endif
+
                 strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
             }
         }
