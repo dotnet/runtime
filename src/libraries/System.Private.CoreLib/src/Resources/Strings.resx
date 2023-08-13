@@ -4181,6 +4181,9 @@
   <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
     <value>COM Interop requires ComWrapper instance registered for marshalling.</value>
   </data>
+  <data name="InvalidOperation_ComInteropRequireComWrapperTrackerInstance" xml:space="preserve">
+    <value>COM Interop requires ComWrapper instance registered for reference tracker support.</value>
+  </data>
   <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
     <value>Must not be greater than the length of the buffer.</value>
   </data>
