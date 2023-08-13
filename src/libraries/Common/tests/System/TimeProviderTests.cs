@@ -638,6 +638,36 @@ namespace Tests.System
             }
         }
 
+        public static IEnumerable<object[]> TaskFactoryData()
+        {
+            yield return new object[] { taskFactory };
+
+#if TESTEXTENSIONS
+            yield return new object[] { extensionsTaskFactory };
+#endif // TESTEXTENSIONS
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(TaskFactoryData))]
+        public void TestDelayTaskContinuation(ITestTaskFactory taskFactory)
+        {
+            ManualTimeProvider manualTimeProvider = new ManualTimeProvider();
+            var callbackCount = 0;
+            _ = Continuation(manualTimeProvider, () => callbackCount++);
+
+            Assert.NotNull(manualTimeProvider.Timer);
+            manualTimeProvider.Timer.Fire();
+
+            // Delay should be completed and the continuation should be called.
+            Assert.Equal(1, callbackCount);
+
+            async Task Continuation(TimeProvider timeProvider, Action callback)
+            {
+                await taskFactory.Delay(timeProvider, TimeSpan.FromSeconds(10));
+                callback();
+            }
+        }
+
         [Fact]
         // 1- Creates the CTS with a delay that we control via the time provider.
         // 2- Disposes the CTS.
