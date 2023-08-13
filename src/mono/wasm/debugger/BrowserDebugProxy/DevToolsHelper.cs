@@ -475,7 +475,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return store;
             }
         }
-        public string[] GetWasmFunctionIds { get; internal set; }
+        public string[] WasmFunctionIds { get; internal set; }
 
         public PerScopeCache GetCacheForScope(int scopeId)
         {
