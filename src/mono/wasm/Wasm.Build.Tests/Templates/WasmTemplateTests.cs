@@ -434,5 +434,59 @@ namespace Wasm.Build.Tests
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
         }
+
+        [Theory]
+        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
+        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
+        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
+        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
+        public void BuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+        {
+            string id = $"{config}_{GetRandomId()}";
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            string projectName = Path.GetFileNameWithoutExtension(projectFile);
+
+            string extraPropertiesForDBP = "";
+            if (appendRID)
+                extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
+            if (useArtifacts)
+                extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
+
+            string projectDirectory = Path.GetDirectoryName(projectFile)!;
+            if (!string.IsNullOrEmpty(extraPropertiesForDBP))
+                AddItemsPropertiesToProject(Path.Combine(projectDirectory, "Directory.Build.props"),
+                                            extraPropertiesForDBP);
+
+            var buildOptions = new BuildProjectOptions(
+                                    DotnetWasmFromRuntimePack: true,
+                                    CreateProject: false,
+                                    HasV8Script: false,
+                                    MainJS: "main.mjs",
+                                    Publish: false,
+                                    TargetFramework: DefaultTargetFramework,
+                                    IsBrowserProject: false);
+            if (useArtifacts)
+            {
+                buildOptions = buildOptions with
+                {
+                    BinFrameworkDir = Path.Combine(
+                                            projectDirectory,
+                                            "bin",
+                                            id,
+                                            $"{config.ToLower()}_{BuildEnvironment.DefaultRuntimeIdentifier}",
+                                            "AppBundle",
+                                            "_framework")
+                };
+            }
+
+            var buildArgs = new BuildArgs(projectName, config, false, id, null);
+            buildArgs = ExpandBuildArgs(buildArgs);
+            BuildTemplateProject(buildArgs, id: id, buildOptions);
+
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                        .EnsureSuccessful();
+        }
     }
 }
