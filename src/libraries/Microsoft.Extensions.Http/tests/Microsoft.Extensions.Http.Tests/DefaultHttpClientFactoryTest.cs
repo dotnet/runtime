@@ -508,6 +508,28 @@ namespace Microsoft.Extensions.Http
             return cleanupEntry;
         }
 
+        [Fact]
+        public void Dispose_StopsTimer()
+        {
+            var services = new ServiceCollection();
+            services.AddHttpClient("test");
+            services.AddSingleton<IHttpClientFactory, DisposeTrackingHttpClientFactory>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            var factory = (DisposeTrackingHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+            _ = factory.CreateClient("test");
+
+            factory.StartCleanupTimer();
+            Assert.True(factory.CleanupTimerActive);
+
+            serviceProvider.Dispose();
+
+            Assert.True(factory.DisposeCalled);
+            Assert.False(factory.CleanupTimerActive);
+        }
+
         private class TestHttpClientFactory : DefaultHttpClientFactory
         {
             public TestHttpClientFactory(
@@ -571,8 +593,31 @@ namespace Microsoft.Extensions.Http
             {
                 if (EnableCleanupTimer)
                 {
-                    Assert.True(CleanupTimerStarted.IsSet, "Cleanup timer started");
+                    Assert.True(CleanupTimerStarted.IsSet || _disposed, "Cleanup timer started");
                     CleanupTimerStarted.Reset();
+                }
+            }
+        }
+
+        private class DisposeTrackingHttpClientFactory : DefaultHttpClientFactory
+        {
+            public DisposeTrackingHttpClientFactory(
+                IServiceProvider services,
+                IServiceScopeFactory scopeFactory,
+                IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
+                IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
+                : base(services, scopeFactory, optionsMonitor, filters) { }
+
+            public bool CleanupTimerActive => _cleanupTimer != null;
+
+            public bool DisposeCalled { get; private set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                base.Dispose(disposing);
+                if (disposing)
+                {
+                    DisposeCalled = true;
                 }
             }
         }
