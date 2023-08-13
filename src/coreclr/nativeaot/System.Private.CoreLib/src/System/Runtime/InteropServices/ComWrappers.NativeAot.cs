@@ -45,18 +45,16 @@ namespace System.Runtime.InteropServices
         private readonly Lock _lock = new Lock();
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
 
-        internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out bool isAggregated, out long wrapperId)
+        internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out long wrapperId)
         {
             if (obj == null
                 || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
             {
                 unknown = IntPtr.Zero;
-                isAggregated = false;
                 wrapperId = 0;
                 return false;
             }
 
-            isAggregated = wrapper._aggregatedManagedObjectWrapper;
             wrapperId = wrapper._comWrappers.id;
             return Marshal.QueryInterface(wrapper._externalComObject, in iid, out unknown) == HResults.S_OK;
         }
@@ -1608,7 +1606,10 @@ namespace System.Runtime.InteropServices
 
         private static unsafe bool PossiblyComObject(object target)
         {
-            return s_rcwTable.TryGetValue(target, out _);
+            // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
+            // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
+            // by a COM weak reference.
+            return s_rcwTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper._aggregatedManagedObjectWrapper;
         }
 
         private static unsafe IntPtr ObjectToComWeakRef(object target, out long wrapperId)
@@ -1617,14 +1618,10 @@ namespace System.Runtime.InteropServices
                 target,
                 IID_IWeakReferenceSource,
                 out IntPtr weakReferenceSourcePtr,
-                out bool isAggregated,
                 out wrapperId))
             {
-                // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
-                // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
-                // by a COM weak reference.
                 using ComHolder weakReferenceSource = new ComHolder(weakReferenceSourcePtr);
-                if (!isAggregated && IWeakReferenceSource.GetWeakReference(weakReferenceSource.Ptr, out IntPtr weakReference) == HResults.S_OK)
+                if (IWeakReferenceSource.GetWeakReference(weakReferenceSource.Ptr, out IntPtr weakReference) == HResults.S_OK)
                 {
                     return weakReference;
                 }
