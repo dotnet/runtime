@@ -1,21 +1,17 @@
 # NonGC Heap
 
-.NET 8.0 introduces a new concept called **NonGC Heap** - a specialized heap that is not managed by the Garbage Collector (GC) and is designed to store immortal objects with certain benefits for GC and code generation (codegen). Although the name is new, the feature is based on pre-existing **Frozen Segments** which were added long time ago to serve a similar purpose and were used on CoreRT/NativeAOT. What's changed in .NET 8.0 is that this functionality has been exposed to users through public profiling and debugging APIs, and it is now heavily leveraged for several codegen optimizations in RyuJIT. A general overview of the .NET managed heap can be visualized as shown in the following mermaid diagram:
+.NET 8.0 introduced a new concept called **NonGC Heap** - a specialized heap that is not managed by the Garbage Collector (GC) and is designed to store immortal objects with certain benefits for GC and code generation (codegen). Although the name is new, the feature is based on pre-existing **Frozen Segments** which were added long time ago to serve a similar purpose and were used on CoreRT/NativeAOT. What's changed in .NET 8.0 is that this functionality has been exposed to users through public profiling and debugging APIs, and it is now heavily leveraged for several codegen optimizations in RyuJIT. A general overview of the .NET managed heap can be visualized as shown in the following mermaid diagram:
 
 ```mermaid
 flowchart
     heap(.NET Managed Heap) --> gcheap
     heap --> nongcheap
-    gcheap --> soh
-    gcheap --> poh
-    gcheap --> loh
-
-    gcheap("GC Heap")
-    soh("Small Object Heap\n(SOH)")
-    poh("Pinned Object Heap\n(SOH)")
-    loh("Large Object Heap\n(SOH)")
-    nongcheap("Non-GC Heap\n(Not managed by GC)")
-
+    nongcheap("NonGC Heap\n(Not managed by GC)")
+    subgraph gcheap[GC Heaps]
+        soh("Small Object Heap (SOH)")
+        poh("Pinned Object Heap (SOH)")
+        loh("Large Object Heap (SOH)")
+    end
     style nongcheap stroke:green
 ```
 
@@ -83,8 +79,8 @@ Although, we may need to emit memory barriers on platforms with a weak memory mo
 
 ## Limitations: which objects cannot be allocated on NonGC heaps
 The NonGC Heap, while powerful and beneficial, comes with certain inherent limitations, both obvious and specific to the current design used by CoreCLR and NativeAOT:
-* **Immortal objects only:** Only immortal objects should be allocated on NonGC heap.
-* **Avoid unloadble contexts:** NonGC heap should never be used for objects belonging to unloadable contexts. Doing so could lead to potential memory leaks. As a consequence, all string literals associated with **unloadable** Assembly Load Contexts (ALCs) won't be placed in the NonGC Heap.
+* **Non-immortal objects:** Only immortal objects should be allocated on NonGC heap to avoid "dead weight" in that heap.
+* **Objects from unloadble contexts:** NonGC heap should never be used for objects belonging to unloadable contexts. Doing so could lead to potential memory leaks. As a consequence, all string literals associated with **unloadable** Assembly Load Contexts (ALCs) won't be placed in the NonGC Heap.
 * **No References to GC Heap's objects:** NonGC heap **must** never contain references to GC heaps' objects. However, it may contain references to other NonGC objects and GC heaps are allowed to reference NonGC objects.
 * The current design of CoreCLR's `FrozenObjectHeapManager` has certain design limitations such as:
   * Large objects are not supported.
@@ -92,7 +88,7 @@ The NonGC Heap, while powerful and beneficial, comes with certain inherent limit
 
 Because of these restrictions, users **must never** assume that certain kinds of objects can be accessed without pinning.
 
-## What typically can be found in NonGC heap?
+## What typically can be found in the NonGC heap?
 The NonGC Heap is suitable for a specific set of objects that adhere to the previously described rules. Here's a list showcasing the types of objects that are commonly found in the NonGC Heap for CoreCLR and NativeAOT runtimes:
 * String literal objects
 * RuntimeType objects (CoreCLR-only as of the time of writing), which means for:
