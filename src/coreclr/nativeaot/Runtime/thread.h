@@ -77,7 +77,7 @@ struct InlinedThreadStaticRoot
 {
     // The reference to the memory block that stores variables for the current {thread, typeManager} combination
     Object* m_threadStaticsBase;
-    // The next root in the list. All roots in the list belong to the same thread, but to a different typeManagers.
+    // The next root in the list. All roots in the list belong to the same thread, but to different typeManagers.
     InlinedThreadStaticRoot* m_next;
     // m_typeManager is currently unused, but could be useful when debugging
     TypeManager* m_typeManager;

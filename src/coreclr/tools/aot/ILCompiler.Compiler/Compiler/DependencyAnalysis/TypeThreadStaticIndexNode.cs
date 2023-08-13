@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (IsInlined)
                 {
                     // Inlined threadstatics are stored as a single data block and thus do not need
-                    // an index in the containing storage (since there is none).
+                    // an index in the containing storage.
                     // We use a negative index to indicate that. Any negative value would work.
                     // For the purpose of natvis we will encode the offset of the type storage within the block.
                     typeTlsIndex = - (_inlinedThreadStatics.GetTypeStorageOffset(_type) + factory.Target.PointerSize);

@@ -75,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (index is TypeThreadStaticIndexNode ti && ti.IsInlined)
                         {
                             // REVIEW: how to keep a node around?
-                            // we will not use the index node, but need to keep the node around for natvis.
+                            // we do not need the index node to run our code, but need to keep the node around for natvis.
                             // emit a junk MOV for now
                             encoder.EmitMOV(encoder.TargetRegister.Result, index);
 
