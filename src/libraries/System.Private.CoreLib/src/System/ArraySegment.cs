@@ -301,17 +301,17 @@ namespace System
             return $"System.ArraySegment<{typeof(T).Name}>[{_count}]";
         }
 
-        private sealed class ArraySegmentDebugView<T>
+        private sealed class ArraySegmentDebugView<U>
         {
-            private readonly T[] _array;
+            private readonly U[] _array;
 
-            public ArraySegmentDebugView(ArraySegment<T> arraySegments)
+            public ArraySegmentDebugView(ArraySegment<U> arraySegments)
             {
                 _array = arraySegments.ToArray();
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public T[] Items => _array;
+            public U[] Items => _array;
         }
 
         public struct Enumerator : IEnumerator<T>
