@@ -363,8 +363,15 @@ namespace ILCompiler
 
         public sealed override bool VersionsWithType(TypeDesc typeDesc)
         {
-            return typeDesc.GetTypeDefinition() is EcmaType ecmaType &&
-                _versionsWithTypeCache.GetOrAdd(typeDesc, _versionsWithTypeUncached);
+            if (typeDesc.GetTypeDefinition() is EcmaType)
+            {
+                return _versionsWithTypeCache.GetOrAdd(typeDesc, _versionsWithTypeUncached);
+            }
+            if (typeDesc.IsParameterizedType)
+            {
+                return VersionsWithType(((ParameterizedType)typeDesc).ParameterType);
+            }
+            return false;
         }
 
         public bool CrossModuleInlineableModule(ModuleDesc module)
