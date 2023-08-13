@@ -108,7 +108,7 @@ public class ManagedToNativeGenerator : Task
     {
         if (string.IsNullOrEmpty(CacheFilePath) || !File.Exists(CacheFilePath))
         {
-            Log.LogMessage(MessageImportance.High, $"Running because no cache file found at '{CacheFilePath}'.");
+            Log.LogMessage(MessageImportance.Low, $"Running because no cache file found at '{CacheFilePath}'.");
             return true;
         }
 
@@ -116,7 +116,7 @@ public class ManagedToNativeGenerator : Task
         string newModules = string.Join(",", PInvokeModules.OrderBy(l => l));
         if (!string.Equals(oldModules, newModules, StringComparison.InvariantCulture))
         {
-            Log.LogMessage(MessageImportance.High, $"Running because the list of pinvoke modules has changed from: {oldModules} to {newModules} .");
+            Log.LogMessage(MessageImportance.Low, $"Running because the list of pinvoke modules has changed from: {oldModules} to {newModules} .");
             return true;
         }
 
@@ -149,7 +149,7 @@ public class ManagedToNativeGenerator : Task
 
             if (!File.Exists(path))
             {
-                Log.LogMessage(MessageImportance.High, $"Running because output file '{path}' does not exist.");
+                Log.LogMessage(MessageImportance.Low, $"Running because output file '{path}' does not exist.");
                 return true;
             }
             DateTime utc = File.GetLastWriteTimeUtc(path);

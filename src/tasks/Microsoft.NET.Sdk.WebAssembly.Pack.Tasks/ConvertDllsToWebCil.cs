@@ -82,7 +82,7 @@ public class ConvertDllsToWebCil : Task
             }
             else
             {
-                Log.LogMessage(MessageImportance.High, $"Skipping {dllFilePath} as it is older than the output file {finalWebcil}");
+                Log.LogMessage(MessageImportance.Low, $"Skipping {dllFilePath} as it is older than the output file {finalWebcil}");
             }
 
             _fileWrites.Add(finalWebcil);
