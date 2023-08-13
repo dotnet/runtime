@@ -1432,7 +1432,9 @@ ep_shutdown (void)
 
 	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
 		EventPipeSession *session = ep_volatile_load_session (i);
-		if (session)
+		// Do not shut down listener sessions on shutdown, the processing thread will
+		// still be trying to process events in the background until the process is torn down
+		if (session && session->session_type != EP_SESSION_TYPE_LISTENER)
 			ep_disable ((EventPipeSessionID)session);
 	}
 
