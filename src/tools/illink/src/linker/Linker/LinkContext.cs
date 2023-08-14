@@ -108,7 +108,7 @@ namespace Mono.Linker
 
 		public readonly bool KeepMembersForDebugger = true;
 
-		public bool IgnoreUnresolved { get; set; }
+		public bool IgnoreUnresolved { get; set; } = true;
 
 		public bool EnableReducedTracing { get; set; }
 
