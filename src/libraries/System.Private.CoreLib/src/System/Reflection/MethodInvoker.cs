@@ -18,7 +18,7 @@ namespace System.Reflection
     /// <remarks>
     /// Used for better performance than <seealso cref="MethodBase.Invoke"/> when compatibility with that method
     /// is not necessary and when the caller can cache the MethodInvoker instance for additional invoke calls.<br/>
-    /// Unlike <see="MethodBase.Invoke"/>, the invoke methods do not look up default values for arguments when
+    /// Unlike <see cref="MethodBase.Invoke"/>, the invoke methods do not look up default values for arguments when
     /// <see cref="Type.Missing"/> is specified. In addition, the target method may be inlined for performance and not
     /// appear in stack traces.
     /// </remarks>
