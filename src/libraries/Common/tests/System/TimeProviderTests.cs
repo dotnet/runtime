@@ -118,24 +118,27 @@ namespace Tests.System
                             stat =>
                                 {
                                     TimerState s = (TimerState)stat;
-                                    s.Counter++;
-
-                                    s.TotalTicks += DateTimeOffset.UtcNow.Ticks - s.UtcNow.Ticks;
-
-                                    switch (s.Counter)
+                                    lock (s)
                                     {
-                                        case 2:
-                                            s.Period = 400;
-                                            s.Timer.Change(TimeSpan.FromMilliseconds(s.Period), TimeSpan.FromMilliseconds(s.Period));
-                                            break;
+                                        s.Counter++;
 
-                                        case 4:
-                                            s.TokenSource.Cancel();
-                                            s.Timer.Dispose();
-                                            break;
+                                        s.TotalTicks += DateTimeOffset.UtcNow.Ticks - s.UtcNow.Ticks;
+
+                                        switch (s.Counter)
+                                        {
+                                            case 2:
+                                                s.Period = 400;
+                                                s.Timer.Change(TimeSpan.FromMilliseconds(s.Period), TimeSpan.FromMilliseconds(s.Period));
+                                                break;
+
+                                            case 4:
+                                                s.TokenSource.Cancel();
+                                                s.Timer.Dispose();
+                                                break;
+                                        }
+
+                                        s.UtcNow = DateTimeOffset.UtcNow;
                                     }
-
-                                    s.UtcNow = DateTimeOffset.UtcNow;
                                 },
                             state,
                             TimeSpan.FromMilliseconds(state.Period), TimeSpan.FromMilliseconds(state.Period));

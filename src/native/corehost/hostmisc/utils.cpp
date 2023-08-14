@@ -4,6 +4,11 @@
 #include "utils.h"
 #include "trace.h"
 #include "bundle/info.h"
+#if defined(TARGET_WINDOWS)
+#include <_version.h>
+#else
+#include <_version.c>
+#endif
 
 bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path)
 {
@@ -249,23 +254,13 @@ const pal::char_t* get_current_arch_name()
     return _STRINGIFY(CURRENT_ARCH_NAME);
 }
 
-pal::string_t get_current_runtime_id(bool use_fallback)
+pal::string_t get_runtime_id()
 {
     pal::string_t rid;
     if (try_get_runtime_id_from_env(rid))
         return rid;
 
-    rid = pal::get_current_os_rid_platform();
-    if (rid.empty() && use_fallback)
-        rid = pal::get_current_os_fallback_rid();
-
-    if (!rid.empty())
-    {
-        rid.append(_X("-"));
-        rid.append(get_current_arch_name());
-    }
-
-    return rid;
+    return _STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME);
 }
 
 bool try_get_runtime_id_from_env(pal::string_t& out_rid)
@@ -468,8 +463,8 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
     const pal::char_t* arch = get_current_arch_name();
     url.append(_X("&arch="));
     url.append(arch);
-    url.append(_X("&rid=") _STRINGIFY(HOST_RID_PLATFORM) _X("-"));
-    url.append(arch);
+    url.append(_X("&rid="));
+    url.append(get_runtime_id());
 
     pal::string_t os = pal::get_current_os_rid_platform();
     if (os.empty())
@@ -479,6 +474,26 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
     url.append(os);
 
     return url;
+}
+
+pal::string_t get_host_version_description()
+{
+#if defined(TARGET_WINDOWS)
+    return _STRINGIFY(VER_PRODUCTVERSION_STR);
+#else
+    pal::string_t info {_STRINGIFY(HOST_VERSION)};
+
+    // sccsid is @(#)Version <file_version> [@Commit: <commit_hash>]
+    // Get the commit portion if available
+    char* commit_maybe = ::strchr(&sccsid[STRING_LENGTH("@(#)Version ")], '@');
+    if (commit_maybe != nullptr)
+    {
+        info.append(" ");
+        info.append(commit_maybe);
+    }
+
+    return info;
+#endif
 }
 
 pal::string_t to_lower(const pal::char_t* in) {

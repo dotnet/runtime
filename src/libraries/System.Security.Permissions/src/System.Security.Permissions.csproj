@@ -2,11 +2,13 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types supporting Code Access Security (CAS).</PackageDescription>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
+
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">

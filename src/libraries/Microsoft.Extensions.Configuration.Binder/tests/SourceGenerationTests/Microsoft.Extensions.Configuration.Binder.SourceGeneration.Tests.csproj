@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <!-- Type not supported; property on type not suppported; value types invalid for bind; generator could not parse target type -->
-    <NoWarn>SYSLIB1100,SYSLIB1101,SYSLIB1103,SYSLIB1104</NoWarn>
+    <!-- Type not supported; property on type not suppported -->
+    <NoWarn>SYSLIB1100,SYSLIB1101</NoWarn>
     <!-- The SDK disables the configuration binding generator by default no matter how it was referenced, so we need to enable it here for testing. -->
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
@@ -44,9 +44,9 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Content Include="Baselines\*.generated.txt;
-             Baselines\ConfigurationBinder\*.generated.txt;
-             Baselines\OptionsBuilder\*.generated.txt;
-             Baselines\ServiceCollection\*.generated.txt">
+                      Baselines\ConfigurationBinder\*.generated.txt;
+                      Baselines\OptionsBuilder\*.generated.txt;
+                      Baselines\ServiceCollection\*.generated.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 

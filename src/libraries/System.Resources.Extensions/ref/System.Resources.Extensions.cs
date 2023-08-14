@@ -20,6 +20,7 @@ namespace System.Resources.Extensions
         public PreserializedResourceWriter(System.IO.Stream stream) { }
         public PreserializedResourceWriter(string fileName) { }
         public void AddActivatorResource(string name, System.IO.Stream value, string typeName, bool closeAfterWrite = false) { }
+        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void AddBinaryFormattedResource(string name, byte[] value, string? typeName = null) { }
         public void AddResource(string name, byte[]? value) { }
         public void AddResource(string name, System.IO.Stream? value, bool closeAfterWrite = false) { }
