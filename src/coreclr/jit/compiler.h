@@ -8563,6 +8563,19 @@ private:
         return strcmp(ns, "System.Runtime.Intrinsics") == 0;
     }
 
+    bool isSpanClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        // TODO: Span/ReadOnlySpan should be marked as intrinsic
+        //if (isIntrinsicType(clsHnd))
+        {
+            const char* namespaceName = nullptr;
+            const char* className = getClassNameFromMetadata(clsHnd, &namespaceName);
+            return strcmp(namespaceName, "System") == 0
+                    && strcmp(className, "Span") == 0 || strcmp(className, "ReadOnlySpan") == 0;
+        }
+        return false;
+    }
+
 #ifdef FEATURE_SIMD
     // Have we identified any SIMD types?
     // This is currently used by struct promotion to avoid getting type information for a struct

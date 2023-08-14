@@ -851,7 +851,6 @@ enum CorInfoFlag
 //  CORINFO_FLG_UNUSED                = 0x40000000,
 
     // These are internal flags that can only be on Classes
-    CORINFO_FLG_SPAN                  = 0x00008000, // is the class a Span<T>/ReadOnlySpan<T>
     CORINFO_FLG_VALUECLASS            = 0x00010000, // is the class a value class
 //  This flag is define din the Methods section, but is also valid on classes.
 //  CORINFO_FLG_SHAREDINST            = 0x00020000, // This class is satisfies TypeHandle::IsCanonicalSubtype
