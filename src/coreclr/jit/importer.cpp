@@ -2872,12 +2872,10 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 if ((opts == BoxPatterns::IsByRefLike) ||
                     (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
                 {
-                    GenTree* op = impPopStack().val;
-                    if ((op->gtFlags & GTF_SIDE_EFFECT) != 0)
-                    {
-                        impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op, CHECK_SPILL_ALL);
-                    }
                     JITDUMP("\n Importing BOX; BR_TRUE/FALSE as constant\n")
+
+                    impEvalSideEffects();
+                    impPopStack();
                     impPushOnStack(gtNewTrue(), typeInfo(TYP_INT));
                     return 0;
                 }
@@ -2899,11 +2897,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     {
                         JITDUMP("\n Importing BOX; ISINST; as null\n");
 
-                        GenTree* op = impPopStack().val;
-                        if ((op->gtFlags & GTF_SIDE_EFFECT) != 0)
-                        {
-                            impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op, CHECK_SPILL_ALL);
-                        }
+                        impEvalSideEffects();
+                        impPopStack();
                         impPushOnStack(gtNewNull(), typeInfo(TYP_REF));
                         return 1 + sizeof(mdToken);
                     }
@@ -2952,12 +2947,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 {
                                     JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
 
-                                    GenTree* op = impPopStack().val;
-                                    if ((op->gtFlags & GTF_SIDE_EFFECT) != 0)
-                                    {
-                                        impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op,
-                                                     CHECK_SPILL_ALL);
-                                    }
+                                    impEvalSideEffects();
+                                    impPopStack();
                                     impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
                                                    typeInfo(TYP_INT));
                                     return 1 + sizeof(mdToken);
