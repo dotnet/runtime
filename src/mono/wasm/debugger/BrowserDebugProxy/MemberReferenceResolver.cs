@@ -441,15 +441,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
                             ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
-
-                            // get_Item should not have an overload, but if user defined it, take the default one: with one param (key)
                             if (paramInfo.Length == 1)
                             {
                                 try
                                 {
+                                    if (indexObject != null && !CheckParametersCompatibility(paramInfo[0].TypeCode, indexObject))
+                                        continue;
                                     ArraySegment<byte> buffer = indexObject is null ?
-                                        await WriteLiteralExpressionAsIndex(objectId,  elementIdxInfo.IndexingExpression, elementIdxInfo.ElementIdxStr) :
-                                        await WriteJObjectAsIndex(objectId, indexObject, elementIdxInfo.ElementIdxStr);
+                                        await WriteLiteralExpressionAsIndex(objectId, elementIdxInfo.IndexingExpression, elementIdxInfo.ElementIdxStr) :
+                                        await WriteJObjectAsIndex(objectId, indexObject, elementIdxInfo.ElementIdxStr, paramInfo[0].TypeCode);
                                     JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
                                     return (JObject)getItemRetObj["value"];
                                 }
@@ -527,12 +527,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     IndexingExpression: indexingExpression);
             }
 
-            async Task<ArraySegment<byte>> WriteJObjectAsIndex(DotnetObjectId rootObjId, JObject indexObject, string elementIdxStr)
+            async Task<ArraySegment<byte>> WriteJObjectAsIndex(DotnetObjectId rootObjId, JObject indexObject, string elementIdxStr, ElementType? expectedType)
             {
                 using var writer = new MonoBinaryWriter();
                 writer.WriteObj(rootObjId, context.SdbAgent);
                 writer.Write(1); // number of method args
-                if (!await writer.WriteJsonValue(indexObject, context.SdbAgent, token))
+                if (!await writer.WriteJsonValue(indexObject, context.SdbAgent, expectedType, token))
                     throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
                 return writer.GetParameterBuffer();
             }
@@ -546,6 +546,56 @@ namespace Microsoft.WebAssembly.Diagnostics
                     throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
                 return writer.GetParameterBuffer();
             }
+        }
+
+        private static bool CheckParametersCompatibility(ElementType? paramTypeCode, JObject value)
+        {
+            if (!paramTypeCode.HasValue)
+                return true;
+            var argumentType = value["type"]?.Value<string>();
+            var argumentClassName = value["className"]?.Value<string>();
+
+            switch (paramTypeCode.Value)
+            {
+                case ElementType.Object:
+                    if (argumentType != "object")
+                        return false;
+                    break;
+                case ElementType.I2:
+                case ElementType.I4:
+                case ElementType.I8:
+                case ElementType.R4:
+                case ElementType.R8:
+                case ElementType.U2:
+                case ElementType.U4:
+                case ElementType.U8:
+                    if (argumentType != "number")
+                        return false;
+                    if (argumentType == "object")
+                        return false;
+                    break;
+                case ElementType.Char:
+                    if (argumentType != "string" && argumentType != "symbol")
+                        return false;
+                    if (argumentType == "object")
+                        return false;
+                    break;
+                case ElementType.Boolean:
+                    if (argumentType == "boolean")
+                        return true;
+                    if (argumentType == "number" && (argumentClassName == "Single" || argumentClassName == "Double"))
+                        return false;
+                    if (argumentType == "object")
+                        return false;
+                    break;
+                case ElementType.String:
+                    if (argumentType != "string")
+                        return false;
+                    break;
+                default:
+                    return true;
+            }
+            return true;
         }
 
         public async Task<(JObject, string)> ResolveInvocationInfo(InvocationExpressionSyntax method, CancellationToken token)
@@ -667,7 +717,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else if (arg.Expression is IdentifierNameSyntax identifierName)
                         {
-                            if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, token))
+                            if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, methodParamsInfo[argIndex].TypeCode, token))
                                 throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.");
                         }
                         else
