@@ -117,7 +117,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedBitwiseExclusiveOrNullableNumberTest(bool useInterpreter)
         {
-            AssertExtensions.Throws<NotSupportedException>(() =>
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
             {
                 Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
                 for (int i = 0; i < values.Length; i++)
