@@ -293,7 +293,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
       buildConfig: release
-      runtimeFlavor: mono
+      runtimeFlavor: aot
       platforms:
       - linux_x64
       jobParameters:
