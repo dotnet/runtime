@@ -41,10 +41,10 @@ namespace System.Reflection
         /// <remarks>
         /// For performance, the resulting instance should be cached for additional calls.
         /// </remarks>
-        /// <param name="method">The constructor that will be invoked.</param>
+        /// <param name="constructor">The constructor that will be invoked.</param>
         /// <returns>An instance of a ConstructorInvoker.</returns>
         /// <exception cref="ArgumentException">
-        /// The <paramref name="method"/> is not a runtime-based method.
+        /// The <paramref name="constructor"/> is not a runtime-based method.
         /// </exception>
         public static ConstructorInvoker Create(ConstructorInfo constructor)
         {
@@ -93,8 +93,8 @@ namespace System.Reflection
             return InvokeImpl(null, null, null, null);
         }
 
-        /// <inheritdoc cref="Invoke(object?)"/>
-        /// <param name="arg1">The first argument for the invoked constructor.</param>
+        /// <inheritdoc cref="Invoke()"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
         /// <exception cref="ArgumentException">
         /// The arguments do not match the signature of the invoked constructor.
         /// </exception>
@@ -108,8 +108,9 @@ namespace System.Reflection
             return InvokeImpl(arg1, null, null, null);
         }
 
-        /// <inheritdoc cref="Invoke(object?, object?)"/>
-        /// <param name="arg2">The second argument for the invoked constructor.</param>
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2)
         {
             if (_argCount != 2)
@@ -120,8 +121,10 @@ namespace System.Reflection
             return InvokeImpl(arg1, arg2, null, null);
         }
 
-        /// <inheritdoc cref="Invoke(object?, object?, object?)"/>
-        /// <param name="arg3">The third argument for the invoked constructor.</param>
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
+        /// <param name="arg3">The third argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
             if (_argCount !=3)
@@ -132,8 +135,11 @@ namespace System.Reflection
             return InvokeImpl(arg1, arg2, arg3, null);
         }
 
-        /// <inheritdoc cref="Invoke(object?, object?, object?, object?)"/>
-        /// <param name="arg4">The fourth argument for the invoked constructor.</param>
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
+        /// <param name="arg3">The third argument for the invoked method.</param>
+        /// <param name="arg4">The fourth argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
         {
             if (_argCount != 4)
