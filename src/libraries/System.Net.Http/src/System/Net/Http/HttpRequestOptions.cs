@@ -84,10 +84,7 @@ namespace System.Net.Http
             Options[key.Key] = value;
         }
 
-        private string DebuggerToString()
-        {
-            return $"Count = {Options.Count}";
-        }
+        private string DebuggerToString() => $"Count = {Options.Count}";
 
         private sealed class HttpRequestOptionsDebugView(HttpRequestOptions options)
         {
