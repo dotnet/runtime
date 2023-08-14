@@ -692,7 +692,7 @@ namespace Tests.System
                 {
                     await taskFactory.Delay(timeProvider, TimeSpan.FromSeconds(10), token);
                 }
-                catch (TaskCanceledException)
+                catch (OperationCanceledException)
                 {
                     // Ignore
                 }
