@@ -297,7 +297,7 @@ internal sealed class JObjectValueCreator
         }
         else
         {
-            var toString = await _sdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId, BindingFlags.DeclaredOnly, token);
+            var toString = await _sdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId, BindingFlags.DeclaredOnly, invokeToStringInObject: false, token);
             if (toString != null)
                 description = toString;
         }
