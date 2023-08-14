@@ -20,7 +20,7 @@ namespace System
     // (ie, users could assign a new value to the old location).
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    [DebuggerDisplay("{ToString(),raw}")]
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     [DebuggerTypeProxy(typeof(ArraySegmentDebugView<>))]
 #pragma warning disable CA1066 // adding IEquatable<T> implementation could change semantics of code like that in xunit that queries for IEquatable vs enumerating contents
     public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
@@ -279,23 +279,11 @@ namespace System
             }
         }
 
-        /// <summary>
-        /// For <see cref="ArraySegment{Char}"/>, returns a new instance of string that represents the characters pointed to by the segment.
-        /// Otherwise, returns a <see cref="string"/> with the name of the type and the number of elements.
-        /// </summary>
-        public override string ToString()
+        private string DebuggerToString()
         {
             if (typeof(T) == typeof(char))
             {
-                StringBuilder stringBuilder = new StringBuilder(_count);
-
-                for (int i = 0; i < _count; i++)
-                {
-                    T element = this[i];
-                    stringBuilder.Append(Unsafe.As<T, char>(ref element));
-                }
-
-                return stringBuilder.ToString();
+                return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _array![_offset]), _count));
             }
 
             return $"System.ArraySegment<{typeof(T).Name}>[{_count}]";
