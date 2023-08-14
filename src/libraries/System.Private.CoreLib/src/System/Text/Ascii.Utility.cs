@@ -101,9 +101,7 @@ namespace System.Text
             // like pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            if (!Vector512.IsHardwareAccelerated &&
-                !Vector256.IsHardwareAccelerated &&
-                (Sse2.IsSupported || AdvSimd.IsSupported))
+            if (!Vector512.IsHardwareAccelerated && !Vector256.IsHardwareAccelerated && Sse2.IsSupported)
             {
                 return GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength);
             }
