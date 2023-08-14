@@ -94,11 +94,6 @@ namespace ILCompiler.DependencyAnalysis
 
                                 EmitInlineTLSAccess(factory, ref encoder);
                             }
-
-                            // REVIEW: how to keep a node around?
-                            // we do not need the index node to run our code, but need to keep the node around for natvis.
-                            // emit a junk MOV for now  (this code is unreachable)
-                            encoder.EmitMOV(encoder.TargetRegister.Result, index);
                         }
                         else
                         {
