@@ -65,7 +65,7 @@ namespace System.Runtime
         // Force a garbage collection.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCollect")]
-        internal static extern void RhCollect(int generation, InternalGCCollectionMode mode);
+        internal static extern void RhCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false);
 
         // Mark an object instance as already finalized.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -128,6 +128,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetGcLatencyMode")]
         internal static extern int RhSetGcLatencyMode(GCLatencyMode newLatencyMode);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhIsPromoted")]
+        internal static extern bool RhIsPromoted(object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhIsServerGc")]
@@ -293,7 +297,7 @@ namespace System.Runtime
         // Allocate handle for dependent handle case where a secondary can be set at the same time.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAllocDependent")]
-        private static extern IntPtr RhpHandleAllocDependent(object primary, object secondary);
+        internal static extern IntPtr RhpHandleAllocDependent(object primary, object secondary);
 
         internal static IntPtr RhHandleAllocDependent(object primary, object secondary)
         {

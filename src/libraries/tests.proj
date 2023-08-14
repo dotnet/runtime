@@ -676,7 +676,8 @@
 
   <PropertyGroup>
     <Samples_BuildInParallel Condition="'$(OS)' == 'Windows_NT'">false</Samples_BuildInParallel>
-    <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">true</Samples_BuildInParallel>
+    <!-- prompted by https://github.com/dotnet/dnceng/issues/450 -->
+    <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">false</Samples_BuildInParallel>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunWasmSamples)' == 'true' and '$(TargetOS)' == 'browser'">
