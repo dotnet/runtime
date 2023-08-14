@@ -79,7 +79,7 @@ struct InlinedThreadStaticRoot
     Object* m_threadStaticsBase;
     // The next root in the list. All roots in the list belong to the same thread, but to different typeManagers.
     InlinedThreadStaticRoot* m_next;
-    // m_typeManager is currently unused, but could be useful when debugging
+    // m_typeManager is used by NativeAOT.natvis when debugging
     TypeManager* m_typeManager;
 };
 
