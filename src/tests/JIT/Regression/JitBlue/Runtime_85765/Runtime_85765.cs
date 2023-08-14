@@ -29,6 +29,7 @@ public class Runtime_85765
         Assert.False(Consume(vr2.F2));
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static S1 M4()
     {
         S1 var1 = default(S1);
