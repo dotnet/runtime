@@ -73,7 +73,7 @@ public class IcuShardingTests : BlazorWasmTestBase
         {
             if (isFilenameCorrect)
             {
-                Assert.Contains($"File in location $(BlazorIcuDataFileName)={fileName} cannot be found in the project directory, in the runtime pack or when treated as an absolute path.", ex.Message);
+                Assert.Contains($"Could not find $(BlazorIcuDataFileName)={fileName}, or when used as a path relative to the runtime pack", ex.Message);
             }
             else
             {
