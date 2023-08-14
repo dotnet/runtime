@@ -363,15 +363,7 @@ namespace ILCompiler
 
         public sealed override bool VersionsWithType(TypeDesc typeDesc)
         {
-            if (typeDesc.GetTypeDefinition() is EcmaType)
-            {
-                return _versionsWithTypeCache.GetOrAdd(typeDesc, _versionsWithTypeUncached);
-            }
-            if (typeDesc.IsParameterizedType)
-            {
-                return VersionsWithType(((ParameterizedType)typeDesc).ParameterType);
-            }
-            return false;
+            return _versionsWithTypeCache.GetOrAdd(typeDesc, _versionsWithTypeUncached);
         }
 
         public bool CrossModuleInlineableModule(ModuleDesc module)
@@ -762,6 +754,16 @@ namespace ILCompiler
 
         private bool ComputeTypeVersionsWithCode(TypeDesc type)
         {
+            if (type.IsParameterizedType)
+            {
+                return VersionsWithType(type.GetParameterType());
+            }
+
+            if (!(type.GetTypeDefinition() is EcmaType))
+            {
+                return false;
+            }
+            
             if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 return true;
 
@@ -921,12 +923,6 @@ namespace ILCompiler
 
                 if (versionsWithTypePredicate(type))
                     return true;
-
-                if (type.IsArray)
-                    return ComputeInstantiationTypeVersionsWithCode(versionsWithTypePredicate, type.GetParameterType());
-
-                if (type.IsPointer)
-                    return ComputeInstantiationTypeVersionsWithCode(versionsWithTypePredicate, type.GetParameterType());
 
                 return false;
             }
