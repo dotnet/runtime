@@ -89,7 +89,14 @@ namespace System.Threading.Tasks
             state.Registration = cancellationToken.Register(static delayState =>
             {
                 DelayState s = (DelayState)delayState!;
-                s.TrySetCanceled(s.CancellationToken);
+
+                // When cancellation is requested, we need to force the task continuation to run asynchronously
+                ThreadPool.UnsafeQueueUserWorkItem(static state =>
+                {
+                    DelayState theState = (DelayState)state;
+                    theState.TrySetCanceled(theState.CancellationToken);
+                }, s);
+
                 s.Registration.Dispose();
                 s.Timer?.Dispose();
             }, state);

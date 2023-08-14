@@ -651,19 +651,36 @@ namespace Tests.System
         [MemberData(nameof(TaskFactoryData))]
         public void TestDelayTaskContinuation(ITestTaskFactory taskFactory)
         {
+            //
+            // Test time expiration and validate continuation is called synchronously.
+            //
+
             ManualTimeProvider manualTimeProvider = new ManualTimeProvider();
             var callbackCount = 0;
-            _ = Continuation(manualTimeProvider, () => callbackCount++);
 
-            Assert.NotNull(manualTimeProvider.Timer);
-            manualTimeProvider.Timer.Fire();
+            _ = Continuation(manualTimeProvider, default, () => callbackCount++);
 
-            // Delay should be completed and the continuation should be called.
+             Assert.NotNull(manualTimeProvider.Timer);
+             manualTimeProvider.Timer.Fire();
+
+            // Delay should be completed and the continuation should be called synchronously.
             Assert.Equal(1, callbackCount);
 
-            async Task Continuation(TimeProvider timeProvider, Action callback)
+            //
+            // Test cancellation and validate continuation is called asynchronously.
+            //
+
+            manualTimeProvider = new ManualTimeProvider();
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            Task task = Continuation(manualTimeProvider, cts.Token, () => callbackCount++);
+            cts.Cancel();
+
+            Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
+
+            async Task Continuation(TimeProvider timeProvider, CancellationToken token, Action callback)
             {
-                await taskFactory.Delay(timeProvider, TimeSpan.FromSeconds(10));
+                await taskFactory.Delay(timeProvider, TimeSpan.FromSeconds(10), token);
                 callback();
             }
         }
