@@ -8563,15 +8563,14 @@ private:
         return strcmp(ns, "System.Runtime.Intrinsics") == 0;
     }
 
-    bool isSpanClass(CORINFO_CLASS_HANDLE clsHnd)
+    bool isSpanClass(const CORINFO_CLASS_HANDLE clsHnd)
     {
-        // TODO: Span/ReadOnlySpan should be marked as intrinsic
-        //if (isIntrinsicType(clsHnd))
+        if (isIntrinsicType(clsHnd))
         {
             const char* namespaceName = nullptr;
-            const char* className = getClassNameFromMetadata(clsHnd, &namespaceName);
-            return strcmp(namespaceName, "System") == 0
-                    && strcmp(className, "Span") == 0 || strcmp(className, "ReadOnlySpan") == 0;
+            const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
+            return strcmp(namespaceName, "System") == 0 &&
+                   (strcmp(className, "Span`1") == 0 || strcmp(className, "ReadOnlySpan`1") == 0);
         }
         return false;
     }
