@@ -10140,7 +10140,8 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_GENERICINST || type == MONO_TYPE_OBJECT)
 			{
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
-				buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))));
+				if (CHECK_ICORDBG (TRUE))
+					buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))));
 			}
 		}
 		break;
