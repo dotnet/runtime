@@ -24,13 +24,15 @@ namespace System
         public static void ThrowsOnAot<T>(Action action)
             where T : Exception
         {
-            if (RuntimeFeature.IsDynamicCodeSupported)
-            {
-                action();
-            }
-            else
+#if NETCOREAPP // Dynamic code is always supported on .NET Framework
+            if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 Assert.Throws<T>(action);
+            }
+            else
+#endif
+            {
+                action();
             }
         }
 
