@@ -48310,6 +48310,14 @@ HRESULT GCHeap::Initialize()
             // because ro segs are supposed to always be out of range
             // for regions.
             uint8_t* seg_mem = new (nothrow) uint8_t [ro_seg_size];
+
+            if (seg_mem == nullptr)
+            {
+                GCToEEInterface::LogErrorToHost("STRESS_REGIONS couldn't allocate ro segment");
+                hr = E_FAIL;
+                break;
+            }
+
             segment_info seg_info;
             seg_info.pvMem = seg_mem;
             seg_info.ibFirstObject = sizeof(ObjHeader);
@@ -48319,7 +48327,9 @@ HRESULT GCHeap::Initialize()
 
             if (!RegisterFrozenSegment(&seg_info))
             {
+                GCToEEInterface::LogErrorToHost("STRESS_REGIONS failed to RegisterFrozenSegment");
                 hr = E_FAIL;
+                break;
             }
         }
 #endif //STRESS_REGIONS && FEATURE_BASICFREEZE
