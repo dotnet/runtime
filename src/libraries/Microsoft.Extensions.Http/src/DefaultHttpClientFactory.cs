@@ -267,7 +267,8 @@ namespace Microsoft.Extensions.Http
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(DefaultHttpClientFactory));
+                ThrowDisposed();
+                static void ThrowDisposed() => throw new ObjectDisposedException(nameof(DefaultHttpClientFactory));
             }
         }
 
