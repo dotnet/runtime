@@ -80,7 +80,10 @@ namespace System.Runtime.Serialization
                 {
                     lock (_fastDictionary)
                     {
-                        return _fastDictionary.GetOrAdd(t, f);
+                        if (!_fastDictionary.TryGetValue(t, out ret))
+                        {
+                            return _fastDictionary.GetOrAdd(t, f);
+                        }
                     }
                 }
             }
@@ -92,7 +95,10 @@ namespace System.Runtime.Serialization
                 {
                     lock (_collectibleTable)
                     {
-                        return _collectibleTable.GetValue(t, k => f(k));
+                        if (!_collectibleTable.TryGetValue(t, out ret))
+                        {
+                            return _collectibleTable.GetValue(t, k => f(k));
+                        }
                     }
                 }
             }
