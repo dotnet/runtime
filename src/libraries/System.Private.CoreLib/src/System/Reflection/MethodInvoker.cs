@@ -86,8 +86,7 @@ namespace System.Reflection
         /// Invokes the method using the specified parameters.
         /// </summary>
         /// <param name="obj">
-        /// The object on which to invoke the method.
-        /// If the method is static, this argument is ignored.
+        /// The object on which to invoke the method. If the method is static, this argument is ignored.
         /// </param>
         /// <returns>
         /// An object containing the return value of the invoked method,
@@ -120,6 +119,7 @@ namespace System.Reflection
         }
 
         /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="obj"> The object on which to invoke the method. If the method is static, this argument is ignored. </param>
         /// <param name="arg1">The first argument for the invoked method.</param>
         /// <exception cref="ArgumentException">
         /// The arguments do not match the signature of the invoked method.
@@ -134,7 +134,9 @@ namespace System.Reflection
             return InvokeImpl(obj, arg1, null, null, null);
         }
 
-        /// <inheritdoc cref="Invoke(object?, object?)"/>
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="obj"> The object on which to invoke the method. If the method is static, this argument is ignored. </param>
+        /// <param name="arg1">The first argument for the invoked method.</param>
         /// <param name="arg2">The second argument for the invoked method.</param>
         public object? Invoke(object? obj, object? arg1, object? arg2)
         {
@@ -146,7 +148,10 @@ namespace System.Reflection
             return InvokeImpl(obj, arg1, arg2, null, null);
         }
 
-        /// <inheritdoc cref="Invoke(object?, object?, object?)"/>
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="obj"> The object on which to invoke the method. If the method is static, this argument is ignored. </param>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
         /// <param name="arg3">The third argument for the invoked method.</param>
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3)
         {
@@ -158,7 +163,11 @@ namespace System.Reflection
             return InvokeImpl(obj, arg1, arg2, arg3, null);
         }
 
-        /// <inheritdoc cref="Invoke(object?, object?, object?, object?)"/>
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="obj"> The object on which to invoke the method. If the method is static, this argument is ignored. </param>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
+        /// <param name="arg3">The third argument for the invoked method.</param>
         /// <param name="arg4">The fourth argument for the invoked method.</param>
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3, object? arg4)
         {
@@ -217,6 +226,7 @@ namespace System.Reflection
         }
 
         /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="obj"> The object on which to invoke the method. If the method is static, this argument is ignored. </param>
         /// <param name="arguments">The arguments for the invoked method.</param>
         /// <exception cref="ArgumentException">
         /// The arguments do not match the signature of the invoked method.
