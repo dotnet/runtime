@@ -3473,6 +3473,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/**">
             <Issue>https://github.com/dotnet/runtime/issues/67359</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/InlineArray/**">
+            <Issue>https://github.com/dotnet/runtime/issues/90398</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64'">
