@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Http
 {
-    internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory, IDisposable
+    internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
     {
         private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
         private readonly IServiceProvider _services;
@@ -36,8 +36,9 @@ namespace Microsoft.Extensions.Http
         // We use a new timer for each regular cleanup cycle, protected with a lock. Note that this scheme
         // doesn't give us anything to dispose, as the timer is started/stopped as needed.
         //
-        // protected for tests
-        protected Timer? _cleanupTimer;
+        // There's no need for the factory itself to be disposable. If you stop using it, eventually everything will
+        // get reclaimed.
+        private Timer? _cleanupTimer;
         private readonly object _cleanupTimerLock;
         private readonly object _cleanupActiveLock;
 
@@ -101,7 +102,6 @@ namespace Microsoft.Extensions.Http
 
         public HttpClient CreateClient(string name)
         {
-            ThrowIfDisposed();
             ThrowHelper.ThrowIfNull(name);
 
             HttpMessageHandler handler = CreateHandler(name);
@@ -118,7 +118,6 @@ namespace Microsoft.Extensions.Http
 
         public HttpMessageHandler CreateHandler(string name)
         {
-            ThrowIfDisposed();
             ThrowHelper.ThrowIfNull(name);
 
             ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
@@ -193,11 +192,6 @@ namespace Microsoft.Extensions.Http
         // Internal for tests
         internal void ExpiryTimer_Tick(object? state)
         {
-            if (_disposed)
-            {
-                return;
-            }
-
             var active = (ActiveHandlerTrackingEntry)state!;
 
             // The timer callback should be the only one removing from the active collection. If we can't find
@@ -231,11 +225,6 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                if (_disposed)
-                {
-                    return;
-                }
-
                 _cleanupTimer ??= NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
             }
         }
@@ -245,30 +234,8 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                _cleanupTimer?.Dispose();
+                _cleanupTimer!.Dispose();
                 _cleanupTimer = null;
-            }
-        }
-
-        // protected for tests
-        protected bool _disposed;
-
-        public void Dispose()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-            _disposed = true;
-            StopCleanupTimer();
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                ThrowDisposed();
-                static void ThrowDisposed() => throw new ObjectDisposedException(nameof(DefaultHttpClientFactory));
             }
         }
 
@@ -294,11 +261,6 @@ namespace Microsoft.Extensions.Http
                 // If we end up in that position, just make sure the timer gets started again. It should be cheap
                 // to run a 'no-op' cleanup.
                 StartCleanupTimer();
-                return;
-            }
-
-            if (_disposed)
-            {
                 return;
             }
 

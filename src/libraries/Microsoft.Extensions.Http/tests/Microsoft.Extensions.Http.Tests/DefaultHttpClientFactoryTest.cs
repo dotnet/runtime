@@ -509,25 +509,26 @@ namespace Microsoft.Extensions.Http
         }
 
         [Fact]
-        public void Dispose_StopsTimer()
+        public void ServiceProviderDispose_DebugLoggingDoesNotThrow()
         {
-            var services = new ServiceCollection();
-            services.AddHttpClient("test");
-            services.AddSingleton<IHttpClientFactory, DisposeTrackingHttpClientFactory>();
+            var sink = new TestSink();
 
-            var serviceProvider = services.BuildServiceProvider();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging();
+            serviceCollection.AddSingleton<ILoggerFactory>(new TestLoggerFactory(sink, enabled: true));
+            serviceCollection.AddHttpClient("test");
 
-            var factory = (DisposeTrackingHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
+            var serviceProvider = serviceCollection.BuildServiceProvider();
 
-            _ = factory.CreateClient("test");
-
-            factory.StartCleanupTimer();
-            Assert.True(factory.CleanupTimerActive);
+            var httpClientFactory = (DefaultHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
+            _ =  httpClientFactory.CreateClient("test");
 
             serviceProvider.Dispose();
 
-            Assert.True(factory.IsDisposed);
-            Assert.False(factory.CleanupTimerActive);
+            httpClientFactory.StartCleanupTimer(); // we need to create a timer instance before triggering cleanup; normally it happens after the first expiry
+            httpClientFactory.CleanupTimer_Tick(); // trigger cleanup to (try to) write debug logs
+            // but no log is added, because ILogger couldn't be created
+            Assert.Equal(0, sink.Writes.Count(w => w.LoggerName == typeof(DefaultHttpClientFactory).FullName));
         }
 
         private class TestHttpClientFactory : DefaultHttpClientFactory
@@ -593,23 +594,10 @@ namespace Microsoft.Extensions.Http
             {
                 if (EnableCleanupTimer)
                 {
-                    Assert.True(CleanupTimerStarted.IsSet || _disposed, "Cleanup timer started");
+                    Assert.True(CleanupTimerStarted.IsSet, "Cleanup timer started");
                     CleanupTimerStarted.Reset();
                 }
             }
-        }
-
-        private class DisposeTrackingHttpClientFactory : DefaultHttpClientFactory
-        {
-            public DisposeTrackingHttpClientFactory(
-                IServiceProvider services,
-                IServiceScopeFactory scopeFactory,
-                IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
-                IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
-                : base(services, scopeFactory, optionsMonitor, filters) { }
-
-            public bool CleanupTimerActive => _cleanupTimer != null;
-            public bool IsDisposed => _disposed;
         }
 
         private class DisposeTrackingHandler : DelegatingHandler
