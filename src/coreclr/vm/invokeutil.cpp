@@ -907,17 +907,14 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         MethodTable *pMT = fldTH.AsMethodTable();
         {
             void* pFieldData;
-            fldTH.AsMethodTable()->EnsureActive();
-            obj = fldTH.AsMethodTable()->Allocate();
-            GCPROTECT_BEGIN(obj);
             if (pField->IsStatic())
+            {
                 pFieldData = pField->GetCurrentStaticAddress();
+            }
             else
             {
-                OBJECTREF objRef = ObjectToOBJECTREF(obj);
-                pFieldData = pField->GetAddress(OBJECTREFToObject(objRef));
+                pFieldData = pField->GetInstanceAddress(*target);
             }
-            GCPROTECT_END();
 
             if (*valueObj == NULL)
                 InitValueClass(pFieldData, pMT);
@@ -1058,10 +1055,12 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         GCPROTECT_BEGIN(obj);
         // calculate the offset to the field...
         if (pField->IsStatic())
+        {
             p = pField->GetCurrentStaticAddress();
-        else {
-            OBJECTREF objRef = ObjectToOBJECTREF(obj);
-            p = pField->GetAddress(OBJECTREFToObject(objRef));
+        }
+        else
+        {
+            p = pField->GetInstanceAddress(*target);
         }
         GCPROTECT_END();
 
