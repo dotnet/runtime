@@ -1144,11 +1144,6 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtVNPair.SetBoth(ValueNumStore::NoVN);
     gtRegTag   = GT_REGTAG_NONE;
     gtOperSave = GT_NONE;
-
-    if (ISMETHOD("M10") && (gtTreeID == 94))
-    {
-        printf("here");
-    }
 #endif
 }
 
