@@ -1204,9 +1204,8 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
             if (pEntry->srcofs & ShuffleEntry::FPREGMASK)
             {
-                _ASSERTE(!"RISCV64: not validated on riscv64!!!");
-                // FirstFloatReg is 10;
-                int j = 10;
+                // FirstFloatReg is 1;
+                int j = 1;
                 while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
                 {
                     j++;
@@ -1214,13 +1213,13 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                 assert((pEntry->dstofs - pEntry->srcofs) == index);
                 assert(8 > index);
 
-                int tmp_reg = 0; // f0.
+                int tmp_reg = 0; // ft0.
                 ShuffleEntry* tmp_entry = pShuffleEntryArray + delay_index[0];
                 while (index)
                 {
                     // fld(Ft, sp, offset);
                     _ASSERTE(isValidSimm12(tmp_entry->srcofs << 3));
-                    Emit32(0x3007 | (tmp_reg << 15) | (2 << 7/*sp*/) | ((tmp_entry->srcofs << 3) << 20));
+                    Emit32(0x3007 | (tmp_reg << 7) | (2 << 15/*sp*/) | ((tmp_entry->srcofs << 3) << 20));
                     tmp_reg++;
                     index--;
                     tmp_entry++;
@@ -1231,25 +1230,30 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                 i += j;
                 while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
                 {
-                    if (pEntry[j].dstofs & ShuffleEntry::FPREGMASK)// fsgnj.d fd, fs, fs
-                        Emit32(0x22000053 | ((pEntry[j].dstofs & ShuffleEntry::OFSREGMASK) << 7) | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 15) | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 20));
-                    else //// fsd(Ft, Rn, offset);
+                    FloatReg srcReg = (pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) + 10;
+                    if ((pEntry[j].dstofs & pEntry[j].dstofs) & ShuffleEntry::FPREGMASK) {// fsgnj.d fd, fs, fs
+                        FloatReg dstReg = (pEntry[j].dstofs & ShuffleEntry::OFSREGMASK) + 10;
+                        Emit32(0x22000053 | (dstReg << 7) | (srcReg << 15) | (srcReg << 20));
+                    }
+                    else // if (pEntry[j].srcofs & ShuffleEntry::FPREGMASK) //// fsd(Ft, Rn, offset);
                     {
-                        _ASSERTE(isValidSimm12((pEntry[j].dstofs * sizeof(long))));
-                        Emit32(0x3027 | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 20) | (2 << 15 /*sp*/) | ((pEntry[j].dstofs * sizeof(long) & 0x1f) << 7) | ((pEntry[j].dstofs * sizeof(long) & 0x7f) << 25));
+                        size_t dstOfs = pEntry[j].dstofs * sizeof(long);
+                        _ASSERTE(isValidSimm12(dstOfs));
+                        Emit32(0x3027 | (srcReg << 20) | (RegSp << 15 /*sp*/) | ((dstOfs & 0x1f) << 7) | (((dstOfs >> 5) & 0x7f) << 25));
                     }
                     j--;
                 }
-                assert(tmp_reg <= 11);
-                /*
-                while (tmp_reg > 11)
+
+                assert(tmp_reg <= 7);
+                while (tmp_reg > 0)
                 {
                     tmp_reg--;
-                    // fmov.d fd, fs
-                    Emit32(0x01149800 | index | (tmp_reg << 5));
+                    // fmov.d fd, fs  a.k.a  fsgnj.d fd, fs, fs
+                    FloatReg srcReg = tmp_reg;
+                    FloatReg dstReg = index + 10;
+                    Emit32(0x22000053 | (dstReg << 7) | (srcReg << 15) | (srcReg << 20));
                     index++;
                 }
-                */
                 index = 0;
                 pEntry = tmp_entry;
             }
@@ -1293,7 +1297,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             EmitLoadStoreRegImm(eSTORE, IntReg(29)/*t4*/, RegSp, pEntry->dstofs * sizeof(void*));
         }
     }
-
     // Tailcall to target
     // jalr x0, 0(t6)
     EmitJumpRegister(31);
