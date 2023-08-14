@@ -140,18 +140,20 @@ mono_set_assemblies_path (const char* path)
 	assemblies_path = dest = split;
 	while (*split) {
 		char *tmp = *split;
+#ifndef HOST_WIN32
 		int len = strlen(tmp);
 		// If the current string ends with a backslash, append the next string to it
 		while (len > 0 && tmp[len - 1] == '\\') {
 			tmp[len - 1] = '\0'; // Remove the backslash
 			if (*(split + 1)) {
-				tmp = g_strconcat (tmp, ":", *(split + 1), NULL);
+				tmp = g_strconcat (tmp, G_SEARCHPATH_SEPARATOR_S, *(split + 1), NULL);
 				g_free (*(split + 1)); // Free the next string since it's appended now
 				*(split + 1) = NULL; // Mark it as null
 				split++; // Skip the next string
 			}
 			len = strlen(tmp);
 		}
+#endif
 		if (*tmp)
 			*dest++ = mono_path_canonicalize (tmp);
 		g_free (tmp);
