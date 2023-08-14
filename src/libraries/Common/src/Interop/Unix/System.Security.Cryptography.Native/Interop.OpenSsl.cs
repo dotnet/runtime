@@ -243,7 +243,7 @@ internal static partial class Interop
 #if DEBUG
                 if (s_fileStream != null)
                 {
-                        Ssl.SslCtxSetKeylogCallback(sslCtx, &KeyLogCallback);
+                    Ssl.SslCtxSetKeylogCallback(sslCtx, &KeyLogCallback);
                 }
 #endif
             }
@@ -797,8 +797,9 @@ internal static partial class Interop
         [UnmanagedCallersOnly]
         private static unsafe void KeyLogCallback(IntPtr ssl, char* line)
         {
+            Debug.Assert(s_fileStream != null);
             ReadOnlySpan<byte> data = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)line);
-            if (s_fileStream != null && data.Length > 0)
+            if (data.Length > 0)
             {
                 lock (s_fileStream)
                 {
