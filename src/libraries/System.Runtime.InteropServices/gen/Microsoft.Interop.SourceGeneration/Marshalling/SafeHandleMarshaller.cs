@@ -77,7 +77,7 @@ namespace Microsoft.Interop
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseTypeName(TypeNames.System_Activator),
+                                    TypeSyntaxes.System_Activator,
                                     IdentifierName("CreateInstance")))
                             .WithArgumentList(
                                 ArgumentList(
@@ -168,7 +168,7 @@ namespace Microsoft.Interop
                     StatementSyntax unmarshalStatement = ExpressionStatement(
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal),
+                                TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                                 IdentifierName("InitHandle")),
                             ArgumentList(SeparatedList(
                                 new[]
@@ -214,7 +214,7 @@ namespace Microsoft.Interop
                                         IdentifierName(newHandleObjectIdentifier)))));
                     }
                     break;
-                case StubCodeContext.Stage.Cleanup:
+                case StubCodeContext.Stage.CleanupCallerAllocated:
                     if (!info.IsManagedReturnPosition && (!info.IsByRef || info.RefKind == RefKind.In))
                     {
                         yield return IfStatement(
@@ -234,6 +234,7 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
     }
 }

@@ -815,10 +815,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             assert(compMacOsArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
 
 #ifdef TARGET_ARM64
-            if (compMacOsArm64Abi() && (treeNode->GetStackByteSize() == 12))
+            if (treeNode->GetStackByteSize() == 12)
             {
-                regNumber tmpReg = treeNode->GetSingleTempReg();
-                GetEmitter()->emitStoreSimd12ToLclOffset(varNumOut, argOffsetOut, srcReg, tmpReg);
+                GetEmitter()->emitStoreSimd12ToLclOffset(varNumOut, argOffsetOut, srcReg, treeNode);
                 argOffsetOut += 12;
             }
             else

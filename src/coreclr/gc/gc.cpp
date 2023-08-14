@@ -454,7 +454,7 @@ void gc_heap::add_to_history()
 #endif //GC_HISTORY && BACKGROUND_GC
 }
 
-#ifdef TRACE_GC
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
 BOOL   gc_log_on = TRUE;
 FILE* gc_log = NULL;
 size_t gc_log_file_size = 0;
@@ -468,6 +468,22 @@ static CLRCriticalSection gc_log_lock;
 #define gc_log_buffer_size (1024*1024)
 uint8_t* gc_log_buffer = 0;
 size_t gc_log_buffer_offset = 0;
+
+void flush_gc_log (bool close)
+{
+    if (gc_log_on && (gc_log != NULL))
+    {
+        fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
+        fflush(gc_log);
+        if (close)
+        {
+            fclose(gc_log);
+            gc_log_on = false;
+            gc_log = NULL;
+        }
+        gc_log_buffer_offset = 0;
+    }
+}
 
 void log_va_msg(const char *fmt, va_list args)
 {
@@ -527,7 +543,7 @@ void GCLog (const char *fmt, ... )
         va_end(args);
     }
 }
-#endif // TRACE_GC
+#endif //TRACE_GC && SIMPLE_DPRINTF
 
 #ifdef GC_CONFIG_DRIVEN
 
@@ -577,15 +593,9 @@ void GCLogConfig (const char *fmt, ... )
 
 void GCHeap::Shutdown()
 {
-#if defined(TRACE_GC) && !defined(BUILD_AS_STANDALONE)
-    if (gc_log_on && (gc_log != NULL))
-    {
-        fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
-        fflush(gc_log);
-        fclose(gc_log);
-        gc_log_buffer_offset = 0;
-    }
-#endif //TRACE_GC && !BUILD_AS_STANDALONE
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF) && !defined(BUILD_AS_STANDALONE)
+    flush_gc_log (true);
+#endif //TRACE_GC && SIMPLE_DPRINTF && !BUILD_AS_STANDALONE
 }
 
 #ifdef SYNCHRONIZATION_STATS
@@ -2907,6 +2917,7 @@ BOOL gc_heap::should_expand_in_full_gc = FALSE;
 #endif //!USE_REGIONS
 
 #ifdef DYNAMIC_HEAP_COUNT
+int gc_heap::dynamic_adaptation_mode = dynamic_adaptation_default;
 gc_heap::dynamic_heap_count_data_t SVR::gc_heap::dynamic_heap_count_data;
 #endif // DYNAMIC_HEAP_COUNT
 
@@ -3258,6 +3269,41 @@ void gc_heap::fire_pevents()
     }
 #endif //FEATURE_LOH_COMPACTION
 #endif //FEATURE_EVENT_TRACE
+}
+
+// This fires the amount of total committed in use, in free and on the decommit list.
+// It's fired on entry and exit of each blocking GC and on entry of each BGC (not firing this on exit of a GC
+// because EE is not suspended then. On entry it's fired after the GCStart event, on exit it's fire before the GCStop event.
+void gc_heap::fire_committed_usage_event()
+{
+#if defined(FEATURE_EVENT_TRACE) && defined(USE_REGIONS)
+    if (!EVENT_ENABLED (GCMarkWithType)) return;
+
+    size_t total_committed = 0;
+    size_t committed_decommit = 0;
+    size_t committed_free = 0;
+    size_t committed_bookkeeping = 0;
+    size_t new_current_total_committed;
+    size_t new_current_total_committed_bookkeeping;
+    size_t new_committed_by_oh[recorded_committed_bucket_counts];
+    compute_committed_bytes(total_committed, committed_decommit, committed_free,
+                            committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping,
+                            new_committed_by_oh);
+
+    size_t total_committed_in_use = new_committed_by_oh[soh] + new_committed_by_oh[loh] + new_committed_by_oh[poh];
+    size_t total_committed_in_global_decommit = committed_decommit;
+    size_t total_committed_in_free = committed_free;
+    size_t total_committed_in_global_free = new_committed_by_oh[recorded_committed_free_bucket] - total_committed_in_free - total_committed_in_global_decommit;
+    size_t total_bookkeeping_committed = committed_bookkeeping;
+
+    GCEventFireCommittedUsage_V1 (
+        (uint64_t)total_committed_in_use,
+        (uint64_t)total_committed_in_global_decommit,
+        (uint64_t)total_committed_in_free,
+        (uint64_t)total_committed_in_global_free,
+        (uint64_t)total_bookkeeping_committed
+    );
+#endif //FEATURE_EVENT_TRACE && USE_REGIONS
 }
 
 inline BOOL
@@ -6228,7 +6274,7 @@ extern "C" uint64_t __rdtsc();
     {
         ////FIXME: TODO for LOONGARCH64:
         //ptrdiff_t  cycle;
-        __asm__ volatile ("break \n");
+        __asm__ volatile ("break 0 \n");
         return 0;
     }
 #else
@@ -7317,7 +7363,7 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
     assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
     assert(bucket < total_oh_count || h_number == -1);
 
-    bool decommit_succeeded_p = GCToOSInterface::VirtualDecommit (address, size);
+    bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
 
     dprintf(3, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
 
@@ -13906,7 +13952,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif //MULTIPLE_HEAPS
 )
 {
-#ifdef TRACE_GC
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
     if (GCConfig::GetLogEnabled())
     {
         gc_log = CreateLogFile(GCConfig::GetLogFile(), false);
@@ -13939,7 +13985,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
         max_gc_buffers = gc_log_file_size * 1024 * 1024 / gc_log_buffer_size;
     }
-#endif // TRACE_GC
+#endif //TRACE_GC && SIMPLE_DPRINTF
 
 #ifdef GC_CONFIG_DRIVEN
     if (GCConfig::GetConfigLogEnabled())
@@ -13986,6 +14032,26 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif //GC_CONFIG_DRIVEN
 
     HRESULT hres = S_OK;
+
+    conserve_mem_setting = (int)GCConfig::GetGCConserveMem();
+
+#ifdef DYNAMIC_HEAP_COUNT
+    dynamic_adaptation_mode = (int)GCConfig::GetGCDynamicAdaptationMode();
+    if (GCConfig::GetHeapCount() != 0)
+    {
+        dynamic_adaptation_mode = 0;
+    }
+
+    if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (conserve_mem_setting == 0))
+        conserve_mem_setting = 5;
+#endif //DYNAMIC_HEAP_COUNT
+
+    if (conserve_mem_setting < 0)
+        conserve_mem_setting = 0;
+    if (conserve_mem_setting > 9)
+        conserve_mem_setting = 9;
+
+    dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
 
 #ifdef WRITE_WATCH
     hardware_write_watch_api_supported();
@@ -14226,7 +14292,7 @@ gc_heap::init_semi_shared()
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
 #ifdef DYNAMIC_HEAP_COUNT
-    if (GCConfig::GetGCDynamicAdaptationMode() == 1 && GCConfig::GetHeapCount() == 0)
+    if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
     {
         // we'll actually start with one heap in this case
         g_mark_list_total_size = mark_list_size;
@@ -14434,16 +14500,6 @@ gc_heap::init_semi_shared()
     }
 #endif //FEATURE_LOH_COMPACTION
 #endif //FEATURE_EVENT_TRACE
-
-    conserve_mem_setting  = (int)GCConfig::GetGCConserveMem();
-    if (conserve_mem_setting == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
-        conserve_mem_setting = 5;
-    if (conserve_mem_setting < 0)
-        conserve_mem_setting = 0;
-    if (conserve_mem_setting > 9)
-        conserve_mem_setting = 9;
-
-    dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
 
     reset_mm_p = TRUE;
 
@@ -16646,6 +16702,41 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
     // fetch the ephemeral_heap_segment *before* we release the msl
     // - ephemeral_heap_segment may change due to other threads allocating
     heap_segment* gen0_segment = ephemeral_heap_segment;
+
+#ifdef BACKGROUND_GC
+    {
+        if (uoh_p && gc_heap::background_running_p())
+        {
+            uint8_t* obj = acontext->alloc_ptr;
+            uint8_t* result = obj;
+            uint8_t* current_lowest_address = background_saved_lowest_address;
+            uint8_t* current_highest_address = background_saved_highest_address;
+
+            if (current_c_gc_state == c_gc_state_planning)
+            {
+                dprintf (3, ("Concurrent allocation of a large object %zx",
+                            (size_t)obj));
+                //mark the new block specially so we know it is a new object
+                if ((result < current_highest_address) && (result >= current_lowest_address))
+                {
+#ifdef DOUBLY_LINKED_FL
+                    heap_segment* seg = seg_mapping_table_segment_of (result);
+                    // if bgc_allocated is 0 it means it was allocated during bgc sweep,
+                    // and since sweep does not look at this seg we cannot set the mark array bit.
+                    uint8_t* background_allocated = heap_segment_background_allocated(seg);
+                    if (background_allocated != 0)
+#endif //DOUBLY_LINKED_FL
+                    {
+                        dprintf(3, ("Setting mark bit at address %zx",
+                            (size_t)(&mark_array[mark_word_of(result)])));
+
+                        mark_array_set_marked(result);
+                    }
+                }
+            }
+        }
+    }
+#endif //BACKGROUND_GC
 
     // check if space to clear is all dirty from prior use or only partially
     if ((seg == 0) || (clear_limit <= heap_segment_used (seg)))
@@ -20857,9 +20948,7 @@ size_t gc_heap::get_total_allocated_since_last_gc()
     {
         gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-        // TEMP, only count UOH allocs
-        //total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
-        total_allocated_size += hp->allocated_since_last_gc[1];
+        total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
         hp->allocated_since_last_gc[0] = 0;
         hp->allocated_since_last_gc[1] = 0;
     }
@@ -21151,7 +21240,7 @@ int gc_heap::generation_to_condemn (int n_initial,
     int n_alloc = n;
     if (heap_number == 0)
     {
-        dprintf (5555, ("init: %d(%d)", n_initial, settings.reason));
+        dprintf (GTC_LOG, ("init: %d(%d)", n_initial, settings.reason));
     }
     int i = 0;
     int temp_gen = 0;
@@ -22491,10 +22580,6 @@ void gc_heap::gc1()
 
             gc_t_join.restart();
         }
-
-#ifdef USE_REGIONS
-//        rethread_fl_items ();
-#endif //USE_REGIONS
 
         update_end_gc_time_per_heap();
         add_to_history_per_heap();
@@ -24955,15 +25040,8 @@ void gc_heap::check_heap_count ()
 {
     dynamic_heap_count_data.new_n_heaps = n_heaps;
 
-    if (GCConfig::GetHeapCount() != 0)
+    if (dynamic_adaptation_mode != dynamic_adaptation_to_application_sizes)
     {
-        // don't change the heap count if we see an environment variable setting it explicitly
-        return;
-    }
-
-    if (GCConfig::GetGCDynamicAdaptationMode() == 0)
-    {
-        // don't change the heap count dynamically if the feature isn't explicitly enabled
         return;
     }
 
@@ -25020,6 +25098,13 @@ void gc_heap::check_heap_count ()
         sample.heap_size/(1024*1024)));
 
     dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
+
+    GCEventFireHeapCountSample_V1(
+        sample.gc_elapsed_time,
+        sample.soh_msl_wait_time,
+        sample.uoh_msl_wait_time,
+        sample.elapsed_between_gcs
+    );
 
     if (settings.gc_index < prev_change_heap_count_gc_index + 3)
     {
@@ -25170,10 +25255,21 @@ void gc_heap::check_heap_count ()
         dynamic_heap_count_data.space_cost_increase_per_step_up   = space_cost_increase_per_step_up;
         dynamic_heap_count_data.space_cost_decrease_per_step_down = space_cost_decrease_per_step_down;
 
+        GCEventFireHeapCountTuning_V1(
+            (uint16_t)dynamic_heap_count_data.new_n_heaps,
+            (uint64_t)VolatileLoad(&settings.gc_index),
+            dynamic_heap_count_data.median_percent_overhead,
+            dynamic_heap_count_data.smoothed_median_percent_overhead,
+            dynamic_heap_count_data.overhead_reduction_per_step_up,
+            dynamic_heap_count_data.overhead_increase_per_step_down,
+            dynamic_heap_count_data.space_cost_increase_per_step_up,
+            dynamic_heap_count_data.space_cost_decrease_per_step_down
+        );
+
         if (new_n_heaps != n_heaps)
         {
             // can't have threads allocating while we change the number of heaps
-            GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+            GCToEEInterface::SuspendEE(SUSPEND_FOR_GC_PREP);
 
             if (gc_heap::background_running_p())
             {
@@ -26240,7 +26336,7 @@ void gc_heap::save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_obje
 }
 
 // enable on processors known to have a useful prefetch instruction
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 #define PREFETCH
 #endif
 
@@ -42957,7 +43053,8 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                                           max (min_gc_size, (max_size/3)));
                 }
 
-                if (conserve_mem_setting != 0)
+#ifdef DYNAMIC_HEAP_COUNT
+                if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
                 {
                     // if this is set, limit gen 0 size to a small multiple of the older generations
                     float f_older_gen = ((10.0f / conserve_mem_setting) - 1) * 0.5f;
@@ -42983,6 +43080,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                         older_size,
                         new_allocation));
                 }
+#endif //DYNAMIC_HEAP_COUNT
             }
         }
 
@@ -43607,32 +43705,31 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
 size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
 {
     uint8_t* page_start = align_lower_page (get_region_start (region));
-    uint8_t* end = use_large_pages_p ? heap_segment_used (region) : heap_segment_committed (region);
-    size_t size = end - page_start;
-    bool decommit_succeeded_p = false;
-    if (!use_large_pages_p)
-    {
-        decommit_succeeded_p = virtual_decommit (page_start, size, bucket, h_number);
-    }
+    uint8_t* decommit_end = heap_segment_committed (region);
+    size_t decommit_size = decommit_end - page_start;
+    bool decommit_succeeded_p = virtual_decommit (page_start, decommit_size, bucket, h_number);
+    bool require_clearing_memory_p = !decommit_succeeded_p || use_large_pages_p;
     dprintf (REGIONS_LOG, ("decommitted region %p(%p-%p) (%zu bytes) - success: %d",
         region,
         page_start,
-        end,
-        size,
+        decommit_end,
+        decommit_size,
         decommit_succeeded_p));
-    if (decommit_succeeded_p)
+    if (require_clearing_memory_p)
     {
-        heap_segment_committed (region) = heap_segment_mem (region);
-    }
-    else
-    {
-        memclr (page_start, size);
+        uint8_t* clear_end = use_large_pages_p ? heap_segment_used (region) : heap_segment_committed (region);
+        size_t clear_size = clear_end - page_start;
+        memclr (page_start, clear_size);
         heap_segment_used (region) = heap_segment_mem (region);
         dprintf(REGIONS_LOG, ("cleared region %p(%p-%p) (%zu bytes)",
             region,
             page_start,
-            end,
-            size));
+            clear_end,
+            clear_size));
+    }
+    else
+    {
+        heap_segment_committed (region) = heap_segment_mem (region);
     }
 
     // Under USE_REGIONS, mark array is never partially committed. So we are only checking for this
@@ -43661,7 +43758,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     assert ((region->flags & heap_segment_flags_ma_committed) == 0);
     global_region_allocator.delete_region (get_region_start (region));
 
-    return size;
+    return decommit_size;
 }
 #endif //USE_REGIONS
 
@@ -44498,37 +44595,6 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
     alloc_bytes += size;
 
     CObjectHeader* obj = (CObjectHeader*)result;
-
-#ifdef BACKGROUND_GC
-    if (gc_heap::background_running_p())
-    {
-        uint8_t* current_lowest_address = background_saved_lowest_address;
-        uint8_t* current_highest_address = background_saved_highest_address;
-
-        if (current_c_gc_state == c_gc_state_planning)
-        {
-            dprintf (3, ("Concurrent allocation of a large object %zx",
-                        (size_t)obj));
-            //mark the new block specially so we know it is a new object
-            if ((result < current_highest_address) && (result >= current_lowest_address))
-            {
-#ifdef DOUBLY_LINKED_FL
-                heap_segment* seg = seg_mapping_table_segment_of (result);
-                // if bgc_allocated is 0 it means it was allocated during bgc sweep,
-                // and since sweep does not look at this seg we cannot set the mark array bit.
-                uint8_t* background_allocated = heap_segment_background_allocated(seg);
-                if (background_allocated != 0)
-#endif //DOUBLY_LINKED_FL
-                {
-                    dprintf(3, ("Setting mark bit at address %zx",
-                        (size_t)(&mark_array[mark_word_of(result)])));
-
-                    mark_array_set_marked(result);
-                }
-            }
-        }
-    }
-#endif //BACKGROUND_GC
 
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
@@ -47180,7 +47246,6 @@ void gc_heap::verify_regions (bool can_verify_gen_num, bool concurrent_p)
             dprintf(3, ("commit-accounting:  checkpoint for %d for heap %d", oh, heap_number));
             total_committed = 0;
         }
-
     }
 #endif //USE_REGIONS
 }
@@ -48218,9 +48283,9 @@ HRESULT GCHeap::Initialize()
     {
 #ifdef DYNAMIC_HEAP_COUNT
         // if no heap count was specified, and we are told to adjust heap count dynamically ...
-        if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
+        if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
         {
-            // ... start with only 1 heap
+            // start with only 1 heap
             gc_heap::smoothed_desired_total[0] /= gc_heap::n_heaps;
             gc_heap::g_heaps[0]->change_heap_count (1);
         }
@@ -49402,6 +49467,8 @@ void gc_heap::do_pre_gc()
 #endif //TRACE_GC
 
     GCHeap::UpdatePreGCCounters();
+    fire_committed_usage_event();
+
 #if defined(__linux__)
     GCToEEInterface::UpdateGCEventStatus(static_cast<int>(GCEventStatus::GetEnabledLevel(GCEventProvider_Default)),
                                          static_cast<int>(GCEventStatus::GetEnabledKeywords(GCEventProvider_Default)),
@@ -49805,6 +49872,10 @@ void gc_heap::do_post_gc()
         settings.entry_memory_load,
         current_memory_load));
 
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
+    flush_gc_log (false);
+#endif //TRACE_GC && SIMPLE_DPRINTF
+
     // Now record the gc info.
     last_recorded_gc_info* last_gc_info = 0;
 #ifdef BACKGROUND_GC
@@ -49930,6 +50001,10 @@ void gc_heap::do_post_gc()
         }
     }
 
+    if (!settings.concurrent)
+    {
+        fire_committed_usage_event ();
+    }
     GCHeap::UpdatePostGCCounters();
 
     // We need to reinitialize the number of pinned objects because it's used in the GCHeapStats
@@ -50673,11 +50748,13 @@ size_t gc_heap::get_gen0_min_size()
         int n_heaps = 1;
 #endif //SERVER_GC
 
-        if (GCConfig::GetGCConserveMem() != 0 || GCConfig::GetGCDynamicAdaptationMode() == 1)
+#ifdef DYNAMIC_HEAP_COUNT
+        if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
         {
             // if we are asked to be stingy with memory, limit gen 0 size
             gen0size = min (gen0size, (4*1024*1024));
         }
+#endif //DYNAMIC_HEAP_COUNT
 
         dprintf (1, ("gen0size: %zd * %d = %zd, physical mem: %zd / 6 = %zd",
                 gen0size, n_heaps, (gen0size * n_heaps),
@@ -51916,6 +51993,7 @@ bool GCHeap::IsConcurrentGCEnabled()
 
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
+    bool v2 = gcDacVars->minor_version_number >= 2;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -51927,10 +52005,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #define CLASS_NAME gc_heap
 #include "dac_gcheap_fields.h"
 #undef CLASS_NAME
-
-        offsetof(gc_heap, generation_table)
     };
-    static_assert(sizeof(gc_heap_field_offsets) == (GENERATION_TABLE_FIELD_INDEX + 1) * sizeof(int), "GENERATION_TABLE_INDEX mismatch");
 #endif //MULTIPLE_HEAPS
     static int generation_field_offsets[] = {
 
@@ -51945,21 +52020,26 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     };
 
     assert(gcDacVars != nullptr);
-    *gcDacVars = {};
     // Note: These version numbers do not need to be checked in the .Net dac/SOS because
     // we always match the compiled dac and GC to the version used.  NativeAOT's SOS may
     // work differently than .Net SOS.  When making breaking changes here you may need to
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
     gcDacVars->minor_version_number = 0;
-    gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
-    gcDacVars->card_table_info_size = sizeof(card_table_info);
+    if (v2)
+    {
+        gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
+        gcDacVars->card_table_info_size = sizeof(card_table_info);
+    }
 
 #ifdef USE_REGIONS
     gcDacVars->minor_version_number |= 1;
-    gcDacVars->count_free_region_kinds = count_free_region_kinds;
-    gcDacVars->global_regions_to_decommit = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_regions_to_decommit);
-    gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
+    if (v2)
+    {
+        gcDacVars->count_free_region_kinds = count_free_region_kinds;
+        gcDacVars->global_regions_to_decommit = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_regions_to_decommit);
+        gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
+    }
 #endif //USE_REGIONS
 #ifndef BACKGROUND_GC
     gcDacVars->minor_version_number |= 2;
@@ -51978,14 +52058,20 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef MULTIPLE_HEAPS
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);
 #ifdef USE_REGIONS
-    gcDacVars->free_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::free_regions);
+    if (v2)
+    {
+        gcDacVars->free_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::free_regions);
+    }
 #endif
 #ifdef BACKGROUND_GC
     gcDacVars->mark_array = &gc_heap::mark_array;
     gcDacVars->background_saved_lowest_address = &gc_heap::background_saved_lowest_address;
     gcDacVars->background_saved_highest_address = &gc_heap::background_saved_highest_address;
-    gcDacVars->freeable_soh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_soh_segment);
-    gcDacVars->freeable_uoh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_uoh_segment);
+    if (v2)
+    {
+        gcDacVars->freeable_soh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_soh_segment);
+        gcDacVars->freeable_uoh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_uoh_segment);
+    }
     gcDacVars->next_sweep_obj = &gc_heap::next_sweep_obj;
 #ifdef USE_REGIONS
     gcDacVars->saved_sweep_ephemeral_seg = 0;
@@ -51998,8 +52084,11 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->mark_array = 0;
     gcDacVars->background_saved_lowest_address = 0;
     gcDacVars->background_saved_highest_address = 0;
-    gcDacVars->freeable_soh_segment = 0;
-    gcDacVars->freeable_uoh_segment = 0;
+    if (v2)
+    {
+        gcDacVars->freeable_soh_segment = 0;
+        gcDacVars->freeable_uoh_segment = 0;
+    }
     gcDacVars->next_sweep_obj = 0;
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
@@ -52026,7 +52115,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
-    gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
+    if (v2)
+    {
+        gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
+    }
 }
 
 int GCHeap::RefreshMemoryLimit()
@@ -52201,25 +52293,11 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
     return true;
 }
 
-int gc_heap::refresh_memory_limit()
-{
-    refresh_memory_limit_status status = refresh_success;
-
-    if (GCConfig::GetGCTotalPhysicalMemory() != 0)
-    {
-        return (int)status;
-    }
-
-    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
-
 #ifdef USE_REGIONS
-    decommit_lock.Enter();
-    size_t total_committed = 0;
-    size_t committed_bookkeeping = 0;
-    size_t new_current_total_committed;
-    size_t new_current_total_committed_bookkeeping;
-    size_t new_committed_by_oh[recorded_committed_bucket_counts];
-
+void gc_heap::compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
+                                      size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
+                                      size_t* new_committed_by_oh)
+{
     // Accounting for the bytes committed for the regions
     for (int oh = soh; oh < total_oh_count; oh++)
     {
@@ -52257,7 +52335,8 @@ int gc_heap::refresh_memory_limit()
     }
 
     // Accounting for the bytes committed for the free lists
-    size_t committed_free = 0;
+    size_t committed_old_free = 0;
+    committed_free = 0;
 #ifdef MULTIPLE_HEAPS
     for (int h = 0; h < n_heaps; h++)
     {
@@ -52272,6 +52351,8 @@ int gc_heap::refresh_memory_limit()
             heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
         }
     }
+    committed_old_free += committed_free;
+    committed_decommit = 0;
     for (int i = 0; i < count_free_region_kinds; i++)
     {
         heap_segment* seg = global_regions_to_decommit[i].get_first_free_region();
@@ -52280,8 +52361,9 @@ int gc_heap::refresh_memory_limit()
 #else
         gc_heap* heap = nullptr;
 #endif //MULTIPLE_HEAPS
-        heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
+        heap->accumulate_committed_bytes (seg, committed_decommit, committed_bookkeeping);
     }
+    committed_old_free += committed_decommit;
     {
         heap_segment* seg = global_free_huge_regions.get_first_free_region();
 #ifdef MULTIPLE_HEAPS
@@ -52289,11 +52371,11 @@ int gc_heap::refresh_memory_limit()
 #else
         gc_heap* heap = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-        heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
+        heap->accumulate_committed_bytes (seg, committed_old_free, committed_bookkeeping);
     }
 
-    new_committed_by_oh[recorded_committed_free_bucket] = committed_free;
-    total_committed += committed_free;
+    new_committed_by_oh[recorded_committed_free_bucket] = committed_old_free;
+    total_committed += committed_old_free;
 
     // Accounting for the bytes committed for the book keeping elements
     uint8_t* commit_begins[total_bookkeeping_elements];
@@ -52314,6 +52396,32 @@ int gc_heap::refresh_memory_limit()
     new_committed_by_oh[recorded_committed_bookkeeping_bucket] = committed_bookkeeping;
     total_committed += committed_bookkeeping;
     new_current_total_committed = total_committed;
+}
+#endif //USE_REGIONS
+
+int gc_heap::refresh_memory_limit()
+{
+    refresh_memory_limit_status status = refresh_success;
+
+    if (GCConfig::GetGCTotalPhysicalMemory() != 0)
+    {
+        return (int)status;
+    }
+
+    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+
+#ifdef USE_REGIONS
+    decommit_lock.Enter();
+    size_t total_committed = 0;
+    size_t committed_decommit; // unused
+    size_t committed_free; // unused
+    size_t committed_bookkeeping = 0;
+    size_t new_current_total_committed;
+    size_t new_current_total_committed_bookkeeping;
+    size_t new_committed_by_oh[recorded_committed_bucket_counts];
+    compute_committed_bytes(total_committed, committed_decommit, committed_free,
+                            committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping,
+                            new_committed_by_oh);
 #endif //USE_REGIONS
 
     uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());

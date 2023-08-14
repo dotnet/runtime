@@ -32,22 +32,6 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         public bool UseUtcTimestamp { get; set; }
 
-        internal virtual void Configure(IConfiguration configuration)
-        {
-            if (ConsoleLoggerOptions.ParseBool(configuration, nameof(IncludeScopes), out bool includeScopes))
-            {
-                IncludeScopes = includeScopes;
-            }
-
-            if (configuration[nameof(TimestampFormat)] is string timestampFormat)
-            {
-                TimestampFormat = timestampFormat;
-            }
-
-            if (ConsoleLoggerOptions.ParseBool(configuration, nameof(UseUtcTimestamp), out bool useUtcTimestamp))
-            {
-                UseUtcTimestamp = useUtcTimestamp;
-            }
-        }
+        internal virtual void Configure(IConfiguration configuration) => configuration.Bind(this);
     }
 }

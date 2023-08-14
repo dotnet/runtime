@@ -5505,8 +5505,7 @@ namespace System.Diagnostics.Tracing
             {
                 templates?.Append(" map=\"").Append(type.Name).Append('"');
                 mapsTab ??= new Dictionary<string, Type>();
-                if (!mapsTab.ContainsKey(type.Name))
-                    mapsTab.Add(type.Name, type);        // Remember that we need to dump the type enumeration
+                mapsTab.TryAdd(type.Name, type);        // Remember that we need to dump the type enumeration
             }
 
             templates?.AppendLine("/>");

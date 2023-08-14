@@ -17,8 +17,13 @@
 
 #include <sal.h>
 #include <stdarg.h>
+#ifdef TARGET_UNIX
+#include <pthread.h>
+#endif
+
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "gcenv.structs.h" // CRITICAL_SECTION
-#include "IntrinsicConstants.h"
 #include "PalRedhawkCommon.h"
 
 #ifndef PAL_REDHAWK_INCLUDED
@@ -50,6 +55,12 @@
 
 #endif // !_MSC_VER
 
+#ifdef TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '/'
+#else // TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '\\'
+#endif // TARGET_UNIX
+
 #ifndef _INC_WINDOWS
 
 // There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
@@ -72,12 +83,6 @@ typedef wchar_t TCHAR;
 #define _T(s) L##s
 #endif
 
-#ifdef TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '/'
-#else // TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '\\'
-#endif // TARGET_UNIX
-
 typedef union _LARGE_INTEGER {
     struct {
 #if BIGENDIAN
@@ -90,13 +95,6 @@ typedef union _LARGE_INTEGER {
     } u;
     int64_t QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
-
-typedef struct _GUID {
-    uint32_t Data1;
-    uint16_t Data2;
-    uint16_t Data3;
-    uint8_t Data4[8];
-} GUID;
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
 
@@ -731,6 +729,7 @@ struct UNIX_CONTEXT;
 #endif
 
 #ifdef TARGET_UNIX
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #else
 REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
@@ -779,31 +778,6 @@ REDHAWK_PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
-
-#if defined(HOST_X86) || defined(HOST_AMD64)
-
-#ifdef TARGET_UNIX
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-//
-// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
-
-REDHAWK_PALIMPORT void __cpuid(int cpuInfo[4], int function_id);
-REDHAWK_PALIMPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#else
-#include <intrin.h>
-#endif
-
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport();
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI avx512StateSupport();
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvxEnabled();
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvx512Enabled();
-
-#endif // defined(HOST_X86) || defined(HOST_AMD64)
-
-#if defined(HOST_ARM64)
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags);
-#endif //defined(HOST_ARM64)
 
 #include "PalRedhawkInline.h"
 

@@ -91,6 +91,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"ab|(abc)|(abcd)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
         [InlineData(@"ab(?=cd)", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
         [InlineData(@"ab(?=cd)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
+        [InlineData(@"\bab(?=\w)(?!=\d)c\b", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "abc")]
+        [InlineData(@"\bab(?=\w)(?!=\d)c\b", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
         public void LeadingPrefix(string pattern, int options, int expectedMode, string expectedPrefix)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
@@ -107,6 +109,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[Aa]", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "Aa")]
         [InlineData(@"a", (int)RegexOptions.IgnoreCase | (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "Aa")]
         [InlineData(@"ab|cd|ef|gh", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "bdfh")]
+        [InlineData(@"\bab(?=\w)(?!=\d)c\b", (int)(RegexOptions.IgnoreCase | RegexOptions.RightToLeft), (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "Cc")]
         public void LeadingSet(string pattern, int options, int expectedMode, string expectedChars)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);

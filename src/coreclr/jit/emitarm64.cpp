@@ -1059,6 +1059,9 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             assert(emitInsIsLoad(ins));
             return true;
 
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
+            return ins == INS_mrs_tpid0;
+
         default:
             return false;
     }
@@ -5158,6 +5161,9 @@ void emitter::emitIns_R_R_I(
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             isRightShift = emitInsIsVectorRightShift(ins);
+
+            assert(!isRightShift ||
+                   (imm != 0 && "instructions for vector right-shift do not allow zero as an immediate value"));
 
             if (insOptsAnyArrangement(opt))
             {
@@ -10138,7 +10144,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = 4;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = %08XH\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
                dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, distVal);
     }
 #endif
@@ -16767,4 +16773,32 @@ bool emitter::IsOptimizableLdrToMov(
 
     return true;
 }
+
+#if defined(FEATURE_SIMD)
+//-----------------------------------------------------------------------------------
+// emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
+//
+// Arguments:
+//     varNum         - the variable on the stack to use as a base;
+//     offset         - the offset from the varNum;
+//     dataReg        - the src reg with SIMD12 value;
+//     tmpRegProvider - a tree to grab a tmp reg from if needed.
+//
+void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
+{
+    assert(varNum != BAD_VAR_NUM);
+    assert(isVectorRegister(dataReg));
+
+    // store lower 8 bytes
+    emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
+
+    // Extract upper 4-bytes from data
+    regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
+    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+
+    // 4-byte write
+    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+}
+#endif // FEATURE_SIMD
+
 #endif // defined(TARGET_ARM64)

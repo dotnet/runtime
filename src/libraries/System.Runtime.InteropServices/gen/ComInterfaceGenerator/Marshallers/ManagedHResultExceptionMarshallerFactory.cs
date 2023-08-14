@@ -51,7 +51,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
-                if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
+                if (context.CurrentStage != StubCodeContext.Stage.NotifyForSuccessfulInvoke)
                 {
                     yield break;
                 }
@@ -62,7 +62,7 @@ namespace Microsoft.Interop
                 yield return ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                             IdentifierName("ThrowExceptionForHR")),
                         ArgumentList(
                             SingletonSeparatedList(Argument(IdentifierName(managedIdentifier))))));
@@ -71,7 +71,8 @@ namespace Microsoft.Interop
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.ManagedIdentifier;
             public bool IsSupported(TargetFramework target, Version version) => true;
-            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
+            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
         }
 
@@ -82,7 +83,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
-                if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
+                if (context.CurrentStage != StubCodeContext.Stage.NotifyForSuccessfulInvoke)
                 {
                     yield break;
                 }
@@ -108,7 +109,8 @@ namespace Microsoft.Interop
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.ManagedIdentifier;
             public bool IsSupported(TargetFramework target, Version version) => true;
-            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
+            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
         }
     }

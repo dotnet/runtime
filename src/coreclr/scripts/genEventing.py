@@ -731,7 +731,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 
             eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
             if is_windows:
-                Clrallevents.write(('constexpr ' if target_cpp else '') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+                Clrallevents.write(('constexpr ' if target_cpp else 'static const ') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
             if not is_windows and not write_xplatheader:
                 Clrallevents.write('__attribute__((weak)) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
@@ -782,14 +782,14 @@ typedef struct _EVENT_DESCRIPTOR
                     symbolName = eventNode.getAttribute('symbol')
                     keywords = eventNode.getAttribute('keywords')
                     level = convertToLevelId(levelName)
-                    Clrproviders.write(("constexpr " if target_cpp else "const ") + "EVENT_DESCRIPTOR " + symbolName + " = { " + str(level) + ", " + hex(getKeywordsMaskCombined(keywords, keywordsToMask)) + " };\n")
+                    Clrproviders.write(("constexpr " if target_cpp else "static const ") + "EVENT_DESCRIPTOR " + symbolName + " = { " + str(level) + ", " + hex(getKeywordsMaskCombined(keywords, keywordsToMask)) + " };\n")
 
                 allProviders.append("&" + providerSymbol + "_LTTNG_Context")
 
             # define and initialize runtime providers' DOTNET_TRACE_CONTEXT depending on the platform
             if not is_windows:
                 Clrproviders.write('#define NB_PROVIDERS ' + str(nbProviders) + '\n')
-                Clrproviders.write(('constexpr ' if target_cpp else 'const ') + 'LTTNG_TRACE_CONTEXT * ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
+                Clrproviders.write(('constexpr ' if target_cpp else 'static const ') + 'LTTNG_TRACE_CONTEXT * ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
                 Clrproviders.write(', '.join(allProviders))
                 Clrproviders.write(' };\n')
 

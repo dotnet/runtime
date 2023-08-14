@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
     <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
   </PropertyGroup>
@@ -14,7 +14,15 @@
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\ref\%(Identity).csproj')" />
     <ProjectReference Include="@(AnyProject)"
                       Exclude="@(NonNetCoreAppProject);
-                               @(NetCoreAppLibraryNoReference->'%(Identity)\ref\%(Identity).csproj')" />
+                               System.Private.CoreLib\ref\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RefOnly)' == 'true'">
+    <ProjectReference Include="shims\*\src\*.csproj" />
+    <ReferenceShimProject Include="shims\*\ref\*.csproj" />
+    <ProjectReference Include="@(ReferenceShimProject)" />
+    <!-- Omit projects which depend on source projects to be built. -->
+    <ProjectReference Remove="@(ReferenceShimProject->'shims\%(Filename)\src\%(Filename)%(Extension)')" />
   </ItemGroup>
 
 </Project>

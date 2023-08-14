@@ -28,6 +28,7 @@
 #     c    all caller-saved registers
 
 nop: len:4
+relaxed_nop: len:4
 not_reached: len:0
 not_null: src1:i len:0
 dummy_use: src1:i len:0
@@ -40,6 +41,7 @@ gc_safe_point: src1:i len:12 clob:c
 start_handler: len:8 clob:c
 call_handler: len:4 clob:c
 endfinally: len:32
+endfilter: src1:i len:32
 localloc: dest:i src1:i len:52
 localloc_imm: dest:i len:28
 generic_class_init: src1:a len:12 clob:c
@@ -59,6 +61,8 @@ voidcall_membase: src1:b len:8 clob:c
 vcall2: len:16 clob:c
 vcall2_membase: src1:b len:20 clob:c
 fcall: dest:f len:8 clob:c
+rcall: dest:f len:8 clob:c
+fcall_membase: dest:f src1:b len:12 clob:c
 
 # Note: in RV32, it shoule be 
 # lcall: dest:l ...
@@ -86,9 +90,12 @@ loadr8_membase: dest:f src1:b len:16
 
 memory_barrier: len:4
 atomic_add_i4: dest:i src1:i src2:i len:4
+atomic_add_i8: dest:i src1:i src2:i len:4
 atomic_store_u1: dest:b src1:i len:8
 atomic_store_i4: dest:b src1:i len:8
 atomic_store_u8: dest:b src1:i len:8
+atomic_store_i8: dest:b src1:i len:8
+atomic_load_u1: dest:b src1:i len:12
 atomic_load_i4: dest:b src1:i len:12
 atomic_load_i8: dest:b src1:i len:12
 atomic_load_u8: dest:b src1:i len:12
@@ -106,8 +113,11 @@ iconst: dest:i len:16
 i8const: dest:i len:16
 int_add: dest:i src1:i src2:i len:4
 long_add: dest:i src1:i src2:i len:4
+float_add: dest:f src1:f src2:f len:4
 int_sub: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
+float_sub: dest:f src1:f src2:f len:4
+float_neg: dest:f src1:f len:4
 int_mul: dest:i src1:i src2:i len:4
 r4_mul: dest:f src1:f src2:f len:4
 long_mul: dest:i src1:i src2:i len:4
@@ -117,7 +127,7 @@ long_div: dest:i src1:i src2:i len:32
 int_div_un: dest:i src1:i src2:i len:32
 long_div_un: dest:i src1:i src2:i len:32
 r4_div: dest:f src1:f src2:f len:36
-float_div: dest:f src1:f src2:f len:4
+float_div: dest:f src1:f src2:f len:36
 int_rem: dest:i src1:i src2:i len:32
 long_rem: dest:i src1:i src2:i len:32
 int_rem_un: dest:i src1:i src2:i len:32
@@ -127,14 +137,18 @@ r4const: dest:f len:16
 r8const: dest:f len:16
 int_conv_to_r4: dest:f src1:i len:4
 int_conv_to_r8: dest:f src1:i len:4
+r4_conv_to_i8: dest:i src1:f len:4
 r4_conv_to_r8: dest:f src1:f len:4
 r4_conv_to_i4: dest:i src1:f len:4
 float_conv_to_i4: dest:i src1:f len:4
 float_conv_to_r4: dest:f src1:f len:4
+float_conv_to_i8: dest:i src1:f len:4
 float_ceq: dest:i src1:f src2:f len:4
+float_cle: dest:i src1:f src2:f len:4
 float_clt: dest:i src1:f src2:f len:4
 float_clt_un: dest:i src1:f src2:f len:4
 r4_clt: dest:i src1:f src2:f len:4
+r4_cle: dest:i src1:f src2:f len:4
 
 add_imm: dest:i src1:i len:4
 int_add_imm: dest:i src1:i len:4
@@ -154,6 +168,7 @@ int_xor: dest:i src1:i src2:i len:4
 int_xor_imm: dest:i src1:i len:4
 int_shl: dest:i src1:i src2:i len:4
 int_shl_imm: dest:i src1:i len:4
+int_shr: dest:i src1:i src2:i len:4
 int_shr_un: dest:i src1:i src2:i len:4
 int_shr_imm: dest:i src1:i len:4
 int_shr_un_imm: dest:i src1:i len:4
@@ -163,6 +178,7 @@ long_and_imm: dest:i src1:i len:4
 long_or: dest:i src1:i src2:i len:4
 long_xor: dest:i src1:i src2:i len:4
 long_or_imm: dest:i src1:i len:4
+long_shl: dest:i src1:i src2:i len:4
 long_shl_imm: dest:i src1:i len:4
 long_shr_un: dest:i src1:i src2:i len:4
 long_shr_imm: dest:i src1:i len:4

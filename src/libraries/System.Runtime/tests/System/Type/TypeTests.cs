@@ -545,7 +545,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
@@ -964,13 +964,8 @@ namespace System.Tests
             yield return new object[] { typeof(void) };
             yield return new object[] { typeof(object).MakeByRefType() };
             yield return new object[] { typeof(int).MakePointerType() };
-
-            // https://github.com/dotnet/runtime/issues/71095
-            if (!PlatformDetection.IsMonoRuntime)
-            {
-                yield return new object[] { FunctionPointerType() };
-                static unsafe Type FunctionPointerType() => typeof(delegate*<void>);
-            }
+            yield return new object[] { FunctionPointerType() };
+            static unsafe Type FunctionPointerType() => typeof(delegate*<void>);
         }
 
         [Theory]
@@ -1077,7 +1072,7 @@ namespace System.Tests
             };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/861", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89157", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)

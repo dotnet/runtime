@@ -25,7 +25,7 @@ public class WasiTemplateTests : BuildTestBase
     [InlineData("Release")]
     public void ConsoleBuildThenPublish(string config)
     {
-        string id = $"{config}_{Path.GetRandomFileName()}";
+        string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simpleMainWithArgs);
@@ -88,7 +88,7 @@ public class WasiTemplateTests : BuildTestBase
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
     public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking, bool invariantTimezone)
     {
-        string id = $"{config}_{Path.GetRandomFileName()}";
+        string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simpleMainWithArgs);

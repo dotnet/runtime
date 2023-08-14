@@ -5,7 +5,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -125,6 +124,32 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public async Task ValidateOnStart_NamedOptions_ValidatesFailureOnStart_AddOptionsWithValidateOnStart()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddOptions().AddSingleton(new FakeService());
+                services
+                    .AddOptionsWithValidateOnStart<FakeSettings>("named")
+                    .Configure<FakeService>((o, _) =>
+                    {
+                        o.Name = "named";
+                    })
+                    .Validate(o => o.Name == null, "trigger validation failure for named option!");
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
+                {
+                    await host.StartAsync();
+                });
+
+                ValidateFailure<FakeSettings>(error, 1, "trigger validation failure for named option!");
+            }
+        }
+
+        [Fact]
         private async Task ValidateOnStart_AddNamedOptionsMultipleTimesForSameType_BothGetTriggered()
         {
             bool firstOptionsBuilderTriggered = false;
@@ -193,6 +218,61 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
 
             Assert.True(validateCalled);
+        }
+
+        [Fact]
+        private async Task ValidateOnStart_AddEagerValidation_DoesValidationWhenHostStartsWithNoFailure_AddOptionsWithValidateOnStart()
+        {
+            bool validateCalled = false;
+
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                // Adds eager validation using ValidateOnStart
+                services.AddOptionsWithValidateOnStart<ComplexOptions>("correct_configuration")
+                    .Configure(o => o.Boolean = true)
+                    .Validate(o =>
+                    {
+                        validateCalled = true;
+                        return o.Boolean;
+                    }, "correct_configuration");
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            Assert.True(validateCalled);
+        }
+
+        [Fact]
+        private async void CanValidateOptionsEagerly_AddOptionsWithValidateOnStart_IValidateOptions()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+                services.AddOptionsWithValidateOnStart<ComplexOptions, ComplexOptionsValidator>()
+                    .Configure(o => o.Boolean = false));
+
+            using (var host = hostBuilder.Build())
+            {
+                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
+                {
+                    await host.StartAsync();
+                });
+
+                ValidateFailure<ComplexOptions>(error, 1, "Boolean != true");
+            }
+        }
+
+        private class ComplexOptionsValidator : IValidateOptions<ComplexOptions>
+        {
+            public ValidateOptionsResult Validate(string name, ComplexOptions options)
+            {
+                if (options.Boolean == true)
+                {
+                    return ValidateOptionsResult.Success;
+                }
+                return ValidateOptionsResult.Fail("Boolean != true");
+            }
         }
 
         [Fact]

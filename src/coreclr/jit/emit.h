@@ -2054,6 +2054,7 @@ protected:
     unsigned emitGetInsCIargs(instrDesc* id);
 
     inline emitAttr emitGetMemOpSize(instrDesc* id) const;
+    inline emitAttr emitGetBaseMemOpSize(instrDesc*) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -2107,6 +2108,7 @@ protected:
     void emitDispInsAddr(BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
+    void emitDispEmbBroadcastCount(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -2305,9 +2307,18 @@ private:
 #if defined(TARGET_AMD64)
     regMaskTP rbmFltCalleeTrash;
 
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
+    }
+#endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    regMaskTP rbmMskCalleeTrash;
+
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    {
+        return this->rbmMskCalleeTrash;
     }
 #endif // TARGET_AMD64
 
@@ -2713,6 +2724,10 @@ private:
 #ifdef TARGET_X86
     void emitMarkStackLvl(unsigned stackLevel);
 #endif
+
+#if defined(FEATURE_SIMD)
+    void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
+#endif // FEATURE_SIMD
 
     int emitNextRandomNop();
 
@@ -3735,21 +3750,15 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //-----------------------------------------------------------------------------
 // emitGetMemOpSize: Get the memory operand size of instrDesc.
 //
-// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
-// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
-// and a 128-bit input (register or memory).
-// Similarly, vextractf64x4 has a 256-bit output and 128-bit input and vinsertf64x4 the inverse
-// This method is mainly used for such instructions to return the appropriate memory operand
-// size, otherwise returns the regular operand size of the instruction.
+//  Note: there are cases when embedded broadcast is enabled, so the memory operand
+//  size is different from the intrinsic simd size, we will check here if emitter is
+//  emiting a embedded broadcast enabled instruction.
 
 //  Arguments:
 //       id - Instruction descriptor
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-
-    emitAttr    defaultSize = id->idOpSize();
-    instruction ins         = id->idIns();
     if (id->idIsEvexbContext())
     {
         // should have the assumption that Evex.b now stands for the embedded broadcast context.
@@ -3766,6 +3775,31 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
                 unreached();
         }
     }
+    else
+    {
+        return emitGetBaseMemOpSize(id);
+    }
+}
+
+//-----------------------------------------------------------------------------
+// emitGetMemOpSize: Get the memory operand size of instrDesc.
+//
+// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
+// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
+// and a 128-bit input (register or memory).
+// Similarly, vextractf64x4 has a 256-bit output and 128-bit input and vinsertf64x4 the inverse
+// This method is mainly used for such instructions to return the appropriate memory operand
+// size, otherwise returns the regular operand size of the instruction.
+
+//  Arguments:
+//       id - Instruction descriptor
+//
+emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
+{
+
+    emitAttr    defaultSize = id->idOpSize();
+    instruction ins         = id->idIns();
+
     switch (ins)
     {
         case INS_pextrb:

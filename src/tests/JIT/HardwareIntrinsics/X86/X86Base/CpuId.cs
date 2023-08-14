@@ -3,6 +3,7 @@
 //
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -256,9 +257,13 @@ namespace XarchHardwareIntrinsicTest._CpuId
                     }
                 }
 
-                if (isVector512Throttling)
+                if (isAvx512HierarchyDisabled || isVector512Throttling)
                 {
                     preferredVectorByteLength = 256 / 8;
+                }
+                else
+                {
+                    preferredVectorByteLength = 512 / 8;
                 }
             }
 
@@ -366,10 +371,10 @@ namespace XarchHardwareIntrinsicTest._CpuId
             return;
         }
 
-        static bool IsBitIncorrect(int register, int bitNumber, Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
+        static bool IsBitIncorrect(int register, int bitNumber, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
         {
             bool isSupportedByHardware = (register & (1 << bitNumber)) != 0;
-            isHierarchyDisabled |= !GetDotnetEnable(name);
+            isHierarchyDisabled |= (!isSupported || !GetDotnetEnable(name));
 
             if (isSupported)
             {
@@ -408,7 +413,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
             return false;
         }
 
-        static bool IsIncorrect(Type isa, bool isHardwareAccelerated, bool isHierarchyDisabled)
+        static bool IsIncorrect([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type isa, bool isHardwareAccelerated, bool isHierarchyDisabled)
         {
             if (isHardwareAccelerated)
             {

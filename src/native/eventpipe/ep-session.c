@@ -26,6 +26,10 @@ static
 void
 session_create_streaming_thread (EventPipeSession *session);
 
+static
+void
+ep_session_remove_dangling_session_states (EventPipeSession *session);
+
 /*
  * EventPipeSession.
  */
@@ -49,6 +53,8 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 
 	bool success = true;
 	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
+
+	ep_rt_volatile_store_uint32_t (&session->started, 1);
 
 	EP_GCX_PREEMP_ENTER
 		while (ep_session_get_streaming_enabled (session)) {
@@ -203,6 +209,7 @@ ep_session_alloc (
 	instance->session_start_timestamp = ep_perf_timestamp_get ();
 	instance->paused = false;
 	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk ();
+	instance->started = 0;
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -214,6 +221,48 @@ ep_on_error:
 	ep_session_free (instance);
 
 	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+void
+ep_session_remove_dangling_session_states (EventPipeSession *session)
+{
+	ep_return_void_if_nok (session != NULL);
+
+	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
+
+	dn_vector_ptr_custom_init_params_t params = {0, };
+	params.allocator = (dn_allocator_t *)&allocator;
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
+
+	dn_vector_ptr_t threads;
+
+	if (dn_vector_ptr_custom_init (&threads, &params)) {
+		ep_thread_get_threads (&threads);
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
+			if (thread) {
+				EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1);
+				EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
+				if (session_state) {
+					// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
+					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access 
+					// the session from the thread session state. Whenever we terminate a session we check to make sure
+					// we haven't leaked any thread session states.
+					ep_thread_delete_session_state(thread, session);
+				}
+				EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1);
+
+				ep_thread_release (thread);
+			}
+		} DN_VECTOR_PTR_FOREACH_END;
+
+		dn_vector_ptr_dispose (&threads);
+	}
+
+ep_on_exit:
+	return;
+
+ep_on_error:
 	ep_exit_error_handler ();
 }
 
@@ -230,6 +279,8 @@ ep_session_free (EventPipeSession *session)
 
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
+
+	ep_session_remove_dangling_session_states (session);
 
 	ep_rt_object_free (session);
 }
@@ -392,6 +443,9 @@ ep_session_start_streaming (EventPipeSession *session)
 		EP_ASSERT (session->file == NULL);
 		EP_ASSERT (!ep_session_get_streaming_enabled (session));
 	}
+
+	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
+		ep_rt_volatile_store_uint32_t_without_barrier (&session->started, 1);
 
 	ep_requires_lock_held ();
 	return;
@@ -579,6 +633,13 @@ ep_session_resume (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 	session->paused = false;
+}
+
+bool
+ep_session_has_started (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	return ep_rt_volatile_load_uint32_t (&session->started) == 1 ? true : false;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

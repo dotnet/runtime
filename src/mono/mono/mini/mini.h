@@ -1239,9 +1239,9 @@ typedef struct {
 	guint            emulate_long_shift_opts : 1;
 	guint            have_objc_get_selector : 1;
 	guint            have_generalized_imt_trampoline : 1;
-	gboolean         have_op_tailcall_membase : 1;
-	gboolean         have_op_tailcall_reg : 1;
-	gboolean         have_volatile_non_param_register : 1;
+	guint         have_op_tailcall_membase : 1;
+	guint         have_op_tailcall_reg : 1;
+	guint         have_volatile_non_param_register : 1;
 	guint            have_init_mrgctx : 1;
 	guint            gshared_supported : 1;
 	guint            ilp32 : 1;
@@ -2544,15 +2544,19 @@ gpointer mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info);
 gpointer mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+/* Return an arch specific structure with precomputed information for pinvoke calls with signature SIG */
+gpointer mono_arch_get_interp_native_call_info (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 // Moves data (arguments and return vt address) from the InterpFrame to the CallContext so a pinvoke call can be made.
-void mono_arch_set_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+void mono_arch_set_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 // Moves the return value from the InterpFrame to the ccontext, or to the retp (if native code passed the retvt address)
-void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp);
+void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info, gpointer retp);
 // When entering interp from native, this moves the arguments from the ccontext to the InterpFrame. If we have a return
 // vt address, we return it. This ret vt address needs to be passed to mono_arch_set_native_call_context_ret.
-gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 // After the pinvoke call is done, this moves return value from the ccontext to the InterpFrame.
-void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
+/* Free the structure returned by mono_arch_get_interp_native_call_info (NULL, sig) */
+void mono_arch_free_interp_native_call_info (gpointer call_info);
 #endif
 
 /*New interruption machinery */

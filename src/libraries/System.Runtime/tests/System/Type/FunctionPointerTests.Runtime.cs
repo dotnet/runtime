@@ -12,7 +12,7 @@ namespace System.Tests.Types
     public partial class FunctionPointerTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
         public static unsafe void CompileTimeIdentity_Managed()
         {
             object obj = new delegate*<int>[1];
@@ -27,7 +27,7 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
         public static unsafe void CompileTimeIdentity_ManagedWithMods()
         {
             object obj = new delegate*<ref int, void>[1];
@@ -42,7 +42,7 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
         public static unsafe void CompileTimeIdentity_Unmanaged()
         {
             object obj = new delegate* unmanaged[MemberFunction]<void>[1];
@@ -59,7 +59,7 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
         public static unsafe void CompileTimeIdentity_UnmanagedIsPartOfIdentity()
         {
             object obj = new delegate* unmanaged[MemberFunction]<void>[1];

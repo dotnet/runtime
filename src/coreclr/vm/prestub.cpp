@@ -372,6 +372,15 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         shouldTier = false;
     }
 #endif // FEATURE_TIERED_COMPILATION
+    NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+    if (shouldTier && !nativeCodeVersion.IsDefaultVersion())
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        if (pConfig->GetCodeVersion().GetILCodeVersion().IsDeoptimized())
+        {
+            shouldTier = false;
+        }
+    }
 
     if (pConfig->MayUsePrecompiledCode())
     {
@@ -1257,13 +1266,12 @@ namespace
 
         MethodDesc* targetMaybe = NULL;
 
-        // Following the iteration pattern found in MemberLoader::FindMethod().
-        // Reverse order is recommended - see comments in MemberLoader::FindMethod().
-        MethodTable::MethodIterator iter(targetType.AsMethodTable());
-        iter.MoveToEnd();
-        for (; iter.IsValid(); iter.Prev())
+        // Following a similar iteration pattern found in MemberLoader::FindMethod().
+        // However, we are only operating on the current type not walking the type hierarchy.
+        MethodTable::IntroducedMethodIterator iter(targetType.AsMethodTable());
+        for (; iter.IsValid(); iter.Next())
         {
-            MethodDesc* curr = iter.GetDeclMethodDesc();
+            MethodDesc* curr = iter.GetMethodDesc();
 
             // Check the target and current method match static/instance state.
             if (cxt.IsTargetStatic != (!!curr->IsStatic()))
@@ -1274,7 +1282,8 @@ namespace
                 continue;
 
             // Check signature
-            MetaSig::CompareState state{};
+            TokenPairList list { nullptr };
+            MetaSig::CompareState state{ &list };
             state.IgnoreCustomModifiers = ignoreCustomModifiers;
             if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;
@@ -1492,6 +1501,15 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         // Method access requires a target type.
         if (firstArgType.IsNull())
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
+        // If the non-static method access is for a
+        // value type, the instance must be byref.
+        if (kind == UnsafeAccessorKind::Method
+            && firstArgType.IsValueType()
+            && !firstArgType.IsByRef())
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+        }
 
         context.TargetType = ValidateTargetType(firstArgType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;

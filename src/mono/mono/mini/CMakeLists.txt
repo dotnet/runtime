@@ -19,7 +19,7 @@ if(HOST_DARWIN)
   if(CMAKE_SYSTEM_VARIANT STREQUAL "maccatalyst")
     set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
-elseif(HOST_IOS)
+elseif(HOST_IOS OR HOST_TVOS)
 set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
 elseif(HOST_ANDROID)
 set(OS_LIBS m dl log)
@@ -67,17 +67,24 @@ if(HAVE_SYS_ICU)
       entrypoints.c
       ${pal_icushim_sources_base})
 
+  addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
+
   if (TARGET_DARWIN)
-    set(icu_shim_sources_base
-        ${icu_shim_sources_base}
+    set(icu_shim_darwin_sources_base
         pal_locale.m
         pal_collation.m
-        pal_casing.m)
+        pal_casing.m
+        pal_calendarData.m)
+
+    addprefix(icu_shim_darwin_sources "${ICU_SHIM_PATH}" "${icu_shim_darwin_sources_base}")
+    set(icu_shim_sources ${icu_shim_sources} ${icu_shim_darwin_sources})
   endif()
 
-  addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I\"${ICU_INCLUDEDIR}\" -I\"${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native/\" -I\"${CLR_SRC_NATIVE_DIR}/libs/Common/\" ${ICU_FLAGS}")
+  if(TARGET_DARWIN)
+    set_property(SOURCE ${icu_shim_darwin_sources} APPEND_STRING PROPERTY COMPILE_FLAGS " -fobjc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
+  endif()
   if(TARGET_WIN32)
       set_source_files_properties(${icu_shim_sources} PROPERTIES LANGUAGE CXX)
   endif()
@@ -357,8 +364,18 @@ endif()
 
 set(monosgen-sources "${mini_sources};${ZLIB_SOURCES}")
 
+if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
+  add_library(monosgen-objects_shared OBJECT "${monosgen-sources}")
+  target_compile_definitions(monosgen-objects_shared PRIVATE -DMONO_DLL_EXPORT)
+  target_link_libraries (monosgen-objects_shared PRIVATE monoapi eglib_api utils_objects_shared sgen_objects_shared metadata_objects_shared)
+endif()
+
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
 target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects)
+if(NOT HOST_WIN32)
+    target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
+endif()
+
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 
@@ -372,12 +389,11 @@ if(NOT DISABLE_LIBS)
 endif()
 if(NOT DISABLE_SHARED_LIBS)
   if(HOST_WIN32)
-    add_library(monosgen-shared SHARED "mini-windows-dllmain.c;${monosgen-sources}")
-    target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
+    add_library(monosgen-shared SHARED "mini-windows-dllmain.c" $<TARGET_OBJECTS:monosgen-objects_shared>)
   else()
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
-    target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
   endif()
+  target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
     target_link_libraries(monosgen-shared PRIVATE ucontext)
@@ -386,7 +402,11 @@ if(NOT DISABLE_SHARED_LIBS)
   if(MONO_SET_RPATH_ORIGIN)
     set_target_properties(monosgen-shared PROPERTIES INSTALL_RPATH "$ORIGIN")
   endif()
-  target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+  if(HOST_WIN32)
+    target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects_shared sgen_objects_shared metadata_objects_shared)
+  else()
+    target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+  endif()
   if(HAVE_ICU_SHIM)
     target_link_libraries(monosgen-shared PRIVATE icu_shim_objects)
   endif()
