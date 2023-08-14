@@ -11040,7 +11040,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             return andnNode;
         }
-	default:
+        default:
         {
             break;
         }
