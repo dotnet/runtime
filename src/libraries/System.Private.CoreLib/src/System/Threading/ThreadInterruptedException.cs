@@ -26,13 +26,25 @@ namespace System.Threading
         }
 
         public ThreadInterruptedException(string? message)
-            : base(message)
+            : base(message ??
+#if CORECLR
+            GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted)
+#else
+            SR.Threading_ThreadInterrupted
+#endif
+            )
         {
             HResult = HResults.COR_E_THREADINTERRUPTED;
         }
 
         public ThreadInterruptedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ??
+#if CORECLR
+            GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted)
+#else
+            SR.Threading_ThreadInterrupted
+#endif
+            , innerException)
         {
             HResult = HResults.COR_E_THREADINTERRUPTED;
         }

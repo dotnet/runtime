@@ -24,19 +24,19 @@ namespace System.Runtime.InteropServices
         }
 
         public COMException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_COMException)
         {
             HResult = HResults.E_FAIL;
         }
 
         public COMException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_COMException, inner)
         {
             HResult = HResults.E_FAIL;
         }
 
         public COMException(string? message, int errorCode)
-            : base(message)
+            : base(message ?? SR.Arg_COMException)
         {
             HResult = errorCode;
         }
@@ -54,9 +54,9 @@ namespace System.Runtime.InteropServices
             s.Append($"{GetType()} (0x{HResult:X8})");
 
             string message = Message;
-            if (!string.IsNullOrEmpty(message))
+            if (!string.IsNullOrEmpty(message ?? SR.Arg_COMException))
             {
-                s.Append(": ").Append(message);
+                s.Append(": ").Append(message ?? SR.Arg_COMException);
             }
 
             Exception? innerException = InnerException;

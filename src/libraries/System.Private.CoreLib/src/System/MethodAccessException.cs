@@ -21,13 +21,13 @@ namespace System
         }
 
         public MethodAccessException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MethodAccessException)
         {
             HResult = HResults.COR_E_METHODACCESS;
         }
 
         public MethodAccessException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MethodAccessException, inner)
         {
             HResult = HResults.COR_E_METHODACCESS;
         }

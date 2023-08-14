@@ -21,19 +21,19 @@ namespace System.Runtime.InteropServices
         }
 
         public ExternalException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_ExternalException)
         {
             HResult = HResults.E_FAIL;
         }
 
         public ExternalException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_ExternalException, inner)
         {
             HResult = HResults.E_FAIL;
         }
 
         public ExternalException(string? message, int errorCode)
-            : base(message)
+            : base(message ?? SR.Arg_ExternalException)
         {
             HResult = errorCode;
         }
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices
 
             string s = $"{GetType()} (0x{HResult:X8})";
 
-            if (!string.IsNullOrEmpty(message))
+            if (!string.IsNullOrEmpty(message ?? SR.Arg_ExternalException))
             {
                 s += ": " + message;
             }

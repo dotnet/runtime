@@ -18,19 +18,19 @@ namespace System.IO
         }
 
         public IOException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_IOException)
         {
             HResult = HResults.COR_E_IO;
         }
 
         public IOException(string? message, int hresult)
-            : base(message)
+            : base(message ?? SR.Arg_IOException)
         {
             HResult = hresult;
         }
 
         public IOException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_IOException, innerException)
         {
             HResult = HResults.COR_E_IO;
         }

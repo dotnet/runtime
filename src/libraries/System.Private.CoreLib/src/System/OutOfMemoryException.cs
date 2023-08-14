@@ -26,13 +26,25 @@ namespace System
         }
 
         public OutOfMemoryException(string? message)
-            : base(message)
+            : base(message ??
+#if CORECLR
+            GetMessageFromNativeResources(ExceptionMessageKind.OutOfMemory)
+#else
+            SR.Arg_OutOfMemoryException
+#endif
+            )
         {
             HResult = HResults.COR_E_OUTOFMEMORY;
         }
 
         public OutOfMemoryException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ??
+#if CORECLR
+            GetMessageFromNativeResources(ExceptionMessageKind.OutOfMemory)
+#else
+            SR.Arg_OutOfMemoryException
+#endif
+            , innerException)
         {
             HResult = HResults.COR_E_OUTOFMEMORY;
         }
