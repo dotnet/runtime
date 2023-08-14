@@ -283,7 +283,7 @@ namespace System
         {
             if (typeof(T) == typeof(char))
             {
-                return AsSpan().ToString();
+                return this.AsSpan().ToString();
             }
 
             return $"System.ArraySegment<{typeof(T).Name}>[{_count}]";
