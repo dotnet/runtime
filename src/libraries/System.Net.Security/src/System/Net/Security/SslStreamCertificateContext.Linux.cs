@@ -228,6 +228,7 @@ namespace System.Net.Security
                     {
                         if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuer, out DateTimeOffset expiration))
                         {
+                            ret = null;
                             continue;
                         }
 
