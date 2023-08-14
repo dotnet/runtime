@@ -526,7 +526,7 @@ namespace Microsoft.Extensions.Http
 
             serviceProvider.Dispose();
 
-            Assert.True(factory.DisposeCalled);
+            Assert.True(factory.IsDisposed);
             Assert.False(factory.CleanupTimerActive);
         }
 
@@ -609,17 +609,7 @@ namespace Microsoft.Extensions.Http
                 : base(services, scopeFactory, optionsMonitor, filters) { }
 
             public bool CleanupTimerActive => _cleanupTimer != null;
-
-            public bool DisposeCalled { get; private set; }
-
-            protected override void Dispose(bool disposing)
-            {
-                base.Dispose(disposing);
-                if (disposing)
-                {
-                    DisposeCalled = true;
-                }
-            }
+            public bool IsDisposed => _disposed;
         }
 
         private class DisposeTrackingHandler : DelegatingHandler

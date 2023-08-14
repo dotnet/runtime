@@ -253,26 +253,14 @@ namespace Microsoft.Extensions.Http
         // protected for tests
         protected bool _disposed;
 
-        protected virtual void Dispose(bool disposing)
+        public void Dispose()
         {
             if (_disposed)
             {
                 return;
             }
             _disposed = true;
-
             StopCleanupTimer();
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        ~DefaultHttpClientFactory()
-        {
-            Dispose(false);
         }
 
         private void ThrowIfDisposed()
