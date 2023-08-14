@@ -649,7 +649,7 @@ namespace Tests.System
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TaskFactoryData))]
-        public async void TestDelayTaskContinuation(ITestTaskFactory taskFactory)
+        public async Task TestDelayTaskContinuation(ITestTaskFactory taskFactory)
         {
             //
             // Test time expiration and validate continuation is called synchronously.
