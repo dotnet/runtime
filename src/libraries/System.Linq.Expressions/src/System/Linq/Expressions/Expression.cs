@@ -24,7 +24,7 @@ namespace System.Linq.Expressions
         internal const string CallSiteRequiresDynamicCode = "Creating a call site may require dynamic code generation.";
         internal const string LambdaCompilerRequiresDynamicCode = "Compiling a lambda expression requires dynamic code generation.";
         internal const string StrongBoxRequiresDynamicCode = "Creating a StrongBox requires dynamic code generation.";
-        internal const string NewArrayRequiresDynamicCode = "Creating arrays at runtime requires dynamic code generation. This warning can be suppressed if there are no new array nodes in the expression tree.";
+        internal const string NewArrayRequiresDynamicCode = "Creating arrays at runtime requires dynamic code generation.";
 
         private static readonly CacheDict<Type, MethodInfo> s_lambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
         private static volatile CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? s_lambdaFactories;

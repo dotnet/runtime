@@ -134,7 +134,6 @@ namespace System.Linq.Expressions
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public Delegate Compile()
         {
             if (CanCompileToIL)
@@ -156,7 +155,6 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="preferInterpretation">A <see cref="bool"/> that indicates if the expression should be compiled to an interpreted form, if available.</param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public Delegate Compile(bool preferInterpretation)
         {
             if (CanInterpret && preferInterpretation)
@@ -190,7 +188,6 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="debugInfoGenerator">Debugging information generator used by the compiler to mark sequence points and annotate local variables.</param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public Delegate Compile(DebugInfoGenerator debugInfoGenerator)
         {
             return Compile();
@@ -220,7 +217,6 @@ namespace System.Linq.Expressions
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public new TDelegate Compile()
         {
             if (CanCompileToIL)
@@ -242,7 +238,6 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="preferInterpretation">A <see cref="bool"/> that indicates if the expression should be compiled to an interpreted form, if available.</param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public new TDelegate Compile(bool preferInterpretation)
         {
             if (CanInterpret && preferInterpretation)
@@ -337,7 +332,6 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="debugInfoGenerator">Debugging information generator used by the compiler to mark sequence points and annotate local variables.</param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public new TDelegate Compile(DebugInfoGenerator debugInfoGenerator)
         {
             return Compile();

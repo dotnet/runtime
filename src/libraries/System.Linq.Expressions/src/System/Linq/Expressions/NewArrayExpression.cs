@@ -207,7 +207,7 @@ namespace System.Linq.Expressions
         /// <param name="type">A <see cref="System.Type"/> that represents the element type of the array.</param>
         /// <param name="bounds">An <see cref="IEnumerable{T}"/> that contains <see cref="Expression"/> objects to use to populate the <see cref="NewArrayExpression.Expressions"/> collection.</param>
         /// <returns>A <see cref="NewArrayExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NewArrayBounds"/> and the <see cref="NewArrayExpression.Expressions"/> property set to the specified value.</returns>
-        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public static NewArrayExpression NewArrayBounds(Type type, IEnumerable<Expression> bounds)
         {
             ArgumentNullException.ThrowIfNull(type);
