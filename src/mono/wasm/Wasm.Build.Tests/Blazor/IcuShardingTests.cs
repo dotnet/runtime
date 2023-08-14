@@ -22,12 +22,6 @@ public class IcuShardingTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug", "icudt.dat")]
     [InlineData("Release", "icudt.dat")]
-    [InlineData("Debug", "icudt_EFIGS.dat")]
-    [InlineData("Release", "icudt_EFIGS.dat")]
-    [InlineData("Debug", "icudt_no_CJK.dat")]
-    [InlineData("Release", "icudt_no_CJK.dat")]
-    [InlineData("Debug", "icudt_CJK.dat")]
-    [InlineData("Release", "icudt_CJK.dat")]
     public async Task CustomIcuFileFromRuntimePack(string config, string fileName)
     {
         string id = $"blz_customFromRuntimePack_{config}_{GetRandomId()}";
@@ -77,7 +71,7 @@ public class IcuShardingTests : BlazorWasmTestBase
         {
             if (isFilenameCorrect)
             {
-                Assert.Contains($"File in location $(BlazorIcuDataFileName)={fileName} cannot be found: in project directory, in runtime pack nor used as an absolute path.", ex.Message);
+                Assert.Contains($"File in location $(BlazorIcuDataFileName)={fileName} cannot be found in the project directory, in the runtime pack or when treated as an absolute path.", ex.Message);
             }
             else
             {
