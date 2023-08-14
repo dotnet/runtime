@@ -19,8 +19,23 @@ namespace System.Dynamic.Utils
         // with the Reflection.Emit statics below.
         private static class DynamicDelegateLightup
         {
-            public static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegate { get; }
-                = CreateObjectArrayDelegateInternal();
+            public static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegate
+            {
+                get
+                {
+                    // CreateObjectArrayDelegateInternal is only supported with NativeAOT which always expects CanEmitObjectArrayDelegate to be false.
+                    // Additionally, this check guards static constructor of trying to resolve 'Internal.Runtime.Augments.DynamicDelegateAugments'
+                    // on runtimes which do not support this private API, which would otherwise cause TypeInitializationException.
+                    if (!CanEmitObjectArrayDelegate)
+                    {
+                        return CreateObjectArrayDelegateInternal();
+                    }
+                    else
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+            }
 
             private static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegateInternal()
                 => Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
