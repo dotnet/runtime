@@ -145,7 +145,7 @@ mono_set_assemblies_path (const char* path)
 		while (len > 0 && tmp[len - 1] == '\\') {
 			tmp[len - 1] = '\0'; // Remove the backslash
 			if (*(split + 1)) {
-				tmp = g_strconcat (tmp, *(split + 1), NULL);
+				tmp = g_strconcat (tmp, ":", *(split + 1), NULL);
 				g_free (*(split + 1)); // Free the next string since it's appended now
 				*(split + 1) = NULL; // Mark it as null
 				split++; // Skip the next string
