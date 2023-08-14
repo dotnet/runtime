@@ -3583,20 +3583,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/LargeMemory/API/gc/gettotalmemory/**">
             <Issue>System.ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')</Issue>
         </ExcludeList>
-
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
-            <Issue>System.DllNotFoundException: ThisCallNative</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Span/SpanBench/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
         </ExcludeList>

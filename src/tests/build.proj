@@ -490,7 +490,7 @@
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
-      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != '' and '$(TargetsAppleMobile)' != 'true'" />
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
@@ -503,6 +503,7 @@
     </PropertyGroup>
     <ItemGroup>
       <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);@(OutOfProcessTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
+      <LegacyRunnableTestPaths Condition="'$(TargetsAppleMobile)' == 'true'" Include="@(MergedRunnableTestPaths)" />
     </ItemGroup>
   </Target>
 
