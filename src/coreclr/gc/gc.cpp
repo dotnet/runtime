@@ -48310,15 +48310,17 @@ HRESULT GCHeap::Initialize()
             // because ro segs are supposed to always be out of range
             // for regions.
             uint8_t* seg_mem = new (nothrow) uint8_t [ro_seg_size];
-            heap_segment* ro_seg = (heap_segment*) seg_mem;
-            uint8_t* start = seg_mem + gc_heap::segment_info_size;
-            heap_segment_mem (ro_seg) = start;
-            heap_segment_used (ro_seg) = start;
-            heap_segment_reserved (ro_seg) = seg_mem + ro_seg_size;
-            heap_segment_committed (ro_seg) = heap_segment_reserved (ro_seg);
-            gc_heap::init_heap_segment (ro_seg, hp, seg_mem, ro_seg_size, 2);
-            ro_seg->flags = heap_segment_flags_readonly;
-            hp->insert_ro_segment (ro_seg);
+            segment_info seg_info;
+            seg_info.pvMem = seg_mem;
+            seg_info.ibFirstObject = sizeof(ObjHeader);
+            seg_info.ibAllocated = ro_seg_size;
+            seg_info.ibCommit = seg_info.ibAllocated;
+            seg_info.ibReserved = seg_info.ibAllocated;
+
+            if (!RegisterFrozenSegment(&seg_info))
+            {
+                hr = E_FAIL;
+            }
         }
 #endif //STRESS_REGIONS && FEATURE_BASICFREEZE
     }
