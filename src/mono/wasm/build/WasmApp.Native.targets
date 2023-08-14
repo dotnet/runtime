@@ -22,12 +22,15 @@
       $(_BeforeWasmBuildAppDependsOn);
       _SetupEmscripten;
       _SetWasmBuildNativeDefaults;
-      _SetWasmNativeStripDefault
+      _SetWasmNativeStripDefault;
+      _ReadEmccProps
     </_BeforeWasmBuildAppDependsOn>
 
     <_EmccDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128</_EmccDefaultFlags>
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
+    <!-- compare versions only when emsdk is not from the workload -->
+    <_WasmStrictVersionMatch Condition="'$(WasmUseEMSDK_PATH)' == 'true'">true</_WasmStrictVersionMatch>
   </PropertyGroup>
 
   <ItemGroup>
@@ -182,6 +185,7 @@
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
       <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke.g.h</_WasmInterpToNativeTablePath>
+      <_WasmM2NCachePath>$(_WasmIntermediateOutputPath)m2n_cache.txt</_WasmM2NCachePath>
       <_WasmPInvokeHPath>$(_WasmRuntimePackIncludeDir)wasm\pinvoke.h</_WasmPInvokeHPath>
       <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
       <DisableParallelAot Condition="'$(DisableParallelAot)' == ''">false</DisableParallelAot>
@@ -332,7 +336,8 @@
       IcallOutputPath="$(_WasmICallTablePath)"
       PInvokeModules="@(_WasmPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
-      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)">
+      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
+      CacheFilePath="$(_WasmM2NCachePath)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
@@ -349,7 +354,6 @@
       <FileWrites Include="$(_EmccCompileRsp)" />
     </ItemGroup>
 
-    <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
     <ItemGroup>
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" Dependencies="%(_WasmRuntimePackSrcFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileRsp)" />
@@ -359,6 +363,7 @@
           Arguments='"@$(_EmccDefaultFlagsRsp)" $(_EmccDefaultFlags) "@$(_EmccCompileRsp)"'
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
+          MessageToIndicateCompiling="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..."
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
@@ -375,12 +380,12 @@
       <_BitCodeFile Dependencies="%(_BitCodeFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)" />
     </ItemGroup>
 
-    <Message Text="Compiling assembly bitcode files with $(EmccLinkOptimizationFlag) ..." Importance="High" Condition="@(_BitCodeFile->Count()) > 0" />
     <EmccCompile
           SourceFiles="@(_BitCodeFile)"
           Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; $(_EmccDefaultFlags) &quot;@$(_EmccCompileBitcodeRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
+          MessageToIndicateCompiling="Compiling assembly bitcode files with $(EmccLinkOptimizationFlag) ..."
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
@@ -535,15 +540,12 @@
   <Target Name="_GenerateDriverGenC" Condition="'$(_WasmShouldAOT)' != 'true'">
   </Target>
 
-  <Target Name="_CheckEmccIsExpectedVersion">
-    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
-           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
-
+  <Target Name="_ReadEmccProps" Condition="'$(_IsEMSDKMissing)' != 'true'">
     <ReadEmccProps JsonFilePath="$(_WasmRuntimePackSrcDir)emcc-props.json">
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
-      <Output TaskParameter="WasmOptConfigurationFlags" ItemName= "_WasmOptConfigurationFlagsItems" />
-      <Output TaskParameter="EmccDefaultExportedFunctions" ItemName= "EmccExportedFunction" />
-      <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName= "EmccExportedRuntimeMethod" />
+      <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_WasmOptConfigurationFlagsItems" />
+      <Output TaskParameter="EmccDefaultExportedFunctions" ItemName="EmccExportedFunction" />
+      <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName="EmccExportedRuntimeMethod" />
     </ReadEmccProps>
 
     <CreateProperty Value="%(_EmccPropItems.Value)">
@@ -553,7 +555,11 @@
     <CreateProperty Value="%(_WasmOptConfigurationFlagsItems.Value)">
       <Output TaskParameter="Value" PropertyName="%(_WasmOptConfigurationFlagsItems.Identity)" />
     </CreateProperty>
+  </Target>
 
+  <Target Name="_CheckEmccIsExpectedVersion" Condition="'$(_WasmStrictVersionMatch)' == 'true'">
+    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
     <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
 
@@ -585,10 +591,8 @@
       <_VersionMismatchMessage>Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures.</_VersionMismatchMessage>
     </PropertyGroup>
 
-    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)' and '$(_WasmStrictVersionMatch)' != 'true'"
-             Text="$(_VersionMismatchMessage)" />
-    <Error Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)' and '$(_WasmStrictVersionMatch)' == 'true'"
-           Text="$(_VersionMismatchMessage)" />
+    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'" Text="$(_VersionMismatchMessage)" />
+    <Error Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'" Text="$(_VersionMismatchMessage)" />
   </Target>
 
   <!--
