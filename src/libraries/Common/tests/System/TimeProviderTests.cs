@@ -649,7 +649,7 @@ namespace Tests.System
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TaskFactoryData))]
-        public void TestDelayTaskContinuation(ITestTaskFactory taskFactory)
+        public async void TestDelayTaskContinuation(ITestTaskFactory taskFactory)
         {
             //
             // Test time expiration and validate continuation is called synchronously.
@@ -673,14 +673,30 @@ namespace Tests.System
             manualTimeProvider = new ManualTimeProvider();
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            Task task = Continuation(manualTimeProvider, cts.Token, () => callbackCount++);
+            var tl = new ThreadLocal<int>();
+            tl.Value = 10;
+            int t1Value = 0;
+
+            Task task = Continuation(manualTimeProvider, cts.Token, () =>  t1Value = tl.Value);
             cts.Cancel();
 
-            Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
+            // rest the thread local value as the continuation callback could end up running on the this thread pool thread.
+            tl.Value = 0;
+            await task;
+
+            Assert.NotEqual(10, t1Value);
 
             async Task Continuation(TimeProvider timeProvider, CancellationToken token, Action callback)
             {
-                await taskFactory.Delay(timeProvider, TimeSpan.FromSeconds(10), token);
+                try
+                {
+                    await taskFactory.Delay(timeProvider, TimeSpan.FromSeconds(10), token);
+                }
+                catch (TaskCanceledException)
+                {
+                    // Ignore
+                }
+
                 callback();
             }
         }
