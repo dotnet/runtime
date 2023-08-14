@@ -386,6 +386,9 @@ static const uint32_t BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE =
 #define GC_TYPE_NGC 0
 #define GC_ROOT_FLAGS_NONE 0
 #define GC_ROOT_FLAGS_PINNING 1
+#define GC_ROOT_FLAGS_WEAKREF 2
+#define GC_ROOT_FLAGS_INTERIOR 4
+#define GC_ROOT_FLAGS_REFCOUNTED 8
 #define GC_ROOT_KIND_STACK 0
 #define GC_ROOT_KIND_FINALIZER 1
 #define GC_ROOT_KIND_HANDLE 2
@@ -3981,6 +3984,11 @@ fire_gc_event_bulk_root_edge (
 			break;
 		case MONO_ROOT_SOURCE_HANDLE :
 			root_kind = GC_ROOT_KIND_HANDLE;
+			root_id = address;
+			break;
+		case MONO_ROOT_SOURCE_TOGGLEREF :
+			root_kind = GC_ROOT_KIND_HANDLE;
+			root_flags = GC_ROOT_FLAGS_REFCOUNTED;
 			root_id = address;
 			break;
 		default :
