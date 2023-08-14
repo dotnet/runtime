@@ -2877,7 +2877,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     {
                         impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op, CHECK_SPILL_ALL);
                     }
-                    JITDUMP("\n Importing BOX; BR_TRUE/FALSE as %sconstant\n")
+                    JITDUMP("\n Importing BOX; BR_TRUE/FALSE as constant\n")
                     impPushOnStack(gtNewTrue(), typeInfo(TYP_INT));
                     return 0;
                 }
