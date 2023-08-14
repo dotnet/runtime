@@ -680,11 +680,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     TypeCode = ElementType.Char;
                     break;
                 case ConstantTypeCode.Byte:
-                    Value = (int)value[0];
+                    Value = (uint)value[0];
                     TypeCode = ElementType.U1;
                     break;
                 case ConstantTypeCode.SByte:
-                    Value = (uint)value[0];
+                    Value = (int)value[0];
                     TypeCode = ElementType.I1;
                     break;
                 case ConstantTypeCode.Int16:
