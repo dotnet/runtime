@@ -680,7 +680,7 @@ namespace Tests.System
             Task task = Continuation(manualTimeProvider, cts.Token, () =>  t1Value = tl.Value);
             cts.Cancel();
 
-            // rest the thread local value as the continuation callback could end up running on the this thread pool thread.
+            // reset the thread local value as the continuation callback could end up running on this thread pool thread.
             tl.Value = 0;
             await task;
 
