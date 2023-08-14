@@ -918,13 +918,7 @@ namespace ILCompiler
 
             static bool ComputeInstantiationTypeVersionsWithCode(Func<TypeDesc, bool> versionsWithTypePredicate, TypeDesc type)
             {
-                if (type == type.Context.CanonType)
-                    return true;
-
-                if (versionsWithTypePredicate(type))
-                    return true;
-
-                return false;
+                return type == type.Context.CanonType || versionsWithTypePredicate(type);
             }
         }
 
