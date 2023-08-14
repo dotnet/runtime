@@ -35,7 +35,7 @@
          test depends on. Merged Test Groups don't like separate apps being built
          together with the test projects. -->
 
-    <RestoreProjects Include="Common\HelloWorld\HelloWorld.csproj" />
+    <!-- <RestoreProjects Include="Common\HelloWorld\HelloWorld.csproj" /> -->
 
     <RestoreProjects Include="Common\XUnitLogChecker\XUnitLogChecker.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperGenerator\XUnitWrapperGenerator.csproj" />
@@ -623,9 +623,9 @@
 
     <!-- Same as before, putting this here just for testing and development purposes. -->
     <!-- Explanation is on this file's Line 32-36. -->
-    <MSBuild
-      Projects="Common/HelloWorld/HelloWorld.csproj"
-      Targets="Build" />
+    <!-- <MSBuild -->
+    <!--   Projects="Common/HelloWorld/HelloWorld.csproj" -->
+    <!--   Targets="Build" /> -->
 
     <MSBuild
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
