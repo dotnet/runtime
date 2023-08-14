@@ -641,6 +641,69 @@ namespace Tests.System
             }
         }
 
+        public static IEnumerable<object[]> TaskFactoryData()
+        {
+            yield return new object[] { taskFactory };
+
+#if TESTEXTENSIONS
+            yield return new object[] { extensionsTaskFactory };
+#endif // TESTEXTENSIONS
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(TaskFactoryData))]
+        public async Task TestDelayTaskContinuation(ITestTaskFactory taskFactory)
+        {
+            //
+            // Test time expiration and validate continuation is called synchronously.
+            //
+
+            ManualTimeProvider manualTimeProvider = new ManualTimeProvider();
+            int callbackCount = 0;
+
+            _ = Continuation(manualTimeProvider, default, () => callbackCount++);
+
+             Assert.NotNull(manualTimeProvider.Timer);
+             manualTimeProvider.Timer.Fire();
+
+            // Delay should be completed and the continuation should be called synchronously.
+            Assert.Equal(1, callbackCount);
+
+            //
+            // Test cancellation and validate continuation is called asynchronously.
+            //
+
+            manualTimeProvider = new ManualTimeProvider();
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            var tl = new ThreadLocal<int>();
+            tl.Value = 10;
+            int t1Value = 0;
+
+            Task task = Continuation(manualTimeProvider, cts.Token, () =>  t1Value = tl.Value);
+            cts.Cancel();
+
+            // reset the thread local value as the continuation callback could end up running on this thread pool thread.
+            tl.Value = 0;
+            await task;
+
+            Assert.NotEqual(10, t1Value);
+
+            async Task Continuation(TimeProvider timeProvider, CancellationToken token, Action callback)
+            {
+                try
+                {
+                    await taskFactory.Delay(timeProvider, TimeSpan.FromSeconds(10), token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Ignore
+                }
+
+                callback();
+            }
+        }
+
         [Fact]
         // 1- Creates the CTS with a delay that we control via the time provider.
         // 2- Disposes the CTS.

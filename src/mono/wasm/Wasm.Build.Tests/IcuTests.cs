@@ -68,7 +68,7 @@ public class IcuTests : IcuTestsBase
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{s_customIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{CustomIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
         string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         string programText = GetProgramText(testedLocales);
@@ -79,7 +79,7 @@ public class IcuTests : IcuTestsBase
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                             GlobalizationMode: fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.PredefinedIcu,
-                            PredefinedIcudt: fullIcu ? "" : s_customIcuPath));
+                            PredefinedIcudt: fullIcu ? "" : CustomIcuPath));
         if (fullIcu)
             Assert.Contains("$(WasmIcuDataFileName) has no effect when $(WasmIncludeFullIcuData) is set to true.", output);
 

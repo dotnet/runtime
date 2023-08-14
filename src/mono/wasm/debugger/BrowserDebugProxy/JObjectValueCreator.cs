@@ -365,7 +365,7 @@ internal sealed class JObjectValueCreator
     public bool TryGetValueTypeById(int valueTypeId, out ValueTypeClass vt) => _valueTypes.TryGetValue(valueTypeId, out vt);
     public PointerValue GetPointerValue(int pointerId) => _pointerValues.TryGetValue(pointerId, out PointerValue pv) ? pv : null;
 
-    private static JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", value.ToString(), writable: true);
+    private static JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", value.ToString(), writable: true, className: typeof(T).Name);
 
     private static JObject CreateJObjectForChar(int value)
     {

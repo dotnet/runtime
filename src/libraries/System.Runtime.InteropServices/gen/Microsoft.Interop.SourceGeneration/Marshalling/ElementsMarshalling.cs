@@ -34,7 +34,8 @@ namespace Microsoft.Interop
         /// &lt; GetUnmanagedValuesDestination &gt;.Clear();
         /// </code>
         /// </summary>
-        public StatementSyntax GenerateClearUnmanagedValuesDestination(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateClearUnmanagedDestination(TypePositionInfo info, StubCodeContext context)
+
         {
             // <GetUnmanagedValuesDestination>.Clear();
             return MethodInvocationStatement(
