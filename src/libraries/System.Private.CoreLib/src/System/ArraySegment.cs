@@ -21,7 +21,7 @@ namespace System
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     [DebuggerDisplay("{DebuggerToString(),nq}")]
-    [DebuggerTypeProxy(typeof(ArraySegmentDebugView<>))]
+    [DebuggerTypeProxy(typeof(ArraySegmentDebugView))]
 #pragma warning disable CA1066 // adding IEquatable<T> implementation could change semantics of code like that in xunit that queries for IEquatable vs enumerating contents
     public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
 #pragma warning restore CA1066
@@ -283,23 +283,16 @@ namespace System
         {
             if (typeof(T) == typeof(char))
             {
-                return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _array![_offset]), _count));
+                return AsSpan().ToString();
             }
 
             return $"System.ArraySegment<{typeof(T).Name}>[{_count}]";
         }
 
-        private sealed class ArraySegmentDebugView<U>
+        private sealed class ArraySegmentDebugView(ArraySegment<T> array)
         {
-            private readonly U[] _array;
-
-            public ArraySegmentDebugView(ArraySegment<U> arraySegments)
-            {
-                _array = arraySegments.ToArray();
-            }
-
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public U[] Items => _array;
+            public T[] Items => array.AsSpan().ToArray();
         }
 
         public struct Enumerator : IEnumerator<T>
