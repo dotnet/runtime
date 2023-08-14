@@ -91,23 +91,14 @@ namespace System.Net.Http
 
         private sealed class HttpRequestOptionsDebugView(HttpRequestOptions options)
         {
-            private readonly Dictionary<string, object?> _collection = options.Options;
-
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePair<string, string?>[] Items
+            public KeyValuePair<string, object?>[] Items
             {
                 get
                 {
-                    var kvpArr = new KeyValuePair<string, string?>[_collection.Count];
-                    int i = 0;
-
-                    foreach (var kvp in _collection)
-                    {
-                        kvpArr[i] = new KeyValuePair<string, string?>(kvp.Key, kvp.Value?.ToString());
-                        i++;
-                    }
-
-                    return kvpArr;
+                    var items = new KeyValuePair<string, object?>[options.Count];
+                    options.CopyTo(items, 0);
+                    return items;
                 }
             }
         }
