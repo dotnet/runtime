@@ -33,7 +33,8 @@ const char* g_help = "createdump [options]\n"
 "--crashreportonly - write crash report file only (no dump).\n"
 "--crashthread <id> - the thread id of the crashing thread.\n"
 "--signal <code> - the signal code of the crash.\n"
-"--singlefile - enable single-file app check.\n"
+"--singlefile - single-file app model.\n"
+"--nativeaot - native AOT app model.\n"
 #endif
 ;
 
@@ -70,11 +71,10 @@ int createdump_main(const int argc, const char* argv[])
     options.Signal = 0;
     options.CrashThread = 0;
     options.Pid = 0;
-#if defined(HOST_UNIX) && !defined(HOST_OSX)
     options.SignalCode = 0;
     options.SignalErrno = 0;
-    options.SignalAddress = nullptr;
-#endif
+    options.SignalAddress = 0;
+    options.ExceptionRecord = 0;
     bool help = false;
     int exitCode = 0;
 
@@ -126,6 +126,10 @@ int createdump_main(const int argc, const char* argv[])
             {
                 options.AppModel = AppModelType::SingleFile;
             }
+            else if (strcmp(*argv, "--nativeaot") == 0)
+            {
+                options.AppModel = AppModelType::NativeAOT;
+            }
             else if (strcmp(*argv, "--code") == 0)
             {
                 options.SignalCode = atoi(*++argv);
@@ -136,7 +140,11 @@ int createdump_main(const int argc, const char* argv[])
             }
             else if (strcmp(*argv, "--address") == 0)
             {
-                options.SignalAddress = (void*)atoll(*++argv);
+                options.SignalAddress = atoll(*++argv);
+            }
+            else if (strcmp(*argv, "--exception-record") == 0)
+            {
+                options.ExceptionRecord = atoll(*++argv);
             }
 #endif
             else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))
@@ -199,9 +207,8 @@ int createdump_main(const int argc, const char* argv[])
     {
         if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
         {
-            //printf_error("GetTempPath failed %s", GetLastErrorString().c_str());
             printf_error("GetTempPath failed\n");
-            return ::GetLastError();
+            return -1;
         }
         exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
         if (exitCode != 0)

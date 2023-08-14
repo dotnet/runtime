@@ -4376,9 +4376,8 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 
 #if defined(TARGET_AMD64)
 
-
-    // The code below handles RIP-relative addressing on AMD64.  the original implementation made the assumption that
-    // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information).  this
+    // The code below handles RIP-relative addressing on AMD64. The original implementation made the assumption that
+    // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information). This
     // has since been expanded to handle RIP-relative writes as well.
     if (m_instrAttrib.m_dwOffsetToDisp != 0)
     {
@@ -4396,8 +4395,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
                           (offsetof(SharedPatchBypassBuffer, PatchBypass) + m_instrAttrib.m_cbInstr);
         *(int*)(&patchBypassRW[m_instrAttrib.m_dwOffsetToDisp]) = dwNewDisp;
 
-        // This could be an LEA, which we'll just have to change into a MOV
-        // and copy the original address
+        // This could be an LEA, which we'll just have to change into a MOV and copy the original address.
         if (((patchBypassRX[0] == 0x4C) || (patchBypassRX[0] == 0x48)) && (patchBypassRX[1] == 0x8d))
         {
             patchBypassRW[1] = 0x8b; // MOV reg, mem
@@ -4418,6 +4416,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
             }
         }
     }
+
 #endif // TARGET_AMD64
 
 #endif // !FEATURE_EMULATE_SINGLESTEP
@@ -4864,6 +4863,7 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
             return false;
         }
     }
+
 #if defined(TARGET_AMD64)
     // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
     _ASSERTE(m_pSharedPatchBypassBuffer);
@@ -4895,6 +4895,7 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
         case 16:
         case 32:
+        case 64:
             memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, fixupSize);
             break;
 

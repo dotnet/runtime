@@ -151,7 +151,6 @@ nativeStringResourceTable_mscorrc
 #SetEvent
 #SetFilePointer
 #SetLastError
-#SetErrorMode
 #SetThreadDescription
 #Sleep
 #SleepEx

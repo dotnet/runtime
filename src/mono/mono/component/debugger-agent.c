@@ -85,6 +85,7 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-poll.h>
 
 #include <mono/component/debugger-state-machine.h>
 #include "debugger-agent.h"
@@ -110,10 +111,10 @@
 #endif
 
 /*
- * On iOS we can't use System.Environment.Exit () as it will do the wrong
+ * On iOS/tvOS we can't use System.Environment.Exit () as it will do the wrong
  * shutdown sequence.
 */
-#if !defined (TARGET_IOS)
+#if !defined (TARGET_IOS) && !defined(TARGET_TVOS)
 #define TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
 #endif
 
@@ -1144,16 +1145,10 @@ socket_transport_connect (const char *address)
 		PRINT_DEBUG_MSG (1, "Listening on %s:%d (timeout=%d ms)...\n", host, port, agent_config.timeout);
 
 		if (agent_config.timeout) {
-			fd_set readfds;
-			struct timeval tv;
-
-			tv.tv_sec = 0;
-			tv.tv_usec = agent_config.timeout * 1000;
-			FD_ZERO (&readfds);
-			FD_SET (sfd, &readfds);
-
-			res = select ((int)sfd + 1, &readfds, NULL, NULL, &tv);
-
+			mono_pollfd mp;
+			mp.fd = (int)sfd;
+			mp.events = MONO_POLLIN;
+			res = mono_poll (&mp, 1, agent_config.timeout);
 			if (res == 0) {
 				PRINT_ERROR_MSG ("debugger-agent: Timed out waiting to connect.\n");
 				exit (1);
@@ -5269,6 +5264,13 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				continue;
 			nfields ++;
 		}
+		if (CHECK_PROTOCOL_VERSION(2, 65)) {
+			if (m_class_is_inlinearray (klass) && nfields == 1)
+				buffer_add_int (buf, m_class_inlinearray_value (klass));
+			else
+				buffer_add_int (buf, -1);
+		}
+
 		buffer_add_int (buf, nfields);
 
 		iter = NULL;
@@ -5290,6 +5292,14 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 			}
 
 			buffer_add_value_full (buf, f->type, mono_vtype_get_field_addr (addr, f), domain, FALSE, parent_vtypes, len_fixed_array != 1 ? len_fixed_array : isFixedSizeArray(f));
+			if (CHECK_PROTOCOL_VERSION(2, 65)) {
+				if (m_class_is_inlinearray (klass) && nfields == 1) {
+					int element_size = mono_class_instance_size (mono_class_from_mono_type_internal (f->type)) - MONO_ABI_SIZEOF (MonoObject);
+					int array_size = m_class_inlinearray_value (klass);
+					for (int i = 1; i < array_size; i++)
+						buffer_add_value_full (buf, f->type, ((char*)mono_vtype_get_field_addr (addr, f)) + (i*element_size), domain, FALSE, parent_vtypes, len_fixed_array != 1 ? len_fixed_array : isFixedSizeArray(f));
+				}
+			}
 		}
 
 		if (boxed_vtype) {
@@ -5349,6 +5359,8 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	if (CHECK_PROTOCOL_VERSION(2, 61))
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
+	if (CHECK_PROTOCOL_VERSION(2, 65))
+		decode_int (buf, &buf, limit); //ignore inline array
 	if (err != ERR_NONE)
 		return err;
 
@@ -5453,6 +5465,8 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 	if (CHECK_PROTOCOL_VERSION(2, 61))
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
+	if (CHECK_PROTOCOL_VERSION(2, 65))
+		decode_int (buf, &buf, limit); //ignore inline array
 	if (err != ERR_NONE)
 		goto end;
 
@@ -5580,6 +5594,8 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 				decode_byte (buf, &buf, limit);
 				if (CHECK_PROTOCOL_VERSION(2, 61))
 					decode_byte (buf, &buf, limit); //ignore is boxed
+				if (CHECK_PROTOCOL_VERSION(2, 65))
+					decode_int (buf, &buf, limit); //ignore inline array
 				decode_typeid (buf, &buf, limit, &d, &err);
 				ret += decode_vtype_compute_size (NULL, domain, buf, &buf, limit, from_by_ref_value_type);
 			} else {
@@ -5757,6 +5773,8 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				if (CHECK_PROTOCOL_VERSION(2, 61))
 					decode_byte (buf, &buf, limit); //ignore is boxed
 				klass = decode_typeid (buf, &buf, limit, &d, &err);
+				if (CHECK_PROTOCOL_VERSION(2, 65))
+					decode_int (buf, &buf, limit); //ignore inline array
 				if (err != ERR_NONE)
 					return err;
 
@@ -6020,6 +6038,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 		mono_gc_memmove_atomic (addr, val, size);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
 		/* Same as regoffset, but with an indirection */
 		addr = (guint8 *)mono_arch_context_get_int_reg (ctx, reg);
 		addr += (gint32)var->offset;
@@ -7468,41 +7487,42 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case MDBGPROT_CMD_GET_ASSEMBLY_BYTES: { //only used by wasm
 #ifdef HOST_WASM
 		char* assembly_name = m_dbgprot_decode_string (p, &p, end);
-		if (assembly_name == NULL)
-		{
+		if (assembly_name == NULL) {
 			m_dbgprot_buffer_add_int (buf, 0);
 			m_dbgprot_buffer_add_int (buf, 0);
 			m_dbgprot_buffer_add_int (buf, 0);
-		}
-		else
-		{
+		} else {
 			int ppdb_size = 0;
 			const unsigned char* assembly_bytes = NULL;
 			unsigned int assembly_size = 0;
 			const unsigned char* pdb_bytes = NULL;
 			unsigned int symfile_size = 0;
+			MonoAssembly* assembly = NULL;
 			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
-			MonoAssembly* assembly = find_assembly_by_name (assembly_name);
-			assembly_size = assembly->image->image_info->cli_cli_header.ch_metadata.size;
-			assembly_bytes = (const unsigned char*) assembly->image->raw_metadata;
-			if (symfile_size == 0) //try to send embedded pdb data
-			{
-				guint8 pe_guid [16];
-				gint32 pe_age;
-				gint32 pe_timestamp;
-				guint8 *ppdb_data = NULL;
-				int ppdb_compressed_size = 0;
-				char *ppdb_path;
-				mono_get_pe_debug_info_full (assembly->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, NULL, NULL);
-				if (ppdb_compressed_size > 0)
-				{
-					symfile_size = ppdb_compressed_size;
-					pdb_bytes = ppdb_data;
-				}
+			if (!CHECK_PROTOCOL_VERSION(2, 62)) {
+				mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size);
+			} else {
+				assembly = find_assembly_by_name (assembly_name);
+				assembly_size = assembly->image->image_info->cli_cli_header.ch_metadata.size;
+				assembly_bytes = (const unsigned char*) assembly->image->raw_metadata;
+				if (symfile_size == 0) { //try to send embedded pdb data
+					guint8 pe_guid [16];
+					gint32 pe_age;
+					gint32 pe_timestamp;
+					guint8 *ppdb_data = NULL;
+					int ppdb_compressed_size = 0;
+					char *ppdb_path;
+					mono_get_pe_debug_info_full (assembly->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, NULL, NULL);
+					if (ppdb_compressed_size > 0) {
+						symfile_size = ppdb_compressed_size;
+						pdb_bytes = ppdb_data;
+					}
+				}				
 			}
 			m_dbgprot_buffer_init (buf, assembly_size + symfile_size + 1024);
 			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) assembly_bytes, assembly_size);
-			m_dbgprot_buffer_add_int (buf, ppdb_size);
+			if (CHECK_PROTOCOL_VERSION(2, 62))
+				m_dbgprot_buffer_add_int (buf, ppdb_size);
 			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) pdb_bytes, symfile_size);
 			if (assembly)
 				send_debug_information (assembly, buf);
@@ -9154,6 +9174,11 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 					buffer_add_int (buf, header->code_size);
 				}
 			}
+			if (CHECK_PROTOCOL_VERSION (2, 65)) {
+				for (int i = 0; i < num_locals; ++i) {
+					buffer_add_int (buf, locals->locals [i].index);
+				}
+			}
 		}
 		mono_metadata_free_mh (header);
 
@@ -9913,7 +9938,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				pos = - pos - 1;
 				cmd_stack_frame_get_parameter (frame, sig, pos, buf, jit);
 			} else {
-				if (!CHECK_PROTOCOL_VERSION (2, 59)) { //from newer protocol versions it's sent the pdb index
+				if (!CHECK_PROTOCOL_VERSION (2, 59)) { //from older protocol versions it's sent the pdb index
 					MonoDebugLocalsInfo *locals;
 					locals = mono_debug_lookup_locals (frame->de.method);
 					if (locals) {
@@ -9969,7 +9994,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				var = &jit->params [pos];
 				is_arg = TRUE;
 			} else {
-				if (!CHECK_PROTOCOL_VERSION (2, 59)) { //from newer protocol versions it's sent the pdb index
+				if (!CHECK_PROTOCOL_VERSION (2, 59)) { //from older protocol versions it's sent the pdb index
 					MonoDebugLocalsInfo *locals;
 					locals = mono_debug_lookup_locals (frame->de.method);
 					if (locals) {

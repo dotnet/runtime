@@ -441,6 +441,19 @@ class Program
         Assert.AreEqual(ILInliningTest.TestDifferentIntValue(), actualMethodCallResult);
     }
 
+    private class CallDefaultVsExactStaticVirtual<T> where T : IDefaultVsExactStaticVirtual
+    {
+        public static string CallMethodOnGenericType() => T.Method();
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestDefaultVsExactStaticVirtualMethodImplementation()
+    {
+        Assert.AreEqual(CallDefaultVsExactStaticVirtual<DefaultVsExactStaticVirtualClass>.CallMethodOnGenericType(), "DefaultVsExactStaticVirtualMethod");
+        // Naively one would expect that the following should do, however Roslyn fails to compile it claiming that the type DVESVC doesn't contain 'Method':
+        // Assert.AreEqual(DefaultVsExactStaticVirtualClass.Method(), "DefaultVsExactStaticVirtualMethod");
+    }
+
     static void RunAllTests()
     {
         Console.WriteLine("TestVirtualMethodCalls");
@@ -527,6 +540,10 @@ class Program
 
         Console.WriteLine("TestILBodyChange");
         TestILBodyChange();
+        
+        Console.WriteLine("TestDefaultVsExactStaticVirtualMethodImplementation");
+        TestDefaultVsExactStaticVirtualMethodImplementation();
+        
         ILInliningVersioningTest<LocallyDefinedStructure>.RunAllTests(typeof(Program).Assembly);
     }
 

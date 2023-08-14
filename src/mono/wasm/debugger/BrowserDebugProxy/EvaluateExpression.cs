@@ -24,6 +24,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
+    internal sealed record VariableDefinition(
+        string IdName,
+        JObject Obj,
+        string Definition);
+
     internal static partial class ExpressionEvaluator
     {
         internal static Script<object> script = CSharpScript.Create(
@@ -35,9 +40,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ));
         private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
-#pragma warning disable SYSLIB1045
-            private static Regex regexForReplaceVarName = new (@"[^A-Za-z0-9_]", RegexOptions.Singleline);
-#pragma warning restore SYSLIB1045
+            [GeneratedRegex(@"[^A-Za-z0-9_]", RegexOptions.Singleline)]
+            private static partial Regex RegexForReplaceVarName();
+
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
@@ -47,7 +52,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             private int visitCount;
             public bool hasMethodCalls;
             public bool hasElementAccesses;
-            internal List<string> variableDefinitions = new List<string>();
+            public bool hasStringExpressionStatement;
+            internal List<VariableDefinition> variableDefinitions = new ();
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -92,6 +98,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     hasElementAccesses = true;
                 }
 
+                if (node is BinaryExpressionSyntax)
+                {
+                    var binaryExpression = node as BinaryExpressionSyntax;
+                    if (binaryExpression.Left.Kind() == SyntaxKind.StringLiteralExpression || binaryExpression.Right.Kind() == SyntaxKind.StringLiteralExpression)
+                        hasStringExpressionStatement = true;
+                }
+
                 if (node is AssignmentExpressionSyntax)
                     throw new Exception("Assignment is not implemented yet");
                 base.Visit(node);
@@ -113,7 +126,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(ma_str, "_");
+                        string prefix = RegexForReplaceVarName().Replace(ma_str, "_");
                         id_name = $"{prefix}_{suffix}";
 
                         memberAccessToParamName[ma_str] = id_name;
@@ -130,7 +143,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(iesStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(iesStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
@@ -146,7 +159,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(eaStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(eaStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         elementAccessToParamName[eaStr] = id_name;
                     }
@@ -214,7 +227,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (localsSet.Contains(idName))
                         return;
                     localsSet.Add(idName);
-                    variableDefinitions.Add(ConvertJSToCSharpLocalVariableAssignment(idName, value));
+                    variableDefinitions.Add(new (idName, value, ConvertJSToCSharpLocalVariableAssignment(idName, value)));
                 }
             }
         }
@@ -445,12 +458,49 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 syntaxTree = replacer.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }
-
             expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
+            var variableDef = await GetVariableDefinitions(resolver, replacer.variableDefinitions, invokeToStringInObject: replacer.hasStringExpressionStatement, token);
+            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, variableDef, logger, token);
+        }
 
-            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, replacer.variableDefinitions, logger, token);
+        internal static async Task<List<string>> GetVariableDefinitions(MemberReferenceResolver resolver, List<VariableDefinition> variableDefinitions, bool invokeToStringInObject, CancellationToken token)
+        {
+            var variableDefStrings = new List<string>();
+            foreach (var definition in variableDefinitions)
+            {
+                if (!invokeToStringInObject || definition.Obj?["type"]?.Value<string>() != "object")
+                {
+                    variableDefStrings.Add(definition.Definition);
+                    continue;
+                }
+
+                if (definition.Obj["subtype"]?.Value<string>()?.Equals("null") == true)
+                {
+                    variableDefStrings.Add($"string {definition.IdName} = \"\";");
+                    continue;
+                }
+
+                if (DotnetObjectId.TryParse(definition.Obj?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                {
+                    if (objectId.IsValueType)
+                    {
+                        variableDefStrings.Add($"string {definition.IdName} = \"{definition.Obj["description"].Value<string>()}\";");
+                    }
+                    else
+                    {
+                        var typeIds = await resolver.GetContext().SdbAgent.GetTypeIdsForObject(objectId.Value, withParents: true, token);
+                        var toString = await resolver.GetContext().SdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId.Value, BindingFlags.DeclaredOnly, invokeToStringInObject: true, token);
+                        variableDefStrings.Add($"string {definition.IdName} = \"{toString}\";");
+                    }
+                }
+                else
+                {
+                    variableDefStrings.Add(definition.Definition);
+                }
+            }
+            return variableDefStrings;
         }
 
         internal static async Task<JObject> EvaluateSimpleExpression(

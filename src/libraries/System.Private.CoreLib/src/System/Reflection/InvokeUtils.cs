@@ -11,11 +11,11 @@ namespace System.Reflection
     internal static class InvokeUtils
     {
         // This method is similar to the NativeAot method ConvertOrWidenPrimitivesEnumsAndPointersIfPossible().
-        public static object ConvertOrWiden(Type srcType, object srcObject, Type dstType, CorElementType dstElementType)
+        public static object ConvertOrWiden(RuntimeType srcType, object srcObject, RuntimeType dstType, CorElementType dstElementType)
         {
             object dstObject;
 
-            if (dstType.IsPointer)
+            if (dstType.IsPointer || dstType.IsFunctionPointer)
             {
                 if (TryConvertPointer(srcObject, out object? dstPtr))
                 {
@@ -111,15 +111,9 @@ namespace System.Reflection
 
         private static bool TryConvertPointer(object srcObject, [NotNullWhen(true)] out object? dstPtr)
         {
-            if (srcObject is IntPtr)
+            if (srcObject is IntPtr or UIntPtr)
             {
                 dstPtr = srcObject;
-                return true;
-            }
-
-            if (srcObject is UIntPtr)
-            {
-                dstPtr = (IntPtr)(UIntPtr)srcObject;
                 return true;
             }
 

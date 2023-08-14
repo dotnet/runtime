@@ -46,6 +46,10 @@ ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord,
                  UINT_PTR          TargetFrameSp);
 #endif // !TARGET_UNIX
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartContext);
+#endif // TARGET_UNIX && !DACCESS_COMPILE
+
 #ifdef USE_CURRENT_CONTEXT_IN_FILTER
 inline void CaptureNonvolatileRegisters(PKNONVOLATILE_CONTEXT pNonvolatileContext, PCONTEXT pContext)
 {
@@ -800,7 +804,7 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     {
         CopyOSContext(pThread->m_OSContext, pContextRecord);
         SetIP(pThread->m_OSContext, (PCODE)uResumePC);
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !(defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM))
         uAbortAddr = NULL;
 #else
         uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(uResumePC);
@@ -833,7 +837,12 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
         STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p\n", uResumePC);
 
 #ifdef TARGET_AMD64
+#ifdef TARGET_UNIX
+        pContextRecord->Rdi = uResumePC;
+        pContextRecord->Rsi = GetIP(pThread->GetAbortContext());
+#else
         pContextRecord->Rcx = uResumePC;
+#endif
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
         // On ARM & ARM64, we save off the original PC in Lr. This is the same as done
         // in HandleManagedFault for H/W generated exceptions.
@@ -1281,7 +1290,7 @@ bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
     }
     CONTRACTL_END;
 
-    CONTEXT _ctx = {0};
+    CONTEXT _ctx = {};
 
     // Ctor will initialize it to NULL
     REGDISPLAY regdisp;
@@ -1573,7 +1582,6 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     pcfThisFrame->pThread = pThread;
 
     Frame* pTopFrame = pThread->GetFrame();
-    pcfThisFrame->isIPadjusted = (FRAME_TOP != pTopFrame) && (pTopFrame->GetVTablePtr() != FaultingExceptionFrame::GetMethodFrameVPtr());
     if (pcfThisFrame->isFrameless && (pcfThisFrame->isIPadjusted == false) && (pcfThisFrame->GetRelOffset() == 0))
     {
         // If we are here, then either a hardware generated exception happened at the first instruction
@@ -4206,7 +4214,16 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
                                                            (PBYTE*)&uInterceptStackFrame,
                                                            NULL, NULL);
 
+#ifdef TARGET_UNIX
+    CONTEXT *pContext = pThread->GetExceptionState()->GetContextRecord();
+    PAL_SEHException ex(pThread->GetExceptionState()->GetExceptionRecord(), pContext, /* onStack */ false);
+    ex.TargetIp = INVALID_RESUME_ADDRESS;
+    ex.TargetFrameSp = uInterceptStackFrame;
+    ex.ReturnValue = (UINT_PTR)pThread;
+    UnwindManagedExceptionPass2(ex, pContext);
+#else // TARGET_UNIX
     ClrUnwindEx(pExceptionRecord, (UINT_PTR)pThread, INVALID_RESUME_ADDRESS, uInterceptStackFrame);
+#endif // TARGET_UNIX
 
     UNREACHABLE();
 }
@@ -4549,6 +4566,29 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
         }
 
     } while (Thread::IsAddressInCurrentStack(sp) && (establisherFrame != ex.TargetFrameSp));
+
+#ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
+    if ((establisherFrame == ex.TargetFrameSp) && (ex.TargetIp != 0))
+    {
+#ifdef TARGET_AMD64
+#define RETURN_REG Rax
+#elif defined(TARGET_ARM64)
+#define RETURN_REG X0
+#elif defined(TARGET_ARM)
+#define RETURN_REG R0
+#elif defined(TARGET_X86)
+#define RETURN_REG Eax
+#else
+#error Missing definition of RETURN_REG for the current architecture
+#endif
+        currentFrameContext->RETURN_REG = ex.ReturnValue;
+        if (ex.GetExceptionRecord()->ExceptionCode != STATUS_UNWIND_CONSOLIDATE)
+        {
+            SetIP(currentFrameContext, ex.TargetIp);
+        }
+        ExceptionTracker::ResumeExecution(currentFrameContext);
+    }
+#endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 
     _ASSERTE(!"UnwindManagedExceptionPass2: Unwinding failed. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);

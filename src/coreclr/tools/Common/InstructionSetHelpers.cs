@@ -3,8 +3,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+
 using ILCompiler;
+
 using Internal.TypeSystem;
+
 using InstructionSet = Internal.JitInterface.InstructionSet;
 
 namespace System.CommandLine
@@ -12,7 +16,7 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize = false)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -34,7 +38,35 @@ namespace System.CommandLine
                 }
             }
 
-            if (instructionSet != null)
+            // Whether to allow optimistically expanding the instruction sets beyond what was specified.
+            // We seed this from optimizingForSize - if we're size-optimizing, we don't want to unnecessarily
+            // compile both branches of IsSupported checks.
+            bool allowOptimistic = !optimizingForSize;
+
+            if (instructionSet == "native")
+            {
+                // We're compiling for a specific chip
+                allowOptimistic = false;
+
+                if (GetTargetArchitecture(null) != targetArchitecture)
+                {
+                    throw new CommandLineException("Instruction set 'native' not supported when cross-compiling to a different architecture.");
+                }
+
+                string jitInterfaceLibrary = "jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+                nint libHandle = NativeLibrary.Load(jitInterfaceLibrary, System.Reflection.Assembly.GetExecutingAssembly(), DllImportSearchPath.ApplicationDirectory);
+                int cpuFeatures;
+                unsafe
+                {
+                    var getCpuFeatures = (delegate* unmanaged<int>)NativeLibrary.GetExport(libHandle, "JitGetProcessorFeatures");
+                    cpuFeatures = getCpuFeatures();
+                }
+                HardwareIntrinsicHelpers.AddRuntimeRequiredIsaFlagsToBuilder(instructionSetSupportBuilder, cpuFeatures);
+
+                if (logger.IsVerbose)
+                    logger.LogMessage($"The 'native' instruction set expanded to {instructionSetSupportBuilder}");
+            }
+            else if (instructionSet != null)
             {
                 List<string> instructionSetParams = new List<string>();
 
@@ -99,7 +131,7 @@ namespace System.CommandLine
             InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(instructionSetSupportBuilder);
 
             // Optimistically assume some instruction sets are present.
-            if (targetArchitecture == TargetArchitecture.X86 || targetArchitecture == TargetArchitecture.X64)
+            if (allowOptimistic && (targetArchitecture == TargetArchitecture.X86 || targetArchitecture == TargetArchitecture.X64))
             {
                 // We set these hardware features as opportunistically enabled as most of hardware in the wild supports them.
                 // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as

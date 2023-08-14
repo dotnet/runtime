@@ -86,7 +86,7 @@ namespace Microsoft.Interop
                     AttributeList(
                         SingletonSeparatedList(
                             Attribute(
-                                ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute_WithGlobal),
+                                NameSyntaxes.System_CodeDom_Compiler_GeneratedCodeAttribute,
                                 AttributeArgumentList(
                                     SeparatedList(
                                         new[]
@@ -104,7 +104,7 @@ namespace Microsoft.Interop
                             // Adding the skip locals init indiscriminately since the source generator is
                             // targeted at non-blittable method signatures which typically will contain locals
                             // in the generated code.
-                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_WithGlobal)))));
+                            Attribute(NameSyntaxes.System_Runtime_CompilerServices_SkipLocalsInitAttribute))));
             }
 
             return new SignatureContext()
@@ -187,7 +187,7 @@ namespace Microsoft.Interop
             return false;
 
             static bool IsSkipLocalsInitAttribute(AttributeData a)
-                => a.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata;
+                => a.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute;
         }
     }
 }

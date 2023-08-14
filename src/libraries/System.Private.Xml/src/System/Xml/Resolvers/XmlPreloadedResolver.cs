@@ -352,14 +352,7 @@ namespace System.Xml.Resolvers
             Debug.Assert(uri != null);
 
             // override if exists
-            if (_mappings.ContainsKey(uri))
-            {
-                _mappings[uri] = data;
-            }
-            else
-            {
-                _mappings.Add(uri, data);
-            }
+            _mappings[uri] = data;
         }
 
         private void AddKnownDtd(XmlKnownDtdData[] dtdSet)

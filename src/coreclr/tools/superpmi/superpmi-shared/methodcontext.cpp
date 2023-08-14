@@ -789,8 +789,8 @@ DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 
     DEBUG_REP(dmpGetMethodAttribs(key, value));
 
-    if (cr->repSetMethodAttribs(methodHandle) == CORINFO_FLG_BAD_INLINEE)
-        value ^= CORINFO_FLG_DONT_INLINE;
+    if ((cr->repSetMethodAttribs(methodHandle) & CORINFO_FLG_BAD_INLINEE) != 0)
+        value |= CORINFO_FLG_DONT_INLINE;
     return value;
 }
 
@@ -1014,12 +1014,6 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.field   = CastHandle(field);
     key.method  = CastHandle(method);
     key.context = CastHandle(context);
-
-    if ((InitClass == nullptr) || (InitClass->GetIndex(key) == -1))
-    {
-        // We could try additional inlines with stress modes, just reject them.
-        return CORINFO_INITCLASS_DONT_INLINE;
-    }
 
     DWORD value = InitClass->Get(key);
     DEBUG_REP(dmpInitClass(key, value));
@@ -1542,6 +1536,19 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     {
         pResult->hMethod = (CORINFO_METHOD_HANDLE)value.hMethod;
         pResult->methodFlags = (unsigned)value.methodFlags;
+        // We could have stored getCallInfo from a previous call in this
+        // context without the CORINFO_FLG_DONT_INLINE bit. If the JIT later
+        // realized that this will be an always no-inline then it would call
+        // setMethodAttribs with that information, but a later getCallInfo call
+        // would not update the recorded SPMI entry. In that case let's mimic
+        // the behavior on the runtime side by calculating this particular
+        // dynamic flag here (the same logic is present in getMethodAttribs).
+        //
+        // This doesn't handle all cases (e.g. parallelism could still cause
+        // us to record these flags without CORINFO_FLG_DONT_INLINE).
+        if ((cr->repSetMethodAttribs(pResult->hMethod) & CORINFO_FLG_BAD_INLINEE) != 0)
+            pResult->methodFlags |= CORINFO_FLG_DONT_INLINE;
+
         pResult->classFlags = (unsigned)value.classFlags;
         pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap);
         pResult->accessAllowed = (CorInfoIsAccessAllowedResult)value.accessAllowed;
@@ -1558,18 +1565,8 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->nullInstanceCheck = (bool)value.nullInstanceCheck;
         pResult->contextHandle = (CORINFO_CONTEXT_HANDLE)value.contextHandle;
         pResult->exactContextNeedsRuntimeLookup = (bool)value.exactContextNeedsRuntimeLookup;
-        pResult->stubLookup.lookupKind.needsRuntimeLookup = value.stubLookup.lookupKind.needsRuntimeLookup != 0;
-        pResult->stubLookup.lookupKind.runtimeLookupKind =
-            (CORINFO_RUNTIME_LOOKUP_KIND)value.stubLookup.lookupKind.runtimeLookupKind;
-        if (pResult->stubLookup.lookupKind.needsRuntimeLookup)
-        {
-            pResult->stubLookup.runtimeLookup = SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(value.stubLookup.runtimeLookup);
-        }
-        else
-        {
-            pResult->stubLookup.constLookup.accessType = (InfoAccessType)value.stubLookup.constLookup.accessType;
-            pResult->stubLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)value.stubLookup.constLookup.handle;
-        }
+        pResult->stubLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.stubLookup);
+
         if (pResult->kind == CORINFO_VIRTUALCALL_STUB)
         {
             cr->CallTargetTypes->Add(CastPointer(pResult->codePointerLookup.constLookup.addr),
@@ -3019,48 +3016,69 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
     return result;
 }
 
-void MethodContext::recGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_METHOD_HANDLE   callerHandle,
-                                    bool*                   pHasSideEffects,
-                                    CorInfoHelpFunc         result)
+void MethodContext::recHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2, bool result)
+{
+    if (HaveSameMethodDefinition == nullptr)
+        HaveSameMethodDefinition = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    key.A = CastHandle(methHnd1);
+    key.B = CastHandle(methHnd2);
+
+    DWORD value = result ? 1 : 0;
+    HaveSameMethodDefinition->Add(key, value);
+}
+void MethodContext::dmpHaveSameMethodDefinition(const DLDL& key, DWORD value)
+{
+    printf("HaveSameMethodDefinition key methHnd1-%016" PRIX64 ", methHnd2-%016" PRIX64 ", value %u", key.A, key.B, value);
+}
+bool MethodContext::repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2)
+{
+    DLDL key;
+    key.A = CastHandle(methHnd1);
+    key.B = CastHandle(methHnd2);
+
+    DWORD value = LookupByKeyOrMiss(HaveSameMethodDefinition, key, "key %016" PRIX64 ", %016" PRIX64, key.A, key.B);
+    return value != 0;
+}
+
+void MethodContext::recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
+                                    bool                  hasSideEffects,
+                                    CorInfoHelpFunc       result,
+                                    DWORD                 exceptionCode)
 {
     if (GetNewHelper == nullptr)
-        GetNewHelper = new LightWeightMap<Agnostic_GetNewHelper, DD>();
+        GetNewHelper = new LightWeightMap<DWORDLONG, DDD>();
 
-    Agnostic_GetNewHelper key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.hClass       = CastHandle(pResolvedToken->hClass);
-    key.callerHandle = CastHandle(callerHandle);
+    DWORDLONG key = CastHandle(classHandle);
 
-    DD value;
-    value.A = (pHasSideEffects != nullptr) ? (DWORD)(*pHasSideEffects ? 1 : 0) : (DWORD)0;
+    DDD value;
+    value.A = hasSideEffects ? 1 : 0;
     value.B = (DWORD)result;
+    value.C = exceptionCode;
 
     GetNewHelper->Add(key, value);
     DEBUG_REC(dmpGetNewHelper(key, value));
 }
-void MethodContext::dmpGetNewHelper(const Agnostic_GetNewHelper& key, DD value)
+void MethodContext::dmpGetNewHelper(DWORDLONG key, const DDD& value)
 {
-    printf("GetNewHelper key cls-%016" PRIX64 " chan-%016" PRIX64 ", hasSideEffects-%u, value res-%u", key.hClass, key.callerHandle, value.A, value.B);
+    printf("GetNewHelper key %016" PRIX64 ", hasSideEffects-%u, value res-%u, exceptionCode-%08X", key, value.A, value.B, value.C);
 }
-CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                               CORINFO_METHOD_HANDLE   callerHandle,
-                                               bool*                   pHasSideEffects)
+CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
+                                               bool*                 pHasSideEffects,
+                                               DWORD*                exceptionCode)
 {
-    Agnostic_GetNewHelper key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.hClass       = CastHandle(pResolvedToken->hClass);
-    key.callerHandle = CastHandle(callerHandle);
+    DWORDLONG key = CastHandle(classHandle);
 
-    DD value = LookupByKeyOrMiss(GetNewHelper, key, ": key %016" PRIX64 " %016" PRIX64 "", key.hClass, key.callerHandle);
-
+    DDD value = LookupByKeyOrMiss(GetNewHelper, key, ": key %016" PRIX64, key);
     DEBUG_REP(dmpGetNewHelper(key, value));
 
     if (pHasSideEffects != nullptr)
     {
-        *pHasSideEffects = (value.A == 0) ? false : true;
+        *pHasSideEffects = value.A != 0;
     }
     CorInfoHelpFunc result = (CorInfoHelpFunc)value.B;
+    *exceptionCode = value.C;
     return result;
 }
 

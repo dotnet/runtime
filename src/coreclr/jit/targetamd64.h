@@ -92,7 +92,9 @@
   #define REG_MASK_FIRST           REG_K0
   #define REG_MASK_LAST            REG_K7
 
-  #define RBM_ALLMASK              RBM_K1
+  #define RBM_ALLMASK_INIT         (0)
+  #define RBM_ALLMASK_EVEX         (RBM_K1 | RBM_K2 | RBM_K3 | RBM_K4 | RBM_K5 | RBM_K6 | RBM_K7)
+  #define RBM_ALLMASK              get_RBM_ALLMASK()
 
   #define CNT_MASK_REGS            8
 
@@ -155,17 +157,20 @@
 
   #define RBM_FLT_CALLEE_TRASH    get_RBM_FLT_CALLEE_TRASH()
 
+  /* NOTE: Sync with variable name defined in compiler.h */
+  #define RBM_MSK_CALLEE_TRASH_INIT (0)
+  #define RBM_MSK_CALLEE_TRASH_EVEX RBM_ALLMASK_EVEX
+
   #define RBM_MSK_CALLEE_SAVED    (0)
-  #define RBM_MSK_CALLEE_TRASH    RBM_ALLMASK
+  #define RBM_MSK_CALLEE_TRASH    get_RBM_MSK_CALLEE_TRASH()
 
   #define RBM_OSR_INT_CALLEE_SAVED  (RBM_INT_CALLEE_SAVED | RBM_EBP)
 
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM15
 
-  // TODO-AVX512: Add RBM_MSK_CALLEE_*
-  #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
-  #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
+  #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH)
+  #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED | RBM_MSK_CALLEE_SAVED)
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
 
@@ -285,6 +290,7 @@
 #define REG_VAR_ORDER           REG_VAR_ORDER_CALLEE_TRASH,REG_VAR_ORDER_CALLEE_SAVED
 #define REG_VAR_ORDER_FLT       REG_VAR_ORDER_FLT_CALLEE_TRASH,REG_VAR_ORDER_FLT_CALLEE_SAVED
 #define REG_VAR_ORDER_FLT_EVEX  REG_VAR_ORDER_FLT_EVEX_CALLEE_TRASH,REG_VAR_ORDER_FLT_EVEX_CALLEE_SAVED
+#define REG_VAR_ORDER_MSK       REG_K1,REG_K2,REG_K3,REG_K4,REG_K5,REG_K6,REG_K7
 
 #ifdef UNIX_AMD64_ABI
   #define CNT_CALLEE_SAVED         (5 + REG_ETW_FRAMED_EBP_COUNT)
@@ -297,6 +303,9 @@
   /* NOTE: Sync with variable name defined in compiler.h */
   #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
   #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+
+  // For SysV we have more volatile registers so we do not save any callee saves for EnC.
+  #define RBM_ENC_CALLEE_SAVED     0
 #else // !UNIX_AMD64_ABI
   #define CNT_CALLEE_SAVED         (7 + REG_ETW_FRAMED_EBP_COUNT)
   #define CNT_CALLEE_TRASH         (7)
@@ -308,15 +317,21 @@
   /* NOTE: Sync with variable name defined in compiler.h */
   #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
   #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ESI,RBM_EDI,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+
+  // Callee-preserved registers we always save and allow use of for EnC code, since there are quite few volatile registers.
+  #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
 #endif // !UNIX_AMD64_ABI
 
   #define CNT_CALLEE_TRASH_FLOAT   get_CNT_CALLEE_TRASH_FLOAT()
 
+  #define CNT_CALLEE_SAVED_MASK      (0)
+
+  #define CNT_CALLEE_TRASH_MASK_INIT (0)
+  #define CNT_CALLEE_TRASH_MASK_EVEX (7)
+  #define CNT_CALLEE_TRASH_MASK      get_CNT_CALLEE_TRASH_MASK()
+
   #define CALLEE_SAVED_REG_MAXSZ   (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ (CNT_CALLEE_SAVED_FLOAT*16)
-
-  // callee-preserved registers we always save and allow use of for EnC code
-  #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
 
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX

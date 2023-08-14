@@ -33,6 +33,9 @@
   <Import Project="..\..\Common\Compiler\GenericCycleDetection\GenericCycleDetection.projitems" />
 
   <ItemGroup>
+    <Compile Include="..\..\Common\Compiler\ImpliedRepeatedFieldDesc.cs" Link="Compiler\ImpliedRepeatedFieldDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFields.cs" Link="Compiler\TypeWithRepeatedFields.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" Link="Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />

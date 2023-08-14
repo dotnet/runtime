@@ -65,7 +65,7 @@ namespace System.Net.Sockets
         private int _acceptAddressBufferCount;
 
         // Internal SocketAddress buffer.
-        internal Internals.SocketAddress? _socketAddress;
+        internal SocketAddress? _socketAddress;
 
         // Misc state variables.
         private readonly bool _flowExecutionContext;
@@ -866,7 +866,7 @@ namespace System.Net.Sockets
             {
                 case SocketAsyncOperation.Accept:
                     // Get the endpoint.
-                    Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_currentSocket!._rightEndPoint!);
+                    SocketAddress remoteSocketAddress = _currentSocket!._rightEndPoint!.Serialize();
 
                     socketError = FinishOperationAccept(remoteSocketAddress);
 
@@ -922,13 +922,12 @@ namespace System.Net.Sockets
 
                 case SocketAsyncOperation.ReceiveFrom:
                     // Deal with incoming address.
-                    _socketAddress!.InternalSize = GetSocketAddressSize();
-                    Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
-                    if (!socketAddressOriginal.Equals(_socketAddress))
+                    UpdateReceivedSocketAddress(_socketAddress!);
+                    if (_remoteEndPoint != null && !SocketAddressExtensions.Equals(_socketAddress!, _remoteEndPoint))
                     {
                         try
                         {
-                            if (_remoteEndPoint!.AddressFamily == _socketAddress.Family)
+                            if (_remoteEndPoint!.AddressFamily == _socketAddress!.Family)
                             {
                                 _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
                             }
@@ -945,13 +944,12 @@ namespace System.Net.Sockets
 
                 case SocketAsyncOperation.ReceiveMessageFrom:
                     // Deal with incoming address.
-                    _socketAddress!.InternalSize = GetSocketAddressSize();
-                    socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
-                    if (!socketAddressOriginal.Equals(_socketAddress))
+                    UpdateReceivedSocketAddress(_socketAddress!);
+                    if (!SocketAddressExtensions.Equals(_socketAddress!, _remoteEndPoint))
                     {
                         try
                         {
-                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
+                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress!);
                         }
                         catch
                         {
