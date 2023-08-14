@@ -390,7 +390,7 @@ VOID Frame::Push(Thread *pThread)
     // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
-             (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             pThread->IsStackPointerBefore(PBYTE(this), (PBYTE(m_Next) + (2 * GetOsPageSize())))) &&
              "Pushing a frame out of order ?");
 
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
