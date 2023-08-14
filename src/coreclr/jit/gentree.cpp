@@ -16859,31 +16859,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
     *pList = extractor.GetResult();
 }
 
-//------------------------------------------------------------------------
-// gtWrapWithSideEffects: Extracts possible side effects from treeToCheckForSideEffects and
-//    appends them to returnValue via GT_COMMA (or just returnValue if there are no side effects).
-//
-// Arguments:
-//    treeToCheckForSideEffects - the expression tree to extract side effects from
-//    returnValue               - the expression tree to append side effects to
-//
-// Return Value:
-//    Either returnValue or COMMA(sideEffects, returnValue)
-//
-GenTree* Compiler::gtWrapWithSideEffects(GenTree* treeToCheckForSideEffects, GenTree* returnValue)
-{
-    GenTree* opSideEffects = nullptr;
-    gtExtractSideEffList(treeToCheckForSideEffects, &opSideEffects, GTF_ALL_EFFECT);
-    if (opSideEffects != nullptr)
-    {
-        return gtNewOperNode(GT_COMMA, returnValue->TypeGet(), opSideEffects, returnValue);
-    }
-    else
-    {
-        return returnValue;
-    }
-}
-
 /*****************************************************************************
  *
  *  For debugging only - displays a tree node list and makes sure all the

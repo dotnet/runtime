@@ -2872,8 +2872,13 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 if ((opts == BoxPatterns::IsByRefLike) ||
                     (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
                 {
+                    GenTree* op = impPopStack().val;
+                    if (op->gtFlags & GTF_SIDE_EFFECT)
+                    {
+                        impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op, CHECK_SPILL_ALL);
+                    }
                     JITDUMP("\n Importing BOX; BR_TRUE/FALSE as %sconstant\n")
-                    impPushOnStack(gtWrapWithSideEffects(impPopStack().val, gtNewTrue()), typeInfo(TYP_INT));
+                    impPushOnStack(gtNewTrue(), typeInfo(TYP_INT));
                     return 0;
                 }
             }
@@ -2893,7 +2898,13 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         TypeCompareState::MustNot)
                     {
                         JITDUMP("\n Importing BOX; ISINST; as null\n");
-                        impPushOnStack(gtWrapWithSideEffects(impPopStack().val, gtNewNull()), typeInfo(TYP_REF));
+
+                        GenTree* op = impPopStack().val;
+                        if (op->gtFlags & GTF_SIDE_EFFECT)
+                        {
+                            impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op, CHECK_SPILL_ALL);
+                        }
+                        impPushOnStack(gtNewNull(), typeInfo(TYP_REF));
                         return 1 + sizeof(mdToken);
                     }
                 }
@@ -2937,11 +2948,18 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
                                                                           isInstResolvedToken.hClass);
 
-                                GenTree* result = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
                                 if (castResult != TypeCompareState::May)
                                 {
                                     JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
-                                    impPushOnStack(gtWrapWithSideEffects(impPopStack().val, result), typeInfo(TYP_INT));
+
+                                    GenTree* op = impPopStack().val;
+                                    if (op->gtFlags & GTF_SIDE_EFFECT)
+                                    {
+                                        impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op,
+                                                     CHECK_SPILL_ALL);
+                                    }
+                                    impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
+                                                   typeInfo(TYP_INT));
                                     return 1 + sizeof(mdToken);
                                 }
                             }
