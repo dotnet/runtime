@@ -3035,6 +3035,9 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functional requirement - These methods have no IL that could be optimized
         !IsWrapperStub() &&
 
+        // Functions with AggressiveOptimization attribute bypass tiering
+        !RequestedAggressiveOptimization() &&
+
         // Policy - Generating optimized code is not disabled
         !IsJitOptimizationDisabledForSpecificMethod())
     {
