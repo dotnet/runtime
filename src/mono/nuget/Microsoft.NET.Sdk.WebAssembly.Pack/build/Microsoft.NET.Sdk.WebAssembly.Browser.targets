@@ -175,7 +175,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_LoadCustomIcuData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
       <_LoadCustomIcuData Condition="'$(_LoadCustomIcuData)' == ''">false</_LoadCustomIcuData>
       <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND Exists('$(BlazorIcuDataFileName)')">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
-      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(BlazorIcuDataFileName)')">$(_RuntimePackNativeDir)$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
+      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(BlazorIcuDataFileName)') AND !$([System.IO.Path]::IsPathRooted($(BlazorIcuDataFileName)))">$(_RuntimePackDir)$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
       <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' != 'true' AND '$(_LoadCustomIcuData)' != 'true'">$(HybridGlobalization)</_IsHybridGlobalization>
       <_IsHybridGlobalization Condition="'$(_IsHybridGlobalization)' == ''">false</_IsHybridGlobalization>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
