@@ -726,8 +726,6 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     // call the <cinit>
     OBJECTREF Throwable = NULL;
 
-    OBJECTREF obj = NULL;
-
     MethodTable * pDeclMT = NULL;
     if (!declaringType.IsNull())
     {
