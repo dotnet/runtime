@@ -431,6 +431,14 @@
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
 
+    <ReadLinesFromFile File="$(WasmObjDir)/exports-linker.js">
+      <Output TaskParameter="Lines" ItemName="_WasmImportedMethodNames" />
+    </ReadLinesFromFile>
+    <!-- append at the end of dotnet.es6.lib.js -->
+    <WriteLinesToFile File="$(NativeBinDir)src/es6/dotnet.es6.lib.js"
+                      Lines="@(_WasmImportedMethodNames)"
+                      Overwrite="false" />
+
     <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
@@ -526,6 +534,7 @@
     <ItemGroup>
       <_MonoRollupEnvironmentVariable Include="Configuration:$(Configuration)" />
       <_MonoRollupEnvironmentVariable Include="NativeBinDir:$(NativeBinDir)" />
+      <_MonoRollupEnvironmentVariable Include="WasmObjDir:$(WasmObjDir)" />
       <_MonoRollupEnvironmentVariable Include="ProductVersion:$(ProductVersion)" />
       <_MonoRollupEnvironmentVariable Include="MonoWasmThreads:$(MonoWasmThreads)" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:1" Condition="'$(WasmEnableSIMD)' != 'false'" />

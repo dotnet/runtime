@@ -62,7 +62,7 @@ namespace Microsoft.Interop
                 yield return ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                             IdentifierName("ThrowExceptionForHR")),
                         ArgumentList(
                             SingletonSeparatedList(Argument(IdentifierName(managedIdentifier))))));

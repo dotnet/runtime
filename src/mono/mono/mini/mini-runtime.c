@@ -3268,6 +3268,7 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 		info->ret_box_class = mono_class_from_mono_type_internal (ret_type);
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		info->ret_box_class = mono_defaults.int_class;
 		break;
 	case MONO_TYPE_STRING:

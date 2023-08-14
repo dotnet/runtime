@@ -1268,6 +1268,7 @@ is_element_type_primitive (MonoType *vector_type)
 	}
 }
 
+#ifdef TARGET_ARM64
 static MonoInst*
 emit_msb_vector_mask (MonoCompile *cfg, MonoClass *arg_class, MonoTypeEnum arg_type)
 {
@@ -1358,6 +1359,7 @@ emit_msb_shift_vector_constant (MonoCompile *cfg, MonoClass *arg_class, MonoType
 	msb_shift_vec->klass = arg_class;
 	return msb_shift_vec;
 }
+#endif
 
 /*
  * Emit intrinsics in System.Numerics.Vector and System.Runtime.Intrinsics.Vector64/128/256/512.
@@ -1800,13 +1802,30 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		g_assert_not_reached ();
 	}
 	case SN_ExtractMostSignificantBits: {
-		if (!is_element_type_primitive (fsig->params [0]) || type_enum_is_float (arg0_type))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 #ifdef TARGET_WASM
+		if (type_enum_is_float (arg0_type))
+			return NULL;
+
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
 #elif defined(TARGET_ARM64)
-		MonoInst* result_ins = NULL;
-		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		MonoClass* arg_class;
+		if (type_enum_is_float (arg0_type)) {
+			MonoClass* cast_class;
+			if (arg0_type == MONO_TYPE_R4) {
+				arg0_type = MONO_TYPE_I4;
+				cast_class = mono_defaults.int32_class;
+			} else {
+				arg0_type = MONO_TYPE_I8;
+				cast_class = mono_defaults.int64_class;
+			}
+			arg_class = create_class_instance ("System.Runtime.Intrinsics", m_class_get_name (klass), m_class_get_byval_arg (cast_class));
+		} else {
+			arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		}
+		
+		// FIXME: Add support for Vector64 on arm64
 		int size = mono_class_value_size (arg_class, NULL);
 		if (size != 16)
 			return NULL;
@@ -1816,11 +1835,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		and_res_vec->sreg2 = msb_mask_vec->dreg;
 
 		MonoInst* msb_shift_vec = emit_msb_shift_vector_constant (cfg, arg_class, arg0_type);
-		
+
 		MonoInst* shift_res_vec = emit_simd_ins (cfg, arg_class, OP_XOP_OVR_X_X_X, and_res_vec->dreg, msb_shift_vec->dreg);
 		shift_res_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_USHL;
 		shift_res_vec->inst_c1 = arg0_type;
 
+		MonoInst* result_ins = NULL;
 		if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1) {
 			// Always perform unsigned operations as vector sum and extract operations could sign-extend the result into the GP register
 			// making the final result invalid. This is not needed for wider type as the maximum sum of extracted MSB cannot be larger than 8bits
@@ -2390,8 +2410,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	MonoClass *klass = cmethod->klass;
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-	gboolean supported = TRUE;
 
+	// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
 
@@ -2408,9 +2428,17 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		g_free (name);
 	}
 
+	// Special case SN_get_IsSupported intrinsic handling in this function which verifies whether a type parameter T is supported for a generic vector.
+	// As we got passed the MONO_TYPE_IS_VECTOR_PRIMITIVE check above, this should always return true for primitive types.
+	if (id == SN_get_IsSupported) {
+		MonoInst *ins = NULL;
+		EMIT_NEW_ICONST (cfg, ins, 1);
+		return ins;
+	}
+
 #if defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg))
-		supported = FALSE;
+		return NULL;
 #endif
 
 // FIXME: Support Vector64 for mini JIT on arm64
@@ -2421,24 +2449,11 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #ifdef TARGET_AMD64
 	if (!COMPILE_LLVM (cfg) && (size != 16))
-		supported = FALSE;
-#ifdef TARGET_WIN32
-		supported = FALSE;
-#endif
-#endif
-
-	switch (id) {
-	case SN_get_IsSupported: {
-		MonoInst *ins = NULL;
-		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
-		return ins;
-	}
-	default:
-		break;
-	}
-
-	if (!supported)
 		return NULL;
+#ifdef TARGET_WIN32
+		return NULL;
+#endif
+#endif
 
 	switch (id) {
 	case SN_get_Count: {

@@ -149,12 +149,12 @@
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
-        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <target state="translated">Vrácená hodnota ve spravované definici se při volání nespravované metody COM převede na parametr out. Pokud má být návratovou hodnotou kód HRESULT vrácený nespravovanou metodou COM, použijte u metody [PreserveSig].</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
-        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <target state="translated">Návratová hodnota ve spravované definici se při volání nespravované metody COM převede na další parametr out na konci seznamu parametrů.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -904,7 +904,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="needs-review-translation">Atribut [Out] je podporován pouze u parametrů pole a parametrů zařazených připnutím. Zvažte použití klíčových slov out nebo ref, aby byl parametr měnitelný.</target>
+        <target state="new">The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -994,17 +994,17 @@
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
+        <target state="translated">Při volání metody musí být definována velikost parametru{0}, která je zařazena do volané metody, ale parametr count {1} je parametr out.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
+        <target state="translated">Při volání metody musí být definována velikost parametru{0}, která je zařazena do volaného, ale vrácená hodnota se používá jako velikost kolekce.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
         <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
-        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
+        <target state="translated">Velikost kolekce, která je zařazena do volaného, musí být definována při volání metody.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
@@ -1226,7 +1226,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="new">Specified type is not supported by source-generated COM</target>
+        <target state="translated">Zadaný typ není podporován modelem COM generovaným zdrojem.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

@@ -149,12 +149,12 @@
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
-        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <target state="translated">呼叫未受控 COM 方法時，受控定義中的傳回值將轉換為 'out' 參數。如果傳回值預期是未受控 COM 方法傳回的 HRESULT 代碼，請在方法上使用 '[PreserveSig]'。</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
-        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <target state="translated">呼叫未受控 COM 方法時，受控定義中的傳回值將在參數清單尾端轉換為額外的 'out' 參數。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -904,7 +904,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="needs-review-translation">只有在依釘選排列的陣列參數和參數上，才支援 '[Out]' 屬性。請考慮使用 'out' 或 'ref' 關鍵字將參數設為可變。</target>
+        <target state="translated">只有陣列參數才支援 '[Out]' 屬性。請考慮使用 'out' 或 'ref' 關鍵字將參數設為可變。</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -994,17 +994,17 @@
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
+        <target state="translated">呼叫方法時，必須定義封送處理給被呼叫者的參數 '{0}' 的大小，但 count 參數 '{1}' 是 'out' 參數。</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
+        <target state="translated">呼叫方法時，必須定義封送處理給被呼叫者的參數 '{0}' 的大小，但使用傳回值做為集合的大小。</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
         <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
-        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
+        <target state="translated">呼叫方法時，必須定義封送處理給被呼叫者的集合大小。</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
@@ -1226,7 +1226,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="new">Specified type is not supported by source-generated COM</target>
+        <target state="translated">来源產生的 COM 不支援指定的類型。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

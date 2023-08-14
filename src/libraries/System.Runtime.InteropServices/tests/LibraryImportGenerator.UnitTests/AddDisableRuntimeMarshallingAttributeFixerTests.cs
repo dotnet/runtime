@@ -4,12 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Xunit;
-using System.IO;
-
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
     Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer,
     Microsoft.Interop.Analyzers.AddDisableRuntimeMarshallingAttributeFixer>;

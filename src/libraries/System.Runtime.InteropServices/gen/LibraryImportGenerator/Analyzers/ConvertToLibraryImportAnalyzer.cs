@@ -21,7 +21,7 @@ namespace Microsoft.Interop.Analyzers
         private const string Category = "Interoperability";
 
         public static readonly DiagnosticDescriptor ConvertToLibraryImport =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConvertToLibraryImport,
                 GetResourceString(nameof(SR.ConvertToLibraryImportTitle)),
                 GetResourceString(nameof(SR.ConvertToLibraryImportMessage)),
@@ -62,7 +62,7 @@ namespace Microsoft.Interop.Analyzers
                         context.Compilation,
                         targetFramework.TargetFramework,
                         targetFramework.Version,
-                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata));
+                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
 
                     context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType, env), SymbolKind.Method);
                 });

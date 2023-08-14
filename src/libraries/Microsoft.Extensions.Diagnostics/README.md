@@ -5,6 +5,7 @@
 Commonly Used APIS:
 - MetricsServiceExtensions.AddMetrics(this IServiceCollection services)
 - MeterFactoryExtensions.Create(this IMeterFactory, string name, string? version = null, IEnumerable<KeyValuePair<string,object?>> tags = null,  object? scope = null)
+- MetricsBuilderConfigurationExtensions.AddConfiguration(this IMetricsBuilder builder, IConfiguration configuration)
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](https://github.com/dotnet/runtime/tree/main/src/libraries#contribution-bar)
