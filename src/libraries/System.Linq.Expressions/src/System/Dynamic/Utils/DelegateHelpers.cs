@@ -29,7 +29,7 @@ namespace System.Dynamic.Utils
                 // on runtimes which do not support this private API.
                 if (!CanEmitObjectArrayDelegate)
                 {
-                    return Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
+                    return Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments, System.Private.CoreLib")!
                         .GetMethod("CreateObjectArrayDelegate")!
                         .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
                 }
