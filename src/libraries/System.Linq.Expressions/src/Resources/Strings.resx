@@ -565,6 +565,6 @@
     <value>The given key '{0}' was not present in the dictionary.</value>
   </data>
   <data name="LiftingInExpressionRequiresDynamicCode" xml:space="preserve">
-    <value>Nullable lifting on non-primitive type '{0}' is not supported in expression trees when dynamic code generation is not available.</value>
+    <value>Nullable lifting on non-primitive type '{0}' is only supported in expression trees when dynamic code generation is available.</value>
   </data>
 </root>
