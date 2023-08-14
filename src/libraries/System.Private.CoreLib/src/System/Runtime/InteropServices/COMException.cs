@@ -54,9 +54,9 @@ namespace System.Runtime.InteropServices
             s.Append($"{GetType()} (0x{HResult:X8})");
 
             string message = Message;
-            if (!string.IsNullOrEmpty(message ?? SR.Arg_COMException))
+            if (!string.IsNullOrEmpty(message))
             {
-                s.Append(": ").Append(message ?? SR.Arg_COMException);
+                s.Append(": ").Append(message);
             }
 
             Exception? innerException = InnerException;

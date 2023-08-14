@@ -44,11 +44,11 @@ namespace System
         public InsufficientMemoryException(string? message, Exception? innerException)
             : base(message ??
 #if CORECLR
-            GetMessageFromNativeResources(ExceptionMessageKind.OutOfMemory)
+            GetMessageFromNativeResources(ExceptionMessageKind.OutOfMemory),
 #else
-            SR.Arg_OutOfMemoryException
+            SR.Arg_OutOfMemoryException,
 #endif
-            , innerException)
+            innerException)
         {
             HResult = HResults.COR_E_INSUFFICIENTMEMORY;
         }

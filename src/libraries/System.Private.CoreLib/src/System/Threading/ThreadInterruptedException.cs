@@ -40,11 +40,11 @@ namespace System.Threading
         public ThreadInterruptedException(string? message, Exception? innerException)
             : base(message ??
 #if CORECLR
-            GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted)
+            GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted),
 #else
-            SR.Threading_ThreadInterrupted
+            SR.Threading_ThreadInterrupted,
 #endif
-            , innerException)
+            innerException)
         {
             HResult = HResults.COR_E_THREADINTERRUPTED;
         }

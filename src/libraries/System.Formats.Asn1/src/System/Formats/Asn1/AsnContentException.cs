@@ -15,12 +15,12 @@ namespace System.Formats.Asn1
         }
 
         public AsnContentException(string? message)
-            : base(message ?? SR.ContentException_DefaultMessage ?? SR.ContentException_DefaultMessage)
+            : base(message ?? SR.ContentException_DefaultMessage)
         {
         }
 
         public AsnContentException(string? message, Exception? inner)
-            : base(message ?? SR.ContentException_DefaultMessage ?? SR.ContentException_DefaultMessage, inner)
+            : base(message ?? SR.ContentException_DefaultMessage, inner)
         {
         }
 
