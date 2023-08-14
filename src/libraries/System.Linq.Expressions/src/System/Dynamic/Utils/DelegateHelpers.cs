@@ -23,9 +23,21 @@ namespace System.Dynamic.Utils
                 = CreateObjectArrayDelegateInternal();
 
             private static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegateInternal()
-                => Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
-                    .GetMethod("CreateObjectArrayDelegate")!
-                    .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
+            {
+                // This is only supported by NativeAOT which always expects CanEmitObjectArrayDelegate to be false.
+                // This check guards static constructor of trying to resolve 'Internal.Runtime.Augments.DynamicDelegateAugments'
+                // on runtimes which do not support this private API.
+                if (!CanEmitObjectArrayDelegate)
+                {
+                    return Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments, System.Private.CoreLib", throwOnError: true)!
+                        .GetMethod("CreateObjectArrayDelegate")!
+                        .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
+                }
+                else
+                {
+                    return new Func<Type, Func<object?[], object?>, Delegate>((_x, _y) => throw new NotImplementedException());
+                }
+            }
         }
 
         private static class ForceAllowDynamicCodeLightup
