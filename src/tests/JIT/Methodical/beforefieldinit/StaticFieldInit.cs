@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 static class C
 {
@@ -34,7 +35,8 @@ public class ClassB
 
 public class StaticFieldInit
 {
-    public static int Main () {
+    [Fact]
+    public static int TestEntryPoint () {
         C.TestMethod(false);
 
         return C.retVal;
