@@ -488,7 +488,7 @@ namespace System.Net.Http
 
                     if (bytesRead == 0)
                     {
-                        // https://quicwg.org/base-drafts/draft-ietf-quic-http.html#name-unidirectional-streams
+                        // https://www.rfc-editor.org/rfc/rfc9114.html#name-unidirectional-streams
                         // A sender can close or reset a unidirectional stream unless otherwise specified. A receiver MUST
                         // tolerate unidirectional streams being closed or reset prior to the reception of the unidirectional
                         // stream header.
