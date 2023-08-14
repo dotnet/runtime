@@ -193,13 +193,13 @@ namespace Microsoft.Interop
 
             context.RegisterSourceOutput(filesToGenerate, (context, data) =>
             {
-                context.AddSource(data.TypeName.Replace("global::", ""), data.Source);
+                context.AddSource(data.TypeName.Replace(TypeNames.GlobalAlias, ""), data.Source);
             });
         }
 
         private static readonly AttributeSyntax s_iUnknownDerivedAttributeTemplate =
             Attribute(
-                GenericName(TypeNames.IUnknownDerivedAttribute)
+                GenericName(TypeNames.GlobalAlias + TypeNames.IUnknownDerivedAttribute)
                     .AddTypeArgumentListArguments(
                         IdentifierName("InterfaceInformation"),
                         IdentifierName("InterfaceImplementation")));
@@ -452,7 +452,7 @@ namespace Microsoft.Interop
                         .Select(ctx => ctx.Stub.Node)
                         .Concat(shadowImplementations)
                         .Concat(inheritedStubs)))
-                .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute)))));
+                .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute))));
         }
 
         private static InterfaceDeclarationSyntax GenerateImplementationVTableMethods(ComInterfaceAndMethodsContext comInterfaceAndMethods, CancellationToken _)
@@ -496,7 +496,7 @@ namespace Microsoft.Interop
                                     CastExpression(VoidStarStarSyntax,
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseTypeName(TypeNames.System_Runtime_CompilerServices_RuntimeHelpers),
+                                                TypeSyntaxes.System_Runtime_CompilerServices_RuntimeHelpers,
                                                 IdentifierName("AllocateTypeAssociatedMemory")))
                                         .AddArgumentListArguments(
                                             Argument(TypeOfExpression(interfaceType.Syntax)),
@@ -525,7 +525,7 @@ namespace Microsoft.Interop
                         ExpressionStatement(
                             InvocationExpression(
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers),
+                                    TypeSyntaxes.System_Runtime_InteropServices_ComWrappers,
                                     IdentifierName("GetIUnknownImpl")))
                             .AddArgumentListArguments(
                                 Argument(IdentifierName("v0"))
@@ -586,7 +586,7 @@ namespace Microsoft.Interop
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseTypeName(TypeNames.System_Runtime_InteropServices_NativeMemory),
+                                    TypeSyntaxes.System_Runtime_InteropServices_NativeMemory,
                                     IdentifierName("Copy")))
                             .WithArgumentList(
                                 ArgumentList(
@@ -601,7 +601,7 @@ namespace Microsoft.Interop
                                                             SyntaxKind.SimpleMemberAccessExpression,
                                                             MemberAccessExpression(
                                                                 SyntaxKind.SimpleMemberAccessExpression,
-                                                                ParseTypeName(TypeNames.StrategyBasedComWrappers),
+                                                                TypeSyntaxes.StrategyBasedComWrappers,
                                                                 IdentifierName("DefaultIUnknownInterfaceDetailsStrategy")),
                                                             IdentifierName("GetIUnknownDerivedDetails")))
                                                     .WithArgumentList(
@@ -643,14 +643,14 @@ namespace Microsoft.Interop
         private static readonly ClassDeclarationSyntax InterfaceInformationTypeTemplate =
             ClassDeclaration("InterfaceInformation")
             .AddModifiers(Token(SyntaxKind.FileKeyword), Token(SyntaxKind.UnsafeKeyword))
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(TypeNames.IIUnknownInterfaceType)));
+            .AddBaseListTypes(SimpleBaseType(TypeSyntaxes.IIUnknownInterfaceType));
 
         private static ClassDeclarationSyntax GenerateInterfaceInformation(ComInterfaceInfo context, CancellationToken _)
         {
             ClassDeclarationSyntax interfaceInformationType = InterfaceInformationTypeTemplate
                 .AddMembers(
                     // public static System.Guid Iid { get; } = new(<embeddedDataBlob>);
-                    PropertyDeclaration(ParseTypeName(TypeNames.System_Guid), "Iid")
+                    PropertyDeclaration(TypeSyntaxes.System_Guid, "Iid")
                         .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                         .AddAccessorListAccessors(
                             AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(Token(SyntaxKind.SemicolonToken)))

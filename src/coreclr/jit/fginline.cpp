@@ -20,15 +20,11 @@
 //    candidates at depth 1, etc.
 //
 // Notes:
-//    We generally disallow recursive inlines by policy. However, they are
-//    supported by the underlying machinery.
-//
-//    Likewise the depth limit is a policy consideration, and serves mostly
-//    as a safeguard to prevent runaway inlining of small methods.
+//    The depth limit is a policy consideration, and serves mostly as a
+//    safeguard to prevent runaway inlining of small methods.
 //
 unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 {
-    BYTE*          candidateCode = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
     InlineContext* inlineContext = inlineInfo->inlineCandidateInfo->inlinersContext;
     InlineResult*  inlineResult  = inlineInfo->inlineResult;
 
@@ -39,17 +35,15 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
     {
-        assert(inlineContext->GetCode() != nullptr);
         depth++;
 
-        if ((inlineContext->GetCallee() == inlineInfo->fncHandle) &&
-            (inlineContext->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
+        if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
         {
             // This is a recursive inline
             //
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
 
-            // No need to note CALLSITE_DEPTH we're already rejecting this candidate
+            // No need to note CALLSITE_DEPTH since we're already rejecting this candidate
             //
             return depth;
         }
@@ -62,6 +56,150 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_DEPTH, depth);
     return depth;
+}
+
+//------------------------------------------------------------------------
+// IsDisallowedRecursiveInline: Check whether 'info' is a recursive inline (of
+// 'ancestor'), and whether it should be disallowed.
+//
+// Return Value:
+//    True if the inline is recursive and should be disallowed.
+//
+bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo)
+{
+    // We disallow inlining the exact same instantiation.
+    if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
+        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
+    {
+        JITDUMP("Call site is trivially recursive\n");
+        return true;
+    }
+
+    // None of the inline heuristics take into account that inlining will cause
+    // type/method loading for generic contexts. When polymorphic recursion is
+    // involved this can quickly consume a large amount of resources, so try to
+    // verify that we aren't inlining recursively with complex contexts.
+    if (info.compCompHnd->haveSameMethodDefinition(inlineInfo->fncHandle, ancestor->GetCallee()) &&
+        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHnd, 64))
+    {
+        JITDUMP("Call site is recursive with a complex generic context\n");
+        return true;
+    }
+
+    // Not recursive, or allowed recursive inline.
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ContextComplexityExceeds: Check whether the complexity of a generic context
+// exceeds a specified maximum.
+//
+// Arguments:
+//    handle - Handle for the generic context
+//    max    - Max complexity
+//
+// Return Value:
+//    True if the max was exceeded.
+//
+bool Compiler::ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max)
+{
+    if (handle == nullptr)
+    {
+        return false;
+    }
+
+    int cur = 0;
+
+    // We do not expect to try to inline with the sentinel context.
+    assert(handle != METHOD_BEING_COMPILED_CONTEXT());
+
+    if (((size_t)handle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    {
+        return MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE((size_t)handle & ~CORINFO_CONTEXTFLAGS_MASK),
+                                                    cur, max);
+    }
+
+    return TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE((size_t)handle & ~CORINFO_CONTEXTFLAGS_MASK), cur,
+                                              max);
+}
+
+//------------------------------------------------------------------------
+// MethodInstantiationComplexityExceeds: Check whether the complexity of a
+// method's instantiation exceeds a specified maximum.
+//
+// Arguments:
+//    handle - Handle for a method that may be generic
+//    cur    - [in, out] Current complexity (number of types seen in the instantiation)
+//    max    - Max complexity
+//
+// Return Value:
+//    True if the max was exceeded.
+//
+bool Compiler::MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max)
+{
+    CORINFO_SIG_INFO sig;
+    info.compCompHnd->getMethodSig(handle, &sig);
+
+    cur += sig.sigInst.classInstCount + sig.sigInst.methInstCount;
+    if (cur > max)
+    {
+        return true;
+    }
+
+    for (unsigned i = 0; i < sig.sigInst.classInstCount; i++)
+    {
+        if (TypeInstantiationComplexityExceeds(sig.sigInst.classInst[i], cur, max))
+        {
+            return true;
+        }
+    }
+
+    for (unsigned i = 0; i < sig.sigInst.methInstCount; i++)
+    {
+        if (TypeInstantiationComplexityExceeds(sig.sigInst.methInst[i], cur, max))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// TypeInstantiationComplexityExceeds: Check whether the complexity of a type's
+// instantiation exceeds a specified maximum.
+//
+// Arguments:
+//    handle - Handle for a class that may be generic
+//    cur    - [in, out] Current complexity (number of types seen in the instantiation)
+//    max    - Max complexity
+//
+// Return Value:
+//    True if the max was exceeded.
+//
+bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, int& cur, int max)
+{
+    for (int i = 0;; i++)
+    {
+        CORINFO_CLASS_HANDLE instArg = info.compCompHnd->getTypeInstantiationArgument(handle, i);
+
+        if (instArg == NO_CLASS_HANDLE)
+        {
+            break;
+        }
+
+        if (++cur > max)
+        {
+            return true;
+        }
+
+        if (TypeInstantiationComplexityExceeds(instArg, cur, max))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>

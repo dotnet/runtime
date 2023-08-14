@@ -7847,55 +7847,28 @@ CEEInfo::getMethodInfo(
     return result;
 }
 
-#ifdef _DEBUG
-
-/************************************************************************
-    Return true when ftn contains a local of type CLASS__STACKCRAWMARK
-*/
-
-bool containsStackCrawlMarkLocal(MethodDesc* ftn)
+bool CEEInfo::haveSameMethodDefinition(
+    CORINFO_METHOD_HANDLE meth1Hnd,
+    CORINFO_METHOD_HANDLE meth2Hnd)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
-    COR_ILMETHOD* ilHeader = ftn->GetILHeader();
-    _ASSERTE(ilHeader);
+    bool result = false;
 
-    COR_ILMETHOD_DECODER header(ilHeader, ftn->GetMDImport(), NULL);
+    JIT_TO_EE_TRANSITION_LEAF();
 
-    if (header.LocalVarSig == NULL)
-        return NULL;
+    MethodDesc* meth1 = GetMethod(meth1Hnd);
+    MethodDesc* meth2 = GetMethod(meth2Hnd);
+    result = meth1->HasSameMethodDefAs(meth2);
 
-    SigPointer ptr(header.LocalVarSig, header.cbLocalVarSig);
+    EE_TO_JIT_TRANSITION_LEAF();
 
-    IfFailThrow(ptr.GetData(NULL)); // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG
-
-    uint32_t numLocals;
-    IfFailThrow(ptr.GetData(&numLocals));
-
-    for(uint32_t i = 0; i < numLocals; i++)
-    {
-        CorElementType eType;
-        IfFailThrow(ptr.PeekElemType(&eType));
-        if (eType != ELEMENT_TYPE_VALUETYPE)
-        {
-            IfFailThrow(ptr.SkipExactlyOne());
-            continue;
-        }
-
-        IfFailThrow(ptr.GetElemType(NULL));
-
-        mdToken token;
-        IfFailThrow(ptr.GetToken(&token));
-
-        // We are inside CoreLib - simple token match is sufficient
-        if (token == CoreLibBinder::GetClass(CLASS__STACKCRAWMARK)->GetCl())
-            return TRUE;
-    }
-
-    return FALSE;
+    return result;
 }
-
-#endif
 
 /*************************************************************
  * Check if the caller and calle are in the same assembly

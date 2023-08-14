@@ -60,6 +60,16 @@ bool WrapICorJitInfo::getMethodInfo(
     return temp;
 }
 
+bool WrapICorJitInfo::haveSameMethodDefinition(
+          CORINFO_METHOD_HANDLE meth1Hnd,
+          CORINFO_METHOD_HANDLE meth2Hnd)
+{
+    API_ENTER(haveSameMethodDefinition);
+    bool temp = wrapHnd->haveSameMethodDefinition(meth1Hnd, meth2Hnd);
+    API_LEAVE(haveSameMethodDefinition);
+    return temp;
+}
+
 CorInfoInline WrapICorJitInfo::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)

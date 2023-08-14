@@ -154,19 +154,23 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
     public Task BlazorRunForBuildWithDotnetRun(BlazorRunOptions runOptions)
-    {
-        if (runOptions.ExtraArgs is null)
-            runOptions = runOptions with { ExtraArgs = "--no-build" };
-
-        return BlazorRunTest($"run -c {runOptions.Config}",
-                         _projectDir!,
-                         runOptions with { Host = BlazorRunHost.DotnetRun });
-    }
+        => BlazorRunTest(runOptions with { Host = BlazorRunHost.DotnetRun });
 
     public Task BlazorRunForPublishWithWebServer(BlazorRunOptions runOptions)
-        => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                         Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(runOptions.Config, forPublish: true), "..")),
-                         runOptions with { Host = BlazorRunHost.WebServer });
+        => BlazorRunTest(runOptions with { Host = BlazorRunHost.WebServer });
+
+    public Task BlazorRunTest(BlazorRunOptions runOptions) => runOptions.Host switch
+    {
+        BlazorRunHost.DotnetRun =>
+                BlazorRunTest($"run -c {runOptions.Config} --no-build", _projectDir!, runOptions),
+
+        BlazorRunHost.WebServer =>
+                BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+                     Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(runOptions.Config, forPublish: true), "..")),
+                     runOptions),
+
+        _ => throw new NotImplementedException(runOptions.Host.ToString())
+    };
 
     public async Task BlazorRunTest(string runArgs,
                                     string workingDirectory,

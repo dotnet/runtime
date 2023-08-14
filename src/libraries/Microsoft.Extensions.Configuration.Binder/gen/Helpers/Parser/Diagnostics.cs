@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -21,7 +22,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public static DiagnosticDescriptor MultiDimArraysNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.MultiDimArraysNotSupported));
                 public static DiagnosticDescriptor NullableUnderlyingTypeNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.NullableUnderlyingTypeNotSupported));
 
-                public static DiagnosticDescriptor PropertyNotSupported { get; } = new DiagnosticDescriptor(
+                public static DiagnosticDescriptor PropertyNotSupported { get; } = DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1101",
                     title: new LocalizableResourceString(nameof(SR.PropertyNotSupportedTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
                     messageFormat: new LocalizableResourceString(nameof(SR.PropertyNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
@@ -29,7 +30,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     defaultSeverity: DiagnosticSeverity.Warning,
                     isEnabledByDefault: true);
 
-                public static DiagnosticDescriptor LanguageVersionNotSupported { get; } = new DiagnosticDescriptor(
+                public static DiagnosticDescriptor LanguageVersionNotSupported { get; } = DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1102",
                     title: new LocalizableResourceString(nameof(SR.LanguageVersionIsNotSupportedTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
                     messageFormat: new LocalizableResourceString(nameof(SR.Language_VersionIsNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
@@ -37,7 +38,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     defaultSeverity: DiagnosticSeverity.Error,
                     isEnabledByDefault: true);
 
-                public static DiagnosticDescriptor ValueTypesInvalidForBind { get; } = new DiagnosticDescriptor(
+                public static DiagnosticDescriptor ValueTypesInvalidForBind { get; } = DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1103",
                     title: new LocalizableResourceString(nameof(SR.ValueTypesInvalidForBindTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
                     messageFormat: new LocalizableResourceString(nameof(SR.ValueTypesInvalidForBindMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
@@ -45,7 +46,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     defaultSeverity: DiagnosticSeverity.Warning,
                     isEnabledByDefault: true);
 
-                public static DiagnosticDescriptor CouldNotDetermineTypeInfo { get; } = new DiagnosticDescriptor(
+                public static DiagnosticDescriptor CouldNotDetermineTypeInfo { get; } = DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1104",
                     title: new LocalizableResourceString(nameof(SR.CouldNotDetermineTypeInfoTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
                     messageFormat: new LocalizableResourceString(nameof(SR.CouldNotDetermineTypeInfoMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
@@ -54,7 +55,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     isEnabledByDefault: true);
 
                 private static DiagnosticDescriptor CreateTypeNotSupportedDescriptor(string nameofLocalizableMessageFormat) =>
-                    new DiagnosticDescriptor(
+                    DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1100",
                     title: new LocalizableResourceString(nameof(SR.TypeNotSupportedTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
                     messageFormat: new LocalizableResourceString(nameofLocalizableMessageFormat, SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),

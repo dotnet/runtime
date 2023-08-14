@@ -115,7 +115,7 @@ namespace Microsoft.Interop
                                 SyntaxKind.SimpleMemberAccessExpression,
                                 ParenthesizedExpression(
                                     CastExpression(
-                                        ParseTypeName(TypeNames.IUnmanagedVirtualMethodTableProvider),
+                                        TypeSyntaxes.IUnmanagedVirtualMethodTableProvider,
                                         ThisExpression())),
                                 IdentifierName("GetVirtualMethodTableInfoForKey") ))
                         .WithArgumentList(
@@ -189,7 +189,7 @@ namespace Microsoft.Interop
                 ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            ParseTypeName(TypeNames.System_GC),
+                            TypeSyntaxes.System_GC,
                             IdentifierName("KeepAlive")),
                         ArgumentList(SingletonSeparatedList(Argument(ThisExpression()))))));
 

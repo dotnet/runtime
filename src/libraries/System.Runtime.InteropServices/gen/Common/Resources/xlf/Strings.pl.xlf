@@ -149,12 +149,12 @@
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
-        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <target state="translated">Wartość zwracana w definicji zarządzanej zostanie przekonwertowana na parametr „out” podczas wywoływania niezarządzanej metody COM. Jeśli wartość zwracana ma być kodem HRESULT zwracanym przez niezarządzaną metodę COM, należy użyć „[PreserveSig]” w metodzie.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
-        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <target state="translated">Wartość zwracana w definicji zarządzanej zostanie przekonwertowana na dodatkowy parametr „out” na końcu listy parametrów podczas wywoływania niezarządzanej metody COM.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -904,7 +904,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="needs-review-translation">Atrybut `[Out]` jest obsługiwany tylko w przypadku parametrów tablicy i parametrów kierowanych przez przypinanie. Rozważ użycie słów kluczowych „out” lub „ref”, aby umożliwić modyfikowanie parametru.</target>
+        <target state="translated">Atrybut „[Out]” jest obsługiwany tylko w przypadku parametrów tablicy. Rozważ użycie słów kluczowych „out” lub „ref”, aby umożliwić modyfikowanie parametru.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -994,17 +994,17 @@
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
+        <target state="translated">Rozmiar parametru „{0}”, który jest kierowany do obiektu wywołującego, musi być zdefiniowany podczas wywoływania metody, ale parametr ILE.LICZB „{1}” jest parametrem „out”.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
+        <target state="translated">Rozmiar parametru „{0}”, który jest kierowany do obiektu wywołującego, musi być zdefiniowany podczas wywoływania metody, ale wartość zwracana jest używana jako rozmiar kolekcji.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
         <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
-        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
+        <target state="translated">Rozmiar kolekcji kierowanej do obiektu wywołującego musi być zdefiniowany podczas wywoływania metody.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
@@ -1226,7 +1226,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="new">Specified type is not supported by source-generated COM</target>
+        <target state="translated">Określony typ nie jest obsługiwany przez źródłowy COM</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

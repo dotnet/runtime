@@ -113,7 +113,7 @@ namespace Microsoft.Interop
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                        TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                         IdentifierName("CreateSpan")),
                     ArgumentList(
                         SeparatedList(new[]
@@ -121,7 +121,7 @@ namespace Microsoft.Interop
                             Argument(
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                                        TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                                         IdentifierName("GetReference")),
                                     ArgumentList(SingletonSeparatedList(
                                         Argument(CollectionSource.GetUnmanagedValuesSource(info, context))))))
@@ -167,7 +167,7 @@ namespace Microsoft.Interop
             ExpressionSyntax destination = InvocationExpression(
                 MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                    TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                     IdentifierName("CreateSpan")),
                 ArgumentList(
                     SeparatedList(new[]
@@ -175,7 +175,7 @@ namespace Microsoft.Interop
                         Argument(
                             InvocationExpression(
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                                    TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                                     IdentifierName("GetReference")),
                                 ArgumentList(SingletonSeparatedList(
                                     Argument(CollectionSource.GetManagedValuesSource(info, context))))))
@@ -223,7 +223,7 @@ namespace Microsoft.Interop
             return InvocationExpression(
                 MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    ParseTypeName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                    TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                     GenericName(
                         Identifier("Cast"),
                         TypeArgumentList(SeparatedList(
@@ -369,7 +369,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                            TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                             IdentifierName("CreateSpan")))
                     .WithArgumentList(
                         ArgumentList(
@@ -379,7 +379,7 @@ namespace Microsoft.Interop
                                     Argument(
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                                TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
                                                 IdentifierName("AsRef")),
                                             ArgumentList(SingletonSeparatedList(
                                                 Argument(
@@ -493,7 +493,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                            TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                             IdentifierName("CreateSpan")))
                     .WithArgumentList(
                         ArgumentList(
@@ -503,7 +503,7 @@ namespace Microsoft.Interop
                                     Argument(
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                                TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
                                                 IdentifierName("AsRef")),
                                             ArgumentList(SingletonSeparatedList(
                                                 Argument(

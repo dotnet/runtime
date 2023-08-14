@@ -168,7 +168,7 @@ namespace Microsoft.Interop
                     managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }));
             return ImmutableArray.Create(
                 CatchClause(
-                    CatchDeclaration(ParseTypeName(TypeNames.System_Exception), Identifier(managed)),
+                    CatchDeclaration(TypeSyntaxes.System_Exception, Identifier(managed)),
                     filter: null,
                     Block(List(catchClauseBuilder))));
         }
