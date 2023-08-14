@@ -8,15 +8,75 @@
 // Represents a list of statements; this is the result of store decomposition.
 class DecompositionStatementList
 {
+    // Singly linked, stored in reverse order
     GenTree* m_head = nullptr;
 
 public:
+    //------------------------------------------------------------------------
+    // AddStatement:
+    //   Add a statement to the list.
+    //
+    // Parameters:
+    //   stmt - The statement
+    //
     void AddStatement(GenTree* stmt)
     {
         stmt->gtNext = m_head;
         m_head       = stmt;
     }
 
+    //------------------------------------------------------------------------
+    // ReplaceTopLevelStatement:
+    //   Replace a top level statement with the statements in this list.
+    //
+    // Parameters:
+    //   comp         - Compiler instance
+    //   block        - Block containing the top level statement
+    //   topLevelStmt - Top level statement to replace.
+    //
+    // Remarks:
+    //   The top level statement has its node replaced with the last one stored in this list.
+    //   All other statements are placed (ensuring correct order) before the statement.
+    //
+    void ReplaceTopLevelStatement(Compiler* comp, BasicBlock* block, Statement* topLevelStmt)
+    {
+        if (m_head == nullptr)
+        {
+            topLevelStmt->SetRootNode(comp->gtNewNothingNode());
+            return;
+        }
+
+        topLevelStmt->SetRootNode(m_head);
+
+        const DebugInfo& di     = topLevelStmt->GetDebugInfo();
+        GenTree*         cur    = m_head->gtNext;
+        Statement*       before = topLevelStmt;
+        while (cur != nullptr)
+        {
+            // Save next since we will sequence it and override it as part of
+            // inserting the statement.
+            GenTree*   next    = cur->gtNext;
+            Statement* newStmt = comp->fgNewStmtFromTree(cur, nullptr, di);
+            DISPSTMT(newStmt);
+
+            comp->fgInsertStmtBefore(block, before, newStmt);
+            before = newStmt;
+
+            cur = next;
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // ToCommaTree:
+    //   Convert the statement list to a tree by creating a cascading COMMA
+    //   tree with embedded statements.
+    //
+    // Parameters:
+    //   comp - Compiler instance
+    //
+    // Returns:
+    //   Cascading COMMA tree with embedded statements. GT_NOP if the list is empty.
+    //
     GenTree* ToCommaTree(Compiler* comp)
     {
         if (m_head == nullptr)
@@ -1346,7 +1406,16 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
 
         plan.Finalize(&result);
 
-        *use          = result.ToCommaTree(m_compiler);
+        if (m_currentStmt->GetRootNode() == store)
+        {
+            JITDUMP("Store is top-level; creating new statements\n");
+            result.ReplaceTopLevelStatement(m_compiler, m_currentBlock, m_currentStmt);
+        }
+        else
+        {
+            *use = result.ToCommaTree(m_compiler);
+        }
+
         m_madeChanges = true;
     }
     else
