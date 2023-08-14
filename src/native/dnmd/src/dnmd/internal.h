@@ -15,7 +15,6 @@
 typedef size_t rsize_t;
 #endif // !__STDC_LIB_EXT1__
 
-
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
 // Mutable data
@@ -53,10 +52,15 @@ typedef enum
     mdtc_idx_heap   = 0x00000002, // Index into a heap - see flags below.
     mdtc_idx_table  = 0x00000004, // Index into a table - see mask below.
     mdtc_idx_coded  = 0x00000008, // Coded index - see II.24.2.6.
+    // Value category mask
+    mdtc_categorymask = 0x0000000f,
 
     // Size of the constant or index
     mdtc_b2         = 0x00000010, // 2-bytes
     mdtc_b4         = 0x00000020, // 4-bytes
+    // Width of column flags 
+    mdtc_widthmask  = 0x00000030,
+
     //mdtc_unused1  = 0x00000040,
     //mdtc_unused2  = 0x00000080,
 
@@ -74,6 +78,7 @@ typedef enum
     mdtc_hstring    = 0x20000000, // #Strings
     mdtc_hus        = 0x40000000, // #US
     mdtc_hblob      = 0x80000000, // #Blob
+    mdtc_hmask      = 0xf0000000, // Mask for storing heap type
 } mdtcol_t;
 
 // Flags and masks for context details
@@ -100,6 +105,10 @@ typedef enum
 #define InsertCodedIndex(s) ((s << 24) & mdtc_cimask)
 #define ExtractCodedIndex(s) ((s & mdtc_cimask) >> 24)
 
+// Macros used to insert/extract the heap type
+#define InsertHeapType(h) ((h) & mdtc_hmask)
+#define ExtractHeapType(h) ((h) & mdtc_hmask)
+
 // Forward declare.
 struct _mdcxt_t;
 
@@ -109,7 +118,8 @@ typedef struct _mdtable_t
     uint32_t row_count;
     uint8_t row_size_bytes;
     uint8_t column_count;
-    bool is_sorted;
+    bool is_sorted : 1;
+    bool is_adding_new_row : 1;
     uint8_t table_id;
     struct _mdcxt_t* cxt; // Non-null is indication of complete initialization
     mdtcol_t* column_details;
@@ -117,17 +127,15 @@ typedef struct _mdtable_t
 
 typedef mdcdata_t mdstream_t;
 
-typedef struct _mdmem_t
-{
-    struct _mdmem_t* next;
-    size_t size;
-    uint8_t data[1]; // Arbitrary sized array
-} mdmem_t;
+typedef struct _mdmem_t mdmem_t;
+
+typedef struct _mdeditor_t mdeditor_t;
 
 typedef struct _mdcxt_t
 {
     uint32_t magic; // mdlib magic
-    mdcdata_t data; // metadata raw bytes
+    mdcdata_t raw_metadata; // metadata raw bytes
+    mdeditor_t* editor; // metadata editor
     mdcxt_flag_t context_flags;
 
     // Metadata root details - II.24.2.1
@@ -156,8 +164,9 @@ typedef struct _mdcxt_t
 // Extract a context from the mdhandle_t.
 mdcxt_t* extract_mdcxt(mdhandle_t md);
 
-// Allocate tracked memory.
-mdmem_t* alloc_mdmem(mdcxt_t* cxt, size_t length);
+// Allocate and free tracked memory.
+void* alloc_mdmem(mdcxt_t* cxt, size_t length);
+void free_mdmem(mdcxt_t* cxt, void* mem);
 
 // Merge the supplied delta into the context.
 bool merge_in_delta(mdcxt_t* cxt, mdcxt_t* delta);
@@ -166,21 +175,28 @@ bool merge_in_delta(mdcxt_t* cxt, mdcxt_t* delta);
 // Streams
 //
 
+mdstream_t* get_heap_by_id(mdcxt_t* cxt, mdtcol_t heap_id);
+mdcxt_flag_t get_large_heap_flag(mdtcol_t heap_id);
+
 // Strings heap, #Strings - II.24.2.3
 bool try_get_string(mdcxt_t* cxt, size_t offset, char const** str);
 bool validate_strings_heap(mdcxt_t* cxt);
+uint32_t add_to_string_heap(mdcxt_t* cxt, char const* str);
 
 // User strings heap, #US - II.24.2.4
 bool try_get_user_string(mdcxt_t* cxt, size_t offset, mduserstring_t* str, size_t* next_offset);
 bool validate_user_string_heap(mdcxt_t* cxt);
+uint32_t add_to_user_string_heap(mdcxt_t* cxt, char16_t const* str);
 
 // Blob heap, #Blob - II.24.2.4
 bool try_get_blob(mdcxt_t* cxt, size_t offset, uint8_t const** blob, uint32_t* blob_len);
 bool validate_blob_heap(mdcxt_t* cxt);
+uint32_t add_to_blob_heap(mdcxt_t* cxt, uint8_t const* data, uint32_t length);
 
 // GUID heap, #GUID - II.24.2.5
 bool try_get_guid(mdcxt_t* cxt, size_t idx, md_guid_t* guid);
 bool validate_guid_heap(mdcxt_t* cxt);
+uint32_t add_to_guid_heap(mdcxt_t* cxt, md_guid_t guid);
 
 // Table heap, #~ - II.24.2.6
 // Note: This can only be done after all streams have been read in.
@@ -226,19 +242,10 @@ typedef enum
     mdci_Count
 } md_coded_idx_t;
 
-typedef struct _coded_index_entry
-{
-    // Coded index lookup
-    mdtable_id_t const* lookup;
-    // Coded index lookup length
-    uint8_t const lookup_len;
-    // Number of bits needed to encode lookup index
-    uint8_t const bit_encoding_size;
-} coded_index_entry;
-
 // Manipulators for coded indices - II.24.2.6
 bool compose_coded_index(mdToken tk, mdtcol_t col_details, uint32_t* coded_index);
 bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* table_id, uint32_t* table_row);
+bool is_coded_index_target(mdtcol_t col_details, mdtable_id_t table);
 
 // Get the column count for a table.
 uint8_t get_table_column_count(mdtable_id_t id);
@@ -267,10 +274,101 @@ bool consume_table_rows(mdtable_t* table, uint8_t const** data, size_t* data_len
 
 // Get whether or not the column in the table points into an indirect table
 bool table_is_indirect_table(mdtable_id_t table_id);
+// Get the indirection table for a given table
+mdtable_id_t get_corresponding_indirection_table(mdtable_id_t table_id);
+
+// Cursor manipulation
+
 
 // Internal function used to create a cursor.
 // Limited validation is done for the arguments.
 mdcursor_t create_cursor(mdtable_t* table, uint32_t row);
+
+// We declare these functions as static so they can be included in each translation unit.
+// Some units may not use them, so we ignore the unused function warning.
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+static mdtable_t* CursorTable(mdcursor_t* c)
+{
+    assert(c != NULL);
+    return (mdtable_t*)c->_reserved1;
+}
+
+static uint32_t CursorRow(mdcursor_t* c)
+{
+    assert(c != NULL);
+    return RidFromToken(c->_reserved2);
+}
+
+static bool CursorNull(mdcursor_t* c)
+{
+    return CursorRow(c) == 0;
+}
+
+static bool CursorEnd(mdcursor_t* c)
+{
+    return (CursorTable(c)->row_count + 1) == CursorRow(c);
+}
+
+static uint8_t col_to_index(col_index_t col_idx, mdtable_t const* table)
+{
+    assert(table != NULL);
+    uint32_t idx = (uint32_t)col_idx;
+#ifdef DEBUG_TABLE_COLUMN_LOOKUP
+    mdtable_id_t tgt_table_id = col_idx >> 8;
+    if (tgt_table_id != table->table_id)
+    {
+        assert(!"Unexpected table/column indexing");
+        return false;
+    }
+    idx = (col_idx & 0xff);
+#else
+    (void)table;
+#endif
+    return (uint8_t)idx;
+}
+
+static col_index_t index_to_col(uint8_t idx, mdtable_id_t table_id)
+{
+#ifdef DEBUG_TABLE_COLUMN_LOOKUP
+    return (col_index_t)((table_id << 8) | idx);
+#else
+    (void)table_id;
+    return (col_index_t)idx;
+#endif
+}
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+// Copy data from a cursor to one row to a cursor to another row.
+bool copy_cursor(mdcursor_t dest, mdcursor_t src);
+
+// Raw table data access
+
+typedef struct _access_cxt_t
+{
+    mdtable_t* table;
+    mdtcol_t col_details;
+    uint8_t const* start;
+    uint8_t const* data;
+    uint8_t* writable_data;
+    uint8_t const* end;
+    size_t data_len;
+    uint32_t data_len_col;
+    uint32_t next_row_stride;
+} access_cxt_t;
+
+bool create_access_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, bool make_writable, access_cxt_t* acxt);
+bool read_column_data(access_cxt_t* acxt, uint32_t* data);
+bool write_column_data(access_cxt_t* acxt, uint32_t data);
+bool next_row(access_cxt_t* acxt);
+
+// Internal functions used to read/write columns with minimal validation.
+int32_t get_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* offset);
+int32_t set_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t* offset);
 
 //
 // Manipulation of bits
@@ -294,12 +392,34 @@ bool read_i32(uint8_t const** data, size_t* data_len, int32_t* o);
 bool read_u64(uint8_t const** data, size_t* data_len, uint64_t* o);
 bool read_i64(uint8_t const** data, size_t* data_len, int64_t* o);
 
+bool write_u8(uint8_t** data, size_t* data_len, uint8_t o);
+bool write_i8(uint8_t** data, size_t* data_len, int8_t o);
+bool write_u16(uint8_t** data, size_t* data_len, uint16_t o);
+bool write_i16(uint8_t** data, size_t* data_len, int16_t o);
+bool write_u32(uint8_t** data, size_t* data_len, uint32_t o);
+bool write_i32(uint8_t** data, size_t* data_len, int32_t o);
+bool write_u64(uint8_t** data, size_t* data_len, uint64_t o);
+bool write_i64(uint8_t** data, size_t* data_len, int64_t o);
+
 // II.23.2
 bool decompress_u32(uint8_t const** data, size_t* data_len, uint32_t* o);
 bool decompress_i32(uint8_t const** data, size_t* data_len, int32_t* o);
-// II.23.2
 // compressed_len is an in/out parameter. If compress_u32 returns true, then
 // compressed_len is set to the number of bytes written to compressed.
 bool compress_u32(uint32_t data, uint8_t* compressed, size_t* compressed_len);
+
+// Editing
+bool create_and_fill_indirect_table(mdcxt_t* cxt, mdtable_id_t original_table, mdtable_id_t indirect_table);
+bool allocate_new_table(mdcxt_t* cxt, mdtable_id_t table_id);
+uint8_t* get_writable_table_data(mdtable_t* table, bool make_writable);
+bool initialize_new_table_details(mdcxt_t* cxt, mdtable_id_t id, mdtable_t* table);
+int32_t update_shifted_row_references(mdcursor_t* c, uint32_t count, uint8_t col_index, mdtable_id_t updated_table, uint32_t original_starting_table_index, uint32_t new_starting_table_index);
+bool insert_row_into_table(mdcxt_t* cxt, mdtable_id_t table_id, uint32_t row_index, mdcursor_t* new_row);
+
+// Sort a row list (like FieldList, MethodList, ParamList, etc.) by the values specified in the given constant column on the target table.
+bool sort_list_by_column(mdcursor_t parent, col_index_t list_col, col_index_t col);
+
+// Add the heap with the specified id from the delta image to the cxt image.
+bool append_heap(mdcxt_t* cxt, mdcxt_t* delta, mdtcol_t heap_id);
 
 #endif // _SRC_DNMD_INTERNAL_H_

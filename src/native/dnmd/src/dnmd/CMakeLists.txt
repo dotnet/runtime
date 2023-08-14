@@ -1,11 +1,14 @@
 set(SOURCES
+  access.c
   bytes.c
+  deltas.c
+  editor.c
   entry.c
   query.c
   streams.c
   tables.c
   sig.c
-  deltas.c
+  write.c
 )
 
 set(HEADERS

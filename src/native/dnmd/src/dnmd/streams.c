@@ -267,6 +267,7 @@ bool validate_tables(mdcxt_t* cxt)
     assert(cxt != NULL);
     (void)cxt;
     // [TODO] Reference ECMA-335 and encode table verification.
+    // [TODO] Validate that tables marked as sorted are actually sorted.
     // [TODO] Do not allow the EncMap and *Ptr tables to be present in a compressed table heap.
     return true;
 }
@@ -326,4 +327,37 @@ bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb)
     (void)pdb;
     return false;
 #endif // !DNMD_PORTABLE_PDB
+}
+
+mdstream_t* get_heap_by_id(mdcxt_t* cxt, mdtcol_t heap_id)
+{
+    assert(cxt != NULL);
+    switch (heap_id)
+    {
+        case mdtc_hblob:
+            return &cxt->blob_heap;
+        case mdtc_hguid:
+            return &cxt->guid_heap;
+        case mdtc_hstring:
+            return &cxt->strings_heap;
+        case mdtc_hus:
+            return &cxt->user_string_heap;
+        default:
+            return NULL;
+    }
+}
+
+mdcxt_flag_t get_large_heap_flag(mdtcol_t heap_id)
+{
+    switch (heap_id)
+    {
+    case mdtc_hblob:
+        return mdc_large_blob_heap;
+    case mdtc_hguid:
+        return mdc_large_guid_heap;
+    case mdtc_hstring:
+        return mdc_large_string_heap;
+    default:
+        return 0;
+    }
 }

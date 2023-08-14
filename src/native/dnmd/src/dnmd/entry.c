@@ -223,8 +223,8 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
 
     // Header initialization is complete.
     cxt.magic = MDLIB_MAGIC_NUMBER;
-    cxt.data.ptr = data;
-    cxt.data.size = data_len;
+    cxt.raw_metadata.ptr = data;
+    cxt.raw_metadata.size = data_len;
 
     // Allocate and initialize a context
     mdcxt_t* pcxt = allocate_full_context(&cxt);
@@ -270,6 +270,13 @@ bool md_apply_delta(mdhandle_t handle, void const* data, size_t data_len)
     return result;
 }
 
+typedef struct _mdmem_t
+{
+    mdmem_t* next;
+    size_t size;
+    uint8_t data[];
+} mdmem_t;
+
 void md_destroy_handle(mdhandle_t handle)
 {
     mdcxt_t* cxt = extract_mdcxt(handle);
@@ -284,6 +291,8 @@ void md_destroy_handle(mdhandle_t handle)
         free(curr);
         curr = tmp;
     }
+
+    free(cxt);
 }
 
 bool md_validate(mdhandle_t handle)
@@ -426,7 +435,7 @@ mdcxt_t* extract_mdcxt(mdhandle_t md)
     return cxt;
 }
 
-mdmem_t* alloc_mdmem(mdcxt_t* cxt, size_t length)
+void* alloc_mdmem(mdcxt_t* cxt, size_t length)
 {
     assert(cxt != NULL);
     mdmem_t* m = (mdmem_t*)malloc(sizeof(mdmem_t) + length);
@@ -435,6 +444,37 @@ mdmem_t* alloc_mdmem(mdcxt_t* cxt, size_t length)
         m->next = cxt->mem;
         m->size = length;
         cxt->mem = m;
+        return m->data;
     }
-    return m;
+    return NULL;
+}
+
+void free_mdmem(mdcxt_t* cxt, void* mem)
+{
+    assert(cxt != NULL);
+    if (mem == NULL)
+        return;
+
+    // We need to get back to the mdmem_t header from the start of the block.
+    mdmem_t* m = (mdmem_t*)((char*)mem - offsetof(mdmem_t, data));
+
+    // Remove m from the chain of tracked memory.
+    if (cxt->mem == m)
+    {
+        cxt->mem = m->next;
+    }
+    else
+    {
+        for (mdmem_t* p = cxt->mem; p != NULL; p = p->next)
+        {
+            if (p->next == m)
+            {
+                p->next = m->next;
+                break;
+            }
+        }
+    }
+
+    // Now that we aren't tracking the memory, free it.
+    free(m);
 }

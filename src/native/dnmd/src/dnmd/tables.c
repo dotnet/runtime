@@ -75,6 +75,16 @@ static mdtable_id_t const HasCustomDebugInformation[] =
 };
 #endif // DNMD_PORTABLE_PDB
 
+typedef struct
+{
+    // Coded index lookup
+    mdtable_id_t const* lookup;
+    // Coded index lookup length
+    uint8_t const lookup_len;
+    // Number of bits needed to encode lookup index
+    uint8_t const bit_encoding_size;
+} coded_index_entry;
+
 static coded_index_entry const coded_index_map[] =
 {
     { TypeDefOrRef, ARRAY_SIZE(TypeDefOrRef), 2},
@@ -140,6 +150,24 @@ bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* ta
     // Remove the encoded lookup index.
     *table_row = cidx >> ci_entry->bit_encoding_size;
     return true;
+}
+
+bool is_coded_index_target(mdtcol_t col_details, mdtable_id_t table)
+{
+    assert(table != mdtid_Unused);
+
+    size_t ci_idx = ExtractCodedIndex(col_details);
+    assert(ci_idx < ARRAY_SIZE(coded_index_map));
+    coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
+    for (uint8_t i = 0; i < ci_entry->lookup_len; ++i)
+    {
+        // If the table is valid, construct the coded index.
+        if (ci_entry->lookup[i] == table)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Look up table for column counts by table ID
@@ -726,6 +754,36 @@ bool initialize_table_details(
     return true;
 }
 
+bool initialize_new_table_details(
+    mdcxt_t* cxt,
+    mdtable_id_t id,
+    mdtable_t* table
+)
+{
+    assert(table->cxt == NULL);
+    // Use the real table row counts to ensure that when saving, we can
+    // directly write out table memory without any required post-processing.
+    uint32_t table_row_counts[MDTABLE_MAX_COUNT];
+    for (size_t i = 0; i < MDTABLE_MAX_COUNT; i++)
+    {
+        table_row_counts[i] = cxt->tables[i].row_count;
+    }
+
+    // Set the new table's row count temporarily to 1 to ensure that we initialize the table.
+    table_row_counts[id] = 1;
+
+    if (!initialize_table_details(
+        table_row_counts,
+        cxt->context_flags,
+        id,
+        false,
+        table))
+        return false;
+
+    table->row_count = 0;
+    return true;
+}
+
 bool consume_table_rows(mdtable_t* table, uint8_t const** data, size_t* data_len)
 {
     assert(table != NULL && data != NULL && data_len != NULL);
@@ -755,5 +813,24 @@ bool table_is_indirect_table(mdtable_id_t table_id)
             return true;
         default:
             return false;
+    }
+}
+
+mdtable_id_t get_corresponding_indirection_table(mdtable_id_t table_id)
+{
+    switch (table_id)
+    {
+    case mdtid_Field:
+        return mdtid_FieldPtr;
+    case mdtid_MethodDef:
+        return mdtid_MethodPtr;
+    case mdtid_Param:
+        return mdtid_ParamPtr;
+    case mdtid_Event:
+        return mdtid_EventPtr;
+    case mdtid_Property:
+        return mdtid_PropertyPtr;
+    default:
+        return mdtid_Unused;
     }
 }

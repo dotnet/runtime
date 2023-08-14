@@ -30,10 +30,11 @@ typedef struct md_guid_t {
 
 typedef void* mdhandle_t;
 
-// Create a metadata handle that can be used to parse the supplied metadata.
+// Create a metadata handle that can be used to parse and modify the supplied metadata.
 //
 // The supplied data is expected to be unmoved and available until all
 // handles created with the data have been destroyed.
+// If modifications are made, the data will not be updated in place.
 bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle);
 
 // Apply delta data to the current metadata.
@@ -421,8 +422,8 @@ typedef enum
 } col_index_t;
 
 // Query row's column values
-int32_t md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tk);
 // The returned number represents the number of valid cursor(s) for indexing.
+int32_t md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tk);
 int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdcursor_t* cursor);
 // Resolve the column to a cursor and a range based on the run/list pattern in tables.
 // The run continues to the smaller of:
@@ -472,6 +473,46 @@ bool md_create_methoddefsig_from_methodrefsig(uint8_t const* ref_sig, size_t ref
 // Given a cursor, resolve any indirections to the final cursor or return the original cursor if it does not point to an indirection table.
 // Returns true if the cursor was not an indirect cursor or if the indirection was resolved, or false if the cursor pointed to an invalid indirection table entry.
 bool md_resolve_indirect_cursor(mdcursor_t c, mdcursor_t* target);
+
+// Set row's column values
+// The returned number represents the number of rows updated.
+int32_t md_set_column_value_as_token(mdcursor_t c, col_index_t col, uint32_t in_length, mdToken* tk);
+int32_t md_set_column_value_as_cursor(mdcursor_t c, col_index_t col, uint32_t in_length, mdcursor_t* cursor);
+int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t* constant);
+int32_t md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char const** str);
+int32_t md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint8_t const** blob, uint32_t* blob_len);
+int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t in_length, md_guid_t const* guid);
+int32_t md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char16_t const** userstring);
+
+// Create a new row logically before the row specified by the cursor.
+// If the given row is in a table that is a target of a list column, this function will return false.
+// Only md_add_row_to_list can be used to add rows to a table that is a target of a list column.
+// The table is treated as unsorted until md_commit_row_add is called after all columns have been set on the new row.
+bool md_insert_row_before(mdcursor_t row, mdcursor_t* new_row);
+
+// Create a new row after the row specified by the cursor.
+// If the given row is in a table that is a target of a list column, this function will return false.
+// Only md_add_row_to_list can be used to add rows to a table that is a target of a list column.
+// The table is treated as unsorted until md_commit_row_add is called after all columns have been set on the new row.
+bool md_insert_row_after(mdcursor_t row, mdcursor_t* new_row);
+
+// Create a new row at the end of the specified table.
+// If the given row is in a table that is a target of a list column, this function will return false.
+// Only md_add_row_to_list can be used to add rows to a table that is a target of a list column.
+// The table is treated as unsorted until md_commit_row_add is called after all columns have been set on the new row.
+bool md_append_row(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* new_row);
+
+// Creates a new row in the list for the given cursor specified by the given column.
+// This method accounts for any indirection tables that may need to be created or maintained to ensure that
+// the structure of the list is maintained without moving tokens.
+// The table that new_child_row points to is treated as unsorted until md_commit_row_add is called after all columns have been set on the new row.
+bool md_add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdcursor_t* new_row);
+
+// Finish the process of adding a row to the cursor's table.
+void md_commit_row_add(mdcursor_t row);
+
+// Add a user string to the #US heap.
+mduserstringcursor_t md_add_userstring_to_heap(mdhandle_t handle, char16_t const* userstring);
 
 #ifdef __cplusplus
 }
