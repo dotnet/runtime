@@ -4,5 +4,9 @@
       <method signature="System.Boolean get_IsNetworkingEnabledByDefault()" body="stub" value="false"
               feature="System.Xml.XmlResolver.IsNetworkingEnabledByDefault" featurevalue="false" />
     </type>
+    <type fullname="System.Xml.Serialization.XmlSerializer">
+      <method signature="System.Xml.Serialization.SerializationMode get_Mode()" body="stub" value="1"
+              feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="false" />
+    </type>
   </assembly>
 </linker>
