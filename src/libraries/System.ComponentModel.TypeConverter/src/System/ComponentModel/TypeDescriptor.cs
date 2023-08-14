@@ -1542,8 +1542,7 @@ namespace System.ComponentModel
                 {
                     type = ComObjectType;
                 }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    && ComWrappers.TryGetComInstance(instance, out nint unknown))
+                else if (TryGetComInstance(instance, out nint unknown))
                 {
                     // ComObjectType uses the Windows Forms provided ComNativeDescriptor. It currently has hard Win32
                     // API dependencies. Even though ComWrappers work with other platforms, restricting to Windows until
@@ -2536,6 +2535,23 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(infos);
 
             ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
+        }
+
+        /// <summary>
+        /// Wraps ComWrappers.TryGetComInstance and returns false when not supported
+        /// </summary>
+        private static unsafe bool TryGetComInstance(object instance, out IntPtr unknown)
+        {
+            unknown = IntPtr.Zero;
+            try
+            {
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
+                    ComWrappers.TryGetComInstance(instance, out unknown);
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
+            }
         }
 
         /// <summary>
