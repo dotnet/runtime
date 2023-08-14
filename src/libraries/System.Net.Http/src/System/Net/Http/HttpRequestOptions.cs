@@ -96,8 +96,9 @@ namespace System.Net.Http
             {
                 get
                 {
-                    var items = new KeyValuePair<string, object?>[options.Options.Count];
-                    ((IDictionary<string, object?>)options.Options).CopyTo(items, 0);
+                    var dictionary = (IDictionary<string, object?>)options;
+                    var items = new KeyValuePair<string, object?>[dictionary.Count];
+                    dictionary.CopyTo(items, 0);
                     return items;
                 }
             }
