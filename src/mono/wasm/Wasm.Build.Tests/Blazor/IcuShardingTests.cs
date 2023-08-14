@@ -49,12 +49,13 @@ public class IcuShardingTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void NonExistingCustomFileAssertError(string config)
+    [InlineData("Debug", "incorrectName.dat", false)]
+    [InlineData("Release", "incorrectName.dat", false)]
+    [InlineData("Debug", "icudtNonExisting.dat", true)]
+    [InlineData("Release", "icudtNonExisting.dat", true)]
+    public void NonExistingCustomFileAssertError(string config, string fileName, bool isFilenameCorrect)
     {
         string id = $"blz_invalidCustomIcu_{config}_{GetRandomId()}";
-        string fileName = "nonexisting.dat";
         string projectFile = CreateBlazorWasmTemplateProject(id);
         AddItemsPropertiesToProject(
             projectFile,
@@ -74,7 +75,14 @@ public class IcuShardingTests : BlazorWasmTestBase
         }
         catch (XunitException ex)
         {
-            Assert.Contains("File name in $(BlazorIcuDataFileName) has to start with 'icudt'", ex.Message);
+            if (isFilenameCorrect)
+            {
+                Assert.Contains($"File in location $(BlazorIcuDataFileName)={fileName} cannot be found: in project directory, in runtime pack nor used as an absolute path.", ex.Message);
+            }
+            else
+            {
+                Assert.Contains("File name in $(BlazorIcuDataFileName) has to start with 'icudt'", ex.Message);
+            }
         }
         catch (Exception)
         {

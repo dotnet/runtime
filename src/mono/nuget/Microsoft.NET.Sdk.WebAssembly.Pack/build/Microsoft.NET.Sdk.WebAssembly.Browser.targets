@@ -185,6 +185,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- if IcuCustomFilePathFromRuntimePack is empty then ICU is custom but not from runtime pack (needs including), otherwise ReferenceCopyLocalPaths already contains it -->
       <ReferenceCopyLocalPaths Include="$(_BlazorIcuDataFileName)" />
     </ItemGroup>
+    <Error Condition="'$(_LoadCustomIcuData)' == 'true' !Exists('$(_BlazorIcuDataFileName)')" Text="File in location %24(BlazorIcuDataFileName)=$(BlazorIcuDataFileName) cannot be found: in project directory, in runtime pack nor used as an absolute path."/>
   </Target>
 
   <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">
