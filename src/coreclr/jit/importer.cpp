@@ -2873,7 +2873,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
                 {
                     GenTree* op = impPopStack().val;
-                    if (op->gtFlags & GTF_SIDE_EFFECT)
+                    if ((op->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
                         impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op, CHECK_SPILL_ALL);
                     }
@@ -2900,7 +2900,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         JITDUMP("\n Importing BOX; ISINST; as null\n");
 
                         GenTree* op = impPopStack().val;
-                        if (op->gtFlags & GTF_SIDE_EFFECT)
+                        if ((op->gtFlags & GTF_SIDE_EFFECT) != 0)
                         {
                             impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op, CHECK_SPILL_ALL);
                         }
@@ -2953,7 +2953,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
 
                                     GenTree* op = impPopStack().val;
-                                    if (op->gtFlags & GTF_SIDE_EFFECT)
+                                    if ((op->gtFlags & GTF_SIDE_EFFECT) != 0)
                                     {
                                         impStoreTemp(lvaGrabTemp(true DEBUGARG("spill side effects")), op,
                                                      CHECK_SPILL_ALL);
