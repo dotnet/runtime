@@ -91,6 +91,7 @@ namespace System.Threading.Tasks
                 DelayState s = (DelayState)delayState!;
 
                 // When cancellation is requested, we need to force the task continuation to run asynchronously
+                // to avoid doing arbitrary amounts of work as part of a call to CancellationTokenSource.Cancel.
                 ThreadPool.UnsafeQueueUserWorkItem(static state =>
                 {
                     DelayState theState = (DelayState)state;

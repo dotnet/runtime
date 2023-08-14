@@ -656,7 +656,7 @@ namespace Tests.System
             //
 
             ManualTimeProvider manualTimeProvider = new ManualTimeProvider();
-            var callbackCount = 0;
+            int callbackCount = 0;
 
             _ = Continuation(manualTimeProvider, default, () => callbackCount++);
 
