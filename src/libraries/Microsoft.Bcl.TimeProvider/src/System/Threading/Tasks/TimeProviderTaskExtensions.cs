@@ -15,7 +15,7 @@ namespace System.Threading.Tasks
 #if !NET8_0_OR_GREATER
         private sealed class DelayState : TaskCompletionSource<bool>
         {
-            public DelayState(CancellationToken cancellationToken) : base()
+            public DelayState(CancellationToken cancellationToken)
             {
                 CancellationToken = cancellationToken;
             }
