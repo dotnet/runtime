@@ -85,6 +85,7 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-poll.h>
 
 #include <mono/component/debugger-state-machine.h>
 #include "debugger-agent.h"
@@ -1144,16 +1145,10 @@ socket_transport_connect (const char *address)
 		PRINT_DEBUG_MSG (1, "Listening on %s:%d (timeout=%d ms)...\n", host, port, agent_config.timeout);
 
 		if (agent_config.timeout) {
-			fd_set readfds;
-			struct timeval tv;
-
-			tv.tv_sec = 0;
-			tv.tv_usec = agent_config.timeout * 1000;
-			FD_ZERO (&readfds);
-			FD_SET (sfd, &readfds);
-
-			res = select ((int)sfd + 1, &readfds, NULL, NULL, &tv);
-
+			mono_pollfd mp;
+			mp.fd = (int)sfd;
+			mp.events = MONO_POLLIN;
+			res = mono_poll (&mp, 1, agent_config.timeout);
 			if (res == 0) {
 				PRINT_ERROR_MSG ("debugger-agent: Timed out waiting to connect.\n");
 				exit (1);
