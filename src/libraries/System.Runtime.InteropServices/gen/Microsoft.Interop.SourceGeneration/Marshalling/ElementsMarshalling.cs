@@ -28,7 +28,7 @@ namespace Microsoft.Interop
             CollectionSource = collectionSource;
         }
 
-        public StatementSyntax GenerateClearManagedSource(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateClearUnmanagedDestination(TypePositionInfo info, StubCodeContext context)
         {
             // <GetUnmanagedValuesDestination>.Clear();
             return ExpressionStatement(
