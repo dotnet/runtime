@@ -41,6 +41,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (constructorInfo is null)
             {
+                Debug.Assert(type.IsValueType);
+
                 LocalBuilder local = generator.DeclareLocal(type);
 
                 generator.Emit(OpCodes.Ldloca_S, local);
