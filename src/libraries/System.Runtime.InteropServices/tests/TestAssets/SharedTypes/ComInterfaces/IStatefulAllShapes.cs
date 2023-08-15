@@ -23,12 +23,10 @@ namespace SharedTypes.ComInterfaces
     [NativeMarshalling(typeof(AllStatefulMarshallerShapes))]
     internal class StatefulAllShapesType
     {
-        public int I;
     }
 
     internal unsafe struct StatefulAllShapesNative
     {
-        public int I;
     }
 
     [CustomMarshaller(typeof(StatefulAllShapesType), MarshalMode.Default, typeof(AllStatefulMarshallerShapes))]
