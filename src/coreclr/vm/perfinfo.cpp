@@ -10,19 +10,13 @@
 #include "perfinfo.h"
 #include "pal.h"
 
-PerfInfo::PerfInfo(int pid)
+PerfInfo::PerfInfo(int pid, const char* basePath)
   : m_Stream(nullptr)
 {
     LIMITED_METHOD_CONTRACT;
 
-    SString tempPath;
-    if (!WszGetTempPath(tempPath))
-    {
-        return;
-    }
-
     SString path;
-    path.Printf("%Sperfinfo-%d.map", tempPath.GetUnicode(), pid);
+    path.Printf("%s/perfinfo-%d.map", basePath, pid);
     OpenFile(path);
 }
 
