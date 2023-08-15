@@ -131,6 +131,15 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 #pragma warning disable CA1810 // Initialize all static fields in 'MsQuicApi' when those fields are declared and remove the explicit static constructor
         static MsQuicApi()
         {
+            // Completely disabled QUIC.
+            IsQuicSupported = false;
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(null, $"QUIC is completely disabled in .NET 6 due to critical defects fixed in later versions.");
+            }
+            return;
+
+#pragma warning disable CS0162 // Unreachable code detected -- leaving the original code intact, instead of removing big chunks of code transitively
             if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
             {
                 if (NetEventSource.Log.IsEnabled())
@@ -163,7 +172,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             // Gracefully close the API table to free resources. The API table will be allocated lazily again if needed
             MsQuicClose(apiTable);
         }
-#pragma warning restore CA1810
+#pragma warning restore CA1810, CS0162
 
         private static MsQuicApi AllocateMsQuicApi()
         {
