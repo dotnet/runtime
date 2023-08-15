@@ -1608,10 +1608,11 @@ EMSCRIPTEN_KEEPALIVE gpointer
 mono_jiterp_tlqueue_next (int queue) {
 	GPtrArray *items = get_queue (queue);
 	mono_os_mutex_lock (&queue_mutex);
-	if (items->len < 1)
-		return NULL;
-	gpointer result = g_ptr_array_index (items, 0);
-	g_ptr_array_remove_index_fast (items, 0);
+	gpointer result = NULL;
+	if (items->len) {
+		result = g_ptr_array_index (items, 0);
+		g_ptr_array_remove_index_fast (items, 0);
+	}
 	mono_os_mutex_unlock (&queue_mutex);
 	return result;
 }
