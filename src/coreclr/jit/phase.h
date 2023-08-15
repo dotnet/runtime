@@ -31,7 +31,7 @@ class Phase
     };
 
 public:
-    virtual void Run();
+    virtual PhaseStatus Run();
 
 protected:
     Phase(Compiler* _compiler, Phases _phase) : comp(_compiler), m_name(nullptr), m_phase(_phase)
@@ -130,10 +130,10 @@ private:
 
 // Wrapper for using CompilePhaseWithStatus
 //
-inline void DoPhase(Compiler* _compiler, Phases _phase, PhaseStatus (Compiler::*_action)())
+inline PhaseStatus DoPhase(Compiler* _compiler, Phases _phase, PhaseStatus (Compiler::*_action)())
 {
     CompilerPhaseWithStatus phase(_compiler, _phase, _action);
-    phase.Run();
+    return phase.Run();
 }
 
 #endif /* End of _PHASE_H_ */

@@ -5042,8 +5042,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 {
                     ResetOptAnnotations();
                     RecomputeLoopInfo();
-                    DoPhase(this, PHASE_UNROLL_LOOPS2, &Compiler::optUnrollLoops);
-                    hasPostLoopUnrolling = true;
+                    if (DoPhase(this, PHASE_UNROLL_LOOPS2, &Compiler::optUnrollLoops) ==
+                        PhaseStatus::MODIFIED_EVERYTHING)
+                        hasPostLoopUnrolling = true;
                 }
                 else
                 {

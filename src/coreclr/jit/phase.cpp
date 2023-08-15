@@ -54,13 +54,14 @@ void Phase::Observations::Check(PhaseStatus status)
 //------------------------------------------------------------------------
 // Run: execute a phase and any before and after actions
 //
-void Phase::Run()
+PhaseStatus Phase::Run()
 {
     Observations observations(comp);
     PrePhase();
     PhaseStatus status = DoPhase();
     PostPhase(status);
     observations.Check(status);
+    return status;
 }
 
 //------------------------------------------------------------------------
