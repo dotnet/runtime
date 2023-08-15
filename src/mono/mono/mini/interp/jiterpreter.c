@@ -937,6 +937,7 @@ mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
 {
 	MonoJitInfo *jinfo = imethod->jinfo;
 	const guint8 *start;
+	gboolean need_extra_free = TRUE;
 
 	// Erase the method and interpmethod from all of the thread local JIT queues
 	mono_jiterp_tlqueue_purge_all (method);
@@ -944,33 +945,36 @@ mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
 
 	// FIXME: Enumerate all active threads and ensure we perform the free_method_data_js
 	//  call on every thread.
-	// TODO: Migrate the interp_entry and jit_call JIT queues into the native heap,
-	//  so that this method can synchronously remove entries from them.
 
-	if (!jinfo) {
-		// HACK: Perform a single free operation to clear out any stuff from the jit queues
-		mono_jiterp_free_method_data_js (method, imethod, 0);
-		return;
+	// Scan through the interp opcodes for the method and ensure that any jiterp traces
+	//  owned by it are cleaned up. This will automatically clean up any AOT related data for
+	//  the method in the process
+	if (jinfo) {
+		start = (const guint8*) jinfo->code_start;
+		const guint16 *p = (const guint16 *)start,
+			*end = (const guint16 *)(start + jinfo->code_size);
+
+		while (p < end) {
+			switch (*p) {
+				case MINT_TIER_PREPARE_JITERPRETER:
+				case MINT_TIER_NOP_JITERPRETER:
+				case MINT_TIER_ENTER_JITERPRETER:
+				case MINT_TIER_MONITOR_JITERPRETER: {
+					JiterpreterOpcode *opcode = (JiterpreterOpcode *)p;
+					guint32 trace_index = opcode->trace_index;
+					need_extra_free = FALSE;
+					mono_jiterp_free_method_data_js (method, imethod, trace_index);
+					break;
+				}
+			}
+			p = mono_interp_dis_mintop_len (p);
+		}
 	}
 
-	start = (const guint8*) jinfo->code_start;
-	const guint16 *p = (const guint16 *)start,
-		*end = (const guint16 *)(start + jinfo->code_size);
-	while (p < end) {
-		switch (*p) {
-			// FIXME: Is it possible for there to actually be any jiterp data
-			//  for a given trace if we see a prepare point? I don't think so
-			case MINT_TIER_PREPARE_JITERPRETER:
-			case MINT_TIER_NOP_JITERPRETER:
-			case MINT_TIER_ENTER_JITERPRETER:
-			case MINT_TIER_MONITOR_JITERPRETER: {
-				JiterpreterOpcode *opcode = (JiterpreterOpcode *)p;
-				guint32 trace_index = opcode->trace_index;
-				mono_jiterp_free_method_data_js (method, imethod, trace_index);
-				break;
-			}
-		}
-		p = mono_interp_dis_mintop_len (p);
+	if (need_extra_free) {
+		// HACK: Perform a single free operation to clear out any stuff from the jit queues
+		// This will happen if we didn't encounter any jiterpreter traces in the method
+		mono_jiterp_free_method_data_js (method, imethod, 0);
 	}
 }
 
