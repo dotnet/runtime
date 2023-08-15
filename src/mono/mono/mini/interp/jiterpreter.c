@@ -479,6 +479,7 @@ mono_jiterp_type_get_raw_value_size (MonoType *type) {
 EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_trace_bailout (int reason)
 {
+	// FIXME: Harmless race condition if threads are in use
 	if (reason < 256)
 		jiterp_trace_bailout_counts[reason]++;
 }
@@ -671,6 +672,7 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int value = jiterp_get_opcode_value(ins, &inside_branch_block);
 			if (value < 0) {
+				// FIXME: Harmless race condition if threads are in use
 				jiterpreter_abort_counts[ins->opcode]++;
 				return current_trace_value >= mono_opt_jiterpreter_minimum_trace_value;
 			} else if (value >= VALUE_SIMD) {
@@ -1390,6 +1392,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 			if (mono_opt_jiterpreter_trace_monitoring_log > 1)
 				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", opcode->trace_index, ip, frame->imethod->method->name, average_penalty, threshold);
 		} else {
+			// FIXME: Harmless race condition if threads are in use
 			traces_rejected++;
 			if (mono_opt_jiterpreter_trace_monitoring_log > 0) {
 				char * full_name = mono_method_get_full_name (frame->imethod->method);
