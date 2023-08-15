@@ -42,4 +42,22 @@ public class Runtime_85765
     {
         return value;
     }
+
+    // ------
+
+    [Fact]
+    public static void Test2()
+    {
+        byte* bytes = stackalloc byte[1024];
+        bytes[0x1A] = 1;
+        bytes[0x1B] = 2;
+        int sum = Foo(bytes);
+        Assert.Equal(515, sum);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Foo(byte* b)
+    {
+        return Unsafe.ReadUnaligned<int>(ref b[0x1A]) + Unsafe.ReadUnaligned<int>(ref b[0x1B]);
+    }
 }
