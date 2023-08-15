@@ -21,12 +21,12 @@ namespace System.Text.Json.Serialization.Metadata
             => s_cache.GetOrAdd((nameof(CreateAddMethodDelegate), typeof(TCollection), null),
                 static (_) => s_sourceAccessor.CreateAddMethodDelegate<TCollection>());
 
-        public override Func<object>? CreateConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType)
-            => s_cache.GetOrAdd((nameof(CreateConstructor), classType, null),
+        public override Func<object>? CreateParameterlessConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, ConstructorInfo? ctorInfo)
+            => s_cache.GetOrAdd((nameof(CreateParameterlessConstructor), type, ctorInfo),
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
                     Justification = "Cannot apply DynamicallyAccessedMembersAttribute to tuple properties.")]
 #pragma warning disable IL2077 // The suppression doesn't work for the trim analyzer: https://github.com/dotnet/roslyn/issues/59746
-                static (key) => s_sourceAccessor.CreateConstructor(key.declaringType));
+                static (key) => s_sourceAccessor.CreateParameterlessConstructor(key.declaringType, (ConstructorInfo?)key.member));
 #pragma warning restore IL2077
 
         public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo)

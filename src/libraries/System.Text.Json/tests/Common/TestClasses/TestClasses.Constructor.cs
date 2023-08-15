@@ -74,6 +74,33 @@ namespace System.Text.Json.Serialization.Tests
         protected ProtectedParameterizedCtor_WithAttribute(int x) => X = x;
     }
 
+    public class PrivateParameterlessCtor_WithAttribute
+    {
+        public int X { get; }
+
+        [JsonConstructor]
+        private PrivateParameterlessCtor_WithAttribute()
+            => X = 42;
+    }
+
+    public class ProtectedParameterlessCtor_WithAttribute
+    {
+        public int X { get; }
+
+        [JsonConstructor]
+        protected ProtectedParameterlessCtor_WithAttribute()
+            => X = 42;
+    }
+
+    public class InternalParameterlessCtor_WithAttribute
+    {
+        public int X { get; }
+
+        [JsonConstructor]
+        internal InternalParameterlessCtor_WithAttribute()
+            => X = 42;
+    }
+
     public class PrivateParameterlessCtor_InternalParameterizedCtor_WithMultipleAttributes
     {
         [JsonConstructor]
