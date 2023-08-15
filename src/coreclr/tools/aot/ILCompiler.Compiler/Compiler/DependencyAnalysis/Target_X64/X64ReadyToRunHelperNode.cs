@@ -80,17 +80,11 @@ namespace ILCompiler.DependencyAnalysis
                             }
                             else
                             {
-                                // First arg: unused address of the TypeManager
-                                // encoder.EmitMOV(encoder.TargetRegister.Arg0, 0);
+                                encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
 
-                                // Second arg: -1 (index of inlined storage)
-                                encoder.EmitMOV(encoder.TargetRegister.Arg1, -1);
-
-                                encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-
-                                AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
+                                AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
                                 encoder.EmitCMP(ref initialized, 0);
-                                encoder.EmitJNE(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                                encoder.EmitJNE(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBaseInlined));
 
                                 EmitInlineTLSAccess(factory, ref encoder);
                             }

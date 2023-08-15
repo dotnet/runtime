@@ -18,7 +18,7 @@ namespace Internal.Runtime
     internal static class ThreadStatics
     {
         [ThreadStatic]
-        private static object t_inlinedThreadStaticBase;
+        internal static object t_inlinedThreadStaticBase;
 
         /// <summary>
         /// This method is called from a ReadyToRun helper to get base address of thread

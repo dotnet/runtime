@@ -8,6 +8,7 @@ namespace ILCompiler.DependencyAnalysis
         EnsureClassConstructorRunAndReturnGCStaticBase,
         EnsureClassConstructorRunAndReturnNonGCStaticBase,
         EnsureClassConstructorRunAndReturnThreadStaticBase,
+        EnsureClassConstructorRunAndReturnThreadStaticBaseInlined,
         GetThreadStaticBaseForType,
         GetInlinedThreadStaticBaseSlow,
     }
