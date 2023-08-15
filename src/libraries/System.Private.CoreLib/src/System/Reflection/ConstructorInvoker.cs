@@ -69,7 +69,7 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Invokes the constructor using the specified parameters.
+        /// Invokes the constructor.
         /// </summary>
         /// <returns>
         /// An instance of the class associated with the constructor.
@@ -93,6 +93,9 @@ namespace System.Reflection
             return InvokeImpl(null, null, null, null);
         }
 
+        /// <summary>
+        /// Invokes the constructor using the specified parameters.
+        /// </summary>
         /// <inheritdoc cref="Invoke()"/>
         /// <param name="arg1">The first argument for the invoked method.</param>
         /// <exception cref="ArgumentException">
