@@ -744,7 +744,11 @@ trace_info_get (gint32 index) {
 
 static gint32
 trace_info_alloc () {
+#ifdef DISABLE_THREADS
 	gint32 index = trace_count++,
+#else
+	gint32 index = atomic_fetch_add ((atomic_int *)&trace_count, 1),
+#endif
 		limit = (MAX_TRACE_SEGMENTS * TRACE_SEGMENT_SIZE);
 	// Make sure we're not out of space in the trace info table.
 	if (index == limit)
