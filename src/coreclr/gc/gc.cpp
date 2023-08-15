@@ -23834,7 +23834,7 @@ void gc_heap::garbage_collect (int n)
         }
 #endif // HEAP_ANALYZE
 
-        GCToEEInterface::DiagGCStart(settings.condemned_generation, settings.reason == reason_induced);
+        GCToEEInterface::DiagGCStart(settings.condemned_generation, is_induced (settings.reason));
 
 #ifdef BACKGROUND_GC
         if ((settings.condemned_generation == max_generation) &&
