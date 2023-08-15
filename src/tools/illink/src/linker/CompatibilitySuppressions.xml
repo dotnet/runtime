@@ -1525,6 +1525,12 @@
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
+    <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_EmbeddedXmlInfo</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_TrimAction</Target>
