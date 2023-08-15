@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <!-- <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles> -->
   </PropertyGroup>

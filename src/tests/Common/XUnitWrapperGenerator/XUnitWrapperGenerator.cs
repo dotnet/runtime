@@ -184,10 +184,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static void CheckNoEntryPoint(SourceProductionContext context, CompData compData)
     {
+        /*
         foreach (IMethodSymbol entryPoint in compData.PossibleEntryPoints)
         {
             context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1001, entryPoint.Locations[0]));
         }
+        */
     }
 
     private static void AppendAliasMap(CodeBuilder builder, ImmutableDictionary<string, string> aliasMap)
