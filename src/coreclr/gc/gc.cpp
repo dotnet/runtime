@@ -48320,10 +48320,10 @@ HRESULT GCHeap::Initialize()
 
             segment_info seg_info;
             seg_info.pvMem = seg_mem;
-            seg_info.ibFirstObject = sizeof(ObjHeader);
-            seg_info.ibAllocated = ro_seg_size;
-            seg_info.ibCommit = seg_info.ibAllocated;
-            seg_info.ibReserved = seg_info.ibAllocated;
+            seg_info.ibFirstObject = 0; // nothing is there, don't fake it with sizeof(ObjHeader)
+            seg_info.ibAllocated = 0;
+            seg_info.ibCommit = ro_seg_size;
+            seg_info.ibReserved = seg_info.ibCommit;
 
             if (!RegisterFrozenSegment(&seg_info))
             {
