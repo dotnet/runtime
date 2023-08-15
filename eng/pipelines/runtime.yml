@@ -1511,8 +1511,6 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: Release
           runtimeFlavor: mono
-          isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-          isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
           platforms:
           - android_x64
           variables:
