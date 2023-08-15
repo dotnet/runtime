@@ -172,14 +172,14 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 const char WildcardChar = '*';
 
                 int wildcardIndex = meterName.IndexOf(WildcardChar);
-                if (wildcardIndex != -1 &&
-                    meterName.IndexOf(WildcardChar, wildcardIndex + 1) != -1)
+                if (wildcardIndex >= 0 &&
+                    meterName.IndexOf(WildcardChar, wildcardIndex + 1) >= 0)
                 {
                     throw new InvalidOperationException(SR.MoreThanOneWildcard);
                 }
 
                 ReadOnlySpan<char> prefix, suffix;
-                if (wildcardIndex == -1)
+                if (wildcardIndex < 0)
                 {
                     prefix = meterName.AsSpan();
                     suffix = default;
