@@ -692,7 +692,7 @@ namespace System.Globalization
                 JsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 return;
             }
-#elif TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
                 ChangeCaseNative(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);

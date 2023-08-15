@@ -8667,8 +8667,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
     }
 
     bool            helperHasSideEffects;
-    CorInfoHelpFunc helperTemp =
-        info.compCompHnd->getNewHelper(pResolvedToken, info.compMethodHnd, &helperHasSideEffects);
+    CorInfoHelpFunc helperTemp = info.compCompHnd->getNewHelper(pResolvedToken->hClass, &helperHasSideEffects);
 
     if (!usingReadyToRunHelper)
     {
@@ -14882,6 +14881,21 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 goto CNS_LONG;
 
                             case TYP_FLOAT:
+                            {
+#if defined(TARGET_64BIT)
+                                if (tree->IsUnsigned())
+                                {
+                                    f1 = (float)UINT32(i1);
+                                }
+                                else
+                                {
+                                    f1 = (float)INT32(i1);
+                                }
+#else
+                                // 32-bit currently does a 2-step conversion, which is incorrect
+                                // but which we are going to take a breaking change around early
+                                // in a release cycle.
+
                                 if (tree->IsUnsigned())
                                 {
                                     f1 = forceCastToFloat(UINT32(i1));
@@ -14890,10 +14904,14 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     f1 = forceCastToFloat(INT32(i1));
                                 }
+#endif
+
                                 d1 = f1;
                                 goto CNS_DOUBLE;
+                            }
 
                             case TYP_DOUBLE:
+                            {
                                 if (tree->IsUnsigned())
                                 {
                                     d1 = (double)UINT32(i1);
@@ -14903,6 +14921,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                     d1 = (double)INT32(i1);
                                 }
                                 goto CNS_DOUBLE;
+                            }
 
                             default:
                                 assert(!"Bad CastToType() in gtFoldExprConst() for a cast from int");
@@ -14983,7 +15002,38 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 goto CNS_LONG;
 
                             case TYP_FLOAT:
+                            {
+#if defined(TARGET_64BIT)
+                                if (tree->IsUnsigned() && (lval1 < 0))
+                                {
+                                    f1 = FloatingPointUtils::convertUInt64ToFloat((unsigned __int64)lval1);
+                                }
+                                else
+                                {
+                                    f1 = (float)lval1;
+                                }
+#else
+                                // 32-bit currently does a 2-step conversion, which is incorrect
+                                // but which we are going to take a breaking change around early
+                                // in a release cycle.
+
+                                if (tree->IsUnsigned() && (lval1 < 0))
+                                {
+                                    f1 = forceCastToFloat(
+                                        FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1));
+                                }
+                                else
+                                {
+                                    f1 = forceCastToFloat((double)lval1);
+                                }
+#endif
+
+                                d1 = f1;
+                                goto CNS_DOUBLE;
+                            }
+
                             case TYP_DOUBLE:
+                            {
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
                                     d1 = FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1);
@@ -14992,13 +15042,8 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     d1 = (double)lval1;
                                 }
-
-                                if (tree->CastToType() == TYP_FLOAT)
-                                {
-                                    f1 = forceCastToFloat(d1); // truncate precision
-                                    d1 = f1;
-                                }
                                 goto CNS_DOUBLE;
+                            }
                             default:
                                 assert(!"Bad CastToType() in gtFoldExprConst() for a cast from long");
                                 return tree;
@@ -20609,7 +20654,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsic = NI_Illegal;
+    NamedIntrinsic intrinsic                = NI_Illegal;
+    bool           needsConvertMaskToVector = false;
 
     switch (op)
     {
@@ -20619,15 +20665,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
             if (simdSize == 64)
             {
                 assert(IsBaselineVector512IsaSupportedDebugOnly());
-
-                if (varTypeIsSmall(simdBaseType))
-                {
-                    intrinsic = NI_AVX512BW_CompareEqual;
-                }
-                else
-                {
-                    intrinsic = NI_AVX512F_CompareEqual;
-                }
+                intrinsic                = NI_AVX512F_CompareEqualMask;
+                needsConvertMaskToVector = true;
             }
             else if (simdSize == 32)
             {
@@ -20690,31 +20729,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                if (simdSize == 64)
+                if ((simdSize == 64) || !varTypeIsFloating(simdBaseType))
                 {
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_CompareGreaterThanOrEqual;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_CompareGreaterThanOrEqual;
-                    }
-                    break;
-                }
-                else if (!varTypeIsFloating(simdBaseType))
-                {
-                    assert((simdSize == 16) || (simdSize == 32));
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_VL_CompareGreaterThanOrEqual;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_VL_CompareGreaterThanOrEqual;
-                    }
-
+                    intrinsic                = NI_AVX512F_CompareGreaterThanOrEqualMask;
+                    needsConvertMaskToVector = true;
                     break;
                 }
             }
@@ -20785,31 +20803,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                if (simdSize == 64)
+                if ((simdSize == 64) || varTypeIsUnsigned(simdBaseType))
                 {
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_CompareGreaterThan;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_CompareGreaterThan;
-                    }
-                    break;
-                }
-                else if (varTypeIsUnsigned(simdBaseType))
-                {
-                    assert((simdSize == 16) || (simdSize == 32));
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_VL_CompareGreaterThan;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_VL_CompareGreaterThan;
-                    }
-
+                    intrinsic                = NI_AVX512F_CompareGreaterThanMask;
+                    needsConvertMaskToVector = true;
                     break;
                 }
             }
@@ -20987,31 +20984,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                if (simdSize == 64)
+                if ((simdSize == 64) || !varTypeIsFloating(simdBaseType))
                 {
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_CompareLessThanOrEqual;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_CompareLessThanOrEqual;
-                    }
-                    break;
-                }
-                else if (!varTypeIsFloating(simdBaseType))
-                {
-                    assert((simdSize == 16) || (simdSize == 32));
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_VL_CompareLessThanOrEqual;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_VL_CompareLessThanOrEqual;
-                    }
-
+                    intrinsic                = NI_AVX512F_CompareLessThanOrEqualMask;
+                    needsConvertMaskToVector = true;
                     break;
                 }
             }
@@ -21082,31 +21058,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                if (simdSize == 64)
+                if ((simdSize == 64) || varTypeIsUnsigned(simdBaseType))
                 {
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_CompareLessThan;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_CompareLessThan;
-                    }
-                    break;
-                }
-                else if (varTypeIsUnsigned(simdBaseType))
-                {
-                    assert((simdSize == 16) || (simdSize == 32));
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_VL_CompareLessThan;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_VL_CompareLessThan;
-                    }
-
+                    intrinsic                = NI_AVX512F_CompareLessThanMask;
+                    needsConvertMaskToVector = true;
                     break;
                 }
             }
@@ -21360,7 +21315,15 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     assert(intrinsic != NI_Illegal);
 
 #if defined(TARGET_XARCH)
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+    if (needsConvertMaskToVector)
+    {
+        GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
+        return gtNewSimdHWIntrinsicNode(type, retNode, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
+    }
+    else
+    {
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+    }
 #else
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
 #endif
@@ -25259,7 +25222,11 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 //
 bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
 {
+#if defined(TARGET_XARCH)
     return HWIntrinsicInfo::IsEmbBroadcastCompatible(GetHWIntrinsicId());
+#else
+    return false;
+#endif // TARGET_XARCH
 }
 
 //------------------------------------------------------------------------

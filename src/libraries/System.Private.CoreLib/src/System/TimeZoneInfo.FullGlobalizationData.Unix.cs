@@ -131,7 +131,7 @@ namespace System
         // Helper function that builds the value backing the DisplayName field from globalization data.
         private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, ref string? displayName)
         {
-            // There are a few diffent ways we might show the display name depending on the data.
+            // There are a few different ways we might show the display name depending on the data.
             // The algorithm used below should avoid duplicating the same words while still achieving the
             // goal of providing a unique, discoverable, and intuitive name.
 

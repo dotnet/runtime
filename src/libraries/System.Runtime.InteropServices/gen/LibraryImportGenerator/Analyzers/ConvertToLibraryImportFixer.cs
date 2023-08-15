@@ -196,7 +196,7 @@ namespace Microsoft.Interop.Analyzers
             char? entryPointSuffix,
             CancellationToken cancellationToken)
         {
-            INamedTypeSymbol? dllImportAttrType = editor.SemanticModel.Compilation.GetBestTypeByMetadataName(typeof(DllImportAttribute).FullName);
+            INamedTypeSymbol? dllImportAttrType = editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.DllImportAttribute);
             if (dllImportAttrType == null)
                 return methodSyntax;
 

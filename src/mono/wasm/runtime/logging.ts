@@ -91,8 +91,8 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
 export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
     let errObj: any = err;
-    if (!errObj || !errObj.stack || !(errObj instanceof Error)) {
-        errObj = new Error(errObj || "Unknown error");
+    if (!errObj || !errObj.stack) {
+        errObj = new Error(errObj ? ("" + errObj) : "Unknown error");
     }
 
     // Error
@@ -148,4 +148,8 @@ export function parseSymbolMapFile(text: string) {
     });
 
     mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+}
+
+export function mono_wasm_get_func_id_to_name_mappings() {
+    return [...wasm_func_map.values()];
 }

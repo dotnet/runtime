@@ -1741,11 +1741,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> LoadUnsafe<T>(ref T source)
+        public static Vector128<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref source);
-            return Unsafe.ReadUnaligned<Vector128<T>>(ref address);
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+            return Unsafe.ReadUnaligned<Vector128<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -1757,11 +1757,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
+        public static Vector128<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
-            source = ref Unsafe.Add(ref source, (nint)elementOffset);
-            return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref source));
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+            return Unsafe.ReadUnaligned<Vector128<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>
@@ -3220,6 +3220,22 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowNotSupportedException();
             }
             return AdvSimd.SubtractSaturate(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse2))]
+        internal static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.AddSaturate(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.AddSaturate(left, right);
         }
     }
 }

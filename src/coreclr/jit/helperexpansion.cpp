@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include <minipal/utf8.h>
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -651,17 +652,21 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 #ifdef UNIX_X86_ABI
         tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Code sequence to access thread local variable on linux/arm64:
         //
         //      mrs xt, tpidr_elf0
         //      mov xd, [xt+cns]
-        tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
-#elif defined(TARGET_LOONGARCH64)
+        //
         // Code sequence to access thread local variable on linux/loongarch64:
         //
         //      ori, targetReg, $tp, 0
         //      load rd, targetReg, cns
+        //
+        // Code sequence to access thread local variable on linux/riscv64:
+        //
+        //      mov targetReg, $tp
+        //      ld rd, targetReg(cns)
         tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
 #else
         assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
@@ -1238,7 +1243,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement
 
 //------------------------------------------------------------------------------
 // fgVNBasedIntrinsicExpansionForCall_ReadUtf8 : Expand NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8
-//    when src data is a string literal (UTF16) that can be narrowed to ASCII (UTF8), e.g.:
+//    when src data is a string literal (UTF16) that can be converted to UTF8, e.g.:
 //
 //      string str = "Hello, world!";
 //      int bytesWritten = ReadUtf8(ref str[0], str.Length, buffer, buffer.Length);
@@ -1282,6 +1287,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         return false;
     }
 
+    assert(strObj != nullptr);
+
     // We mostly expect string literal objects here, but let's be more agile just in case
     if (!info.compCompHnd->isObjectImmutable(strObj))
     {
@@ -1289,52 +1296,57 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         return false;
     }
 
-    GenTree* srcLen = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+    const GenTree* srcLen = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     if (!srcLen->gtVNPair.BothEqual() || !vnStore->IsVNInt32Constant(srcLen->gtVNPair.GetLiberal()))
     {
         JITDUMP("ReadUtf8: srcLen is not constant\n")
         return false;
     }
 
-    const int      MaxPossibleUnrollThreshold = 256;
-    const unsigned unrollThreshold            = min(getUnrollThreshold(UnrollKind::Memcpy), MaxPossibleUnrollThreshold);
-    const unsigned srcLenCns                  = (unsigned)vnStore->GetConstantInt32(srcLen->gtVNPair.GetLiberal());
-    if ((srcLenCns == 0) || (srcLenCns > unrollThreshold))
+    // Source UTF16 (U16) string length in characters
+    const unsigned srcLenCnsU16            = (unsigned)vnStore->GetConstantInt32(srcLen->gtVNPair.GetLiberal());
+    const int      MaxU16BufferSizeInChars = 256;
+    if ((srcLenCnsU16 == 0) || (srcLenCnsU16 > MaxU16BufferSizeInChars))
     {
         // TODO: handle srcLenCns == 0 if it's a common case
-        JITDUMP("ReadUtf8: srcLenCns is out of unrollable range\n")
+        JITDUMP("ReadUtf8: srcLenCns is 0 or > MaxPossibleUnrollThreshold\n")
         return false;
     }
 
-    // Read the string literal (UTF16) into a local buffer (UTF8)
-    assert(strObj != nullptr);
-    uint16_t bufferU16[MaxPossibleUnrollThreshold];
-    uint8_t  bufferU8[MaxPossibleUnrollThreshold]; // twice smaller because of narrowing
-
-    // Both must be within [0..INT_MAX] range as we're going to cast them to int
-    assert((unsigned)srcLenCns <= INT_MAX);
-    assert((unsigned)strObjOffset <= INT_MAX);
+    uint16_t bufferU16[MaxU16BufferSizeInChars];
 
     // getObjectContent is expected to validate the offset and length
-    if (!info.compCompHnd->getObjectContent(strObj, (uint8_t*)bufferU16, (int)srcLenCns * 2, (int)strObjOffset))
+    // NOTE: (int) casts should not overflow:
+    //  * srcLenCns is <= MaxUTF16BufferSizeInChars
+    //  * strObjOffset is already checked to be <= INT_MAX
+    if (!info.compCompHnd->getObjectContent(strObj, (uint8_t*)bufferU16, (int)(srcLenCnsU16 * sizeof(uint16_t)),
+                                            (int)strObjOffset))
     {
         JITDUMP("ReadUtf8: getObjectContent returned false.\n")
         return false;
     }
 
-    for (unsigned charIndex = 0; charIndex < srcLenCns; charIndex++)
-    {
-        // Buffer keeps the original utf16 chars
-        uint16_t ch = bufferU16[charIndex];
-        if (ch > 127)
-        {
-            // Only ASCII is supported.
-            JITDUMP("ReadUtf8: %dth char is not ASCII.\n", charIndex)
-            return false;
-        }
+    const int MaxU8BufferSizeInBytes = 256;
+    uint8_t   bufferU8[MaxU8BufferSizeInBytes];
 
-        // Narrow U16 to U8 in the same buffer
-        bufferU8[charIndex] = (uint8_t)ch;
+    const int srcLenU8 = (int)minipal_convert_utf16_to_utf8((const CHAR16_T*)bufferU16, srcLenCnsU16, (char*)bufferU8,
+                                                            MaxU8BufferSizeInBytes, 0);
+    if (srcLenU8 <= 0)
+    {
+        // E.g. output buffer is too small
+        JITDUMP("ReadUtf8: minipal_convert_utf16_to_utf8 returned <= 0\n")
+        return false;
+    }
+
+    // The API is expected to return [1..MaxU8BufferSizeInBytes] real length of the UTF-8 value
+    // stored in bufferU8
+    assert((unsigned)srcLenU8 <= MaxU8BufferSizeInBytes);
+
+    // Now that we know the exact UTF8 buffer length we can check if it's unrollable
+    if (srcLenU8 > (int)getUnrollThreshold(UnrollKind::Memcpy))
+    {
+        JITDUMP("ReadUtf8: srcLenU8 is out of unrollable range\n")
+        return false;
     }
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
@@ -1373,10 +1385,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fgMorphStmtBlockOps(block, stmt);
     gtUpdateStmtSideEffects(stmt);
 
-    // srcLenCns is the length of the string literal in chars (UTF16)
+    // srcLenU8 is the length of the string literal in chars (UTF16)
     // but we're going to use the same value as the "bytesWritten" result in the fast path and in the length check.
-    GenTree* srcLenCnsNode = gtNewIconNode(srcLenCns);
-    fgValueNumberTreeConst(srcLenCnsNode);
+    GenTree* srcLenU8Node = gtNewIconNode(srcLenU8);
+    fgValueNumberTreeConst(srcLenU8Node);
 
     // We're going to insert the following blocks:
     //
@@ -1384,12 +1396,12 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     //  lengthCheckBb:
     //      bytesWritten = -1;
-    //      if (dstLen <srcLen)
+    //      if (dstLen < srcLenU8)
     //          goto block;
     //
     //  fastpathBb:
     //      <unrolled block copy>
-    //      bytesWritten = srcLenCns * 2;
+    //      bytesWritten = srcLenU8;
     //
     //  block:
     //      use(bytesWritten)
@@ -1406,7 +1418,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fgInsertStmtAtEnd(lengthCheckBb, fgNewStmtFromTree(bytesWrittenDefaultVal, debugInfo));
 
     GenTree* dstLen      = call->gtArgs.GetUserArgByIndex(3)->GetNode();
-    GenTree* lengthCheck = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(dstLen), srcLenCnsNode);
+    GenTree* lengthCheck = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(dstLen), srcLenU8Node);
     lengthCheck->gtFlags |= GTF_RELOP_JMP_USED;
     Statement* lengthCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, lengthCheck), debugInfo);
     fgInsertStmtAtEnd(lengthCheckBb, lengthCheckStmt);
@@ -1424,14 +1436,14 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fastpathBb->bbFlags |= BBF_INTERNAL;
 
     // The widest type we can use for loads
-    const var_types maxLoadType = roundDownMaxType(srcLenCns);
+    const var_types maxLoadType = roundDownMaxType(srcLenU8);
     assert(genTypeSize(maxLoadType) > 0);
 
     // How many iterations we need to copy UTF8 const data to the destination
-    unsigned iterations = srcLenCns / genTypeSize(maxLoadType);
+    unsigned iterations = srcLenU8 / genTypeSize(maxLoadType);
 
     // Add one more iteration if we have a remainder
-    iterations += (srcLenCns % genTypeSize(maxLoadType) == 0) ? 0 : 1;
+    iterations += (srcLenU8 % genTypeSize(maxLoadType) == 0) ? 0 : 1;
 
     GenTree* dstPtr = call->gtArgs.GetUserArgByIndex(2)->GetNode();
     for (unsigned i = 0; i < iterations; i++)
@@ -1441,7 +1453,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         // Last iteration: overlap with previous load if needed
         if (i == iterations - 1)
         {
-            offset = (ssize_t)srcLenCns - genTypeSize(maxLoadType);
+            offset = (ssize_t)srcLenU8 - genTypeSize(maxLoadType);
         }
 
         // We're going to emit the following tree (in case of SIMD16 load):
@@ -1465,7 +1477,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     }
 
     // Finally, store the number of bytes written to the resultLcl local
-    Statement* finalStmt = fgNewStmtFromTree(gtNewStoreLclVarNode(resultLclNum, gtCloneExpr(srcLenCnsNode)), debugInfo);
+    Statement* finalStmt = fgNewStmtFromTree(gtNewStoreLclVarNode(resultLclNum, gtCloneExpr(srcLenU8Node)), debugInfo);
     fgInsertStmtAtEnd(fastpathBb, finalStmt);
     fastpathBb->bbCodeOffs    = block->bbCodeOffsEnd;
     fastpathBb->bbCodeOffsEnd = block->bbCodeOffsEnd;

@@ -153,13 +153,13 @@
           Include="$(ArtifactsDir)\TargetingPack\**"
           TargetDir="TargetingPack/"/>
 
-        <!-- Wasm App Builder always builds in Debug -->
+        <!-- Wasm App Builder builds as part of tasks, using the corresponding TasksConfiguration -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\**"
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\MonoTargetsTasks\Debug\$(NetCoreAppToolCurrent)\publish\**"
+          Include="$(ArtifactsBinDir)\MonoTargetsTasks\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal

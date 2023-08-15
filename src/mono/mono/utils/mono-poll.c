@@ -31,7 +31,7 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 
 #else
 
-#if defined(HAVE_POLL) && !defined(__APPLE__)
+#if defined(HAVE_POLL)
 
 int
 mono_poll_can_add (mono_pollfd *ufds, unsigned int nfds, int fd)

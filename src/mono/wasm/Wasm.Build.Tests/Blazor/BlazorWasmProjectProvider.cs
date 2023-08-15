@@ -1,15 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.IO;
-using System.Linq;
-using Xunit;
 using Xunit.Abstractions;
-using System.Runtime.Serialization.Json;
-using Microsoft.NET.Sdk.WebAssembly;
 
 #nullable enable
 
@@ -21,39 +13,18 @@ public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
             : base(_testOutput, _projectDir)
     {}
 
-    public void AssertBlazorBootJson(
-        string config,
-        bool isPublish,
-        string targetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
-        bool expectFingerprintOnDotnetJs = false,
-        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
-    {
-        AssertBootJson(binFrameworkDir: FindBlazorBinFrameworkDir(config, isPublish, targetFramework),
-                      isPublish: isPublish,
-                      expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
-                      runtimeType: runtimeType);
-    }
-
-    public void AssertBlazorBundle(
-        BlazorBuildOptions options,
-        bool isPublish,
-        string? binFrameworkDir = null)
-    {
-        EnsureProjectDirIsSet();
-        if (options.TargetFramework is null)
-            options = options with { TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor };
-
-        AssertDotNetNativeFiles(options.ExpectedFileType,
-                                      options.Config,
-                                      forPublish: isPublish,
-                                      targetFramework: options.TargetFramework,
-                                      expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
-                                      runtimeType: options.RuntimeType);
-
-        AssertBlazorBootJson(config: options.Config,
-                             isPublish: isPublish,
-                             targetFramework: options.TargetFramework,
-                             expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
-                             runtimeType: options.RuntimeType);
-    }
+    public void AssertBundle(BlazorBuildOptions options)
+        => AssertBundle(new AssertWasmSdkBundleOptions(
+                Config: options.Config,
+                IsPublish: options.IsPublish,
+                TargetFramework: options.TargetFramework,
+                BinFrameworkDir: options.BinFrameworkDir ?? FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework),
+                GlobalizationMode: options.GlobalizationMode,
+                PredefinedIcudt: options.PredefinedIcudt,
+                ExpectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
+                ExpectedFileType: options.ExpectedFileType,
+                RuntimeType: options.RuntimeType,
+                AssertIcuAssets: true,
+                AssertSymbolsFile: false // FIXME: not supported yet
+            ));
 }

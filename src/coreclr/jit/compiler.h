@@ -6128,6 +6128,11 @@ private:
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
+    bool IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo);
+    bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max);
+    bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max);
+    bool TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, int& cur, int max);
+
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
     void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
@@ -7181,12 +7186,13 @@ public:
 
     bool isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget);
 
-    void addGuardedDevirtualizationCandidate(GenTreeCall*          call,
-                                             CORINFO_METHOD_HANDLE methodHandle,
-                                             CORINFO_CLASS_HANDLE  classHandle,
-                                             unsigned              methodAttr,
-                                             unsigned              classAttr,
-                                             unsigned              likelihood);
+    void addGuardedDevirtualizationCandidate(GenTreeCall*           call,
+                                             CORINFO_METHOD_HANDLE  methodHandle,
+                                             CORINFO_CLASS_HANDLE   classHandle,
+                                             CORINFO_CONTEXT_HANDLE contextHandle,
+                                             unsigned               methodAttr,
+                                             unsigned               classAttr,
+                                             unsigned               likelihood);
 
     int getGDVMaxTypeChecks()
     {
@@ -8740,7 +8746,10 @@ private:
         }
         else
         {
-            return 0;
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
         if (compExactlyDependsOn(InstructionSet_VectorT128))
@@ -8749,7 +8758,10 @@ private:
         }
         else
         {
-            return 0;
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return FP_REGSIZE_BYTES;
         }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
@@ -10953,20 +10965,58 @@ private:
     unsigned  cntCalleeTrashFloat;
 
 public:
-    regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
-    unsigned get_CNT_CALLEE_TRASH_FLOAT() const
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_FLOAT() const
     {
         return this->cntCalleeTrashFloat;
     }
 
 #endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+private:
+    // The following are for initializing register allocator "constants" defined in targetamd64.h
+    // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which adds
+    // 8 mask registers for use.
+    //
+    // Users of these values need to define four accessor functions:
+    //
+    //    regMaskTP get_RBM_ALLMASK();
+    //    regMaskTP get_RBM_MSK_CALLEE_TRASH();
+    //    unsigned get_CNT_CALLEE_TRASH_MASK();
+    //    unsigned get_AVAILABLE_REG_COUNT();
+    //
+    // which return the values of these variables.
+    //
+    // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
+    // TARGET_XARCH requires one.
+    //
+    regMaskTP rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
+    unsigned  cntCalleeTrashMask;
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+
+public:
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    {
+        return this->rbmAllMask;
+    }
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    {
+        return this->rbmMskCalleeTrash;
+    }
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_MASK() const
+    {
+        return this->cntCalleeTrashMask;
+    }
+#endif // TARGET_XARCH
 
 }; // end of class Compiler
 
