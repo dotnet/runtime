@@ -1222,6 +1222,13 @@ namespace Internal.JitInterface
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
+        private bool haveSameMethodDefinition(CORINFO_METHOD_STRUCT_* methHnd1, CORINFO_METHOD_STRUCT_* methHnd2)
+        {
+            MethodDesc meth1 = HandleToObject(methHnd1);
+            MethodDesc meth2 = HandleToObject(methHnd2);
+            return meth1.GetTypicalMethodDefinition() == meth2.GetTypicalMethodDefinition();
+        }
+
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);

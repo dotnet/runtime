@@ -203,7 +203,7 @@ public:
 
     // Get debugger variable information for a specific version of a method
     virtual     void GetVarInfo(MethodDesc *       fd,         // [IN] method of interest
-                                void *DebuggerVersionToken,    // [IN] which edit version
+                                CORDB_ADDRESS nativeCodeAddress,    // [IN] which edit version
                                 SIZE_T *           cVars,      // [OUT] size of 'vars'
                                 const ICorDebugInfo::NativeVarInfo **vars     // [OUT] map telling where local vars are stored
                                 ) = 0;
@@ -261,11 +261,6 @@ public:
     ) = 0;
 
     virtual bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod) = 0;
-
-    // Given a method, get's its EnC version number. 1 if the method is not EnCed.
-    // Note that MethodDescs are reused between versions so this will give us
-    // the most recent EnC number.
-    virtual int GetMethodEncNumber(MethodDesc * pMethod) = 0;
 
     virtual void SendLogSwitchSetting (int iLevel,
                                        int iReason,

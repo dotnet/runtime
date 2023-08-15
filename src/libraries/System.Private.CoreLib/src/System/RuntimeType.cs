@@ -944,9 +944,9 @@ namespace System
 
             if (value == null)
             {
-                if (IsPointer)
+                if (IsPointer || IsFunctionPointer)
                 {
-                    // Pass an IntPtr instead of null for pointers.
+                    // Pass an IntPtr instead of null.
                     value = default(IntPtr);
                     return CheckValueStatus.Success;
                 }
@@ -971,7 +971,7 @@ namespace System
             // - Enum treated as underlying type
             // - Pointer (*) types to IntPtr (if dest is IntPtr)
             // - System.Reflection.Pointer to appropriate pointer (*) type (if dest is pointer type)
-            if (IsPointer || IsEnum || IsPrimitive)
+            if (IsPointer || IsEnum || IsPrimitive || IsFunctionPointer)
                 return TryChangeTypeSpecial(ref value);
 
             return CheckValueStatus.ArgumentException;

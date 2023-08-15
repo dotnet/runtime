@@ -2410,8 +2410,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	MonoClass *klass = cmethod->klass;
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-	gboolean supported = TRUE;
 
+	// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
 
@@ -2428,9 +2428,17 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		g_free (name);
 	}
 
+	// Special case SN_get_IsSupported intrinsic handling in this function which verifies whether a type parameter T is supported for a generic vector.
+	// As we got passed the MONO_TYPE_IS_VECTOR_PRIMITIVE check above, this should always return true for primitive types.
+	if (id == SN_get_IsSupported) {
+		MonoInst *ins = NULL;
+		EMIT_NEW_ICONST (cfg, ins, 1);
+		return ins;
+	}
+
 #if defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg))
-		supported = FALSE;
+		return NULL;
 #endif
 
 // FIXME: Support Vector64 for mini JIT on arm64
@@ -2441,24 +2449,11 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #ifdef TARGET_AMD64
 	if (!COMPILE_LLVM (cfg) && (size != 16))
-		supported = FALSE;
-#ifdef TARGET_WIN32
-		supported = FALSE;
-#endif
-#endif
-
-	switch (id) {
-	case SN_get_IsSupported: {
-		MonoInst *ins = NULL;
-		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
-		return ins;
-	}
-	default:
-		break;
-	}
-
-	if (!supported)
 		return NULL;
+#ifdef TARGET_WIN32
+		return NULL;
+#endif
+#endif
 
 	switch (id) {
 	case SN_get_Count: {

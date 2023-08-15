@@ -1805,6 +1805,14 @@ namespace System
                     }
                 }
             }
+            else if (IsFunctionPointer)
+            {
+                if (value is IntPtr or UIntPtr)
+                    return CheckValueStatus.Success;
+
+                value = (IntPtr)value;
+                return CheckValueStatus.Success;
+            }
 
             return CheckValueStatus.ArgumentException;
         }

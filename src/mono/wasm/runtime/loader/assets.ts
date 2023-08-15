@@ -201,10 +201,11 @@ export async function mono_download_assets(): Promise<void> {
                 const asset = await downloadPromise;
                 if (asset.buffer) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
+                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
                         mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
                         const url = asset.resolvedUrl!;
-                        const data = new Uint8Array(asset.buffer!);
+                        const buffer = await asset.buffer;
+                        const data = new Uint8Array(buffer);
                         cleanupAsset(asset);
 
                         // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
@@ -487,7 +488,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         return asset.pendingDownloadInternal.response;
     }
     if (asset.buffer) {
-        const buffer = asset.buffer;
+        const buffer = await asset.buffer;
         if (!asset.resolvedUrl) {
             asset.resolvedUrl = "undefined://" + asset.name;
         }
@@ -707,6 +708,7 @@ export function cleanupAsset(asset: AssetEntryInternal) {
     asset.pendingDownloadInternal = null as any; // GC
     asset.pendingDownload = null as any; // GC
     asset.buffer = null as any; // GC
+    asset.moduleExports = null as any; // GC
 }
 
 function fileName(name: string) {

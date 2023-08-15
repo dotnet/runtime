@@ -4075,6 +4075,11 @@ namespace System.Diagnostics.Tracing
                 }
                 Validate();
             }
+
+#if FEATURE_PERFTRACING
+            // Remove the listener from the EventPipe dispatcher. EventCommand.Update with enable==false removes it.
+            EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, false, EventLevel.LogAlways, (EventKeywords)0);
+#endif // FEATURE_PERFTRACING
         }
         // We don't expose a Dispose(bool), because the contract is that you don't have any non-syncronous
         // 'cleanup' associated with this object
@@ -4391,11 +4396,6 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
-
-#if FEATURE_PERFTRACING
-            // Remove the listener from the EventPipe dispatcher.
-            EventPipeEventDispatcher.Instance.RemoveEventListener(listenerToRemove);
-#endif // FEATURE_PERFTRACING
         }
 
 

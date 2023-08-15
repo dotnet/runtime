@@ -2135,11 +2135,6 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    // Continuable exceptions are not implemented on Unix-like platforms.
-    return E_NOTIMPL;
-
-#else  // !FEATURE_DBGIPC_TRANSPORT_DI
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -2216,7 +2211,6 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
     }
     EX_CATCH_HRESULT(hr);
     return hr;
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
 }
 
 //---------------------------------------------------------------------------------------
