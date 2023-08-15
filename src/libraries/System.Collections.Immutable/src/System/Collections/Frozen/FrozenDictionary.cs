@@ -113,6 +113,8 @@ namespace System.Collections.Frozen
         private static FrozenDictionary<TKey, TValue> CreateFromDictionary<TKey, TValue>(Dictionary<TKey, TValue> source)
             where TKey : notnull
         {
+            Debug.Assert(source.Count > 0, "Empty sources should have been filtered out by caller");
+
             IEqualityComparer<TKey> comparer = source.Comparer;
 
             // Optimize for value types when the default comparer is being used. In such a case, the implementation
