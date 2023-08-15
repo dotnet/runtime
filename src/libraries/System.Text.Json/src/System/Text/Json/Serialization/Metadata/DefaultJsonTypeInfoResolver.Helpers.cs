@@ -427,6 +427,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Fall back to resolving any public constructors on the type.
             defaultCtor ??= type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+
             return MemberAccessor.CreateParameterlessConstructor(type, defaultCtor);
         }
     }
