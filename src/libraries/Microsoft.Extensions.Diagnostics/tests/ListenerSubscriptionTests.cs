@@ -226,6 +226,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [InlineData("*.namE", "", "")]
         [InlineData("*.sillY.meteR.Name", "", "")]
         [InlineData("long*Name", "", "")]
+        [InlineData("lonG.sillY.meter*MeteR.namE", "", "")] // Shouldn't match, but does, left for compatibility with Logging.
         [InlineData("lonG.sillY.meteR.namE", "", "")]
         [InlineData("", "instrumenTnamE", "")]
         [InlineData("lonG.sillY.meteR.namE", "instrumenTnamE", "")]
