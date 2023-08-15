@@ -28,6 +28,7 @@ namespace System.Runtime
         UnhandledException = 2,                              // "unhandled exception"
         UnhandledExceptionFromPInvoke = 3,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
         EnvironmentFailFast = 4,
+        AssertionFailure = 5,
     }
 
     internal static unsafe partial class EH
