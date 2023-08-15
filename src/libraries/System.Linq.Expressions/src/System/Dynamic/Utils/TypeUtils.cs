@@ -50,71 +50,47 @@ namespace System.Dynamic.Utils
             {
                 return type;
             }
-            if (type == typeof(bool))
+            switch (type.GetTypeCode())
             {
-                return typeof(bool?);
+                case TypeCode.Boolean:
+                    return typeof(bool?);
+                case TypeCode.Int32:
+                    return typeof(int?);
+                case TypeCode.Int64:
+                    return typeof(long?);
+                case TypeCode.Single:
+                    return typeof(float?);
+                case TypeCode.Double:
+                    return typeof(double?);
+                case TypeCode.UInt32:
+                    return typeof(uint?);
+                case TypeCode.UInt64:
+                    return typeof(ulong?);
+                case TypeCode.Byte:
+                    return typeof(byte?);
+                case TypeCode.SByte:
+                    return typeof(sbyte?);
+                case TypeCode.Int16:
+                    return typeof(short?);
+                case TypeCode.UInt16:
+                    return typeof(ushort?);
+                case TypeCode.Char:
+                    return typeof(char?);
+                case TypeCode.Decimal:
+                    return typeof(decimal?);
+                case TypeCode.DateTime:
+                    return typeof(DateTime?);
+                default:
+                    if (type == typeof(DateTimeOffset))
+                    {
+                        return typeof(DateTimeOffset?);
+                    }
+                    else if (type == typeof(TimeSpan))
+                    {
+                        return typeof(TimeSpan?);
+                    }
+                    throw new NotSupportedException(Strings.LiftingInExpressionRequiresDynamicCode(type));
             }
-            else if (type == typeof(int))
-            {
-                return typeof(int?);
-            }
-            else if (type == typeof(long))
-            {
-                return typeof(long?);
-            }
-            else if (type == typeof(float))
-            {
-                return typeof(float?);
-            }
-            else if (type == typeof(double))
-            {
-                return typeof(double?);
-            }
-            else if (type == typeof(uint))
-            {
-                return typeof(uint?);
-            }
-            else if (type == typeof(ulong))
-            {
-                return typeof(ulong?);
-            }
-            else if (type == typeof(byte))
-            {
-                return typeof(byte?);
-            }
-            else if (type == typeof(sbyte))
-            {
-                return typeof(sbyte?);
-            }
-            else if (type == typeof(short))
-            {
-                return typeof(short?);
-            }
-            else if (type == typeof(ushort))
-            {
-                return typeof(ushort?);
-            }
-            else if (type == typeof(char))
-            {
-                return typeof(char?);
-            }
-            else if (type == typeof(decimal))
-            {
-                return typeof(decimal?);
-            }
-            else if (type == typeof(DateTime))
-            {
-                return typeof(DateTime?);
-            }
-            else if (type == typeof(DateTimeOffset))
-            {
-                return typeof(DateTimeOffset?);
-            }
-            else if (type == typeof(TimeSpan))
-            {
-                return typeof(TimeSpan?);
-            }
-            throw new NotSupportedException(Strings.LiftingInExpressionRequiresDynamicCode(type));
         }
 
         public static ConstructorInfo GetNullableConstructor(Type nullableType)
