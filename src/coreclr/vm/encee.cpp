@@ -733,9 +733,11 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
     return E_FAIL;
-#endif // #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#endif // #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
 }
 
+#ifdef FEATURE_ENC_SUPPORTED
 //---------------------------------------------------------------------------------------
 //
 // FixContextAndResume - Modify the thread context for EnC remap and resume execution
@@ -804,8 +806,8 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // Get the var info which the codemanager will use for updating
     // enregistered variables correctly, or variables whose lifetimes differ
     // at the update point
-    g_pDebugInterface->GetVarInfo(pMD, oldDebuggerFuncHandle, &oldVarInfoCount, &pOldVarInfo);
-    g_pDebugInterface->GetVarInfo(pMD, NULL,                  &newVarInfoCount, &pNewVarInfo);
+    g_pDebugInterface->GetVarInfo(pMD, oldCodeInfo.GetCodeAddress(), &oldVarInfoCount, &pOldVarInfo);
+    g_pDebugInterface->GetVarInfo(pMD, newCodeInfo.GetCodeAddress(),                  &newVarInfoCount, &pNewVarInfo);
 
 #ifdef TARGET_X86
     // save the frame pointer as FixContextForEnC might step on it.
@@ -871,6 +873,8 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));
     _ASSERTE(!"Should not return from ResumeAtJit()");
 }
+#endif // #ifdef FEATURE_ENC_SUPPORTED
+
 #endif // #ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------

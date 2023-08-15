@@ -215,6 +215,10 @@ ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (Mo
 
 ICALL_EXPORT gint32 ves_icall_RuntimeType_GetGenericParameterPosition (MonoQCallTypeHandle type_handle);
 
+ICALL_EXPORT gint8 ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_RuntimeType_IsUnmanagedFunctionPointerInternal (MonoQCallTypeHandle type_handle);
+
 ICALL_EXPORT int ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle);
 
 ICALL_EXPORT gint32 ves_icall_System_Array_GetCorElementTypeOfElementTypeInternal (MonoObjectHandleOnStack arr_handle);

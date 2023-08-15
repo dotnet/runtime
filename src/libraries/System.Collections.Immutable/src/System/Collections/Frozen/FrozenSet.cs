@@ -59,6 +59,8 @@ namespace System.Collections.Frozen
 
         private static FrozenSet<T> CreateFromSet<T>(HashSet<T> source)
         {
+            Debug.Assert(source.Count > 0, "Empty sources should have been filtered out by caller");
+
             IEqualityComparer<T> comparer = source.Comparer;
 
             // Optimize for value types when the default comparer is being used. In such a case, the implementation

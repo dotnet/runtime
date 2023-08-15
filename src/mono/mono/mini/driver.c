@@ -1688,7 +1688,6 @@ mono_get_version_info (void)
 #endif
 
 	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
-	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
 
 	g_string_append_printf (output, "\tMisc:          ");
 #ifdef MONO_SMALL_CONFIG

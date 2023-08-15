@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -107,7 +109,7 @@ namespace Microsoft.Interop
         public BlockSyntax GeneratePInvokeBody(string dllImportName)
         {
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context, IdentifierName(dllImportName));
-            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
+            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.CleanupCallerAllocated.IsEmpty || !statements.CleanupCalleeAllocated.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
             var setupStatements = new List<StatementSyntax>();
@@ -115,15 +117,15 @@ namespace Microsoft.Interop
             if (_setLastError)
             {
                 // Declare variable for last error
-                setupStatements.Add(MarshallerHelpers.Declare(
+                setupStatements.Add(Declare(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     LastErrorIdentifier,
                     initializeToDefault: false));
             }
 
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
+                setupStatements.Add(Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
             }
 
             setupStatements.AddRange(declarations.Initializations);
@@ -148,7 +150,7 @@ namespace Microsoft.Interop
             }
             tryStatements.Add(statements.Pin.NestFixedStatements(fixedBlock));
             // <invokeSucceeded> = true;
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
                 tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(InvokeSucceededIdentifier),
@@ -160,12 +162,12 @@ namespace Microsoft.Interop
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = new List<StatementSyntax>();
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
+                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal.Concat(statements.CleanupCalleeAllocated))));
             }
 
-            finallyStatements.AddRange(statements.Cleanup);
+            finallyStatements.AddRange(statements.CleanupCallerAllocated);
             if (finallyStatements.Count > 0)
             {
                 // Add try-finally block if there are any statements in the finally block
