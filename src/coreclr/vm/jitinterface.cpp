@@ -10646,7 +10646,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             NativeCodeVersion::OptimizationTier tier;
 
             // Avoid taking the lock for foreground jit compilations
-            if (TieredCompilationManager::IsBackgroundWorkerActive())
+            if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive())
             {
                 {
                     CodeVersionManager::LockHolder codeVersioningLockHolder;
