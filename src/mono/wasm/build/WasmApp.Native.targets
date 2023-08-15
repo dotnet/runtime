@@ -440,6 +440,10 @@
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
+      <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-simd.a</_WasmSIMDLib>
+      <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-nosimd.a</_WasmSIMDLib>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-nosimd.a</_WasmSIMDLibToExclude>
       <_EmccExportedLibraryFunction>&quot;[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
@@ -460,7 +464,9 @@
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
           Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')" />
       <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
+      <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
+      <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
 
       <_WasmExtraJSFile Include="@(Content)" Condition="'%(Content.Extension)' == '.js'" />
 
