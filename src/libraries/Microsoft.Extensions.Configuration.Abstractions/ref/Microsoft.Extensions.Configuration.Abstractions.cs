@@ -24,6 +24,7 @@ namespace Microsoft.Extensions.Configuration
         public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] this Microsoft.Extensions.Configuration.IConfigurationSection? section) { throw null; }
         public static string? GetConnectionString(this Microsoft.Extensions.Configuration.IConfiguration configuration, string name) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(this Microsoft.Extensions.Configuration.IConfiguration configuration, string key) { throw null; }
+        public static bool IsPresent([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] this Microsoft.Extensions.Configuration.IConfigurationSection? section) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public sealed partial class ConfigurationKeyNameAttribute : System.Attribute

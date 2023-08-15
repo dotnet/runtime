@@ -837,6 +837,30 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void IsPresent_Success()
+        {
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", "Value1"},
+                {"Mem1:KeyInMem1", "ValueInMem1"},
+                {"Mem2", ""}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            var config = configurationBuilder.Build();
+
+            var sectionMem1IsPresent1 = config.GetSection("Mem1").IsPresent();
+            var sectionMem1IsPresent2 = config.GetSection("Mem1:KeyInMem1").IsPresent();
+            var sectionMem2IsPresent1 = config.GetSection("Mem2").IsPresent();
+            var sectionMem2IsPresent2 = config.GetSection("Mem2:KeyInMem2").IsPresent();
+
+            Assert.True(sectionMem1IsPresent1);
+            Assert.True(sectionMem1IsPresent2);
+            Assert.True(sectionMem2IsPresent1);
+            Assert.False(sectionMem2IsPresent2);
+        }
+
+        [Fact]
         public void SectionGetRequiredSectionSuccess()
         {
             // Arrange

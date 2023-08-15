@@ -106,5 +106,19 @@ namespace Microsoft.Extensions.Configuration
 
             throw new InvalidOperationException(SR.Format(SR.InvalidSectionName, key));
         }
+
+        /// <summary>
+        /// Determines whether the section has a <see cref="IConfigurationSection.Value"/>.
+        /// </summary>
+        /// <param name="section">The section to enumerate.</param>
+        /// <returns><see langword="true" /> if the section has values; otherwise, <see langword="false" />.</returns>
+        public static bool IsPresent([NotNullWhen(true)] this IConfigurationSection? section)
+        {
+            if (section == null)
+            {
+                return false;
+            }
+            return section.Value != null;
+        }
     }
 }
