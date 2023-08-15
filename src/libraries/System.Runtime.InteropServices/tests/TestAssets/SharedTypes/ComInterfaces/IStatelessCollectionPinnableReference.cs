@@ -28,10 +28,6 @@ namespace SharedTypes.ComInterfaces
 
         [return: MarshalUsing(CountElementName = nameof(size))]
         StatelessCollectionPinnableReference<int> Return(int size);
-
-        [PreserveSig]
-        [return: MarshalUsing(CountElementName = nameof(size))]
-        StatelessCollectionPinnableReference<int> ReturnPreserveSig(int size);
     }
 
     [NativeMarshalling(typeof(StatelessCollectionPinnableReferenceMarshaller<,>))]
