@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Breadcrumb_thread_finishes_when_app_closes_normally()
         {
-            var fixture = sharedTestState.PortableAppFixture.Copy();
+            var fixture = sharedTestState.PortableAppFixture;
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
@@ -38,11 +38,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Breadcrumb_thread_does_not_finish_when_app_has_unhandled_exception()
         {
-            var fixture = sharedTestState.PortableAppWithExceptionFixture.Copy();
+            var fixture = sharedTestState.PortableAppFixture;
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
-            dotnet.Exec(appDll)
+            dotnet.Exec(appDll, "throw_exception")
                 .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
                 .EnableTracingAndCaptureOutputs()
                 .Execute(expectedToFail: true)
@@ -511,7 +511,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             public TestProjectFixture HostApiInvokerAppFixture { get; }
             public TestProjectFixture PortableAppFixture { get; }
-            public TestProjectFixture PortableAppWithExceptionFixture { get; }
             public RepoDirectoriesProvider RepoDirectories { get; }
 
             public string BreadcrumbLocation { get; }
@@ -528,14 +527,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .EnsureRestored()
                     .PublishProject();
 
-                PortableAppWithExceptionFixture = new TestProjectFixture("PortableAppWithException", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
-
                 if (!OperatingSystem.IsWindows())
                 {
+                    // On non-Windows breadcrumbs are only written if the breadcrumb directory already exists,
+                    // so we explicitly create a directory for breadcrumbs
                     BreadcrumbLocation = Path.Combine(
-                        PortableAppWithExceptionFixture.TestProject.OutputDirectory,
+                        PortableAppFixture.TestProject.OutputDirectory,
                         "opt",
                         "corebreadcrumbs");
                     Directory.CreateDirectory(BreadcrumbLocation);
@@ -552,7 +549,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 HostApiInvokerAppFixture.Dispose();
                 PortableAppFixture.Dispose();
-                PortableAppWithExceptionFixture.Dispose();
             }
         }
     }

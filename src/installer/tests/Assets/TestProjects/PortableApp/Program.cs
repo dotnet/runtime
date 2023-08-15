@@ -19,11 +19,17 @@ namespace PortableApp
             if (args.Length == 0)
                 return;
 
-            if (args[0] == "load_shared_library")
+            switch (args[0])
             {
-                var asm = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("SharedLibrary"));
-                FieldInfo field = asm.GetType("SharedLibrary.SharedType").GetField("Value");
-                Console.WriteLine($"SharedLibrary.SharedType.Value={field.GetValue(null)}");
+                case "load_shared_library":
+                    var asm = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("SharedLibrary"));
+                    FieldInfo field = asm.GetType("SharedLibrary.SharedType").GetField("Value");
+                    Console.WriteLine($"SharedLibrary.SharedType.Value={field.GetValue(null)}");
+                    break;
+                case "throw_exception":
+                    throw new Exception("Goodbye World!");
+                default:
+                    break;
             }
         }
     }
