@@ -1264,8 +1264,15 @@ mono_class_try_load_from_name (MonoImage *image, const char* name_space, const c
 void
 mono_error_set_for_class_failure (MonoError *orerror, const MonoClass *klass);
 
-gboolean
-mono_class_has_failure (const MonoClass *klass);
+static inline gboolean
+mono_class_has_failure_inline (const MonoClass *klass, const char *func, const char *file, int line)
+{ 
+	g_assertf(klass != NULL, "klass ptr is null in %s at %s:%d\n", func, file, line);
+	return m_class_has_failure ((MonoClass*)klass) != 0;
+}
+
+#define mono_class_has_failure(klass) (mono_class_has_failure_inline((klass), __func__, __FILE__, __LINE__))
+
 
 gboolean
 mono_class_has_deferred_failure (const MonoClass *klass);
