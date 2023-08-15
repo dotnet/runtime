@@ -31,8 +31,21 @@ if (CLR_CMAKE_HOST_WIN32)
     set_target_properties(${targetName} PROPERTIES COMPILE_OPTIONS "${compileOptions}")
   endfunction()
 
+  function(add_ijw_msbuild_project_properties targetName ijwhost_target)
+    # When we're building with MSBuild, we need to set some project properties
+    # in case CMake has decided to use the SDK support.
+    # We're dogfooding things, so we need to set settings in ways that the product doesn't quite support.
+    # We don't actually need an installed/available target framework version here
+    # since we are disabling implicit framework references. We just need a valid value, and net7.0 is valid.
+    set_target_properties(${targetName} PROPERTIES
+      DOTNET_TARGET_FRAMEWORK net7.0
+      VS_GLOBAL_DisableImplicitFrameworkReferences true
+      VS_GLOBAL_GenerateRuntimeConfigurationFiles false
+      VS_PROJECT_IMPORT "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/SetIJWProperties.props")
+  endfunction()
+
   # 4365 - signed/unsigned mismatch
-  # 4679 - Could not import member. This is an issue with IJW and static abstract methods in interfaces. 
+  # 4679 - Could not import member. This is an issue with IJW and static abstract methods in interfaces.
   add_compile_options(/wd4365 /wd4679)
 
   # IJW

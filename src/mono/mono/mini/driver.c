@@ -1407,7 +1407,7 @@ static void main_thread_handler (gpointer user_data)
 				MonoImage *img;
 
 				img = mono_image_open (main_args->argv [i], &status);
-				if (img && strcmp (img->name, assembly->image->name)) {
+				if (img && g_strcasecmp (img->name, assembly->image->name)) {
 					fprintf (stderr, "Error: Loaded assembly '%s' doesn't match original file name '%s'. Set MONO_PATH to the assembly's location.\n", assembly->image->name, img->name);
 					exit (1);
 				}

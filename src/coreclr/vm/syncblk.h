@@ -103,14 +103,14 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 #define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX    0x08000000
 
 // if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is laid out as follows:
-// - lower ten bits (bits 0 thru 9) is thread id used for the thin locks
+// - lower sixteen bits (bits 0 thru 15) is thread id used for the thin locks
 //   value is zero if no thread is holding the lock
-// - following six bits (bits 10 thru 15) is recursion level used for the thin locks
+// - following six bits (bits 16 thru 21) is recursion level used for the thin locks
 //   value is zero if lock is not taken or only taken once by the same thread
-#define SBLK_MASK_LOCK_THREADID             0x000003FF   // special value of 0 + 1023 thread ids
-#define SBLK_MASK_LOCK_RECLEVEL             0x0000FC00   // 64 recursion levels
-#define SBLK_LOCK_RECLEVEL_INC              0x00000400   // each level is this much higher than the previous one
-#define SBLK_RECLEVEL_SHIFT                 10           // shift right this much to get recursion level
+#define SBLK_MASK_LOCK_THREADID             0x0000FFFF   // special value of 0 + 65535 thread ids
+#define SBLK_MASK_LOCK_RECLEVEL             0x003F0000   // 64 recursion levels
+#define SBLK_LOCK_RECLEVEL_INC              0x00010000   // each level is this much higher than the previous one
+#define SBLK_RECLEVEL_SHIFT                 16           // shift right this much to get recursion level
 
 // add more bits here... (adjusting the following mask to make room)
 

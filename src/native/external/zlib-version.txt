@@ -1,11 +1,15 @@
-v1.2.12
-(21767c654d31d2dccdde4330529775c6c5fd5389)
+v1.2.13
+(04f42ceca40f73e2978b50e93806c2a18c1281fc)
 
-https://github.com/madler/zlib/releases/tag/v1.2.12
+https://github.com/madler/zlib/releases/tag/v1.2.13
+
+We have removed zlib.3.pdf from our local copy, as it is a binary file which is
+not needed for our compilation.
 
 We have also cherry-picked into our local copy:
-https://github.com/madler/zlib/commit/ec3df00224d4b396e2ac6586ab5d25f673caa4c2
-https://github.com/madler/zlib/commit/7ecf7c7458578d05a20fa481436dd5c58db112f7
 
-And we have inserted into our local copy of zutil.h, line 196, the following declaration:
-    ZEXTERN uLong ZEXPORT crc32_combine_gen64 OF((z_off_t));
+- https://github.com/madler/zlib/commit/e554695638228b846d49657f31eeff0ca4680e8a
+
+  This patch only affects memLevel 9 compression. .NET doesn't currently use this
+  memLevel, but we'll take this patch out of an abundance of caution just in case
+  we enable this functionality in a future release.
