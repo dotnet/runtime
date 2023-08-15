@@ -19,13 +19,7 @@ namespace System.Globalization
 
             return GlobalizationMode.UseNls ?
                 NlsIsNormalized(strInput, normalizationForm) :
-// #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-//                 GlobalizationMode.Hybrid ?
-//                     NativeIsNormalized(strInput, normalizationForm) :
-//                     IcuIsNormalized(strInput, normalizationForm);
-// #else
                 IcuIsNormalized(strInput, normalizationForm);
-// #endif
         }
 
         internal static string Normalize(string strInput, NormalizationForm normalizationForm)
@@ -39,13 +33,7 @@ namespace System.Globalization
 
             return GlobalizationMode.UseNls ?
                 NlsNormalize(strInput, normalizationForm) :
-// #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-//                 GlobalizationMode.Hybrid ?
-//                     NativeNormalize(strInput, normalizationForm) :
-//                     IcuNormalize(strInput, normalizationForm);
-// #else
                 IcuNormalize(strInput, normalizationForm);
-// #endif
         }
     }
 }
