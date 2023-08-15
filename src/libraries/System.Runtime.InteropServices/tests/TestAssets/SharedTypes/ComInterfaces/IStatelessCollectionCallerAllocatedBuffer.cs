@@ -127,11 +127,6 @@ namespace SharedTypes.ComInterfaces
             {
                 throw new NotImplementedException();
             }
-            // Should be removed: https://github.com/dotnet/runtime/issues/89885
-            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(StatelessCollectionCallerAllocatedBufferNative unmanaged, int numElements)
-            {
-                throw new NotImplementedException();
-            }
 
             public static Span<T> GetManagedValuesDestination(StatelessCollectionCallerAllocatedBuffer<T> managed)
             {
