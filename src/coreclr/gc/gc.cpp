@@ -25492,7 +25492,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
 
         // prepare for the switch by fixing the allocation contexts on the old heaps, unify the gen0_bricks_cleared flag,
         // and setting the survived size for the existing regions to their allocated size
-        BOOL unified_gen0_bricks_cleared = true;
+        BOOL unified_gen0_bricks_cleared = TRUE;
         for (int i = 0; i < old_n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
