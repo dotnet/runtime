@@ -10610,34 +10610,34 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
-            
-            MethodDesc* helperMD = pPrecode->GetMethodDesc();
-            _ASSERT(helperMD != nullptr);
 
             // Check if the target MethodDesc is already jitted to its final Tier
             // so we no longer need to use indirections and can emit a direct call instead.
-            NativeCodeVersion::OptimizationTier tier;
-
+            //
             // Avoid taking the lock for foreground jit compilations
             if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive())
             {
+                MethodDesc* helperMD = pPrecode->GetMethodDesc();
+                _ASSERT(helperMD != nullptr);
+
                 CodeVersionManager* manager = helperMD->GetCodeVersionManager();
                 NativeCodeVersion activeCodeVersion;
-                // Get active code version under a lock
+
                 {
+                    // Get active code version under a lock
                     CodeVersionManager::LockHolder codeVersioningLockHolder;
                     activeCodeVersion = manager->GetActiveILCodeVersion(helperMD).GetActiveNativeCodeVersion(helperMD);
                 }
-                tier = activeCodeVersion.GetOptimizationTier();
 
-                if (tier == NativeCodeVersion::OptimizationTier::OptimizationTier1 ||
-                    tier == NativeCodeVersion::OptimizationTier::OptimizationTierOptimized)
+                if (activeCodeVersion.IsFinalTier())
                 {
                     finalTierAddr = (LPVOID)activeCodeVersion.GetNativeCode();
-                    _ASSERT(finalTierAddr != NULL);
-                    // Cache it for future uses to avoid taking the lock again.
-                    hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
-                    return finalTierAddr;
+                    if (finalTierAddr != NULL);
+                    {
+                        // Cache it for future uses to avoid taking the lock again.
+                        hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
+                        return finalTierAddr;
+                    }
                 }
             }
 
