@@ -52,7 +52,7 @@ public class Runtime_85765
         bytes[0x1A] = 1;
         bytes[0x1B] = 2;
         int sum = Foo(bytes);
-        Assert.Equal(515, sum);
+        Assert.True(sum == 515);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
