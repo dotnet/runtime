@@ -153,7 +153,7 @@ jobs:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
     - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
         - task: Bash@3
           displayName: Setup Private Feeds Credentials
           inputs:
@@ -161,7 +161,7 @@ jobs:
             arguments: $(Build.SourcesDirectory)/NuGet.config $Token
           env:
             Token: $(dn-bot-dnceng-artifact-feeds-rw)
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - ${{ else }}:
         - task: PowerShell@2
           displayName: Setup Private Feeds Credentials
           inputs:
