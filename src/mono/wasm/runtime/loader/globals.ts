@@ -3,6 +3,8 @@
 
 import { exceptions, simd } from "wasm-feature-detect";
 
+import gitHash from "consts:gitHash";
+
 import type { AssetEntryInternal, GlobalObjects, LoaderHelpers, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
@@ -64,6 +66,7 @@ export function setLoaderGlobals(
         abort: (reason: any) => { throw reason; },
     });
     Object.assign(loaderHelpers, {
+        gitHash,
         config: globalObjects.module.config,
         diagnosticTracing: false,
 

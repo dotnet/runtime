@@ -462,6 +462,7 @@ namespace System.Linq.Expressions.Compiler
             return cr.Finish(expr);
         }
 
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         private Result RewriteNewArrayExpression(Expression expr, Stack stack)
         {
             var node = (NewArrayExpression)expr;

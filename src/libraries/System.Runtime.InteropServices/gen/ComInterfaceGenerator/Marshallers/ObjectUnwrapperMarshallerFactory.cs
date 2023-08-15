@@ -47,7 +47,7 @@ namespace Microsoft.Interop
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseTypeName(TypeNames.UnmanagedObjectUnwrapper),
+                                    TypeSyntaxes.UnmanagedObjectUnwrapper,
                                     GenericName(Identifier("GetObjectForUnmanagedWrapper"))
                                         .WithTypeArgumentList(
                                             TypeArgumentList(

@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Folder Include="Resources\xlf\" />
+    <Compile Include="$(CommonPath)Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs" Link="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
   </ItemGroup>
 

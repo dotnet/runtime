@@ -151,6 +151,7 @@ namespace Microsoft.Quic
         NONE = 0x0000,
         UNIDIRECTIONAL = 0x0001,
         ZERO_RTT = 0x0002,
+        DELAY_FC_UPDATES = 0x0004,
     }
 
     [System.Flags]

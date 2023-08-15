@@ -406,6 +406,10 @@ public:
     void dmpGetMethodInfo(DLDL key, const Agnostic_GetMethodInfo& value);
     bool repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, DWORD* exceptionCode);
 
+    void recHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2, bool result);
+    void dmpHaveSameMethodDefinition(const DLDL& key, DWORD value);
+    bool repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2);
+
     void recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                          bool                  hasSideEffects,
                          CorInfoHelpFunc       result,
@@ -1133,6 +1137,7 @@ enum mcPackets
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
     Packet_GetObjectContent = 210,
     Packet_GetTypeLayout = 211,
+    Packet_HaveSameMethodDefinition = 212,
 };
 
 void SetDebugDumpVariables();

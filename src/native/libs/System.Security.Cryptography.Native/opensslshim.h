@@ -509,6 +509,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     LIGHTUP_FUNCTION(SSL_CTX_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_CTX_set_client_cert_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_ex_data) \
+    FALLBACK_FUNCTION(SSL_CTX_set_keylog_callback) \
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
@@ -1005,6 +1006,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_client_cert_cb SSL_CTX_set_client_cert_cb_ptr
 #define SSL_CTX_set_ex_data SSL_CTX_set_ex_data_ptr
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
+#define SSL_CTX_set_keylog_callback SSL_CTX_set_keylog_callback_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
 #define SSL_CTX_set_session_id_context SSL_CTX_set_session_id_context_ptr
@@ -1268,6 +1270,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_get_X509_PUBKEY local_X509_get_X509_PUBKEY
 #define X509_get_version local_X509_get_version
 #define X509_up_ref local_X509_up_ref
+#define SSL_CTX_set_keylog_callback local_SSL_CTX_set_keylog_callback
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
 
