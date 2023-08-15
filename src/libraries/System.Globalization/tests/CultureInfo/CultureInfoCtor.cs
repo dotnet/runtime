@@ -254,8 +254,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "pa-IN", new [] { "pa-IN" }, true };
             yield return new object[] { "pl", new [] { "pl" } };
             yield return new object[] { "pl-PL", new [] { "pl-PL" } };
-            yield return new object[] { "prs", new [] { "prs" }, true };
-            yield return new object[] { "prs-AF", new [] { "prs-AF" }, true };
+            yield return new object[] { "prs", new [] { "prs", "fa" }, true  };
+            yield return new object[] { "prs-AF", new [] { "prs-AF", "fa-AF" }, true };
             yield return new object[] { "ps", new [] { "ps" }, true };
             yield return new object[] { "ps-AF", new [] { "ps-AF" }, true };
             yield return new object[] { "pt", new [] { "pt" } };
@@ -441,7 +441,7 @@ namespace System.Globalization.Tests
             Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
         }
 
-        private static bool NotWasmWithIcu => PlatformDetection.IsNotBrowser && PlatformDetection.IsIcuGlobalization;
+        private static bool NotWasmWithIcu => PlatformDetection.IsNotBrowser && PlatformDetection.IsIcuGlobalization && PlatformDetection.IsNotWindowsServerCore;
 
         [InlineData("zh-TW-u-co-zhuyin", "zh-TW", "zh-TW_zhuyin")]
         [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phoneboo")]
