@@ -8,6 +8,7 @@ using Wasm.Build.NativeRebuild.Tests;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using System.Collections.Generic;
 
 #nullable enable
 
@@ -69,11 +70,11 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", testUnicode: false)]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", testUnicode: false)]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", testUnicode: true)]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", testUnicode: true)]
-        public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id, bool testUnicode)
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", parameters: new object[] { false } )]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", parameters: new object[] { false } )]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", parameters: new object[] { true } )]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", parameters: new object[] { true } )]
+        public void BuildThenPublishWithAOT(BuildArgs buildArgs, bool testUnicode, RunHost host, string id)
         {
             string projectName = GetTestProjectPath(
                 prefix: "build_publish", config: buildArgs.Config, appendUnicode: testUnicode);
@@ -114,6 +115,7 @@ namespace Wasm.Build.Tests
             // FIXME: relinking for paths with unicode does not work:
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
             // remove the condition when the issue is fixed
+            Dictionary<string, FileStat> publishStat = new();
             if (!testUnicode)
             {
                 // relink by default for Release+publish
@@ -126,11 +128,11 @@ namespace Wasm.Build.Tests
                                         UseCache: false,
                                         Label: "first_publish"));
 
-                var publishStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+                publishStat = (Dictionary<string, FileStat>)_provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
                 Assert.True(publishStat["pinvoke.o"].Exists);
                 Assert.True(publishStat[$"{mainDll}.bc"].Exists);
                 CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
-                CompareStat(firstBuildStat, publishStat, pathsDict.Values);
+                _provider.CompareStat(firstBuildStat, publishStat, pathsDict.Values);
 
                 Run(expectAOT: true);
             }
@@ -155,7 +157,7 @@ namespace Wasm.Build.Tests
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
             if (!testUnicode)
             {
-                CompareStat(publishStat, secondBuildStat, pathsDict.Values);
+                _provider.CompareStat(publishStat, secondBuildStat, pathsDict.Values);
             }
 
             void Run(bool expectAOT) => RunAndTestWasmApp(
@@ -173,6 +175,7 @@ namespace Wasm.Build.Tests
         }
 
         // appending UTF-8 char makes sure project build&publish under all types of paths is supported
-        string GetTestProjectPath(string prefix, string config, bool appendUnicode=true) => appendUnicode ? $"{prefix}_{config}_{s_unicodeChar}" : $"{prefix}_{config}";
+        string GetTestProjectPath(string prefix, string config, bool appendUnicode=true) =>
+            appendUnicode ? $"{prefix}_{config}_{s_unicodeChar}" : $"{prefix}_{config}";
     }
 }
