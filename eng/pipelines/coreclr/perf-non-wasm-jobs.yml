@@ -27,6 +27,7 @@ jobs:
           archiveType: tar
           tarCompression: gz
           hybridGlobalization: True
+          artifactNameAppendString: 'HybridGlobalization'
 
   # build NativeAOT iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -50,6 +51,7 @@ jobs:
           archiveType: tar
           tarCompression: gz
           hybridGlobalization: True
+          artifactNameAppendString: 'HybridGlobalization'
 
   # run mono iOS scenarios scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -69,6 +71,7 @@ jobs:
         iOSLlvmBuild: False
         iOSStripSymbols: False
         hybridGlobalization: True
+        artifactNameAppendString: 'HybridGlobalization'
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -87,6 +90,7 @@ jobs:
         iOSLlvmBuild: False
         iOSStripSymbols: True
         hybridGlobalization: True
+        artifactNameAppendString: 'HybridGlobalization'
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -105,6 +109,7 @@ jobs:
         iOSLlvmBuild: True
         iOSStripSymbols: False
         hybridGlobalization: True
+        artifactNameAppendString: 'HybridGlobalization'
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -123,6 +128,7 @@ jobs:
         iOSLlvmBuild: True
         iOSStripSymbols: True
         hybridGlobalization: True
+        artifactNameAppendString: 'HybridGlobalization'
 
   # run NativeAOT iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -141,6 +147,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: False
         hybridGlobalization: True
+        artifactNameAppendString: 'HybridGlobalization'
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -158,6 +165,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: True
         hybridGlobalization: True
+        artifactNameAppendString: 'HybridGlobalization'
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule'), eq(parameters.TestHybridGlobalization, false)) }}:
 
