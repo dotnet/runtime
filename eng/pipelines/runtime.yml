@@ -1535,6 +1535,7 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              testBuildArgs: tree Loader/classloader/InlineArray
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
       
@@ -1571,6 +1572,7 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              testBuildArgs: tree Loader/classloader/InlineArray
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -1610,5 +1612,6 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              testBuildArgs: tree Loader/classloader/InlineArray
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
