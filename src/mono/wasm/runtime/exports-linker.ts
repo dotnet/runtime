@@ -4,8 +4,6 @@
 import { mono_wasm_imports, mono_wasm_legacy_interop_imports, mono_wasm_threads_imports } from "./exports-binding";
 import gitHash from "consts:gitHash";
 
-// FIXME: MERGE DAMAGE
-
 export function export_linker_indexes_as_code(): string {
     const indexByName: any = {
         mono_wasm_imports: {},
