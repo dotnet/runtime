@@ -4908,6 +4908,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doRangeAnalysis           = true;
         bool doVNBasedDeadStoreRemoval = true;
         int  iterations                = 1;
+        bool hasPostLoopUnrolling      = false;
 
 #if defined(OPT_CONFIG)
         doSsa                     = (JitConfig.JitDoSsa() != 0);
@@ -4928,7 +4929,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
 #endif // defined(OPT_CONFIG)
 
-        while (iterations > 0)
+        while (iterations > 0 || hasPostLoopUnrolling)
         {
             if (doSsa)
             {
@@ -5034,10 +5035,28 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Recompute the edge weight if we have modified the flow graph
                 //
                 DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS2, &Compiler::fgComputeEdgeWeights);
+
+                // Do loop unrolling once again if we modified flowgraph during the optimization phase
+                //
+                if (!hasPostLoopUnrolling)
+                {
+                    ResetOptAnnotations();
+                    RecomputeLoopInfo();
+                    DoPhase(this, PHASE_UNROLL_LOOPS2, &Compiler::optUnrollLoops);
+                    hasPostLoopUnrolling = true;
+                }
+                else
+                {
+                    hasPostLoopUnrolling = false;
+                }
+            }
+            else
+            {
+                hasPostLoopUnrolling = false;
             }
 
             // Iterate if requested, resetting annotations first.
-            if (--iterations == 0)
+            if (--iterations == 0 && !hasPostLoopUnrolling)
             {
                 break;
             }
@@ -5730,8 +5749,6 @@ void Compiler::generatePatchpointInfo()
 
 void Compiler::ResetOptAnnotations()
 {
-    assert(opts.optRepeat);
-    assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa();
     vnStore              = nullptr;
     m_blockToEHPreds     = nullptr;
@@ -5763,8 +5780,6 @@ void Compiler::ResetOptAnnotations()
 //
 void Compiler::RecomputeLoopInfo()
 {
-    assert(opts.optRepeat);
-    assert(JitConfig.JitOptRepeatCount() > 0);
     // Recompute reachability sets, dominators, and loops.
     optResetLoopInfo();
     fgDomsComputed = false;
