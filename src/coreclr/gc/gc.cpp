@@ -43712,6 +43712,7 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
 #ifdef USE_REGIONS
 size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
 {
+    FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem (region));
     uint8_t* page_start = align_lower_page (get_region_start (region));
     uint8_t* decommit_end = heap_segment_committed (region);
     size_t decommit_size = decommit_end - page_start;
