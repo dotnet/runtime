@@ -83,9 +83,9 @@ typedef struct
     uint8_t const lookup_len;
     // Number of bits needed to encode lookup index
     uint8_t const bit_encoding_size;
-} coded_index_entry;
+} coded_index_entry_t;
 
-static coded_index_entry const coded_index_map[] =
+static coded_index_entry_t const coded_index_map[] =
 {
     { TypeDefOrRef, ARRAY_SIZE(TypeDefOrRef), 2},
     { HasConstant, ARRAY_SIZE(HasConstant), 2},
@@ -113,7 +113,7 @@ bool compose_coded_index(mdToken tk, mdtcol_t col_details, uint32_t* coded_index
     // Use the embedded index into the coded index map.
     size_t ci_idx = ExtractCodedIndex(col_details);
     assert(ci_idx < ARRAY_SIZE(coded_index_map));
-    coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
+    coded_index_entry_t const* ci_entry = &coded_index_map[ci_idx];
 
     // Verify the supplied table type is valid for encoding.
     mdtable_id_t tgt_table = ExtractTokenType(tk);
@@ -139,7 +139,7 @@ bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* ta
     // Use the embedded index into the coded index map.
     size_t ci_idx = ExtractCodedIndex(col_details);
     assert(ci_idx < ARRAY_SIZE(coded_index_map));
-    coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
+    coded_index_entry_t const* ci_entry = &coded_index_map[ci_idx];
 
     // Create a mask to extract the index into the entry.
     uint32_t code_mask = (1 << ci_entry->bit_encoding_size) - 1;
@@ -158,7 +158,7 @@ bool is_coded_index_target(mdtcol_t col_details, mdtable_id_t table)
 
     size_t ci_idx = ExtractCodedIndex(col_details);
     assert(ci_idx < ARRAY_SIZE(coded_index_map));
-    coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
+    coded_index_entry_t const* ci_entry = &coded_index_map[ci_idx];
     for (uint8_t i = 0; i < ci_entry->lookup_len; ++i)
     {
         // If the table is valid, construct the coded index.
@@ -243,35 +243,35 @@ uint8_t get_table_column_count(mdtable_id_t id)
 
 // II.22 Metadata logical format tables
 // DNMD implements the augments to the metadata logical format in the ECMA-335 spec located at https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md
-static md_key_info const keys_ClassLayout[] = { { mdtClassLayout_Parent, false } };
-static md_key_info const keys_Constant[] = { { mdtConstant_Parent, false } };
-static md_key_info const keys_CustomAttribute[] = { { mdtCustomAttribute_Parent, false } };
-static md_key_info const keys_DeclSecurity[] = { { mdtDeclSecurity_Parent, false } };
-static md_key_info const keys_FieldLayout[] = { { mdtFieldLayout_Field, false } };
-static md_key_info const keys_FieldMarshal[] = { { mdtFieldMarshal_Parent, false } };
-static md_key_info const keys_FieldRva[] = { { mdtFieldRva_Field, false } };
-static md_key_info const keys_GenericParam[] = { { mdtGenericParam_Owner, false }, { mdtGenericParam_Number, false } };
-static md_key_info const keys_GenericParamConstraint[] = { { mdtGenericParamConstraint_Owner, false } };
-static md_key_info const keys_ImplMap[] = { { mdtImplMap_MemberForwarded, false } };
-static md_key_info const keys_InterfaceImpl[] = { { mdtInterfaceImpl_Class, false } };
-static md_key_info const keys_MethodImpl[] = { { mdtMethodImpl_Class, false } };
-static md_key_info const keys_MethodSemantics[] = { { mdtMethodSemantics_Association, false } };
-static md_key_info const keys_NestedClass[] = { { mdtNestedClass_NestedClass, false } };
+static md_key_info_t const keys_ClassLayout[] = { { mdtClassLayout_Parent, false } };
+static md_key_info_t const keys_Constant[] = { { mdtConstant_Parent, false } };
+static md_key_info_t const keys_CustomAttribute[] = { { mdtCustomAttribute_Parent, false } };
+static md_key_info_t const keys_DeclSecurity[] = { { mdtDeclSecurity_Parent, false } };
+static md_key_info_t const keys_FieldLayout[] = { { mdtFieldLayout_Field, false } };
+static md_key_info_t const keys_FieldMarshal[] = { { mdtFieldMarshal_Parent, false } };
+static md_key_info_t const keys_FieldRva[] = { { mdtFieldRva_Field, false } };
+static md_key_info_t const keys_GenericParam[] = { { mdtGenericParam_Owner, false }, { mdtGenericParam_Number, false } };
+static md_key_info_t const keys_GenericParamConstraint[] = { { mdtGenericParamConstraint_Owner, false } };
+static md_key_info_t const keys_ImplMap[] = { { mdtImplMap_MemberForwarded, false } };
+static md_key_info_t const keys_InterfaceImpl[] = { { mdtInterfaceImpl_Class, false } };
+static md_key_info_t const keys_MethodImpl[] = { { mdtMethodImpl_Class, false } };
+static md_key_info_t const keys_MethodSemantics[] = { { mdtMethodSemantics_Association, false } };
+static md_key_info_t const keys_NestedClass[] = { { mdtNestedClass_NestedClass, false } };
 
 #ifdef DNMD_PORTABLE_PDB
 // https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
-static md_key_info const keys_LocalScope[] = { { mdtLocalScope_Method, false }, { mdtLocalScope_StartOffset, false }, { mdtLocalScope_Length, true } };
-static md_key_info const keys_StateMachineMethod[] = { { mdtStateMachineMethod_MoveNextMethod, false } };
-static md_key_info const keys_CustomDebugInformation[] = { { mdtCustomDebugInformation_Parent, false } };
+static md_key_info_t const keys_LocalScope[] = { { mdtLocalScope_Method, false }, { mdtLocalScope_StartOffset, false }, { mdtLocalScope_Length, true } };
+static md_key_info_t const keys_StateMachineMethod[] = { { mdtStateMachineMethod_MoveNextMethod, false } };
+static md_key_info_t const keys_CustomDebugInformation[] = { { mdtCustomDebugInformation_Parent, false } };
 #endif
 
 typedef struct
 {
-    md_key_info const* keys;
+    md_key_info_t const* keys;
     uint8_t key_count;
-} keys_info;
+} keys_info_t;
 
-static keys_info const table_keys[] = 
+static keys_info_t const table_keys[] =
 {
     { NULL, 0 },
     { NULL, 0 },
@@ -336,7 +336,7 @@ static keys_info const table_keys[] =
 
 // II.22 Metadata logical format tables
 // Primary and secondary key info for tables
-uint8_t get_table_keys(mdtable_id_t id, md_key_info const** keys)
+uint8_t get_table_keys(mdtable_id_t id, md_key_info_t const** keys)
 {
     assert(mdtid_First <= id && id < mdtid_End);
     *keys = table_keys[id].keys;
@@ -363,7 +363,7 @@ static mdtcol_t compute_coded_index(bool is_minimal_delta, uint32_t const* row_c
     assert(coded_map_idx < ARRAY_SIZE(coded_index_map));
     assert(coded_map_idx <= ExtractCodedIndex(mdtc_cimask) && "Coded index map index bit encoding exceeded");
 
-    coded_index_entry const* entry = &coded_index_map[coded_map_idx];
+    coded_index_entry_t const* entry = &coded_index_map[coded_map_idx];
 
     uint32_t rc;
     uint32_t m = 0;

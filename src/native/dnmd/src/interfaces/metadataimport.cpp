@@ -568,7 +568,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetScopeProps(
         return CLDB_E_INDEX_NOTFOUND;
 
     GUID mvid;
-    if (1 != md_get_column_value_as_guid(cursor, mdtModule_Mvid, 1, reinterpret_cast<md_guid_t*>(&mvid)))
+    if (1 != md_get_column_value_as_guid(cursor, mdtModule_Mvid, 1, reinterpret_cast<mdguid_t*>(&mvid)))
         return CLDB_E_FILE_CORRUPT;
     *pmvid = mvid;
 
@@ -2823,7 +2823,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetCustomAttributeByName(
     } finder {S_FALSE, ppData, pcbData, cvt};
 
     EnumTableRange(cursor, count, mdtCustomAttribute_Parent, tkObj, finder);
-    
+
     if (finder.hr != S_OK)
     {
         *ppData = nullptr;

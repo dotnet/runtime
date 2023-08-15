@@ -179,7 +179,7 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
             // indicate "none" or point 1 past the end.
             if (table_row > table->row_count + 1)
                 return -1;
-            
+
             // Sometimes we can get an index into a table of 0 or 1 past the end
             // of a table that does not exist. In that case, our table object here
             // will be completely uninitialized. Set the table id so we can do operations
@@ -419,7 +419,7 @@ int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t 
     return read_in;
 }
 
-int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t out_length, md_guid_t* guid)
+int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdguid_t* guid)
 {
     if (out_length == 0)
         return 0;
@@ -447,7 +447,7 @@ int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t 
     return read_in;
 }
 
-typedef struct _find_cxt_t
+typedef struct find_cxt__
 {
     uint32_t col_offset;
     uint32_t data_len;
@@ -587,7 +587,7 @@ md_range_result_t md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, u
     if (!table->is_sorted || table->is_adding_new_row)
         return MD_RANGE_NOT_SUPPORTED;
 
-    md_key_info const* keys;
+    md_key_info_t const* keys;
     uint8_t keys_count = get_table_keys(table->table_id, &keys);
     if (keys_count == 0)
         return MD_RANGE_NOT_SUPPORTED;

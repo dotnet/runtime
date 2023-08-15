@@ -18,14 +18,14 @@ typedef size_t rsize_t;
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
 // Mutable data
-typedef struct _mddata_t
+typedef struct mddata__
 {
     uint8_t* ptr;
     size_t size;
 } mddata_t;
 
 // Const data
-typedef struct _mdcdata_t
+typedef struct mdcdata__
 {
     uint8_t const* ptr;
     size_t size;
@@ -58,7 +58,7 @@ typedef enum
     // Size of the constant or index
     mdtc_b2         = 0x00000010, // 2-bytes
     mdtc_b4         = 0x00000020, // 4-bytes
-    // Width of column flags 
+    // Width of column flags
     mdtc_widthmask  = 0x00000030,
 
     //mdtc_unused1  = 0x00000040,
@@ -110,9 +110,9 @@ typedef enum
 #define ExtractHeapType(h) ((h) & mdtc_hmask)
 
 // Forward declare.
-struct _mdcxt_t;
+struct mdcxt__;
 
-typedef struct _mdtable_t
+typedef struct mdtable__
 {
     mdcdata_t data;
     uint32_t row_count;
@@ -121,17 +121,17 @@ typedef struct _mdtable_t
     bool is_sorted : 1;
     bool is_adding_new_row : 1;
     uint8_t table_id;
-    struct _mdcxt_t* cxt; // Non-null is indication of complete initialization
+    struct mdcxt__* cxt; // Non-null is indication of complete initialization
     mdtcol_t* column_details;
 } mdtable_t;
 
 typedef mdcdata_t mdstream_t;
 
-typedef struct _mdmem_t mdmem_t;
+typedef struct mdmem__ mdmem_t;
 
-typedef struct _mdeditor_t mdeditor_t;
+typedef struct mdeditor__ mdeditor_t;
 
-typedef struct _mdcxt_t
+typedef struct mdcxt__
 {
     uint32_t magic; // mdlib magic
     mdcdata_t raw_metadata; // metadata raw bytes
@@ -194,9 +194,9 @@ bool validate_blob_heap(mdcxt_t* cxt);
 uint32_t add_to_blob_heap(mdcxt_t* cxt, uint8_t const* data, uint32_t length);
 
 // GUID heap, #GUID - II.24.2.5
-bool try_get_guid(mdcxt_t* cxt, size_t idx, md_guid_t* guid);
+bool try_get_guid(mdcxt_t* cxt, size_t idx, mdguid_t* guid);
 bool validate_guid_heap(mdcxt_t* cxt);
-uint32_t add_to_guid_heap(mdcxt_t* cxt, md_guid_t guid);
+uint32_t add_to_guid_heap(mdcxt_t* cxt, mdguid_t guid);
 
 // Table heap, #~ - II.24.2.6
 // Note: This can only be done after all streams have been read in.
@@ -204,7 +204,7 @@ bool initialize_tables(mdcxt_t* cxt);
 bool validate_tables(mdcxt_t* cxt);
 
 // PDB heap, #Pdb - https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md#pdb-stream
-typedef struct _md_pdb_t
+typedef struct md_pdb__
 {
     uint8_t pdb_id[20];
     mdToken entry_point;
@@ -253,13 +253,13 @@ uint8_t get_table_column_count(mdtable_id_t id);
 // II.22 Metadata logical format tables
 // Sort key info for tables
 
-typedef struct _md_key_info
+typedef struct md_key_info__
 {
     uint8_t index;
     bool descending;
-} md_key_info;
+} md_key_info_t;
 
-uint8_t get_table_keys(mdtable_id_t id, md_key_info const** keys);
+uint8_t get_table_keys(mdtable_id_t id, md_key_info_t const** keys);
 
 // Initialize the supplied table details
 bool initialize_table_details(
@@ -348,7 +348,7 @@ bool copy_cursor(mdcursor_t dest, mdcursor_t src);
 
 // Raw table data access
 
-typedef struct _access_cxt_t
+typedef struct access_cxt__
 {
     mdtable_t* table;
     mdtcol_t col_details;

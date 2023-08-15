@@ -1,6 +1,6 @@
 #include "internal.h"
 
-static bool is_row_sorted_with_next_row(md_key_info const* keys, uint8_t count_keys, mdtable_id_t table_id, mdcursor_t row, mdcursor_t next_row)
+static bool is_row_sorted_with_next_row(md_key_info_t const* keys, uint8_t count_keys, mdtable_id_t table_id, mdcursor_t row, mdcursor_t next_row)
 {
     // We have a previous row, let's validate that it's sorted.
     for (uint8_t i = 0; i < count_keys; i++)
@@ -41,7 +41,7 @@ static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_id
     access_cxt_t acxt;
     if (!create_access_context(&c, col_idx, in_length, true, &acxt))
         return -1;
-    
+
     // If we can't write on the underlying table, then fail.
     if (acxt.writable_data == NULL)
         return -1;
@@ -52,7 +52,7 @@ static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_id
 
     uint8_t key_count = 0;
     uint8_t key_idx = UINT8_MAX;
-    md_key_info const* keys = NULL;
+    md_key_info_t const* keys = NULL;
     // If we're editing already-existing rows, then we need to validate that we stay sorted.
     // If we're in the middle of a row-add operation, we'll wait until the add is complete to validate.
     if (acxt.table->is_sorted && !acxt.table->is_adding_new_row)
@@ -185,10 +185,10 @@ int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
     // If this isn't an constant column, then fail.
     if (!(acxt.col_details & mdtc_constant))
         return -1;
-    
+
     uint8_t key_count = 0;
     uint8_t key_idx = UINT8_MAX;
-    md_key_info const* keys = NULL;
+    md_key_info_t const* keys = NULL;
     // If we're editing already-existing rows, then we need to validate that we stay sorted.
     // If we're in the middle of a row-add operation, we'll wait until the add is complete to validate.
     if (acxt.table->is_sorted && !acxt.table->is_adding_new_row)
@@ -212,7 +212,7 @@ int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
     {
         if (!write_column_data(&acxt, constant[written]))
             return -1;
-        
+
         // If the column we are writing to is a key of a sorted column, then we need to validate that it is sorted correctly.
         // We'll validate against the previous row here and then validate against the next row after we've written all of the columns that we will write.
         if (key_idx != UINT8_MAX)
@@ -267,7 +267,7 @@ int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
 #ifdef DEBUG_COLUMN_SORTING
 static void validate_column_is_not_key(mdtable_t const* table, col_index_t col_idx)
 {
-    md_key_info const* keys = NULL;
+    md_key_info_t const* keys = NULL;
     uint8_t key_count = get_table_keys(table->table_id, &keys);
     for (uint8_t i = 0; i < key_count; i++)
     {
@@ -383,7 +383,7 @@ int32_t md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t 
     return written;
 }
 
-int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t in_length, md_guid_t const* guid)
+int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t in_length, mdguid_t const* guid)
 {
     if (in_length == 0)
         return 0;
@@ -465,7 +465,7 @@ int32_t update_shifted_row_references(mdcursor_t* c, uint32_t count, uint8_t col
         mdToken tk;
         if (1 != md_get_column_value_as_token(*c, col, 1, &tk))
             return -1;
-        
+
         if ((mdtable_id_t)ExtractTokenType(tk) == updated_table)
         {
             uint32_t rid = RidFromToken(tk);
@@ -598,7 +598,7 @@ static bool insert_row_cursor_relative(mdcursor_t row, int32_t offset, mdcursor_
 
     if (new_row_index > table->row_count + 1)
         return false;
-    
+
     if (!insert_row_into_table(table->cxt, table->table_id, new_row_index, new_row))
         return false;
 
@@ -692,7 +692,7 @@ bool md_add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdcurso
         // If we don't have a table to add the row to, create one.
         if (!allocate_new_table(CursorTable(&list_owner)->cxt, CursorTable(&existing_range)->table_id))
             return false;
-        
+
         // Now that we have a table, we recreate the "existing range" cursor as the one-past-the-end cursor
         // This allows us to use the remaining logic unchanged.
         existing_range = create_cursor(CursorTable(&existing_range), 1);
@@ -758,7 +758,7 @@ bool md_add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdcurso
                 mdcursor_t prev_cursor_value;
                 if (1 != md_get_column_value_as_cursor(parent_row, list_col, 1, &prev_cursor_value))
                     return false;
-                
+
                 if (CursorRow(&prev_cursor_value) != CursorRow(&current_cursor_value))
                 {
                     // We found the last cursor value that doesn't match the current value.
@@ -819,7 +819,7 @@ bool copy_cursor(mdcursor_t dest, mdcursor_t src)
 static bool validate_row_sorted_within_table(mdcursor_t row)
 {
     mdtable_t* table = CursorTable(&row);
-    md_key_info const* keys;
+    md_key_info_t const* keys;
     uint8_t count_keys = get_table_keys(table->table_id, &keys);
     assert(count_keys != 0); // We should only ever have a sorted table for a table with keys.
 

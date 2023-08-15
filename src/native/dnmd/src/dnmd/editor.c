@@ -1,19 +1,19 @@
 #include "dnmd.h"
 #include "internal.h"
 
-typedef struct _mdtable_editor_t
+typedef struct mdtable_editor__
 {
     mddata_t data; // If non-null, points to allocated data for the table.
     mdtable_t* table; // The read-only table that corresponds to this editor.
 } mdtable_editor_t;
 
-typedef struct _md_heap_editor_t
+typedef struct md_heap_editor__
 {
     mddata_t heap; // If non-null, points to allocated data for the heap.
     mdstream_t* stream; // The read-only stream that corresponds to this editor.
 } md_heap_editor_t;
 
-typedef struct _mdeditor_t
+typedef struct mdeditor__
 {
     mdcxt_t* cxt; // Non-null is indication of complete initialization
 
@@ -31,7 +31,7 @@ static mdeditor_t* get_editor(mdcxt_t* cxt)
 {
     if (cxt->editor != NULL)
         return cxt->editor;
-    
+
     assert(cxt->editor == NULL);
     // If we haven't edited yet, initialize the table editor.
     size_t editor_mem = align_to(sizeof(mdeditor_t), sizeof(void*));
@@ -180,7 +180,7 @@ static bool copy_row(uint8_t** dest, size_t* dest_len, mdtcol_t const* dest_cols
                 return false;
         }
     }
-    
+
     return true;
 }
 
@@ -198,7 +198,7 @@ static bool set_column_size_for_max_row_count(mdeditor_t* editor, mdtable_t* tab
     else if (updated_heap == mdtc_hguid)
     {
         mdstream_t* stream = get_heap_by_id(table->cxt, updated_heap);
-        initial_row_count = (uint32_t)(stream->size / sizeof(md_guid_t));
+        initial_row_count = (uint32_t)(stream->size / sizeof(mdguid_t));
     }
     else
     {
@@ -408,7 +408,7 @@ bool allocate_new_table(mdcxt_t* cxt, mdtable_id_t table_id)
 bool insert_row_into_table(mdcxt_t* cxt, mdtable_id_t table_id, uint32_t row_index, mdcursor_t* new_row)
 {
     assert(row_index != 0); // Row indexes are 1-based.
-    mdeditor_t* editor = get_editor(cxt);    
+    mdeditor_t* editor = get_editor(cxt);
     if (editor == NULL)
         return false;
 
@@ -422,7 +422,7 @@ bool insert_row_into_table(mdcxt_t* cxt, mdtable_id_t table_id, uint32_t row_ind
     // We can either insert a row in the middle of a table or directly after the end of the table.
     if (target_table_editor->table->row_count < (row_index - 1))
         return false;
-    
+
     // If we are out of space in our table, then we need to allocate a new table buffer.
     if (target_table_editor->data.ptr == NULL || target_table_editor->data.size < target_table_editor->table->row_size_bytes * (size_t)(target_table_editor->table->row_count + 1))
     {
@@ -486,7 +486,7 @@ static bool reserve_heap_space(mdeditor_t* editor, uint32_t space_size, mdtcol_t
     {
         // Set the default heap size based on likely reasonable sizes for the heaps.
         // In most images, there won't be more than three guids, so we can start with a small heap in that case.
-        const size_t initial_heap_size = heap_id == mdtc_hguid ? sizeof(md_guid_t) * 3 : 0x100;
+        const size_t initial_heap_size = heap_id == mdtc_hguid ? sizeof(mdguid_t) * 3 : 0x100;
         void* mem = alloc_mdmem(editor->cxt, initial_heap_size);
         if (mem == NULL)
             return false;
@@ -497,7 +497,7 @@ static bool reserve_heap_space(mdeditor_t* editor, uint32_t space_size, mdtcol_t
 
         // The first character in the strings heap must be the '\0' - II.24.2.3
         // The first character in the user_string and blob heaps must be the 0 - II.24.2.4
-        // The guid heap doesn't start with a 0 byte, but it must be emitted in sizeof(md_guid_t)-based chuncks.
+        // The guid heap doesn't start with a 0 byte, but it must be emitted in sizeof(mdguid_t)-based chuncks.
         // If we are preserving offsets, then we don't initialize the heap, as we will be copying an existing heap that has already been validated and
         // we must have the exact same offsets as the existing heap to avoid breaking heap references.
         if (heap_id != mdtc_hguid && !preserve_offsets)
@@ -508,7 +508,7 @@ static bool reserve_heap_space(mdeditor_t* editor, uint32_t space_size, mdtcol_t
     }
 
     *heap_offset = (uint32_t)heap_editor->stream->size;
-    
+
     if (*heap_offset > UINT32_MAX - space_size)
     {
         // The max heap size is 2^32-1, so we don't have space left to allocate.
@@ -524,7 +524,7 @@ static bool reserve_heap_space(mdeditor_t* editor, uint32_t space_size, mdtcol_t
     }
 
     // Update heap references in case the additional used space crosses the boundary for index sizes.
-    uint32_t index_scale = (heap_id == mdtc_hguid ? sizeof(md_guid_t) : 1);
+    uint32_t index_scale = (heap_id == mdtc_hguid ? sizeof(mdguid_t) : 1);
     assert(heap_editor->stream->size % index_scale == 0);
     for (mdtable_id_t i = mdtid_First; i < mdtid_End; i++)
     {
@@ -549,7 +549,7 @@ uint32_t add_to_string_heap(mdcxt_t* cxt, char const* str)
     mdeditor_t* editor = get_editor(cxt);
     if (editor == NULL)
         return 0;
-    
+
     // TODO: Deduplicate heap
     uint32_t str_len = (uint32_t)strlen(str);
     uint32_t heap_offset;
@@ -572,7 +572,7 @@ uint32_t add_to_blob_heap(mdcxt_t* cxt, uint8_t const* data, uint32_t length)
     size_t compressed_length_size = 0;
     if (!compress_u32(length, compressed_length, &compressed_length_size))
         return 0;
-    
+
     uint32_t heap_slot_size = length + (uint32_t)compressed_length_size;
 
     uint32_t heap_offset;
@@ -604,7 +604,7 @@ uint32_t add_to_user_string_heap(mdcxt_t* cxt, char16_t const* str)
         //  This final byte holds the value 1 if and only if any UTF16 character
         // within the string has any bit set in its top byte,
         // or its low byte is any of the following: 0x01-0x08, 0x0E–0x1F, 0x27, 0x2D, 0x7F.
-        // Otherwise, it holds 0. 
+        // Otherwise, it holds 0.
         if ((c & 0x80) != 0)
         {
             has_special_char = 1;
@@ -630,12 +630,12 @@ uint32_t add_to_user_string_heap(mdcxt_t* cxt, char16_t const* str)
             has_special_char = 1;
         }
     }
-    
+
     uint8_t compressed_length[sizeof(str_len)];
     size_t compressed_length_size = 0;
     if (!compress_u32(str_len, compressed_length, &compressed_length_size))
         return 0;
-    
+
     uint32_t heap_slot_size = str_len + (uint32_t)compressed_length_size + 1;
     uint32_t heap_offset;
     if (!reserve_heap_space(editor, heap_slot_size, mdtc_hus, false, &heap_offset))
@@ -650,7 +650,7 @@ uint32_t add_to_user_string_heap(mdcxt_t* cxt, char16_t const* str)
     return heap_offset;
 }
 
-uint32_t add_to_guid_heap(mdcxt_t* cxt, md_guid_t guid)
+uint32_t add_to_guid_heap(mdcxt_t* cxt, mdguid_t guid)
 {
     mdeditor_t* editor = get_editor(cxt);
     if (editor == NULL)
@@ -658,13 +658,13 @@ uint32_t add_to_guid_heap(mdcxt_t* cxt, md_guid_t guid)
     // TODO: Deduplicate heap
 
     uint32_t heap_offset;
-    if (!reserve_heap_space(editor, sizeof(md_guid_t), mdtc_hguid, false, &heap_offset))
+    if (!reserve_heap_space(editor, sizeof(mdguid_t), mdtc_hguid, false, &heap_offset))
     {
         return 0;
     }
 
-    memcpy(editor->guid_heap.heap.ptr + heap_offset, &guid, sizeof(md_guid_t));
-    return heap_offset / sizeof(md_guid_t);
+    memcpy(editor->guid_heap.heap.ptr + heap_offset, &guid, sizeof(mdguid_t));
+    return heap_offset / sizeof(mdguid_t);
 }
 
 bool append_heap(mdcxt_t* cxt, mdcxt_t* delta, mdtcol_t heap_id)
@@ -678,7 +678,7 @@ bool append_heap(mdcxt_t* cxt, mdcxt_t* delta, mdtcol_t heap_id)
     mdstream_t* delta_heap = get_heap_by_id(delta, heap_id);
     if (delta_heap->size == 0)
         return true;
-    
+
     size_t copy_offset;
     size_t delta_size;
     if (is_minimal_delta && heap_id != mdtc_hguid)
@@ -715,6 +715,6 @@ mduserstringcursor_t md_add_userstring_to_heap(mdhandle_t handle, char16_t const
     mdcxt_t* cxt = extract_mdcxt(handle);
     if (cxt == NULL)
         return 0;
-    
+
     return add_to_user_string_heap(cxt, userstring);
 }

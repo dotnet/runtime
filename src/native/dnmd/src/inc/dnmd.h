@@ -21,12 +21,13 @@ extern "C" {
 
 typedef uint32_t mdToken;
 
-typedef struct md_guid_t {
+typedef struct mdguid__
+{
     uint32_t data1;
     uint16_t data2;
     uint16_t data3;
     uint8_t  data4[8];
-} md_guid_t;
+} mdguid_t;
 
 typedef void* mdhandle_t;
 
@@ -121,7 +122,7 @@ typedef enum
 } mdtable_id_t;
 
 // Table cursor definition
-typedef struct _mdcursor_t
+typedef struct mdcursor__
 {
     intptr_t _reserved1;
     intptr_t _reserved2;
@@ -145,7 +146,7 @@ mdhandle_t md_extract_handle_from_cursor(mdcursor_t c);
 // a valid offset into the #US heap - see RidFromToken in corhdr.h.
 typedef intptr_t mduserstringcursor_t;
 
-typedef struct _mduserstring_t
+typedef struct mduserstring__
 {
     char16_t const* str;
     uint32_t str_bytes;
@@ -435,7 +436,7 @@ int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
 int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
 int32_t md_get_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings);
 int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len);
-int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, md_guid_t* guid);
+int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, mdguid_t* guid);
 
 // Find a row or range of rows where the supplied column has the expected value.
 // These APIs assume the value to look for is the value in the table, typically record IDs (RID)
@@ -481,7 +482,7 @@ int32_t md_set_column_value_as_cursor(mdcursor_t c, col_index_t col, uint32_t in
 int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t* constant);
 int32_t md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char const** str);
 int32_t md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint8_t const** blob, uint32_t* blob_len);
-int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t in_length, md_guid_t const* guid);
+int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t in_length, mdguid_t const* guid);
 int32_t md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char16_t const** userstring);
 
 // Create a new row logically before the row specified by the cursor.

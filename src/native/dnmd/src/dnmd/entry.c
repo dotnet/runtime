@@ -270,9 +270,9 @@ bool md_apply_delta(mdhandle_t handle, void const* data, size_t data_len)
     return result;
 }
 
-typedef struct _mdmem_t
+typedef struct mdmem__
 {
-    mdmem_t* next;
+    struct mdmem__* next;
     size_t size;
     uint8_t data[];
 } mdmem_t;
@@ -322,7 +322,7 @@ static bool dump_table_rows(mdtable_t* table)
     }
 
     char const* str;
-    md_guid_t guid;
+    mdguid_t guid;
     uint8_t const* blob;
     uint32_t blob_len;
     uint32_t constant;

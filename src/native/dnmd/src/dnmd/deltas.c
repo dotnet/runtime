@@ -3,7 +3,7 @@
 static bool append_heaps_from_delta(mdcxt_t* cxt, mdcxt_t* delta)
 {
     assert(delta != NULL);
-    
+
     if (!append_heap(cxt, delta, mdtc_hstring))
         return false;
 
@@ -36,13 +36,13 @@ typedef enum
 // We'll strip this high bit if it is set since we don't need it.
 #define RemoveRecordBit(x) (x & 0x7fffffff)
 
-typedef struct _map_table_group_t
+typedef struct map_table_group__
 {
     mdcursor_t start;
     uint32_t count;
 } map_table_group_t;
 
-typedef struct _enc_token_map_t
+typedef struct enc_token_map__
 {
     map_table_group_t map_cur_by_table[MDTABLE_MAX_COUNT];
 } enc_token_map_t;
@@ -71,7 +71,7 @@ static bool initialize_token_map(mdtable_t* map, enc_token_map_t* token_map)
         mdToken tk;
         if (1 != md_get_column_value_as_constant(map_cur, mdtENCMap_Token, 1, &tk))
             return false;
-        
+
         mdtable_id_t table_id = ExtractTokenType(RemoveRecordBit(tk));
 
         if (table_id < mdtid_First || table_id >= mdtid_End)
@@ -124,14 +124,14 @@ static bool resolve_token(enc_token_map_t* token_map, mdToken referenced_token, 
         mdToken mappedToken;
         if (1 != md_get_column_value_as_constant(map_record, mdtENCMap_Token, 1, &mappedToken))
             return false;
-        
+
         assert((mdtable_id_t)ExtractTokenType(RemoveRecordBit(mappedToken)) == type);
         if (RidFromToken(mappedToken) == rid)
         {
             return md_token_to_cursor(delta_image, TokenFromRid(i + 1, CreateTokenType(type)), row_in_delta);
         }
     }
-    
+
     // If we have a set of remapped tokens for a table,
     // we will remap all tokens in the EncLog.
     return false;
@@ -256,19 +256,19 @@ static bool process_log(mdcxt_t* cxt, mdcxt_t* delta)
 
             if (rid == 0)
                 return false;
-            
+
             // Resolve the token in the delta image that has the data that we need to copy to the base image.
             mdcursor_t delta_record;
             if (!resolve_token(&token_map, tk, delta, &delta_record))
                 return false;
-            
+
             // Try resolving the original token to determine what row we're editing.
             // We'll try to look up the row in the base image.
             // If we fail to resolve the original token, then we aren't editing an existing row,
             // but instead creating a new row.
             mdcursor_t record_to_edit;
             bool edit_record = md_token_to_cursor(cxt, tk, &record_to_edit);
-    
+
             // We can only add rows directly to the end of the table.
             // TODO: In the future, we could be smarter
             // and try to insert a row in the middle of a table to preserve sorting.
@@ -285,14 +285,14 @@ static bool process_log(mdcxt_t* cxt, mdcxt_t* delta)
                 // The ENC Log is invalid.
                 if (table->row_count != (rid - 1))
                     return false;
-                
+
                 if (!md_append_row(cxt, table_id, &record_to_edit))
                     return false;
             }
 
             if (!copy_cursor(record_to_edit, delta_record))
                 return false;
-            
+
             if (!edit_record)
                 md_commit_row_add(record_to_edit);
 
@@ -339,25 +339,25 @@ bool merge_in_delta(mdcxt_t* cxt, mdcxt_t* delta)
     mdcursor_t base_module = create_cursor(&cxt->tables[mdtid_Module], 1);
     mdcursor_t delta_module = create_cursor(&delta->tables[mdtid_Module], 1);
 
-    md_guid_t base_mvid;
+    mdguid_t base_mvid;
     if (1 != md_get_column_value_as_guid(base_module, mdtModule_Mvid, 1, &base_mvid))
         return false;
 
-    md_guid_t delta_mvid;
+    mdguid_t delta_mvid;
     if (1 != md_get_column_value_as_guid(delta_module, mdtModule_Mvid, 1, &delta_mvid))
         return false;
 
     // MVIDs must match between base and delta images.
-    if (memcmp(&base_mvid, &delta_mvid, sizeof(md_guid_t)) != 0)
+    if (memcmp(&base_mvid, &delta_mvid, sizeof(mdguid_t)) != 0)
         return false;
 
     // The EncBaseId of the delta must equal the EncId of the base image.
     // This ensures that we are applying deltas in order.
-    md_guid_t enc_id;
-    md_guid_t delta_enc_base_id;
+    mdguid_t enc_id;
+    mdguid_t delta_enc_base_id;
     if (1 != md_get_column_value_as_guid(base_module, mdtModule_EncId, 1, &enc_id)
         || 1 != md_get_column_value_as_guid(delta_module, mdtModule_EncBaseId, 1, &delta_enc_base_id)
-        || memcmp(&enc_id, &delta_enc_base_id, sizeof(md_guid_t)) != 0)
+        || memcmp(&enc_id, &delta_enc_base_id, sizeof(mdguid_t)) != 0)
     {
         return false;
     }

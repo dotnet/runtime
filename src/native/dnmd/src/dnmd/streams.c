@@ -111,12 +111,12 @@ bool validate_blob_heap(mdcxt_t* cxt)
     return true;
 }
 
-bool try_get_guid(mdcxt_t* cxt, size_t idx, md_guid_t* guid)
+bool try_get_guid(mdcxt_t* cxt, size_t idx, mdguid_t* guid)
 {
     assert(cxt != NULL && guid != NULL);
 
     mdstream_t* h = &cxt->guid_heap;
-    size_t count = h->size / sizeof(md_guid_t);
+    size_t count = h->size / sizeof(mdguid_t);
 
     if (count < idx)
         return false;
@@ -130,7 +130,7 @@ bool try_get_guid(mdcxt_t* cxt, size_t idx, md_guid_t* guid)
         return true;
     }
 
-    md_guid_t* guids = (md_guid_t*)h->ptr;
+    mdguid_t* guids = (mdguid_t*)h->ptr;
     *guid = guids[idx - 1];
     return true;
 }
@@ -140,7 +140,7 @@ bool validate_guid_heap(mdcxt_t* cxt)
     assert(cxt != NULL);
 
     mdstream_t* h = &cxt->guid_heap;
-    if (h->size % sizeof(md_guid_t) != 0)
+    if (h->size % sizeof(mdguid_t) != 0)
         return false;
 
     return true;
