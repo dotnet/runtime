@@ -241,7 +241,6 @@ The element type of the `Span` for the caller-allocated buffer can be any type t
 
 ```csharp
 [CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToNative))]
-[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.UnmanagedToManagedOut, typeof(ManagedToNative))]
 static class TMarshaller<T, U, V...>
 {
     public static class ManagedToNative
@@ -293,16 +292,24 @@ static class TMarshaller<T, U, V...>
 
 ### Stateless Bidirectional
 ```csharp
+[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.ManagedToUnmanagedOut, typeof(Bidirectional))]
+[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.UnmanagedToManagedOut, typeof(Bidirectional))]
+[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.ManagedToUnmanagedIn, typeof(Bidirectional))]
+[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.UnmanagedToManagedIn, typeof(Bidirectional))]
 [CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.ManagedToUnmanagedRef, typeof(Bidirectional))]
 [CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.UnmanagedToManagedRef, typeof(Bidirectional))]
 [CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.ElementRef, typeof(Bidirectional))]
+[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.ElementIn, typeof(Bidirectional))]
+[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.ElementOut, typeof(Bidirectional))]
+[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.Default, typeof(Bidirectional))]
 static class TMarshaller<T, U, V...>
 {
     public static class Bidirectional
     {
-        // Include members from each of the following:
-        // - One Stateless Managed->Unmanaged Value shape
-        // - One Stateless Unmanaged->Managed Value shape
+        // The following members are required
+        // - Members of Stateless Managed->Unmanaged
+        // - Members of either Stateless Unmanaged->Managed or Stateless Unmanaged->Managed with GuaranteedUnmarshalling
+        // - Optionally, members of Stateless Managed->Unmanaged with Caller Allocated Buffer may be added and will be used in ManagedToUnmanagedIn scenarios only
     }
 }
 
@@ -340,7 +347,6 @@ The element type of the `Span` for the caller-allocated buffer can be any type t
 
 ```csharp
 [CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToNative))]
-[CustomMarshaller(typeof(TManaged<,,,...>), MarshalMode.UnmanagedToManagedOut, typeof(ManagedToNative))]
 static class TMarshaller<T, U, V...>
 {
     public struct ManagedToNative // Can be ref struct
@@ -414,9 +420,10 @@ static class TMarshaller<T, U, V...>
 {
     public struct Bidirectional // Can be ref struct
     {
-        // Include members from each of the following:
-        // - One Stateful Managed->Unmanaged Value shape
-        // - One Stateful Unmanaged->Managed Value shape
+        // The following members are required
+        // - Members of Stateful Managed->Unmanaged
+        // - Members of either Stateful Unmanaged->Managed or Stateful Unmanaged->Managed with GuaranteedUnmarshalling
+        // - Optionally, members of Stateful Managed->Unmanaged with Caller Allocated Buffer may be added and will be used in ManagedToUnmanagedIn scenarios only
     }
 }
 ```
@@ -445,7 +452,6 @@ The type `TNative` can be any `unmanaged` type. It represents whatever unmanaged
 ```csharp
 [CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToNative))]
 [CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.UnmanagedToManagedOut, typeof(ManagedToNative))]
-[CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ElementIn, typeof(ManagedToNative))]
 [ContiguousCollectionMarshaller]
 static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
@@ -470,7 +476,6 @@ The element type of the `Span` for the caller-allocated buffer can be any type t
 
 ```csharp
 [CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToNative))]
-[CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ElementIn, typeof(ManagedToNative))]
 [ContiguousCollectionMarshaller]
 static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
@@ -496,7 +501,6 @@ static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement 
 ```csharp
 [CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ManagedToUnmanagedOut, typeof(NativeToManaged))]
 [CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.UnmanagedToManagedIn, typeof(NativeToManaged))]
-[CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ElementOut, typeof(NativeToManaged))]
 [ContiguousCollectionMarshaller]
 static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
@@ -542,6 +546,8 @@ static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement 
 [CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ManagedToUnmanagedRef, typeof(Bidirectional))]
 [CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.UnmanagedToManagedRef, typeof(Bidirectional))]
 [CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ElementRef, typeof(Bidirectional))]
+[CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ElementIn, typeof(Bidirectional))]
+[CustomMarshaller(typeof(TCollection<,,,...>), MarshalMode.ElementOut, typeof(Bidirectional))]
 [ContiguousCollectionMarshaller]
 static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
