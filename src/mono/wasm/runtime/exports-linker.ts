@@ -30,5 +30,5 @@ export function export_linker_indexes_as_code(): string {
     `;
 }
 
-// this is running during runtime compile time inside rollup process.
+// this is running during runtime compile time inside rollup process. 
 (globalThis as any).export_linker_indexes_as_code = export_linker_indexes_as_code;
