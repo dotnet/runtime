@@ -371,13 +371,13 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>1fd4ff9d594b227baa3fc0962e2251323311ec19</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23412.1">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23414.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>755a4f888d64fc7c0f2802adca731f301a53283d</Sha>
+      <Sha>2af4cd81f7b5ac21569411f8dd5c93272c6dd19f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0-preview.23412.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0-preview.23414.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>755a4f888d64fc7c0f2802adca731f301a53283d</Sha>
+      <Sha>2af4cd81f7b5ac21569411f8dd5c93272c6dd19f</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-preview.7.23329.3">
       <Uri>https://github.com/dotnet/sdk</Uri>
