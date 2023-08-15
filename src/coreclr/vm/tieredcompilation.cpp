@@ -384,12 +384,6 @@ bool TieredCompilationManager::TryScheduleBackgroundWorkerWithoutGCTrigger_Locke
     return false; // it's the caller's responsibility to call CreateBackgroundWorker() after leaving the GC_NOTRIGGER region
 }
 
-bool TieredCompilationManager::IsBackgroundWorkerActive()
-{
-    WRAPPER_NO_CONTRACT;
-    return s_isBackgroundWorkerRunning;
-}
-
 void TieredCompilationManager::CreateBackgroundWorker()
 {
     CONTRACTL

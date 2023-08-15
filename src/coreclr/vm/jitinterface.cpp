@@ -10648,17 +10648,19 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             // Avoid taking the lock for foreground jit compilations
             if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive())
             {
+                CodeVersionManager* manager = helperMD->GetCodeVersionManager();
+                NativeCodeVersion activeCodeVersion;
+                // Get active code version under a lock
                 {
                     CodeVersionManager::LockHolder codeVersioningLockHolder;
-                    NativeCodeVersion activeCodeVersion = helperMD->GetCodeVersionManager()->GetActiveILCodeVersion(helperMD)
-                        .GetActiveNativeCodeVersion(helperMD);
-                    tier = activeCodeVersion.GetOptimizationTier();
+                    activeCodeVersion = manager->GetActiveILCodeVersion(helperMD).GetActiveNativeCodeVersion(helperMD);
                 }
+                tier = activeCodeVersion.GetOptimizationTier();
 
                 if (tier == NativeCodeVersion::OptimizationTier::OptimizationTier1 ||
                     tier == NativeCodeVersion::OptimizationTier::OptimizationTierOptimized)
                 {
-                    finalTierAddr = (LPVOID)GetEEFuncEntryPoint(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
+                    finalTierAddr = (LPVOID)activeCodeVersion.GetNativeCode();
                     _ASSERT(finalTierAddr != NULL);
                     // Cache it for future uses to avoid taking the lock again.
                     hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
