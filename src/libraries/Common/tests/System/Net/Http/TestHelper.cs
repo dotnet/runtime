@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -103,18 +101,6 @@ namespace System.Net.Http.Functional.Tests
 #else
         public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = (_, __, ___, ____) => true;
 #endif
-
-        public static IPAddress GetIPv6LinkLocalAddress() =>
-            NetworkInterface
-                .GetAllNetworkInterfaces()
-                .Where(i => !i.Description.StartsWith("PANGP Virtual Ethernet"))    // This is a VPN adapter, but is reported as a regular Ethernet interface with
-                                                                                    // a valid link-local address, but the link-local address doesn't actually work.
-                                                                                    // So just manually filter it out.
-                .Where(i => !i.Name.Contains("Tailscale"))                          // Same as PANGP above.
-                .SelectMany(i => i.GetIPProperties().UnicastAddresses)
-                .Select(a => a.Address)
-                .Where(a => a.IsIPv6LinkLocal)
-                .FirstOrDefault();
 
         public static byte[] GenerateRandomContent(int size)
         {

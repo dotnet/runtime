@@ -428,16 +428,29 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         : createEmscriptenMain();
 }
 
+// in the future we can use feature detection to load different flavors
 function importModules() {
     const jsModuleRuntimeAsset = resolve_single_asset_path("js-module-runtime");
     const jsModuleNativeAsset = resolve_single_asset_path("js-module-native");
-    mono_log_debug(`Attempting to import '${jsModuleRuntimeAsset.resolvedUrl}' for ${jsModuleRuntimeAsset.name}`);
-    mono_log_debug(`Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
-    return [
-        // keep js module names dynamic by using config, in the future we can use feature detection to load different flavors
-        import(/* webpackIgnore: true */jsModuleRuntimeAsset.resolvedUrl!),
-        import(/* webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!),
-    ];
+
+    let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
+    let jsModuleNativePromise: Promise<NativeModuleExportsInternal>;
+
+    if (typeof jsModuleRuntimeAsset.moduleExports === "object") {
+        jsModuleRuntimePromise = jsModuleRuntimeAsset.moduleExports;
+    } else {
+        mono_log_debug(`Attempting to import '${jsModuleRuntimeAsset.resolvedUrl}' for ${jsModuleRuntimeAsset.name}`);
+        jsModuleRuntimePromise = import(/* webpackIgnore: true */jsModuleRuntimeAsset.resolvedUrl!);
+    }
+
+    if (typeof jsModuleNativeAsset.moduleExports === "object") {
+        jsModuleNativePromise = jsModuleNativeAsset.moduleExports;
+    } else {
+        mono_log_debug(`Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
+        jsModuleNativePromise = import(/* webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
+    }
+
+    return [jsModuleRuntimePromise, jsModuleNativePromise];
 }
 
 async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {

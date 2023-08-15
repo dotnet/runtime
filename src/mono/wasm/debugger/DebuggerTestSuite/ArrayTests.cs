@@ -714,7 +714,7 @@ namespace DebuggerTests
                 o = TObject("DebuggerTests.InlineArray.Two")
             }, "s_one_props#1");
         }
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InspectInlineArray2()
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";

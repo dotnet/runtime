@@ -21,7 +21,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     }
 
     // dotnet-run needed for running with *build* so wwwroot has the index.html etc
-    // [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    // [Theory]
     // [InlineData("Debug")]
     // [InlineData("Release")]
     // public async Task BlazorBuildRunTest(string config)

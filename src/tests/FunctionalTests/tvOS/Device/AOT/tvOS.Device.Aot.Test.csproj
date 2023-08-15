@@ -1,17 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <MonoForceInterpreter>false</MonoForceInterpreter>
-    <RunAOTCompilation>true</RunAOTCompilation>
+    <OutputPath>bin</OutputPath>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
-    <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <TargetOS Condition="'$(TargetOS)' == ''">tvos</TargetOS>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <EnableAggressiveTrimming Condition="'$(EnableAggressiveTrimming)' == ''">true</EnableAggressiveTrimming>
+    <SelfContained>true</SelfContained>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <MonoEnableLLVM>true</MonoEnableLLVM>
+    <MainLibraryFileName>tvOS.Device.Aot.Test.dll</MainLibraryFileName>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
   </PropertyGroup>
 
   <ItemGroup>

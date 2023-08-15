@@ -10915,8 +10915,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTree* vectorNode = op1->AsHWIntrinsic()->Op(1);
 
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(node);
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return vectorNode;
         }
@@ -10942,8 +10942,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTree* maskNode = op1->AsHWIntrinsic()->Op(1);
 
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(node);
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return maskNode;
         }

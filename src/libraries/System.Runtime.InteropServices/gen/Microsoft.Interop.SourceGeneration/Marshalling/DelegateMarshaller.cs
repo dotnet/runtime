@@ -53,7 +53,7 @@ namespace Microsoft.Interop
                                     InvocationExpression(
                                         MemberAccessExpression(
                                             SyntaxKind.SimpleMemberAccessExpression,
-                                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                                             IdentifierName("GetFunctionPointerForDelegate")),
                                         ArgumentList(SingletonSeparatedList(Argument(IdentifierName(managedIdentifier))))),
                                     LiteralExpression(SyntaxKind.DefaultLiteralExpression))));
@@ -75,7 +75,7 @@ namespace Microsoft.Interop
                                     InvocationExpression(
                                         MemberAccessExpression(
                                             SyntaxKind.SimpleMemberAccessExpression,
-                                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                                             GenericName(Identifier("GetDelegateForFunctionPointer"))
                                             .WithTypeArgumentList(
                                                 TypeArgumentList(

@@ -100,6 +100,7 @@ export interface AssetEntryInternal extends AssetEntry {
 }
 
 export type LoaderHelpers = {
+    gitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 
@@ -161,6 +162,8 @@ export type LoaderHelpers = {
     simd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
+    gitHash: string,
+    moduleGitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 
@@ -279,6 +282,7 @@ export type EmscriptenInternals = {
     linkerEnableBrowserProfiler: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
+    gitHash: string,
 };
 export type GlobalObjects = {
     mono: any,
@@ -448,8 +452,8 @@ export declare interface EmscriptenModuleInternal {
     ENVIRONMENT_IS_PTHREAD?: boolean;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
-    asm: { memory?: WebAssembly.Memory };
-    wasmMemory?: WebAssembly.Memory;
+    asm: any;
+    getMemory(): WebAssembly.Memory;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;

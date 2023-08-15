@@ -114,7 +114,7 @@ namespace Microsoft.Interop
                 .WithExpressionBody(ArrowExpressionClause(
                     ThrowExpression(
                         ObjectCreationExpression(
-                            ParseTypeName(TypeNames.UnreachableException))
+                            TypeSyntaxes.UnreachableException)
                             .WithArgumentList(ArgumentList()))));
         }
 

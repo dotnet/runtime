@@ -1063,7 +1063,8 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static IEnumerable<object[]> IntAndEnumReturnTypeSnippets()
         {
-            var diagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable).WithLocation(0);
+            var managedReturnWillBeOutDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable).WithLocation(0);
+            var hresultReturnStructWillBeStructDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.HResultTypeWillBeTreatedAsStruct).WithLocation(0);
             var enumDecl = $$"""
                 internal enum Err
                 {
@@ -1090,22 +1091,22 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 enumReturn,
-                new DiagnosticResult[] { diagnostic }
+                new DiagnosticResult[] { managedReturnWillBeOutDiagnostic }
             };
             yield return new object[] {
                 ID(),
                 intReturn,
-                new DiagnosticResult[] { diagnostic }
+                new DiagnosticResult[] { managedReturnWillBeOutDiagnostic }
             };
             yield return new object[] {
                 ID(),
                 structHrReturn,
-                new DiagnosticResult[] { diagnostic }
+                new DiagnosticResult[] { managedReturnWillBeOutDiagnostic }
             };
             yield return new object[] {
                 ID(),
                 structHResultReturn,
-                new DiagnosticResult[] { diagnostic }
+                new DiagnosticResult[] { managedReturnWillBeOutDiagnostic }
             };
             yield return new object[] {
                 ID(),
@@ -1130,12 +1131,19 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 structHrPreserveSig,
-                new DiagnosticResult[] {  }
+                new DiagnosticResult[] { hresultReturnStructWillBeStructDiagnostic.WithArguments("HR") }
             };
             yield return new object[] {
                 ID(),
                 structHResultPreserveSig,
-                new DiagnosticResult[] {  }
+                new DiagnosticResult[] { hresultReturnStructWillBeStructDiagnostic.WithArguments("HResult") }
+            };
+
+            var structHResultPreserveSigWithMarshalAs = Template("HResult", structDeclHResult, "[PreserveSig][return:MarshalAs(UnmanagedType.Error)]");
+            yield return new object[] {
+                ID(),
+                structHResultPreserveSigWithMarshalAs,
+                new DiagnosticResult[] { }
             };
 
             var intReturnMarshalAs = Template("int", "", "[return: MarshalAs(UnmanagedType.I4)]");
@@ -1161,9 +1169,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                     """;
             }
         }
+
         [Theory]
         [MemberData(nameof(IntAndEnumReturnTypeSnippets))]
-        async Task ValidateIntReturnTypeShowsInfo(string id, string source, DiagnosticResult[] diagnostics)
+        public async Task ValidateReturnTypeInfoDiagnostics(string id, string source, DiagnosticResult[] diagnostics)
         {
             _ = id;
 
