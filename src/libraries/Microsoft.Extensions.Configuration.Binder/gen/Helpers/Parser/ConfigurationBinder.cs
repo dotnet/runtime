@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             private void RegisterMethodInvocation_ConfigurationBinder(BinderInvocation invocation)
             {
-                switch (invocation.Operation.TargetMethod.Name)
+                switch (invocation.CandidateOperation.TargetMethod.Name)
                 {
                     case nameof(MethodsToGen_ConfigurationBinder.Bind):
                         {
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RegisterBindInvocation(BinderInvocation invocation)
             {
-                IInvocationOperation operation = invocation.Operation!;
+                IInvocationOperation operation = invocation.CandidateOperation!;
                 ImmutableArray<IParameterSymbol> @params = operation.TargetMethod.Parameters;
                 int paramCount = @params.Length;
 
@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RegisterGetInvocation(BinderInvocation invocation)
             {
-                IInvocationOperation operation = invocation.Operation!;
+                IInvocationOperation operation = invocation.CandidateOperation!;
                 IMethodSymbol targetMethod = operation.TargetMethod;
                 ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
                 int paramCount = @params.Length;
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RegisterGetValueInvocation(BinderInvocation invocation)
             {
-                IInvocationOperation operation = invocation.Operation!;
+                IInvocationOperation operation = invocation.CandidateOperation!;
                 IMethodSymbol targetMethod = operation.TargetMethod;
                 ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
                 int paramCount = @params.Length;

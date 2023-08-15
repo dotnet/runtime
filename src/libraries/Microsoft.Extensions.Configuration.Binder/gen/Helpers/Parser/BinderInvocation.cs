@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
@@ -8,43 +9,38 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record BinderInvocation
+    internal readonly record struct BinderInvocation
     {
-        public IInvocationOperation Operation { get; private set; }
-        public Location? Location { get; private set; }
+        public IInvocationOperation? CandidateOperation { get; private init; }
+        public Location? Location { get; private init; }
 
-        public static BinderInvocation? Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+        public static BinderInvocation Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
         {
-            if (!IsCandidateInvocationExpressionSyntax(context.Node, out InvocationExpressionSyntax? invocationSyntax) ||
-                context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is not IInvocationOperation operation ||
-                !IsCandidateInvocation(operation))
+            Debug.Assert(IsCandidateSyntaxNode(context.Node));
+            InvocationExpressionSyntax? invocationSyntax = (InvocationExpressionSyntax)context.Node;
+
+            if (context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is IInvocationOperation operation &&
+                IsCandidateInvocationOperation(operation))
             {
-                return null;
+                return new BinderInvocation()
+                {
+                    CandidateOperation = operation,
+                    Location = invocationSyntax.GetLocation()
+                };
             }
 
-            return new BinderInvocation()
-            {
-                Operation = operation,
-                Location = invocationSyntax.GetLocation()
-            };
+            return default;
         }
 
-        private static bool IsCandidateInvocationExpressionSyntax(SyntaxNode node, out InvocationExpressionSyntax? invocationSyntax)
+        public static bool IsCandidateSyntaxNode(SyntaxNode node)
         {
-            if (node is InvocationExpressionSyntax
-                {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name.Identifier.ValueText: string memberName
-                    }
-                } syntax && IsCandidateBindingMethodName(memberName))
+            return node is InvocationExpressionSyntax
             {
-                invocationSyntax = syntax;
-                return true;
-            }
-
-            invocationSyntax = null;
-            return false;
+                Expression: MemberAccessExpressionSyntax
+                {
+                    Name.Identifier.ValueText: string memberName
+                }
+            } && IsCandidateBindingMethodName(memberName);
 
             static bool IsCandidateBindingMethodName(string name) =>
                 IsCandidateMethodName_ConfigurationBinder(name) ||
@@ -52,19 +48,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(name);
         }
 
-        private static bool IsCandidateInvocation(IInvocationOperation operation)
+        private static bool IsCandidateInvocationOperation(IInvocationOperation operation)
         {
             if (operation.TargetMethod is not IMethodSymbol
                 {
                     IsExtensionMethod: true,
                     Name: string methodName,
-                    ContainingType: ITypeSymbol
-                    {
-                        Name: string containingTypeName,
-                        ContainingNamespace: INamespaceSymbol { } containingNamespace,
-                    } containingType
-                } method ||
-                containingNamespace.ToDisplayString() is not string containingNamespaceName)
+                    ContainingType.Name: string containingTypeName,
+                })
             {
                 return false;
             }
@@ -72,13 +63,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return (containingTypeName) switch
             {
                 "ConfigurationBinder" =>
-                    containingNamespaceName is "Microsoft.Extensions.Configuration" &&
                     IsCandidateMethodName_ConfigurationBinder(methodName),
                 "OptionsBuilderConfigurationExtensions" =>
-                    containingNamespaceName is "Microsoft.Extensions.DependencyInjection" &&
                     IsCandidateMethodName_OptionsBuilderConfigurationExtensions(methodName),
                 "OptionsConfigurationServiceCollectionExtensions" =>
-                    containingNamespaceName is "Microsoft.Extensions.DependencyInjection" &&
                     IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(methodName),
                 _ => false,
             };

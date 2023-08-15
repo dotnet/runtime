@@ -44,13 +44,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (BinderInvocation invocation in _invocations)
                 {
-                    IInvocationOperation invocationOperation = invocation.Operation!;
-                    if (!invocationOperation.TargetMethod.IsExtensionMethod)
+                    if (invocation.CandidateOperation is not IInvocationOperation operation)
                     {
                         continue;
                     }
 
-                    INamedTypeSymbol? candidateBinderType = invocationOperation.TargetMethod.ContainingType;
+                    Debug.Assert(operation.TargetMethod.IsExtensionMethod);
+                    INamedTypeSymbol? candidateBinderType = operation.TargetMethod.ContainingType;
+
                     if (SymbolEqualityComparer.Default.Equals(candidateBinderType, _typeSymbols.ConfigurationBinder))
                     {
                         RegisterMethodInvocation_ConfigurationBinder(invocation);
