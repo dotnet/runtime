@@ -5,7 +5,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileArgument ("/optimize+")]
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/LocalsWithoutStore.il" })]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]

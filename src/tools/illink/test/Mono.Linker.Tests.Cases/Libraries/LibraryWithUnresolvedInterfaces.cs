@@ -8,7 +8,6 @@ using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 namespace Mono.Linker.Tests.Cases.Libraries
 {
 	[SetupCompileBefore ("copylibrary.dll", new[] { "Dependencies/CopyLibrary.cs" }, removeFromLinkerInput: true)]
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[SetupLinkerArgument ("-a", "test.exe", "library")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	[VerifyMetadataNames]

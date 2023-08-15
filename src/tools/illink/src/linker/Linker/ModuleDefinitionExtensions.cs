@@ -22,10 +22,13 @@ namespace Mono.Linker
 				return false;
 
 			foreach (var et in module.ExportedTypes) {
+				context.Resolver.IgnoreUnresolved = true;
 				if (context.TryResolve (et) == typeDefinition) {
 					exportedType = et;
+					context.Resolver.IgnoreUnresolved = false;
 					return true;
 				}
+				context.Resolver.IgnoreUnresolved = false;
 			}
 
 			return false;

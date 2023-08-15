@@ -113,14 +113,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Append (assembly);
 		}
 
-		public virtual void AddSkipUnresolved (bool skipUnresolved)
-		{
-			if (skipUnresolved) {
-				Append ("--skip-unresolved");
-				Append ("true");
-			}
-		}
-
 		public virtual void AddStripDescriptors (bool stripDescriptors)
 		{
 			if (!stripDescriptors) {
@@ -212,8 +204,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);
-
-			AddSkipUnresolved (options.SkipUnresolved);
 
 			AddStripDescriptors (options.StripDescriptors);
 

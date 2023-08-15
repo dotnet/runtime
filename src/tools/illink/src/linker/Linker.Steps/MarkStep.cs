@@ -1473,7 +1473,10 @@ namespace Mono.Linker.Steps
 			protected override void ProcessExportedType (ExportedType exportedType)
 			{
 				markingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, assembly), new MessageOrigin (assembly));
+
+				markingHelpers.Context.Resolver.IgnoreUnresolved = true;
 				markingHelpers.MarkForwardedScope (CreateTypeReferenceForExportedTypeTarget (exportedType), new MessageOrigin (assembly));
+				markingHelpers.Context.Resolver.IgnoreUnresolved = false;
 			}
 
 			protected override void ProcessExtra ()

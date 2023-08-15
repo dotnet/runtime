@@ -5,7 +5,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
 	[SetupLinkerDescriptorFile ("LinkXmlErrorCases.xml")]
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
 
 	[ExpectedWarning ("IL2001", "TypeWithNoFields", FileName = "LinkXmlErrorCases.xml", SourceLine = 3, SourceColumn = 6)]
 	[ExpectedWarning ("IL2002", "TypeWithNoMethods", FileName = "LinkXmlErrorCases.xml", SourceLine = 4, SourceColumn = 6)]

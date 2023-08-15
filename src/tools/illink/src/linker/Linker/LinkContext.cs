@@ -108,8 +108,6 @@ namespace Mono.Linker
 
 		public readonly bool KeepMembersForDebugger = true;
 
-		public bool IgnoreUnresolved { get; set; }
-
 		public bool EnableReducedTracing { get; set; }
 
 		public bool KeepUsedAttributeTypesOnly { get; set; }
@@ -474,7 +472,10 @@ namespace Mono.Linker
 
 			while (toProcess.Count > 0) {
 				var assembly = toProcess.Dequeue ();
-				foreach (var reference in ResolveReferences (assembly)) {
+				Resolver.IgnoreUnresolved = true;
+				var references = ResolveReferences (assembly);
+				Resolver.IgnoreUnresolved = false;
+				foreach (var reference in references) {
 					if (!loaded.Add (reference))
 						continue;
 					yield return reference;
@@ -774,7 +775,7 @@ namespace Mono.Linker
 #pragma warning disable RS0030 // Cecil's resolve is banned -- this provides the wrapper
 			md = methodReference.Resolve ();
 #pragma warning restore RS0030
-			if (md == null && !IgnoreUnresolved)
+			if (md == null)
 				ReportUnresolved (methodReference);
 
 			methodresolveCache.Add (methodReference, md);
@@ -817,7 +818,7 @@ namespace Mono.Linker
 				return fd;
 
 			fd = fieldReference.Resolve ();
-			if (fd == null && !IgnoreUnresolved)
+			if (fd == null)
 				ReportUnresolved (fieldReference);
 
 			fieldresolveCache.Add (fieldReference, fd);
@@ -866,7 +867,7 @@ namespace Mono.Linker
 #pragma warning disable RS0030
 			td = typeReference.Resolve ();
 #pragma warning restore RS0030
-			if (td == null && !IgnoreUnresolved)
+			if (td == null)
 				ReportUnresolved (typeReference);
 
 			typeresolveCache.Add (typeReference, td);

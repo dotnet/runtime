@@ -612,9 +612,8 @@ namespace Mono.Linker.Steps
 #pragma warning restore RS0030
 				if (td == null) {
 					//
-					// This can happen when not all assembly refences were provided and we
-					// run in `--skip-unresolved` mode. We cannot fully sweep and keep the
-					// original assembly reference
+					// This can happen when not all assembly refences were provided.
+					// We cannot fully sweep and keep the original assembly reference.
 					//
 					var anr = (AssemblyNameReference) type.Scope;
 					type.Scope = importer.ImportReference (anr);
@@ -635,8 +634,7 @@ namespace Mono.Linker.Steps
 				TypeDefinition? td = exportedType.Resolve ();
 #pragma warning restore RS0030
 				if (td == null) {
-					// Forwarded type cannot be resolved but it was marked
-					// ILLink is running in --skip-unresolved true mode
+					// Forwarded type cannot be resolved but it was marked.
 					var anr = (AssemblyNameReference) exportedType.Scope;
 					exportedType.Scope = importer.ImportReference (anr);
 					return;

@@ -7,7 +7,6 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 	[KeptMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyMethodInAssemblyLibrary", ".ctor()")]
 	[KeptMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyMethodInAssemblyLibrary", "privateField")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/DynamicDependencyMethodInAssemblyLibrary.cs" })]
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	public class DynamicDependencyMethodInAssembly
 	{
 		public static void Main ()

@@ -3,7 +3,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	// Actions:
 	// link - This assembly, TypeForwarderModifiersLibDef.dll and TypeForwardersModifiersLib.dll
 	[SetupLinkerDefaultAction ("link")]
