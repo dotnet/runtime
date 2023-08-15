@@ -3700,7 +3700,7 @@ inline void Compiler::LoopDsc::VERIFY_lpTestTree() const
 
     if (lpFlags & LPFLG_CONST_LIMIT)
     {
-        assert(limit->OperIsConst());
+        assert(limit->OperIsConst() || lpTestVarCnsInit != nullptr);
     }
     if (lpFlags & LPFLG_VAR_LIMIT)
     {
@@ -3776,6 +3776,11 @@ inline int Compiler::LoopDsc::lpConstLimit() const
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_CONST_LIMIT);
+
+    if (lpTestVarCnsInit != nullptr)
+    {
+        return (int)lpTestVarCnsInit->AsIntCon()->gtIconVal;
+    }
 
     GenTree* limit = lpLimit();
     assert(limit->OperIsConst());

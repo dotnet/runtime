@@ -843,7 +843,14 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
         //
         if (!optIsVarAssgLoop(loopInd, limitOp->AsLclVarCommon()->GetLclNum()))
         {
-            optLoopTable[loopInd].lpFlags |= LPFLG_VAR_LIMIT;
+            if (optIsVarConstInit(loopInd, limitOp))
+            {
+                optLoopTable[loopInd].lpFlags |= LPFLG_CONST_LIMIT;
+            }
+            else
+            {
+                optLoopTable[loopInd].lpFlags |= LPFLG_VAR_LIMIT;
+            }
         }
         else
         {
@@ -6378,6 +6385,104 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
                 return false;
             default:
                 noway_assert(!"Unexpected lpAsgCall value");
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optIsSetAssgLoop: see if a locals is initialized by a constant
+//
+// Arguments:
+//     lnum - loop number
+//     var  - var to check
+//
+// Returns:
+//     true if the var is initialized by a constant
+//
+bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var)
+{
+    noway_assert(lnum < optLoopCount);
+    noway_assert(var->OperIs(GT_LCL_VAR));
+
+    unsigned         lclNum = var->AsLclVarCommon()->GetLclNum();
+    LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+
+    if (varDsc->IsAddressExposed())
+    {
+        // We don't check address exposed vars
+        //
+        return false;
+    }
+
+    class IsVarConstInitVisitor : public GenTreeVisitor<IsVarConstInitVisitor>
+    {
+        isVarConstInitDsc* m_dsc;
+
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            UseExecutionOrder = true,
+        };
+
+        IsVarConstInitVisitor(Compiler* comp, isVarConstInitDsc* dsc) : GenTreeVisitor(comp), m_dsc(dsc) {}
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const tree = *use;
+
+            if (tree == m_dsc->ivciDst)
+            {
+                return WALK_ABORT;
+            }
+
+            if (tree->OperIs(GT_STORE_LCL_VAR))
+            {
+                GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
+                const unsigned lclNum    = lcl->GetLclNum();
+                GenTree* const data      = lcl->Data();
+                m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    LoopDsc* const    loop = &optLoopTable[lnum];
+    isVarConstInitDsc dsc  = {};
+    dsc.ivciVar            = lclNum;
+    dsc.ivciDst            = var;
+    dsc.ivciVarSet = new (getAllocator(CMK_LoopOpt)) Compiler::isVarConstInitDsc::VarAsgnSet(getAllocator(CMK_LoopOpt));
+
+    IsVarConstInitVisitor walker(this, &dsc);
+    for (Statement* const stmt : loop->lpHead->Statements())
+    {
+        if (walker.WalkTree(stmt->GetRootNodePointer(), nullptr) == WALK_ABORT)
+        {
+            break;
+        }
+    }
+
+    GenTree* data;
+    unsigned cur = lclNum;
+
+    while (dsc.ivciVarSet->Lookup(cur, &data))
+    {
+        if (data->OperIs(GT_LCL_VAR))
+        {
+            cur = data->AsLclVar()->GetLclNum();
+        }
+        else if (data->IsCnsIntOrI())
+        {
+            JITDUMP("optIsVarConstInit: V%02u initialized with a constant value, substitute the value in unrolling.\n", lclNum);
+            loop->lpTestVarCnsInit = data;
+            return true;
+        }
+        else
+        {
+            break;
         }
     }
 

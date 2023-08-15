@@ -6449,6 +6449,7 @@ public:
         GenTree*   lpTestTree;         // pointer to the node containing the loop test
         genTreeOps lpTestOper() const; // the type of the comparison between the iterator and the limit (GT_LE, GT_GE,
                                        // etc.)
+        GenTree*   lpTestVarCnsInit;   // pointer to the constant initialization of the loop test variable
 
         bool lpIsIncreasingLoop() const; // if the loop iterator increases from low to high value.
         bool lpIsDecreasingLoop() const; // if the loop iterator decreases from high to low value.
@@ -6758,6 +6759,15 @@ protected:
         callInterf   ivaMaskCall;       // What kind of calls are there?
         bool         ivaMaskIncomplete; // Variables not representable in ivaMaskVal were assigned to.
     };
+    
+    struct isVarConstInitDsc
+    {
+        typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*>
+            VarAsgnSet;
+        VarAsgnSet*  ivciVarSet;         // Set of variables assigned to.
+        unsigned     ivciVar;            // Variable we are interested in, or -1
+        GenTree*     ivciDst;            // Destination
+    };
 
     bool optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc);
 
@@ -6768,6 +6778,8 @@ protected:
     bool optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds = VR_NONE);
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
+
+    bool optIsVarConstInit(unsigned lnum, GenTree* var);
 
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
