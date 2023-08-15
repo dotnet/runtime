@@ -112,30 +112,24 @@ namespace Wasm.Build.Tests
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
-            // FIXME: relinking for paths with unicode does not work:
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
-            // remove the condition when the issue is fixed
             Dictionary<string, FileStat> publishStat = new();
-            if (!testUnicode)
-            {
-                // relink by default for Release+publish
-                (_, output) = BuildProject(buildArgs,
-                                    id: id,
-                                    new BuildProjectOptions(
-                                        DotnetWasmFromRuntimePack: false,
-                                        CreateProject: false,
-                                        Publish: true,
-                                        UseCache: false,
-                                        Label: "first_publish"));
+            // relink by default for Release+publish
+            (_, output) = BuildProject(buildArgs,
+                                id: id,
+                                new BuildProjectOptions(
+                                    DotnetWasmFromRuntimePack: false,
+                                    CreateProject: false,
+                                    Publish: true,
+                                    UseCache: false,
+                                    Label: "first_publish"));
 
-                publishStat = (Dictionary<string, FileStat>)_provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
-                Assert.True(publishStat["pinvoke.o"].Exists);
-                Assert.True(publishStat[$"{mainDll}.bc"].Exists);
-                CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
-                _provider.CompareStat(firstBuildStat, publishStat, pathsDict.Values);
+            publishStat = (Dictionary<string, FileStat>)_provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            Assert.True(publishStat["pinvoke.o"].Exists);
+            Assert.True(publishStat[$"{mainDll}.bc"].Exists);
+            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
+            _provider.CompareStat(firstBuildStat, publishStat, pathsDict.Values);
 
-                Run(expectAOT: true);
-            }
+            Run(expectAOT: true);
 
             // second build
             (_, output) = BuildProject(buildArgs,
@@ -153,12 +147,7 @@ namespace Wasm.Build.Tests
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
-            // FIXME: elinking for paths with unicode does not work:
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
-            if (!testUnicode)
-            {
-                _provider.CompareStat(publishStat, secondBuildStat, pathsDict.Values);
-            }
+            _provider.CompareStat(publishStat, secondBuildStat, pathsDict.Values);
 
             void Run(bool expectAOT) => RunAndTestWasmApp(
                                 buildArgs with { AOT = expectAOT },
