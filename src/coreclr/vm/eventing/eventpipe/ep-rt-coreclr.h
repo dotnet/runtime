@@ -12,6 +12,7 @@
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-string.h>
 #include "fstream.h"
 #include "typestring.h"
 #include "clrversion.h"
@@ -1431,38 +1432,6 @@ ep_rt_utf8_string_replace (
 }
 
 static
-ep_char16_t *
-ep_rt_utf8_to_utf16le_string (
-	const ep_char8_t *str,
-	size_t len)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	if (!str)
-		return NULL;
-
-	COUNT_T len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), 0, 0);
-	if (len_utf16 == 0)
-		return NULL;
-
-	if (static_cast<int>(len) != -1)
-		len_utf16 += 1;
-
-	ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc (len_utf16 * sizeof (ep_char16_t)));
-	if (!str_utf16)
-		return NULL;
-
-	len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), reinterpret_cast<LPWSTR>(str_utf16), len_utf16);
-	if (len_utf16 == 0) {
-		free (str_utf16);
-		return NULL;
-	}
-
-	str_utf16 [len_utf16 - 1] = 0;
-	return str_utf16;
-}
-
-static
 inline
 ep_char16_t *
 ep_rt_utf16_string_dup (const ep_char16_t *str)
@@ -1477,6 +1446,13 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
 	if (str_dup)
 		memcpy (str_dup, str, str_size);
 	return str_dup;
+}
+
+static
+ep_char8_t *
+ep_rt_utf8_string_alloc (size_t len)
+{
+	return reinterpret_cast<ep_char8_t *>(malloc(len));
 }
 
 static
@@ -1502,45 +1478,10 @@ ep_rt_utf16_string_len (const ep_char16_t *str)
 }
 
 static
-ep_char8_t *
-ep_rt_utf16_to_utf8_string (
-	const ep_char16_t *str,
-	size_t len)
+ep_char16_t *
+ep_rt_utf16_string_alloc (size_t len)
 {
-	STATIC_CONTRACT_NOTHROW;
-
-	if (!str)
-		return NULL;
-
-	COUNT_T size_utf8 = WszWideCharToMultiByte (CP_UTF8, 0, reinterpret_cast<LPCWSTR>(str), static_cast<int>(len), NULL, 0, NULL, NULL);
-	if (size_utf8 == 0)
-		return NULL;
-
-	if (static_cast<int>(len) != -1)
-		size_utf8 += 1;
-
-	ep_char8_t *str_utf8 = reinterpret_cast<ep_char8_t *>(malloc (size_utf8));
-	if (!str_utf8)
-		return NULL;
-
-	size_utf8 = WszWideCharToMultiByte (CP_UTF8, 0, reinterpret_cast<LPCWSTR>(str), static_cast<int>(len), reinterpret_cast<LPSTR>(str_utf8), size_utf8, NULL, NULL);
-	if (size_utf8 == 0) {
-		free (str_utf8);
-		return NULL;
-	}
-
-	str_utf8 [size_utf8 - 1] = 0;
-	return str_utf8;
-}
-
-static
-inline
-ep_char8_t *
-ep_rt_utf16le_to_utf8_string (
-	const ep_char16_t *str,
-	size_t len)
-{
-	return ep_rt_utf16_to_utf8_string (str, len);
+	return reinterpret_cast<ep_char16_t *>(malloc(len * sizeof(ep_char16_t)));
 }
 
 static
