@@ -6607,7 +6607,7 @@ bool Compiler::optIsVarConstInit(BasicBlock* bb, GenTree* var, GenTree** cnsInit
         }
         else if (data->IsCnsIntOrI())
         {
-            JITDUMP("optIsVarConstInit: V%02u initialized with a constant value.\n", lclNum);
+            JITDUMP("optIsVarConstInit: V%02u initialized with a constant value in [%06d].\n", lclNum, dspTreeID(data));
             *cnsInit = data;
             return true;
         }
