@@ -1617,6 +1617,7 @@ mini_usage (void)
 #endif
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
+		"    --path=DIR             Add DIR to the list of directories to search for assemblies.\n"
 	  );
 
 	g_print ("\nOptions:\n");
@@ -2069,6 +2070,7 @@ mono_main (int argc, char* argv[])
 	char *aot_options = NULL;
 	GPtrArray *agents = NULL;
 	char *extra_bindings_config_file = NULL;
+	GList *paths = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
 #endif
@@ -2294,6 +2296,8 @@ mono_main (int argc, char* argv[])
 				g_free (tmp);
 				split++;
 			}
+		} else if (strncmp (argv [i], "--path=", 7) == 0) {
+			paths = g_list_append (paths, argv [i] + 7);
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {
 			action = DO_COMPILE;
 			recompilation_times = atoi (argv [i] + 14);
@@ -2502,6 +2506,16 @@ mono_main (int argc, char* argv[])
 
 	if (g_hasenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;
+
+	if (paths) {
+		char **p = g_new0 (char *, g_list_length (paths) + 1);
+		int pindex = 0;
+		for (GList *l = paths; l; l = l->next)
+			p [pindex ++] = (char*)l->data;
+		g_list_free (paths);
+
+		mono_set_assemblies_path_direct (p);
+	}
 
 #ifdef MONO_CROSS_COMPILE
 	if (!mono_compile_aot) {
