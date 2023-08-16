@@ -6768,10 +6768,12 @@ protected:
     {
         typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*>
             VarAsgnSet;
-        VarAsgnSet*  ivciVarSet;         // Set of variables assigned to.
+        typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, GenTree*>
+            GtAsgnSet;
+        VarAsgnSet*  ivciVarSet;         // Set of local variables we are tracking.
+        GtAsgnSet*   ivciGtSet;          // Set of GenTree we are tracking.
         ALLVARSET_TP ivciMaskVal;        // Set of variables been assigned.
-        unsigned     ivciVar;            // Variable we are interested in, or -1
-        GenTree*     ivciDst;            // Destination
+        GenTree*     ivciVar;            // Variable we are interested in.
     };
 
     bool optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc);
@@ -6784,7 +6786,7 @@ protected:
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
-    bool optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit);
+    bool optIsVarConstInit(BasicBlock* bb, GenTree* var, GenTree** cnsInit);
 
 protected:
     //  The following is the upper limit on how many expressions we'll keep track

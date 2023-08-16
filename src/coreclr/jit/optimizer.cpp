@@ -846,7 +846,7 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
         {
             // See if limit var is constant initialized
             //
-            if (optIsVarConstInit(loopInd, limitOp, &optLoopTable[loopInd].lpTestVarCnsInit))
+            if (optIsVarConstInit(optLoopTable[loopInd].lpHead, limitOp, &optLoopTable[loopInd].lpTestVarCnsInit))
             {
                 optLoopTable[loopInd].lpFlags |= LPFLG_CONST_VAR_LIMIT;
 
@@ -875,7 +875,21 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
         {
             if (!optIsVarAssgLoop(loopInd, array->AsLclVarCommon()->GetLclNum()))
             {
-                optLoopTable[loopInd].lpFlags |= LPFLG_ARRLEN_LIMIT;
+                // See if limit array length is constant initialized
+                //
+                if (optIsVarConstInit(optLoopTable[loopInd].lpHead, array, &optLoopTable[loopInd].lpTestVarCnsInit))
+                {
+                    optLoopTable[loopInd].lpFlags |= LPFLG_CONST_VAR_LIMIT;
+
+                    if ((optLoopTable[loopInd].lpTestVarCnsInit->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
+                    {
+                        optLoopTable[loopInd].lpFlags |= LPFLG_SIMD_LIMIT;
+                    }
+                }
+                else
+                {
+                    optLoopTable[loopInd].lpFlags |= LPFLG_ARRLEN_LIMIT;
+                }
             }
             else
             {
@@ -6406,16 +6420,15 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
 // optIsSetAssgLoop: see if a locals is initialized by a constant
 //
 // Arguments:
-//     lnum    - loop number
-//     var     - var to check
+//     bb      - the basic block to check
+//     var     - the local variable to check
 //     cnsInit - [out] the const initialization
 //
 // Returns:
 //     true if the var is initialized by a constant
 //
-bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
+bool Compiler::optIsVarConstInit(BasicBlock* bb, GenTree* var, GenTree** cnsInit)
 {
-    noway_assert(lnum < optLoopCount);
     noway_assert(var->OperIs(GT_LCL_VAR));
 
     unsigned         lclNum = var->AsLclVarCommon()->GetLclNum();
@@ -6448,16 +6461,84 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
         {
             GenTree* const tree = *use;
 
-            if (tree == m_dsc->ivciDst)
+            if (tree == m_dsc->ivciVar)
             {
                 return WALK_ABORT;
             }
 
-            if (tree->OperIs(GT_STORE_LCL_VAR))
+            if (tree->IsHelperCall() && eeGetHelperNum(tree->AsCall()->gtCallMethHnd) == CORINFO_HELP_NEWARR_1_VC)
+            {
+                unsigned index = 0;
+                for (CallArg& arg : tree->AsCall()->gtArgs.Args())
+                {
+                    if (index == 1)
+                    {
+                        GenTree* data;
+                        GenTree* op = arg.GetNode();
+                        if (op->OperIsConst())
+                        {
+                            m_dsc->ivciGtSet->Set(tree, op, Compiler::isVarConstInitDsc::GtAsgnSet::Overwrite);
+                        }
+                        else if (op->OperIsLocal() &&
+                                 m_dsc->ivciVarSet->Lookup(op->AsLclVarCommon()->GetLclNum(), &data))
+                        {
+                            m_dsc->ivciGtSet->Set(tree, data, Compiler::isVarConstInitDsc::GtAsgnSet::Overwrite);
+                        }
+                        else if (m_dsc->ivciGtSet->Lookup(op, &data))
+                        {
+                            m_dsc->ivciGtSet->Set(tree, data, Compiler::isVarConstInitDsc::GtAsgnSet::Overwrite);
+                        }
+                        break;
+                    }
+                    index++;
+                }
+            }
+
+            if (tree->OperIsArrLength())
+            {
+                GenTree* data;
+                GenTree* op = tree->AsArrLen()->gtGetOp1();
+                if (op->OperIsConst())
+                {
+                    m_dsc->ivciGtSet->Set(tree, op, Compiler::isVarConstInitDsc::GtAsgnSet::Overwrite);
+                }
+                else if (op->OperIsLocal() && m_dsc->ivciVarSet->Lookup(op->AsLclVarCommon()->GetLclNum(), &data))
+                {
+                    m_dsc->ivciGtSet->Set(tree, data, Compiler::isVarConstInitDsc::GtAsgnSet::Overwrite);
+                }
+                else if (m_dsc->ivciGtSet->Lookup(op, &data))
+                {
+                    m_dsc->ivciGtSet->Set(tree, data, Compiler::isVarConstInitDsc::GtAsgnSet::Overwrite);
+                }
+            }
+
+            if (tree->OperIs(GT_CAST))
+            {
+                GenTreeCast* const cast = tree->AsCast();
+                var_types          toType = cast->CastToType();
+                var_types          fromType = cast->CastFromType();
+                if (toType >= fromType && toType >= TYP_BYTE && toType <= TYP_ULONG && fromType >= TYP_BYTE &&
+                    fromType <= TYP_ULONG)
+                {
+                    GenTree* data;
+                    GenTree* op = cast->CastOp();
+                    if (op->OperIsLocal() && m_dsc->ivciVarSet->Lookup(op->AsLclVarCommon()->GetLclNum(), &data))
+                    {
+                        m_dsc->ivciGtSet->Set(tree, data, Compiler::isVarConstInitDsc::GtAsgnSet::Overwrite);
+                    }
+                    else if (m_dsc->ivciGtSet->Lookup(op, &data))
+                    {
+                        m_dsc->ivciGtSet->Set(tree, data, Compiler::isVarConstInitDsc::GtAsgnSet::Overwrite);
+                    }
+                }
+            }
+
+            if (tree->OperIsLocalStore())
             {
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
                 const unsigned       lclNum = lcl->GetLclNum();
                 GenTree* const       data   = lcl->Data();
+                GenTree*             dataOut;
 
                 if (data->OperIs(GT_LCL_VAR))
                 {
@@ -6476,9 +6557,17 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
                     }
                 }
 
-                if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, lclNum))
+                if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, lclNum) &&
+                    !m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
                 {
-                    m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+                    if (data->OperIsConst())
+                    {
+                        m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+                    }
+                    else if (m_dsc->ivciGtSet->Lookup(data, &dataOut))
+                    {
+                        m_dsc->ivciVarSet->Set(lclNum, dataOut, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+                    }
                 }
             }
 
@@ -6486,15 +6575,14 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
         }
     };
 
-    LoopDsc* const    loop = &optLoopTable[lnum];
-    isVarConstInitDsc dsc  = {};
-    dsc.ivciVar            = lclNum;
-    dsc.ivciDst            = var;
+    isVarConstInitDsc dsc = {};
+    dsc.ivciVar           = var;
     dsc.ivciVarSet = new (getAllocator(CMK_LoopOpt)) Compiler::isVarConstInitDsc::VarAsgnSet(getAllocator(CMK_LoopOpt));
+    dsc.ivciGtSet  = new (getAllocator(CMK_LoopOpt)) Compiler::isVarConstInitDsc::GtAsgnSet(getAllocator(CMK_LoopOpt));
     AllVarSetOps::AssignNoCopy(this, dsc.ivciMaskVal, AllVarSetOps::MakeEmpty(this));
 
     IsVarConstInitVisitor walker(this, &dsc);
-    for (Statement* const stmt : loop->lpHead->Statements())
+    for (Statement* const stmt : bb->Statements())
     {
         if (walker.WalkTree(stmt->GetRootNodePointer(), nullptr) == WALK_ABORT)
         {
@@ -6503,28 +6591,11 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
     }
 
     GenTree* data;
-    unsigned cur = lclNum;
-
-    while (dsc.ivciVarSet->Lookup(cur, &data))
+    if (dsc.ivciVarSet->Lookup(lclNum, &data))
     {
-        if (data->OperIs(GT_LCL_VAR))
-        {
-            if (lvaGetDesc(data->AsLclVarCommon())->IsAddressExposed())
-            {
-                break;
-            }
-            cur = data->AsLclVar()->GetLclNum();
-        }
-        else if (data->IsCnsIntOrI())
-        {
-            JITDUMP("optIsVarConstInit: V%02u initialized with a constant value.\n", lclNum);
-            *cnsInit = data;
-            return true;
-        }
-        else
-        {
-            break;
-        }
+        JITDUMP("optIsVarConstInit: V%02u initialized with a constant value.\n", lclNum);
+        *cnsInit = data;
+        return true;
     }
 
     return false;
