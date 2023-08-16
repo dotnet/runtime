@@ -4062,9 +4062,9 @@ PhaseStatus Compiler::optUnrollLoops()
     INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
 
     static const unsigned ITER_LIMIT[COUNT_OPT_CODE + 1] = {
-        10, // BLENDED_CODE
+        16, // BLENDED_CODE
         0,  // SMALL_CODE
-        20, // FAST_CODE
+        32, // FAST_CODE
         0   // COUNT_OPT_CODE
     };
 
@@ -4081,9 +4081,9 @@ PhaseStatus Compiler::optUnrollLoops()
 #endif
 
     static const int UNROLL_LIMIT_SZ[COUNT_OPT_CODE + 1] = {
-        300, // BLENDED_CODE
+        400, // BLENDED_CODE
         0,   // SMALL_CODE
-        600, // FAST_CODE
+        800, // FAST_CODE
         0    // COUNT_OPT_CODE
     };
 
@@ -6557,15 +6557,18 @@ bool Compiler::optIsVarConstInit(BasicBlock* bb, GenTree* var, GenTree** cnsInit
                     }
                 }
 
-                if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, lclNum))
+                if (lclNum < lclMAX_ALLSET_TRACKED)
                 {
-                    if (m_dsc->ivciGtSet->Lookup(data, &dataOut))
+                    if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, lclNum))
                     {
-                        m_dsc->ivciVarSet->Set(lclNum, dataOut, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
-                    }
-                    else
-                    {
-                        m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+                        if (m_dsc->ivciGtSet->Lookup(data, &dataOut))
+                        {
+                            m_dsc->ivciVarSet->Set(lclNum, dataOut, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+                        }
+                        else
+                        {
+                            m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+                        }
                     }
                 }
             }
