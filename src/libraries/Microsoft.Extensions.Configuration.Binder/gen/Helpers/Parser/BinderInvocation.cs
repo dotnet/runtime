@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             InvocationExpressionSyntax invocationSyntax = (InvocationExpressionSyntax)context.Node;
 
             return context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is IInvocationOperation operation &&
-                IsCandidateInvocationOperation(operation)
+                IsBindingOperation(operation)
                 ? new BinderInvocation(operation, invocationSyntax.GetLocation())
                 : null;
         }
@@ -28,7 +28,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Expression: MemberAccessExpressionSyntax
                 {
-                    Name.Identifier.ValueText: string memberName
+                    Name.Identifier.ValueText: string memberName,
+                    Expression: NameSyntax,
                 }
             } && IsCandidateBindingMethodName(memberName);
 
@@ -38,7 +39,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(name);
         }
 
-        private static bool IsCandidateInvocationOperation(IInvocationOperation operation)
+        private static bool IsBindingOperation(IInvocationOperation operation)
         {
             if (operation.TargetMethod is not IMethodSymbol
                 {
