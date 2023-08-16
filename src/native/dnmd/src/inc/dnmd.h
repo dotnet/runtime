@@ -436,7 +436,16 @@ int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
 int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
 int32_t md_get_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings);
 int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len);
-int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t out_length, mdguid_t* guid);
+int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdguid_t* guid);
+
+// Return the raw column values for the row. Unlike the md_get_column_value_as_* APIs, the returned values
+// are in their raw form.
+// Callers should indicate ('true') using the 'values_to_get' collection which columns are desired.
+// Corresponding entries in 'values_raw' will only be set if a 'true' value is set in 'values_to_get'.
+// Note this API was not designed in a performance critical manner and should only be used if necessary.
+// The APIs that retrieve specific columns in their respective formatted forms have been designed for performance
+// and should be preferred whenever possible.
+bool md_get_column_values_raw(mdcursor_t c, uint32_t values_length, bool* values_to_get, uint32_t* values_raw);
 
 // Find a row or range of rows where the supplied column has the expected value.
 // These APIs assume the value to look for is the value in the table, typically record IDs (RID)
@@ -445,7 +454,7 @@ int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t o
 // transformed to its coded form for comparison.
 bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor);
 
-typedef enum _md_range_result_t
+typedef enum
 {
     MD_RANGE_FOUND = 0,
     MD_RANGE_NOT_FOUND = 1,

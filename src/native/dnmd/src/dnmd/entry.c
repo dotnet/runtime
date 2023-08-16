@@ -310,8 +310,6 @@ bool md_validate(mdhandle_t handle)
 
 static bool dump_table_rows(mdtable_t* table)
 {
-#define IF_NOT_ONE_REPORT_RETURN(exp) if (1 != (exp)) { printf("Failure in row %u (0x%x), column %u (0x%x)\n", i, i, j, j); return false; }
-
     if (table->row_count == 0)
     {
         printf("Empty table\n");
@@ -339,46 +337,58 @@ static bool dump_table_rows(mdtable_t* table)
     // Create a cursor to the first row.
     mdcursor_t cursor = create_cursor(table, 1);
 
+    // The maximum known column count is 9, so hard coding the array to that.
+    bool to_get[] = { true, true, true, true, true, true, true, true, true };
+    assert(table->column_count <= ARRAY_SIZE(to_get));
+    uint32_t raw_values[ARRAY_SIZE(to_get)];
+
+#define IF_NOT_ONE_REPORT_RAW(exp) if (1 != (exp)) { printf("Invalid (%u) [%#x]|", j, raw_values[j]); continue; }
     for (uint32_t i = 0; i < table->row_count; ++i)
     {
-        printf("|");
+        if (!md_get_column_values_raw(cursor, table->column_count, to_get, raw_values))
+        {
+            printf("Failure to retrieve raw column values. Table is corrupted.\n");
+            return false;
+        }
+
+        printf("%4u|", i);
         for (uint8_t j = 0; j < table->column_count; ++j)
         {
             if (table->column_details[j] & mdtc_hstring)
             {
-                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_utf8(cursor, IDX(j), 1, &str));
-                printf("'%s'|", str);
+                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_utf8(cursor, IDX(j), 1, &str));
+                printf("'%s' [%#x]|", str, raw_values[j]);
             }
             else if (table->column_details[j] & mdtc_hguid)
             {
-                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_guid(cursor, IDX(j), 1, &guid));
-                printf("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}|",
+                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_guid(cursor, IDX(j), 1, &guid));
+                printf("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} [%#x]|",
                     guid.data1, guid.data2, guid.data3,
                     guid.data4[0], guid.data4[1],
                     guid.data4[2], guid.data4[3],
                     guid.data4[4], guid.data4[5],
-                    guid.data4[6], guid.data4[7]);
+                    guid.data4[6], guid.data4[7], raw_values[j]);
             }
             else if (table->column_details[j] & mdtc_hblob)
             {
-                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_blob(cursor, IDX(j), 1, &blob, &blob_len));
-                printf("Offset: %zu (len: %u)|", (blob - table->cxt->blob_heap.ptr), blob_len);
+                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, IDX(j), 1, &blob, &blob_len));
+                printf("Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]);
             }
             else if (table->column_details[j] & mdtc_hus)
             {
-                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_userstring(cursor, IDX(j), 1, &user_string));
-                printf("UTF-16 string (%u bytes)|", user_string.str_bytes);
+                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_userstring(cursor, IDX(j), 1, &user_string));
+                printf("UTF-16 string (%u bytes) [%#x]|", user_string.str_bytes, raw_values[j]);
             }
             else if (table->column_details[j] & (mdtc_idx_table | mdtc_idx_coded))
             {
-                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_token(cursor, IDX(j), 1, &tk));
-                printf("0x%08x (mdToken)|", tk);
+                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_token(cursor, IDX(j), 1, &tk));
+                printf("0x%08x (mdToken) [%#x]|", tk, raw_values[j]);
             }
             else
             {
                 assert(table->column_details[j] & mdtc_constant);
-                IF_NOT_ONE_REPORT_RETURN(md_get_column_value_as_constant(cursor, IDX(j), 1, &constant));
-                printf("0x%08x|", constant);
+                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_constant(cursor, IDX(j), 1, &constant));
+                printf("0x%08x [%#x]|", constant, raw_values[j]);
             }
         }
         printf("\n");
@@ -386,7 +396,7 @@ static bool dump_table_rows(mdtable_t* table)
             return false;
     }
     printf("\n");
-#undef IF_NOT_ONE_REPORT_RETURN
+#undef IF_NOT_ONE_REPORT_RAW
 
     return true;
 }

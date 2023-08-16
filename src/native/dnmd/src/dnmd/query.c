@@ -447,6 +447,32 @@ int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t 
     return read_in;
 }
 
+bool md_get_column_values_raw(mdcursor_t c, uint32_t values_length, bool* values_to_get, uint32_t* values_raw)
+{
+    if (values_length > 0
+        && (values_to_get == NULL
+            || values_raw == NULL))
+    {
+        return false;
+    }
+
+    access_cxt_t acxt;
+    for (uint32_t i = 0; i < values_length; ++i)
+    {
+        if (!values_to_get[i])
+            continue;
+
+        // Create access context for the next column value
+        if (!create_access_context(&c, i, 1, false, &acxt))
+            return false;
+
+        if (!read_column_data(&acxt, &values_raw[i]))
+            return false;
+    }
+
+    return true;
+}
+
 typedef struct find_cxt__
 {
     uint32_t col_offset;
