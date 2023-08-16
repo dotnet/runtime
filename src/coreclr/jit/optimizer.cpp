@@ -6463,9 +6463,16 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
                 {
                     const unsigned dataLclNum = data->AsLclVar()->GetLclNum();
 
-                    if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, dataLclNum))
+                    if (dataLclNum < lclMAX_ALLSET_TRACKED)
                     {
-                        AllVarSetOps::AddElemD(m_compiler, m_dsc->ivciMaskVal, dataLclNum);
+                        if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, dataLclNum))
+                        {
+                            AllVarSetOps::AddElemD(m_compiler, m_dsc->ivciMaskVal, dataLclNum);
+                        }
+                    }
+                    else
+                    {
+                        return WALK_ABORT;
                     }
                 }
 
