@@ -58,10 +58,7 @@ public class JittedMethodsCountingTest
             // the runtime to print them out with DOTNET_JitDisasmSummary, and
             // write them out to a file we can parse and investigate later
             // with DOTNET_JitStdOutFile.
-
             startInfo.EnvironmentVariables.Add("DOTNET_JitDisasmSummary", 1);
-            startInfo.EnvironmentVariables.Add("DOTNET_TieredCompilation", 0);
-            startInfo.EnvironmentVariables.Add("DOTNET_ReadyToRun", 1);
             startInfo.EnvironmentVariables.Add("DOTNET_JitStdOutFile", jitOutputFile);
 
             Console.WriteLine("Launching Test App: {0} {1}", startInfo.FileName,
