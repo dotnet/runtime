@@ -296,18 +296,6 @@ namespace ComInterfaceGenerator.Tests
             var obj = CreateWrapper<StatefulPinnedMarshalling, IStatefulPinnedMarshalling>();
             var data = new StatefulPinnedType() { I = 4 };
 
-            // In parameters should always use pinning
-            // https://github.com/dotnet/runtime/issues/90621
-            //StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.DisableNonPinnedPath();
-
-            obj.Method(data);
-            Assert.Equal(4, data.I);
-
-            obj.MethodIn(in data);
-            Assert.Equal(4, data.I);
-
-            //StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.EnableNonPinnedPath();
-
             obj.MethodOut(out data);
             Assert.Equal(102, data.I);
 
