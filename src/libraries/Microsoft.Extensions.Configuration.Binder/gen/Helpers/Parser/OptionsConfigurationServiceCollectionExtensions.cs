@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             private void RegisterMethodInvocation_ServiceCollectionExt(BinderInvocation invocation)
             {
-                IInvocationOperation operation = invocation.CandidateOperation!;
+                IInvocationOperation operation = invocation.Operation!;
                 IMethodSymbol targetMethod = operation.TargetMethod;
                 ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
                 int paramCount = @params.Length;

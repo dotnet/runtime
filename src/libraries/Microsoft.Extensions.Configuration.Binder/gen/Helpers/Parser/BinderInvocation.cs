@@ -9,27 +9,17 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal readonly record struct BinderInvocation
+    internal sealed record BinderInvocation(IInvocationOperation Operation, Location Location)
     {
-        public IInvocationOperation? CandidateOperation { get; private init; }
-        public Location? Location { get; private init; }
-
-        public static BinderInvocation Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+        public static BinderInvocation? Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(IsCandidateSyntaxNode(context.Node));
-            InvocationExpressionSyntax? invocationSyntax = (InvocationExpressionSyntax)context.Node;
+            InvocationExpressionSyntax invocationSyntax = (InvocationExpressionSyntax)context.Node;
 
-            if (context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is IInvocationOperation operation &&
-                IsCandidateInvocationOperation(operation))
-            {
-                return new BinderInvocation()
-                {
-                    CandidateOperation = operation,
-                    Location = invocationSyntax.GetLocation()
-                };
-            }
-
-            return default;
+            return context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is IInvocationOperation operation &&
+                IsCandidateInvocationOperation(operation)
+                ? new BinderInvocation(operation, invocationSyntax.GetLocation())
+                : null;
         }
 
         public static bool IsCandidateSyntaxNode(SyntaxNode node)
@@ -54,19 +44,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     IsExtensionMethod: true,
                     Name: string methodName,
-                    ContainingType.Name: string containingTypeName,
+                    ContainingType: INamedTypeSymbol
+                    {
+                        Name: string containingTypeName,
+                        ContainingNamespace: INamespaceSymbol containingNamespace,
+                    }
                 })
             {
                 return false;
             }
 
+            string containingNamespaceName = containingNamespace.ToDisplayString();
+
             return (containingTypeName) switch
             {
                 "ConfigurationBinder" =>
+                    containingNamespaceName is "Microsoft.Extensions.Configuration" &&
                     IsCandidateMethodName_ConfigurationBinder(methodName),
                 "OptionsBuilderConfigurationExtensions" =>
+                    containingNamespaceName is "Microsoft.Extensions.DependencyInjection" &&
                     IsCandidateMethodName_OptionsBuilderConfigurationExtensions(methodName),
                 "OptionsConfigurationServiceCollectionExtensions" =>
+                    containingNamespaceName is "Microsoft.Extensions.DependencyInjection" &&
                     IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(methodName),
                 _ => false,
             };
