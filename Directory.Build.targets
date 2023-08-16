@@ -49,13 +49,6 @@
     <SupportedNETCoreAppTargetFramework Include=".NETCoreApp,Version=v$(NETCoreAppMaximumVersion)" DisplayName=".NET $(NETCoreAppMaximumVersion)" Alias="net$(NETCoreAppMaximumVersion)" />
   </ItemGroup>
 
-  <!-- Add known packs from the downlevel TFM until we are building with an SDK that supports the new TFM all-up. -->
-  <ItemGroup Condition="'$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
-    <KnownILLinkPack Include="@(KnownILLinkPack->WithMetadataValue('Identity', 'Microsoft.NET.ILLink.Tasks')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))">
-      <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    </KnownILLinkPack>
-  </ItemGroup>
-
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
        This is required to show all the files corresponding to all target frameworks in VS. -->
   <ItemGroup Condition="'$(DefaultLanguageSourceExtension)' != '' and
