@@ -31,10 +31,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValuesProvider<BinderInvocation> inputCalls = context.SyntaxProvider
+            IncrementalValuesProvider<BinderInvocation?> inputCalls = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
-                    BinderInvocation.Create);
+                    BinderInvocation.Create)
+                .Where(invocation => invocation is not null);
 
             IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocation>)> inputData = compilationData.Combine(inputCalls.Collect());
 
