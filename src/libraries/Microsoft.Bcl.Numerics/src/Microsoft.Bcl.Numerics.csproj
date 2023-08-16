@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
+    <PackageDescription>Provides MathF</PackageDescription>
+        <!-- Disabling baseline validation since this is a brand new package.
+       Once this package has shipped a stable version, the following line
+       should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OmitResources Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</OmitResources>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="System\MathF.cs" />
+    <EmbeddedResource Include="Resources/strings.resx" />
+  </ItemGroup>
+
+</Project>
