@@ -521,12 +521,13 @@ PhaseStatus Compiler::optClearLoopIterInfo()
     {
         LoopDsc& loop = optLoopTable[lnum];
         loop.lpFlags &= ~(LPFLG_ITER | LPFLG_CONST_INIT | LPFLG_SIMD_LIMIT | LPFLG_VAR_LIMIT | LPFLG_CONST_LIMIT |
-                          LPFLG_ARRLEN_LIMIT);
+                          LPFLG_CONST_VAR_LIMIT | LPFLG_ARRLEN_LIMIT);
 
-        loop.lpIterTree  = nullptr;
-        loop.lpInitBlock = nullptr;
-        loop.lpConstInit = -1;
-        loop.lpTestTree  = nullptr;
+        loop.lpIterTree       = nullptr;
+        loop.lpInitBlock      = nullptr;
+        loop.lpConstInit      = -1;
+        loop.lpTestTree       = nullptr;
+        loop.lpTestVarCnsInit = nullptr;
     }
 
     return PhaseStatus::MODIFIED_NOTHING;
@@ -609,9 +610,9 @@ void Compiler::optPrintLoopInfo(const LoopDsc* loop, bool printVerbose /* = fals
             // If a simple test condition print operator and the limits */
             printf(" %s", GenTree::OpName(loop->lpTestOper()));
 
-            if (loop->lpFlags & LPFLG_CONST_LIMIT)
+            if ((loop->lpFlags & LPFLG_CONST_LIMIT) || (loop->lpFlags & LPFLG_CONST_VAR_LIMIT))
             {
-                printf(" %d", loop->lpConstLimit());
+                printf(" %d", (loop->lpFlags & LPFLG_CONST_LIMIT) ? loop->lpConstLimit() : loop->lpConstVarLimit());
                 if (loop->lpFlags & LPFLG_SIMD_LIMIT)
                 {
                     printf(" (simd)");
@@ -843,9 +844,16 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
         //
         if (!optIsVarAssgLoop(loopInd, limitOp->AsLclVarCommon()->GetLclNum()))
         {
-            if (optIsVarConstInit(loopInd, limitOp))
+            // See if limit var is constant initialized
+            //
+            if (optIsVarConstInit(loopInd, limitOp, &optLoopTable[loopInd].lpTestVarCnsInit))
             {
-                optLoopTable[loopInd].lpFlags |= LPFLG_CONST_LIMIT;
+                optLoopTable[loopInd].lpFlags |= LPFLG_CONST_VAR_LIMIT;
+
+                if ((optLoopTable[loopInd].lpTestVarCnsInit->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
+                {
+                    optLoopTable[loopInd].lpFlags |= LPFLG_SIMD_LIMIT;
+                }
             }
             else
             {
@@ -887,8 +895,8 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
 
     // Were we able to successfully analyze the limit?
     //
-    const bool analyzedLimit =
-        (optLoopTable[loopInd].lpFlags & (LPFLG_CONST_LIMIT | LPFLG_VAR_LIMIT | LPFLG_ARRLEN_LIMIT)) != 0;
+    const bool analyzedLimit = (optLoopTable[loopInd].lpFlags & (LPFLG_CONST_LIMIT | LPFLG_VAR_LIMIT |
+                                                                 LPFLG_ARRLEN_LIMIT | LPFLG_CONST_VAR_LIMIT)) != 0;
 
     // Save the type of the comparison between the iterator and the limit.
     //
@@ -1353,7 +1361,9 @@ bool Compiler::optRecordLoop(
         iterLoopCount++;
 
         // Check if a constant iteration loop.
-        if ((optLoopTable[loopInd].lpFlags & LPFLG_CONST_INIT) && (optLoopTable[loopInd].lpFlags & LPFLG_CONST_LIMIT))
+        if ((optLoopTable[loopInd].lpFlags & LPFLG_CONST_INIT) &&
+            ((optLoopTable[loopInd].lpFlags & LPFLG_CONST_LIMIT) ||
+             (optLoopTable[loopInd].lpFlags & LPFLG_CONST_VAR_LIMIT)))
         {
             // This is a constant loop.
             constIterLoopCount++;
@@ -4097,9 +4107,10 @@ PhaseStatus Compiler::optUnrollLoops()
 
         // Check for required flags:
         // LPFLG_CONST_INIT  - required because this transform only handles full unrolls
-        // LPFLG_CONST_LIMIT - required because this transform only handles full unrolls
-        const unsigned requiredFlags = LPFLG_CONST_INIT | LPFLG_CONST_LIMIT;
-        if ((loopFlags & requiredFlags) != requiredFlags)
+        // LPFLG_CONST_LIMIT or LPFLG_CONST_VAR_LIMIT - required because this transform only handles full unrolls
+        if ((loopFlags & LPFLG_CONST_INIT) != LPFLG_CONST_INIT ||
+            ((loopFlags & LPFLG_CONST_LIMIT) != LPFLG_CONST_LIMIT) &&
+            ((loopFlags & LPFLG_CONST_VAR_LIMIT) != LPFLG_CONST_VAR_LIMIT))
         {
             // Don't print to the JitDump about this common case.
             continue;
@@ -4136,7 +4147,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
         initBlock = loop.lpInitBlock;
         lbeg      = loop.lpConstInit;
-        llim      = loop.lpConstLimit();
+        llim      = (loop.lpFlags & LPFLG_CONST_LIMIT) ? loop.lpConstLimit() : loop.lpConstVarLimit();
         testOper  = loop.lpTestOper();
 
         lvar     = loop.lpIterVar();
@@ -6395,19 +6406,21 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
 // optIsSetAssgLoop: see if a locals is initialized by a constant
 //
 // Arguments:
-//     lnum - loop number
-//     var  - var to check
+//     lnum    - loop number
+//     var     - var to check
+//     cnsInit - [out] the const initialization
 //
 // Returns:
 //     true if the var is initialized by a constant
 //
-bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var)
+bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
 {
     noway_assert(lnum < optLoopCount);
     noway_assert(var->OperIs(GT_LCL_VAR));
 
     unsigned         lclNum = var->AsLclVarCommon()->GetLclNum();
     LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+    *cnsInit                = nullptr;
 
     if (varDsc->IsAddressExposed())
     {
@@ -6472,12 +6485,16 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var)
     {
         if (data->OperIs(GT_LCL_VAR))
         {
+            if (lvaGetDesc(data->AsLclVarCommon())->IsAddressExposed())
+            {
+                break;
+            }
             cur = data->AsLclVar()->GetLclNum();
         }
         else if (data->IsCnsIntOrI())
         {
             JITDUMP("optIsVarConstInit: V%02u initialized with a constant value, substitute the value in unrolling.\n", lclNum);
-            loop->lpTestVarCnsInit = data;
+            *cnsInit = data;
             return true;
         }
         else

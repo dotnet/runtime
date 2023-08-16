@@ -3700,7 +3700,12 @@ inline void Compiler::LoopDsc::VERIFY_lpTestTree() const
 
     if (lpFlags & LPFLG_CONST_LIMIT)
     {
-        assert(limit->OperIsConst() || lpTestVarCnsInit != nullptr);
+        assert(limit->OperIsConst());
+    }
+    if (lpFlags & LPFLG_CONST_VAR_LIMIT)
+    {
+        assert(lpTestVarCnsInit != nullptr);
+        assert(lpTestVarCnsInit->OperIsConst());
     }
     if (lpFlags & LPFLG_VAR_LIMIT)
     {
@@ -3777,14 +3782,19 @@ inline int Compiler::LoopDsc::lpConstLimit() const
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_CONST_LIMIT);
 
-    if (lpTestVarCnsInit != nullptr)
-    {
-        return (int)lpTestVarCnsInit->AsIntCon()->gtIconVal;
-    }
-
     GenTree* limit = lpLimit();
     assert(limit->OperIsConst());
     return (int)limit->AsIntCon()->gtIconVal;
+}
+
+//-----------------------------------------------------------------------------
+
+inline int Compiler::LoopDsc::lpConstVarLimit() const
+{
+    assert(lpFlags & LPFLG_CONST_VAR_LIMIT);
+
+    assert(lpTestVarCnsInit != nullptr);
+    return (int)lpTestVarCnsInit->AsIntCon()->gtIconVal;
 }
 
 //-----------------------------------------------------------------------------

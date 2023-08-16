@@ -1220,9 +1220,9 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     }
 
     // Limit Conditions
-    if (loop->lpFlags & LPFLG_CONST_LIMIT)
+    if ((loop->lpFlags & LPFLG_CONST_LIMIT) || (loop->lpFlags & LPFLG_CONST_VAR_LIMIT))
     {
-        int limit = loop->lpConstLimit();
+        int limit = (loop->lpFlags & LPFLG_CONST_LIMIT) ? loop->lpConstLimit() : loop->lpConstVarLimit();
         if (limit < 0)
         {
             JITDUMP("> limit %d is invalid\n", limit);
@@ -1870,7 +1870,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     if (requireIterable)
     {
         if ((loop.lpFlags & LPFLG_CONST_LIMIT) == 0 && (loop.lpFlags & LPFLG_VAR_LIMIT) == 0 &&
-            (loop.lpFlags & LPFLG_ARRLEN_LIMIT) == 0)
+            (loop.lpFlags & LPFLG_CONST_VAR_LIMIT) == 0 && (loop.lpFlags & LPFLG_ARRLEN_LIMIT) == 0)
         {
             JITDUMP("Loop cloning: rejecting loop " FMT_LP
                     ". Loop limit is neither constant, variable or array length.\n",

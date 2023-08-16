@@ -1901,10 +1901,10 @@ enum LoopFlags : unsigned short
     LPFLG_ITER = 0x0004, // loop of form: for (i = icon or expression; test_condition(); i++)
     // LPFLG_UNUSED    = 0x0008,
 
-    LPFLG_CONTAINS_CALL = 0x0010, // If executing the loop body *may* execute a call
-    // LPFLG_UNUSED     = 0x0020,
-    LPFLG_CONST_INIT = 0x0040, // iterator is initialized with a constant (found in lpConstInit)
-    LPFLG_SIMD_LIMIT = 0x0080, // iterator is compared with vector element count (found in lpConstLimit)
+    LPFLG_CONTAINS_CALL   = 0x0010, // If executing the loop body *may* execute a call
+    LPFLG_CONST_VAR_LIMIT = 0x0020, // iterator is compared with a constant initialized local var
+    LPFLG_CONST_INIT      = 0x0040, // iterator is initialized with a constant (found in lpConstInit)
+    LPFLG_SIMD_LIMIT      = 0x0080, // iterator is compared with vector element count (found in lpConstLimit)
 
     LPFLG_VAR_LIMIT    = 0x0100, // iterator is compared with a local var (var # found in lpVarLimit)
     LPFLG_CONST_LIMIT  = 0x0200, // iterator is compared with a constant (found in lpConstLimit)
@@ -6463,6 +6463,10 @@ public:
         // Limit constant value of iterator - loop condition is "i RELOP const"
         // : Valid if LPFLG_CONST_LIMIT
         int lpConstLimit() const;
+        
+        // Limit constant value of iterator - loop condition is "i RELOP lclVar" and lclVar is constant initialized
+        // : Valid if LPFLG_CONST_VAR_LIMIT
+        int lpConstVarLimit() const;
 
         // The lclVar # in the loop condition ( "i RELOP lclVar" )
         // : Valid if LPFLG_VAR_LIMIT
@@ -6779,7 +6783,7 @@ protected:
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
-    bool optIsVarConstInit(unsigned lnum, GenTree* var);
+    bool optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit);
 
 protected:
     //  The following is the upper limit on how many expressions we'll keep track

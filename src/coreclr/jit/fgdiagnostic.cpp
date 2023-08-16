@@ -4816,18 +4816,23 @@ void Compiler::fgDebugCheckLoopTable()
 
         // Only one of the `limit` flags can be set. (Note that LPFLG_SIMD_LIMIT is a "sub-flag" that can be
         // set when LPFLG_CONST_LIMIT is set.)
-        assert(genCountBits((unsigned)(loop.lpFlags & (LPFLG_VAR_LIMIT | LPFLG_CONST_LIMIT | LPFLG_ARRLEN_LIMIT))) <=
-               1);
+        assert(genCountBits((unsigned)(loop.lpFlags & (LPFLG_VAR_LIMIT | LPFLG_CONST_LIMIT | LPFLG_CONST_VAR_LIMIT |
+                                                       LPFLG_ARRLEN_LIMIT))) <= 1);
 
-        // LPFLG_SIMD_LIMIT can only be set if LPFLG_CONST_LIMIT is set.
+        // LPFLG_SIMD_LIMIT can only be set if LPFLG_CONST_LIMIT or LPFLG_CONST_VAR_LIMIT is set.
         if (loop.lpFlags & LPFLG_SIMD_LIMIT)
         {
-            assert(loop.lpFlags & LPFLG_CONST_LIMIT);
+            assert((loop.lpFlags & LPFLG_CONST_LIMIT) || (loop.lpFlags & LPFLG_CONST_VAR_LIMIT));
         }
 
         if (loop.lpFlags & LPFLG_CONST_INIT)
         {
             assert(loop.lpInitBlock != nullptr);
+        }
+
+        if (loop.lpFlags & LPFLG_CONST_VAR_LIMIT)
+        {
+            assert(loop.lpTestVarCnsInit != nullptr);
         }
 
         if (loop.lpFlags & LPFLG_ITER)
