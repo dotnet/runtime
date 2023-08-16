@@ -142,10 +142,10 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
 |  __`SYSLIB1024`__ | Argument is using the unsupported out parameter modifier |
 |  __`SYSLIB1025`__ | Multiple logging methods cannot use the same event name within a class |
-|  __`SYSLIB1026`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
-|  __`SYSLIB1027`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
-|  __`SYSLIB1028`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
-|  __`SYSLIB1029`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1026`__ | C# language version not supported by the logging source generator. |
+|  __`SYSLIB1027`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1028`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1029`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
 |  __`SYSLIB1030`__ | JsonSourceGenerator did not generate serialization metadata for type |
 |  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
 |  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
@@ -250,7 +250,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1213`__ | Options validation generator: Member potentially missing enumerable validation. |
 |  __`SYSLIB1214`__ | Options validation generator: Can't validate constants, static fields or properties. |
 |  __`SYSLIB1215`__ | Options validation generator: Validation attribute on the member is inaccessible from the validator type. |
-|  __`SYSLIB1216`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1216`__ | C# language version not supported by the options validation source generator. |
 |  __`SYSLIB1217`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1218`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1219`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |

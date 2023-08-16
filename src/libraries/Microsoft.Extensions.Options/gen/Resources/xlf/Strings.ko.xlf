@@ -122,6 +122,16 @@
         <target state="translated">'ValidateObjectMembersAttribute' 또는 'ValidateEnumeratedItemsAttribute' 특성에 Null 유효성 검사기 형식이 지정되었습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
+        <source>The options validation source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="new">The options validation source generator is not available in C# '{0}'. Please use language version {1} or greater.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="new">C# language version not supported by the source generator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
         <target state="translated">형식 {0}은(는) 유효성 검사 주석이 있지만 멤버 {1}은(는) 참조할 수 있는 [ValidateEnumeratedItems]을(를) 지정하지 않습니다.</target>

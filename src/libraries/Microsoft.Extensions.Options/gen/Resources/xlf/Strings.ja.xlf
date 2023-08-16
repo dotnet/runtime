@@ -122,6 +122,16 @@
         <target state="translated">'ValidateObjectMembersAttribute' 属性または 'ValidateEnumeratedItemsAttribute' 属性に対して NULL のバリデーター型が指定されています。</target>
         <note />
       </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
+        <source>The options validation source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="new">The options validation source generator is not available in C# '{0}'. Please use language version {1} or greater.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="new">C# language version not supported by the source generator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
         <target state="translated">型 {0} には検証の注釈がありますが、メンバー {1} では [ValidateEnumeratedItem] が指定されていません。これは誤りである可能性があります。</target>
