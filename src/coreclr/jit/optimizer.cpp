@@ -6557,16 +6557,15 @@ bool Compiler::optIsVarConstInit(BasicBlock* bb, GenTree* var, GenTree** cnsInit
                     }
                 }
 
-                if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, lclNum) &&
-                    !m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
+                if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, lclNum))
                 {
-                    if (data->OperIsConst())
-                    {
-                        m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
-                    }
-                    else if (m_dsc->ivciGtSet->Lookup(data, &dataOut))
+                    if (m_dsc->ivciGtSet->Lookup(data, &dataOut))
                     {
                         m_dsc->ivciVarSet->Set(lclNum, dataOut, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+                    }
+                    else
+                    {
+                        m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
                     }
                 }
             }
@@ -6591,11 +6590,28 @@ bool Compiler::optIsVarConstInit(BasicBlock* bb, GenTree* var, GenTree** cnsInit
     }
 
     GenTree* data;
-    if (dsc.ivciVarSet->Lookup(lclNum, &data))
+    unsigned cur = lclNum;
+    while (dsc.ivciVarSet->Lookup(cur, &data))
     {
-        JITDUMP("optIsVarConstInit: V%02u initialized with a constant value.\n", lclNum);
-        *cnsInit = data;
-        return true;
+        if (data->OperIsLocal())
+        {
+            unsigned lcl = data->AsLclVarCommon()->GetLclNum();
+            if (lvaGetDesc(lcl)->IsAddressExposed())
+            {
+                break;
+            }
+            cur = lcl;
+        }
+        else if (data->IsCnsIntOrI())
+        {
+            JITDUMP("optIsVarConstInit: V%02u initialized with a constant value.\n", lclNum);
+            *cnsInit = data;
+            return true;
+        }
+        else
+        {
+            break;
+        }
     }
 
     return false;
