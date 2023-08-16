@@ -854,6 +854,58 @@ mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, uint32_t *res, in
 gboolean
 mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const MonoDynamicTable *t, guint idx, guint32 *res, int res_size, MonoError *error);
 
+static inline guint32
+mono_metadata_get_token_from_custom_attribute_index(guint32 idx)
+{
+	switch (idx & MONO_CUSTOM_ATTR_MASK)
+	{
+	case MONO_CUSTOM_ATTR_METHODDEF:
+		return mono_metadata_make_token (MONO_TABLE_METHOD, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_FIELDDEF:
+		return mono_metadata_make_token (MONO_TABLE_FIELD, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_TYPEREF:
+		return mono_metadata_make_token (MONO_TABLE_TYPEREF, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_TYPEDEF:
+		return mono_metadata_make_token (MONO_TABLE_TYPEDEF, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_PARAMDEF:
+		return mono_metadata_make_token (MONO_TABLE_PARAM, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_INTERFACE:
+		return mono_metadata_make_token (MONO_TABLE_INTERFACEIMPL, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_MEMBERREF:
+		return mono_metadata_make_token (MONO_TABLE_MEMBERREF, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_MODULE:
+		return mono_metadata_make_token (MONO_TABLE_MODULE, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_PERMISSION:
+		return mono_metadata_make_token (MONO_TABLE_DECLSECURITY, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_PROPERTY:
+		return mono_metadata_make_token (MONO_TABLE_PROPERTY, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_EVENT:
+		return mono_metadata_make_token (MONO_TABLE_EVENT, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_SIGNATURE:
+		return mono_metadata_make_token (MONO_TABLE_STANDALONESIG, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_MODULEREF:
+		return mono_metadata_make_token (MONO_TABLE_MODULEREF, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_TYPESPEC:
+		return mono_metadata_make_token (MONO_TABLE_TYPESPEC, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_ASSEMBLY:
+		return mono_metadata_make_token (MONO_TABLE_ASSEMBLY, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_ASSEMBLYREF:
+		return mono_metadata_make_token (MONO_TABLE_ASSEMBLYREF, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_FILE:
+		return mono_metadata_make_token (MONO_TABLE_FILE, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_EXP_TYPE:
+		return mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_MANIFEST:
+		return mono_metadata_make_token (MONO_TABLE_MANIFESTRESOURCE, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_GENERICPAR:
+		return mono_metadata_make_token (MONO_TABLE_GENERICPARAM, idx >> MONO_CUSTOM_ATTR_BITS);
+	case MONO_CUSTOM_ATTR_GENERICPARAMCONSTRAINT:
+		return mono_metadata_make_token (MONO_TABLE_GENERICPARAMCONSTRAINT, idx >> MONO_CUSTOM_ATTR_BITS);
+	default:
+		return 0;
+	}
+}
+
 MonoType*
 mono_metadata_get_shared_type (MonoType *type);
 

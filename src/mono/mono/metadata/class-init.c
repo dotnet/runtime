@@ -794,7 +794,7 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 }
 
 static gboolean
-has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, guint32 *cols, gpointer user_data)
+has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, mdcursor_t *cols, gpointer user_data)
 {
 	FoundAttrUD *attr = (FoundAttrUD *)user_data;
 	if (!strcmp (name, attr->name) && !strcmp (nspace, attr->nspace)) {
@@ -813,14 +813,19 @@ has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, con
 }
 
 static void
-has_inline_array_attribute_value_func (MonoImage *image, uint32_t method_token, uint32_t *cols, gpointer user_data)
+has_inline_array_attribute_value_func (MonoImage *image, uint32_t method_token, mdcursor_t *cols, gpointer user_data)
 {
 	FoundAttrUD *attr = (FoundAttrUD *)user_data;
 	MonoError error;
 	MonoMethod *ctor = mono_get_method_checked (image, method_token, NULL, NULL, &error);
 	if (ctor) {
-		const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
-		uint32_t data_size = mono_metadata_decode_value (data, &data);
+		mdcursor_t c = *cols;
+		uint8_t const* data;
+		uint32_t data_size;
+		if (1 != md_get_column_value_as_blob(c, mdtCustomAttribute_Value, 1, &data, &data_size)) {
+			g_warning ("Can't find custom attr body: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
+			return;
+		}
 		MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
 		mono_error_assert_ok (&error);
 		g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
