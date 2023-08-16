@@ -131,6 +131,7 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableDictionary<TKey, TValue> SetItems(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items);
         bool TryGetKey(TKey equalKey, out TKey actualKey);
     }
+    [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.Immutable.ImmutableList), "Create")]
     public partial interface IImmutableList<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         System.Collections.Immutable.IImmutableList<T> Add(T value);
@@ -148,6 +149,7 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableList<T> Replace(T oldValue, T newValue, System.Collections.Generic.IEqualityComparer<T>? equalityComparer);
         System.Collections.Immutable.IImmutableList<T> SetItem(int index, T value);
     }
+    [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.Immutable.ImmutableQueue), "Create")]
     public partial interface IImmutableQueue<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
         bool IsEmpty { get; }
@@ -156,6 +158,7 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableQueue<T> Enqueue(T value);
         T Peek();
     }
+    [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.Immutable.ImmutableHashSet), "Create")]
     public partial interface IImmutableSet<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
     {
         System.Collections.Immutable.IImmutableSet<T> Add(T value);
@@ -174,6 +177,7 @@ namespace System.Collections.Immutable
         bool TryGetValue(T equalValue, out T actualValue);
         System.Collections.Immutable.IImmutableSet<T> Union(System.Collections.Generic.IEnumerable<T> other);
     }
+    [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.Immutable.ImmutableStack), "Create")]
     public partial interface IImmutableStack<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
         bool IsEmpty { get; }

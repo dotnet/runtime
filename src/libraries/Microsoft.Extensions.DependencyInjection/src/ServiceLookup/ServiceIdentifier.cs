@@ -32,11 +32,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (ServiceKey == null && other.ServiceKey == null)
             {
-                return ServiceType.Equals(other.ServiceType);
+                return ServiceType == other.ServiceType;
             }
             else if (ServiceKey != null && other.ServiceKey != null)
             {
-                return ServiceType.Equals(other.ServiceType) && ServiceKey.Equals(other.ServiceKey);
+                return ServiceType == other.ServiceType && ServiceKey.Equals(other.ServiceKey);
             }
             return false;
         }
@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
             unchecked
             {
-                return ((ServiceType?.GetHashCode() ?? 23) * 397) ^ ServiceKey.GetHashCode();
+                return (ServiceType.GetHashCode() * 397) ^ ServiceKey.GetHashCode();
             }
         }
 

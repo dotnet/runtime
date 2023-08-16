@@ -99,4 +99,47 @@ public class BuildPublishTests : BlazorWasmTestBase
     //// publish again, no AOT
     //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
     //}
+
+    [Theory]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public void DefaultTemplate_WithResources_Publish(string config)
+    {
+        string[] cultures = ["ja-JP", "es-ES"];
+        string id = $"blz_resources_{config}_{GetRandomId()}";
+        CreateBlazorWasmTemplateProject(id);
+
+        // Ensure we have the source data we rely on
+        string resxSourcePath = Path.Combine(BuildEnvironment.TestAssetsPath, "resx");
+        foreach (string culture in cultures)
+            Assert.True(File.Exists(Path.Combine(resxSourcePath, $"words.{culture}.resx")));
+
+        Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir!, "resx"));
+
+        // Build and assert resource dlls
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        AssertResourcesDlls(FindBlazorBinFrameworkDir(config, false));
+
+        // Publish and assert resource dlls
+        if (config == "Release")
+        {
+            // relinking in publish for Release config
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
+        }
+        else
+        {
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
+        }
+
+        AssertResourcesDlls(FindBlazorBinFrameworkDir(config, true));
+
+        void AssertResourcesDlls(string basePath)
+        {
+            foreach (string culture in cultures)
+            {
+                string resourceAssemblyPath = Path.Combine(basePath, culture, $"{id}.resources{ProjectProviderBase.WasmAssemblyExtension}");
+                Assert.True(File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
+            }
+        }
+    }
 }

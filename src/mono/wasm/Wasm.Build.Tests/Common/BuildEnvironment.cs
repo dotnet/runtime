@@ -128,9 +128,6 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmEnableWebCil"] = "false";
             }
 
-            // helps with debugging
-            EnvVars["WasmNativeStrip"] = "false";
-
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";

@@ -24,6 +24,7 @@ namespace System.Net.Http.Metrics
             // Meter has a cache for the instruments it owns
             _activeRequests = meter.CreateUpDownCounter<long>(
                 "http.client.active_requests",
+                unit: "{request}",
                 description: "Number of outbound HTTP requests that are currently active on the client.");
             _requestsDuration = meter.CreateHistogram<double>(
                 "http.client.request.duration",
@@ -131,14 +132,11 @@ namespace System.Net.Http.Metrics
 
         private static string GetErrorReason(Exception exception)
         {
-            if (exception is OperationCanceledException)
-            {
-                return "cancellation";
-            }
-            else if (exception is HttpRequestException e)
+            if (exception is HttpRequestException e)
             {
                 Debug.Assert(Enum.GetValues<HttpRequestError>().Length == 12, "We need to extend the mapping in case new values are added to HttpRequestError.");
-                return e.HttpRequestError switch
+
+                string? errorReason = e.HttpRequestError switch
                 {
                     HttpRequestError.NameResolutionError => "name_resolution_error",
                     HttpRequestError.ConnectionError => "connection_error",
@@ -151,10 +149,18 @@ namespace System.Net.Http.Metrics
                     HttpRequestError.InvalidResponse => "invalid_response",
                     HttpRequestError.ResponseEnded => "response_ended",
                     HttpRequestError.ConfigurationLimitExceeded => "configuration_limit_exceeded",
-                    _ => "_OTHER"
+
+                    // Fall back to the exception type name (including for HttpRequestError.Unknown).
+                    _ => null
                 };
+
+                if (errorReason is not null)
+                {
+                    return errorReason;
+                }
             }
-            return "_OTHER";
+
+            return exception.GetType().Name;
         }
 
         private static string GetProtocolVersionString(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch

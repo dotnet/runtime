@@ -412,5 +412,67 @@ namespace System.Net.Http.Functional.Tests
                 return base.SerializeToStreamAsync(stream, context);
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task RequestSent_HandlerDisposed_RequestIsUnaffected(bool post)
+        {
+            byte[] postContent = "Hello world"u8.ToArray();
+
+            TaskCompletionSource serverReceivedRequest = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                using HttpClient client = CreateHttpClient(handler);
+
+                using HttpRequestMessage request = CreateRequest(post ? HttpMethod.Post : HttpMethod.Get, uri, UseVersion);
+
+                if (post)
+                {
+                    request.Content = new StreamContent(new DelegateDelegatingStream(new MemoryStream())
+                    {
+                        CanSeekFunc = () => false,
+                        CopyToFunc = (destination, _) =>
+                        {
+                            destination.Flush();
+                            Assert.True(serverReceivedRequest.Task.Wait(TestHelper.PassingTestTimeout));
+                            destination.Write(postContent);
+                        },
+                        CopyToAsyncFunc = async (destination, _, ct) =>
+                        {
+                            await destination.FlushAsync(ct);
+                            await serverReceivedRequest.Task.WaitAsync(ct);
+                            await destination.WriteAsync(postContent, ct);
+                        }
+                    });
+                }
+
+                Task<HttpResponseMessage> clientTask = client.SendAsync(TestAsync, request);
+                await serverReceivedRequest.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                handler.Dispose();
+                await Task.Delay(1); // Give any potential disposal/cancellation some time to propagate
+
+                await clientTask;
+            },
+            async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync(readBody: false);
+                    serverReceivedRequest.SetResult();
+
+                    if (post)
+                    {
+                        byte[] received = await connection.ReadRequestBodyAsync();
+                        Assert.Equal(postContent, received);
+                    }
+
+                    await connection.SendResponseAsync();
+                });
+            });
+        }
     }
 }

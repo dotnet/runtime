@@ -17,6 +17,10 @@
 
 #include <sal.h>
 #include <stdarg.h>
+#ifdef TARGET_UNIX
+#include <pthread.h>
+#endif
+
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "gcenv.structs.h" // CRITICAL_SECTION

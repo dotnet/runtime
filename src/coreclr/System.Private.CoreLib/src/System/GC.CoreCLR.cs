@@ -741,9 +741,6 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        /// <remarks>
-        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
         public static unsafe T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
@@ -766,11 +763,8 @@ namespace System
 
 #endif
             }
-            else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-            }
 
+            // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
             if (pinned)
                 flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
@@ -784,22 +778,16 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        /// <remarks>
-        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
-        /// </remarks>
         public static T[] AllocateArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 
             if (pinned)
             {
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-
                 flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
             }
 
-            return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
+            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

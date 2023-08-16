@@ -3016,6 +3016,32 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
     return result;
 }
 
+void MethodContext::recHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2, bool result)
+{
+    if (HaveSameMethodDefinition == nullptr)
+        HaveSameMethodDefinition = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    key.A = CastHandle(methHnd1);
+    key.B = CastHandle(methHnd2);
+
+    DWORD value = result ? 1 : 0;
+    HaveSameMethodDefinition->Add(key, value);
+}
+void MethodContext::dmpHaveSameMethodDefinition(const DLDL& key, DWORD value)
+{
+    printf("HaveSameMethodDefinition key methHnd1-%016" PRIX64 ", methHnd2-%016" PRIX64 ", value %u", key.A, key.B, value);
+}
+bool MethodContext::repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2)
+{
+    DLDL key;
+    key.A = CastHandle(methHnd1);
+    key.B = CastHandle(methHnd2);
+
+    DWORD value = LookupByKeyOrMiss(HaveSameMethodDefinition, key, "key %016" PRIX64 ", %016" PRIX64, key.A, key.B);
+    return value != 0;
+}
+
 void MethodContext::recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                                     bool                  hasSideEffects,
                                     CorInfoHelpFunc       result,

@@ -405,7 +405,7 @@ PALIMPORT
 VOID
 PALAPI
 PAL_SetCreateDumpCallback(
-    IN PCREATEDUMP_CALLBACK callback); 
+    IN PCREATEDUMP_CALLBACK callback);
 
 PALIMPORT
 BOOL
@@ -2760,15 +2760,6 @@ PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalS
 PALIMPORT VOID PALAPI InitializeCriticalSection(OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
-#define SEM_FAILCRITICALERRORS          0x0001
-#define SEM_NOOPENFILEERRORBOX          0x8000
-
-PALIMPORT
-UINT
-PALAPI
-SetErrorMode(
-         IN UINT uMode);
-
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02
 #define PAGE_READWRITE                  0x04
@@ -4499,6 +4490,7 @@ private:
         ExceptionPointers.ExceptionRecord = ex.ExceptionPointers.ExceptionRecord;
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
+        TargetIp = ex.TargetIp;
         RecordsOnStack = ex.RecordsOnStack;
         IsExternal = ex.IsExternal;
         ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
@@ -4521,6 +4513,8 @@ public:
     EXCEPTION_POINTERS ExceptionPointers;
     // Target frame stack pointer set before the 2nd pass.
     SIZE_T TargetFrameSp;
+    SIZE_T TargetIp;
+    SIZE_T ReturnValue;
     bool RecordsOnStack;
     // The exception is a hardware exception coming from a native code out of
     // the well known runtime helpers
@@ -4534,6 +4528,7 @@ public:
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
+        TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
@@ -4573,6 +4568,7 @@ public:
         ExceptionPointers.ExceptionRecord = NULL;
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
+        TargetIp = 0;
         RecordsOnStack = false;
         IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;

@@ -2917,6 +2917,7 @@ BOOL gc_heap::should_expand_in_full_gc = FALSE;
 #endif //!USE_REGIONS
 
 #ifdef DYNAMIC_HEAP_COUNT
+int gc_heap::dynamic_adaptation_mode = dynamic_adaptation_default;
 gc_heap::dynamic_heap_count_data_t SVR::gc_heap::dynamic_heap_count_data;
 #endif // DYNAMIC_HEAP_COUNT
 
@@ -14032,6 +14033,26 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     HRESULT hres = S_OK;
 
+    conserve_mem_setting = (int)GCConfig::GetGCConserveMem();
+
+#ifdef DYNAMIC_HEAP_COUNT
+    dynamic_adaptation_mode = (int)GCConfig::GetGCDynamicAdaptationMode();
+    if (GCConfig::GetHeapCount() != 0)
+    {
+        dynamic_adaptation_mode = 0;
+    }
+
+    if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (conserve_mem_setting == 0))
+        conserve_mem_setting = 5;
+#endif //DYNAMIC_HEAP_COUNT
+
+    if (conserve_mem_setting < 0)
+        conserve_mem_setting = 0;
+    if (conserve_mem_setting > 9)
+        conserve_mem_setting = 9;
+
+    dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
+
 #ifdef WRITE_WATCH
     hardware_write_watch_api_supported();
 #ifdef BACKGROUND_GC
@@ -14271,7 +14292,7 @@ gc_heap::init_semi_shared()
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
 #ifdef DYNAMIC_HEAP_COUNT
-    if (GCConfig::GetGCDynamicAdaptationMode() == 1 && GCConfig::GetHeapCount() == 0)
+    if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
     {
         // we'll actually start with one heap in this case
         g_mark_list_total_size = mark_list_size;
@@ -14479,16 +14500,6 @@ gc_heap::init_semi_shared()
     }
 #endif //FEATURE_LOH_COMPACTION
 #endif //FEATURE_EVENT_TRACE
-
-    conserve_mem_setting  = (int)GCConfig::GetGCConserveMem();
-    if (conserve_mem_setting == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
-        conserve_mem_setting = 5;
-    if (conserve_mem_setting < 0)
-        conserve_mem_setting = 0;
-    if (conserve_mem_setting > 9)
-        conserve_mem_setting = 9;
-
-    dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
 
     reset_mm_p = TRUE;
 
@@ -21229,7 +21240,7 @@ int gc_heap::generation_to_condemn (int n_initial,
     int n_alloc = n;
     if (heap_number == 0)
     {
-        dprintf (5555, ("init: %d(%d)", n_initial, settings.reason));
+        dprintf (GTC_LOG, ("init: %d(%d)", n_initial, settings.reason));
     }
     int i = 0;
     int temp_gen = 0;
@@ -22570,10 +22581,6 @@ void gc_heap::gc1()
             gc_t_join.restart();
         }
 
-#ifdef USE_REGIONS
-//        rethread_fl_items ();
-#endif //USE_REGIONS
-
         update_end_gc_time_per_heap();
         add_to_history_per_heap();
         alloc_context_count = 0;
@@ -23827,7 +23834,7 @@ void gc_heap::garbage_collect (int n)
         }
 #endif // HEAP_ANALYZE
 
-        GCToEEInterface::DiagGCStart(settings.condemned_generation, settings.reason == reason_induced);
+        GCToEEInterface::DiagGCStart(settings.condemned_generation, is_induced (settings.reason));
 
 #ifdef BACKGROUND_GC
         if ((settings.condemned_generation == max_generation) &&
@@ -25033,15 +25040,8 @@ void gc_heap::check_heap_count ()
 {
     dynamic_heap_count_data.new_n_heaps = n_heaps;
 
-    if (GCConfig::GetHeapCount() != 0)
+    if (dynamic_adaptation_mode != dynamic_adaptation_to_application_sizes)
     {
-        // don't change the heap count if we see an environment variable setting it explicitly
-        return;
-    }
-
-    if (GCConfig::GetGCDynamicAdaptationMode() == 0)
-    {
-        // don't change the heap count dynamically if the feature isn't explicitly enabled
         return;
     }
 
@@ -25490,8 +25490,9 @@ bool gc_heap::change_heap_count (int new_n_heaps)
             from_heap_number = (from_heap_number + 1) % old_n_heaps;
         }
 
-        // prepare for the switch by fixing the allocation contexts on the old heaps,
+        // prepare for the switch by fixing the allocation contexts on the old heaps, unify the gen0_bricks_cleared flag,
         // and setting the survived size for the existing regions to their allocated size
+        BOOL unified_gen0_bricks_cleared = TRUE;
         for (int i = 0; i < old_n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
@@ -25499,6 +25500,11 @@ bool gc_heap::change_heap_count (int new_n_heaps)
             if (GCScan::GetGcRuntimeStructuresValid())
             {
                 hp->fix_allocation_contexts (TRUE);
+            }
+
+            if (unified_gen0_bricks_cleared && (hp->gen0_bricks_cleared == FALSE))
+            {
+                unified_gen0_bricks_cleared = FALSE;
             }
 
             for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
@@ -25610,6 +25616,8 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         for (int i = 0; i < new_n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
+
+            hp->gen0_bricks_cleared = unified_gen0_bricks_cleared;
 
             // establish invariants regarding the ephemeral segment
             generation* gen0 = hp->generation_of (0);
@@ -43053,7 +43061,8 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                                           max (min_gc_size, (max_size/3)));
                 }
 
-                if (conserve_mem_setting != 0)
+#ifdef DYNAMIC_HEAP_COUNT
+                if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
                 {
                     // if this is set, limit gen 0 size to a small multiple of the older generations
                     float f_older_gen = ((10.0f / conserve_mem_setting) - 1) * 0.5f;
@@ -43079,6 +43088,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                         older_size,
                         new_allocation));
                 }
+#endif //DYNAMIC_HEAP_COUNT
             }
         }
 
@@ -43702,6 +43712,7 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
 #ifdef USE_REGIONS
 size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
 {
+    FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem (region));
     uint8_t* page_start = align_lower_page (get_region_start (region));
     uint8_t* decommit_end = heap_segment_committed (region);
     size_t decommit_size = decommit_end - page_start;
@@ -48281,9 +48292,9 @@ HRESULT GCHeap::Initialize()
     {
 #ifdef DYNAMIC_HEAP_COUNT
         // if no heap count was specified, and we are told to adjust heap count dynamically ...
-        if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptationMode() == 1)
+        if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
         {
-            // ... start with only 1 heap
+            // start with only 1 heap
             gc_heap::smoothed_desired_total[0] /= gc_heap::n_heaps;
             gc_heap::g_heaps[0]->change_heap_count (1);
         }
@@ -50746,11 +50757,13 @@ size_t gc_heap::get_gen0_min_size()
         int n_heaps = 1;
 #endif //SERVER_GC
 
-        if (GCConfig::GetGCConserveMem() != 0 || GCConfig::GetGCDynamicAdaptationMode() == 1)
+#ifdef DYNAMIC_HEAP_COUNT
+        if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
         {
             // if we are asked to be stingy with memory, limit gen 0 size
             gen0size = min (gen0size, (4*1024*1024));
         }
+#endif //DYNAMIC_HEAP_COUNT
 
         dprintf (1, ("gen0size: %zd * %d = %zd, physical mem: %zd / 6 = %zd",
                 gen0size, n_heaps, (gen0size * n_heaps),

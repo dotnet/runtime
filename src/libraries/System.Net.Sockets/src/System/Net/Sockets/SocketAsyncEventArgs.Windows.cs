@@ -1029,7 +1029,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private unsafe SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
+        private unsafe SocketError FinishOperationAccept(SocketAddress remoteSocketAddress)
         {
             SocketError socketError;
             IntPtr localAddr;
@@ -1120,7 +1120,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private unsafe void UpdateReceivedSocketAddress(Internals.SocketAddress socketAddress)
+        private unsafe void UpdateReceivedSocketAddress(SocketAddress socketAddress)
         {
             Debug.Assert(_socketAddressPtr != IntPtr.Zero);
             int size = *((int*)_socketAddressPtr);

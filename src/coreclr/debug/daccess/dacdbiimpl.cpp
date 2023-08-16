@@ -6743,7 +6743,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
         seg = gen2.start_segment;
         for (; seg && (i < count); ++i)
         {
-            pHeaps[0].Segments[i].Generation = 2;
+            pHeaps[0].Segments[i].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;
             pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
             pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6752,7 +6752,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
         seg = gen1.start_segment;
         for (; seg && (i < count); ++i)
         {
-            pHeaps[0].Segments[i].Generation = 1;
+            pHeaps[0].Segments[i].Generation = CorDebug_Gen1;
             pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
             pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6771,7 +6771,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
             {
                 pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
             }
-            pHeaps[0].Segments[i].Generation = 0;
+            pHeaps[0].Segments[i].Generation = CorDebug_Gen0;
 
             seg = seg->next;
         }
@@ -6785,13 +6785,13 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
             if (seg.GetAddr() == (TADDR)*g_gcDacGlobals->ephemeral_heap_segment)
             {
                 pHeaps[0].Segments[i].End = (CORDB_ADDRESS)*g_gcDacGlobals->alloc_allocated;
-                pHeaps[0].Segments[i].Generation = 1;
+                pHeaps[0].Segments[i].Generation = CorDebug_Gen1;
                 pHeaps[0].EphemeralSegment = i;
             }
             else
             {
                 pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
-                pHeaps[0].Segments[i].Generation = 2;
+                pHeaps[0].Segments[i].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;
             }
 
             seg = seg->next;
@@ -6802,7 +6802,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     seg = loh.start_segment;
     for (; seg && (i < count); ++i)
     {
-        pHeaps[0].Segments[i].Generation = 3;
+        pHeaps[0].Segments[i].Generation = CorDebug_LOH;
         pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
         pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6813,7 +6813,7 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
     seg = poh.start_segment;
     for (; seg && (i < count); ++i)
     {
-        pHeaps[0].Segments[i].Generation = 4;
+        pHeaps[0].Segments[i].Generation = CorDebug_POH;
         pHeaps[0].Segments[i].Start = (CORDB_ADDRESS)seg->mem;
         pHeaps[0].Segments[i].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -6995,13 +6995,13 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
             }
             else
             {
-                // Otherwise, we have a gen2 or gen3 (LOH) segment
+                // Otherwise, we have a gen2, POH, LOH or NonGC
                 _ASSERTE(curr < total);
                 COR_SEGMENT &seg = (*pSegments)[curr++];
                 seg.start = heaps[i].Segments[j].Start;
                 seg.end = heaps[i].Segments[j].End;
 
-                _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_POH);
+                _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_NonGC);
                 seg.type = (CorDebugGenerationTypes)heaps[i].Segments[j].Generation;
                 seg.heap = (ULONG)i;
             }
