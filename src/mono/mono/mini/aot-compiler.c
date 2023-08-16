@@ -188,7 +188,7 @@ typedef struct MonoAotOptions {
 	char *llvm_outfile;
 	char *data_outfile;
 	char *export_symbols_outfile;
-	char *compiled_methods_outfile;
+	char *trimming_eligible_methods_outfile;
 	GList *profile_files;
 	GList *mibc_profile_files;
 	gboolean save_temps;
@@ -420,7 +420,7 @@ typedef struct MonoAotCompile {
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
-	FILE *compiled_methods_outfile;
+	FILE *trimming_eligible_methods_outfile;
 	int datafile_offset;
 	int gc_name_offset;
 
@@ -5541,12 +5541,18 @@ is_vt_inst (MonoGenericInst *inst)
 }
 
 static gboolean
-is_vt_inst_no_enum (MonoGenericInst *inst)
+is_vt_inst_no_enum_not_empty (MonoGenericInst *inst)
 {
 	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
-		if (MONO_TYPE_ISSTRUCT (t))
-			return TRUE;
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			MonoClass *k = mono_class_from_mono_type_internal (t);
+			/*
+			 * Empty vtypes with static virtual methods are used for templating in corlib.
+			 */
+			if (mono_class_get_field_count (k) > 0)
+				return TRUE;
+		}
 	}
 	return FALSE;
 }
@@ -5682,7 +5688,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	 * WASM only since other platforms depend on the
 	 * previous behavior.
 	 */
-	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst_no_enum (mono_class_get_generic_class (klass)->context.class_inst)) {
+	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst_no_enum_not_empty (mono_class_get_generic_class (klass)->context.class_inst)) {
 		use_gsharedvt = TRUE;
 		use_gsharedvt_for_array = TRUE;
 	}
@@ -8798,8 +8804,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
 		} else if (str_begins_with (arg, "export-symbols-outfile=")) {
 			opts->export_symbols_outfile = g_strdup (arg + strlen ("export-symbols-outfile="));
-		} else if (str_begins_with (arg, "compiled-methods-outfile=")) {
-			opts->compiled_methods_outfile = g_strdup (arg + strlen ("compiled-methods-outfile="));
+		} else if (str_begins_with (arg, "trimming-eligible-methods-outfile=")) {
+			opts->trimming_eligible_methods_outfile = g_strdup (arg + strlen ("trimming-eligible-methods-outfile="));
 		} else if (str_begins_with (arg, "temp-path=")) {
 			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {
@@ -9858,9 +9864,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
-	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0) {
-			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->trimming_eligible_methods_outfile != NULL) {
+		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only && mini_get_interp_callbacks ()->jit_call_can_be_supported (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only)) {
+			// The call back to jit_call_can_be_supported is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
+			// When that happens, interpreter needs to have the capability to call the AOT'ed version of that method, since the method body has already been trimmed.
+			fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
 		}
 	}
 }
@@ -14878,13 +14886,13 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
 	}
 
-	if (acfg->aot_opts.compiled_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
-		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
-		if (!acfg->compiled_methods_outfile)
-			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
+	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
+		acfg->trimming_eligible_methods_outfile = fopen (acfg->aot_opts.trimming_eligible_methods_outfile, "w+");
+		if (!acfg->trimming_eligible_methods_outfile)
+			aot_printerrf (acfg, "Unable to open trimming-eligible-methods-outfile specified file %s\n", acfg->aot_opts.trimming_eligible_methods_outfile);
 		else {
-			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->filename);
-			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->guid);
+			fprintf(acfg->trimming_eligible_methods_outfile, "%s\n", ass->image->filename);
+			fprintf(acfg->trimming_eligible_methods_outfile, "%s\n", ass->image->guid);
 		}
 	}
 
@@ -15238,8 +15246,8 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	current_acfg = NULL;
 
-	if (acfg->compiled_methods_outfile) {
-		fclose (acfg->compiled_methods_outfile);
+	if (acfg->trimming_eligible_methods_outfile) {
+		fclose (acfg->trimming_eligible_methods_outfile);
 	}
 
 	return emit_aot_image (acfg);
@@ -15371,7 +15379,11 @@ emit_aot_image (MonoAotCompile *acfg)
 			acfg->tmpbasename = g_build_filename (temp_path, "temp", (const char*)NULL);
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup_printf ("%s-llvm.s", acfg->tmpbasename);
-			acfg->llvm_ofile = g_strdup_printf ("%s-llvm." AS_OBJECT_FILE_SUFFIX, acfg->tmpbasename);
+
+			if (acfg->aot_opts.static_link)
+				acfg->llvm_ofile = g_strdup (acfg->aot_opts.llvm_outfile);
+			else
+				acfg->llvm_ofile = g_strdup_printf ("%s-llvm." AS_OBJECT_FILE_SUFFIX, acfg->tmpbasename);
 
 			g_free (temp_path);
 		}
@@ -15613,9 +15625,9 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		dedup_methods = g_hash_table_new (NULL, NULL);
 	}
 
-	if (aot_opts.compiled_methods_outfile) {
-		if (g_ensure_directory_exists (aot_opts.compiled_methods_outfile) == FALSE) {
-			fprintf (stderr, "AOT : failed to create the directory to save the compiled method names: %s\n", aot_opts.compiled_methods_outfile);
+	if (aot_opts.trimming_eligible_methods_outfile) {
+		if (g_ensure_directory_exists (aot_opts.trimming_eligible_methods_outfile) == FALSE) {
+			fprintf (stderr, "AOT : failed to create the directory to save the trimmable method names: %s\n", aot_opts.trimming_eligible_methods_outfile);
 			exit (1);
 		}
 	}

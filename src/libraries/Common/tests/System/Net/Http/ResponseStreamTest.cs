@@ -268,14 +268,17 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
         [InlineData(TransferType.Chunked, TransferError.ChunkSizeTooLarge)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_InvalidServerResponse_ThrowsIOException(
             TransferType transferType,
             TransferError transferError)
         {
             await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
             {
-                if (IsWinHttpHandler)
+                if (PlatformDetection.IsBrowser) // TypeError: Failed to fetch
+                {
+                    await Assert.ThrowsAsync<HttpRequestException>(() => ReadAsStreamHelper(uri));
+                }
+                else if (IsWinHttpHandler)
                 {
                     await Assert.ThrowsAsync<IOException>(() => ReadAsStreamHelper(uri));
                 }

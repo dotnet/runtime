@@ -621,7 +621,7 @@ namespace DebuggerTests
                    ("f.textArray[i]", TString("1")));
            });
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateObjectIndexingByNonIntConst() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
@@ -633,17 +633,19 @@ namespace DebuggerTests
                     ("f[\"-\"]", TBool(false)),
                     ("f[\'-\']", TString("res_-")),
                     ("f[true]", TString("True")),
-                    // ("f[1.23]", TNumber(1)) // Not supported yet - float/double
-
-                    // FixMe: https://github.com/dotnet/runtime/issues/76013
-                    // ("f.indexedByStr[\"1\"]", TBool(true)) // keyNotFoundException
-                    // ("f.indexedByStr[\"111\"]", TBool(false)), // keyNotFoundException
-                    // ("f.indexedByStr[\"true\"]", TBool(true)), // keyNotFoundException
+                    //("f[1.23]", TNumber(1)) // Not supported yet - float/double
+                    ("f.indexedByStr[\"1\"]", TBool(true)),
+                    ("f.indexedByStr[\"111\"]", TBool(false)),
+                    ("f.indexedByStr[\"true\"]", TBool(true)),
                     ("f.indexedByChar[\'i\']", TString("I")),
                     ("f.indexedByChar[\'5\']", TString("5")),
                     ("f.indexedByBool[true]", TString("TRUE")),
                     ("f.indexedByBool[false]", TString("FALSE"))
                 );
+                var (_, res) = await EvaluateOnCallFrame(id,"f.indexedByStr[\"invalid\"]", expect_ok: false);
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(f.indexedByStr[\"invalid\"]", StringComparison.Ordinal)); 
+                (_, res) = await EvaluateOnCallFrame(id,"f.indexedByStr[null]", expect_ok: false);
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(f.indexedByStr[null]", StringComparison.Ordinal)); 
             });
 
         [Fact]
@@ -657,12 +659,10 @@ namespace DebuggerTests
                     ("f[longString]", TBool(true)),
                     ("f[aBool]", TString("True")),
                     ("f[aChar]", TString("res_9")),
-                    ("f[shortString]", TBool(false))
-                    // ("f[aFloat]", TNumber(1)),
-                    // ("f[aDouble]", TNumber(2)),
-
-                    // FixMe: https://github.com/dotnet/runtime/issues/76014
-                    // ("f[aDecimal]", TNumber(3)) // object
+                    ("f[shortString]", TBool(false)),
+                    ("f[aFloat]", TNumber(1)),
+                    ("f[aDouble]", TNumber(2)),
+                    ("f[aDecimal]", TNumber(3)) // object
                 );
             });
 

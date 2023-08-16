@@ -8,7 +8,7 @@ namespace Microsoft.Quic;
 internal unsafe partial struct QUIC_NEW_CONNECTION_INFO
 {
     public override string ToString()
-        => $"{{ {nameof(QuicVersion)} = {QuicVersion}, {nameof(LocalAddress)} = {LocalAddress->ToIPEndPoint()}, {nameof(RemoteAddress)} = {RemoteAddress->ToIPEndPoint()} }}";
+        => $"{{ {nameof(QuicVersion)} = {QuicVersion}, {nameof(LocalAddress)} = {MsQuicHelpers.QuicAddrToIPEndPoint(LocalAddress)}, {nameof(RemoteAddress)} = {MsQuicHelpers.QuicAddrToIPEndPoint(RemoteAddress)} }}";
 }
 
 internal unsafe partial struct QUIC_LISTENER_EVENT
@@ -17,7 +17,7 @@ internal unsafe partial struct QUIC_LISTENER_EVENT
         => Type switch
         {
             QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION
-                => $"{{ {nameof(NEW_CONNECTION.Info)} = {{ {nameof(QUIC_NEW_CONNECTION_INFO.QuicVersion)} = {NEW_CONNECTION.Info->QuicVersion}, {nameof(QUIC_NEW_CONNECTION_INFO.LocalAddress)} = {NEW_CONNECTION.Info->LocalAddress->ToIPEndPoint()}, {nameof(QUIC_NEW_CONNECTION_INFO.RemoteAddress)} = {NEW_CONNECTION.Info->RemoteAddress->ToIPEndPoint()} }} }}",
+                => $"{{ {nameof(NEW_CONNECTION.Info)} = {{ {nameof(QUIC_NEW_CONNECTION_INFO.QuicVersion)} = {NEW_CONNECTION.Info->QuicVersion}, {nameof(QUIC_NEW_CONNECTION_INFO.LocalAddress)} = {MsQuicHelpers.QuicAddrToIPEndPoint(NEW_CONNECTION.Info->LocalAddress)}, {nameof(QUIC_NEW_CONNECTION_INFO.RemoteAddress)} = {MsQuicHelpers.QuicAddrToIPEndPoint(NEW_CONNECTION.Info->RemoteAddress)} }} }}",
             _ => string.Empty
         };
 }
@@ -36,9 +36,9 @@ internal unsafe partial struct QUIC_CONNECTION_EVENT
             QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_COMPLETE
                 => $"{{ {nameof(SHUTDOWN_COMPLETE.HandshakeCompleted)} = {SHUTDOWN_COMPLETE.HandshakeCompleted}, {nameof(SHUTDOWN_COMPLETE.PeerAcknowledgedShutdown)} = {SHUTDOWN_COMPLETE.PeerAcknowledgedShutdown}, {nameof(SHUTDOWN_COMPLETE.AppCloseInProgress)} = {SHUTDOWN_COMPLETE.AppCloseInProgress} }}",
             QUIC_CONNECTION_EVENT_TYPE.LOCAL_ADDRESS_CHANGED
-                => $"{{ {nameof(LOCAL_ADDRESS_CHANGED.Address)} = {LOCAL_ADDRESS_CHANGED.Address->ToIPEndPoint()} }}",
+                => $"{{ {nameof(LOCAL_ADDRESS_CHANGED.Address)} = {MsQuicHelpers.QuicAddrToIPEndPoint(LOCAL_ADDRESS_CHANGED.Address)} }}",
             QUIC_CONNECTION_EVENT_TYPE.PEER_ADDRESS_CHANGED
-                => $"{{ {nameof(PEER_ADDRESS_CHANGED.Address)} = {PEER_ADDRESS_CHANGED.Address->ToIPEndPoint()} }}",
+                => $"{{ {nameof(PEER_ADDRESS_CHANGED.Address)} = {MsQuicHelpers.QuicAddrToIPEndPoint(PEER_ADDRESS_CHANGED.Address)} }}",
             QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED
                 => $"{{ {nameof(PEER_STREAM_STARTED.Flags)} = {PEER_STREAM_STARTED.Flags} }}",
             QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED

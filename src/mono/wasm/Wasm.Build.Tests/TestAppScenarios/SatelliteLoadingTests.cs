@@ -27,9 +27,9 @@ public class SatelliteLoadingTests : AppTestBase
     public async Task LoadSatelliteAssembly()
     {
         CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests");
-        PublishProject("Debug");
+        BuildProject("Debug");
 
-        var result = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "SatelliteAssembliesTest"));
+        var result = await RunSdkStyleApp(new(Configuration: "Debug", TestScenario: "SatelliteAssembliesTest"));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("default: hello", m),

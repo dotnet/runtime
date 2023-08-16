@@ -167,8 +167,7 @@ CONFIG_INTEGER(JitStressBiasedCSE, W("JitStressBiasedCSE"), 0x101)     // Intern
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0) // Always split after the first basic
-                                                                                 // block. Skips functions with EH
-                                                                                 // for simplicity.
+                                                                                 // block.
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
 CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStressRegs to methods in this hash range
 
@@ -251,7 +250,8 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
 #endif                                                                     // defined(DEBUG)
 
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Print codegen for given methods
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                // Print codegen for given methods
+CONFIG_INTEGER(JitDisasmTesting, W("JitDisasmTesting"), 0) // Display BEGIN METHOD/END METHOD anchors for disasm testing
 CONFIG_INTEGER(JitDisasmDiffable, W("JitDisasmDiffable"), 0) // Make the disassembly diff-able
 CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0)   // Prints all jitted methods to the console
 CONFIG_INTEGER(JitDisasmWithAlignmentBoundaries, W("JitDisasmWithAlignmentBoundaries"), 0) // Print the alignment

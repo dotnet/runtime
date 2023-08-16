@@ -24,13 +24,13 @@ namespace BrowserDebugProxy
         private bool fieldsExpanded;
         private readonly string className;
         private JArray fields;
-
+        public List<JObject> InlineArray { get; init; }
         public DotnetObjectId Id { get; init; }
         public byte[] Buffer { get; init; }
         public int TypeId { get; init; }
         public bool IsEnum { get; init; }
 
-        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum)
+        public ValueTypeClass(byte[] buffer, string className, JArray fields, int typeId, bool isEnum, List<JObject> inlineArray = null)
         {
             var valueTypeId = MonoSDBHelper.GetNewObjectId();
             var objectId = new DotnetObjectId("valuetype", valueTypeId);
@@ -42,6 +42,7 @@ namespace BrowserDebugProxy
             autoExpand = ShouldAutoExpand(className);
             Id = objectId;
             IsEnum = isEnum;
+            InlineArray = inlineArray;
         }
 
         public override string ToString() => $"{{ ValueTypeClass: typeId: {TypeId}, Id: {Id}, Id: {Id}, fields: {fields} }}";
@@ -54,6 +55,7 @@ namespace BrowserDebugProxy
                                                 int typeId,
                                                 bool isEnum,
                                                 bool includeStatic,
+                                                int inlineArraySize,
                                                 CancellationToken token)
         {
             var typeInfo = await sdbAgent.GetTypeInfo(typeId, token);
@@ -63,6 +65,8 @@ namespace BrowserDebugProxy
             IReadOnlyList<FieldTypeClass> fieldTypes = await sdbAgent.GetTypeFields(typeId, token);
 
             JArray fields = new();
+            List<JObject> inlineArray = null;
+            JObject lastWritableFieldValue = null;
             if (includeStatic)
             {
                 IEnumerable<FieldTypeClass> staticFields =
@@ -77,20 +81,30 @@ namespace BrowserDebugProxy
             IEnumerable<FieldTypeClass> writableFields = fieldTypes
                 .Where(f => !f.Attributes.HasFlag(FieldAttributes.Literal)
                     && !f.Attributes.HasFlag(FieldAttributes.Static));
-
             foreach (var field in writableFields)
             {
-                var fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
-                fields.Add(GetFieldWithMetadata(field, fieldValue, isStatic: false));
+                lastWritableFieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, isOwn: true, field.TypeId, forDebuggerDisplayAttribute: false);
+                fields.Add(GetFieldWithMetadata(field, lastWritableFieldValue, isStatic: false));
             }
-
+            if (inlineArraySize > 0)
+            {
+                inlineArray = new(inlineArraySize+1);
+                inlineArray.Add(lastWritableFieldValue);
+                var firstFieldtypeId = writableFields.First().TypeId;
+                for (int i = 1; i < inlineArraySize; i++)
+                {
+                    //the valuetype has a single instance field in inline-arrays
+                    var inlineArrayItem = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, $"{i}", token, isOwn: true, firstFieldtypeId, forDebuggerDisplayAttribute: false);
+                    inlineArray.Add(inlineArrayItem);
+                }
+            }
             long endPos = cmdReader.BaseStream.Position;
             cmdReader.BaseStream.Position = initialPos;
             byte[] valueTypeBuffer = new byte[endPos - initialPos];
             cmdReader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
             cmdReader.BaseStream.Position = endPos;
 
-            return new ValueTypeClass(valueTypeBuffer, className, fields, typeId, isEnum);
+            return new ValueTypeClass(valueTypeBuffer, className, fields, typeId, isEnum, inlineArray);
 
             JObject GetFieldWithMetadata(FieldTypeClass field, JObject fieldValue, bool isStatic)
             {
@@ -116,7 +130,7 @@ namespace BrowserDebugProxy
             string description = className;
             if (ShouldAutoInvokeToString(className) || IsEnum)
             {
-                var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, isValueType: true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
+                var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, isValueType: true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, invokeToStringInObject: false, token);
                 if (toString == null)
                     sdbAgent.logger.LogDebug($"Error while evaluating ToString method on typeId = {TypeId}");
                 else
@@ -133,7 +147,7 @@ namespace BrowserDebugProxy
                 }
                 else
                 {
-                    var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, isValueType: true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, token);
+                    var toString = await sdbAgent.InvokeToStringAsync(new int[]{ TypeId }, isValueType: true, IsEnum, Id.Value, IsEnum ? BindingFlags.Default : BindingFlags.DeclaredOnly, invokeToStringInObject: false, token);
                     if (toString != null)
                         description = toString;
                 }

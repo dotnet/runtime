@@ -208,7 +208,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1089`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
 |  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
 |  __`SYSLIB1091`__ | Method is declared in different partial declaration than the 'GeneratedComInterface' attribute. |
-|  __`SYSLIB1092`__ | Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces. |
+|  __`SYSLIB1092`__ | 'GenerateComInterfaceAttribute' usage not recommended. See aka.ms/GeneratedComInterfaceUsage for recommended usage. |
 |  __`SYSLIB1093`__ | Analysis for COM interface generation has failed |
 |  __`SYSLIB1094`__ | The base COM interface failed to generate source. Code will not be generated for this interface. |
 |  __`SYSLIB1095`__ | Invalid 'GeneratedComClassAttribute' usage |
@@ -257,8 +257,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1220`__ | JsonSourceGenerator encountered a [JsonConverterAttribute] with an invalid type argument. |
 |  __`SYSLIB1221`__ | JsonSourceGenerator does not support this C# language version. |
 |  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
-|  __`SYSLIB1223`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1224`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
+|  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
 |  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
 |  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
 |  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |

@@ -275,3 +275,42 @@ int32_t CryptoNative_EncodeSubjectPublicKeyInfo(EVP_PKEY* pkey, uint8_t* buf)
     ERR_clear_error();
     return i2d_PUBKEY(pkey, &buf);
 }
+
+static EVP_PKEY* LoadKeyFromEngine(
+    const char* engineName,
+    const char* keyName,
+    ENGINE_LOAD_KEY_PTR load_func)
+{
+    ERR_clear_error();
+
+    EVP_PKEY* ret = NULL;
+    ENGINE* engine = NULL;
+
+    // Per https://github.com/openssl/openssl/discussions/21427
+    // using EVP_PKEY after freeing ENGINE is correct.
+    engine = ENGINE_by_id(engineName);
+
+    if (engine != NULL)
+    {
+        if (ENGINE_init(engine))
+        {
+            ret = load_func(engine, keyName, NULL, NULL);
+
+            ENGINE_finish(engine);
+        }
+
+        ENGINE_free(engine);
+    }
+
+    return ret;
+}
+
+EVP_PKEY* CryptoNative_LoadPrivateKeyFromEngine(const char* engineName, const char* keyName)
+{
+    return LoadKeyFromEngine(engineName, keyName, ENGINE_load_private_key);
+}
+
+EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName)
+{
+    return LoadKeyFromEngine(engineName, keyName, ENGINE_load_public_key);
+}

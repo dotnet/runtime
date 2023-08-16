@@ -145,6 +145,39 @@ namespace System.Text.Json
             return false;
         }
 
+#if NETCOREAPP
+        public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out Half value)
+        {
+            if (span.Length == 3)
+            {
+                if (span.SequenceEqual(JsonConstants.NaNValue))
+                {
+                    value = Half.NaN;
+                    return true;
+                }
+            }
+            else if (span.Length == 8)
+            {
+                if (span.SequenceEqual(JsonConstants.PositiveInfinityValue))
+                {
+                    value = Half.PositiveInfinity;
+                    return true;
+                }
+            }
+            else if (span.Length == 9)
+            {
+                if (span.SequenceEqual(JsonConstants.NegativeInfinityValue))
+                {
+                    value = Half.NegativeInfinity;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+        }
+#endif
+
         public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out float value)
         {
             if (span.Length == 3)

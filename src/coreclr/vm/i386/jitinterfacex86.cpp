@@ -22,6 +22,8 @@
 #include "eventtrace.h"
 #include "threadsuspend.h"
 
+#include <minipal/cpuid.h>
+
 #if defined(_DEBUG) && !defined (WRITE_BARRIER_CHECK)
 #define WRITE_BARRIER_CHECK 1
 #endif

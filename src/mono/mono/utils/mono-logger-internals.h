@@ -96,7 +96,7 @@ mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...)
 #define mono_trace_warning(...) (mono_trace (G_LOG_LEVEL_WARNING, __VA_ARGS__))
 #define mono_trace_message(...) (mono_trace (G_LOG_LEVEL_MESSAGE, __VA_ARGS__))
 
-#if defined (HOST_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
+#if defined (HOST_ANDROID) || defined (TARGET_IOS) || defined (TARGET_TVOS)
 
 #define mono_gc_printf(gc_log_file, format, ...) g_log ("mono-gc", G_LOG_LEVEL_MESSAGE, format, ##__VA_ARGS__)
 #define mono_runtime_printf(format, ...) g_log ("mono-rt", G_LOG_LEVEL_MESSAGE, format "\n", ##__VA_ARGS__)

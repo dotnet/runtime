@@ -328,7 +328,19 @@ inline bool varTypeUsesFloatReg(T vt)
 template <class T>
 inline bool varTypeUsesMaskReg(T vt)
 {
-    return varTypeRegister[TypeGet(vt)] == VTR_MASK;
+// The technically correct check is:
+//     return varTypeRegister[TypeGet(vt)] == VTR_MASK;
+//
+// However, we only have one type that uses VTR_MASK today
+// and so its quite a bit cheaper to just check that directly
+
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+    assert((TypeGet(vt) == TYP_MASK) || (varTypeRegister[TypeGet(vt)] != VTR_MASK));
+    return TypeGet(vt) == TYP_MASK;
+#else
+    assert(varTypeRegister[TypeGet(vt)] != VTR_MASK);
+    return false;
+#endif
 }
 
 template <class T>

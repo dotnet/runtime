@@ -1106,44 +1106,6 @@ void StubLinkerCPU::EmitRet(IntReg Xn)
     Emit32((DWORD)(0x00000067 | (Xn << 15))); // jalr X0, 0(Xn)
 }
 
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset)
-{
-    _ASSERTE((-1024 <= offset) && (offset <= 1015));
-    _ASSERTE((offset & 7) == 0);
-
-    BOOL isLoad = flags & 1;
-    if (isLoad) {
-        // ld Xt1, offset(Xn));
-        Emit32((DWORD)(0x00003003 | (Xt1 << 7) | (Xn << 15) | (offset << 20)));
-        // ld Xt2, (offset+8)(Xn));
-        Emit32((DWORD)(0x00003003 | (Xt2 << 7) | (Xn << 15) | ((offset + 8) << 20)));
-    } else {
-        // sd Xt1, offset(Xn)
-        Emit32((DWORD)(0x00003023 | (Xt1 << 20) | (Xn << 15) | (offset & 0xF) << 7 | (((offset >> 4) & 0xFF) << 25)));
-        // sd Xt1, (offset + 8)(Xn)
-        Emit32((DWORD)(0x00003023 | (Xt2 << 20) | (Xn << 15) | ((offset + 8) & 0xF) << 7 | ((((offset + 8) >> 4) & 0xFF) << 25)));
-    }
-}
-
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, FloatReg Ft1, FloatReg Ft2, IntReg Xn, int offset)
-{
-    _ASSERTE((-1024 <= offset) && (offset <= 1015));
-    _ASSERTE((offset & 7) == 0);
-
-    BOOL isLoad = flags & 1;
-    if (isLoad) {
-        // fld Ft, Xn, offset
-        Emit32((DWORD)(0x00003007 | (Xn << 15) | (Ft1 << 7) | (offset << 20)));
-        // fld Ft, Xn, offset + 8
-        Emit32((DWORD)(0x00003007 | (Xn << 15) | (Ft2 << 7) | ((offset + 8) << 20)));
-    } else {
-        // fsd Ft, offset(Xn)
-        Emit32((WORD)(0x00003027 | (Xn << 15) | (Ft1 << 20) | (offset & 0xF) << 7 | ((offset >> 4) & 0xFF)));
-        // fsd Ft, (offset + 8)(Xn)
-        Emit32((WORD)(0x00003027 | (Xn << 15) | (Ft2 << 20) | ((offset + 8) & 0xF) << 7 | (((offset + 8) >> 4) & 0xFF)));
-    }
-}
-
 void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset)
 {
     BOOL isLoad    = flags & 1;
@@ -1152,7 +1114,7 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int o
         Emit32((DWORD)(0x00003003 | (Xt << 7) | (Xn << 15) | (offset << 20)));
     } else {
         // sd regNum, offset(Xn)
-        Emit32((DWORD)(0x00003023 | (Xt << 20) | (Xn << 15) | (offset & 0xF) << 7 | (((offset >> 4) & 0xFF) << 25)));
+        Emit32((DWORD)(0x00003023 | (Xt << 20) | (Xn << 15) | (offset & 0x1F) << 7 | (((offset >> 5) & 0x7F) << 25)));
     }
 }
 

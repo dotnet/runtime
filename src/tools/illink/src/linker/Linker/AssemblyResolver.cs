@@ -44,6 +44,7 @@ namespace Mono.Linker
 		readonly LinkContext _context;
 		readonly List<string> _directories = new ();
 		readonly Dictionary<AssemblyDefinition, string> _assemblyToPath = new ();
+		readonly Dictionary<string, AssemblyDefinition> _pathToAssembly = new ();
 		readonly List<MemoryMappedViewStream> _viewStreams = new ();
 		readonly ReaderParameters _defaultReaderParameters;
 
@@ -136,6 +137,12 @@ namespace Mono.Linker
 
 		public AssemblyDefinition GetAssembly (string file)
 		{
+			// Sanitize the path for caching purposes
+			file = Path.GetFullPath (file);
+
+			if (_pathToAssembly.TryGetValue (file, out var loadedAssembly))
+				return loadedAssembly;
+
 			MemoryMappedViewStream? viewStream = null;
 			try {
 				// Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
@@ -147,6 +154,7 @@ namespace Mono.Linker
 				AssemblyDefinition result = ModuleDefinition.ReadModule (viewStream, _defaultReaderParameters).Assembly;
 
 				_assemblyToPath.Add (result, file);
+				_pathToAssembly.Add (file, result);
 
 				_viewStreams.Add (viewStream);
 
@@ -192,7 +200,14 @@ namespace Mono.Linker
 
 		public void CacheAssembly (AssemblyDefinition assembly)
 		{
-			AssemblyCache[assembly.Name.Name] = assembly;
+			if (AssemblyCache.TryGetValue (assembly.Name.Name, out var existing)) {
+				if (existing != assembly)
+					throw new ArgumentException ("Cannot overwrite an existing assembly with a different assembly");
+
+				return;
+			}
+
+			AssemblyCache.Add (assembly.Name.Name, assembly);
 			_context.RegisterAssembly (assembly);
 		}
 

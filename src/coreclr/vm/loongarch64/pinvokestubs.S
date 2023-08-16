@@ -107,20 +107,20 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
     ld.d  $t4, $sp, 0
     st.d  $t4, $s0, InlinedCallFrame__m_pCalleeSavedFP
 
-    // v0 = GetThread()
+    // a0 = GetThread()
     bl  GetThreadHelper
 
-    st.d  $v0, $s0, InlinedCallFrame__m_pThread
+    st.d  $a0, $s0, InlinedCallFrame__m_pThread
 
     // pFrame->m_Next = pThread->m_pFrame;
-    ld.d  $t4, $v0, Thread_m_pFrame
+    ld.d  $t4, $a0, Thread_m_pFrame
     st.d  $t4, $s0, Frame__m_Next
 
     // pThread->m_pFrame = pFrame;
-    st.d  $s0, $v0, Thread_m_pFrame
+    st.d  $s0, $a0, Thread_m_pFrame
 
     // pThread->m_fPreemptiveGCDisabled = 0
-    st.w     $zero, $v0, Thread_m_fPreemptiveGCDisabled
+    st.w     $zero, $a0, Thread_m_fPreemptiveGCDisabled
 
     EPILOG_RESTORE_REG      23, 16    //the stack slot at $sp+24 is empty for 16 byte alignment
     EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32

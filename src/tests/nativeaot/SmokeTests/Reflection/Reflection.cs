@@ -61,9 +61,12 @@ internal static class ReflectionTest
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
+        TestGenericMethodOnGenericType.Run();
         TestIsValueTypeWithoutTypeHandle.Run();
         TestMdArrayLoad.Run();
         TestByRefTypeLoad.Run();
+        TestGenericLdtoken.Run();
+        TestAbstractGenericLdtoken.Run();
 
         //
         // Mostly functionality tests
@@ -2271,6 +2274,40 @@ internal static class ReflectionTest
         }
     }
 
+    class TestGenericMethodOnGenericType
+    {
+        class Gen<T, U> { }
+
+        struct Atom1 { }
+        struct Atom2 { }
+
+        class GenericType<T>
+        {
+            public static Gen<T, U> GenericMethod1<U>() => new Gen<T, U>();
+            public static Gen<T, U> GenericMethod2<U>() => new Gen<T, U>();
+        }
+
+        static MethodInfo s_genericMethod2 = typeof(GenericType<>).GetMethod("GenericMethod2");
+
+        static object Make<T>(Type t)
+        {
+            if (t.IsValueType) throw null;
+            // AOT safe because we just checked t is not a valuetype
+            return typeof(GenericType<T>).GetMethod("GenericMethod1").MakeGenericMethod(t).Invoke(null, null);
+        }
+
+        public static void Run()
+        {
+            Make<Atom1>(typeof(object));
+
+            // This is supposed to be all AOT safe because we're instantiating over a reference type
+            // Ideally there would also be no AOT warning.
+            ((MethodInfo)(typeof(GenericType<Atom2>).GetMemberWithSameMetadataDefinitionAs(s_genericMethod2)))
+                .MakeGenericMethod(typeof(object))
+                .Invoke(null, null);
+        }
+    }
+
     class TestIsValueTypeWithoutTypeHandle
     {
         [Nothing(
@@ -2364,6 +2401,59 @@ internal static class ReflectionTest
             var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
                 throw new Exception();
+        }
+    }
+
+    class TestGenericLdtoken
+    {
+        class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Base GetInstance() => new Base();
+            public virtual Type GrabType<T>() => typeof(T);
+        }
+
+        class Derived : Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static new Base GetInstance() => new Derived();
+            public override Type GrabType<T>() => typeof(T);
+        }
+
+        class Generic<T> { }
+
+        class Atom { }
+
+        public static void Run()
+        {
+            Expression<Func<Type>> grabType = () => Base.GetInstance().GrabType<Generic<Atom>>();
+            Console.WriteLine(grabType.Compile()().FullName);
+        }
+    }
+
+    class TestAbstractGenericLdtoken
+    {
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Base GetInstance() => null;
+            public abstract Type GrabType<T>();
+        }
+
+        class Generic<T> { }
+
+        class Atom { }
+
+        public static void Run()
+        {
+            Expression<Func<Type>> grabType = () => Base.GetInstance().GrabType<Generic<Atom>>();
+            try
+            {
+                grabType.Compile()();
+            }
+            catch (NullReferenceException)
+            {
+            }
         }
     }
 

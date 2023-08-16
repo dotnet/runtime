@@ -160,7 +160,7 @@ namespace ComWrappersTests.GlobalInstance
                 {
                     var iid = iids[i];
                     IntPtr comObject;
-                    int hr = Marshal.QueryInterface(externalComObject, ref iid, out comObject);
+                    int hr = Marshal.QueryInterface(externalComObject, in iid, out comObject);
                     if (hr == 0)
                         return new FakeWrapper(comObject);
                 }

@@ -15,6 +15,7 @@ export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
 export const bound_cs_function_symbol = Symbol.for("wasm bound_cs_function");
 export const bound_js_function_symbol = Symbol.for("wasm bound_js_function");
 export const imported_js_function_symbol = Symbol.for("wasm imported_js_function");
+export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 
 /**
  * JSFunctionSignature is pointer to [
@@ -330,7 +331,10 @@ export class ManagedError extends Error implements IDisposable {
 
     getSuperStack() {
         if (this.superStack) {
-            return this.superStack.value;
+            if (this.superStack.value !== undefined)
+                return this.superStack.value;
+            if (this.superStack.get !== undefined)
+                return this.superStack.get.call(this);
         }
         return super.stack; // this works on FF
     }

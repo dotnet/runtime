@@ -32,6 +32,8 @@ namespace Microsoft.Interop
             InteropGenerationOptions interopGenerationOptions = new(UseMarshalType: true);
             generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
 
+            generatorFactory = new StructAsHResultMarshallerFactory(generatorFactory);
+
             IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(
                 // Since the char type in an array will not be part of the P/Invoke signature, we can
                 // use the regular blittable marshaller in all cases.

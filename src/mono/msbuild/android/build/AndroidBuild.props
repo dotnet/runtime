@@ -8,7 +8,7 @@
     <_HostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_HostOS>
     <_HostOS Condition="'$(_HostOS)' == ''">linux</_HostOS>
 
-    <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
+    <_IsLibraryMode Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
 
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
     <AndroidBuildDependsOn>

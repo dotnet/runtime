@@ -49,7 +49,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private void ProcessSkipAttributes (LinkedTestCaseResult linkResult, AssemblyDefinition original, out bool skipCheckEntirely, out HashSet<string> assembliesToSkip)
 		{
-			var peVerifyAttrs = original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName).CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SkipPeVerifyAttribute));
+			var peVerifyAttrs = linkResult.TestCase.FindTypeDefinition (original).CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SkipPeVerifyAttribute));
 			skipCheckEntirely = false;
 			assembliesToSkip = new HashSet<string> ();
 			foreach (var attr in peVerifyAttrs) {

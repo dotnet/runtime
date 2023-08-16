@@ -535,6 +535,7 @@ typedef struct DECLSPEC_ALIGN(16) {
     // Floating Point Registers
     //
     ULONGLONG F[32];
+    DWORD64 Fcc;
     DWORD Fcsr;
 } DT_CONTEXT;
 

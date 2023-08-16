@@ -61,7 +61,7 @@ namespace ComWrappersTests.Common
 
     public struct IUnknownVtbl
     {
-        public static Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+        public static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
 
         public IntPtr QueryInterface;
         public IntPtr AddRef;
@@ -314,7 +314,7 @@ namespace ComWrappersTests.Common
             const int S_OK = 0;
             const int E_NOINTERFACE = unchecked((int)0x80004002);
 
-            int hr = Marshal.QueryInterface(this.classNative.Inner, ref iid, out ppv);
+            int hr = Marshal.QueryInterface(this.classNative.Inner, in iid, out ppv);
             if (hr == S_OK)
             {
                 return CustomQueryInterfaceResult.Handled;
@@ -391,7 +391,7 @@ namespace ComWrappersTests.Common
                 // it should answer immediately without going through the outer. Either way
                 // the reference count will go to the new instance.
                 IntPtr queryForTracker = isAggregation ? classNative.Inner : classNative.Instance;
-                int hr = Marshal.QueryInterface(queryForTracker, ref IID_IReferenceTracker, out classNative.ReferenceTracker);
+                int hr = Marshal.QueryInterface(queryForTracker, in IID_IReferenceTracker, out classNative.ReferenceTracker);
                 if (hr != 0)
                 {
                     classNative.ReferenceTracker = default;

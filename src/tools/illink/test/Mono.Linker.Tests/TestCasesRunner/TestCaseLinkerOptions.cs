@@ -15,7 +15,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public bool IgnoreDescriptors;
 		public bool IgnoreSubstitutions;
 		public bool IgnoreLinkAttributes;
-		public string KeepDebugMembers;
 		public string LinkSymbols;
 		public bool SkipUnresolved;
 		public bool StripDescriptors;

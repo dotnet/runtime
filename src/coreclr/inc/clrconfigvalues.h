@@ -162,9 +162,13 @@ CONFIG_DWORD_INFO(INTERNAL_BreakOnUEF, W("BreakOnUEF"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_BreakOnUncaughtException, W("BreakOnUncaughtException"), 0, "")
 
 ///
-/// Debugger
+/// Debugger, Profiler, Diagnostics IPC Ports
 ///
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableDiagnostics, W("EnableDiagnostics"), 1, "Allows the debugger, profiler, and EventPipe diagnostics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableDiagnostics, W("EnableDiagnostics"), 1, "Allows the debugger, profiler, and diagnostic IPC service ports to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableDiagnostics_IPC, W("EnableDiagnostics_IPC"), 1, "Allows the diagnostic IPC service ports to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableDiagnostics_Debugger, W("EnableDiagnostics_Debugger"), 1, "Allows the debugger to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableDiagnostics_Profiler, W("EnableDiagnostics_Profiler"), 1, "Allows the profiler to be disabled")
+
 CONFIG_DWORD_INFO(INTERNAL_D__FCE, W("D::FCE"), 0, "Allows an assert when crawling the managed stack for an exception handler")
 CONFIG_DWORD_INFO(INTERNAL_DbgBreakIfLocksUnavailable, W("DbgBreakIfLocksUnavailable"), 0, "Allows an assert when the debugger can't take a lock ")
 CONFIG_DWORD_INFO(INTERNAL_DbgBreakOnErr, W("DbgBreakOnErr"), 0, "Allows an assert when we get a failing hresult")

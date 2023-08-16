@@ -556,17 +556,6 @@ BOOL TypeDesc::IsRestored()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SUPPORTS_DAC;
 
-    return IsRestored_NoLogging();
-}
-
-BOOL TypeDesc::IsRestored_NoLogging()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SUPPORTS_DAC;
-
     return (m_typeAndFlags & TypeDesc::enum_flag_Unrestored) == 0;
 }
 
@@ -1611,8 +1600,9 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                                 if (pMD->IsVirtual() &&
                                     pMD->IsStatic() &&
                                     (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(
-                                        pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE,
-                                        /*allowVariantMatches*/ TRUE, /*uniqueResolution*/ NULL, CLASS_DEPENDENCIES_LOADED)))
+                                        pInterfaceMT, pMD,
+                                        ResolveVirtualStaticMethodFlags::AllowNullResult | ResolveVirtualStaticMethodFlags::VerifyImplemented | ResolveVirtualStaticMethodFlags::AllowVariantMatches,
+                                        /*uniqueResolution*/ NULL, CLASS_DEPENDENCIES_LOADED)))
                                 {
                                     virtualStaticResolutionCheckFailed = true;
                                     break;

@@ -673,27 +673,12 @@ HRESULT CordbFunction::AreOptimizationsDisabled(BOOL *pOptimizationsDisabled)
     {
         return E_INVALIDARG;
     }
-
-    CordbProcess * pProcess = GetProcess();
-    RSLockHolder lockHolder(pProcess->GetProcessLock());
-
-    DebuggerIPCEvent event;
-    CordbAppDomain * pAppDomain = GetAppDomain();
-    _ASSERTE (pAppDomain != NULL);
-
-    pProcess->InitIPCEvent(&event, DB_IPCE_IS_OPTS_DISABLED, true, pAppDomain->GetADToken());
-    event.DisableOptData.funcMetadataToken = m_MDToken;
-    event.DisableOptData.pModule = m_pModule->GetRuntimeModule();
-
-    lockHolder.Release();
-    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
-    lockHolder.Acquire();
-
-    _ASSERTE(event.type == DB_IPCE_IS_OPTS_DISABLED_RESULT);
-    
-    *pOptimizationsDisabled = event.IsOptsDisabledData.value;
-
-    return event.hr;;
+    EX_TRY
+    {
+        hr = GetProcess()->GetDAC()->AreOptimizationsDisabled(GetModule()->GetRuntimeModule(), GetMetadataToken(), pOptimizationsDisabled);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 // determine whether we have a native-only implementation

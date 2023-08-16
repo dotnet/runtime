@@ -15,7 +15,7 @@ namespace System.Net.Quic;
 internal sealed class MsQuicTlsSecret : IDisposable
 {
     private static readonly string? s_keyLogFile = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
-    private static readonly FileStream? s_fileStream = s_keyLogFile != null ? File.Open(s_keyLogFile, FileMode.Append, FileAccess.Write) : null;
+    private static readonly FileStream? s_fileStream = s_keyLogFile != null ? File.Open(s_keyLogFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite) : null;
 
     private unsafe QUIC_TLS_SECRETS* _tlsSecrets;
 

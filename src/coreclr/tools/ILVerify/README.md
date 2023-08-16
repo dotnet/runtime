@@ -116,7 +116,7 @@ Additionally the method signature of the special test method must be equal to th
 The methods are automatically fed into appropriate XUnit theories based on the naming convention. Methods not following this naming conventions are ignored by the test scaffolding system.
 
 ## How to contribute
-All ILVerify issues are labeled with [area-ILVerification](https://github.com/search?utf8=%E2%9C%93&q=label%3Aarea-ILVerification&type=). You can also look and fix TODOs in the source code.
+All ILVerify issues are labeled with [area-Tools-ILVerification](https://github.com/search?utf8=%E2%9C%93&q=label%3Aarea-Tools-ILVerification&type=). You can also look and fix TODOs in the source code.
 
 Useful sources:
  - [PEVerify source code](https://github.com/lewischeng-ms/sscli/blob/master/clr/src/jit64/newverify.cpp)

@@ -1016,6 +1016,8 @@ public:
 
     // Get extra work for the finalizer
     virtual FinalizerWorkItem* GetExtraWorkForFinalization() PURE_VIRTUAL
+
+    virtual uint64_t GetGenerationBudget(int generation) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

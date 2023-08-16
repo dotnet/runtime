@@ -3363,7 +3363,11 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         // This is a workaround to fix the generation of stack traces from exception objects so that
         // they point to the line that actually generated the exception instead of the line
         // following.
-        if (!(pCf->HasFaulted() || pCf->IsIPadjusted()) && pStackTraceElem->ip != 0)
+        if (pCf->IsIPadjusted())
+        {
+            pStackTraceElem->flags |= STEF_IP_ADJUSTED;
+        }
+        else if (!pCf->HasFaulted() && pStackTraceElem->ip != 0)
         {
             pStackTraceElem->ip -= 1;
             pStackTraceElem->flags |= STEF_IP_ADJUSTED;
@@ -6346,7 +6350,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !(TARGET_RISCV64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #else

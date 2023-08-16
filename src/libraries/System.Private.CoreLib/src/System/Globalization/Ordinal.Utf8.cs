@@ -296,13 +296,7 @@ namespace System.Globalization
                     return true;
                 }
 
-                if (!Utf8Utility.UInt32OrdinalIgnoreCaseAscii(valueAu32, valueBu32))
-                {
-                    return false;
-                }
-
-                byteOffset += 4;
-                length -= 4;
+                return Utf8Utility.UInt32OrdinalIgnoreCaseAscii(valueAu32, valueBu32);
             }
 
             Debug.Assert(length == 0);

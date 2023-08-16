@@ -16,7 +16,7 @@ public class ManualTestsAsync : TarTestsBase
         // Fixes error xUnit1015: MemberData needs to be in the same class
         => ManualTests.WriteEntry_LongFileSize_TheoryData();
 
-    [ConditionalTheory(nameof(ManualTests.ManualTestsEnabled))]
+    [ConditionalTheory(typeof(ManualTests), nameof(ManualTests.ManualTestsEnabled))]
     [MemberData(nameof(WriteEntry_LongFileSize_TheoryDataAsync))]
     [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Needs too much disk space.")]
     public async Task WriteEntry_LongFileSizeAsync(TarEntryFormat entryFormat, long size, bool unseekableStream)

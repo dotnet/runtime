@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public sealed class JSException : Exception
     {
         internal JSObject? jsException;
+        internal string? combinedStackTrace;
 
         /// <summary>
         /// Initializes a new instance of the JSException class with a specified error message.
@@ -21,11 +22,13 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSException(string msg) : base(msg)
         {
             jsException = null;
+            combinedStackTrace = null;
         }
 
         internal JSException(string msg, JSObject? jsException) : base(msg)
         {
             this.jsException = jsException;
+            this.combinedStackTrace = null;
         }
 
         /// <inheritdoc />
@@ -33,6 +36,10 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
+                if (combinedStackTrace != null)
+                {
+                    return combinedStackTrace;
+                }
                 var bs = base.StackTrace;
                 if (jsException == null)
                 {
@@ -42,16 +49,19 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
                 if (jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
                 {
-                    return null;
+                    return bs;
                 }
 #endif
                 string? jsStackTrace = jsException.GetPropertyAsString("stack");
+
+                // after this, we don't need jsException proxy anymore
+                jsException.Dispose();
+                jsException = null;
+
                 if (jsStackTrace == null)
                 {
-                    if (bs == null)
-                    {
-                        return null;
-                    }
+                    combinedStackTrace = bs;
+                    return combinedStackTrace;
                 }
                 else if (jsStackTrace.StartsWith(Message + "\n"))
                 {
@@ -62,11 +72,15 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 if (bs == null)
                 {
-                    return jsStackTrace;
+                    combinedStackTrace = jsStackTrace;
                 }
-                return base.StackTrace + "\r\n" + jsStackTrace;
-            }
 
+                combinedStackTrace = bs != null
+                    ? bs + Environment.NewLine + jsStackTrace
+                    : jsStackTrace;
+
+                return combinedStackTrace;
+            }
         }
 
         /// <inheritdoc />
