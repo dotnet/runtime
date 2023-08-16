@@ -1582,7 +1582,7 @@ namespace __OptionValidationStaticInstances
         Assert.Equal(DiagDescriptors.NotEnumerableType.Id, diagnostics[0].Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public async Task LanguageVersionTest()
     {
         string source = """
