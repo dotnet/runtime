@@ -273,12 +273,31 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90621")]
+        public void StatefulPinnedMarshalling_EnforcePinning()
+        {
+            var obj = CreateWrapper<StatefulPinnedMarshalling, IStatefulPinnedMarshalling>();
+            var data = new StatefulPinnedType() { I = 4 };
+
+            StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.DisableNonPinnedPath();
+
+            obj.Method(data);
+            Assert.Equal(4, data.I);
+
+            obj.MethodIn(in data);
+            Assert.Equal(4, data.I);
+
+            StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.EnableNonPinnedPath();
+        }
+
+        [Fact]
         public void StatefulPinnedMarshalling()
         {
             var obj = CreateWrapper<StatefulPinnedMarshalling, IStatefulPinnedMarshalling>();
             var data = new StatefulPinnedType() { I = 4 };
 
             // In parameters should always use pinning
+            // https://github.com/dotnet/runtime/issues/90621
             //StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.DisableNonPinnedPath();
 
             obj.Method(data);
