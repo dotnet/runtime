@@ -44,6 +44,9 @@
   </PropertyGroup>
 
   <!-- Use ILLink.Tasks version matching the SDK used to build. See comment about _RequiresILLinkPack. -->
+  <PropertyGroup>
+    <SuppressILLinkExplicitPackageReferenceWarning>true</SuppressILLinkExplicitPackageReferenceWarning>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="$(BundledNETCoreAppPackageVersion)" PrivateAssets="all" />
   </ItemGroup>
