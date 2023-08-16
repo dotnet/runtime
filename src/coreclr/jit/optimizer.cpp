@@ -4109,8 +4109,8 @@ PhaseStatus Compiler::optUnrollLoops()
         // LPFLG_CONST_INIT  - required because this transform only handles full unrolls
         // LPFLG_CONST_LIMIT or LPFLG_CONST_VAR_LIMIT - required because this transform only handles full unrolls
         if ((loopFlags & LPFLG_CONST_INIT) != LPFLG_CONST_INIT ||
-            ((loopFlags & LPFLG_CONST_LIMIT) != LPFLG_CONST_LIMIT) &&
-            ((loopFlags & LPFLG_CONST_VAR_LIMIT) != LPFLG_CONST_VAR_LIMIT))
+            ((loopFlags & LPFLG_CONST_LIMIT) != LPFLG_CONST_LIMIT &&
+            (loopFlags & LPFLG_CONST_VAR_LIMIT) != LPFLG_CONST_VAR_LIMIT))
         {
             // Don't print to the JitDump about this common case.
             continue;
