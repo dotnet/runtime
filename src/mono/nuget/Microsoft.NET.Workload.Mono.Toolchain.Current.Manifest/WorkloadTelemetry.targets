@@ -38,8 +38,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(%(ReferencePath.Identity)).ToLower())' == 'avalonia.dll'">true</_WorkloadUsesOther>
-      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(%(ReferencePath.Identity)).ToLower())' == 'uno.dll'">true</_WorkloadUsesOther>
+      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(&quot;%(ReferencePath.Identity)&quot;).ToLowerInvariant())' == 'avalonia.dll'">true</_WorkloadUsesOther>
+      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(&quot;%(ReferencePath.Identity)&quot;).ToLowerInvariant())' == 'uno.dll'">true</_WorkloadUsesOther>
       <_WorkloadUsesMobileSDKOnly Condition="'$(RuntimeIdentifier)' != 'browser-wasm' and '$(UseMaui)' != 'true' and '$(_WorkloadUsesOther)' != 'true'">true</_WorkloadUsesMobileSDKOnly>
     </PropertyGroup>
   </Target>

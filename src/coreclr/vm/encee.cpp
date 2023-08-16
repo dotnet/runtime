@@ -806,8 +806,8 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // Get the var info which the codemanager will use for updating
     // enregistered variables correctly, or variables whose lifetimes differ
     // at the update point
-    g_pDebugInterface->GetVarInfo(pMD, oldDebuggerFuncHandle, &oldVarInfoCount, &pOldVarInfo);
-    g_pDebugInterface->GetVarInfo(pMD, NULL,                  &newVarInfoCount, &pNewVarInfo);
+    g_pDebugInterface->GetVarInfo(pMD, oldCodeInfo.GetCodeAddress(), &oldVarInfoCount, &pOldVarInfo);
+    g_pDebugInterface->GetVarInfo(pMD, newCodeInfo.GetCodeAddress(),                  &newVarInfoCount, &pNewVarInfo);
 
 #ifdef TARGET_X86
     // save the frame pointer as FixContextForEnC might step on it.
