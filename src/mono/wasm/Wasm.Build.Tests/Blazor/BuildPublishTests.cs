@@ -38,15 +38,15 @@ public class BuildPublishTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void DefaultTemplate_NoAOT_WithWorkload(string config)
+    [InlineData("Debug", true)]
+    [InlineData("Debug", false)]
+    [InlineData("Release", true)]
+    [InlineData("Release", false)]
+    public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
     {
-        // disable relinking tests for Unicode: github.com/emscripten-core/emscripten/issues/17817
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
-        string id = config == "Release" ?
-            $"blz_no_aot_{config}_{GetRandomId()}" :
-            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}";
+        string id = testUnicode ?
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_no_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
