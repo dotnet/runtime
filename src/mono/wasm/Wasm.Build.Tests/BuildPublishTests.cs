@@ -69,12 +69,24 @@ namespace Wasm.Build.Tests
                                 host: host, id: id);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", parameters: new object[] { false } )]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", parameters: new object[] { false } )]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", parameters: new object[] { true } )]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", parameters: new object[] { true } )]
-        public void BuildThenPublishWithAOT(BuildArgs buildArgs, bool testUnicode, RunHost host, string id)
+        public void BuildThenPublishWithAOTLinux(BuildArgs buildArgs, bool testUnicode, RunHost host, string id) =>
+            BuildThenPublishWithAOT(buildArgs, testUnicode, host, id);
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", parameters: new object[] { false } )]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", parameters: new object[] { false } )]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
+        // [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", parameters: new object[] { true } )]
+        // [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", parameters: new object[] { true } )]
+        public void BuildThenPublishWithAOTWindows(BuildArgs buildArgs, bool testUnicode, RunHost host, string id) =>
+            BuildThenPublishWithAOT(buildArgs, testUnicode, host, id);
+
+        private void BuildThenPublishWithAOT(BuildArgs buildArgs, bool testUnicode, RunHost host, string id)
         {
             string projectName = GetTestProjectPath(
                 prefix: "build_publish", config: buildArgs.Config, appendUnicode: testUnicode);

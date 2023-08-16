@@ -9,6 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Playwright;
+using System.Runtime.InteropServices;
 
 #nullable enable
 
@@ -37,11 +38,24 @@ public class BuildPublishTests : BlazorWasmTestBase
         await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
     }
 
+
+    public static TheoryData<string, bool> TestDataForDefaultTemplate_NoAOT_WithWorkload()
+    {
+        var data = new TheoryData<string, bool>();
+        data.Add("Debug", false);
+        data.Add("Debug", true);
+        data.Add("Release", false); // Release relinks by default
+
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            data.Add("Release", true);
+        }
+        return data;
+    }
+
     [Theory]
-    [InlineData("Debug", true)]
-    [InlineData("Debug", false)]
-    [InlineData("Release", true)]
-    [InlineData("Release", false)]
+    [MemberData(nameof(TestDataForDefaultTemplate_NoAOT_WithWorkload))]
     public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
