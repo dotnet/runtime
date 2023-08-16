@@ -122,6 +122,16 @@
         <target state="translated">Tipo de validador nulo especificado para os atributos "ValidateObjectMembersAttribute" ou "ValidateEnumeratedItemsAttribute".</target>
         <note />
       </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
+        <source>The options validation source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="new">The options validation source generator is not available in C# '{0}'. Please use language version {1} or greater.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="new">C# language version not supported by the source generator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
         <target state="translated">O tipo {0} tem anotações de validação, mas o membro {1} não especifica [ValidateEnumeratedItems], o que pode ser uma desatenção.</target>
