@@ -6458,7 +6458,21 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
                 const unsigned       lclNum = lcl->GetLclNum();
                 GenTree* const       data   = lcl->Data();
-                m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+
+                if (data->OperIs(GT_LCL_VAR))
+                {
+                    const unsigned dataLclNum = data->AsLclVar()->GetLclNum();
+
+                    if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, dataLclNum))
+                    {
+                        AllVarSetOps::AddElemD(m_compiler, m_dsc->ivciMaskVal, dataLclNum);
+                    }
+                }
+
+                if (!AllVarSetOps::IsMember(m_compiler, m_dsc->ivciMaskVal, lclNum))
+                {
+                    m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
+                }
             }
 
             return WALK_CONTINUE;
@@ -6470,6 +6484,7 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
     dsc.ivciVar            = lclNum;
     dsc.ivciDst            = var;
     dsc.ivciVarSet = new (getAllocator(CMK_LoopOpt)) Compiler::isVarConstInitDsc::VarAsgnSet(getAllocator(CMK_LoopOpt));
+    AllVarSetOps::AssignNoCopy(this, dsc.ivciMaskVal, AllVarSetOps::MakeEmpty(this));
 
     IsVarConstInitVisitor walker(this, &dsc);
     for (Statement* const stmt : loop->lpHead->Statements())

@@ -6769,6 +6769,7 @@ protected:
         typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*>
             VarAsgnSet;
         VarAsgnSet*  ivciVarSet;         // Set of variables assigned to.
+        ALLVARSET_TP ivciMaskVal;        // Set of variables been assigned.
         unsigned     ivciVar;            // Variable we are interested in, or -1
         GenTree*     ivciDst;            // Destination
     };
