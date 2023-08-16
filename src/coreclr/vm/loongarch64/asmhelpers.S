@@ -269,8 +269,8 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     ld.b  $t0, $t4, 0
     bne  $t0, $zero, 1f //LOCAL_LABEL(CheckCardTable)
 
-    ori  $t4, $zero, 0xFF
-    st.b  $t4, $t4, 0
+    ori  $t0, $zero, 0xFF
+    st.b  $t0, $t4, 0
 1:
 //LOCAL_LABEL(CheckCardTable):
 #endif
