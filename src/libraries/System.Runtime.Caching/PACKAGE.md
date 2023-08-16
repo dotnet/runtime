@@ -10,7 +10,6 @@
 
 Use `System.Runtime.Caching`/`MemoryCache` as a compatibility bridge when porting code from ASP.NET 4.x to ASP.NET Core.
 
-
 ## Key Features
 
 * MemoryCache feature represents the type that implements an in-memory cache.
@@ -20,6 +19,10 @@ Use `System.Runtime.Caching`/`MemoryCache` as a compatibility bridge when portin
 The main types provided by this library are:
 
 * `System.Runtime.Caching.MemmoryCache`
+
+## Remarks
+
+[MemoryCache.PhysicalMemeoryLimit](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.caching.memorycache.physicalmemorylimit?view=dotnet-plat-ext-7.0) property is only supported on windows.
 
 ## Addtional Documentation
 
