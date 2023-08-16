@@ -9,6 +9,7 @@
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <AppName>HelloiOS</AppName>
     <GenerateXcodeProject>true</GenerateXcodeProject>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
     <RunAOTCompilation>false</RunAOTCompilation>
     <NativeLib>static</NativeLib>
