@@ -4110,7 +4110,7 @@ PhaseStatus Compiler::optUnrollLoops()
         // LPFLG_CONST_LIMIT or LPFLG_CONST_VAR_LIMIT - required because this transform only handles full unrolls
         if ((loopFlags & LPFLG_CONST_INIT) != LPFLG_CONST_INIT ||
             ((loopFlags & LPFLG_CONST_LIMIT) != LPFLG_CONST_LIMIT &&
-            (loopFlags & LPFLG_CONST_VAR_LIMIT) != LPFLG_CONST_VAR_LIMIT))
+             (loopFlags & LPFLG_CONST_VAR_LIMIT) != LPFLG_CONST_VAR_LIMIT))
         {
             // Don't print to the JitDump about this common case.
             continue;
@@ -6440,7 +6440,9 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
             UseExecutionOrder = true,
         };
 
-        IsVarConstInitVisitor(Compiler* comp, isVarConstInitDsc* dsc) : GenTreeVisitor(comp), m_dsc(dsc) {}
+        IsVarConstInitVisitor(Compiler* comp, isVarConstInitDsc* dsc) : GenTreeVisitor(comp), m_dsc(dsc)
+        {
+        }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -6453,9 +6455,9 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
 
             if (tree->OperIs(GT_STORE_LCL_VAR))
             {
-                GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
-                const unsigned lclNum    = lcl->GetLclNum();
-                GenTree* const data      = lcl->Data();
+                GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
+                const unsigned       lclNum = lcl->GetLclNum();
+                GenTree* const       data   = lcl->Data();
                 m_dsc->ivciVarSet->Set(lclNum, data, Compiler::isVarConstInitDsc::VarAsgnSet::Overwrite);
             }
 
@@ -6493,7 +6495,7 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
         }
         else if (data->IsCnsIntOrI())
         {
-            JITDUMP("optIsVarConstInit: V%02u initialized with a constant value, substitute the value in unrolling.\n", lclNum);
+            JITDUMP("optIsVarConstInit: V%02u initialized with a constant value.\n", lclNum);
             *cnsInit = data;
             return true;
         }
