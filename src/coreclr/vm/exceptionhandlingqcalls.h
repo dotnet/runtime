@@ -12,14 +12,14 @@ struct ExInfo;
 
 #ifndef DACCESS_COMPILE
 
-extern "C" void * QCALLTYPE RhpCallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo);
-extern "C" void QCALLTYPE RhpCallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo);
-extern "C" BOOL QCALLTYPE RhpCallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterP, REGDISPLAY* pvRegDisplay);
-extern "C" void QCALLTYPE RhpAppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
-extern "C" BOOL QCALLTYPE RhpEHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, BYTE** pMethodStartAddress, EH_CLAUSE_ENUMERATOR * pEHEnum);
-extern "C" BOOL QCALLTYPE RhpEHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause);
-extern "C" bool QCALLTYPE RhpSfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault);
-extern "C" bool QCALLTYPE RhpSfiNext(StackFrameIterator* pThis, unsigned int* uExCollideClauseIdx, bool* fUnwoundReversePInvoke);
+extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo);
+extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo);
+extern "C" BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterP, REGDISPLAY* pvRegDisplay);
+extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
+extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, BYTE** pMethodStartAddress, EH_CLAUSE_ENUMERATOR * pEHEnum);
+extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause);
+extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault);
+extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, unsigned int* uExCollideClauseIdx, bool* fUnwoundReversePInvoke);
 #endif // DACCESS_COMPILE
 
 #endif // FEATURE_EH_FUNCLETS

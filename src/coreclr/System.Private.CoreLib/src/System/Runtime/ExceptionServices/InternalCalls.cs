@@ -12,36 +12,36 @@ namespace System.Runtime.ExceptionServices
 {
     internal static partial class InternalCalls
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RhpSfiInit")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiInit")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, [MarshalAs(UnmanagedType.Bool)] bool instructionFault);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RhpSfiNext")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiNext")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke);
 
 #pragma warning disable CS8500
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RhpCallCatchFunclet")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallCatchFunclet")]
         internal static unsafe partial IntPtr RhpCallCatchFunclet(
             ObjectHandleOnStack exceptionObj, byte* pHandlerIP, void* pvRegDisplay, EH.ExInfo* exInfo);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RhpCallFinallyFunclet")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFinallyFunclet")]
         internal static unsafe partial void RhpCallFinallyFunclet(byte* pHandlerIP, void* pvRegDisplay, EH.ExInfo* exInfo);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RhpCallFilterFunclet")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFilterFunclet")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool RhpCallFilterFunclet(
             ObjectHandleOnStack exceptionObj, byte* pFilterIP, void* pvRegDisplay);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RhpAppendExceptionStackFrame")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppendExceptionStackFrame")]
         internal static unsafe partial void RhpAppendExceptionStackFrame(ObjectHandleOnStack exceptionObj, IntPtr ip, UIntPtr sp, int flags, EH.ExInfo* exInfo);
 #pragma warning restore CS8500
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RhpEHEnumInitFromStackFrameIterator")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumInitFromStackFrameIterator")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, byte** pMethodStartAddress, void* pEHEnum);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RhpEHEnumNext")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumNext")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
     }

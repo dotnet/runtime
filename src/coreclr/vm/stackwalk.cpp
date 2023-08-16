@@ -2231,7 +2231,7 @@ ProcessFuncletsForGCReporting:
                             {
                                 STRESS_LOG3(LF_GCROOTS, LL_INFO100,
                                     "STACKWALK: Force callback for skipped function m_crawl.pFunc = %pM (%s.%s)\n", m_crawl.pFunc, m_crawl.pFunc->m_pszDebugClassName, m_crawl.pFunc->m_pszDebugMethodName);
-                                _ASSERTE((m_crawl.pFunc->GetMethodTable() == g_pEHClass) || (strcmp(m_crawl.pFunc->m_pszDebugClassName, "ILStubClass") == 0) || (strcmp(m_crawl.pFunc->m_pszDebugMethodName, "RhpCallFinallyFunclet") == 0));
+                                _ASSERTE((m_crawl.pFunc->GetMethodTable() == g_pEHClass) || (strcmp(m_crawl.pFunc->m_pszDebugClassName, "ILStubClass") == 0) || (strcmp(m_crawl.pFunc->m_pszDebugMethodName, "CallFinallyFunclet") == 0));
                             }
 #endif                                                                
                         }

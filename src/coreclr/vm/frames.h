@@ -2875,7 +2875,7 @@ public:
     // - on windows x86 host: argument stack size (if value is <64k)
     // When m_Datum contains MethodDesc ptr, then on other than windows x86 host
     // - bit 1 set indicates invoking new exception handling helpers
-    // - bit 2 indicates RhpCallCatchFunclet or RhpCallFinallyFunclet
+    // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.
     PTR_NDirectMethodDesc   m_Datum;
 

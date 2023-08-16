@@ -7482,7 +7482,7 @@ void ExceptionTracker::ResetThreadAbortStatus(PTR_Thread pThread, CrawlFrame *pC
 #endif //!DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-// Mark the pinvoke frame as invoking RhpCallCatchFunclet (and similar) for collided unwind detection
+// Mark the pinvoke frame as invoking CallCatchFunclet (and similar) for collided unwind detection
 void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 {
     _ASSERTE(pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
@@ -7498,7 +7498,7 @@ void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
     pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
 }
 
-extern "C" void QCALLTYPE RhpAppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo)
+extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo)
 {
     QCALL_CONTRACT;
     
@@ -7551,7 +7551,7 @@ UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 #endif        
 }
 
-extern "C" void * QCALLTYPE RhpCallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
+extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
     QCALL_CONTRACT;
 
@@ -7702,7 +7702,7 @@ extern "C" void * QCALLTYPE RhpCallCatchFunclet(QCall::ObjectHandleOnStack excep
     return NULL;
 }
 
-extern "C" void QCALLTYPE RhpCallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
+extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
     QCALL_CONTRACT;
 
@@ -7738,7 +7738,7 @@ extern "C" void QCALLTYPE RhpCallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pv
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE RhpCallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
+extern "C" BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
 {
     QCALL_CONTRACT;
 
@@ -7793,7 +7793,7 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     unsigned EHCount;
 };
 
-extern "C" BOOL QCALLTYPE RhpEHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, BYTE** pMethodStartAddress, EH_CLAUSE_ENUMERATOR * pEHEnum)
+extern "C" BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, BYTE** pMethodStartAddress, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
     QCALL_CONTRACT;
 
@@ -7815,7 +7815,7 @@ extern "C" BOOL QCALLTYPE RhpEHEnumInitFromStackFrameIterator(StackFrameIterator
     return pExtendedEHEnum->EHCount != 0;
 }
 
-extern "C" BOOL QCALLTYPE RhpEHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
+extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
 {
     QCALL_CONTRACT;
     BOOL result = FALSE;
@@ -7891,7 +7891,7 @@ extern uint32_t g_exceptionCount;
 
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
-extern "C" bool QCALLTYPE RhpSfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault)
+extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault)
 {
     QCALL_CONTRACT;
 
@@ -7906,7 +7906,7 @@ extern "C" bool QCALLTYPE RhpSfiInit(StackFrameIterator* pThis, CONTEXT* pStackw
     // just clear the thread state.
     pThread->ResetThrowControlForThread();
 
-    // Skip the RhpSfiInit pinvoke frame
+    // Skip the SfiInit pinvoke frame
     pFrame = pThread->GetFrame()->PtrNextFrame();
 
     ExInfo* pExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
@@ -8030,7 +8030,7 @@ extern "C" bool QCALLTYPE RhpSfiInit(StackFrameIterator* pThis, CONTEXT* pStackw
 
 extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
 
-extern "C" bool QCALLTYPE RhpSfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke)
+extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke)
 {
     QCALL_CONTRACT;
 
@@ -8138,10 +8138,10 @@ extern "C" bool QCALLTYPE RhpSfiNext(StackFrameIterator* pThis, uint* uExCollide
                 InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
                 if (((TADDR)pInlinedCallFrame->m_Datum & 6) == 6)
                 {
-                    // passing through RhpCallCatchFunclet et al
+                    // passing through CallCatchFunclet et al
                     if (doingFuncletUnwind)
                     {
-                        // Unwind the RhpCallCatchFunclet
+                        // Unwind the CallCatchFunclet
                         retVal = pThis->Next();
                         if (retVal == SWA_FAILED)
                         {

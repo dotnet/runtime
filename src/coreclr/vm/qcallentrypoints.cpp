@@ -324,14 +324,14 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjectToComWeakRef)
 #endif
 #ifdef FEATURE_EH_FUNCLETS
-    DllImportEntry(RhpSfiInit)
-    DllImportEntry(RhpSfiNext)
-    DllImportEntry(RhpCallCatchFunclet)
-    DllImportEntry(RhpCallFilterFunclet)
-    DllImportEntry(RhpCallFinallyFunclet)
-    DllImportEntry(RhpEHEnumInitFromStackFrameIterator)
-    DllImportEntry(RhpEHEnumNext)
-    DllImportEntry(RhpAppendExceptionStackFrame)
+    DllImportEntry(SfiInit)
+    DllImportEntry(SfiNext)
+    DllImportEntry(CallCatchFunclet)
+    DllImportEntry(CallFilterFunclet)
+    DllImportEntry(CallFinallyFunclet)
+    DllImportEntry(EHEnumInitFromStackFrameIterator)
+    DllImportEntry(EHEnumNext)
+    DllImportEntry(AppendExceptionStackFrame)
 #endif // FEATURE_EH_FUNCLETS
 };
 
