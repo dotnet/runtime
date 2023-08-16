@@ -429,7 +429,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.MethodDefinitionExtensions</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MethodIL</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.MethodReferenceExtensions</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
@@ -1281,6 +1293,18 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.FatalError(System.String,System.Int32,System.Exception,System.String,System.Nullable{Mono.Linker.MessageOrigin})</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.FatalError(System.String,System.Int32,System.String,System.Nullable{Mono.Linker.MessageOrigin})</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.FlushCachedWarnings</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
@@ -1342,6 +1366,12 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_DisableOperatorDiscovery</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_EmbeddedXmlInfo</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
@@ -1522,12 +1552,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_Tracer</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
-  </Suppression>
-    <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.LinkContext.get_EmbeddedXmlInfo</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
