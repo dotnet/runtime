@@ -22,6 +22,7 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <PropertyGroup>
