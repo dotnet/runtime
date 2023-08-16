@@ -401,6 +401,8 @@ EXTERN OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
 // we use this as a dummy object to indicate free space in the handle tables -- this object is never visible to the world
 EXTERN OBJECTHANDLE         g_pPreallocatedSentinelObject;
 
+EXTERN MethodTable*         g_pCastHelpers;
+
 GPTR_DECL(Thread,g_pFinalizerThread);
 GPTR_DECL(Thread,g_pSuspensionThread);
 
