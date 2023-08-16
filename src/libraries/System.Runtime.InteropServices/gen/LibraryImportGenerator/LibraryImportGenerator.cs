@@ -113,11 +113,11 @@ namespace Microsoft.Interop
 
             if (suppressGCTransitionAttribute is not null)
             {
-                attributes.Add(Attribute(ParseName(TypeNames.SuppressGCTransitionAttribute)));
+                attributes.Add(Attribute(NameSyntaxes.SuppressGCTransitionAttribute));
             }
             if (unmanagedCallConvAttribute is not null)
             {
-                AttributeSyntax unmanagedCallConvSyntax = Attribute(ParseName(TypeNames.UnmanagedCallConvAttribute));
+                AttributeSyntax unmanagedCallConvSyntax = Attribute(NameSyntaxes.UnmanagedCallConvAttribute);
                 foreach (KeyValuePair<string, TypedConstant> arg in unmanagedCallConvAttribute.NamedArguments)
                 {
                     if (arg.Key == CallConvsField)
@@ -129,7 +129,7 @@ namespace Microsoft.Interop
                                 TypeOfExpression(((ITypeSymbol)callConv.Value!).AsTypeSyntax()));
                         }
 
-                        ArrayTypeSyntax arrayOfSystemType = ArrayType(ParseTypeName(TypeNames.System_Type), SingletonList(ArrayRankSpecifier()));
+                        ArrayTypeSyntax arrayOfSystemType = ArrayType(TypeSyntaxes.System_Type, SingletonList(ArrayRankSpecifier()));
 
                         unmanagedCallConvSyntax = unmanagedCallConvSyntax.AddArgumentListArguments(
                             AttributeArgument(
@@ -143,9 +143,9 @@ namespace Microsoft.Interop
             if (defaultDllImportSearchPathsAttribute is not null)
             {
                 attributes.Add(
-                    Attribute(ParseName(TypeNames.DefaultDllImportSearchPathsAttribute)).AddArgumentListArguments(
+                    Attribute(NameSyntaxes.DefaultDllImportSearchPathsAttribute).AddArgumentListArguments(
                         AttributeArgument(
-                            CastExpression(ParseTypeName(TypeNames.DllImportSearchPath),
+                            CastExpression(TypeSyntaxes.DllImportSearchPath,
                                 LiteralExpression(SyntaxKind.NumericLiteralExpression,
                                     Literal((int)defaultDllImportSearchPathsAttribute.ConstructorArguments[0].Value!))))));
             }
@@ -424,26 +424,26 @@ namespace Microsoft.Interop
                     SingletonList(AttributeList(
                         SingletonSeparatedList(
                                 Attribute(
-                                ParseName(typeof(DllImportAttribute).FullName),
-                                AttributeArgumentList(
-                                    SeparatedList(
-                                        new[]
-                                        {
-                                            AttributeArgument(LiteralExpression(
-                                                    SyntaxKind.StringLiteralExpression,
-                                                    Literal(libraryImportData.ModuleName))),
-                                            AttributeArgument(
-                                                NameEquals(nameof(DllImportAttribute.EntryPoint)),
-                                                null,
-                                                LiteralExpression(
-                                                    SyntaxKind.StringLiteralExpression,
-                                                    Literal(libraryImportData.EntryPoint ?? stubMethodName))),
-                                            AttributeArgument(
-                                                NameEquals(nameof(DllImportAttribute.ExactSpelling)),
-                                                null,
-                                                LiteralExpression(SyntaxKind.TrueLiteralExpression))
-                                        }
-                                        )))))))
+                                    NameSyntaxes.DllImportAttribute,
+                                    AttributeArgumentList(
+                                        SeparatedList(
+                                            new[]
+                                            {
+                                                AttributeArgument(LiteralExpression(
+                                                        SyntaxKind.StringLiteralExpression,
+                                                        Literal(libraryImportData.ModuleName))),
+                                                AttributeArgument(
+                                                    NameEquals(nameof(DllImportAttribute.EntryPoint)),
+                                                    null,
+                                                    LiteralExpression(
+                                                        SyntaxKind.StringLiteralExpression,
+                                                        Literal(libraryImportData.EntryPoint ?? stubMethodName))),
+                                                AttributeArgument(
+                                                    NameEquals(nameof(DllImportAttribute.ExactSpelling)),
+                                                    null,
+                                                    LiteralExpression(SyntaxKind.TrueLiteralExpression))
+                                            }
+                                            )))))))
                 .WithParameterList(parameterList);
             if (returnTypeAttributes is not null)
             {
@@ -486,7 +486,7 @@ namespace Microsoft.Interop
 
             // Create new attribute
             return Attribute(
-                ParseName(typeof(DllImportAttribute).FullName),
+                NameSyntaxes.DllImportAttribute,
                 AttributeArgumentList(SeparatedList(newAttributeArgs)));
 
             static ExpressionSyntax CreateBoolExpressionSyntax(bool trueOrFalse)

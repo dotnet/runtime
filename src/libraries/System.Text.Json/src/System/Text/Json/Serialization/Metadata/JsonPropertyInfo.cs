@@ -930,6 +930,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// It is set just before property is configured and does not change afterward.
         /// It is not equivalent to index on the properties list
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal int RequiredPropertyIndex
         {
             get
@@ -951,6 +952,6 @@ namespace System.Text.Json.Serialization.Metadata
             => MemberName == other.MemberName && DeclaringType.IsAssignableFrom(other.DeclaringType);
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"PropertyType = {PropertyType}, Name = {Name}, DeclaringType = {DeclaringType}";
+        private string DebuggerDisplay => $"Name = {Name}, PropertyType = {PropertyType}";
     }
 }

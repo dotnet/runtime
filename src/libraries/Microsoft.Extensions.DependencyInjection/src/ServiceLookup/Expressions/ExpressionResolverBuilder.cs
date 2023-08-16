@@ -123,6 +123,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return ServiceLookupHelpers.GetArrayEmptyMethodInfo(elementType);
             }
 
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "VerifyAotCompatibility ensures elementType is not a ValueType")]
+            static NewArrayExpression NewArrayInit(Type elementType, IEnumerable<Expression> expr)
+            {
+                Debug.Assert(!ServiceProvider.VerifyAotCompatibility || !elementType.IsValueType, "VerifyAotCompatibility=true will throw during building the IEnumerableCallSite if elementType is a ValueType.");
+
+                return Expression.NewArrayInit(elementType, expr);
+            }
+
             if (callSite.ServiceCallSites.Length == 0)
             {
                 return Expression.Constant(
@@ -130,7 +139,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     .Invoke(obj: null, parameters: Array.Empty<object>()));
             }
 
-            return Expression.NewArrayInit(
+            return NewArrayInit(
                 callSite.ItemType,
                 callSite.ServiceCallSites.Select(cs =>
                     Convert(

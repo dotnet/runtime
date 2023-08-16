@@ -42,5 +42,20 @@
 			IL_0000:  nop
 			IL_0001:  ret
 		}
+
+		.field public class [System.Runtime]System.Tuple`2<int32,bool modopt([System.Runtime]System.Runtime.CompilerServices.IsConst)> GenericField
+
+		.method public hidebysig specialname instance class [System.Runtime]System.Tuple`2<int32,bool modopt([System.Runtime]System.Runtime.CompilerServices.IsConst)> get_GenericField () cil managed
+		{
+			.maxstack 8
+			IL_0000: ldarg.0
+			IL_0001: ldfld class [System.Runtime]System.Tuple`2<int32,bool modopt([System.Runtime]System.Runtime.CompilerServices.IsConst)> System.Tests.GenericWithModifiers::GenericField
+			IL_0006: ret
+		}
+
+		.property instance class [System.Runtime]System.Tuple`2<int32,bool modopt([System.Runtime]System.Runtime.CompilerServices.IsConst)> GenericProperty()
+		{
+			.get instance class [System.Runtime]System.Tuple`2<int32,bool modopt([System.Runtime]System.Runtime.CompilerServices.IsConst)> System.Tests.GenericWithModifiers::get_GenericField()
+		}
 	}
 }

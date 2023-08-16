@@ -23834,7 +23834,7 @@ void gc_heap::garbage_collect (int n)
         }
 #endif // HEAP_ANALYZE
 
-        GCToEEInterface::DiagGCStart(settings.condemned_generation, settings.reason == reason_induced);
+        GCToEEInterface::DiagGCStart(settings.condemned_generation, is_induced (settings.reason));
 
 #ifdef BACKGROUND_GC
         if ((settings.condemned_generation == max_generation) &&
@@ -25490,8 +25490,9 @@ bool gc_heap::change_heap_count (int new_n_heaps)
             from_heap_number = (from_heap_number + 1) % old_n_heaps;
         }
 
-        // prepare for the switch by fixing the allocation contexts on the old heaps,
+        // prepare for the switch by fixing the allocation contexts on the old heaps, unify the gen0_bricks_cleared flag,
         // and setting the survived size for the existing regions to their allocated size
+        BOOL unified_gen0_bricks_cleared = TRUE;
         for (int i = 0; i < old_n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
@@ -25499,6 +25500,11 @@ bool gc_heap::change_heap_count (int new_n_heaps)
             if (GCScan::GetGcRuntimeStructuresValid())
             {
                 hp->fix_allocation_contexts (TRUE);
+            }
+
+            if (unified_gen0_bricks_cleared && (hp->gen0_bricks_cleared == FALSE))
+            {
+                unified_gen0_bricks_cleared = FALSE;
             }
 
             for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
@@ -25610,6 +25616,8 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         for (int i = 0; i < new_n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
+
+            hp->gen0_bricks_cleared = unified_gen0_bricks_cleared;
 
             // establish invariants regarding the ephemeral segment
             generation* gen0 = hp->generation_of (0);
@@ -43704,6 +43712,7 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
 #ifdef USE_REGIONS
 size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
 {
+    FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem (region));
     uint8_t* page_start = align_lower_page (get_region_start (region));
     uint8_t* decommit_end = heap_segment_committed (region);
     size_t decommit_size = decommit_end - page_start;

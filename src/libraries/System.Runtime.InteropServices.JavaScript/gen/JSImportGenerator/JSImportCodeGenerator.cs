@@ -76,7 +76,7 @@ namespace Microsoft.Interop.JavaScript
 
             if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
+                setupStatements.Add(SyntaxFactoryExtensions.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
             }
 
             setupStatements.AddRange(declarations.Initializations);

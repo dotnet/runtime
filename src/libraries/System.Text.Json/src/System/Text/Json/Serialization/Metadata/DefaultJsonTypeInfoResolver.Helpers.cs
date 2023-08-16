@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.PopulatePolymorphismMetadata();
             typeInfo.MapInterfaceTypesToCallbacks();
 
-            Func<object>? createObject = MemberAccessor.CreateConstructor(typeInfo.Type);
+            Func<object>? createObject = DetermineCreateObjectDelegate(type, converter);
             typeInfo.SetCreateObjectIfCompatible(createObject);
             typeInfo.CreateObjectForExtensionDataProperty = createObject;
 
@@ -410,6 +410,25 @@ namespace System.Text.Json.Serialization.Metadata
                     Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
                     break;
             }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static Func<object>? DetermineCreateObjectDelegate(Type type, JsonConverter converter)
+        {
+            ConstructorInfo? defaultCtor = null;
+
+            if (converter.ConstructorInfo != null && !converter.ConstructorIsParameterized)
+            {
+                // A parameterless constructor has been resolved by the converter
+                // (e.g. it might be a non-public ctor with JsonConverterAttribute).
+                defaultCtor = converter.ConstructorInfo;
+            }
+
+            // Fall back to resolving any public constructors on the type.
+            defaultCtor ??= type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+
+            return MemberAccessor.CreateParameterlessConstructor(type, defaultCtor);
         }
     }
 }

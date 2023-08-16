@@ -564,4 +564,7 @@
   <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
     <value>The given key '{0}' was not present in the dictionary.</value>
   </data>
+  <data name="LiftingInExpressionRequiresDynamicCode" xml:space="preserve">
+    <value>Nullable lifting on non-primitive type '{0}' is only supported in expression trees when dynamic code generation is available.</value>
+  </data>
 </root>

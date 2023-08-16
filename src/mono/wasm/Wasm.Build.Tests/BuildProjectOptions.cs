@@ -26,5 +26,6 @@ public record BuildProjectOptions
     string              TargetFramework           = BuildTestBase.DefaultTargetFramework,
     string?             MainJS                    = null,
     bool                IsBrowserProject          = true,
-    IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
+    IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
+    string?             BinFrameworkDir           = null
 );

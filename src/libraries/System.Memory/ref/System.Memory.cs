@@ -36,6 +36,7 @@ namespace System.Buffers
         public System.ReadOnlySpan<T> WrittenSpan { get { throw null; } }
         public void Advance(int count) { }
         public void Clear() { }
+        public void ResetWrittenCount() { }
         public System.Memory<T> GetMemory(int sizeHint = 0) { throw null; }
         public System.Span<T> GetSpan(int sizeHint = 0) { throw null; }
     }

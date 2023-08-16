@@ -24,7 +24,7 @@ namespace Mono.Linker
 		{
 			var assembly = member.Module.Assembly;
 			if (!_embeddedXmlInfos.TryGetValue (assembly, out xmlInfo)) {
-				xmlInfo = EmbeddedXmlInfo.ProcessSubstitutions (assembly, _context);
+				xmlInfo = _context.EmbeddedXmlInfo.ProcessSubstitutions (assembly, _context);
 				_embeddedXmlInfos.Add (assembly, xmlInfo);
 			}
 

@@ -49,6 +49,7 @@ namespace Mono.Linker
 		public virtual AnnotationStore CreateAnnotationStore (LinkContext context) => new AnnotationStore (context);
 		public virtual MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
 		public virtual Tracer CreateTracer (LinkContext context) => new Tracer (context);
+		public virtual EmbeddedXmlInfo CreateEmbeddedXmlInfo () => new ();
 	}
 
 	public static class TargetRuntimeVersion
@@ -174,6 +175,8 @@ namespace Mono.Linker
 
 		public Tracer Tracer { get; private set; }
 
+		public EmbeddedXmlInfo EmbeddedXmlInfo { get; private set; }
+
 		public CodeOptimizationsSettings Optimizations { get; set; }
 
 		public bool AddReflectionAnnotations { get; set; }
@@ -213,6 +216,7 @@ namespace Mono.Linker
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			SerializationMarker = new SerializationMarker (this);
 			Tracer = factory.CreateTracer (this);
+			EmbeddedXmlInfo = factory.CreateEmbeddedXmlInfo ();
 			MarkedKnownMembers = new KnownMembers ();
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
