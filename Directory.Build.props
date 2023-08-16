@@ -135,7 +135,7 @@
     <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
     <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
-    <TasksConfiguration Condition="'$(TasksConfiguration)' == ''">$(Configuration)</TasksConfiguration>
+    <TasksConfiguration Condition="'$(TasksConfiguration)' == ''">$(RuntimeConfiguration)</TasksConfiguration>
   </PropertyGroup>
 
   <PropertyGroup>
