@@ -58,7 +58,7 @@ public class JittedMethodsCountingTest
             // the runtime to print them out with DOTNET_JitDisasmSummary, and
             // write them out to a file we can parse and investigate later
             // with DOTNET_JitStdOutFile.
-            startInfo.EnvironmentVariables.Add("DOTNET_JitDisasmSummary", 1);
+            startInfo.EnvironmentVariables.Add("DOTNET_JitDisasmSummary", "1");
             startInfo.EnvironmentVariables.Add("DOTNET_JitStdOutFile", jitOutputFile);
 
             Console.WriteLine("Launching Test App: {0} {1}", startInfo.FileName,
@@ -78,7 +78,7 @@ public class JittedMethodsCountingTest
 
     private static int GetNumberOfJittedMethods(string jitOutputFile)
     {
-        string[] lines = File.ReadLines(jitOutputFile);
+        string[] lines = File.ReadLines(jitOutputFile).ToArray();
 
         // Print out the jitted methods from the app run previously. This is
         // mostly done as additional logging to simplify potential bug investigations
