@@ -6514,8 +6514,8 @@ bool Compiler::optIsVarConstInit(BasicBlock* bb, GenTree* var, GenTree** cnsInit
 
             if (tree->OperIs(GT_CAST))
             {
-                GenTreeCast* const cast = tree->AsCast();
-                var_types          toType = cast->CastToType();
+                GenTreeCast* const cast     = tree->AsCast();
+                var_types          toType   = cast->CastToType();
                 var_types          fromType = cast->CastFromType();
                 if (toType >= fromType && toType >= TYP_BYTE && toType <= TYP_ULONG && fromType >= TYP_BYTE &&
                     fromType <= TYP_ULONG)
