@@ -694,7 +694,7 @@ namespace System.IO
             ArgumentException.ThrowIfNullOrEmpty(path);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+            using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Append, FileAccess.Write, FileShare.Read);
             long fileOffset = RandomAccess.GetLength(fileHandle);
             RandomAccess.WriteAtOffset(fileHandle, bytes, fileOffset);
         }
@@ -710,7 +710,7 @@ namespace System.IO
 
             static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
             {
-                using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Open, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
+                using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Append, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
                 long fileOffset = RandomAccess.GetLength(fileHandle);
                 await RandomAccess.WriteAtOffsetAsync(fileHandle, bytes, fileOffset, cancellationToken).ConfigureAwait(false);
             }
