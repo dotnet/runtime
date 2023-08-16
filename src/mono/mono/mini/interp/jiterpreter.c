@@ -27,7 +27,10 @@ void jiterp_preserve_module (void);
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+
+#ifndef DISABLE_THREADS
 #include <pthread.h>
+#endif
 
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-threads.h>
@@ -49,6 +52,7 @@ void jiterp_preserve_module (void);
 #include <mono/mini/llvmonly-runtime.h>
 #include <mono/utils/options.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-tls.h>
 
 #include "jiterpreter.h"
 
@@ -1549,18 +1553,27 @@ mono_jiterp_patch_opcode (volatile JiterpreterOpcode *ip, guint16 old_opcode, gu
  * Unordered thread-local pointer queue (used for do_jit_call and interp_entry wrappers)
  * The queues are all tracked in a global list so that it is possible to perform a global
  *  'purge item with this value from all queues' operation, which means queue operations
- *  are protected by a lock
+ *  are protected by a mutex
  */
 
 #define NUM_QUEUES 2
-pthread_key_t queue_keys[NUM_QUEUES] = { 0 };
+static MonoNativeTlsKey queue_keys[NUM_QUEUES] = { 0 };
+#ifdef DISABLE_THREADS
+gboolean queue_keys_initialized = FALSE;
+#else
 pthread_once_t queue_keys_initialized = PTHREAD_ONCE_INIT;
-mono_mutex_t queue_mutex;
-GPtrArray *shared_queues = NULL;
+#endif
+// NOTE: We're using OS mutexes here not coop mutexes, because we need to be able to run
+//  during a GC and at any point (before runtime startup or after shutdown)
+// This means if we aren't careful we could deadlock, so we have to be cautious about
+//  what operations we perform while holding this mutex.
+static mono_mutex_t queue_mutex;
+static GPtrArray *shared_queues = NULL;
 
 static void
 free_queue (void *ptr) {
 	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
 	g_ptr_array_remove_fast (shared_queues, ptr);
 	g_ptr_array_free ((GPtrArray *)ptr, TRUE);
 	mono_os_mutex_unlock (&queue_mutex);
@@ -1569,27 +1582,41 @@ free_queue (void *ptr) {
 static void
 initialize_queue_keys () {
 	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
 	shared_queues = g_ptr_array_new ();
-	mono_os_mutex_unlock (&queue_mutex);
 
 	for (int i = 0; i < NUM_QUEUES; i++)
-		g_assert (pthread_key_create (&queue_keys[i], free_queue) == 0);
+		g_assert (mono_native_tls_alloc (&queue_keys[i], free_queue));
+
+#ifdef DISABLE_THREADS
+	queue_keys_initialized = TRUE;
+#endif
+
+	mono_os_mutex_unlock (&queue_mutex);
 }
 
-static pthread_key_t
+static MonoNativeTlsKey
 get_queue_key (int queue) {
 	g_assert ((queue >= 0) && (queue < NUM_QUEUES));
+
+#ifdef DISABLE_THREADS
+	if (!queue_keys_initialized)
+		initialize_queue_keys ();
+#else
 	pthread_once (&queue_keys_initialized, initialize_queue_keys);
+#endif
+
 	return queue_keys[queue];
 }
 
 static GPtrArray *
 get_queue (int queue) {
-	pthread_key_t key = get_queue_key (queue);
+	MonoNativeTlsKey key = get_queue_key (queue);
 	GPtrArray *result = NULL;
-	if ((result = (GPtrArray *)pthread_getspecific (key)) == NULL) {
-		pthread_setspecific (key, result = g_ptr_array_new ());
+	if ((result = (GPtrArray *)mono_native_tls_get_value (key)) == NULL) {
+		g_assert (mono_native_tls_set_value (key, result = g_ptr_array_new ()));
 		mono_os_mutex_lock (&queue_mutex);
+		// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
 		g_ptr_array_add (shared_queues, result);
 		mono_os_mutex_unlock (&queue_mutex);
 	}
@@ -1600,6 +1627,7 @@ get_queue (int queue) {
 void
 mono_jiterp_tlqueue_purge_all (gpointer item) {
 	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
 	for (int i = 0; i < shared_queues->len; i++) {
 		GPtrArray *queue = (GPtrArray *)g_ptr_array_index (shared_queues, i);
 		gboolean ok = g_ptr_array_remove_fast (queue, item);
@@ -1613,8 +1641,12 @@ mono_jiterp_tlqueue_purge_all (gpointer item) {
 // Removes the next item from the queue, if any, and returns it (NULL if empty)
 EMSCRIPTEN_KEEPALIVE gpointer
 mono_jiterp_tlqueue_next (int queue) {
+	// This lock-per-call is unpleasant, but the queue is usually only going to contain
+	//  a handful of items and will only be enumerated a few hundred times total during
+	//  execution, so performance is not especially important compared to safety/simplicity
 	GPtrArray *items = get_queue (queue);
 	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
 	gpointer result = NULL;
 	if (items->len) {
 		result = g_ptr_array_index (items, 0);
@@ -1630,6 +1662,7 @@ mono_jiterp_tlqueue_add (int queue, gpointer item) {
 	int result;
 	GPtrArray *items = get_queue (queue);
 	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
 	g_ptr_array_add (items, item);
 	result = items->len;
 	mono_os_mutex_unlock (&queue_mutex);
@@ -1640,6 +1673,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_tlqueue_clear (int queue) {
 	GPtrArray *items = get_queue (queue);
 	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
 	g_ptr_array_set_size (items, 0);
 	mono_os_mutex_unlock (&queue_mutex);
 }
