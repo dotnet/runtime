@@ -6436,7 +6436,7 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
     public:
         enum
         {
-            DoPreOrder        = true,
+            DoPostOrder       = true,
             UseExecutionOrder = true,
         };
 
@@ -6444,7 +6444,7 @@ bool Compiler::optIsVarConstInit(unsigned lnum, GenTree* var, GenTree** cnsInit)
         {
         }
 
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* const tree = *use;
 
