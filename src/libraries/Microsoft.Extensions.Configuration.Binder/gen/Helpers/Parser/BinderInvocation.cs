@@ -26,12 +26,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             return node is InvocationExpressionSyntax
             {
+                // TODO: drill further into this evaluation for a declaring-type name check.
+                // https://github.com/dotnet/runtime/issues/90687.
                 Expression: MemberAccessExpressionSyntax
                 {
                     Name.Identifier.ValueText: string memberName,
-                    // TODO: drill further into this expression for a declaring-type name check.
-                    // https://github.com/dotnet/runtime/issues/90687.
-                    Expression: NameSyntax,
                 }
             } && IsCandidateBindingMethodName(memberName);
 
