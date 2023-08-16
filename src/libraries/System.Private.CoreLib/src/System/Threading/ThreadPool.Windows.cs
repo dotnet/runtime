@@ -12,7 +12,7 @@ namespace System.Threading
     {
         private static readonly bool s_useWindowsThreadPool = // name relied on by sos
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", "DOTNET_ThreadPool_UseWindowsThreadPool");
-        
+
         internal static bool UseWindowsThreadPool => s_useWindowsThreadPool;
 
 #if NATIVEAOT
