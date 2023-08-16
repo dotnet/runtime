@@ -5957,6 +5957,13 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 }
 
 gboolean
+mono_class_has_failure (const MonoClass *klass)
+{
+	g_assert (klass != NULL);
+	return m_class_has_failure ((MonoClass*)klass) != 0;
+}
+
+gboolean
 mono_class_has_deferred_failure (const MonoClass *klass)
 {
 	g_assert (klass != NULL);
