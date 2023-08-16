@@ -8,6 +8,11 @@
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.GenericEqualityComparer<>))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.NullableEqualityComparer<>))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.ObjectEqualityComparer<>))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.Emit.PEFileKinds))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.AssemblyRegistrationFlags))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.ExporterEventKind))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.RegistrationClassContext))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.RegistrationConnectionType))]
 // This is required for back-compatibility with .NET Core 2.0 as we exposed the NonRandomizedStringEqualityComparer inside the serialization blob
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.NonRandomizedStringEqualityComparer))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.ByteEqualityComparer))]
