@@ -158,4 +158,6 @@
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded." />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
   </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 </Project>
