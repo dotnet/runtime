@@ -108,11 +108,6 @@ namespace System.Net.Test.Common
             return checked((int)stream.Id + 1);
         }
 
-        public Http3LoopbackStream GetOpenRequest(int requestId = 0)
-        {
-            return requestId == 0 ? _currentStream : _openStreams[requestId - 1];
-        }
-
         public override Task InitializeConnectionAsync()
         {
             throw new NotImplementedException();
@@ -195,6 +190,17 @@ namespace System.Net.Test.Common
             await _outboundControlStream.SendSettingsFrameAsync(settingsEntries);
         }
 
+        public async Task DisposeCurrentStream()
+        {
+            Assert.NotNull(_currentStream);
+            Assert.True(_currentStreamId >= 0);
+
+            await _currentStream.DisposeAsync().ConfigureAwait(false);
+            _openStreams.Remove((int)_currentStreamId);
+            _currentStream = null;
+            _currentStreamId = -4;
+        }
+
         public override async Task<byte[]> ReadRequestBodyAsync()
         {
             return await _currentStream.ReadRequestBodyAsync().ConfigureAwait(false);
@@ -206,24 +212,32 @@ namespace System.Net.Test.Common
             return await stream.ReadRequestDataAsync(readBody).ConfigureAwait(false);
         }
 
-        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
+        public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
-            return GetOpenRequest().SendResponseAsync(statusCode, headers, content, isFinal);
+            await _currentStream.SendResponseAsync(statusCode, headers, content, isFinal);
+            if (isFinal)
+            {
+                await DisposeCurrentStream().ConfigureAwait(false);
+            }
         }
 
-        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
+        public override async Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
         {
-            return GetOpenRequest().SendResponseBodyAsync(content, isFinal);
+            await _currentStream.SendResponseBodyAsync(content, isFinal);
+            if (isFinal)
+            {
+                await DisposeCurrentStream().ConfigureAwait(false);
+            }
         }
 
         public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            return GetOpenRequest().SendResponseHeadersAsync(statusCode, headers);
+            return _currentStream.SendResponseHeadersAsync(statusCode, headers);
         }
 
         public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            return GetOpenRequest().SendPartialResponseHeadersAsync(statusCode, headers);
+            return _currentStream.SendPartialResponseHeadersAsync(statusCode, headers);
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
@@ -310,7 +324,7 @@ namespace System.Net.Test.Common
 
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
-            await GetOpenRequest().WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
+            await _currentStream.WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
         }
 
         public override Task WaitForCloseAsync(CancellationToken cancellationToken)
