@@ -3,6 +3,6 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="InvalidCSharp.il" />
+    <Compile Include="InvalidCSharpInlineArray.il" />
   </ItemGroup>
 </Project>
