@@ -552,8 +552,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
-    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
-
     if (blkNode->OperIsInitBlkOp())
     {
         if (src->OperIs(GT_INIT_VAL))
@@ -617,12 +615,22 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
-        bool     doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && blkNode->GetLayout()->HasGCPtr();
-        unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-        if (doCpObj && isDstAddrLocal && (size <= copyBlockUnrollLimit))
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
+
+        if (doCpObj && (size <= copyBlockUnrollLimit))
         {
-            doCpObj                  = false;
-            blkNode->gtBlkOpGcUnsafe = true;
+            // No write barriers are needed on the stack.
+            // If the layout contains a byref, then we know it must live on the stack.
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
+            {
+                // If the size is small enough to unroll then we need to mark the block as non-interruptible
+                // to actually allow unrolling. The generated code does not report GC references loaded in the
+                // temporary register(s) used for copying.
+                doCpObj                  = false;
+                blkNode->gtBlkOpGcUnsafe = true;
+            }
         }
 
         if (doCpObj)
@@ -1628,9 +1636,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
-
-    // We support the return type being a SIMD for floating-point as a special optimization
-    assert(varTypeIsArithmetic(node) || (varTypeIsSIMD(node) && varTypeIsFloating(simdBaseType)));
+    assert(varTypeIsSIMD(node));
 
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
@@ -1647,7 +1653,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
         // For 12 byte SIMD, we need to clear the upper 4 bytes:
         //   idx  =    CNS_INT       int    0x03
-        //   tmp1 = *  CNS_DLB       float  0.0
+        //   tmp1 = *  CNS_DBL       float  0.0
         //          /--*  op1  simd16
         //          +--*  idx  int
         //          +--*  tmp1 simd16
@@ -1887,34 +1893,16 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         }
     }
 
-    if (varTypeIsSIMD(node->gtType))
+    // We're producing a vector result, so just return the result directly
+    LIR::Use use;
+
+    if (BlockRange().TryGetUse(node, &use))
     {
-        // We're producing a vector result, so just return the result directly
-
-        LIR::Use use;
-
-        if (BlockRange().TryGetUse(node, &use))
-        {
-            use.ReplaceWith(tmp2);
-        }
-
-        BlockRange().Remove(node);
-        return tmp2->gtNext;
+        use.ReplaceWith(tmp2);
     }
-    else
-    {
-        // We will be constructing the following parts:
-        //   ...
-        //          /--*  tmp2 simd16
-        //   node = *  HWINTRINSIC   simd16 T ToScalar
 
-        // This is roughly the following managed code:
-        //   ...
-        //   return tmp2.ToScalar();
-
-        node->ResetHWIntrinsicId((simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar, tmp2);
-        return LowerNode(node);
-    }
+    BlockRange().Remove(node);
+    return tmp2->gtNext;
 }
 #endif // FEATURE_HW_INTRINSICS
 

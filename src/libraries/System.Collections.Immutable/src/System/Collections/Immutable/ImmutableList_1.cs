@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -12,6 +13,7 @@ namespace System.Collections.Immutable
     /// An immutable list implementation.
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
+    [CollectionBuilder(typeof(ImmutableList), nameof(ImmutableList.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IStrongEnumerable<T, ImmutableList<T>.Enumerator>

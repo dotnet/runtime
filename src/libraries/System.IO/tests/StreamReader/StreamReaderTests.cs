@@ -175,6 +175,46 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void TestPeekReadOneByteAtATime()
+        {
+            byte[] testData = new byte[] { 72, 69, 76, 76, 79 };
+            using var ms = new MemoryStream(testData);
+
+            // DelegateStream to read one at a time.
+            using var stream = new DelegateStream(
+                positionGetFunc: () => ms.Position,
+                lengthFunc: () => ms.Length,
+                canReadFunc: () => true,
+                readFunc: (buffer, offset, count) =>
+                {
+                    if (count == 0 || ms.Position == ms.Length)
+                    {
+                        return 0;
+                    }
+
+                    ms.ReadExactly(buffer, offset, 1);
+                    return 1;
+                });
+
+            using var sr = new StreamReader(stream);
+
+            for (int i = 0; i < testData.Length; i++)
+            {
+                Assert.Equal(i, stream.Position);
+
+                int tmp = sr.Peek();
+                Assert.Equal(testData[i], tmp);
+
+                tmp = sr.Read(); 
+                Assert.Equal(testData[i], tmp);
+            }
+
+            Assert.Equal(stream.Position, stream.Length);
+            Assert.Equal(-1, sr.Peek());
+            Assert.Equal(-1, sr.Read());
+        }
+
+        [Fact]
         public void ArgumentNullOnNullArray()
         {
             var baseInfo = GetCharArrayStream();

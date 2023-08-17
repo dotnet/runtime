@@ -55,7 +55,7 @@ CrstStatic TieredCompilationManager::s_lock;
 #ifdef _DEBUG
 Thread *TieredCompilationManager::s_backgroundWorkerThread = nullptr;
 #endif
-CLREvent TieredCompilationManager::s_backgroundWorkAvailableEvent;
+CLREventStatic TieredCompilationManager::s_backgroundWorkAvailableEvent;
 bool TieredCompilationManager::s_isBackgroundWorkerRunning = false;
 bool TieredCompilationManager::s_isBackgroundWorkerProcessingWork = false;
 
@@ -268,6 +268,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     _ASSERTE(!currentNativeCodeVersion.IsNull());
     _ASSERTE(!currentNativeCodeVersion.IsFinalTier());
     _ASSERTE(createTieringBackgroundWorkerRef != nullptr);
+    _ASSERTE(!currentNativeCodeVersion.GetILCodeVersion().IsDeoptimized());
 
     NativeCodeVersion t1NativeCodeVersion;
     HRESULT hr;
@@ -1003,7 +1004,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-
+        
         // As long as we are exclusively using any non-JumpStamp publishing for tiered compilation
         // methods this first attempt should succeed
         ilParent = nativeCodeVersion.GetILCodeVersion();

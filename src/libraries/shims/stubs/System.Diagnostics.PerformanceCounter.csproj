@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ForwardedType Include="System.Diagnostics.CounterCreationData" />
+    <ForwardedType Include="System.Diagnostics.CounterCreationDataCollection" />
+    <ForwardedType Include="System.Diagnostics.CounterSample" />
+    <ForwardedType Include="System.Diagnostics.CounterSampleCalculator" />
+    <ForwardedType Include="System.Diagnostics.ICollectData" />
+    <ForwardedType Include="System.Diagnostics.InstanceData" />
+    <ForwardedType Include="System.Diagnostics.InstanceDataCollection" />
+    <ForwardedType Include="System.Diagnostics.InstanceDataCollectionCollection" />
+    <ForwardedType Include="System.Diagnostics.PerformanceCounter" />
+    <ForwardedType Include="System.Diagnostics.PerformanceCounterCategory" />
+    <ForwardedType Include="System.Diagnostics.PerformanceCounterCategoryType" />
+    <ForwardedType Include="System.Diagnostics.PerformanceCounterInstanceLifetime" />
+    <ForwardedType Include="System.Diagnostics.PerformanceCounterManager" />
+    <ForwardedType Include="System.Diagnostics.PerformanceCounterType" />
+    <ForwardedType Include="System.Diagnostics.PerformanceData.CounterData" />
+    <ForwardedType Include="System.Diagnostics.PerformanceData.CounterSet" />
+    <ForwardedType Include="System.Diagnostics.PerformanceData.CounterSetInstance" />
+    <ForwardedType Include="System.Diagnostics.PerformanceData.CounterSetInstanceCounterDataSet" />
+    <ForwardedType Include="System.Diagnostics.PerformanceData.CounterSetInstanceType" />
+    <ForwardedType Include="System.Diagnostics.PerformanceData.CounterType" />
+  </ItemGroup>
+
+</Project>

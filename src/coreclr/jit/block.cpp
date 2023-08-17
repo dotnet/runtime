@@ -150,6 +150,30 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
             }
         }
 
+        if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+        {
+            // block is a finally or fault handler; all enclosing filters are predecessors
+            unsigned enclosing = ehblk->ebdEnclosingTryIndex;
+            while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
+                if (enclosingDsc->HasFilter())
+                {
+                    for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
+                         filterBlk             = filterBlk->bbNext)
+                    {
+                        res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+
+                        assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                            return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+                        }) == BasicBlockVisit::Abort);
+                    }
+                }
+
+                enclosing = enclosingDsc->ebdEnclosingTryIndex;
+            }
+        }
+
 #ifdef DEBUG
         unsigned hash = SsaStressHashHelper();
         if (hash != 0)
@@ -1665,9 +1689,9 @@ weight_t BasicBlock::getBBWeight(Compiler* comp)
     {
         weight_t calledCount = getCalledCount(comp);
 
-        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
+        // Normalize the bbWeight.
         //
-        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
+        weight_t fullResult = (this->bbWeight / calledCount) * BB_UNITY_WEIGHT;
 
         return fullResult;
     }

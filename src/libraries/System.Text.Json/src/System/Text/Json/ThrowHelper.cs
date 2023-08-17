@@ -615,6 +615,9 @@ namespace System.Text.Json
                 case NumericType.Int64:
                     message = SR.FormatInt64;
                     break;
+                case NumericType.Int128:
+                    message = SR.FormatInt128;
+                    break;
                 case NumericType.UInt16:
                     message = SR.FormatUInt16;
                     break;
@@ -623,6 +626,12 @@ namespace System.Text.Json
                     break;
                 case NumericType.UInt64:
                     message = SR.FormatUInt64;
+                    break;
+                case NumericType.UInt128:
+                    message = SR.FormatUInt128;
+                    break;
+                case NumericType.Half:
+                    message = SR.FormatHalf;
                     break;
                 case NumericType.Single:
                     message = SR.FormatSingle;
@@ -740,9 +749,12 @@ namespace System.Text.Json
         Int16,
         Int32,
         Int64,
+        Int128,
         UInt16,
         UInt32,
         UInt64,
+        UInt128,
+        Half,
         Single,
         Double,
         Decimal

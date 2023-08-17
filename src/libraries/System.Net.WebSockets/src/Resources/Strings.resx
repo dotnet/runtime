@@ -100,7 +100,7 @@
     <value>The close status code '{0}' is reserved for system use only and cannot be specified when calling this method.</value>
   </data>
   <data name="net_WebSockets_InvalidCloseStatusDescription" xml:space="preserve">
-    <value>The close status description '{0}' is too long. The UTF8-representation of the status description must not be longer than {1} bytes.</value>
+    <value>The close status description '{0}' is too long. The UTF-8 representation of the status description must not be longer than {1} bytes.</value>
   </data>
   <data name="net_WebSockets_UnsupportedPlatform" xml:space="preserve">
     <value>The WebSocket protocol is not supported on this platform.</value>

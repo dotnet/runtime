@@ -99,7 +99,7 @@ endif()
 
 check_include_files("sys/types.h;sys/user.h" HAVE_SYS_USER_H)
 
-if(HOST_IOS OR HOST_MACCAT)
+if(HOST_IOS OR HOST_TVOS OR HOST_MACCAT)
   # getentropy isn't allowed in the AppStore: https://github.com/rust-lang/rust/issues/102643
   set(HAVE_GETENTROPY 0)
 endif()
@@ -114,6 +114,8 @@ ac_check_funcs(
   pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
   pthread_attr_setstacksize pthread_get_stackaddr_np
 )
+
+check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
 
 check_symbol_exists(madvise "sys/mman.h" HAVE_MADVISE)
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
@@ -245,7 +247,7 @@ if(HOST_WIN32)
   set(HAVE_STRUCT_SOCKADDR_IN6 1)
   set(HAVE_STRTOK_R 1)
   set(HAVE_EXECVP 0)
-elseif(HOST_IOS)
+elseif(HOST_IOS OR HOST_TVOS)
   set(HAVE_SYSTEM 0)
   set(HAVE_SYS_USER_H 0)
   if(HOST_TVOS)

@@ -2,9 +2,6 @@ export async function runSecondRuntimeAndTestStaticState() {
     const { dotnet: dotnet2 } = await import('./_framework/dotnet.js?instance=2');
     const runtime2 = await dotnet2
         .withStartupMemoryCache(false)
-        .withConfig({
-            assetUniqueQuery: "?instance=2",
-        })
         .create();
 
     const increment1 = await getIncrementStateFunction(App.runtime);

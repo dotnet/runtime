@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -916,6 +917,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString());
             }
 
+            // [:XX:] inside a range has no special treatment; the [:XX: is literal, the ] closes the range
+            if (PlatformDetection.IsNetCore)
+            {
+                yield return (@"[[::]]", "x", RegexOptions.None, 0, 1, false, "");
+                yield return (@"[[:a:]]", "a]", RegexOptions.None, 0, 2, true, "a]");
+                yield return (@"[c[:ab:]", "c", RegexOptions.None, 0, 1, true, "c");
+                yield return (@"[c[:ab:]{3}d]", "abcd]", RegexOptions.None, 0, 5, true, "abcd]");
+            }
+
             // Long inputs
             string longCharacterRange = string.Concat(Enumerable.Range(1, 0x2000).Select(c => (char)c));
             foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
@@ -1100,7 +1110,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
         [OuterLoop("Takes several seconds")]
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
         {
@@ -1128,6 +1138,11 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
+                if (!RemoteExecutor.IsSupported)
+                {
+                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                }
+
                 RemoteExecutor.Invoke(func, engine.ToString()).Dispose();
             }
             else
@@ -2116,7 +2131,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [OuterLoop("Can take over a minute")]
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
@@ -2150,6 +2165,11 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
+                if (!RemoteExecutor.IsSupported)
+                {
+                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                }
+
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
             }
             else
@@ -2207,6 +2227,11 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
+                if (!RemoteExecutor.IsSupported)
+                {
+                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                }
+
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
             }
             else

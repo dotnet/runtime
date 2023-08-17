@@ -7,7 +7,7 @@ import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 
 import { PromiseAndController, assertNever } from "../../types/internal";
 import { pthread_self } from "../../pthreads/worker";
-import { createPromiseController } from "../../globals";
+import { createPromiseController, mono_assert } from "../../globals";
 import { diagnostics_c_functions as cwraps } from "../../cwraps";
 import { EventPipeSessionIDImpl } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";

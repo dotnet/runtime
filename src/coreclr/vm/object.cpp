@@ -211,7 +211,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
-        PRECONDITION(pObj->GetMethodTable()->IsRestored_NoLogging());
+        PRECONDITION(pObj->GetMethodTable()->IsRestored());
         PRECONDITION(pInterfaceMT->IsInterface());
     }
     CONTRACTL_END
@@ -392,7 +392,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
         return;
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     if (argDest->IsStructPassedInRegs())
     {
@@ -425,7 +425,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
 
 #endif
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (argDest->IsStructPassedInRegs())
     {
         *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 0;

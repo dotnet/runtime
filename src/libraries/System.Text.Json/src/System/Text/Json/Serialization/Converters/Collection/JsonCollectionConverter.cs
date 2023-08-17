@@ -143,8 +143,6 @@ namespace System.Text.Json.Serialization
                     {
                         ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                     }
-
-                    state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 }
 
                 // Handle the metadata properties.
@@ -201,6 +199,7 @@ namespace System.Text.Json.Serialization
                 if (state.Current.ObjectState < StackFrameObjectState.ReadElements)
                 {
                     JsonConverter<TElement> elementConverter = GetElementConverter(elementTypeInfo);
+                    state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
 
                     // Process all elements.
                     while (true)

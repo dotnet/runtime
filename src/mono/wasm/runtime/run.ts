@@ -17,11 +17,16 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
         const result = await mono_run_main(main_assembly_name, args);
         loaderHelpers.mono_exit(result);
         return result;
-    } catch (error) {
-        if (error instanceof runtimeHelpers.ExitStatus) {
+    } catch (error: any) {
+        try {
+            loaderHelpers.mono_exit(1, error);
+        }
+        catch (e) {
+            // ignore
+        }
+        if (error && typeof error.status === "number") {
             return error.status;
         }
-        loaderHelpers.mono_exit(1, error);
         return 1;
     }
 }
@@ -40,6 +45,7 @@ export async function mono_run_main(main_assembly_name: string, args: string[]):
 }
 
 export function find_entry_point(assembly: string) {
+    loaderHelpers.assert_runtime_running();
     assert_bindings();
     const asm = assembly_load(assembly);
     if (!asm)

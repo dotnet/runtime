@@ -2944,6 +2944,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
                                 emitActualTypeSize(targetType));
             }
+            else if (TargetOS::IsUnix && data->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                assert(data->AsIntCon()->IconValue() == 0);
+                emitAttr attr = emitActualTypeSize(targetType);
+                // On non-windows, need to load the address from system register.
+                emit->emitIns_R(INS_mrs_tpid0, attr, targetReg);
+            }
             else
             {
                 inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
@@ -5306,14 +5313,11 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
     {
         // Simply use mov if we move a SIMD12 reg to another SIMD12 reg
         assert(GetEmitter()->isVectorRegister(tgtReg));
-
         inst_Mov(treeNode->TypeGet(), tgtReg, dataReg, /* canSkip */ true);
     }
     else
     {
-        // Need an additional integer register to extract upper 4 bytes from data.
-        regNumber tmpReg = treeNode->GetSingleTempReg();
-        GetEmitter()->emitStoreSimd12ToLclOffset(varNum, offs, dataReg, tmpReg);
+        GetEmitter()->emitStoreSimd12ToLclOffset(varNum, offs, dataReg, treeNode);
     }
     genUpdateLifeStore(treeNode, tgtReg, varDsc);
 }

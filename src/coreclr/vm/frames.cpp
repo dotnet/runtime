@@ -1925,7 +1925,7 @@ BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
                            ((ArrayBase *)pbDelInvocationList)->GetComponentSize()*delegateCount);
 
         _ASSERTE(pbDel);
-        return DelegateInvokeStubManager::TraceDelegateObject(pbDel, trace);
+        return StubLinkStubManager::TraceDelegateObject(pbDel, trace);
     }
 #endif // !DACCESS_COMPILE
 }

@@ -677,6 +677,7 @@
     <HelixPreCommand Include="set __CollectDumps=1" />
     <HelixPreCommand Include="set __CrashDumpFolder=%HELIX_DUMP_FOLDER%" />
     <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
+    <HelixPreCommand Include="set ASAN_SAVE_DUMPS=%HELIX_DUMP_FOLDER%\asan.dmp" />
     <HelixPreCommand Include="type %__TestEnv%" />
   </ItemGroup>
 

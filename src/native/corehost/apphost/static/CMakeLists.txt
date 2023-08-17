@@ -259,3 +259,5 @@ target_link_libraries(
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+add_sanitizer_runtime_support(singlefilehost)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
@@ -142,23 +141,11 @@ async function getCacheKey(): Promise<string | null> {
         return null;
     }
     const inputs = Object.assign({}, runtimeHelpers.config) as any;
-    // above already has env variables, runtime options, etc
-
-    if (!inputs.assetsHash) {
-        // this is fallback for blazor which does not have assetsHash yet
-        inputs.assetsHash = [];
-        for (const asset of inputs.assets) {
-            if (!asset.hash) {
-                // if we don't have hash, we can't use the cache
-                return null;
-            }
-            inputs.assetsHash.push(asset.hash);
-        }
-    }
-    // otherwise config.assetsHash already has hashes for all the assets (DLLs, ICU, .wasms, etc). 
 
     // Now we remove assets collection from the hash.
+    inputs.resourcesHash = inputs.resources.hash;
     delete inputs.assets;
+    delete inputs.resources;
     // some things are calculated at runtime, so we need to add them to the hash
     inputs.preferredIcuAsset = loaderHelpers.preferredIcuAsset;
     // timezone is part of env variables, so it is already in the hash
@@ -167,18 +154,19 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.forwardConsoleLogsToWS;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
+    delete inputs.assertAfterExit;
+    delete inputs.interopCleanupOnExit;
     delete inputs.logExitCode;
     delete inputs.pthreadPoolSize;
     delete inputs.asyncFlushOnExit;
-    delete inputs.assemblyRootFolder;
     delete inputs.remoteSources;
     delete inputs.ignorePdbLoadErrors;
     delete inputs.maxParallelDownloads;
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
-    delete inputs.assetUniqueQuery;
+    delete inputs.extensions;
 
-    inputs.GitHash = GitHash;
+    inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;
 
     const inputsJson = JSON.stringify(inputs);

@@ -10,9 +10,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 {
 	[SetupLinkerTrimMode ("link")]
-#if !NETCOREAPP
-	[SetupLinkerKeepDebugMembers ("true")]
-#endif
 	[SetupCompileBefore ("library.dll", new[] { "../Dependencies/DebuggerDisplayAttributeOnAssemblyUsingTargetTypeNameInOtherAssembly_Lib.cs" })]
 
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168

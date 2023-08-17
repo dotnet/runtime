@@ -253,9 +253,6 @@
 /* Reduce runtime requirements (and capabilities) */
 #cmakedefine MONO_SMALL_CONFIG 1
 
-/* String of disabled features */
-#define DISABLED_FEATURES @DISABLED_FEATURES@
-
 /* Disable AOT Compiler */
 #cmakedefine DISABLE_AOT 1
 
@@ -956,6 +953,9 @@
 
 /* Enable WebCIL image loader */
 #cmakedefine ENABLE_WEBCIL 1
+
+/* define if clockgettime exists */
+#cmakedefine HAVE_CLOCK_GETTIME 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

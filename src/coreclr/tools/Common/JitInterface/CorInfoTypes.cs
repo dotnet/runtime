@@ -1058,6 +1058,7 @@ namespace Internal.JitInterface
         CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE, // object class cannot be referenced from R2R code due to missing tokens
         CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
         CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
+        CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
         CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
     }
 
@@ -1148,10 +1149,13 @@ namespace Internal.JitInterface
     public unsafe struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     {
         public CORINFO_CONST_LOOKUP tlsIndex;
+        public nuint tlsGetAddrFtnPtr;
+        public nuint tlsIndexObject;
+        public nuint threadVarsSection;
         public uint offsetOfThreadLocalStoragePointer;
-        public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
-        public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
-        public CORINFO_CONST_LOOKUP offsetOfGCDataPointer;
+        public uint offsetOfMaxThreadStaticBlocks;
+        public uint offsetOfThreadStaticBlocks;
+        public uint offsetOfGCDataPointer;
     };
 
     // System V struct passing
@@ -1361,6 +1365,9 @@ namespace Internal.JitInterface
 
         // token comes from devirtualizing a method
         CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
+
+        // token comes from resolved static virtual method
+        CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod

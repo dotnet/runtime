@@ -224,7 +224,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         MODE_ANY;
         FORBID_FAULT;
         PRECONDITION(IsStatic());
-        PRECONDITION(GetEnclosingMethodTable()->IsRestored_NoLogging());
+        PRECONDITION(GetEnclosingMethodTable()->IsRestored());
     }
     CONTRACTL_END
 

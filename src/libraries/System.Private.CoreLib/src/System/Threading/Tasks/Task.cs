@@ -6119,12 +6119,14 @@ namespace System.Threading.Tasks
             // Skip a List allocation/copy if tasks is a collection
             if (tasks is ICollection<Task<TResult>> taskCollection)
             {
-                int index = 0;
                 taskArray = new Task<TResult>[taskCollection.Count];
-                foreach (Task<TResult> task in tasks)
+                taskCollection.CopyTo(taskArray, 0);
+                foreach (Task<TResult> task in taskArray)
                 {
-                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                    taskArray[index++] = task;
+                    if (task is null)
+                    {
+                        ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    }
                 }
                 return InternalWhenAll(taskArray);
             }
@@ -6180,12 +6182,13 @@ namespace System.Threading.Tasks
             int taskCount = tasks.Length;
             if (taskCount == 0) return InternalWhenAll(tasks); // small optimization in the case of an empty task array
 
-            Task<TResult>[] tasksCopy = new Task<TResult>[taskCount];
-            for (int i = 0; i < taskCount; i++)
+            Task<TResult>[] tasksCopy = (Task<TResult>[])tasks.Clone();
+            foreach (Task<TResult> task in tasksCopy)
             {
-                Task<TResult> task = tasks[i];
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                tasksCopy[i] = task;
+                if (task is null)
+                {
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                }
             }
 
             // Delegate the rest to InternalWhenAll<TResult>()
@@ -6336,30 +6339,44 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<Task> WhenAny(params Task[] tasks)
         {
-            if (tasks == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            }
+            ArgumentNullException.ThrowIfNull(tasks);
 
+            return WhenAny((ReadOnlySpan<Task>)tasks);
+        }
+
+        /// <summary>
+        /// Creates a task that will complete when any of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
+        /// <remarks>
+        /// The returned task will complete when any of the supplied tasks has completed.  The returned task will always end in the RanToCompletion state
+        /// with its Result set to the first task to complete.  This is true even if the first task to complete ended in the Canceled or Faulted state.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="tasks"/> array contained a null task, or was empty.
+        /// </exception>
+        private static Task<TTask> WhenAny<TTask>(ReadOnlySpan<TTask> tasks) where TTask : Task
+        {
             if (tasks.Length == 2)
             {
                 return WhenAny(tasks[0], tasks[1]);
             }
 
-            if (tasks.Length == 0)
+            if (tasks.IsEmpty)
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
             }
 
-            // Make a defensive copy, as the user may manipulate the tasks array
+            // Make a defensive copy, as the user may manipulate the input collection
             // after we return but before the WhenAny asynchronously completes.
-            int taskCount = tasks.Length;
-            Task[] tasksCopy = new Task[taskCount];
-            for (int i = 0; i < taskCount; i++)
+            TTask[] tasksCopy = tasks.ToArray();
+            foreach (TTask task in tasksCopy)
             {
-                Task task = tasks[i];
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                tasksCopy[i] = task;
+                if (task is null)
+                {
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                }
             }
 
             // Previously implemented CommonCWAnyLogic() can handle the rest
@@ -6377,7 +6394,21 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task> WhenAny(Task task1, Task task2)
+        public static Task<Task> WhenAny(Task task1, Task task2) =>
+            WhenAny<Task>(task1, task2);
+
+        /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>
+        /// <param name="task1">The first task to wait on for completion.</param>
+        /// <param name="task2">The second task to wait on for completion.</param>
+        /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
+        /// <remarks>
+        /// The returned task will complete when any of the supplied tasks has completed.  The returned task will always end in the RanToCompletion state
+        /// with its Result set to the first task to complete.  This is true even if the first task to complete ended in the Canceled or Faulted state.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
+        /// </exception>
+        private static Task<TTask> WhenAny<TTask>(TTask task1, TTask task2) where TTask : Task
         {
             ArgumentNullException.ThrowIfNull(task1);
             ArgumentNullException.ThrowIfNull(task2);
@@ -6385,13 +6416,13 @@ namespace System.Threading.Tasks
             return
                 task1.IsCompleted ? FromResult(task1) :
                 task2.IsCompleted ? FromResult(task2) :
-                new TwoTaskWhenAnyPromise<Task>(task1, task2);
+                new TwoTaskWhenAnyPromise<TTask>(task1, task2);
         }
 
         /// <summary>A promise type used by WhenAny to wait on exactly two tasks.</summary>
         /// <typeparam name="TTask">Specifies the type of the task.</typeparam>
         /// <remarks>
-        /// This has essentially the same logic as <see cref="TaskFactory.CompleteOnInvokePromise"/>, but optimized
+        /// This has essentially the same logic as <see cref="TaskFactory.CompleteOnInvokePromise{TTask}"/>, but optimized
         /// for two tasks rather than any number. Exactly two tasks has shown to be the most common use-case by far.
         /// </remarks>
         private sealed class TwoTaskWhenAnyPromise<TTask> : Task<TTask>, ITaskCompletionAction where TTask : Task
@@ -6483,41 +6514,71 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> collection contained a null task, or was empty.
         /// </exception>
-        public static Task<Task> WhenAny(IEnumerable<Task> tasks)
+        public static Task<Task> WhenAny(IEnumerable<Task> tasks) =>
+            WhenAny<Task>(tasks);
+
+        /// <summary>
+        /// Creates a task that will complete when any of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
+        /// <remarks>
+        /// The returned task will complete when any of the supplied tasks has completed.  The returned task will always end in the RanToCompletion state
+        /// with its Result set to the first task to complete.  This is true even if the first task to complete ended in the Canceled or Faulted state.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="tasks"/> collection contained a null task, or was empty.
+        /// </exception>
+        private static Task<TTask> WhenAny<TTask>(IEnumerable<TTask> tasks) where TTask : Task
         {
             // Skip a List allocation/copy if tasks is a collection
-            if (tasks is ICollection<Task> taskCollection)
+            if (tasks is ICollection<TTask> tasksAsCollection)
             {
-                // Take a more efficient path if tasks is actually an array
-                if (tasks is Task[] taskArray)
+                // Take a more efficient path if tasks is actually a list or an array. Arrays are a bit less common,
+                // since if argument was strongly-typed as an array, it would have bound to the array-based overload.
+                if (tasks is List<TTask> tasksAsList)
                 {
-                    return WhenAny(taskArray);
+                    return WhenAny((ReadOnlySpan<TTask>)CollectionsMarshal.AsSpan(tasksAsList));
+                }
+                if (tasks is TTask[] tasksAsArray)
+                {
+                    return WhenAny((ReadOnlySpan<TTask>)tasksAsArray);
                 }
 
-                int count = taskCollection.Count;
+                int count = tasksAsCollection.Count;
                 if (count <= 0)
                 {
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
                 }
 
-                int index = 0;
-                taskArray = new Task[count];
-                foreach (Task task in tasks)
+                var taskArray = new TTask[count];
+                tasksAsCollection.CopyTo(taskArray, 0);
+                foreach (TTask task in taskArray)
                 {
-                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                    taskArray[index++] = task;
+                    if (task is null)
+                    {
+                        ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    }
                 }
+
                 return TaskFactory.CommonCWAnyLogic(taskArray);
             }
 
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
 
             // Make a defensive copy, as the user may manipulate the tasks collection
             // after we return but before the WhenAny asynchronously completes.
-            List<Task> taskList = new List<Task>();
-            foreach (Task task in tasks)
+            var taskList = new List<TTask>();
+            foreach (TTask task in tasks)
             {
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                if (task is null)
+                {
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                }
+
                 taskList.Add(task);
             }
 
@@ -6547,21 +6608,9 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks)
         {
-            // We would just like to do this:
-            //    return (Task<Task<TResult>>) WhenAny( (Task[]) tasks);
-            // but classes are not covariant to enable casting Task<TResult> to Task<Task<TResult>>.
+            ArgumentNullException.ThrowIfNull(tasks);
 
-            if (tasks != null && tasks.Length == 2)
-            {
-                return WhenAny(tasks[0], tasks[1]);
-            }
-
-            // Call WhenAny(Task[]) for basic functionality
-            Task<Task> intermediate = WhenAny((Task[])tasks!);
-
-            // Return a continuation task with the correct result type
-            return intermediate.ContinueWith(Task<TResult>.TaskWhenAnyCast.Value, default,
-                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+            return WhenAny((ReadOnlySpan<Task<TResult>>)tasks);
         }
 
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>
@@ -6575,16 +6624,8 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2)
-        {
-            ArgumentNullException.ThrowIfNull(task1);
-            ArgumentNullException.ThrowIfNull(task2);
-
-            return
-                task1.IsCompleted ? FromResult(task1) :
-                task2.IsCompleted ? FromResult(task2) :
-                new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
-        }
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2) =>
+            WhenAny<Task<TResult>>(task1, task2);
 
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
@@ -6601,19 +6642,8 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> collection contained a null task, or was empty.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks)
-        {
-            // We would just like to do this:
-            //    return (Task<Task<TResult>>) WhenAny( (IEnumerable<Task>) tasks);
-            // but classes are not covariant to enable casting Task<TResult> to Task<Task<TResult>>.
-
-            // Call WhenAny(IEnumerable<Task>) for basic functionality
-            Task<Task> intermediate = WhenAny((IEnumerable<Task>)tasks);
-
-            // Return a continuation task with the correct result type
-            return intermediate.ContinueWith(Task<TResult>.TaskWhenAnyCast.Value, default,
-                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
-        }
+        public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks) =>
+            WhenAny<Task<TResult>>(tasks);
         #endregion
 
         internal static Task<TResult> CreateUnwrapPromise<TResult>(Task outerTask, bool lookForOce)

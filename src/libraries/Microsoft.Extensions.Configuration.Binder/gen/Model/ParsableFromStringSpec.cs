@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             get
             {
-                Debug.Assert(StringParsableTypeKind is not StringParsableTypeKind.ConfigValue);
+                Debug.Assert(StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
 
                 _parseMethodName ??= StringParsableTypeKind is StringParsableTypeKind.ByteArray
                     ? "ParseByteArray"
@@ -34,7 +34,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     internal enum StringParsableTypeKind
     {
         None = 0,
-        ConfigValue = 1,
+
+        /// <summary>
+        /// Declared types that can be assigned directly from IConfigurationSection.Value, i.e. string and tyepof(object).
+        /// </summary>
+        AssignFromSectionValue = 1,
         Enum = 2,
         ByteArray = 3,
         Integer = 4,

@@ -966,6 +966,16 @@ namespace System.SpanTests
             }
         }
 
+        [Fact]
+        public static void IndexOfAnyExceptWorksOnAvx512_Integer()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/89512
+
+            var arr = new int[32];
+            arr[1] = 1;
+            Assert.Equal(1, arr.AsSpan().IndexOfAnyExcept(0));
+        }
+
         [Theory]
         [MemberData(nameof(TestHelpers.IndexOfAnyNullSequenceData), MemberType = typeof(TestHelpers))]
         public static void IndexOfAnyNullSequence_String(string[] spanInput, string[] searchInput, int expected)
@@ -995,7 +1005,7 @@ namespace System.SpanTests
             Assert.Equal(index >= 0, span.Contains(value));
             Assert.Equal(index >= 0, ((ReadOnlySpan<T>)span).Contains(value));
 
-            AssertSearchValues(span, new ReadOnlySpan<T>(value), index);
+            AssertSearchValues(span, new ReadOnlySpan<T>(in value), index);
             return index;
         }
 

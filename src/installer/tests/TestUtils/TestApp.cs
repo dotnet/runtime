@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using Microsoft.DotNet.Cli.Build;
+using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -63,6 +64,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             // Write out the app
             builder.Build(this);
+        }
+
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true)
+        {
+            // Use the live-built apphost and HostModel to create the apphost to run
+            HostWriter.CreateAppHost(
+                Binaries.AppHost.FilePath,
+                AppExe,
+                Path.GetFileName(AppDll),
+                windowsGraphicalUserInterface: isWindowsGui,
+                assemblyToCopyResourcesFrom: copyResources ? AppDll : null);
         }
 
         public enum MockedComponent

@@ -1,5 +1,4 @@
-﻿using System;
-namespace Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies
+﻿namespace Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies
 {
 	public class PreserveDependencyMethodInAssemblyLibrary
 	{

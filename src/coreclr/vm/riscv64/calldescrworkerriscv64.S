@@ -124,7 +124,7 @@ LOCAL_LABEL(NotCorrectReturn):
     EMIT_BREAKPOINT // Unreachable
 
 LOCAL_LABEL(FloatReturn):
-    fsw  f0, CallDescrData__returnValue(s1)
+    fsw  fa0, CallDescrData__returnValue(s1)
     j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(DoubleReturn):

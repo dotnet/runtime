@@ -26,6 +26,9 @@ variables:
 - template: /eng/pipelines/common/internal-variables.yml
   parameters:
     teamName: dotnet-core-acquisition
+# disable CodeQL here, we have a separate pipeline for it
+- name: Codeql.Enabled
+  value: False
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -38,12 +41,13 @@ extends:
       # Localization build
       #
 
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-        - template: /eng/common/templates/job/onelocbuild.yml
-          parameters:
-            MirrorRepo: runtime
-            LclSource: lclFilesfromPackage
-            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+      # disabled due to https://github.com/dotnet/runtime/issues/90466
+      #- ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      #  - template: /eng/common/templates/job/onelocbuild.yml
+      #    parameters:
+      #      MirrorRepo: runtime
+      #      LclSource: lclFilesfromPackage
+      #      LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
       #
       # Source Index Build
@@ -104,6 +108,8 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
+          - osx_x64
+          - osx_arm64
           - maccatalyst_x64
           - maccatalyst_arm64
           - tvossimulator_x64
@@ -115,7 +121,7 @@ extends:
           - linux_bionic_arm64
           - linux_bionic_x64
           jobParameters:
-            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true
+            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
             nameSuffix: AllSubsets_NativeAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -222,6 +228,8 @@ extends:
           platforms:
           - linux_x64
           - linux_musl_x64
+          - linux_arm64
+          - linux_musl_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
                       /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
@@ -232,28 +240,6 @@ extends:
             - mono_browser_offsets
             monoCrossAOTTargetOS:
             - android
-            - browser
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            extraStepsParameters:
-              name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - linux_arm64
-          - linux_musl_arm64
-          jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                       /p:MonoCrossAOTTargetOS=browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            dependsOn:
-            - mono_browser_offsets
-            monoCrossAOTTargetOS:
             - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -290,6 +276,7 @@ extends:
           buildConfig: release
           platforms:
           - osx_x64
+          - osx_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
                       /p:MonoCrossAOTTargetOS=android+browser+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
@@ -307,27 +294,6 @@ extends:
             - tvos
             - ios
             - maccatalyst
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            extraStepsParameters:
-              name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - osx_arm64
-          jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                       /p:MonoCrossAOTTargetOS=browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            dependsOn:
-            - mono_browser_offsets
-            monoCrossAOTTargetOS:
-            - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             extraStepsParameters:

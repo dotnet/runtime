@@ -146,7 +146,7 @@ namespace System.Text.Json.Serialization.Metadata
                     if (jsonPropertyInfo.SrcGen_HasJsonInclude)
                     {
                         Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnInaccessibleProperty(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
                     }
 
                     continue;
@@ -160,7 +160,10 @@ namespace System.Text.Json.Serialization.Metadata
                 propertyList.AddPropertyWithConflictResolution(jsonPropertyInfo, ref state);
             }
 
-            // NB we don't need to sort source gen properties here since they were already sorted at compile time.
+            if (state.IsPropertyOrderSpecified)
+            {
+                propertyList.SortProperties();
+            }
         }
 
         private static JsonPropertyInfo<T> CreatePropertyInfoCore<T>(JsonPropertyInfoValues<T> propertyInfoValues, JsonSerializerOptions options)

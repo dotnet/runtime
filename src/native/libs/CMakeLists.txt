@@ -76,26 +76,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         endif ()
 
         add_definitions(-DDEBUG)
-
-        # obtain settings from running coreclr\enablesanitizers.sh
-        string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
-        string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
-        if (${__ASAN_POS} GREATER -1 OR ${__UBSAN_POS} GREATER -1)
-            set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS} -fsanitize=")
-            if (${__ASAN_POS} GREATER -1)
-                set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
-                message("Address Sanitizer (asan) enabled")
-            endif ()
-            if (${__UBSAN_POS} GREATER -1)
-                set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}undefined")
-                message("Undefined Behavior Sanitizer (ubsan) enabled")
-            endif ()
-
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS}")
-
-            # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
-        endif ()
     elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
         # Use O1 option when the clang version is smaller than 3.9
         # Otherwise use O3 option in release build

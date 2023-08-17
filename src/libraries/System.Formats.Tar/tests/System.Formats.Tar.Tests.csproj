@@ -53,10 +53,8 @@
     <Compile Include="TarTestsBase.Ustar.cs" />
     <Compile Include="TarTestsBase.V7.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Roundtrip.Tests.cs" />
-    <Compile Include="TarWriter\TarWriter.WriteEntry.LongFile.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Base.cs" />
-    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.LongFile.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Roundtrip.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Ustar.Tests.cs" />
@@ -74,7 +72,6 @@
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" Link="Common\System\IO\ReparsePointUtilities.cs" />
     <Compile Include="$(CommonTestPath)System\IO\WrappedStream.cs" Link="Common\System\IO\WrappedStream.cs" />
-    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

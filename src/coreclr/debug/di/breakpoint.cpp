@@ -211,11 +211,13 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         if (codeIsIL)
         {
             pEvent->BreakpointData.nativeCodeMethodDescToken = pEvent->BreakpointData.nativeCodeMethodDescToken.NullPtr();
+            pEvent->BreakpointData.codeStartAddress = 0;
         }
         else
         {
             pEvent->BreakpointData.nativeCodeMethodDescToken =
                 (m_code.GetValue()->AsNativeCode())->GetVMNativeCodeMethodDescToken().ToLsPtr();
+            pEvent->BreakpointData.codeStartAddress = (m_code.GetValue()->AsNativeCode())->GetAddress();
         }
 
         // Note: we're sending a two-way event, so it blocks here

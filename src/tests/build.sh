@@ -61,7 +61,7 @@ build_Tests()
 
     if [[ "$__SkipNative" != 1 && "$__BuildTestWrappersOnly" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
         "$__TargetOS" != "browser" && "$__TargetOS" != "wasi" && "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" && "$__TargetOS" != "tvos" && "$__TargetOS" != "tvossimulator" ]]; then
-        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
+        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -110,6 +110,7 @@ build_Tests()
     export __MsgPrefix
     export __ErrMsgPrefix
     export __Exclude
+    export EnableNativeSanitizers
 
     # Generate build command
     buildArgs=("$__RepoRootDir/src/tests/build.proj")
@@ -363,6 +364,7 @@ __MonoAot=0
 __MonoFullAot=0
 __BuildLogRootName="TestBuild"
 CORE_ROOT=
+EnableNativeSanitizers=
 
 source $__RepoRootDir/src/coreclr/_build-commons.sh
 

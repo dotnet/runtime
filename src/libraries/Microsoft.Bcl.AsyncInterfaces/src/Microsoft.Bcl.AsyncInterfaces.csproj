@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
-    <!-- Public API not fully documented. -->
-    <NoWarn>$(NoWarn);1591</NoWarn>
     <IsPackable>true</IsPackable>
     <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
     <PackageDescription>Provides the IAsyncEnumerable&lt;T&gt; and IAsyncDisposable interfaces and helper types for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.
@@ -11,10 +10,14 @@ Commonly Used Types:
 System.IAsyncDisposable
 System.Collections.Generic.IAsyncEnumerable
 System.Collections.Generic.IAsyncEnumerator</PackageDescription>
+    <!-- This library uses IsPartialFacadeAssembly for which the compiler doesn't produce any XML documentation. -->
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'netstandard2.1'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncIteratorMethodBuilder.cs" />
@@ -42,8 +45,10 @@ System.Collections.Generic.IAsyncEnumerator</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs">
       <Link>System.Private.CoreLib\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs</Link>
     </Compile>
+  
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
+
 </Project>

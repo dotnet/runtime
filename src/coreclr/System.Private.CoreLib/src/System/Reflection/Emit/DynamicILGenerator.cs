@@ -43,7 +43,7 @@ namespace System.Reflection.Emit
             if (rtType == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
-            localBuilder = new LocalBuilder(m_localCount, localType, m_methodBuilder);
+            localBuilder = new LocalBuilder(m_localCount, localType, m_methodBuilder, pinned);
             // add the localType to local signature
             m_localSignature.AddArgument(localType, pinned);
             m_localCount++;

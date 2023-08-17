@@ -126,6 +126,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.TypeEquivalence.cs">
+      <Link>TypeSystem\Common\CastingHelper.TypeEquivalence.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs">
       <Link>TypeSystem\Common\ConstructedTypeRewritingHelpers.cs</Link>
     </Compile>
@@ -252,6 +255,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.MethodImpls.cs">
       <Link>TypeSystem\Common\InstantiatedType.MethodImpls.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.TypeEquivalence.cs">
+      <Link>TypeSystem\Common\InstantiatedType.TypeEquivalence.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\LayoutInt.cs">
       <Link>TypeSystem\Common\LayoutInt.cs</Link>
     </Compile>
@@ -369,6 +375,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\TypeDesc.Interfaces.cs">
       <Link>TypeSystem\Common\TypeDesc.Interfaces.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeDesc.TypeEquivalence.cs">
+      <Link>TypeSystem\Common\TypeDesc.TypeEquivalence.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\DefType.cs">
       <Link>TypeSystem\Common\DefType.cs</Link>
     </Compile>
@@ -407,6 +416,12 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaType.Sorting.cs">
       <Link>Ecma\EcmaType.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaType.TypeEquivalence.cs">
+      <Link>Ecma\EcmaType.TypeEquivalence.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Ecma\EffectiveVisibility.cs">
+      <Link>Ecma\EffectiveVisibility.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\PrimitiveTypeProvider.cs">
       <Link>Ecma\PrimitiveTypeProvider.cs</Link>

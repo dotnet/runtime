@@ -233,6 +233,7 @@ if [[ ( -z "$DOTNET_JitStress" ) && ( -z "$DOTNET_JitStressRegs" ) && ( -z "$DOT
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
     ERRORLEVEL=$?
     export DOTNET_JitDisasm=`cat $(BashDisasmListOutputFile)`
+    export DOTNET_JitDisasmTesting=1
     export DOTNET_JitDiffableDasm=1
     export DOTNET_JitStdOutFile=$(BashDisasmOutputFile)
     rm -f $(BashDisasmOutputFile)
@@ -280,6 +281,7 @@ IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_Tailcall
       Exit /b 1
     )', '%0d%0a')
     for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set DOTNET_JitDisasm=%%g
+    set DOTNET_JitDisasmTesting=1
     set DOTNET_JitDiffableDasm=1
     set DOTNET_JitStdOutFile=$(BatchDisasmOutputFile)
     del $(BatchDisasmOutputFile) >nul 2>&1

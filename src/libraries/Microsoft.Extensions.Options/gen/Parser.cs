@@ -93,7 +93,12 @@ namespace Microsoft.Extensions.Options.Generators
                                 continue;
                             }
 
-                            var membersToValidate = GetMembersToValidate(modelType, true);
+                            Location? modelTypeLocation = modelType.GetLocation();
+                            Location lowerLocationInCompilation = modelTypeLocation is not null && modelTypeLocation.SourceTree is not null && _compilation.ContainsSyntaxTree(modelTypeLocation.SourceTree)
+                                ? modelTypeLocation
+                                : syntax.GetLocation();
+
+                            var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation, validatorType);
                             if (membersToValidate.Count == 0)
                             {
                                 // this type lacks any eligible members
@@ -124,7 +129,7 @@ namespace Microsoft.Extensions.Options.Generators
                         parents.Reverse();
 
                         results.Add(new ValidatorType(
-                            validatorType.ContainingNamespace.IsGlobalNamespace ? string.Empty : validatorType.ContainingNamespace.ToString(),
+                            validatorType.ContainingNamespace.IsGlobalNamespace ? string.Empty : validatorType.ContainingNamespace.ToString()!,
                             GetMinimalFQN(validatorType),
                             GetMinimalFQNWithoutGenerics(validatorType),
                             keyword,
@@ -137,6 +142,13 @@ namespace Microsoft.Extensions.Options.Generators
 
             results.AddRange(_synthesizedValidators.Values);
             _synthesizedValidators.Clear();
+
+            if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
+            {
+                // we only support C# 8.0 and above
+                Diag(DiagDescriptors.OptionsUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
+                return new List<ValidatorType>();
+            }
 
             return results;
         }
@@ -239,7 +251,7 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
 
-        private List<ValidatedMember> GetMembersToValidate(ITypeSymbol modelType, bool speculate)
+        private List<ValidatedMember> GetMembersToValidate(ITypeSymbol modelType, bool speculate, Location lowerLocationInCompilation, ITypeSymbol validatorType)
         {
             // make a list of the most derived members in the model type
 
@@ -263,10 +275,15 @@ namespace Microsoft.Extensions.Options.Generators
             var membersToValidate = new List<ValidatedMember>();
             foreach (var member in members)
             {
-                var memberInfo = GetMemberInfo(member, speculate);
+                Location? memberLocation = member.GetLocation();
+                Location location = memberLocation is not null && memberLocation.SourceTree is not null && _compilation.ContainsSyntaxTree(memberLocation.SourceTree)
+                    ? memberLocation
+                    : lowerLocationInCompilation;
+
+                var memberInfo = GetMemberInfo(member, speculate, location, validatorType);
                 if (memberInfo is not null)
                 {
-                    if (member.DeclaredAccessibility != Accessibility.Public && member.DeclaredAccessibility != Accessibility.Internal)
+                    if (member.DeclaredAccessibility != Accessibility.Public)
                     {
                         Diag(DiagDescriptors.MemberIsInaccessible, member.Locations.First(), member.Name);
                         continue;
@@ -279,7 +296,7 @@ namespace Microsoft.Extensions.Options.Generators
             return membersToValidate;
         }
 
-        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate)
+        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate, Location location, ITypeSymbol validatorType)
         {
             ITypeSymbol memberType;
             switch (member)
@@ -287,6 +304,8 @@ namespace Microsoft.Extensions.Options.Generators
                 case IPropertySymbol prop:
                     memberType = prop.Type;
                     break;
+
+                /* The runtime doesn't support fields validation yet. If we allow that in the future, we need to add the following code back.
                 case IFieldSymbol field:
                     if (field.AssociatedSymbol is not null)
                     {
@@ -296,6 +315,7 @@ namespace Microsoft.Extensions.Options.Generators
 
                     memberType = field.Type;
                     break;
+                */
                 default:
                     // we only care about properties and fields
                     return null;
@@ -362,7 +382,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (transValidatorTypeName == null)
                     {
                         transValidatorIsSynthetic = true;
-                        transValidatorTypeName = AddSynthesizedValidator(memberType, member);
+                        transValidatorTypeName = AddSynthesizedValidator(memberType, member, location, validatorType);
                     }
 
                     // pop the stack
@@ -425,7 +445,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (enumerationValidatorTypeName == null)
                     {
                         enumerationValidatorIsSynthetic = true;
-                        enumerationValidatorTypeName = AddSynthesizedValidator(enumeratedType, member);
+                        enumerationValidatorTypeName = AddSynthesizedValidator(enumeratedType, member, location, validatorType);
                     }
 
                     // pop the stack
@@ -433,6 +453,12 @@ namespace Microsoft.Extensions.Options.Generators
                 }
                 else if (ConvertTo(attributeType, _symbolHolder.ValidationAttributeSymbol))
                 {
+                    if (!_compilation.IsSymbolAccessibleWithin(attributeType, validatorType))
+                    {
+                        Diag(DiagDescriptors.InaccessibleValidationAttribute, location, attributeType.Name, member.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), validatorType.Name);
+                        continue;
+                    }
+
                     var validationAttr = new ValidationAttributeInfo(attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
                     validationAttrs.Add(validationAttr);
 
@@ -455,7 +481,7 @@ namespace Microsoft.Extensions.Options.Generators
                 // generate a warning if the member is const/static and has a validation attribute applied
                 if (validationAttributeIsApplied)
                 {
-                    Diag(DiagDescriptors.CantValidateStaticOrConstMember, member.GetLocation(), member.Name);
+                    Diag(DiagDescriptors.CantValidateStaticOrConstMember, location, member.Name);
                 }
 
                 // don't validate the member in any case
@@ -467,10 +493,10 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 if (!HasOpenGenerics(memberType, out var genericType))
                 {
-                    var membersToValidate = GetMembersToValidate(memberType, false);
+                    var membersToValidate = GetMembersToValidate(memberType, false, location, validatorType);
                     if (membersToValidate.Count > 0)
                     {
-                        Diag(DiagDescriptors.PotentiallyMissingTransitiveValidation, member.GetLocation(), memberType.Name, member.Name);
+                        Diag(DiagDescriptors.PotentiallyMissingTransitiveValidation, location, memberType.Name, member.Name);
                     }
                 }
             }
@@ -483,10 +509,10 @@ namespace Microsoft.Extensions.Options.Generators
                 {
                     if (!HasOpenGenerics(enumeratedType, out var genericType))
                     {
-                        var membersToValidate = GetMembersToValidate(enumeratedType, false);
+                        var membersToValidate = GetMembersToValidate(enumeratedType, false, location, validatorType);
                         if (membersToValidate.Count > 0)
                         {
-                            Diag(DiagDescriptors.PotentiallyMissingEnumerableValidation, member.GetLocation(), enumeratedType.Name, member.Name);
+                            Diag(DiagDescriptors.PotentiallyMissingEnumerableValidation, location, enumeratedType.Name, member.Name);
                         }
                     }
                 }
@@ -511,7 +537,7 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
 
-        private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member)
+        private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member, Location location, ITypeSymbol validatorType)
         {
             var mt = modelType.WithNullableAnnotation(NullableAnnotation.None);
             if (mt.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
@@ -525,11 +551,11 @@ namespace Microsoft.Extensions.Options.Generators
                 return "global::" + validator.Namespace + "." + validator.Name;
             }
 
-            var membersToValidate = GetMembersToValidate(mt, true);
+            var membersToValidate = GetMembersToValidate(mt, true, location, validatorType);
             if (membersToValidate.Count == 0)
             {
                 // this type lacks any eligible members
-                Diag(DiagDescriptors.NoEligibleMember, member.GetLocation(), mt.ToString(), member.ToString());
+                Diag(DiagDescriptors.NoEligibleMember, location, mt.ToString(), member.ToString());
                 return null;
             }
 
@@ -542,7 +568,7 @@ namespace Microsoft.Extensions.Options.Generators
             var validatorTypeName = "__" + mt.Name + "Validator__";
 
             var result = new ValidatorType(
-                mt.ContainingNamespace.IsGlobalNamespace ? string.Empty : mt.ContainingNamespace.ToString(),
+                mt.ContainingNamespace.IsGlobalNamespace ? string.Empty : mt.ContainingNamespace.ToString()!,
                 validatorTypeName,
                 validatorTypeName,
                 "class",
@@ -624,12 +650,12 @@ namespace Microsoft.Extensions.Options.Generators
 
             if (type.SpecialType == SpecialType.System_String)
             {
-                return $@"""{EscapeString(value.ToString())}""";
+                return $@"""{EscapeString(value.ToString()!)}""";
             }
 
             if (type.SpecialType == SpecialType.System_Char)
             {
-                return $@"'{EscapeString(value.ToString())}'";
+                return $@"'{EscapeString(value.ToString()!)}'";
             }
 
             return $"({type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}){Convert.ToString(value, CultureInfo.InvariantCulture)}";
@@ -665,14 +691,10 @@ namespace Microsoft.Extensions.Options.Generators
             return sb.ToString();
         }
 
-        private void Diag(DiagnosticDescriptor desc, Location? location)
-        {
+        private void Diag(DiagnosticDescriptor desc, Location? location) =>
             _reportDiagnostic(Diagnostic.Create(desc, location, Array.Empty<object?>()));
-        }
 
-        private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
-        {
+        private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs) =>
             _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
-        }
     }
 }

@@ -1908,7 +1908,7 @@ FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, MethodTable* pMT) {
 
     // MethodTable::GetInternalCorElementType has unnecessary overhead for enums
     // Call EEClass::GetInternalCorElementType directly to avoid it
-    return pMT->GetClass_NoLogging()->GetInternalCorElementType();
+    return pMT->GetClass()->GetInternalCorElementType();
 }
 FCIMPLEND
 

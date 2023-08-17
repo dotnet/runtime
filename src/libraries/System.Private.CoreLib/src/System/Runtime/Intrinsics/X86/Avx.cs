@@ -471,12 +471,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> ExtractVector128(Vector256<double> value, [ConstantExpected] byte index) => ExtractVector128(value, index);
 
         /// <summary>
-        /// __m256 _mm256_ceil_ps (__m128 a)
+        /// __m256 _mm256_floor_ps (__m256 a)
         ///   VROUNDPS ymm1, ymm2/m256, imm8(9)
         /// </summary>
         public static Vector256<float> Floor(Vector256<float> value) => Floor(value);
         /// <summary>
-        /// __m256d _mm256_ceil_pd (__m128d a)
+        /// __m256d _mm256_floor_pd (__m256d a)
         ///   VROUNDPD ymm1, ymm2/m256, imm8(9)
         /// </summary>
         public static Vector256<double> Floor(Vector256<double> value) => Floor(value);

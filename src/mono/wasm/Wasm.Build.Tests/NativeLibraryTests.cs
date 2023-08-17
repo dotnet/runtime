@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class NativeLibraryTests : BuildTestBase
+    public class NativeLibraryTests : TestMainJsTestBase
     {
         public NativeLibraryTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -91,7 +91,7 @@ public class Test
             Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [BuildAndRun(aot: false, host: RunHost.Chrome)]
         [BuildAndRun(aot: true, host: RunHost.Chrome)]
         public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)

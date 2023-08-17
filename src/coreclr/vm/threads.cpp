@@ -8241,8 +8241,10 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 {
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     DWORD64 ssp = GetSSP(ContextRecord);
+    __asan_handle_no_return();
     ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
 #else
+    __asan_handle_no_return();
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif

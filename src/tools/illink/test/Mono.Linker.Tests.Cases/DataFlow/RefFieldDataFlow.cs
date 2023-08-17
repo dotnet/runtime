@@ -2,10 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using DAM = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute;
 using DAMT = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes;
 
@@ -519,11 +516,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		ref struct RefFieldWithMethods
 		{
 			[Kept]
-			[DynamicallyAccessedMembers (DAMT.PublicMethods)]
+			[DAM (DAMT.PublicMethods)]
 			public ref Type T;
 
 			[Kept]
-			public RefFieldWithMethods ([DynamicallyAccessedMembers (DAMT.PublicMethods)] ref Type t)
+			public RefFieldWithMethods ([DAM (DAMT.PublicMethods)] ref Type t)
 			{
 				T = ref t;
 			}
@@ -533,11 +530,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		ref struct RefFieldWithFields
 		{
 			[Kept]
-			[DynamicallyAccessedMembers (DAMT.PublicFields)]
+			[DAM (DAMT.PublicFields)]
 			public ref Type T;
 
 			[Kept]
-			public RefFieldWithFields ([DynamicallyAccessedMembers (DAMT.PublicFields)] ref Type t)
+			public RefFieldWithFields ([DAM (DAMT.PublicFields)] ref Type t)
 			{
 				T = ref t;
 			}
@@ -547,11 +544,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		ref struct RefFieldWithMethodsAndFields
 		{
 			[Kept]
-			[DynamicallyAccessedMembers (DAMT.PublicFields | DAMT.PublicMethods)]
+			[DAM (DAMT.PublicFields | DAMT.PublicMethods)]
 			public ref Type T;
 
 			[Kept]
-			public RefFieldWithMethodsAndFields ([DynamicallyAccessedMembers (DAMT.PublicFields | DAMT.PublicMethods)] ref Type t)
+			public RefFieldWithMethodsAndFields ([DAM (DAMT.PublicFields | DAMT.PublicMethods)] ref Type t)
 			{
 				T = ref t;
 			}

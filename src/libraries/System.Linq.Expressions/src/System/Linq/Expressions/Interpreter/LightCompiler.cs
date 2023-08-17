@@ -2509,8 +2509,12 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
+        [UnconditionalSuppressMessage("DynamicDependency", "IL3050",
+            Justification = "NewArrayExpression has RequiresDynamicCode, so the only way to get here is by already "
+                + "seeing a warning.")]
         private void CompileNewArrayExpression(Expression expr)
         {
+            Debug.Assert(typeof(NewArrayExpression).GetCustomAttribute<RequiresDynamicCodeAttribute>() is not null);
             var node = (NewArrayExpression)expr;
 
             foreach (Expression arg in node.Expressions)

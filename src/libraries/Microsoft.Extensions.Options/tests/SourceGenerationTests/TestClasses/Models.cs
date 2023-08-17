@@ -154,7 +154,7 @@ namespace TestClasses.OptionsValidation
         public string? DerivedVal { get; set; }
 
         [Required]
-        internal virtual int? VirtualValWithAttr { get; set; }
+        public virtual int? VirtualValWithAttr { get; set; }
 
         public virtual int? VirtualValWithoutAttr { get; set; }
 
@@ -164,7 +164,7 @@ namespace TestClasses.OptionsValidation
 
     public class LeafModel : DerivedModel
     {
-        internal override int? VirtualValWithAttr { get; set; }
+        public override int? VirtualValWithAttr { get; set; }
 
         [Required]
         public override int? VirtualValWithoutAttr { get; set; }

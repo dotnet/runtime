@@ -26,13 +26,16 @@ typedef struct _MonoMethodBuilder MonoMethodBuilder;
 
 typedef struct {
 	int version;
-	MonoMethodBuilder* (*new_base) (MonoClass *klass, MonoWrapperType type);
+	MonoMethodBuilder* (*new_base) (MonoClass *klass, MonoWrapperType type, gboolean dynamic);
 	void (*free) (MonoMethodBuilder *mb);
 	MonoMethod* (*create_method) (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack);
 } MonoMethodBuilderCallbacks;
 
 MONO_COMPONENT_API MonoMethodBuilder *
 mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type);
+
+MONO_COMPONENT_API MonoMethodBuilder *
+mono_mb_new_dynamic (MonoClass *klass, const char *name, MonoWrapperType type);
 
 MonoMethodBuilder *
 mono_mb_new_no_dup_name (MonoClass *klass, const char *name, MonoWrapperType type);

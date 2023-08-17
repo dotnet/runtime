@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -17,11 +16,9 @@ namespace System.Runtime
     {
         Unknown = 0,
         InternalError = 1,                                   // "Runtime internal error"
-        UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
-        UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
-        ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-        UnhandledException = 5,                              // "unhandled exception"
-        UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
+        UnhandledException = 2,                              // "unhandled exception"
+        UnhandledExceptionFromPInvoke = 3,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
+        EnvironmentFailFast = 4,
     }
 
     internal static unsafe partial class EH
@@ -270,10 +267,7 @@ namespace System.Runtime
             // If the helper fails to yield an object, then we fail-fast.
             if (e == null)
             {
-                FailFastViaClasslib(
-                    RhFailFastReason.ClassLibDidNotTranslateExceptionID,
-                    null,
-                    address);
+                FailFastViaClasslib(RhFailFastReason.InternalError, null, address);
             }
 
             return e;
@@ -306,10 +300,7 @@ namespace System.Runtime
             // If the helper fails to yield an object, then we fail-fast.
             if (e == null)
             {
-                FailFastViaClasslib(
-                    RhFailFastReason.ClassLibDidNotTranslateExceptionID,
-                    null,
-                    (IntPtr)pEEType);
+                FailFastViaClasslib(RhFailFastReason.InternalError, null, (IntPtr)pEEType);
             }
 
             return e;

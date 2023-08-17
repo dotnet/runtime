@@ -4664,8 +4664,8 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 
         IL_OFFSET splitPointILOffset = fgFindBlockILOffset(newBlock);
 
-        curr->bbCodeOffsEnd  = splitPointILOffset;
-        newBlock->bbCodeOffs = splitPointILOffset;
+        curr->bbCodeOffsEnd  = max(curr->bbCodeOffs, splitPointILOffset);
+        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
     }
     else
     {
@@ -4781,11 +4781,11 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
             }
         }
 
-        curr->bbCodeOffsEnd = splitPointILOffset;
+        curr->bbCodeOffsEnd = max(curr->bbCodeOffs, splitPointILOffset);
 
         // Also use this as the beginning offset of the next block. Presumably we could/should
         // look to see if the first node is a GT_IL_OFFSET node, and use that instead.
-        newBlock->bbCodeOffs = splitPointILOffset;
+        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
     }
     else
     {

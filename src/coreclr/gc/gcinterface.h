@@ -11,7 +11,7 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 1
+#define GC_INTERFACE_MINOR_VERSION 2
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -1016,6 +1016,8 @@ public:
 
     // Get extra work for the finalizer
     virtual FinalizerWorkItem* GetExtraWorkForFinalization() PURE_VIRTUAL
+
+    virtual uint64_t GetGenerationBudget(int generation) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

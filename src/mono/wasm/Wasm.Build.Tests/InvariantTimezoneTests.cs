@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class InvariantTimezoneTests : BuildTestBase
+    public class InvariantTimezoneTests : TestMainJsTestBase
     {
         public InvariantTimezoneTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

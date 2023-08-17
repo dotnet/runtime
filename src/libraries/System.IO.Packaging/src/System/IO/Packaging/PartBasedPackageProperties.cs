@@ -379,7 +379,9 @@ namespace System.IO.Packaging
                 _package.ThrowIfReadOnly();
 
             // Case of an existing property.
+#pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
             if (_propertyDictionary.ContainsKey(propertyenum))
+#pragma warning restore CA1864 // Cannot use TryAdd because if the value is null it is not added if
             {
                 // Parsing should detect redundant entries.
                 if (initializing)

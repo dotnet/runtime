@@ -43,11 +43,12 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_STACK_ALLOC Size
     addi sp, sp, -\Size
+    .cfi_adjust_cfa_offset \Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
     addi sp, sp, \Size
-    .cfi_def_cfa sp,-\Size
+    .cfi_adjust_cfa_offset -\Size
 .endm
 
 .macro EPILOG_STACK_RESTORE
@@ -64,7 +65,7 @@ C_FUNC(\Name\()_End):
     sd \reg1, \ofs(sp)
     sd \reg2, (\ofs+8)(sp)
     .cfi_rel_offset \reg1, \ofs
-    .cfi_rel_offset \reg1, \ofs + 8
+    .cfi_rel_offset \reg2, \ofs + 8
     .if (\__def_cfa_save ==  1)
         addi fp, sp, 0
         .cfi_def_cfa_register fp
@@ -73,11 +74,11 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
     addi sp, sp, -\ssize
+    .cfi_adjust_cfa_offset \ssize
 
     sd \reg1, 0(sp)
     sd \reg2, 8(sp)
 
-    .cfi_adjust_cfa_offset -\ssize
     .cfi_rel_offset \reg1, 0
     .cfi_rel_offset \reg2, 8
     .if (\__def_cfa_save ==  1)
@@ -89,7 +90,6 @@ C_FUNC(\Name\()_End):
 .macro EPILOG_RESTORE_REG reg, ofs
     ld  \reg, (\ofs)(sp)
     .cfi_restore \reg
-    .cfi_def_cfa_register sp
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
@@ -106,7 +106,7 @@ C_FUNC(\Name\()_End):
     .cfi_restore \reg1
 
     addi  sp, sp, \ssize
-    .cfi_def_cfa sp,-\ssize
+    .cfi_adjust_cfa_offset -\ssize
 .endm
 
 .macro EPILOG_RETURN

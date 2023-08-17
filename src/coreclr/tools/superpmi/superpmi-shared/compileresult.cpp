@@ -576,7 +576,16 @@ void CompileResult::recSetMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethod
     if (SetMethodAttribs == nullptr)
         SetMethodAttribs = new LightWeightMap<DWORDLONG, DWORD>();
 
-    SetMethodAttribs->Add(CastHandle(ftn), (DWORD)attribs);
+    int index = SetMethodAttribs->GetIndex(CastHandle(ftn));
+    if (index == -1)
+    {
+        SetMethodAttribs->Add(CastHandle(ftn), (DWORD)attribs);
+    }
+    else
+    {
+        DWORD existingAttribs = SetMethodAttribs->GetItem(index);
+        SetMethodAttribs->Update(index, existingAttribs | (DWORD)attribs);
+    }
 }
 void CompileResult::dmpSetMethodAttribs(DWORDLONG key, DWORD value)
 {
@@ -584,9 +593,14 @@ void CompileResult::dmpSetMethodAttribs(DWORDLONG key, DWORD value)
 }
 CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
-    if ((SetMethodAttribs == nullptr) || (SetMethodAttribs->GetIndex(CastHandle(ftn)) == -1))
+    if (SetMethodAttribs == nullptr)
         return (CorInfoMethodRuntimeFlags)0;
-    CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->Get(CastHandle(ftn));
+
+    int index = SetMethodAttribs->GetIndex(CastHandle(ftn));
+    if (index == -1)
+        return (CorInfoMethodRuntimeFlags)0;
+
+    CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->GetItem(index);
     return result;
 }
 

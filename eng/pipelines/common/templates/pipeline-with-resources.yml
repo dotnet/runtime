@@ -36,7 +36,7 @@ resources:
 
     # This container contains all required toolsets to build for Android and for Linux with bionic libc.
     - container: linux_bionic
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-android
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-android-amd64
 
     # This container contains all required toolsets to build for Android as well as tooling to build docker images.
     - container: android_docker

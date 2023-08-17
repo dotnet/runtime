@@ -1124,7 +1124,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
 //---------------------------------------------------------
 class ArrayStubCache : public StubCacheBase
 {
-    virtual void CompileStub(const BYTE *pRawStub,
+    virtual DWORD CompileStub(const BYTE *pRawStub,
                              StubLinker *psl);
     virtual UINT Length(const BYTE *pRawStub);
 
@@ -1169,12 +1169,13 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
     return pArrayOpStub;
 }
 
-void ArrayStubCache::CompileStub(const BYTE *pRawStub,
+DWORD ArrayStubCache::CompileStub(const BYTE *pRawStub,
                                  StubLinker *psl)
 {
     STANDARD_VM_CONTRACT;
 
     ((CPUSTUBLINKER*)psl)->EmitArrayOpStub((ArrayOpScript*)pRawStub);
+    return NEWSTUB_FL_NONE;
 }
 
 UINT ArrayStubCache::Length(const BYTE *pRawStub)

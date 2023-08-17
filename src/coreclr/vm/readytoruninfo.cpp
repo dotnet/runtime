@@ -1797,9 +1797,11 @@ const ReadyToRun_MethodIsGenericMap ReadyToRun_MethodIsGenericMap::EmptyInstance
 
 mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport) const
 {
+#ifndef DACCESS_COMPILE
     uint32_t rid = RidFromToken(input);
     _ASSERTE(TypeCount <= (uint32_t)ReadyToRunEnclosingTypeMap::MaxTypeCount);
     if ((rid > TypeCount) || (rid == 0))
+#endif
     {
         mdTypeDef enclosingType;
         HRESULT hr = pImport->GetNestedClassProps(input, &enclosingType);
@@ -1813,18 +1815,22 @@ mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInte
 
         return enclosingType;
     }
+#ifndef DACCESS_COMPILE
     return TokenFromRid((&TypeCount)[rid], mdtTypeDef);
+#endif
 }
 
 HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport) const
 {
+#ifndef DACCESS_COMPILE
     uint32_t rid = RidFromToken(input);
     _ASSERTE(TypeCount <= (uint32_t)ReadyToRunEnclosingTypeMap::MaxTypeCount);
     if ((rid > TypeCount) || (rid == 0))
+#endif
     {
         return pImport->GetNestedClassProps(input, pEnclosingType);
     }
-
+#ifndef DACCESS_COMPILE
     *pEnclosingType = TokenFromRid((&TypeCount)[rid], mdtTypeDef);
 
     if (*pEnclosingType == mdTypeDefNil)
@@ -1832,10 +1838,15 @@ HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, md
         return CLDB_E_RECORD_NOTFOUND;
     }
     return  S_OK;
+#endif
 }
 
 ReadyToRunTypeGenericInfo ReadyToRun_TypeGenericInfoMap::GetTypeGenericInfo(mdTypeDef input, bool *foundResult) const
 {
+#ifdef DACCESS_COMPILE
+    *foundResult = false;
+    return (ReadyToRunTypeGenericInfo)0;
+#else
     uint32_t rid = RidFromToken(input);
     if ((rid > TypeCount) || (rid == 0))
     {
@@ -1851,6 +1862,7 @@ ReadyToRunTypeGenericInfo ReadyToRun_TypeGenericInfoMap::GetTypeGenericInfo(mdTy
     }
     *foundResult = true;
     return static_cast<ReadyToRunTypeGenericInfo>(entry);
+#endif
 }
 
 bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const
@@ -1937,15 +1949,20 @@ bool ReadyToRun_TypeGenericInfoMap::HasConstraints(mdTypeDef input, bool *foundR
 
 bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResult) const
 {
+#ifdef DACCESS_COMPILE
+    *foundResult = false;
+    return false;
+#else
     uint32_t rid = RidFromToken(input);
     if ((rid > MethodCount) || (rid == 0))
     {
         *foundResult = false;
-        return 0;
+        return false;
     }
 
     uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
     chunk >>= 7 - ((rid - 1) % 8);
     return !!(chunk & 1);
+#endif
 }
 

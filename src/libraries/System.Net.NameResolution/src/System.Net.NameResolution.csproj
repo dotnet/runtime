@@ -13,6 +13,7 @@
     <Compile Include="System\Net\Dns.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
     <Compile Include="System\Net\NetEventSource.NameResolution.cs" />
+    <Compile Include="System\Net\NameResolutionMetrics.cs" />
     <Compile Include="System\Net\NameResolutionTelemetry.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
@@ -20,14 +21,8 @@
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs"
-             Link="Common\System\Net\Sockets\ProtocolType.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
-             Link="Common\System\Net\Sockets\SocketType.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />
-    <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs"
-             Link="Common\System\Net\IPEndPointStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />
   </ItemGroup>
@@ -36,9 +31,7 @@
     <!-- Debug only -->
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
-    <!-- System.Net.Internals -->
-    <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
-             Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
+    <!-- System.Net common -->
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Windows.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.Windows" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
@@ -102,6 +95,7 @@
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />

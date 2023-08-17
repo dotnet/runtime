@@ -24,39 +24,6 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
-BOOL EventPipeEventEnabledGCAllocationTick_V1(void);
-ULONG EventPipeWriteEventGCAllocationTick_V1(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
-BOOL EventPipeEventEnabledGCAllocationTick_V2(void);
-ULONG EventPipeWriteEventGCAllocationTick_V2(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    const void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
-BOOL EventPipeEventEnabledGCAllocationTick_V3(void);
-ULONG EventPipeWriteEventGCAllocationTick_V3(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    const void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const void*  Address,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
 BOOL EventPipeEventEnabledGCBulkEdge(void);
 ULONG EventPipeWriteEventGCBulkEdge(
     const unsigned int  Index,
@@ -172,20 +139,6 @@ ULONG EventPipeWriteEventGCGenerationRange(
     const unsigned __int64  RangeUsedLength,
     const unsigned __int64  RangeReservedLength,
     const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
-BOOL EventPipeEventEnabledGCGlobalHeapHistory_V2(void);
-ULONG EventPipeWriteEventGCGlobalHeapHistory_V2(
-    const unsigned __int64  FinalYoungestDesired,
-    const signed int  NumHeaps,
-    const unsigned int  CondemnedGeneration,
-    const unsigned int  Gen0ReductionCount,
-    const unsigned int  Reason,
-    const unsigned int  GlobalMechanisms,
-    const unsigned short  ClrInstanceID,
-    const unsigned int  PauseMode,
-    const unsigned int  MemoryPressure,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
@@ -319,16 +272,6 @@ ULONG EventPipeWriteEventSetGCHandle(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
-BOOL EventPipeEventEnabledGCStart_V1(void);
-ULONG EventPipeWriteEventGCStart_V1(
-    const unsigned int  Count,
-    const unsigned int  Depth,
-    const unsigned int  Reason,
-    const unsigned int  Type,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-);
 BOOL EventPipeEventEnabledGCStart_V2(void);
 ULONG EventPipeWriteEventGCStart_V2(
     const unsigned int  Count,
@@ -366,3 +309,291 @@ ULONG EventPipeWriteEventGCSuspendEEBegin_V1(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
+BOOL EventPipeEventEnabledDecreaseMemoryPressure(void);
+ULONG EventPipeWriteEventDecreaseMemoryPressure(
+    const unsigned __int64  BytesFreed,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledFinalizeObject(void);
+ULONG EventPipeWriteEventFinalizeObject(
+    const void*  TypeID,
+    const void*  ObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCFinalizersBegin_V1(void);
+ULONG EventPipeWriteEventGCFinalizersBegin_V1(
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCFinalizersEnd_V1(void);
+ULONG EventPipeWriteEventGCFinalizersEnd_V1(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledContentionStart_V2(void);
+ULONG EventPipeWriteEventContentionStart_V2(
+    const unsigned char  ContentionFlags,
+    const unsigned short  ClrInstanceID,
+    const void*  LockID,
+    const void*  AssociatedObjectID,
+    const unsigned __int64  LockOwnerThreadID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledContentionStop_V1(void);
+ULONG EventPipeWriteEventContentionStop_V1(
+    const unsigned char  ContentionFlags,
+    const unsigned short  ClrInstanceID,
+    const double  DurationNs,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledContentionLockCreated(void);
+ULONG EventPipeWriteEventContentionLockCreated(
+    const void*  LockID,
+    const void*  AssociatedObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadStart(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadStart(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadStop(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadStop(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadWait(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadWait(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolMinMaxThreads(void);
+ULONG EventPipeWriteEventThreadPoolMinMaxThreads(
+    const unsigned short  MinWorkerThreads,
+    const unsigned short  MaxWorkerThreads,
+    const unsigned short  MinIOCompletionThreads,
+    const unsigned short  MaxIOCompletionThreads,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentSample(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentSample(
+    const double  Throughput,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentAdjustment(
+    const double  AverageThroughput,
+    const unsigned int  NewWorkerThreadCount,
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentStats(void);
+ULONG EventPipeWriteEventThreadPoolWorkerThreadAdjustmentStats(
+    const double  Duration,
+    const double  Throughput,
+    const double  ThreadWave,
+    const double  ThroughputWave,
+    const double  ThroughputErrorEstimate,
+    const double  AverageThroughputErrorEstimate,
+    const double  ThroughputRatio,
+    const double  Confidence,
+    const double  NewControlSetting,
+    const unsigned short  NewThreadWaveMagnitude,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolIOEnqueue(void);
+ULONG EventPipeWriteEventThreadPoolIOEnqueue(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const BOOL  MultiDequeues,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolIODequeue(void);
+ULONG EventPipeWriteEventThreadPoolIODequeue(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolWorkingThreadCount(void);
+ULONG EventPipeWriteEventThreadPoolWorkingThreadCount(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledThreadPoolIOPack(void);
+ULONG EventPipeWriteEventThreadPoolIOPack(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCAllocationTick_V4(void);
+ULONG EventPipeWriteEventGCAllocationTick_V4(
+    const unsigned int  AllocationAmount,
+    const unsigned int  AllocationKind,
+    const unsigned short  ClrInstanceID,
+    const unsigned __int64  AllocationAmount64,
+    const void*  TypeID,
+    const WCHAR*  TypeName,
+    const unsigned int  HeapIndex,
+    const void*  Address,
+    const unsigned __int64  ObjectSize,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCHeapStats_V2(void);
+ULONG EventPipeWriteEventGCHeapStats_V2(
+    const unsigned __int64  GenerationSize0,
+    const unsigned __int64  TotalPromotedSize0,
+    const unsigned __int64  GenerationSize1,
+    const unsigned __int64  TotalPromotedSize1,
+    const unsigned __int64  GenerationSize2,
+    const unsigned __int64  TotalPromotedSize2,
+    const unsigned __int64  GenerationSize3,
+    const unsigned __int64  TotalPromotedSize3,
+    const unsigned __int64  FinalizationPromotedSize,
+    const unsigned __int64  FinalizationPromotedCount,
+    const unsigned int  PinnedObjectCount,
+    const unsigned int  SinkBlockCount,
+    const unsigned int  GCHandleCount,
+    const unsigned short  ClrInstanceID,
+    const unsigned __int64  GenerationSize4,
+    const unsigned __int64  TotalPromotedSize4,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCSampledObjectAllocationHigh(void);
+ULONG EventPipeWriteEventGCSampledObjectAllocationHigh(
+    const void*  Address,
+    const void*  TypeID,
+    const unsigned int  ObjectCountForTypeSample,
+    const unsigned __int64  TotalSizeForTypeSample,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCSampledObjectAllocationLow(void);
+ULONG EventPipeWriteEventGCSampledObjectAllocationLow(
+    const void*  Address,
+    const void*  TypeID,
+    const unsigned int  ObjectCountForTypeSample,
+    const unsigned __int64  TotalSizeForTypeSample,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledPinObjectAtGCTime(void);
+ULONG EventPipeWriteEventPinObjectAtGCTime(
+    const void*  HandleID,
+    const void*  ObjectID,
+    const unsigned __int64  ObjectSize,
+    const WCHAR*  TypeName,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCBulkRootStaticVar(void);
+ULONG EventPipeWriteEventGCBulkRootStaticVar(
+    const unsigned int  Count,
+    const unsigned __int64  AppDomainID,
+    const unsigned short  ClrInstanceID,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledIncreaseMemoryPressure(void);
+ULONG EventPipeWriteEventIncreaseMemoryPressure(
+    const unsigned __int64  BytesAllocated,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCGlobalHeapHistory_V4(void);
+ULONG EventPipeWriteEventGCGlobalHeapHistory_V4(
+    const unsigned __int64  FinalYoungestDesired,
+    const signed int  NumHeaps,
+    const unsigned int  CondemnedGeneration,
+    const unsigned int  Gen0ReductionCount,
+    const unsigned int  Reason,
+    const unsigned int  GlobalMechanisms,
+    const unsigned short  ClrInstanceID,
+    const unsigned int  PauseMode,
+    const unsigned int  MemoryPressure,
+    const unsigned int  CondemnReasons0,
+    const unsigned int  CondemnReasons1,
+    const unsigned int  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGenAwareBegin(void);
+ULONG EventPipeWriteEventGenAwareBegin(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGenAwareEnd(void);
+ULONG EventPipeWriteEventGenAwareEnd(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCLOHCompact(void);
+ULONG EventPipeWriteEventGCLOHCompact(
+    const unsigned short  ClrInstanceID,
+    const unsigned short  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+BOOL EventPipeEventEnabledGCFitBucketInfo(void);
+ULONG EventPipeWriteEventGCFitBucketInfo(
+    const unsigned short  ClrInstanceID,
+    const unsigned short  BucketKind,
+    const unsigned __int64  TotalSize,
+    const unsigned short  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+);
+

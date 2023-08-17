@@ -1061,7 +1061,7 @@ ContractFailureKind GetContractFailureKind(OBJECTREF obj)
                 // getting closer, now look for all three fields on ContractException
                 const int requiredFieldMatches = 3;
 
-                PTR_EEClass pEEClass = pMT->GetClass_NoLogging();
+                PTR_EEClass pEEClass = pMT->GetClass();
 
                 PTR_FieldDesc pFD = pEEClass->GetFieldDescList();
                 PTR_FieldDesc pFDEnd = pFD + numFields;

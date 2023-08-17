@@ -1,8 +1,7 @@
 if (CLR_CMAKE_HOST_WIN32)
 
   function(remove_ijw_incompatible_options options updatedOptions)
-
-    # IJW isn't compatible with Ehsc, which CMake enables by default,
+    # IJW isn't compatible with Ehsc, which CMake enables by default
     if(options MATCHES "/EHsc")
         string(REPLACE "/EHsc" "" options "${options}")
     endif()
@@ -20,6 +19,12 @@ if (CLR_CMAKE_HOST_WIN32)
     # IJW isn't compatible with GR-
     if(options MATCHES "/GR-")
         string(REPLACE "/GR-" "" options "${options}")
+    endif()
+
+    # Disable native sanitizers for IJW since we don't want to have to locate
+    # and copy the sanitizer runtimes and IJW must be built with a dynamic CRT.
+    if (options MATCHES "-fsanitize=")
+        string(REGEX REPLACE "-fsanitize=[a-zA-z,]+" "" options "${options}")
     endif()
 
     SET(${updatedOptions} "${options}" PARENT_SCOPE)
@@ -60,6 +65,10 @@ if (CLR_CMAKE_HOST_WIN32)
   endif()
 
   remove_ijw_incompatible_options("${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
+
+  get_directory_property(dirCompileOptions COMPILE_OPTIONS)
+  remove_ijw_incompatible_options("${dirCompileOptions}" dirCompileOptions)
+  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${dirCompileOptions}")
 
   set(CLR_SDK_REF_PACK_OUTPUT "")
   set(CLR_SDK_REF_PACK_DISCOVERY_ERROR "")

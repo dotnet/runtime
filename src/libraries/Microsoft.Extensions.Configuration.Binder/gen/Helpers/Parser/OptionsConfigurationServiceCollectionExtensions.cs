@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                TypeSpec typeSpec = GetBindingConfigType(
+                TypeSpec typeSpec = GetTargetTypeForRootInvocation(
                     type: targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None),
                     invocation.Location);
 

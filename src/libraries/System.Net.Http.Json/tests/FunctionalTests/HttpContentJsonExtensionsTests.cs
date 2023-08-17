@@ -20,6 +20,10 @@ namespace System.Net.Http.Json.Functional.Tests
             HttpContent content = null;
             AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsync<Person>());
             AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsync(typeof(Person)));
+
+            AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsAsyncEnumerable<Person>());
+            AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsAsyncEnumerable<Person>(options: null));
+            AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsAsyncEnumerable<Person>(jsonTypeInfo: null));
         }
 
         [Theory]
@@ -55,13 +59,6 @@ namespace System.Net.Http.Json.Functional.Tests
                 {
                     using (HttpClient client = new HttpClient(handler))
                     {
-                        static void AssertPersonEquality(Person first, Person second)
-                        {
-                            Assert.Equal(first.Age, second.Age);
-                            Assert.Equal(first.Name, second.Name);
-                            Assert.Equal(first.Parent, second.Parent);
-                            Assert.Equal(first.PlaceOfBirth, second.PlaceOfBirth);
-                        }
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
                         HttpResponseMessage response = await client.SendAsync(request);
                         Person per1 = (Person) await response.Content.ReadFromJsonAsync(typeof(Person));
@@ -71,7 +68,7 @@ namespace System.Net.Http.Json.Functional.Tests
                         response = await client.SendAsync(request);
                         Person per2 = (Person) await response.Content.ReadFromJsonAsync(typeof(Person), options: null);
                         per2.Validate();
-                        AssertPersonEquality(per1, per2);
+                        Person.AssertPersonEquality(per1, per2);
 
                         request = new HttpRequestMessage(HttpMethod.Get, uri);
                         response = await client.SendAsync(request);
@@ -82,7 +79,7 @@ namespace System.Net.Http.Json.Functional.Tests
                         response = await client.SendAsync(request);
                         per2 = await response.Content.ReadFromJsonAsync<Person>(options:null);
                         per2.Validate();
-                        AssertPersonEquality(per1, per2);
+                        Person.AssertPersonEquality(per1, per2);
                     }
                 },
                 server => server.HandleRequestAsync(headers: _headers, content: json));
@@ -115,6 +112,77 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 },
                 server => server.HandleRequestAsync(headers: _headers, content: "null"));
+        }
+
+        [Fact]
+        public async Task HttpContentReturnValueIsNullWithAsAsyncEnumerable()
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        HttpResponseMessage response = await client.SendAsync(request);
+                        await foreach (Person? per in response.Content.ReadFromJsonAsAsyncEnumerable<Person>())
+                        {
+                            Assert.Null(per);
+                        }
+                    }
+                },
+                server => server.HandleRequestAsync(headers: _headers, content: "null"));
+        }
+
+        [Fact]
+        public async Task HttpContentAsAsyncEnumerableHonorsWebDefaults()
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        HttpResponseMessage response = await client.SendAsync(request);
+                        int count = 0;
+                        await foreach (Person? per in response.Content.ReadFromJsonAsAsyncEnumerable<Person>())
+                        {
+                            Assert.NotNull(per);
+                            Assert.NotNull(per.Name);
+                            count++;
+                        }
+                        Assert.Equal(People.PeopleCount, count);
+                    }
+                },
+                async server =>
+                {
+                    string jsonResponse = JsonSerializer.Serialize(People.WomenOfProgramming, JsonOptions.DefaultSerializerOptions);
+                    await server.HandleRequestAsync(headers: _headers, content: jsonResponse);
+                });
+        }
+
+        [Fact]
+        public async Task TestReadFromJsonAsAsyncEnumerableNoMessageBodyAsync()
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        HttpResponseMessage response = await client.SendAsync(request);
+
+                        // As of now, we pass the message body to the serializer even when its empty which causes the serializer to throw.
+                        JsonException ex = await Assert.ThrowsAsync<JsonException>(async () =>
+                        {
+                            await foreach (Person? per in response.Content.ReadFromJsonAsAsyncEnumerable<Person>())
+                            {
+                                _ = per;
+                            }
+                        });
+                        Assert.Contains("Path: $ | LineNumber: 0 | BytePositionInLine: 0", ex.Message);
+                    }
+                },
+                server => server.HandleRequestAsync(headers: _headers));
         }
 
         [Fact]
@@ -210,6 +278,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     await server.HandleRequestAsync(statusCode: HttpStatusCode.OK, headers: headers, bytes: Encoding.Unicode.GetBytes(json));
                 });
         }
+
         [Fact]
         public async Task EnsureDefaultJsonSerializerOptionsAsync()
         {
