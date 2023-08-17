@@ -39,12 +39,16 @@ public class BuildPublishTests : BlazorWasmTestBase
     }
 
 
-    public static TheoryData<string, bool> TestDataForDefaultTemplate_NoAOT_WithWorkload()
+    public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot=false)
     {
         var data = new TheoryData<string, bool>();
         data.Add("Debug", false);
-        data.Add("Debug", true);
         data.Add("Release", false); // Release relinks by default
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
+        if (!isAot || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            data.Add("Debug", true); // for aot:true on Windows, it fails
+        }
 
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -55,7 +59,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [MemberData(nameof(TestDataForDefaultTemplate_NoAOT_WithWorkload))]
+    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload))]
     public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
@@ -73,6 +77,19 @@ public class BuildPublishTests : BlazorWasmTestBase
         {
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
+    public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
+    {
+        string id = testUnicode ?
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_no_aot_{config}_{GetRandomId()}";
+        CreateBlazorWasmTemplateProject(id);
+
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT), "-p:RunAOTCompilation=true");
     }
 
     [Theory]
