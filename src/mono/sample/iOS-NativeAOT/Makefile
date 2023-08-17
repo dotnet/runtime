@@ -8,11 +8,8 @@ TARGET_OS?=iossimulator
 DEPLOY_AND_RUN?=false
 STRIP_DEBUG_SYMBOLS?=false
 USE_RUNTIME_PACKS?=false
-<<<<<<< HEAD
 STATS?=false
-=======
 HYBRID_GLOBALIZATION?=false
->>>>>>> a2c9132c72a (First pass at adding iOS hybrid globalization.)
 
 REPO_DIR=$(realpath $(TOP))
 TASKS_DIR=$(REPO_DIR)/src/tasks
