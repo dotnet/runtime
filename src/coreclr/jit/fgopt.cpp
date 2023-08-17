@@ -6839,6 +6839,10 @@ struct PredSuccInfo
 //------------------------------------------------------------------------
 // fgHeadTailMerge: merge common sequences of statements in block predecessors/successors
 //
+// Parameters:
+//   early - Whether this is being checked with early IR invariants (where
+//           we do not have valid address exposure/GTF_GLOB_REF).
+//
 // Returns:
 //   Suitable phase status.
 //
@@ -7215,6 +7219,19 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+//------------------------------------------------------------------------
+// fgTryOneHeadMerge: Try to merge the first statement of the successors of a
+// specified block.
+//
+// Parameters:
+//   block               - The block whose successors are to be considered
+//   matchedPredSuccInfo - Storage data structure
+//   early               - Whether this is being checked with early IR invariants
+//                         (where we do not have valid address exposure/GTF_GLOB_REF).
+//
+// Returns:
+//   True if the merge succeeded.
+//
 bool Compiler::fgTryOneHeadMerge(BasicBlock* block, ArrayStack<PredSuccInfo>& matchedPredSuccInfo, bool early)
 {
     if (block->NumSucc(this) < 2)
@@ -7311,6 +7328,19 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, ArrayStack<PredSuccInfo>& ma
     return true;
 }
 
+//------------------------------------------------------------------------
+// fgHeadMerge: Try to repeatedly merge the first statement of the successors
+// of the specified block.
+//
+// Parameters:
+//   block               - The block whose successors are to be considered
+//   matchedPredSuccInfo - Storage data structure
+//   early               - Whether this is being checked with early IR invariants
+//                         (where we do not have valid address exposure/GTF_GLOB_REF).
+//
+// Returns:
+//   True if any merge succeeded.
+//
 bool Compiler::fgHeadMerge(BasicBlock* block, ArrayStack<PredSuccInfo>& matchedPredSuccInfo, bool early)
 {
     bool madeChanges = false;
