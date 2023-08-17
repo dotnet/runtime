@@ -756,6 +756,7 @@ void ObjectAllocator::RewriteUses()
     class RewriteUsesVisitor final : public GenTreeVisitor<RewriteUsesVisitor>
     {
         ObjectAllocator* m_allocator;
+        LocalToLocalMap* m_varSet;
 
     public:
         enum
@@ -765,8 +766,8 @@ void ObjectAllocator::RewriteUses()
             ComputeStack  = true,
         };
 
-        RewriteUsesVisitor(ObjectAllocator* allocator)
-            : GenTreeVisitor<RewriteUsesVisitor>(allocator->comp), m_allocator(allocator)
+        RewriteUsesVisitor(ObjectAllocator* allocator, LocalToLocalMap* varSet)
+            : GenTreeVisitor<RewriteUsesVisitor>(allocator->comp), m_allocator(allocator), m_varSet(varSet)
         {
         }
 
@@ -792,6 +793,7 @@ void ObjectAllocator::RewriteUses()
                     newType = TYP_I_IMPL;
                     tree    = m_compiler->gtNewLclVarAddrNode(newLclNum);
                     *use    = tree;
+                    m_varSet->AddOrUpdate(newLclNum, lclNum);
                 }
                 else
                 {
@@ -815,12 +817,106 @@ void ObjectAllocator::RewriteUses()
         }
     };
 
+    class RemoveAddrLclVisitor final : public GenTreeVisitor<RemoveAddrLclVisitor>
+    {
+        ObjectAllocator*  m_allocator;
+        LocalToLocalMap*  m_varSet;
+        LocalToLclOffMap* m_varUpdateSet;
+        BasicBlock*       m_block;
+        Statement*        m_stmt;
+
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+            ComputeStack  = true,
+        };
+
+        RemoveAddrLclVisitor(ObjectAllocator*  allocator,
+                             LocalToLocalMap*  varSet,
+                             LocalToLclOffMap* varUpdateSet,
+                             BasicBlock*       block,
+                             Statement*        stmt)
+            : GenTreeVisitor<RemoveAddrLclVisitor>(allocator->comp)
+            , m_allocator(allocator)
+            , m_varSet(varSet)
+            , m_varUpdateSet(varUpdateSet)
+            , m_block(block)
+            , m_stmt(stmt)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+            assert(tree->OperIsAnyLocal());
+
+            const unsigned int lclNum = tree->AsLclVarCommon()->GetLclNum();
+            unsigned int       oldLclNum;
+            LclVarDsc*         lclVarDsc;
+
+            if (m_varSet->TryGetValue(lclNum, &oldLclNum))
+            {
+                lclVarDsc = m_compiler->lvaGetDesc(oldLclNum);
+            }
+            else
+            {
+                oldLclNum = lclNum;
+                lclVarDsc = m_compiler->lvaGetDesc(lclNum);
+            }
+
+            if ((oldLclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
+                m_allocator->MayLclVarPointToStack(oldLclNum))
+            {
+                if (tree->OperIsLocalStore())
+                {
+                    GenTree* data = tree->Data();
+                    if (data->OperIs(GT_LCL_ADDR) &&
+                        !m_compiler->optIsVarAssigned(m_block, m_compiler->fgLastBB, tree, lclNum))
+                    {
+                        unsigned long long lclNumAndOff = data->AsLclVarCommon()->GetLclNum();
+                        lclNumAndOff                    = (lclNumAndOff << 16) | data->AsLclVarCommon()->GetLclOffs();
+                        m_varUpdateSet->AddOrUpdate(lclNum, lclNumAndOff);
+                        m_compiler->fgRemoveStmt(m_block, m_stmt);
+                        return Compiler::fgWalkResult::WALK_ABORT;
+                    }
+                }
+            }
+
+            unsigned long long newLclNumAndOff;
+            if (m_varUpdateSet->TryGetValue(lclNum, &newLclNumAndOff))
+            {
+                uint16_t     newLclOff = (uint16_t)(newLclNumAndOff & 0xFFFF);
+                unsigned int newLclNum = (unsigned int)(newLclNumAndOff >> 16);
+                tree->ReplaceWith(m_compiler->gtNewLclAddrNode(newLclNum, newLclOff), m_compiler);
+            }
+
+            return Compiler::fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    LocalToLocalMap* localMap =
+        new (comp->getAllocator(CMK_ObjectAllocator)) LocalToLocalMap(comp->getAllocator(CMK_ObjectAllocator));
+
     for (BasicBlock* const block : comp->Blocks())
     {
         for (Statement* const stmt : block->Statements())
         {
-            RewriteUsesVisitor rewriteUsesVisitor(this);
+            RewriteUsesVisitor rewriteUsesVisitor(this, localMap);
             rewriteUsesVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+    }
+
+    LocalToLclOffMap* updateMap =
+        new (comp->getAllocator(CMK_ObjectAllocator)) LocalToLclOffMap(comp->getAllocator(CMK_ObjectAllocator));
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            RemoveAddrLclVisitor removeAddrLclVisitor(this, localMap, updateMap, block, stmt);
+            removeAddrLclVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
 }
