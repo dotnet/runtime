@@ -6,6 +6,7 @@
     <OutputPath>$(RuntimeBinDir)crossgen2</OutputPath>
     <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
+    <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
     <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
     <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
     <RuntimeIdentifiers Condition="'$(_IsPublishing)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;freebsd-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64</RuntimeIdentifiers>
