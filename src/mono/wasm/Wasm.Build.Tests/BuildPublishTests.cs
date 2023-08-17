@@ -174,9 +174,5 @@ namespace Wasm.Build.Tests
 
             TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", buildOutput, contains: expectRelinking || expectAOT);
         }
-
-        // appending UTF-8 char makes sure project build&publish under all types of paths is supported
-        string GetTestProjectPath(string prefix, string config, bool appendUnicode=true) =>
-            appendUnicode ? $"{prefix}_{config}_{s_unicodeChar}" : $"{prefix}_{config}";
     }
 }
