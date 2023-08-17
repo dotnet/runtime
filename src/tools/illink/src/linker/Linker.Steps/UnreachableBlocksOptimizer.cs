@@ -113,14 +113,14 @@ namespace Mono.Linker.Steps
 						}
 					} else {
 						foreach (var rtarget in (Instruction[]) instr.Operand) {
-							if (mapping != null && mapping (target) is int index) {
+							if (mapping != null && mapping (rtarget) is int index) {
 								if (index >= firstInstr && index <= lastInstr) {
 									return true;
 								}
 							}
 							else {
 								for (int i = firstInstr; i <= lastInstr; i++) {
-									if (instructions[i] == target) {
+									if (instructions[i] == rtarget) {
 										return true;
 									}
 								}
