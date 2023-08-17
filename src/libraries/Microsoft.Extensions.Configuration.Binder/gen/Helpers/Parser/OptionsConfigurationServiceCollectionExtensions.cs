@@ -79,14 +79,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 RegisterTypeForMethodGen(overload, typeSpec);
-                RegisterGenMethodAsInterceptor(overload, operation);
+                RegisterAsInterceptor(overload, operation);
             }
 
             private void RegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection overload, TypeSpec typeSpec)
             {
                 _sourceGenSpec.MethodsToGen_ServiceCollectionExt |= overload;
                 _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
-                RegisterTypeForBindCoreGen(typeSpec);
+                RegisterTypeForBindCoreMainGen(typeSpec);
             }
         }
     }

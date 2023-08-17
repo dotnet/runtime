@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -18,7 +19,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitCoreBindingHelpers()
             {
                 Debug.Assert(_emitBlankLineBeforeNextStatement);
-
                 EmitBindingExtStartRegion("Core binding");
                 EmitConfigurationKeyCaches();
                 EmitGetCoreMethod();
@@ -73,12 +73,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitIConfigurationHasValueOrChildrenCheck(voidReturn: false);
 
+                bool isFirstType = true;
                 foreach (TypeSpec type in types)
                 {
                     TypeSpec effectiveType = type.EffectiveType;
                     TypeSpecKind kind = effectiveType.SpecKind;
+                    string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
 
-                    EmitStartBlock($"if (type == typeof({type.DisplayString}))");
+                    EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.DisplayString}))");
 
                     if (effectiveType is ParsableFromStringSpec stringParsableType)
                     {
@@ -104,10 +106,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
 
                     EmitEndBlock();
-                    _writer.WriteLine();
                 }
 
-                Emit_NotSupportedException_TypeNotDetectedAsInput("'{type}'");
+                _writer.WriteLine();
+                Emit_NotSupportedException_TypeNotDetectedAsInput();
                 EmitEndBlock();
                 _emitBlankLineBeforeNextStatement = true;
             }
@@ -135,9 +137,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 _writer.WriteLine();
 
+                bool isFirstType = true;
                 foreach (TypeSpec type in targetTypes)
                 {
-                    EmitStartBlock($"if ({Identifier.type} == typeof({type.DisplayString}))");
+                    string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
+                    EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.DisplayString}))");
 
                     EmitBindLogicFromString(
                         (ParsableFromStringSpec)type.EffectiveType,
@@ -148,9 +152,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         useIncrementalStringValueIdentifier: false);
 
                     EmitEndBlock();
-                    _writer.WriteLine();
                 }
 
+                _writer.WriteLine();
                 _writer.WriteLine("return null;");
                 EmitEndBlock();
                 _emitBlankLineBeforeNextStatement = true;
@@ -158,53 +162,38 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreMainMethod()
             {
-                if (!_sourceGenSpec.TypesForGen_CoreBindingHelper_Methods.TryGetValue(MethodsToGen_CoreBindingHelper.BindCore, out HashSet<TypeSpec>? targetTypes))
+                if (!_sourceGenSpec.TypesForGen_CoreBindingHelper_Methods.TryGetValue(MethodsToGen_CoreBindingHelper.BindCoreMain, out HashSet<TypeSpec>? targetTypes))
                 {
                     return;
                 }
 
                 EmitBlankLineIfRequired();
-
-                EmitStartBlock($"public static void {Identifier.BindCoreMain}({Identifier.IConfiguration}? {Identifier.configuration}, object? {Identifier.obj}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions})");
-
+                EmitStartBlock($"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}({Identifier.IConfiguration} {Identifier.configuration}, object {Identifier.obj}, Type {Identifier.type}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions})");
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
                 EmitCheckForNullArgument_WithBlankLine(Identifier.obj);
-
+                EmitIConfigurationHasValueOrChildrenCheck(voidReturn: true);
                 _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureOptions});");
                 _writer.WriteLine();
 
-                EmitIConfigurationHasValueOrChildrenCheck(voidReturn: true);
-
+                bool isFirstType = true;
                 foreach (TypeSpec type in targetTypes)
                 {
-                    string typedObjIdentifier = GetIncrementalIdentifier(Identifier.typedObj);
-                    EmitStartBlock($"if ({Identifier.obj} is {type.DisplayString} {typedObjIdentifier})");
-
                     TypeSpec effectiveType = type.EffectiveType;
+                    string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
+
+                    EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.DisplayString}))");
                     if (!EmitInitException(effectiveType))
                     {
-                        string objIdentifier;
-                        if (type == effectiveType)
-                        {
-                            objIdentifier = typedObjIdentifier;
-                        }
-                        else
-                        {
-                            objIdentifier = Identifier.temp;
-                            _writer.WriteLine($"var {Identifier.temp} = ({effectiveType.DisplayString}){typedObjIdentifier};");
-                        }
-
-                        EmitBindCoreCall(type, objIdentifier, Identifier.configuration, InitializationKind.None);
+                        _writer.WriteLine($"var {Identifier.temp} = ({effectiveType.DisplayString}){Identifier.obj};");
+                        EmitBindCoreCall(type, Identifier.temp, Identifier.configuration, InitializationKind.None);
                         _writer.WriteLine($"return;");
                     }
-
                     EmitEndBlock();
-                    _writer.WriteLine();
                 }
 
-                Emit_NotSupportedException_TypeNotDetectedAsInput("'{obj.GetType()}'");
+                _writer.WriteLine();
+                Emit_NotSupportedException_TypeNotDetectedAsInput();
                 EmitEndBlock();
-                _emitBlankLineBeforeNextStatement = true;
             }
 
             private void EmitBindCoreMethods()
@@ -228,11 +217,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 string objParameterExpression = $"ref {type.DisplayString} {Identifier.obj}";
                 EmitStartBlock(@$"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCore)}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
-
-                if (!type.IsValueType)
-                {
-                    EmitCheckForNullArgument_WithBlankLine(Identifier.obj);
-                }
 
                 TypeSpec effectiveType = type.EffectiveType;
                 if (effectiveType is EnumerableSpec enumerable)
@@ -396,30 +380,37 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             """);
                 }
             }
+
             private void EmitHelperMethods()
             {
-                if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.BindCore | MethodsToGen_CoreBindingHelper.GetCore))
+                // Emitted if we are to bind objects with complex members, or if we're emitting BindCoreMain or GetCore methods.
+                bool emitAsConfigWithChildren = ShouldEmitMethods(MethodsToGen_CoreBindingHelper.AsConfigWithChildren);
+
+                if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.BindCore))
                 {
+                    EmitBlankLineIfRequired();
                     EmitValidateConfigurationKeysMethod();
-                    _writer.WriteLine();
-                    EmitHasValueOrChildrenMethod();
-                    _writer.WriteLine();
-                    EmitAsConfigWithChildrenMethod();
-                    _emitBlankLineBeforeNextStatement = true;
-                }
-                else if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.AsConfigWithChildren))
-                {
-                    _writer.WriteLine();
-                    EmitAsConfigWithChildrenMethod();
-                    _emitBlankLineBeforeNextStatement = true;
                 }
 
-                if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.BindCore | MethodsToGen_CoreBindingHelper.GetCore) ||
+                if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.BindCoreMain | MethodsToGen_CoreBindingHelper.GetCore))
+                {
+                    // HasValueOrChildren references this method.
+                    Debug.Assert(emitAsConfigWithChildren);
+                    EmitBlankLineIfRequired();
+                    EmitHasValueOrChildrenMethod();
+                }
+
+                if (emitAsConfigWithChildren)
+                {
+                    EmitBlankLineIfRequired();
+                    EmitAsConfigWithChildrenMethod();
+                }
+
+                if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.BindCoreMain | MethodsToGen_CoreBindingHelper.GetCore) ||
                     ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions))
                 {
-                    _writer.WriteLine();
+                    EmitBlankLineIfRequired();
                     EmitGetBinderOptionsHelper();
-                    _emitBlankLineBeforeNextStatement = true;
                 }
 
                 bool enumTypeExists = false;
@@ -483,7 +474,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             return true;
                         }
-                        return {{Identifier.AsConfigWithChildren}}({{Identifier.configuration}}) is not null;
+                        return {{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}}({{Identifier.configuration}}) is not null;
                     }
                     """);
             }
@@ -491,7 +482,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitAsConfigWithChildrenMethod()
             {
                 _writer.WriteLine($$"""
-                    public static {{Identifier.IConfiguration}}? {{Identifier.AsConfigWithChildren}}({{Identifier.IConfiguration}} {{Identifier.configuration}})
+                    public static {{Identifier.IConfiguration}}? {{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}}({{Identifier.IConfiguration}} {{Identifier.configuration}})
                     {
                         foreach ({{Identifier.IConfigurationSection}} _ in {{Identifier.configuration}}.{{Identifier.GetChildren}}())
                         {
@@ -807,7 +798,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return true;
                 }
 
-                string sectionValidationCall = $"{Identifier.AsConfigWithChildren}({sectionParseExpr})";
+                string sectionValidationCall = $"{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}({sectionParseExpr})";
                 string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
                 EmitStartBlock($"if ({sectionValidationCall} is {Identifier.IConfigurationSection} {sectionIdentifier})");
@@ -911,6 +902,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void Emit_Foreach_Section_In_ConfigChildren_StartBlock() =>
                 EmitStartBlock($"foreach ({Identifier.IConfigurationSection} {Identifier.section} in {Identifier.configuration}.{Identifier.GetChildren}())");
 
+            private void Emit_NotSupportedException_TypeNotDetectedAsInput() =>
+                _writer.WriteLine(@$"throw new NotSupportedException($""{string.Format(ExceptionMessages.TypeNotDetectedAsInput, "{type}")}"");");
+
             private static string GetSectionPathFromConfigurationExpression(string configurationKeyName)
                 => $@"{GetSectionFromConfigurationExpression(configurationKeyName)}.{Identifier.Path}";
 
@@ -920,11 +914,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return $@"{Identifier.configuration}.{Identifier.GetSection}({argExpr})";
             }
 
-            private static string GetConfigKeyCacheFieldName(ObjectSpec type) =>
-                $"s_configKeys_{type.DisplayStringWithoutSpecialCharacters}";
+            private static string GetConditionKindExpr(ref bool isFirstType)
+            {
+                if (isFirstType)
+                {
+                    isFirstType = false;
+                    return "if";
+                }
 
-            private void Emit_NotSupportedException_TypeNotDetectedAsInput(string typeArgExpr) =>
-                _writer.WriteLine(@$"throw new NotSupportedException($""{string.Format(ExceptionMessages.TypeNotDetectedAsInput, typeArgExpr)}"");");
+                return "else if";
+            }
+
+            private static string GetConfigKeyCacheFieldName(ObjectSpec type) =>
+                $"s_configKeys_{type.DisplayString.ToIdentifierSubstring()}";
         }
     }
 }

@@ -8,7 +8,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record SourceGenerationSpec
     {
-        public Dictionary<Enum, List<InterceptorLocationInfo>> GenMethodsInterceptionInfo { get; } = new();
+        public Dictionary<Enum, List<InterceptorLocationInfo>> InterceptionInfo { get; } = new();
+        public ConfigurationBinderInterceptorInfo InterceptionInfo_ConfigBinder { get; } = new();
+
         public Dictionary<MethodsToGen_CoreBindingHelper, HashSet<TypeSpec>> TypesForGen_CoreBindingHelper_Methods { get; } = new();
 
         public HashSet<ParsableFromStringSpec> PrimitivesForHelperGen { get; } = new();

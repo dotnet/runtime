@@ -12,17 +12,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     public sealed partial class ConfigurationBindingGenerator
     {
         /// <summary>
-        /// Supresses false-positive diagnostics emitted by the linker analyzers
-        /// when analyzing binding invocations that we have substituted.Workaround
-        /// for https://github.com/dotnet/roslyn/issues/68669.
+        /// Supresses false-positive diagnostics emitted by the linker
+        /// when analyzing binding invocations that we have intercepted.
+        /// Workaround for https://github.com/dotnet/roslyn/issues/68669.
         /// </summary>
         [DiagnosticAnalyzer(LanguageNames.CSharp)]
         public sealed class Suppressor : DiagnosticSuppressor
         {
             private const string Justification = "The target method has been intercepted by a generated static variant.";
 
+            /// <summary>
+            /// Suppression descriptor for IL2026: Members attributed with RequiresUnreferencedCode may break when trimming.
+            /// </summary>
             private static readonly SuppressionDescriptor RUCDiagnostic = new(id: "SYSLIBSUPPRESS0002", suppressedDiagnosticId: "IL2026", Justification);
 
+            /// <summary>
+            /// Suppression descriptor for IL3050: Avoid calling members annotated with 'RequiresDynamicCodeAttribute' when publishing as native AOT.
+            /// </summary>
             private static readonly SuppressionDescriptor RDCDiagnostic = new(id: "SYSLIBSUPPRESS0003", suppressedDiagnosticId: "IL3050", Justification);
 
             public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions => ImmutableArray.Create(RUCDiagnostic, RDCDiagnostic);

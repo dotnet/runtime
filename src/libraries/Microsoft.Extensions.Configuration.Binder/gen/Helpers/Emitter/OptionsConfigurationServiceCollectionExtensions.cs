@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _writer.WriteLine($$"""
                     OptionsServiceCollectionExtensions.AddOptions({{Identifier.services}});
                     {{Identifier.services}}.{{Identifier.AddSingleton}}<{{Identifier.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>>(new {{Identifier.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.configuration}}));
-                    return {{Identifier.services}}.{{Identifier.AddSingleton}}<{{optionsNamespaceName}}.IConfigureOptions<{{Identifier.TOptions}}>>(new {{optionsNamespaceName}}.ConfigureNamedOptions<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.obj}} => {{Identifier.BindCoreMain}}({{Identifier.configuration}}, {{Identifier.obj}}, {{Identifier.configureOptions}})));
+                    return {{Identifier.services}}.{{Identifier.AddSingleton}}<{{optionsNamespaceName}}.IConfigureOptions<{{Identifier.TOptions}}>>(new {{optionsNamespaceName}}.ConfigureNamedOptions<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.obj}} => {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.configuration}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}){{Identifier.configureOptions}})));
                     """);
                 EmitEndBlock();
             }

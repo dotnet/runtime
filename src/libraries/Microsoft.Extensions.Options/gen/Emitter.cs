@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Options.Generators
 {
@@ -31,15 +30,16 @@ namespace Microsoft.Extensions.Options.Generators
 
         public Emitter(Compilation compilation, bool emitPreamble = true) : base(emitPreamble)
         {
-            if (((CSharpCompilation)compilation).LanguageVersion >= Microsoft.CodeAnalysis.CSharp.LanguageVersion.CSharp11)
+            if (((CSharpCompilation)compilation).LanguageVersion >= LanguageVersion.CSharp11)
             {
                 _modifier = "file";
             }
             else
             {
                 _modifier = "internal";
-                GeneratorHelpers.MakeNameUnique(ref _staticValidationAttributeHolderClassName);
-                GeneratorHelpers.MakeNameUnique(ref _staticValidatorHolderClassName);
+                string suffix = $"_{new Random().Next():X8}";
+                _staticValidationAttributeHolderClassName += suffix;
+                _staticValidatorHolderClassName += suffix;
             }
 
             _staticValidationAttributeHolderClassFQN = $"global::{StaticFieldHolderClassesNamespace}.{_staticValidationAttributeHolderClassName}";

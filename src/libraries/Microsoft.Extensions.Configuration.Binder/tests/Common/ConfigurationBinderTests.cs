@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
@@ -2037,6 +2035,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             ValidateGeolocation(obj);
         }
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void TraceSwitchTest()
         {
@@ -2048,7 +2047,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-#if !BUILDING_SOURCE_GENERATOR_TESTS
             TraceSwitch ts = new(displayName: "TraceSwitch", description: "This switch is set via config.");
             ConfigurationBinder.Bind(config, "TraceSwitch", ts);
             Assert.Equal(TraceLevel.Info, ts.Level);
@@ -2056,8 +2054,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             // Value property is not publicly exposed in .NET Framework.
             Assert.Equal("Info", ts.Value);
 #endif // NETCOREAPP
-#endif // !BUILDING_SOURCE_GENERATOR_TESTS
         }
+#endif
 
         private void ValidateGeolocation(IGeolocation location)
         {

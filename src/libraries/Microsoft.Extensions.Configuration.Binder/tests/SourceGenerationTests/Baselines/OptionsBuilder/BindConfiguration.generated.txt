@@ -48,8 +48,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             optionsBuilder.Configure<IConfiguration>((obj, configuration) =>
             {
+                if (obj is null)
+                {
+                    throw new ArgumentNullException(nameof(obj));
+                }
+
+                if (configuration is null)
+                {
+                    throw new ArgumentNullException(nameof(configuration));
+                }
+
                 IConfiguration section = string.Equals(string.Empty, configSectionPath, StringComparison.OrdinalIgnoreCase) ? configuration : configuration.GetSection(configSectionPath);
-                BindCoreMain(section, obj, configureOptions);
+                BindCoreMain(section, obj, typeof(TOptions), configureOptions);
             });
 
             optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>();
@@ -60,7 +70,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList" });
 
-        public static void BindCoreMain(IConfiguration? configuration, object? obj, Action<BinderOptions>? configureOptions)
+        public static void BindCoreMain(IConfiguration configuration, object obj, Type type, Action<BinderOptions>? configureOptions)
         {
             if (configuration is null)
             {
@@ -72,35 +82,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            BinderOptions? binderOptions = GetBinderOptions(configureOptions);
-
             if (!HasValueOrChildren(configuration))
             {
                 return;
             }
 
-            if (obj is List<int> typedObj0)
+            BinderOptions? binderOptions = GetBinderOptions(configureOptions);
+
+            if (type == typeof(Program.MyClass))
             {
-                BindCore(configuration, ref typedObj0, binderOptions);
+                var temp = (Program.MyClass)obj;
+                BindCore(configuration, ref temp, binderOptions);
                 return;
             }
 
-            if (obj is Program.MyClass typedObj2)
-            {
-                BindCore(configuration, ref typedObj2, binderOptions);
-                return;
-            }
-
-            throw new NotSupportedException($"Unable to bind to type ''{obj.GetType()}'': generator did not detect the type as input.");
+            throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
         public static void BindCore(IConfiguration configuration, ref List<int> obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
@@ -112,28 +112,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref Program.MyClass obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
             obj.MyString = configuration["MyString"]!;
 
-            if (configuration["MyInt"] is string value5)
+            if (configuration["MyInt"] is string value2)
             {
-                obj.MyInt = ParseInt(value5, () => configuration.GetSection("MyInt").Path);
+                obj.MyInt = ParseInt(value2, () => configuration.GetSection("MyInt").Path);
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section6)
+            if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section3)
             {
-                List<int>? temp8 = obj.MyList;
-                temp8 ??= new List<int>();
-                BindCore(section6, ref temp8, binderOptions);
-                obj.MyList = temp8;
+                List<int>? temp5 = obj.MyList;
+                temp5 ??= new List<int>();
+                BindCore(section3, ref temp5, binderOptions);
+                obj.MyList = temp5;
             }
         }
+
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
         public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)

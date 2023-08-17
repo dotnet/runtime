@@ -65,18 +65,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 return ParseInt(value, () => section.Path);
             }
-
-            if (type == typeof(bool?))
+            else if (type == typeof(bool?))
             {
                 return ParseBool(value, () => section.Path);
             }
-
-            if (type == typeof(byte[]))
+            else if (type == typeof(byte[]))
             {
                 return ParseByteArray(value, () => section.Path);
             }
-
-            if (type == typeof(CultureInfo))
+            else if (type == typeof(CultureInfo))
             {
                 return ParseCultureInfo(value, () => section.Path);
             }

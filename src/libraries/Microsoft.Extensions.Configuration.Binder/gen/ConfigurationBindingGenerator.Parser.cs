@@ -177,6 +177,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return _createdSpecs[type] = spec;
             }
 
+            private void RegisterTypeForBindCoreMainGen(TypeSpec typeSpec)
+            {
+                if (typeSpec.NeedsMemberBinding)
+                {
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCoreMain, typeSpec);
+                    RegisterTypeForBindCoreGen(typeSpec);
+                    _sourceGenSpec.MethodsToGen_CoreBindingHelper |= MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
+                }
+            }
+
+            private void RegisterTypeForBindCoreGen(TypeSpec typeSpec)
+            {
+                if (typeSpec.NeedsMemberBinding)
+                {
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, typeSpec);
+                }
+            }
+
+            private void RegisterTypeForGetCoreGen(TypeSpec typeSpec)
+            {
+                RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetCore, typeSpec);
+                _sourceGenSpec.MethodsToGen_CoreBindingHelper |= MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
+            }
+
             private void RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper method, TypeSpec type)
             {
                 if (!_sourceGenSpec.TypesForGen_CoreBindingHelper_Methods.TryGetValue(method, out HashSet<TypeSpec>? types))
@@ -188,23 +212,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _sourceGenSpec.MethodsToGen_CoreBindingHelper |= method;
             }
 
-            private void RegisterTypeForBindCoreGen(TypeSpec typeSpec)
-            {
-                if (typeSpec.NeedsMemberBinding)
-                {
-                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, typeSpec);
-                }
-            }
-
-            private void RegisterGenMethodAsInterceptor(Enum method, IInvocationOperation operation)
-            {
-                if (!_sourceGenSpec.GenMethodsInterceptionInfo.TryGetValue(method, out List<InterceptorLocationInfo>? info))
-                {
-                    _sourceGenSpec.GenMethodsInterceptionInfo[method] = info = new List<InterceptorLocationInfo>();
-                }
-
-                info.Add(new InterceptorLocationInfo(operation));
-            }
+            /// <summary>
+            /// Registers interceptors for root binding methods, except for ConfigurationBinder.Bind,
+            /// which is handled by <see cref="RegisterAsInterceptor_ConfigBinder_BindMethod"/>
+            /// </summary>
+            private void RegisterAsInterceptor(Enum method, IInvocationOperation operation) =>
+                _sourceGenSpec.InterceptionInfo.RegisterCacheEntry(method, new InterceptorLocationInfo(operation));
 
             private static bool IsNullable(ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? underlyingType)
             {
@@ -899,6 +912,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _typeDiagnostics[causingType] = typeDiags;
                 }
             }
+        }
+    }
+
+    public static class ParserExtensions
+    {
+        public static void RegisterCacheEntry<TKey, TValue, TEntry>(this Dictionary<TKey, TValue> cache, TKey key, TEntry entry)
+            where TKey : notnull
+            where TValue : ICollection<TEntry>, new()
+        {
+            if (!cache.TryGetValue(key, out TValue? entryCollection))
+            {
+                cache[key] = entryCollection = new TValue();
+            }
+
+            entryCollection.Add(entry);
         }
     }
 }
