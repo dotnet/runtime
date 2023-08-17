@@ -10,6 +10,8 @@
     <ProductBrandPrefix>Microsoft .NET</ProductBrandPrefix>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
+    <!-- We don't have any sources here, so don't run analyzers. -->
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
   <PropertyGroup Condition="'$(PgoInstrument)' != 'true'">
     <GenerateInstallers>true</GenerateInstallers>

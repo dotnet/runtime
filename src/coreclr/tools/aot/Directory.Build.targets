@@ -1,6 +1,6 @@
 <Project>
-  <Import Project="../Directory.Build.props" />
   <PropertyGroup>
     <IsTrimmable Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</IsTrimmable>
   </PropertyGroup>
+  <Import Project="../Directory.Build.targets" />
 </Project>
