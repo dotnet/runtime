@@ -2309,9 +2309,8 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 MonoCustomAttrInfo*
 mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoError *error)
 {
-	MonoTableInfo *ca;
-	guint32 i, idx, method_index;
-	guint32 param_list, param_last, param_pos, found;
+	guint32 method_index;
+	guint32 param_pos, found;
 	MonoImage *image;
 	MonoReflectionMethodAux *aux;
 
@@ -2348,26 +2347,39 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 	method_index = mono_method_get_index (method);
 	if (!method_index)
 		return NULL;
-
-	param_list = mono_metadata_get_method_params (image, method_index, &param_last);
-
-	if (!param_list)
+		
+	mdcursor_t c;
+	if (!md_token_to_cursor(m_class_get_image (method->klass)->metadata_handle, mono_metadata_make_token(MONO_TABLE_METHOD, method_index), &c))
+		return NULL;
+	
+	mdcursor_t param_list;
+	uint32_t param_count;
+	if (!md_get_column_value_as_range(c, MONO_METHOD_PARAMLIST, &param_list, &param_count))
 		return NULL;
 
-	ca = &image->tables [MONO_TABLE_PARAM];
-
 	found = FALSE;
-	for (i = param_list; i < param_last; ++i) {
-		param_pos = mono_metadata_decode_row_col (ca, i - 1, MONO_PARAM_SEQUENCE);
+	for (uint32_t i = 0; i < param_count; ++i, md_cursor_next (&param_list)) {
+		mdcursor_t c;
+		if (!md_resolve_indirect_cursor(param_list, &c))
+			return NULL;
+
+		if (1 != md_get_column_value_as_constant(c, mdtParam_Sequence, 1, &param_pos))
+			return NULL;
+		
 		if (param_pos == param) {
 			found = TRUE;
 			break;
 		}
 	}
+
 	if (!found)
 		return NULL;
-	idx = i;
-	return mono_custom_attrs_from_token_checked (image, mono_metadata_make_token(MONO_TABLE_PARAM, idx), FALSE, error);
+	
+	mdToken param_token;
+	if (!md_cursor_to_token(param_list, &param_token))
+		return NULL;
+
+	return mono_custom_attrs_from_token_checked (image, param_token, FALSE, error);
 }
 
 /**
@@ -2712,22 +2724,16 @@ custom_attr_class_name_from_methoddef (MonoImage *image, guint32 method_token, c
 	}
 	type_token |= MONO_TOKEN_TYPE_DEF;
 	{
-		/* mono_class_create_from_typedef () */
-		MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
-		guint32 cols [MONO_TYPEDEF_SIZE];
-		guint tidx = mono_metadata_token_index (type_token);
-
-		if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEDEF, tidx)) {
-			/* "Invalid typedef token %x", type_token */
+		mdcursor_t c;
+		if (!md_token_to_cursor(image->metadata_handle, type_token, &c))
 			return FALSE;
-		}
-
-		mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
-
-		if (class_name)
-			*class_name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
-		if (nspace)
-			*nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+		
+		if (1 != md_get_column_value_as_utf8(c, mdtTypeDef_TypeName, 1, class_name))
+			return FALSE;
+		
+		if (1 != md_get_column_value_as_utf8(c, mdtTypeDef_TypeNamespace, 1, nspace))
+			return FALSE;
+		
 		return TRUE;
 	}
 }
@@ -2761,45 +2767,46 @@ custom_attr_class_name_from_method_token (MonoImage *image, guint32 method_token
 
 	if (mono_metadata_token_table (method_token) == MONO_TABLE_MEMBERREF) {
 		/* method_from_memberref () */
-		guint32 cols[6];
-		guint32 nindex, class_index;
-
-		int idx = mono_metadata_token_index (method_token);
-
-		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
-		nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
-		class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-		if (class_index == MONO_MEMBERREF_PARENT_TYPEREF) {
-			guint32 type_token = MONO_TOKEN_TYPE_REF | nindex;
-			/* mono_class_from_typeref_checked () */
-			{
-				guint32 typeref_cols [MONO_TYPEREF_SIZE];
-				MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
-
-				mono_metadata_decode_row (t, (type_token&0xffffff)-1, typeref_cols, MONO_TYPEREF_SIZE);
-
-				if (class_name)
-					*class_name = mono_metadata_string_heap (image, typeref_cols [MONO_TYPEREF_NAME]);
-				if (nspace)
-					*nspace = mono_metadata_string_heap (image, typeref_cols [MONO_TYPEREF_NAMESPACE]);
-				if (assembly_token)
-					*assembly_token = typeref_cols [MONO_TYPEREF_SCOPE];
-				return TRUE;
+		mdcursor_t c;
+		if (!md_token_to_cursor (image->metadata_handle, method_token, &c))
+			return FALSE;
+		
+		mdcursor_t cls;
+		guint32 cls_token;
+		if (1 != md_get_column_value_as_cursor(c, mdtMemberRef_Class, 1, &cls))
+			return FALSE;
+		
+		if (!md_cursor_to_token(cls, &cls_token))
+			return FALSE;
+		
+		if (mono_metadata_token_table (cls_token) == MONO_TABLE_TYPEREF) {
+			if (class_name) {
+				if (1 != md_get_column_value_as_utf8(cls, mdtTypeRef_TypeName, 1, class_name))
+					return FALSE;
 			}
-		} else if (class_index == MONO_MEMBERREF_PARENT_METHODDEF) {
-			guint32 methoddef_token = MONO_TOKEN_METHOD_DEF | nindex;
+			
+			if (nspace) {
+				if (1 != md_get_column_value_as_utf8(cls, mdtTypeRef_TypeNamespace, 1, nspace))
+					return FALSE;
+			}
+
+			if (assembly_token) {
+				if (1 != md_get_column_value_as_token(cls, mdtTypeRef_ResolutionScope, 1, assembly_token))
+					return FALSE;
+			}
+			return TRUE;
+		} else if (mono_metadata_token_table (cls_token) == MONO_TABLE_METHOD) {
 			if (assembly_token)
 				*assembly_token = 0;
-			return custom_attr_class_name_from_methoddef (image, methoddef_token, nspace, class_name);
-		} else if (class_index == MONO_MEMBERREF_PARENT_TYPESPEC) {
+			return custom_attr_class_name_from_methoddef (image, cls_token, nspace, class_name);
+		} else if (mono_metadata_token_table (cls_token) == MONO_TABLE_TYPESPEC) {
 			ERROR_DECL (error);
 
 			if (!image->assembly)
 				/* Avoid recursive calls from mono_assembly_has_reference_assembly_attribute () etc. */
 				return FALSE;
 
-			guint32 token = MONO_TOKEN_TYPE_SPEC | nindex;
-			MonoType *type = mono_type_get_checked (image, token, NULL, error);
+			MonoType *type = mono_type_get_checked (image, cls_token, NULL, error);
 			if (!is_ok (error)) {
 				mono_error_cleanup (error);
 				return FALSE;
@@ -2983,135 +2990,117 @@ mono_method_metadata_foreach_custom_attr (MonoMethod *method, MonoAssemblyMetada
 static void
 init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 {
-	MonoTableInfo *tdef;
 	ERROR_DECL (error);
-	MonoClass *klass = NULL;
-	guint32 memberref_index = -1;
-	int first_method_idx = -1;
-	int method_count = -1;
 
 	if (image == mono_get_corlib ()) {
-		/* Typedef */
-		klass = mono_class_from_name_checked (image, "System", "WeakAttribute", error);
+		MonoClass* klass = mono_class_from_name (image, "System", "WeakAttribute", error);
 		if (!is_ok (error)) {
 			mono_error_cleanup (error);
 			return;
 		}
 		if (!klass)
 			return;
-		first_method_idx = mono_class_get_first_method_idx (klass);
-		method_count = mono_class_get_method_count (klass);
 
-		tdef = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
-		guint32 parent, field_idx, col, mtoken, idx;
-		guint32 rows = table_info_get_rows (tdef);
-		for (guint32 i = 0; i < rows; ++i) {
-			parent = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_PARENT);
-			if ((parent & MONO_CUSTOM_ATTR_MASK) != MONO_CUSTOM_ATTR_FIELDDEF)
+		// TODO: Handle indirect references.
+		uint32_t first_method_token = mono_metadata_make_token(MONO_TABLE_METHOD, (uint32_t)mono_class_get_first_method_idx (klass));
+		uint32_t method_count = (uint32_t)mono_class_get_method_count (klass);
+		
+		mdcursor_t ca;
+		uint32_t ca_count;
+		if (!md_create_cursor (image->metadata_handle, mdtid_CustomAttribute, &ca, &count))
+			return;
+		
+		for (uint32_t i = 0; i < ca_count; ++i, md_cursor_next(&ca)) {
+			guint32 parent;
+			if (!md_get_column_value_as_token (ca, mdtCustomAttribute_Parent, 1, &parent))
 				continue;
-
-			col = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_TYPE);
-			mtoken = col >> MONO_CUSTOM_ATTR_TYPE_BITS;
-			/* 1 based index */
-			idx = mtoken - 1;
-			if ((col & MONO_CUSTOM_ATTR_TYPE_MASK) == MONO_CUSTOM_ATTR_TYPE_METHODDEF) {
-				field_idx = parent >> MONO_CUSTOM_ATTR_BITS;
-				if (idx >= first_method_idx && idx < first_method_idx + method_count)
-					g_hash_table_insert (indexes, GUINT_TO_POINTER (field_idx), GUINT_TO_POINTER (1));
-			}
+			
+			if (mono_metadata_token_table (parent) != MONO_TABLE_FIELD)
+				continue;
+			
+			guint32 type;
+			if (!md_get_column_value_as_token (ca, mdtCustomAttribute_Type, 1, &type))
+				continue;
+			
+			if (first_method_token >= type || type >= first_method_token + method_count)
+				continue;
+			
+			g_hash_table_insert (indexes, GUINT_TO_POINTER (mono_metadata_token_index(parent)), GUINT_TO_POINTER (1));
 		}
 	} else {
-		/* FIXME: metadata-update */
-		if (G_UNLIKELY (image->has_updates))
-			g_warning ("[WeakAttribute] ignored on fields added by hot reload in '%s'", image->name);
-
-		/* Memberref pointing to a typeref */
-		tdef = &image->tables [MONO_TABLE_MEMBERREF];
-
-		/* Check whenever the assembly references the WeakAttribute type */
-		gboolean found = FALSE;
-		tdef = &image->tables [MONO_TABLE_TYPEREF];
-		guint32 rows = table_info_get_rows (tdef);
-		for (guint32 i = 0; i < rows; ++i) {
-			guint32 string_offset = mono_metadata_decode_row_col (tdef, i, MONO_TYPEREF_NAME);
-			const char *name = mono_metadata_string_heap (image, string_offset);
-			if (!strcmp (name, "WeakAttribute")) {
-				found = TRUE;
-				break;
-			}
-		}
-
-		if (!found)
+		mdcursor_t type_ref;
+		uint32_t count;
+		if (!md_create_cursor (image->metadata_handle, mdtid_TypeRef, &type_ref, &count))
 			return;
-
-		/* Find the memberref pointing to a typeref */
-		tdef = &image->tables [MONO_TABLE_MEMBERREF];
-		rows = table_info_get_rows (tdef);
-		for (int i = 0; i < rows; ++i) {
-			guint32 memberref_cols [MONO_MEMBERREF_SIZE];
-			const char *sig;
-
-			mono_metadata_decode_row (tdef, i, memberref_cols, MONO_MEMBERREF_SIZE);
-			sig = mono_metadata_blob_heap (image, memberref_cols [MONO_MEMBERREF_SIGNATURE]);
-			mono_metadata_decode_blob_size (sig, &sig);
-
-			guint32 nindex = memberref_cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
-			guint32 class_index = memberref_cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-			const char *fname = mono_metadata_string_heap (image, memberref_cols [MONO_MEMBERREF_NAME]);
-
-			if (!strcmp (fname, ".ctor") && class_index == MONO_MEMBERREF_PARENT_TYPEREF) {
-				MonoTableInfo *typeref_table = &image->tables [MONO_TABLE_TYPEREF];
-				guint32 typeref_cols [MONO_TYPEREF_SIZE];
-
-				mono_metadata_decode_row (typeref_table, nindex - 1, typeref_cols, MONO_TYPEREF_SIZE);
-
-				const char *name = mono_metadata_string_heap (image, typeref_cols [MONO_TYPEREF_NAME]);
-				const char *nspace = mono_metadata_string_heap (image, typeref_cols [MONO_TYPEREF_NAMESPACE]);
-
-				if (!strcmp (nspace, "System") && !strcmp (name, "WeakAttribute")) {
-					klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
-					if (!is_ok (error)) {
-						mono_error_cleanup (error);
-						return;
-					}
-					g_assert (!strcmp (m_class_get_name (klass), "WeakAttribute"));
-					/* Allow a testing dll as well since some profiles don't have WeakAttribute */
-					if (klass && (m_class_get_image (klass) == mono_get_corlib () || strstr (m_class_get_image (klass)->name, "Mono.Runtime.Testing"))) {
-						/* Sanity check that it only has 1 ctor */
-						gpointer iter = NULL;
-						int count = 0;
-						MonoMethod *method;
-						while ((method = mono_class_get_methods (klass, &iter))) {
-							if (!strcmp (method->name, ".ctor"))
-								count ++;
-						}
-						count ++;
-						memberref_index = i;
-						break;
-					}
-				}
-			}
-		}
-		if (memberref_index == -1)
-			return;
-
-		tdef = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
-		guint32 parent, field_idx, col, mtoken, idx;
-		rows = table_info_get_rows (tdef);
-		for (int i = 0; i < rows; ++i) {
-			parent = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_PARENT);
-			if ((parent & MONO_CUSTOM_ATTR_MASK) != MONO_CUSTOM_ATTR_FIELDDEF)
+		
+		// Check if any weak_attribute type is being referenced.
+		guint32 weak_attribute_tok = 0;
+		for (uint32_t i = 0; i < count; ++i, md_cursor_next(&type_ref)) {
+			char const* name;
+			if (!md_get_column_value_as_utf8 (type_ref, mdtTypeRef_TypeName, 1, &name))
+				continue;
+			
+			if (strcmp (name, "WeakAttribute"))
 				continue;
 
-			col = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_TYPE);
-			mtoken = col >> MONO_CUSTOM_ATTR_TYPE_BITS;
-			/* 1 based index */
-			idx = mtoken - 1;
-			field_idx = parent >> MONO_CUSTOM_ATTR_BITS;
-			if ((col & MONO_CUSTOM_ATTR_TYPE_MASK) == MONO_CUSTOM_ATTR_TYPE_MEMBERREF) {
-				if (idx == memberref_index)
-					g_hash_table_insert (indexes, GUINT_TO_POINTER (field_idx), GUINT_TO_POINTER (1));
+			char const* ns;
+			if (!md_get_column_value_as_utf8 (type_ref, mdtTypeRef_TypeNamespace, 1, &ns))
+				continue;
+			
+			if (strcmp (ns, "System"))
+				continue;
+
+			guint32 weak_attribute_tok_maybe;
+			if (!md_cursor_to_token (type_ref, &weak_attribute_tok_maybe))
+				continue;
+			
+			MonoClass* klass = mono_class_from_typeref_checked (image, weak_attribute_tok_maybe, error);
+			if (klass && (m_class_get_image (klass) == mono_get_corlib () || strstr (m_class_get_image (klass)->name, "Mono.Runtime.Testing"))) {
+				weak_attribute_tok = weak_attribute_tok_maybe;
 			}
+		}
+
+		if (!weak_attribute_tok)
+			return;
+
+		// Find the token for the MemberRef to the WeakAttribute constructor
+		mdcursor_t member_ref;
+		uint32_t count;
+		if (!md_create_cursor (image->metadata_handle, mdtid_MemberRef, &member_ref, &count))
+			return;
+
+		mdcursor_t ctor;
+		if (!md_find_row_from_cursor (member_ref, mdtMemberRef_Parent, weak_attribute_tok, &ctor))
+			return;
+		
+		const char* ctor_name;
+		if (!md_get_column_value_as_utf8 (ctor, mdtMemberRef_Name, 1, &ctor_name))
+			return;
+		
+		if (!strcmp (ctor_name, ".ctor"))
+			return;
+
+		
+		guint32 weak_attribute_ctor_tok;
+		if (!md_cursor_to_token (ctor, &weak_attribute_ctor_tok))
+			return;
+
+		for (uint32_t i = 0; i < ca_count; ++i, md_cursor_next(&ca)) {
+			guint32 parent;
+			if (!md_get_column_value_as_token (ca, mdtCustomAttribute_Parent, 1, &parent))
+				continue;
+			
+			if (mono_metadata_token_table (parent) != MONO_TABLE_FIELD)
+				continue;
+			
+			guint32 type;
+			if (!md_get_column_value_as_token (ca, mdtCustomAttribute_Type, 1, &type))
+				continue;
+			
+			if (type != weak_attribute_ctor_tok)
+				continue;
+			
+			g_hash_table_insert (indexes, GUINT_TO_POINTER (mono_metadata_token_index(parent)), GUINT_TO_POINTER (1));
 		}
 	}
 }
