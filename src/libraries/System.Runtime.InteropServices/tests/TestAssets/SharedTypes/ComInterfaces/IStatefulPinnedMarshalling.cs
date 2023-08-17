@@ -207,7 +207,7 @@ namespace SharedTypes.ComInterfaces
                     throw new InvalidOperationException();
                 _ptr = Marshal.AllocHGlobal(sizeof(StatefulPinnedNative));
                 _hasAllocated = true;
-                *(StatefulPinnedNative*)_ptr = new StatefulPinnedNative();
+                *(StatefulPinnedNative*)_ptr = new StatefulPinnedNative() { I = _managed.I };
                 return (StatefulPinnedNative*)_ptr;
             }
 
@@ -257,7 +257,7 @@ namespace SharedTypes.ComInterfaces
                     throw new InvalidOperationException();
                 _ptr = Marshal.AllocHGlobal(sizeof(StatefulPinnedNative));
                 _hasAllocated = true;
-                *(StatefulPinnedNative*)_ptr = new StatefulPinnedNative();
+                *(StatefulPinnedNative*)_ptr = new StatefulPinnedNative() { I = _managed.I };
                 return (StatefulPinnedNative*)_ptr;
             }
 

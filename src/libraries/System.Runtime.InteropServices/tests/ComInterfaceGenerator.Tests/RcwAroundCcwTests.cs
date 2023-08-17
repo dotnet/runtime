@@ -294,7 +294,7 @@ namespace ComInterfaceGenerator.Tests
         public void StatefulPinnedMarshalling()
         {
             var obj = CreateWrapper<StatefulPinnedMarshalling, IStatefulPinnedMarshalling>();
-            var data = new StatefulPinnedType() { I = 4 };
+            StatefulPinnedType data;
 
             obj.MethodOut(out data);
             Assert.Equal(102, data.I);
