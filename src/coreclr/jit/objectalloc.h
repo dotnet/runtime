@@ -21,7 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 class ObjectAllocator final : public Phase
 {
-    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
+    typedef SmallHashTable<unsigned int, unsigned int, 8U>       LocalToLocalMap;
     typedef SmallHashTable<unsigned int, unsigned long long, 8U> LocalToLclOffMap;
 
     //===============================================================================
