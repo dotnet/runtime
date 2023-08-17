@@ -6741,7 +6741,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         predInfo.Reset();
 
         // Find the subset of preds that reach along non-critical edges
-        // and populate predSuccInfo.
+        // and populate predInfo.
         //
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
