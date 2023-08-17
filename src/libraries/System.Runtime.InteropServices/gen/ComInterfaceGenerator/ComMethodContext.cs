@@ -125,9 +125,7 @@ namespace Microsoft.Interop
         private MethodDeclarationSyntax GenerateShadow()
         {
             // DeclarationCopiedFromBaseDeclaration(<Arguments>)
-            // {
-            //    return ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
-            // }
+            //    => ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
             var forwarder = new Forwarder();
             return MethodDeclaration(GenerationContext.SignatureContext.StubReturnType, MethodInfo.MethodName)
                 .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))

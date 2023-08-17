@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -74,58 +75,33 @@ namespace Microsoft.Interop
                         ? ObjectCreationExpression(info.ManagedType.Syntax, ArgumentList(), initializer: null)
                         : CastExpression(
                             info.ManagedType.Syntax,
-                            InvocationExpression(
-                                MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
+                            MethodInvocation(
                                     TypeSyntaxes.System_Activator,
-                                    IdentifierName("CreateInstance")))
-                            .WithArgumentList(
-                                ArgumentList(
-                                    SeparatedList(
-                                        new[]{
-                                            Argument(
-                                                TypeOfExpression(
-                                                    info.ManagedType.Syntax)),
-                                            Argument(
-                                                LiteralExpression(
-                                                    SyntaxKind.TrueLiteralExpression))
-                                            .WithNameColon(
-                                                NameColon(
-                                                    IdentifierName("nonPublic")))
-                                        }))));
+                                    IdentifierName("CreateInstance"),
+                                    Argument(TypeOfExpression(info.ManagedType.Syntax)),
+                                    Argument(LiteralExpression(SyntaxKind.TrueLiteralExpression))
+                                        .WithNameColon(NameColon(IdentifierName("nonPublic")))));
 
                     if (info.IsManagedReturnPosition)
                     {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(managedIdentifier),
-                                safeHandleCreationExpression
-                                ));
+                        yield return AssignmentStatement(IdentifierName(managedIdentifier), safeHandleCreationExpression);
                     }
                     else if (info.IsByRef && info.RefKind != RefKind.In)
                     {
                         // We create the new handle in the Setup phase
                         // so we eliminate the possible failure points during unmarshalling, where we would
                         // leak the handle if we failed to create the handle.
-                        yield return LocalDeclarationStatement(
-                            VariableDeclaration(
-                                info.ManagedType.Syntax,
-                                SingletonSeparatedList(
-                                    VariableDeclarator(newHandleObjectIdentifier)
-                                    .WithInitializer(EqualsValueClause(safeHandleCreationExpression)))));
+                        yield return Declare(info.ManagedType.Syntax, newHandleObjectIdentifier, safeHandleCreationExpression);
+
                         if (info.RefKind != RefKind.Out)
                         {
-                            yield return LocalDeclarationStatement(
-                                VariableDeclaration(
-                                    AsNativeType(info).Syntax,
-                                    SingletonSeparatedList(
-                                        VariableDeclarator(handleValueBackupIdentifier)
-                                        .WithInitializer(EqualsValueClause(
-                                            InvocationExpression(
-                                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                    IdentifierName(newHandleObjectIdentifier),
-                                                    IdentifierName(nameof(SafeHandle.DangerousGetHandle))),
-                                                ArgumentList()))))));
+                            // IntPtr <handleValueBackupIdentifier> = newHandleObjectIdentifier.DangerousGetHandle();
+                            yield return Declare(
+                                AsNativeType(info).Syntax,
+                                handleValueBackupIdentifier,
+                                MethodInvocation(
+                                    IdentifierName(newHandleObjectIdentifier),
+                                    IdentifierName(nameof(SafeHandle.DangerousGetHandle))));
                         }
                     }
                     break;
@@ -133,30 +109,22 @@ namespace Microsoft.Interop
                     if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
                         // <managedIdentifier>.DangerousAddRef(ref <addRefdIdentifier>);
-                        yield return ExpressionStatement(
-                            InvocationExpression(
-                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    IdentifierName(managedIdentifier),
-                                    IdentifierName(nameof(SafeHandle.DangerousAddRef))),
-                                ArgumentList(SingletonSeparatedList(
-                                    Argument(IdentifierName(addRefdIdentifier))
-                                        .WithRefKindKeyword(Token(SyntaxKind.RefKeyword))))));
+                        yield return MethodInvocationStatement(
+                                        IdentifierName(managedIdentifier),
+                                        IdentifierName(nameof(SafeHandle.DangerousAddRef)),
+                                        RefArgument(IdentifierName(addRefdIdentifier)));
 
 
+                        // <native> = <managed>.DangerousGetHandle()
                         ExpressionSyntax assignHandleToNativeExpression =
                             AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                                 IdentifierName(nativeIdentifier),
-                                InvocationExpression(
-                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        IdentifierName(managedIdentifier),
-                                        IdentifierName(nameof(SafeHandle.DangerousGetHandle))),
-                                    ArgumentList()));
+                                MethodInvocation(
+                                    IdentifierName(managedIdentifier),
+                                    IdentifierName(nameof(SafeHandle.DangerousGetHandle))));
                         if (info.IsByRef && info.RefKind != RefKind.In)
                         {
-                            yield return ExpressionStatement(
-                                AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                    IdentifierName(handleValueBackupIdentifier),
-                                    assignHandleToNativeExpression));
+                            yield return AssignmentStatement(IdentifierName(handleValueBackupIdentifier), assignHandleToNativeExpression);
                         }
                         else
                         {
@@ -165,17 +133,11 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.GuaranteedUnmarshal:
-                    StatementSyntax unmarshalStatement = ExpressionStatement(
-                        InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                    StatementSyntax unmarshalStatement = MethodInvocationStatement(
                                 TypeSyntaxes.System_Runtime_InteropServices_Marshal,
-                                IdentifierName("InitHandle")),
-                            ArgumentList(SeparatedList(
-                                new[]
-                                {
-                                    Argument(IdentifierName(newHandleObjectIdentifier)),
-                                    Argument(IdentifierName(nativeIdentifier))
-                                }))));
+                                IdentifierName("InitHandle"),
+                                Argument(IdentifierName(newHandleObjectIdentifier)),
+                                Argument(IdentifierName(nativeIdentifier)));
 
                     if (info.IsManagedReturnPosition)
                     {
@@ -184,22 +146,16 @@ namespace Microsoft.Interop
                     else if (info.RefKind == RefKind.Out)
                     {
                         yield return unmarshalStatement;
-                        yield return ExpressionStatement(
-                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(managedIdentifier),
-                                IdentifierName(newHandleObjectIdentifier)));
+                        yield return AssignmentStatement(IdentifierName(managedIdentifier), IdentifierName(newHandleObjectIdentifier));
                     }
                     else if (info.RefKind == RefKind.Ref)
                     {
                         // Decrement refcount on original SafeHandle if we addrefd
                         yield return IfStatement(
                             IdentifierName(addRefdIdentifier),
-                            ExpressionStatement(
-                                InvocationExpression(
-                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        IdentifierName(managedIdentifier),
-                                        IdentifierName(nameof(SafeHandle.DangerousRelease))),
-                                    ArgumentList())));
+                            MethodInvocationStatement(
+                                IdentifierName(managedIdentifier),
+                                IdentifierName(nameof(SafeHandle.DangerousRelease))));
 
                         // Do not unmarshal the handle if the value didn't change.
                         yield return IfStatement(
@@ -208,10 +164,9 @@ namespace Microsoft.Interop
                                 IdentifierName(nativeIdentifier)),
                             Block(
                                 unmarshalStatement,
-                                ExpressionStatement(
-                                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                        IdentifierName(managedIdentifier),
-                                        IdentifierName(newHandleObjectIdentifier)))));
+                                AssignmentStatement(
+                                    IdentifierName(managedIdentifier),
+                                    IdentifierName(newHandleObjectIdentifier))));
                     }
                     break;
                 case StubCodeContext.Stage.CleanupCallerAllocated:
@@ -219,12 +174,9 @@ namespace Microsoft.Interop
                     {
                         yield return IfStatement(
                             IdentifierName(addRefdIdentifier),
-                            ExpressionStatement(
-                                InvocationExpression(
-                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            MethodInvocationStatement(
                                     IdentifierName(managedIdentifier),
-                                    IdentifierName(nameof(SafeHandle.DangerousRelease))),
-                                    ArgumentList())));
+                                    IdentifierName(nameof(SafeHandle.DangerousRelease))));
                     }
                     break;
                 default:
