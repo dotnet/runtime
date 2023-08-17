@@ -10,28 +10,28 @@ public class HeadMergeException
     [Fact]
     public static int TestEntryPoint()
     {
-		int local = 100;
-		try
-		{
+        int local = 100;
+        try
+        {
             // Ensure head merging does not move the write to 'local' out here.
-			if (Throws())
-			{
-				local = local + 1;
-				local *= 2;
-			}
-			else
-			{
-				local = local + 1;
-				local *= 3;
-			}
-		}
-		catch (Exception)
-		{
-		}
+            if (Throws())
+            {
+                local = local + 1;
+                local *= 2;
+            }
+            else
+            {
+                local = local + 1;
+                local *= 3;
+            }
+        }
+        catch (Exception)
+        {
+        }
 
-		return local;
+        return local;
     }
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static bool Throws() => throw new Exception();
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool Throws() => throw new Exception();
 }
