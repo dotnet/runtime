@@ -17,7 +17,6 @@ parameters:
   archiveType: ''
   tarCompression: ''
   hybridGlobalization: False
-  artifactNameAppendString: ''
 
 steps:
 # Build Android sample app
@@ -55,7 +54,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App NoLLVM
-        artifactName: iOSSampleAppNoLLVMSymbols${{ parameters.artifactNameAppendString }}
+        artifactName: iOSSampleAppNoLLVMSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
         archiveExtension: '.zip'
         archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
@@ -77,7 +76,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App NoLLVM NoSymbols
-        artifactName: iOSSampleAppNoLLVMNoSymbols${{ parameters.artifactNameAppendString }}
+        artifactName: iOSSampleAppNoLLVMNoSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
         archiveExtension: '.zip'
         archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
@@ -99,7 +98,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App LLVM
-        artifactName: iOSSampleAppLLVMSymbols${{ parameters.artifactNameAppendString }}
+        artifactName: iOSSampleAppLLVMSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
         archiveExtension: '.zip'
         archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
@@ -121,7 +120,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App LLVM NoSymbols
-        artifactName: iOSSampleAppLLVMNoSymbols${{ parameters.artifactNameAppendString }}
+        artifactName: iOSSampleAppLLVMNoSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
         archiveExtension: '.zip'
         archiveType: zip
 
@@ -142,7 +141,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App Symbols
-        artifactName: iOSSampleAppSymbols${{ parameters.artifactNameAppendString }}
+        artifactName: iOSSampleAppSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
         archiveExtension: '.zip'
         archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin
@@ -164,6 +163,6 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App NoSymbols
-        artifactName: iOSSampleAppNoSymbols${{ parameters.artifactNameAppendString }}
+        artifactName: iOSSampleAppNoSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
         archiveExtension: '.zip'
         archiveType: zip
