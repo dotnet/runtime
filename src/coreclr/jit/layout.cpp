@@ -449,6 +449,11 @@ bool ClassLayout::HasGCByRef() const
 //
 bool ClassLayout::IntersectsGCPtr(unsigned offset, unsigned size) const
 {
+    if (!HasGCPtr())
+    {
+        return false;
+    }
+
     unsigned startSlot = offset / TARGET_POINTER_SIZE;
     unsigned endSlot   = (offset + size - 1) / TARGET_POINTER_SIZE;
     assert((startSlot < GetSlotCount()) && (endSlot < GetSlotCount()));
