@@ -2466,7 +2466,9 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 passUsingFloatRegs = (floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
 
 #ifdef TARGET_RISCV64
-                passUsingFloatRegs = passUsingFloatRegs && ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) != floatFieldFlags);
+                passUsingFloatRegs =
+                    passUsingFloatRegs &&
+                    ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) != floatFieldFlags);
 #endif // TARGET_RISCV64
 
                 comp->compFloatingPointUsed |= passUsingFloatRegs;
@@ -2481,12 +2483,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     structBaseType = TYP_STRUCT;
                 }
 #ifdef TARGET_RISCV64
-                if ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) == floatFieldFlags) {
+                if ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) == floatFieldFlags)
+                {
                     size = 2;
                 }
                 else
 #endif // TARGET_RISCV64
-                if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO)) != 0)
+                    if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO)) != 0)
                 {
                     size = 1;
                 }
@@ -2903,7 +2906,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         intArgRegNum = maxRegArgs;
                     }
 #ifdef TARGET_RISCV64
-                    else if ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) == floatFieldFlags)
+                    else if ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) ==
+                             floatFieldFlags)
                     {
                         assert(!passUsingFloatRegs);
                         arg.AbiInfo.StructFloatFieldType[0] = TYP_LONG;
