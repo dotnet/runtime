@@ -9,6 +9,8 @@ import { VoidPtr, CharPtr } from "./types/emscripten";
 import { mono_log_warn } from "./logging";
 import { localHeapViewU8 } from "./memory";
 import { utf8ToString } from "./strings";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 const commands_received: any = new Map<number, CommandResponse>();
 commands_received.remove = function (key: number): CommandResponse { const value = this.get(key); this.delete(key); return value; };
 let _call_function_res_cache: any = {};
