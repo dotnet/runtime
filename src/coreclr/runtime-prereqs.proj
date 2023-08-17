@@ -8,7 +8,6 @@
     <VerifySourceLinkFileExists>false</VerifySourceLinkFileExists>
     <VerifySourceLinkFileExists Condition="'$(ContinuousIntegrationBuild)' == 'true' AND '$(EnableSourceControlManagerQueries)' == 'true'">true</VerifySourceLinkFileExists>
     <AssemblyName>.NET Runtime</AssemblyName>
-    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
