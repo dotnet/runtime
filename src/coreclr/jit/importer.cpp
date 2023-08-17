@@ -1386,7 +1386,7 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
         return false;
     }
 
-    if (tree->IsHelperCall() && impIsCastHelperMayHaveProfileData)
+    if (tree->IsHelperCall())
     {
         switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
         {
