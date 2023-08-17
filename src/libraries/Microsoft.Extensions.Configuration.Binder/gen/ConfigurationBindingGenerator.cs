@@ -31,11 +31,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValuesProvider<BinderInvocation> inputCalls = context.SyntaxProvider
+            IncrementalValuesProvider<BinderInvocation?> inputCalls = context.SyntaxProvider
                 .CreateSyntaxProvider(
-                    (node, _) => node is InvocationExpressionSyntax invocation,
+                    (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
                     BinderInvocation.Create)
-                .Where(operation => operation is not null);
+                .Where(invocation => invocation is not null);
 
             IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocation>)> inputData = compilationData.Combine(inputCalls.Collect());
 
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
-            if (parser.GetSourceGenerationSpec() is SourceGenerationSpec { } spec)
+            if (parser.GetSourceGenerationSpec() is SourceGenerationSpec spec)
             {
                 Emitter emitter = new(context, spec);
                 emitter.Emit();
