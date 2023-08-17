@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Breadcrumb_thread_finishes_when_app_closes_normally()
         {
-            var fixture = sharedTestState.PortableAppFixture.Copy();
+            var fixture = sharedTestState.PortableAppFixture;
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
@@ -38,11 +38,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Breadcrumb_thread_does_not_finish_when_app_has_unhandled_exception()
         {
-            var fixture = sharedTestState.PortableAppWithExceptionFixture.Copy();
+            var fixture = sharedTestState.PortableAppFixture;
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
-            dotnet.Exec(appDll)
+            dotnet.Exec(appDll, "throw_exception")
                 .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
                 .EnableTracingAndCaptureOutputs()
                 .Execute(expectedToFail: true)
@@ -115,12 +115,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 foreach ((string fwName, string[] fwVersions) in ProgramFilesGlobalFrameworks)
                 {
                     foreach (string fwVersion in fwVersions)
-                        Directory.CreateDirectory(Path.Combine(ProgramFilesGlobalFrameworksDir, fwName, fwVersion));
+                        AddFrameworkDirectory(ProgramFilesGlobalFrameworksDir, fwName, fwVersion);
                 }
                 foreach ((string fwName, string[] fwVersions) in LocalFrameworks)
                 {
                     foreach (string fwVersion in fwVersions)
-                        Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, fwVersion));
+                        AddFrameworkDirectory(LocalFrameworksDir, fwName, fwVersion);
+
+                    // Empty framework directory - this should not be recognized as a valid framework directory
+                    Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, "9.9.9"));
                 }
 
                 static void AddSdkDirectory(string sdkDir, string version)
@@ -128,6 +131,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     string versionDir = Path.Combine(sdkDir, version);
                     Directory.CreateDirectory(versionDir);
                     File.WriteAllText(Path.Combine(versionDir, "dotnet.dll"), string.Empty);
+                }
+
+                static void AddFrameworkDirectory(string frameworkDir, string name, string version)
+                {
+                    string versionDir = Path.Combine(frameworkDir, name, version);
+                    Directory.CreateDirectory(versionDir);
+                    File.WriteAllText(Path.Combine(versionDir, $"{name}.deps.json"), string.Empty);
                 }
             }
         }
@@ -501,7 +511,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             public TestProjectFixture HostApiInvokerAppFixture { get; }
             public TestProjectFixture PortableAppFixture { get; }
-            public TestProjectFixture PortableAppWithExceptionFixture { get; }
             public RepoDirectoriesProvider RepoDirectories { get; }
 
             public string BreadcrumbLocation { get; }
@@ -518,14 +527,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .EnsureRestored()
                     .PublishProject();
 
-                PortableAppWithExceptionFixture = new TestProjectFixture("PortableAppWithException", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
-
                 if (!OperatingSystem.IsWindows())
                 {
+                    // On non-Windows breadcrumbs are only written if the breadcrumb directory already exists,
+                    // so we explicitly create a directory for breadcrumbs
                     BreadcrumbLocation = Path.Combine(
-                        PortableAppWithExceptionFixture.TestProject.OutputDirectory,
+                        PortableAppFixture.TestProject.OutputDirectory,
                         "opt",
                         "corebreadcrumbs");
                     Directory.CreateDirectory(BreadcrumbLocation);
@@ -542,7 +549,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 HostApiInvokerAppFixture.Dispose();
                 PortableAppFixture.Dispose();
-                PortableAppWithExceptionFixture.Dispose();
             }
         }
     }

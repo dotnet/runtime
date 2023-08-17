@@ -1768,11 +1768,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> LoadUnsafe<T>(ref T source)
+        public static Vector512<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref source);
-            return Unsafe.ReadUnaligned<Vector512<T>>(ref address);
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+            return Unsafe.ReadUnaligned<Vector512<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -1784,11 +1784,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
+        public static Vector512<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
-            source = ref Unsafe.Add(ref source, (nint)elementOffset);
-            return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.As<T, byte>(ref source));
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+            return Unsafe.ReadUnaligned<Vector512<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>

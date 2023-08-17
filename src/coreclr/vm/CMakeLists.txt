@@ -704,6 +704,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/jithelpers_singleappdomain.S
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
+            ${ARCH_SOURCES_DIR}/redirectedhandledjitcase.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S

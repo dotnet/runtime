@@ -184,6 +184,7 @@ namespace System
 
         public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
         public static bool IsInvokingFinalizersSupported => !IsNativeAot;
+        public static bool IsTypeEquivalenceSupported => !IsNativeAot && !IsMonoRuntime && IsWindows;
 
         public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
@@ -365,6 +366,7 @@ namespace System
         public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
+        public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
         public static bool IsSubstAvailable

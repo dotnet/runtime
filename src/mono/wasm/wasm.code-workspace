@@ -8,6 +8,12 @@
 		},
 		{
 			"path": "../wasi"
+		},
+		{
+			"path": "../../tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks"
+		},
+		{
+			"path": "../../tasks/WasmAppBuilder"
 		}
 	],
 	"settings": {

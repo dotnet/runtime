@@ -226,17 +226,23 @@
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_CompilerBinaryPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</_CompilerBinaryPath>
+      <_MonoLLVMPath>$(MonoAotCrossDir)</_MonoLLVMPath>
+      <_MonoLLVMPath Condition="'$(_MonoLLVMPath)' == '' and '$(MonoEnableLLVM)' == 'true'">$([System.IO.Path]::GetDirectoryName("$(_CompilerBinaryPath)"))</_MonoLLVMPath>
+    </PropertyGroup>
+
     <MonoAOTCompiler
         AotModulesTablePath="$(_AotModuleTablePath)"
         AsPrefix="$(_AsPrefixPath)"
         Assemblies="@(_AotInputAssemblies)"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="$(_CompilerBinaryPath)"
         DirectPInvokes="@(DirectPInvokes)"
         DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LibraryFormat="$(_AotLibraryFormat)"
-        LLVMPath="$(MonoAotCrossDir)"
+        LLVMPath="$(_MonoLLVMPath)"
         MibcProfilePath="@(ProfiledAOTProfilePaths)"
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"

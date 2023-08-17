@@ -49,6 +49,7 @@ namespace Mono.Linker
 		public virtual AnnotationStore CreateAnnotationStore (LinkContext context) => new AnnotationStore (context);
 		public virtual MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
 		public virtual Tracer CreateTracer (LinkContext context) => new Tracer (context);
+		public virtual EmbeddedXmlInfo CreateEmbeddedXmlInfo () => new ();
 	}
 
 	public static class TargetRuntimeVersion
@@ -174,6 +175,8 @@ namespace Mono.Linker
 
 		public Tracer Tracer { get; private set; }
 
+		public EmbeddedXmlInfo EmbeddedXmlInfo { get; private set; }
+
 		public CodeOptimizationsSettings Optimizations { get; set; }
 
 		public bool AddReflectionAnnotations { get; set; }
@@ -213,6 +216,7 @@ namespace Mono.Linker
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			SerializationMarker = new SerializationMarker (this);
 			Tracer = factory.CreateTracer (this);
+			EmbeddedXmlInfo = factory.CreateEmbeddedXmlInfo ();
 			MarkedKnownMembers = new KnownMembers ();
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
@@ -565,7 +569,6 @@ namespace Mono.Linker
 		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
 		{
 			WarnVersion version = GetWarningVersion ();
@@ -581,7 +584,6 @@ namespace Mono.Linker
 		/// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (MessageOrigin origin, DiagnosticId id, params string[] args)
 		{
 			WarnVersion version = GetWarningVersion ();
@@ -598,7 +600,6 @@ namespace Mono.Linker
 		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, IMemberDefinition origin, int? ilOffset = null, string subcategory = MessageSubCategory.None)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
@@ -613,7 +614,6 @@ namespace Mono.Linker
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (IMemberDefinition origin, DiagnosticId id, int? ilOffset = null, params string[] args)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
@@ -628,7 +628,6 @@ namespace Mono.Linker
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (IMemberDefinition origin, DiagnosticId id, params string[] args)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin);
@@ -644,7 +643,6 @@ namespace Mono.Linker
 		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, string origin, string subcategory = MessageSubCategory.None)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin);
@@ -659,7 +657,6 @@ namespace Mono.Linker
 		/// <param name="origin">Filename where the warning is coming from</param>
 		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string origin, DiagnosticId id, params string[] args)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin);
@@ -673,7 +670,6 @@ namespace Mono.Linker
 		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of errors and possibly add a new one</param>
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
-		/// <returns>New MessageContainer of 'Error' category</returns>
 		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
 		{
 			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin);
@@ -686,7 +682,6 @@ namespace Mono.Linker
 		/// <param name="origin">Filename, line, and column where the error was found</param>
 		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md and https://github.com/dotnet/runtime/blob/main/src/tools/illink/src/ILLink.Shared/DiagnosticId.cs for the list of errors and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Error' category</returns>
 		public void LogError (MessageOrigin? origin, DiagnosticId id, params string[] args)
 		{
 			var error = MessageContainer.CreateErrorMessage (origin, id, args);

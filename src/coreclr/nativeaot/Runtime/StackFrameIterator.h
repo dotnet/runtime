@@ -4,7 +4,12 @@
 #ifndef __StackFrameIterator_h__
 #define __StackFrameIterator_h__
 
+#include "CommonMacros.h"
 #include "ICodeManager.h"
+#include "PalRedhawk.h" // NATIVE_CONTEXT
+#include "regdisplay.h"
+
+#include "forward_declarations.h"
 
 struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
@@ -22,6 +27,7 @@ struct EHEnum
     EHEnumState m_state;
 };
 
+class StackFrameIterator;
 EXTERN_C FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault);
 EXTERN_C FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke);
 

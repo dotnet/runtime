@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section5)
             {
-                List<int> temp7 = obj.MyList;
+                List<int>? temp7 = obj.MyList;
                 temp7 ??= new List<int>();
                 BindCore(section5, ref temp7, binderOptions);
                 obj.MyList = temp7;
@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("MyArray")) is IConfigurationSection section8)
             {
-                int[] temp10 = obj.MyArray;
+                int[]? temp10 = obj.MyArray;
                 temp10 ??= new int[0];
                 BindCore(section8, ref temp10, binderOptions);
                 obj.MyArray = temp10;
@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section11)
             {
-                Dictionary<string, string> temp13 = obj.MyDictionary;
+                Dictionary<string, string>? temp13 = obj.MyDictionary;
                 temp13 ??= new Dictionary<string, string>();
                 BindCore(section11, ref temp13, binderOptions);
                 obj.MyDictionary = temp13;

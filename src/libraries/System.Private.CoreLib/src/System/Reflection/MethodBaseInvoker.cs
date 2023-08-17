@@ -72,7 +72,7 @@ namespace System.Reflection
             Debug.Assert(_argCount == 1);
 
             object? arg = parameters[0];
-            ReadOnlySpan<object?> parametersSpan = new(arg);
+            var parametersSpan = new ReadOnlySpan<object?>(in arg);
 
             object? copyOfArg = null;
             Span<object?> copyOfArgs = new(ref copyOfArg);
@@ -300,7 +300,7 @@ namespace System.Reflection
             bool copyBack = false;
             Span<bool> shouldCopyBack = new(ref copyBack, 1); // Not used for setters
 
-            CheckArguments(new ReadOnlySpan<object?>(parameter), copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+            CheckArguments(new ReadOnlySpan<object?>(in parameter), copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
             if (_invokeFunc_ObjSpanArgs is not null) // Fast path check
             {

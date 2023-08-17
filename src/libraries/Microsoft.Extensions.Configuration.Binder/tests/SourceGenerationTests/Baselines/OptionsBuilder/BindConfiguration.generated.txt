@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section3)
             {
-                List<int> temp5 = obj.MyList;
+                List<int>? temp5 = obj.MyList;
                 temp5 ??= new List<int>();
                 BindCore(section3, ref temp5, binderOptions);
                 obj.MyList = temp5;

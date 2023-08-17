@@ -339,6 +339,12 @@ void Compiler::lvaInitTypeRef()
             {
                 JITDUMP("-- V%02u is OSR exposed\n", lclNum);
                 varDsc->lvIsOSRExposedLocal = true;
+
+                // Ensure that ref counts for exposed OSR locals take into account
+                // that some of the refs might be in the Tier0 parts of the method
+                // that get trimmed away.
+                //
+                varDsc->lvImplicitlyReferenced = 1;
             }
         }
     }
@@ -7394,7 +7400,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    printf("[%2s%1s%02XH]  ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
 }
 
 /*****************************************************************************

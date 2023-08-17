@@ -15,7 +15,6 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void ManagedCallingConvention(bool modified)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -36,7 +35,6 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Stdcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Thiscall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void UnmanagedCallConv_Param_Unmodified(string methodName)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -54,7 +52,6 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Stdcall), typeof(CallConvStdcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Thiscall), typeof(CallConvThiscall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall), typeof(CallConvFastcall))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void UnmanagedCallConv_Param_Modified(string methodName, Type callingConventionRuntime)
         {
             Type callingConvention = callingConventionRuntime.Project();
@@ -71,7 +68,7 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
         public static unsafe void UnmanagedCallConvs_Return_Unmodified()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -91,7 +88,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void UnmanagedCallConvs_Return_Modified()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -118,7 +114,6 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Stdcall_SuppressGCTransition))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Thiscall_SuppressGCTransition))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall_SuppressGCTransition))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void UnmanagedCallConv_PhysicalModifiers_Unmodified(string methodName)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -137,7 +132,6 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Stdcall_SuppressGCTransition), typeof(CallConvStdcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Thiscall_SuppressGCTransition), typeof(CallConvThiscall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall_SuppressGCTransition), typeof(CallConvFastcall))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void UnmanagedCallConv_PhysicalModifiers_Modified(string methodName, Type callingConventionRuntime)
         {
             Type suppressGcTransitionType = typeof(CallConvSuppressGCTransition).Project();
@@ -161,7 +155,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void GenericTypeParameter()
         {
             Type holder = typeof(FunctionPointerHolder).Project();

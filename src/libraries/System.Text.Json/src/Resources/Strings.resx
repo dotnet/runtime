@@ -576,6 +576,9 @@
   <data name="NodeWrongType" xml:space="preserve">
     <value>The node must be of type '{0}'.</value>
   </data>
+  <data name="NodeParentWrongType" xml:space="preserve">
+    <value>The node must have a parent node of type '{0}'.</value>
+  </data>
   <data name="NodeDuplicateKey" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>

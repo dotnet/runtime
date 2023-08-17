@@ -14,6 +14,12 @@ set (EVENTPIPE_SOURCES "")
 set (EVENTPIPE_HEADERS "")
 set (GEN_EVENTPIPE_SOURCES "")
 
+# Use TCP for EventPipe on mobile platforms
+if (CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
+  set(FEATURE_PERFTRACING_PAL_TCP 1)
+  set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
+endif()
+
 set (SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers")
 set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
 set (SHARED_MINIPAL_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/minipal")
@@ -107,7 +113,6 @@ list(APPEND GEN_EVENTPIPE_SOURCES
 list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
    ${RUNTIME_DIR}/eventpipeinternal.cpp
    ${RUNTIME_DIR}/eventpipeadapter.h
-   ${RUNTIME_DIR}/diagnosticserveradapter.h
    ${RUNTIME_DIR}/EnabledEventPipeInterface.cpp
    ${RUNTIME_DIR}/runtimeeventinternal.cpp
 )

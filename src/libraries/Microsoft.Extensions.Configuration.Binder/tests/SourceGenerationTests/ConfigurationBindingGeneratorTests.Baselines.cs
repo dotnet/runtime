@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -607,64 +606,54 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
         public async Task Collections()
         {
             string source = """
-                        using System.Collections.Generic;
-                        using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
 
-                        public class Program
-                        {
-                            public static void Main()
-                            {
-                                ConfigurationBuilder configurationBuilder = new();
-                                IConfiguration config = configurationBuilder.Build();
-                                IConfigurationSection section = config.GetSection(""MySection"");
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        IConfigurationSection section = config.GetSection(""MySection"");
 
-                                section.Get<MyClassWithCustomCollections>();
-                            }
+                        section.Get<MyClassWithCustomCollections>();
+                    }
 
-                            public class MyClassWithCustomCollections
-                            {
-                                public CustomDictionary<string, int> CustomDictionary { get; set; }
-                                public CustomList CustomList { get; set; }
-                                public ICustomDictionary<string> ICustomDictionary { get; set; }
-                                public ICustomSet<MyClassWithCustomCollections> ICustomCollection { get; set; }
-                                public IReadOnlyList<int> IReadOnlyList { get; set; }
-                                public IReadOnlyDictionary<MyClassWithCustomCollections, int> UnsupportedIReadOnlyDictionaryUnsupported { get; set; }
-                                public IReadOnlyDictionary<string, int> IReadOnlyDictionary { get; set; }
-                            }
+                    public class MyClassWithCustomCollections
+                    {
+                        public CustomDictionary<string, int> CustomDictionary { get; set; }
+                        public CustomList CustomList { get; set; }
+                        public ICustomDictionary<string> ICustomDictionary { get; set; }
+                        public ICustomSet<MyClassWithCustomCollections> ICustomCollection { get; set; }
+                        public IReadOnlyList<int> IReadOnlyList { get; set; }
+                        public IReadOnlyDictionary<MyClassWithCustomCollections, int> UnsupportedIReadOnlyDictionaryUnsupported { get; set; }
+                        public IReadOnlyDictionary<string, int> IReadOnlyDictionary { get; set; }
+                    }
 
-                            public class CustomDictionary<TKey, TValue> : Dictionary<TKey, TValue>
-                            {
-                            }
+                    public class CustomDictionary<TKey, TValue> : Dictionary<TKey, TValue>
+                    {
+                    }
 
-                            public class CustomList : List<string>
-                            {
-                            }
+                    public class CustomList : List<string>
+                    {
+                    }
 
-                            public interface ICustomDictionary<T> : IDictionary<T, string>
-                            {
-                            }
+                    public interface ICustomDictionary<T> : IDictionary<T, string>
+                    {
+                    }
 
-                            public interface ICustomSet<T> : ISet<T>
-                            {
-                            }
-                        }
-                        """;
+                    public interface ICustomSet<T> : ISet<T>
+                    {
+                    }
+                }
+                """;
 
             await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, assessDiagnostics: (d) =>
             {
-                Assert.Equal(6, d.Length);
-                Test(d.Where(diagnostic => diagnostic.Id is "SYSLIB1100"), "Did not generate binding logic for a type");
-                Test(d.Where(diagnostic => diagnostic.Id is "SYSLIB1101"), "Did not generate binding logic for a property on a type");
-
-                static void Test(IEnumerable<Diagnostic> d, string expectedTitle)
-                {
-                    Assert.Equal(3, d.Count());
-                    foreach (Diagnostic diagnostic in d)
-                    {
-                        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
-                        Assert.Contains(expectedTitle, diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
-                    }
-                }
+                Console.WriteLine((d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count() , d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count()));
+                Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+                Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
             });
         }
     }

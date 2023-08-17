@@ -889,6 +889,7 @@ ep_rt_mono_fini (void)
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeRundown (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -904,6 +905,7 @@ EventPipeEtwCallbackDotNETRuntimeRundown (
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimePrivate (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -919,6 +921,7 @@ EventPipeEtwCallbackDotNETRuntimePrivate (
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeStress (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
