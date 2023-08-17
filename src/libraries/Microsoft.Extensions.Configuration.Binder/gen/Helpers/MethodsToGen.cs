@@ -12,8 +12,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         BindCore = 0x1,
         GetCore = 0x2,
         GetValueCore = 0x4,
-        Initialize = 0x8,
-        AsConfigWithChildren = 0x10,
+        BindCoreMain = 0x8,
+        Initialize = 0x10,
+        HasValueOrChildren = 0x20,
+        AsConfigWithChildren = 0x40,
     }
 
     /// <summary>

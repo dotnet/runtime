@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (overload is not MethodsToGen_Extensions_OptionsBuilder.None)
                 {
-                    RegisterAsInterceptor(overload, operation);
+                    RegisterAsInterceptor_OptionsBuilder(overload, operation);
                     RegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions, typeSpec);
                 }
             }
@@ -85,15 +85,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     @params[1].Type.SpecialType is SpecialType.System_String &&
                     SymbolEqualityComparer.Default.Equals(_typeSymbols.ActionOfBinderOptions, @params[2].Type))
                 {
-                    RegisterAsInterceptor(MethodsToGen_Extensions_OptionsBuilder.BindConfiguration_T_path_BinderOptions, invocation.Operation);
-                    RegisterTypeForBindCoreGen(typeSpec);
+                    RegisterAsInterceptor_OptionsBuilder(MethodsToGen_Extensions_OptionsBuilder.BindConfiguration_T_path_BinderOptions, invocation.Operation);
+                    RegisterTypeForBindCoreMainGen(typeSpec);
                 }
             }
 
-            private void RegisterAsInterceptor(MethodsToGen_Extensions_OptionsBuilder overload, IInvocationOperation operation)
+            private void RegisterAsInterceptor_OptionsBuilder(MethodsToGen_Extensions_OptionsBuilder overload, IInvocationOperation operation)
             {
                 _sourceGenSpec.MethodsToGen_OptionsBuilderExt |= overload;
-                RegisterGenMethodAsInterceptor(overload, operation);
+                RegisterAsInterceptor(overload, operation);
 
                 // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource.
                 _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.Options");

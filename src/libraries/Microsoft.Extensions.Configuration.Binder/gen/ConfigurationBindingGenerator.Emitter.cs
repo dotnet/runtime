@@ -17,7 +17,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly SourceProductionContext _context;
             private readonly SourceGenerationSpec _sourceGenSpec;
 
-            private readonly string _generatedNamespaceName = ProjectName;
             private bool _emitBlankLineBeforeNextStatement;
             private int _valueSuffixIndex;
 
@@ -25,15 +24,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private readonly SourceWriter _writer = new();
 
-            public Emitter(SourceProductionContext context, SourceGenerationSpec sourceGenSpec, bool emitUniqueHelperNames)
+            public Emitter(SourceProductionContext context, SourceGenerationSpec sourceGenSpec)
             {
                 _context = context;
                 _sourceGenSpec = sourceGenSpec;
-
-                if (emitUniqueHelperNames)
-                {
-                    GeneratorHelpers.MakeNameUnique(ref _generatedNamespaceName);
-                }
             }
 
             public void Emit()
@@ -51,7 +45,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitInterceptsLocationAttrDecl();
 
-                EmitStartBlock($"namespace {_generatedNamespaceName}");
+                EmitStartBlock($"namespace {ProjectName}");
                 EmitUsingStatements();
 
                 _writer.WriteLine();
@@ -260,10 +254,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitIConfigurationHasValueOrChildrenCheck(bool voidReturn)
             {
                 string returnPostfix = voidReturn ? string.Empty : " null";
-                string methodIdentifier = Identifier.HasValueOrChildren;
-
                 _writer.WriteLine($$"""
-                    if (!{{methodIdentifier}}({{Identifier.configuration}}))
+                    if (!{{Identifier.HasValueOrChildren}}({{Identifier.configuration}}))
                     {
                         return{{returnPostfix}};
                     }

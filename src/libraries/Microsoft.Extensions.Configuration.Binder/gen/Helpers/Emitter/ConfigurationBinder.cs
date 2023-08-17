@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using SourceGenerators;
+
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator
@@ -45,14 +48,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Get_TypeOf))
                 {
                     StartMethodDefinition(MethodsToGen_ConfigurationBinder.Get_TypeOf, documentation);
-                    _writer.WriteLine($"public static object? {Identifier.Get}(this {Identifier.IConfiguration} {Identifier.configuration}, {Identifier.Type} {Identifier.type}) => " +
+                    _writer.WriteLine($"public static object? {Identifier.Get}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}) => " +
                         $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureOptions}: null);");
                 }
 
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Get_TypeOf_BinderOptions))
                 {
                     StartMethodDefinition(MethodsToGen_ConfigurationBinder.Get_TypeOf_BinderOptions, documentation);
-                    _writer.WriteLine($"public static object? {Identifier.Get}(this {Identifier.IConfiguration} {Identifier.configuration}, {Identifier.Type} {Identifier.type}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}) => " +
+                    _writer.WriteLine($"public static object? {Identifier.Get}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}) => " +
                         $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureOptions});");
                 }
             }
@@ -79,25 +82,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key))
                 {
                     StartMethodDefinition(MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key, documentation);
-                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {Identifier.IConfiguration} {Identifier.configuration}, {Identifier.Type} {Identifier.type}, string {Identifier.key}) => " +
+                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, string {Identifier.key}) => " +
                         $"{expressionForGetValueCore}({Identifier.configuration}, {Identifier.type}, {Identifier.key});");
                 }
 
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key_defaultValue))
                 {
                     StartMethodDefinition(MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key_defaultValue, documentation);
-                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {Identifier.IConfiguration} {Identifier.configuration}, {Identifier.Type} {Identifier.type}, string {Identifier.key}, object? {Identifier.defaultValue}) => " +
+                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, string {Identifier.key}, object? {Identifier.defaultValue}) => " +
                         $"{expressionForGetValueCore}({Identifier.configuration}, {Identifier.type}, {Identifier.key}) ?? {Identifier.defaultValue};");
                 }
             }
 
             private void EmitBindMethods_ConfigurationBinder()
             {
+                if (!ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind))
+                {
+                    return;
+                }
+
                 string objParamExpr = $"object? {Identifier.obj}";
 
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind_instance))
                 {
-                    EmitMethodImplementation(
+                    EmitMethods(
                         MethodsToGen_ConfigurationBinder.Bind_instance,
                         additionalParams: objParamExpr,
                         configExpression: Identifier.configuration,
@@ -106,7 +114,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions))
                 {
-                    EmitMethodImplementation(
+                    EmitMethods(
                         MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions,
                         additionalParams: $"{objParamExpr}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}",
                         configExpression: Identifier.configuration,
@@ -115,21 +123,41 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind_key_instance))
                 {
-                    EmitMethodImplementation(
+                    EmitMethods(
                         MethodsToGen_ConfigurationBinder.Bind_key_instance,
                         additionalParams: $"string {Identifier.key}, {objParamExpr}",
-                        configExpression: $"{Identifier.configuration}?.{Identifier.GetSection}({Identifier.key})",
+                        configExpression: $"{Expression.configurationGetSection}({Identifier.key})",
                         configureOptions: false);
                 }
 
-                void EmitMethodImplementation(MethodsToGen_ConfigurationBinder method, string additionalParams, string configExpression, bool configureOptions)
+                void EmitMethods(MethodsToGen_ConfigurationBinder method, string additionalParams, string configExpression, bool configureOptions)
                 {
-                    string configureOptionsArg = configureOptions ? Identifier.configureOptions : $"{Identifier.configureOptions}: null";
-                    string returnExpression = $"{Identifier.BindCoreMain}({configExpression}, {Identifier.obj}, {configureOptionsArg})";
+                    foreach (KeyValuePair<TypeSpec, List<InterceptorLocationInfo>> pair in _sourceGenSpec.InterceptionInfo_ConfigBinder.GetOverloadInfo(method))
+                    {
+                        (TypeSpec type, List<InterceptorLocationInfo> interceptorInfoList) = (pair.Key, pair.Value);
 
-                    StartMethodDefinition(method, "Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.");
-                    _writer.WriteLine($"public static void {Identifier.Bind}(this {Identifier.IConfiguration} {Identifier.configuration}, {additionalParams}) => "
-                        + $"{returnExpression};");
+                        EmitBlankLineIfRequired();
+                        _writer.WriteLine($"/// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>");
+                        EmitInterceptsLocationAnnotations(interceptorInfoList);
+                        EmitStartBlock($"public static void {Identifier.Bind}_{type.DisplayString.ToIdentifierSubstring()}(this {Identifier.IConfiguration} {Identifier.configuration}, {additionalParams})");
+
+                        if (!EmitInitException(type) && type.NeedsMemberBinding)
+                        {
+                            string binderOptionsArg = configureOptions ? $"{Identifier.GetBinderOptions}({Identifier.configureOptions})" : $"{Identifier.binderOptions}: null";
+
+                            EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+                            if (!type.IsValueType)
+                            {
+                                EmitCheckForNullArgument_WithBlankLine(Identifier.obj);
+                            }
+                            _writer.WriteLine($$"""
+                                var {{Identifier.typedObj}} = ({{type.EffectiveType.DisplayString}}){{Identifier.obj}};
+                                {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, {{binderOptionsArg}});
+                                """);
+                        }
+
+                        EmitEndBlock();
+                    }
                 }
             }
 

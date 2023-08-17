@@ -71,9 +71,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string AddSingleton = nameof(AddSingleton);
                 public const string Any = nameof(Any);
                 public const string Array = nameof(Array);
-                public const string AsConfigWithChildren = nameof(AsConfigWithChildren);
                 public const string Bind = nameof(Bind);
-                public const string BindCoreMain = nameof(BindCoreMain);
                 public const string BinderOptions = nameof(BinderOptions);
                 public const string BindingExtensions = nameof(BindingExtensions);
                 public const string ConfigurationChangeTokenSource = nameof(ConfigurationChangeTokenSource);
@@ -111,7 +109,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string TOptions = nameof(TOptions);
                 public const string TryCreate = nameof(TryCreate);
                 public const string TryGetValue = nameof(TryGetValue);
-                public const string TryParse = nameof(TryParse);
                 public const string Type = nameof(Type);
                 public const string Uri = nameof(Uri);
                 public const string ValidateConfigurationKeys = nameof(ValidateConfigurationKeys);
@@ -128,17 +125,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // The only time a generated binding method won't have any locations to
                 // intercept is when either of these methods are used as helpers for
                 // other generated OptionsBuilder or ServiceCollection binding extensions.
-                bool interceptsCalls = _sourceGenSpec.GenMethodsInterceptionInfo.TryGetValue(generatedBindingOverload, out List<InterceptorLocationInfo>? infoList);
+                bool interceptsCalls = _sourceGenSpec.InterceptionInfo.TryGetValue(generatedBindingOverload, out List<InterceptorLocationInfo>? infoList);
                 Debug.Assert(interceptsCalls ||
                     generatedBindingOverload is MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions ||
                     generatedBindingOverload is MethodsToGen_Extensions_OptionsBuilder.Bind_T_BinderOptions);
 
                 if (interceptsCalls)
                 {
-                    foreach (InterceptorLocationInfo info in infoList)
-                    {
-                        _writer.WriteLine($@"[{Identifier.InterceptsLocation}Attribute(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
-                    }
+                    EmitInterceptsLocationAnnotations(infoList);
+                }
+            }
+
+            private void EmitInterceptsLocationAnnotations(List<InterceptorLocationInfo> infoList)
+            {
+                foreach (InterceptorLocationInfo info in infoList)
+                {
+                    _writer.WriteLine($@"[{Identifier.InterceptsLocation}Attribute(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
                 }
             }
 
@@ -237,7 +239,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
 
             private static string GetInitalizeMethodDisplayString(ObjectSpec type) =>
-                $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.DisplayStringWithoutSpecialCharacters}";
+                $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.DisplayString.ToIdentifierSubstring()}";
         }
+    }
+
+    internal static class EmitterExtensions
+    {
+        public static string ToIdentifierSubstring(this string typeDisplayName) =>
+            typeDisplayName
+                .Replace("[]", nameof(Array))
+                .Replace(", ", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace("<", string.Empty)
+                .Replace(">", string.Empty);
     }
 }

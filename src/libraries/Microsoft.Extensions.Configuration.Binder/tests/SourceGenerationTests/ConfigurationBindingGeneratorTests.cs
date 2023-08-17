@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
 
             Diagnostic diagnostic = Assert.Single(d);
             Assert.True(diagnostic.Id == "SYSLIB1102");
-            Assert.Contains("C# 11", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
+            Assert.Contains("C# 12", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
 
@@ -252,9 +252,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
             Assert.Single(r);
 
             string generatedSource = string.Join('\n', r[0].SourceText.Lines.Select(x => x.ToString()));
-            Assert.Contains("public static void Bind(this IConfiguration configuration, object? obj) => BindCoreMain(configuration, obj, configureOptions: null);", generatedSource);
-            Assert.Contains("public static void Bind(this IConfiguration configuration, object? obj, Action<BinderOptions>? configureOptions) => BindCoreMain(configuration, obj, configureOptions);", generatedSource);
-            Assert.Contains("public static void Bind(this IConfiguration configuration, string key, object? obj) => BindCoreMain(configuration?.GetSection(key), obj, configureOptions: null);", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass0(this IConfiguration configuration, object? obj)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass1(this IConfiguration configuration, object? obj, Action<BinderOptions>? configureOptions)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass2(this IConfiguration configuration, string key, object? obj)", generatedSource);
 
             Assert.Empty(d);
         }
@@ -400,7 +400,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
             LanguageVersion langVersion = LanguageVersion.Preview,
             IEnumerable<Assembly>? references = null) =>
             await RoslynTestUtils.RunGenerator(
-                new ConfigurationBindingGenerator() { EmitUniqueHelperNames = false },
+                new ConfigurationBindingGenerator(),
                 references ?? s_compilationAssemblyRefs,
                 new[] { testSourceCode },
                 langVersion: langVersion).ConfigureAwait(false);

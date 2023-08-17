@@ -16,8 +16,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private static readonly string ProjectName = Emitter.s_assemblyName.Name;
 
-        public bool EmitUniqueHelperNames { get; init; } = true;
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
 #if LAUNCH_DEBUGGER
@@ -43,7 +41,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
-        private void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
+        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
         {
             if (inputCalls.IsDefaultOrEmpty)
             {
@@ -59,7 +57,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
             if (parser.GetSourceGenerationSpec() is SourceGenerationSpec spec)
             {
-                Emitter emitter = new(context, spec, EmitUniqueHelperNames);
+                Emitter emitter = new(context, spec);
                 emitter.Emit();
             }
         }
@@ -71,7 +69,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public CompilationData(CSharpCompilation compilation)
             {
-                LanguageVersionIsSupported = compilation.LanguageVersion >= LanguageVersion.Preview;
+                // We don't have a CSharp21 value available yet. Polyfill the value here for forward compat, rather than use the LangugeVersion.Preview enum value.
+                // https://github.com/dotnet/roslyn/blob/168689931cb4e3150641ec2fb188a64ce4b3b790/src/Compilers/CSharp/Portable/LanguageVersion.cs#L218-L232
+                const int LangVersion_CSharp12 = 1200;
+                LanguageVersionIsSupported = (int)compilation.LanguageVersion >= LangVersion_CSharp12;
+
                 if (LanguageVersionIsSupported)
                 {
                     TypeSymbols = new KnownTypeSymbols(compilation);

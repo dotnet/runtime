@@ -59,51 +59,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return obj;
             }
 
-            throw new NotSupportedException($"Unable to bind to type ''{type}'': generator did not detect the type as input.");
-        }
-
-        public static void BindCoreMain(IConfiguration? configuration, object? obj, Action<BinderOptions>? configureOptions)
-        {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
-            BinderOptions? binderOptions = GetBinderOptions(configureOptions);
-
-            if (!HasValueOrChildren(configuration))
-            {
-                return;
-            }
-
-            if (obj is Program.MyClass2 typedObj1)
-            {
-                BindCore(configuration, ref typedObj1, binderOptions);
-                return;
-            }
-
-            throw new NotSupportedException($"Unable to bind to type ''{obj.GetType()}'': generator did not detect the type as input.");
+            throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
         public static void BindCore(IConfiguration configuration, ref Program.MyClass2 obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             ValidateConfigurationKeys(typeof(Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
-            if (configuration["MyInt"] is string value3)
+            if (configuration["MyInt"] is string value1)
             {
-                obj.MyInt = ParseInt(value3, () => configuration.GetSection("MyInt").Path);
+                obj.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
         }
+
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
         public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)

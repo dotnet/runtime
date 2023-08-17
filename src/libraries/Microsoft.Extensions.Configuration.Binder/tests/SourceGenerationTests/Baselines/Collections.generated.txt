@@ -60,92 +60,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return obj;
             }
 
-            throw new NotSupportedException($"Unable to bind to type ''{type}'': generator did not detect the type as input.");
-        }
-
-        public static void BindCoreMain(IConfiguration? configuration, object? obj, Action<BinderOptions>? configureOptions)
-        {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
-            BinderOptions? binderOptions = GetBinderOptions(configureOptions);
-
-            if (!HasValueOrChildren(configuration))
-            {
-                return;
-            }
-
-            if (obj is Program.CustomDictionary<string, int> typedObj1)
-            {
-                BindCore(configuration, ref typedObj1, binderOptions);
-                return;
-            }
-
-            if (obj is Program.CustomList typedObj3)
-            {
-                BindCore(configuration, ref typedObj3, binderOptions);
-                return;
-            }
-
-            if (obj is List<int> typedObj5)
-            {
-                BindCore(configuration, ref typedObj5, binderOptions);
-                return;
-            }
-
-            if (obj is ICollection<int> typedObj7)
-            {
-                BindCore(configuration, ref typedObj7, binderOptions);
-                return;
-            }
-
-            if (obj is IReadOnlyList<int> typedObj9)
-            {
-                BindCore(configuration, ref typedObj9, binderOptions);
-                return;
-            }
-
-            if (obj is Dictionary<string, int> typedObj11)
-            {
-                BindCore(configuration, ref typedObj11, binderOptions);
-                return;
-            }
-
-            if (obj is IDictionary<string, int> typedObj13)
-            {
-                BindCore(configuration, ref typedObj13, binderOptions);
-                return;
-            }
-
-            if (obj is IReadOnlyDictionary<string, int> typedObj15)
-            {
-                BindCore(configuration, ref typedObj15, binderOptions);
-                return;
-            }
-
-            if (obj is Program.MyClassWithCustomCollections typedObj17)
-            {
-                BindCore(configuration, ref typedObj17, binderOptions);
-                return;
-            }
-
-            throw new NotSupportedException($"Unable to bind to type ''{obj.GetType()}'': generator did not detect the type as input.");
+            throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
         public static void BindCore(IConfiguration configuration, ref Program.CustomDictionary<string, int> obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
@@ -157,11 +76,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref Program.CustomList obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
@@ -173,11 +87,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref List<int> obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
@@ -189,11 +98,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref ICollection<int> obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
@@ -205,11 +109,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref IReadOnlyList<int> obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             if (obj is not ICollection<int> temp)
             {
                 return;
@@ -226,11 +125,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref Dictionary<string, int> obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
@@ -242,11 +136,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref IDictionary<string, int> obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
@@ -258,11 +147,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref IReadOnlyDictionary<string, int> obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             if (obj is not IDictionary<string, int> temp)
             {
                 return;
@@ -279,45 +163,41 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref Program.MyClassWithCustomCollections obj, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             ValidateConfigurationKeys(typeof(Program.MyClassWithCustomCollections), s_configKeys_ProgramMyClassWithCustomCollections, configuration, binderOptions);
 
-            if (AsConfigWithChildren(configuration.GetSection("CustomDictionary")) is IConfigurationSection section19)
+            if (AsConfigWithChildren(configuration.GetSection("CustomDictionary")) is IConfigurationSection section1)
             {
-                Program.CustomDictionary<string, int>? temp21 = obj.CustomDictionary;
-                temp21 ??= new Program.CustomDictionary<string, int>();
-                BindCore(section19, ref temp21, binderOptions);
-                obj.CustomDictionary = temp21;
+                Program.CustomDictionary<string, int>? temp3 = obj.CustomDictionary;
+                temp3 ??= new Program.CustomDictionary<string, int>();
+                BindCore(section1, ref temp3, binderOptions);
+                obj.CustomDictionary = temp3;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("CustomList")) is IConfigurationSection section22)
+            if (AsConfigWithChildren(configuration.GetSection("CustomList")) is IConfigurationSection section4)
             {
-                Program.CustomList? temp24 = obj.CustomList;
-                temp24 ??= new Program.CustomList();
-                BindCore(section22, ref temp24, binderOptions);
-                obj.CustomList = temp24;
+                Program.CustomList? temp6 = obj.CustomList;
+                temp6 ??= new Program.CustomList();
+                BindCore(section4, ref temp6, binderOptions);
+                obj.CustomList = temp6;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section25)
+            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section7)
             {
-                IReadOnlyList<int>? temp27 = obj.IReadOnlyList;
-                temp27 = temp27 is null ? new List<int>() : new List<int>(temp27);
-                BindCore(section25, ref temp27, binderOptions);
-                obj.IReadOnlyList = temp27;
+                IReadOnlyList<int>? temp9 = obj.IReadOnlyList;
+                temp9 = temp9 is null ? new List<int>() : new List<int>(temp9);
+                BindCore(section7, ref temp9, binderOptions);
+                obj.IReadOnlyList = temp9;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section28)
+            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section10)
             {
-                IReadOnlyDictionary<string, int>? temp30 = obj.IReadOnlyDictionary;
-                temp30 = temp30 is null ? new Dictionary<string, int>() : temp30.ToDictionary(pair => pair.Key, pair => pair.Value);
-                BindCore(section28, ref temp30, binderOptions);
-                obj.IReadOnlyDictionary = temp30;
+                IReadOnlyDictionary<string, int>? temp12 = obj.IReadOnlyDictionary;
+                temp12 = temp12 is null ? new Dictionary<string, int>() : temp12.ToDictionary(pair => pair.Key, pair => pair.Value);
+                BindCore(section10, ref temp12, binderOptions);
+                obj.IReadOnlyDictionary = temp12;
             }
         }
+
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
         public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)

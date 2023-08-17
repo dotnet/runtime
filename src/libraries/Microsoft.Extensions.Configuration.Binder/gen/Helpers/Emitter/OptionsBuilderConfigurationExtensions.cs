@@ -71,10 +71,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configSectionPath);
 
                 EmitStartBlock($"{Identifier.optionsBuilder}.{Identifier.Configure}<{Identifier.IConfiguration}>(({Identifier.obj}, {Identifier.configuration}) =>");
-
+                EmitCheckForNullArgument_WithBlankLine(Identifier.obj);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
                 _writer.WriteLine($$"""
                     {{Identifier.IConfiguration}} {{Identifier.section}} = string.Equals(string.Empty, {{Identifier.configSectionPath}}, StringComparison.OrdinalIgnoreCase) ? {{Identifier.configuration}} : {{Identifier.configuration}}.{{Identifier.GetSection}}({{Identifier.configSectionPath}});
-                    {{Identifier.BindCoreMain}}({{Identifier.section}}, {{Identifier.obj}}, {{Identifier.configureOptions}});
+                    {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.section}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}), {{Identifier.configureOptions}});
                     """);
 
                 EmitEndBlock(endBraceTrailingSource: ");");
