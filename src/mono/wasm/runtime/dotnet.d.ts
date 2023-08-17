@@ -130,6 +130,18 @@ type MonoConfig = {
      */
     cacheBootResources?: boolean;
     /**
+     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
+     */
+    cachedResourcesPurgeDelay?: number;
+    /**
+     * Configures use of the `integrity` directive for fetching assets
+     */
+    disableIntegrityCheck?: boolean;
+    /**
+     * Configures use of the `no-cache` directive for fetching assets
+     */
+    disableNoCacheFetch?: boolean;
+    /**
     * Enables diagnostic log messages during startup
     */
     diagnosticTracing?: boolean;
@@ -212,18 +224,28 @@ type ResourceList = {
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
 type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
-interface ResourceRequest {
-    name: string;
-    behavior: AssetBehaviors;
-    resolvedUrl?: string;
-    hash?: string | null | "";
-}
 interface LoadingResource {
     name: string;
     url: string;
     response: Promise<Response>;
 }
-interface AssetEntry extends ResourceRequest {
+interface AssetEntry {
+    /**
+     * the name of the asset, including extension.
+     */
+    name: string;
+    /**
+     * determines how the asset will be handled once loaded
+     */
+    behavior: AssetBehaviors;
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * the integrity hash of the asset (if any)
+     */
+    hash?: string | null | "";
     /**
      * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
      */
@@ -244,7 +266,12 @@ interface AssetEntry extends ResourceRequest {
      * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
-    buffer?: ArrayBuffer;
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>;
     /**
      * It's metadata + fetch-like Promise<Response>
      * If provided, the runtime doesn't have to initiate the download. It would just await the response.
@@ -442,4 +469,4 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

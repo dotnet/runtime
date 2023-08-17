@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.Metrics;
+using Microsoft.Extensions.Diagnostics.Metrics.Configuration;
 using System;
 using System.Diagnostics.Metrics;
 
@@ -25,9 +26,45 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(services));
             }
 
+            services.AddOptions();
+
             services.TryAddSingleton<IMeterFactory, DefaultMeterFactory>();
+            services.TryAddSingleton<MetricsSubscriptionManager>();
+            // Make sure the subscription manager is started when the host starts.
+            // The host will trigger options validation.
+            services.AddOptions<NoOpOptions>().Configure<MetricsSubscriptionManager>((_, manager) => manager.Initialize()).ValidateOnStart();
+
+            services.TryAddSingleton<IMetricListenerConfigurationFactory, MetricListenerConfigurationFactory>();
 
             return services;
         }
+
+        /// <summary>
+        /// Adds metrics services to the specified <see cref="IServiceCollection" />.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <param name="configure">A callback to configure the <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        public static IServiceCollection AddMetrics(this IServiceCollection services, Action<IMetricsBuilder> configure)
+        {
+            if (configure is null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+
+            services.AddMetrics();
+
+            var builder = new MetricsBuilder(services);
+            configure(builder);
+
+            return services;
+        }
+
+        private sealed class MetricsBuilder(IServiceCollection services) : IMetricsBuilder
+        {
+            public IServiceCollection Services { get; } = services;
+        }
+
+        private sealed class NoOpOptions { }
     }
 }

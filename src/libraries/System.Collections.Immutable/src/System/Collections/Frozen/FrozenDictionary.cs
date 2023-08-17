@@ -41,7 +41,7 @@ namespace System.Collections.Frozen
         public static FrozenDictionary<TKey, TSource> ToFrozenDictionary<TSource, TKey>(
             this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer = null)
             where TKey : notnull =>
-            CreateFromDictionary(source.ToDictionary(keySelector, comparer));
+            source.ToDictionary(keySelector, comparer).ToFrozenDictionary(comparer);
 
         /// <summary>Creates a <see cref="FrozenDictionary{TKey, TElement}"/> from an <see cref="IEnumerable{TSource}"/> according to specified key selector and element selector functions.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -55,7 +55,7 @@ namespace System.Collections.Frozen
         public static FrozenDictionary<TKey, TElement> ToFrozenDictionary<TSource, TKey, TElement>(
             this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer = null)
             where TKey : notnull =>
-            CreateFromDictionary(source.ToDictionary(keySelector, elementSelector, comparer));
+            source.ToDictionary(keySelector, elementSelector, comparer).ToFrozenDictionary(comparer);
 
         /// <summary>
         /// Extracts from the source either an existing <see cref="FrozenDictionary{TKey,TValue}"/> instance or a <see cref="Dictionary{TKey,TValue}"/>
@@ -113,6 +113,8 @@ namespace System.Collections.Frozen
         private static FrozenDictionary<TKey, TValue> CreateFromDictionary<TKey, TValue>(Dictionary<TKey, TValue> source)
             where TKey : notnull
         {
+            Debug.Assert(source.Count > 0, "Empty sources should have been filtered out by caller");
+
             IEqualityComparer<TKey> comparer = source.Comparer;
 
             // Optimize for value types when the default comparer is being used. In such a case, the implementation
@@ -431,7 +433,7 @@ namespace System.Collections.Frozen
         /// <summary>Gets either a reference to a <typeparamref name="TValue"/> in the dictionary or a null reference if the key does not exist in the dictionary.</summary>
         /// <param name="key">The key used for lookup.</param>
         /// <returns>A reference to a <typeparamref name="TValue"/> in the dictionary or a null reference if the key does not exist in the dictionary.</returns>
-        /// <remarks>The null reference can be detected by calling <see cref="Unsafe.IsNullRef{T}(ref T)"/>.</remarks>
+        /// <remarks>The null reference can be detected by calling <see cref="Unsafe.IsNullRef"/>.</remarks>
         public ref readonly TValue GetValueRefOrNullRef(TKey key)
         {
             if (key is null)

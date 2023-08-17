@@ -837,14 +837,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitStartBlock($"if ({sectionValidationCall} is {Identifier.IConfigurationSection} {sectionIdentifier})");
 
-                bool success = !EmitInitException(effectiveMemberType);
-                if (success)
+                bool canInit = !EmitInitException(effectiveMemberType);
+                if (canInit)
                 {
                     EmitBindCoreCallForMember(member, memberAccessExpr, sectionIdentifier, canSet);
                 }
 
                 EmitEndBlock();
-                return success;
+                return canInit;
             }
 
             private void EmitBindCoreCallForMember(
@@ -856,8 +856,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 TypeSpec memberType = member.Type;
                 TypeSpec effectiveMemberType = memberType.EffectiveType;
-                string effectiveMemberTypeDisplayString = effectiveMemberType.MinimalDisplayString;
-                bool canGet = member.CanGet;
 
                 string tempIdentifier = GetIncrementalIdentifier(Identifier.temp);
                 InitializationKind initKind;
@@ -871,6 +869,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
 
                     Debug.Assert(canSet);
+                    string effectiveMemberTypeDisplayString = effectiveMemberType.MinimalDisplayString;
                     initKind = InitializationKind.None;
 
                     if (memberType.SpecKind is TypeSpecKind.Nullable)
@@ -889,7 +888,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     targetObjAccessExpr = tempIdentifier;
                 }
-                else if (canGet)
+                else if (member.CanGet)
                 {
                     targetObjAccessExpr = memberAccessExpr;
                     initKind = InitializationKind.AssignmentWithNullCheck;

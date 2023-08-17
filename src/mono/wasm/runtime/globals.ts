@@ -5,6 +5,8 @@
 /// <reference path="./types/v8.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
+import gitHash from "consts:gitHash";
+
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
 
@@ -38,6 +40,7 @@ export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     linkerEnableBrowserProfiler = internals.linkerEnableBrowserProfiler;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
+    runtimeHelpers.moduleGitHash = internals.gitHash;
 }
 
 // NOTE: this is called AFTER the config is loaded
@@ -53,6 +56,7 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     exportedRuntimeAPI = globalObjects.api;
 
     Object.assign(runtimeHelpers, {
+        gitHash,
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
         memorySnapshotSkippedOrDone: createPromiseController<void>(),

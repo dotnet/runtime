@@ -105,14 +105,6 @@ namespace Microsoft.Interop
 
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
         {
-            if (marshalKind is ByValueContentsMarshalKind.In)
-            {
-                diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
-                {
-                    NotSupportedDetails = SR.InAttributeOnlyNotSupportedOnPinnedParameters
-                };
-                return ByValueMarshalKindSupport.NotSupported;
-            }
             return ByValueMarshalKindSupportDescriptor.PinnedParameter.GetSupport(marshalKind, info, context, out diagnostic);
         }
     }

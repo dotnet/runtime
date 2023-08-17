@@ -140,7 +140,7 @@ public class TestSummary
         var result = new TestResult(name, containingTypeName, methodName, duration, null, null, output);
         _testResults.Add(result);
 
-        outTw.WriteLine($"{0:HH:mm:ss.fff} Passed test: {1}", System.DateTime.Now, name);
+        outTw.WriteLine("{0:HH:mm:ss.fff} Passed test: {1}", System.DateTime.Now, name);
         statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
         tempLogSw.WriteLine(result.ToXmlString());
         outTw.Flush();

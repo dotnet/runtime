@@ -1188,15 +1188,19 @@ private:
 #ifdef TARGET_ARM64
                 else if (indir->TypeIs(TYP_SIMD8))
                 {
-                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0))
+                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0) &&
+                        m_compiler->IsBaselineSimdIsaSupported())
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
                 }
 #endif
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-                else if (indir->TypeIs(TYP_SIMD16, TYP_SIMD32) && (genTypeSize(indir) * 2 == genTypeSize(varDsc)) &&
-                         ((offset % genTypeSize(indir)) == 0))
+                else if (((indir->TypeIs(TYP_SIMD16) &&
+                           m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                          (indir->TypeIs(TYP_SIMD32) &&
+                           m_compiler->IsBaselineVector512IsaSupportedOpportunistically())) &&
+                         (genTypeSize(indir) * 2 == genTypeSize(varDsc)) && ((offset % genTypeSize(indir)) == 0))
                 {
                     return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                 }

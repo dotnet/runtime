@@ -1,6 +1,20 @@
 {
   "architectures": [
     {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "arch-mips64"
+    },
+    {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "arch-s390x"
+    },
+    {
       "lead": "lewing",
       "owners": [
         "BrzVlad",

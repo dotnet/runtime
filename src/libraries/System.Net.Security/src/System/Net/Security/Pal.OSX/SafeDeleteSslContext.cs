@@ -95,7 +95,7 @@ namespace System.Net
                 throw;
             }
 
-            if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
+            if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer && !TargetHostNameHelper.IsValidAddress(sslAuthenticationOptions.TargetHost))
             {
                 Interop.AppleCrypto.SslSetTargetName(_sslContext, sslAuthenticationOptions.TargetHost);
             }

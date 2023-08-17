@@ -605,7 +605,7 @@ namespace Microsoft.Extensions
         {
             public string Namespace { get; set; }
 
-            public Dictionary<string, QueueProperties> Queues { get; set; } = new();
+            public Dictionary<string, QueueProperties>? Queues { get; set; } = new();
         }
 
         public class QueueProperties

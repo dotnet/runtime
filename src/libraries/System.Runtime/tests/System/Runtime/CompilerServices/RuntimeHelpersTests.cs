@@ -228,12 +228,8 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(int).MakePointerType(), typeof(ArgumentException) }; // pointer
             yield return new[] { typeof(int).MakeByRefType(), typeof(ArgumentException) }; // byref
 
-            // https://github.com/dotnet/runtime/issues/71095
-            if (!PlatformDetection.IsMonoRuntime)
-            {
-                yield return new[] { FunctionPointerType(), typeof(ArgumentException) }; // function pointer
-                static unsafe Type FunctionPointerType() => typeof(delegate*<void>);
-            }
+            yield return new[] { FunctionPointerType(), typeof(ArgumentException) }; // function pointer
+            static unsafe Type FunctionPointerType() => typeof(delegate*<void>);
 
             yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref-like type
             yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref-like type

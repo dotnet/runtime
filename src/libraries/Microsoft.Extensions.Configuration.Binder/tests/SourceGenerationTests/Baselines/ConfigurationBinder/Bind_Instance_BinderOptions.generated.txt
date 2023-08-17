@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section2)
             {
-                List<int> temp4 = obj.MyList;
+                List<int>? temp4 = obj.MyList;
                 temp4 ??= new List<int>();
                 BindCore(section2, ref temp4, binderOptions);
                 obj.MyList = temp4;
@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section5)
             {
-                Dictionary<string, string> temp7 = obj.MyDictionary;
+                Dictionary<string, string>? temp7 = obj.MyDictionary;
                 temp7 ??= new Dictionary<string, string>();
                 BindCore(section5, ref temp7, binderOptions);
                 obj.MyDictionary = temp7;
@@ -107,7 +107,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("MyComplexDictionary")) is IConfigurationSection section8)
             {
-                Dictionary<string, Program.MyClass2> temp10 = obj.MyComplexDictionary;
+                Dictionary<string, Program.MyClass2>? temp10 = obj.MyComplexDictionary;
                 temp10 ??= new Dictionary<string, Program.MyClass2>();
                 BindCore(section8, ref temp10, binderOptions);
                 obj.MyComplexDictionary = temp10;

@@ -28,45 +28,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 /*++
 Function:
-  SetErrorMode
-
-The SetErrorMode function controls whether the system will handle the
-specified types of serious errors, or whether the process will handle
-them.
-
-Parameters
-
-uMode
-       [in] Specifies the process error mode. This parameter can be one or more of the following values.
-
-        Value                     Action
-        0                         Use the system default, which is to display all error dialog boxes.
-        SEM_FAILCRITICALERRORS    The system does not display the critical-error-handler message box. Instead,
-                                  the system sends the error to the calling process.
-        SEM_NOOPENFILEERRORBOX    The system does not display a message box when it fails to find a file. Instead,
-                                  the error is returned to the calling process.
-
-Return Values
-
-The return value is the previous state of the error-mode bit flags.
-
---*/
-UINT
-PALAPI
-SetErrorMode(
-         IN UINT uMode)
-{
-  PERF_ENTRY(SetErrorMode);
-  ENTRY("SetErrorMode (uMode=%#x)\n", uMode);
-
-  LOGEXIT("SetErrorMode returns UINT 0\n");
-  PERF_EXIT(SetErrorMode);
-  return 0;
-}
-
-
-/*++
-Function:
   GetLastError
 
 GetLastError

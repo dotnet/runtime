@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
@@ -134,12 +135,6 @@ namespace System.Buffers
                 return new Any5SearchValues<char, short>(shortValues);
             }
 
-            if (maxInclusive < 256)
-            {
-                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported
-                return new Latin1CharSearchValues(values);
-            }
-
             scoped ReadOnlySpan<char> probabilisticValues = values;
 
             if (Vector128.IsHardwareAccelerated && values.Length < 8)
@@ -160,6 +155,13 @@ namespace System.Buffers
                 return (Ssse3.IsSupported || PackedSimd.IsSupported) && probabilisticValues.Contains('\0')
                     ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(probabilisticValues)
                     : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(probabilisticValues);
+            }
+
+            // We prefer using the ProbabilisticMap over Latin1CharSearchValues if the former is vectorized.
+            if (!(Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && maxInclusive < 256)
+            {
+                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported.
+                return new Latin1CharSearchValues(values);
             }
 
             return new ProbabilisticCharSearchValues(probabilisticValues);

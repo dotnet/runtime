@@ -100,7 +100,7 @@ public static unsafe class ComInterfaces
         }
         protected override object CreateObject(nint ptr, CreateObjectFlags flags)
         {
-            int hr = Marshal.QueryInterface(ptr, ref IComInterface1.IID, out IntPtr IComInterfaceImpl);
+            int hr = Marshal.QueryInterface(ptr, in IComInterface1.IID, out IntPtr IComInterfaceImpl);
             if (hr != 0)
             {
                 return null;
