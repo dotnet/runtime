@@ -53,7 +53,7 @@ public class JittedMethodsCountingTest
     private static bool IsReadyToRunEnvSet()
     {
         string? dotnetR2R = Environment.GetEnvironmentVariable("DOTNET_ReadyToRun");
-        return (dotnetR2R is null || dotnetR2R == "1") ? true : false;
+        return (string.IsNullOrEmpty(dotnetR2R) || dotnetR2R == "1") ? true : false;
     }
 
     private static int RunHelloWorldApp(string appName, string jitOutputFile)
