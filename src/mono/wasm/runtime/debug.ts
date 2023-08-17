@@ -149,6 +149,11 @@ export function mono_wasm_debugger_attached(): void {
     if (runtimeHelpers.waitForDebugger == -1)
         runtimeHelpers.waitForDebugger = 1;
     cwraps.mono_wasm_set_is_debugger_attached(true);
+    if (MonoWasmThreads) {
+        const wasmMemory = Module.getMemory();
+        wasmMemory.grow((wasmMemory.buffer.byteLength + 65535) >>> 16);
+        runtimeHelpers.updateMemoryViews();
+    }
 }
 
 export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
