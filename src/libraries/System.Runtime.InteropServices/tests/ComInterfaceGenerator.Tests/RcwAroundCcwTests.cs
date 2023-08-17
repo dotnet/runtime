@@ -273,8 +273,7 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/90621")]
-        public void StatefulPinnedMarshalling_EnforcePinning()
+        public void StatefulPinnedMarshalling()
         {
             var obj = CreateWrapper<StatefulPinnedMarshalling, IStatefulPinnedMarshalling>();
             var data = new StatefulPinnedType() { I = 4 };
@@ -288,13 +287,6 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(4, data.I);
 
             StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.EnableNonPinnedPath();
-        }
-
-        [Fact]
-        public void StatefulPinnedMarshalling()
-        {
-            var obj = CreateWrapper<StatefulPinnedMarshalling, IStatefulPinnedMarshalling>();
-            StatefulPinnedType data;
 
             obj.MethodOut(out data);
             Assert.Equal(102, data.I);

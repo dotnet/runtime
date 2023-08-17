@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -58,41 +59,54 @@ namespace SharedTypes.ComInterfaces
             Span<byte> buffer;
             nint _ptr;
             bool _canFree;
+            bool _isPinned;
+            ref StatefulPinnedNative _refNativeStruct;
 
             public void FromManaged(StatefulPinnedType managed)
             {
                 _hasManaged = true;
                 _managed = managed;
-                buffer = new byte[sizeof(StatefulPinnedNative)];
             }
 
             public ref StatefulPinnedNative GetPinnableReference()
             {
                 if (!_hasManaged)
                     throw new InvalidOperationException();
-                StatefulPinnedNative native = new() { I = _managed.I };
-                MemoryMarshal.Write(buffer, in native);
-                _canFree = true;
-                return ref MemoryMarshal.AsRef<StatefulPinnedNative>(buffer);
+                buffer = new byte[sizeof(StatefulPinnedNative)];
+                _isPinned = true;
+                _refNativeStruct = ref MemoryMarshal.AsRef<StatefulPinnedNative>(buffer);
+                return ref _refNativeStruct;
             }
 
             public StatefulPinnedNative* ToUnmanaged()
             {
-                if (s_mustPin)
-                    throw new InvalidOperationException("Expected to pin, but is instead converting with default ToUnmanaged.");
                 if (!_hasManaged)
                     throw new InvalidOperationException();
-                _ptr = Marshal.AllocHGlobal(sizeof(StatefulPinnedNative));
+
                 _canFree = true;
+                if (_isPinned)
+                {
+                    _refNativeStruct = new StatefulPinnedNative() { I = _managed.I };
+                    return (StatefulPinnedNative*)Unsafe.AsPointer(ref _refNativeStruct);
+                }
+
+                if (s_mustPin)
+                    throw new InvalidOperationException("Expected to pin, but is instead converting with default ToUnmanaged.");
+
+                _ptr = Marshal.AllocHGlobal(sizeof(StatefulPinnedNative));
                 *(StatefulPinnedNative*)_ptr = new StatefulPinnedNative() { I = _managed.I };
                 return (StatefulPinnedNative*)_ptr;
             }
 
             public void Free()
             {
-                if (!_canFree) throw new InvalidOperationException();
-                if (_ptr != 0)
+                if (!_canFree)
+                    throw new InvalidOperationException();
+
+                if (!_isPinned && _ptr != 0)
+                {
                     Marshal.FreeHGlobal(_ptr);
+                }
             }
         }
 
