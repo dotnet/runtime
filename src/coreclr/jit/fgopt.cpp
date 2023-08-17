@@ -6758,7 +6758,7 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
 
             if (((tree1Flags & (GTF_CALL | GTF_EXCEPT)) != 0) && pred->HasPotentialEHSuccs(this))
             {
-                JITDUMP("  cannot reorder assignment with exception throwing tree and potential EH successor\n");
+                JITDUMP("  cannot reorder store with exception throwing tree and potential EH successor\n");
                 return false;
             }
         }
