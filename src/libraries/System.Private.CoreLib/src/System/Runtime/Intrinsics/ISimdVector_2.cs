@@ -552,5 +552,11 @@ namespace System.Runtime.Intrinsics
         /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf Xor(TSelf left, TSelf right) => left ^ right;
+
+        //
+        // New Surface Area
+        //
+
+        static abstract int IndexOfLastMatch(TSelf vector);
     }
 }

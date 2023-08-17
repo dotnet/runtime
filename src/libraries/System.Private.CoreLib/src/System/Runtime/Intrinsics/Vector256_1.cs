@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -656,5 +657,15 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Xor(Vector256<T> left, Vector256<T> right) => Vector256.Xor(left, right);
+
+        //
+        // New Surface Area
+        //
+
+        static int ISimdVector<Vector256<T>, T>.IndexOfLastMatch(Vector256<T> vector)
+        {
+            uint mask = vector.ExtractMostSignificantBits();
+            return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
+        }
     }
 }

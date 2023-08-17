@@ -732,5 +732,15 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Xor(Vector64<T> left, Vector64<T> right) => Vector64.Xor(left, right);
+
+        //
+        // New Surface Area
+        //
+
+        static int ISimdVector<Vector64<T>, T>.IndexOfLastMatch(Vector64<T> vector)
+        {
+            uint mask = vector.ExtractMostSignificantBits();
+            return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
+        }
     }
 }
