@@ -153,7 +153,7 @@ export function mono_wasm_debugger_attached(): void {
     cwraps.mono_wasm_set_is_debugger_attached(true);
     if (MonoWasmThreads) {
         const wasmMemory = Module.getMemory();
-        wasmMemory.grow((wasmMemory.buffer.byteLength + 65535) >>> 16);
+        wasmMemory.grow(wasmMemory.buffer.byteLength >>> 16);
         runtimeHelpers.updateMemoryViews();
     }
 }
