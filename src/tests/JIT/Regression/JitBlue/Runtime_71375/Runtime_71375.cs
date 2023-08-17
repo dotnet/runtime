@@ -10,10 +10,8 @@ public class Runtime_71375
     [Fact]
     public static int TestEntryPoint()
     {
-        // At the time of writing this test, the calling convention for incoming vector parameters on
-        // Windows ARM64 was broken, so only the fact that "Problem" compiled without asserts was
-        // checked. If/once the above is fixed, this test should be changed to actually call "Problem".
-        RuntimeHelpers.PrepareMethod(typeof(Runtime_71375).GetMethod("Problem").MethodHandle);
+        if (Problem())
+            return 101;
 
         return 100;
     }

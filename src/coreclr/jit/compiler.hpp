@@ -2688,6 +2688,12 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
             default:
                 break;
         }
+
+        if (varTypeIsSIMD(type))
+        {
+            // Vectors also get passed in int registers. Use TYP_INT.
+            return TYP_INT;
+        }
     }
 #endif // defined(TARGET_ARMARCH)
     return type;
