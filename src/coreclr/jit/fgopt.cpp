@@ -6755,6 +6755,12 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
                 JITDUMP("  cannot reorder store to exposed local with any side effect\n");
                 return false;
             }
+
+            if (((tree1Flags & (GTF_CALL | GTF_EXCEPT)) != 0) && pred->HasPotentialEHSuccs(this))
+            {
+                JITDUMP("  cannot reorder assignment with exception throwing tree and potential EH successor\n");
+                return false;
+            }
         }
 
         if (gtHasRef(tree1, lcl->GetLclNum()))
@@ -6864,27 +6870,23 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     bool      madeChanges = false;
     int const mergeLimit  = 50;
 
-    const bool isEnabled = JitConfig.JitEnableTailMerge() > 0;
+    const bool isEnabled = JitConfig.JitEnableHeadTailMerge() > 0;
     if (!isEnabled)
     {
-        JITDUMP("Tail merge disabled by JitEnableTailMerge\n");
+        JITDUMP("Head and tail merge disabled by JitEnableHeadTailMerge\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
-    static ConfigMethodRange JitEnableTailMergeRange;
-    JitEnableTailMergeRange.EnsureInit(JitConfig.JitEnableTailMergeRange());
-    const unsigned hash    = impInlineRoot()->info.compMethodHash();
-    const bool     inRange = JitEnableTailMergeRange.Contains(hash);
-#else
-    const bool inRange = true;
-#endif
-
-    if (!inRange)
+    static ConfigMethodRange JitEnableHeadTailMergeRange;
+    JitEnableHeadTailMergeRange.EnsureInit(JitConfig.JitEnableHeadTailMergeRange());
+    const unsigned hash = impInlineRoot()->info.compMethodHash();
+    if (!JitEnableHeadTailMergeRange.Contains(hash))
     {
-        JITDUMP("Tail merge disabled by JitEnableTailMergeRange\n");
+        JITDUMP("Tail merge disabled by JitEnableHeadTailMergeRange\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
+#endif
 
     ArrayStack<PredSuccInfo> predSuccInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<PredSuccInfo> matchedPredSuccInfo(getAllocator(CMK_ArrayStack));
@@ -7170,16 +7172,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
     auto iterateTailMerge = [&](BasicBlock* block) -> void {
 
-        int  numOpts = 0;
-        bool retry   = true;
+        int numOpts = 0;
 
-        while (retry)
+        while (tailMerge(block))
         {
-            retry = tailMerge(block);
-            if (retry)
-            {
-                numOpts++;
-            }
+            numOpts++;
         }
 
         if (numOpts > 0)
@@ -7317,7 +7314,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, ArrayStack<PredSuccInfo>& ma
 bool Compiler::fgHeadMerge(BasicBlock* block, ArrayStack<PredSuccInfo>& matchedPredSuccInfo, bool early)
 {
     bool madeChanges = false;
-    int numOpts = 0;
+    int  numOpts     = 0;
     while (fgTryOneHeadMerge(block, matchedPredSuccInfo, early))
     {
         madeChanges = true;

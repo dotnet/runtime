@@ -676,6 +676,8 @@ inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
         return false;
     }
 
+    // Throwing in a filter is the same as returning "continue search", which
+    // causes enclosed finally/fault handlers to be executed.
     return hndDesc->InFilterRegionBBRange(this);
 }
 
