@@ -721,7 +721,8 @@ HRESULT EEConfig::sync()
         fTieredCompilation_CallCounting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCounting) != 0;
 
         DWORD tieredCompilation_ConfiguredCallCountThreshold =
-            CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountThreshold);
+            Configuration::GetKnobDWORDValue(W("System.Runtime.TC_CallCountThreshold"), CLRConfig::EXTERNAL_TC_CallCountThreshold);
+
         if (tieredCompilation_ConfiguredCallCountThreshold == 0)
         {
             tieredCompilation_CallCountThreshold = 1;
@@ -735,8 +736,9 @@ HRESULT EEConfig::sync()
             tieredCompilation_CallCountThreshold = (UINT16)tieredCompilation_ConfiguredCallCountThreshold;
         }
 
-        tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
-
+        tieredCompilation_CallCountingDelayMs =
+            Configuration::GetKnobDWORDValue(W("System.Runtime.TC_CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
+        
         bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
         {
