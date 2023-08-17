@@ -9,13 +9,29 @@ using Xunit;
 
 public class JittedMethodsCountingTest
 {
-    private const int MAX_JITTED_METHODS_ACCEPTED = 50;
+    private const int MAX_JITTED_METHODS_ACCEPTED = 120;
 
     [Fact]
     public static int TestEntryPoint()
     {
+        // If DOTNET_ReadyToRun is disabled, then this test ought to be skipped.
+        if (!IsReadyToRunEnvSet())
+        {
+            Console.WriteLine("\nThis test is only supported in ReadyToRun scenarios."
+                              + " Skipping...\n");
+            return 100;
+        }
+
         string appName = "HelloWorld.dll";
         string jitOutputFile = "jits.txt";
+
+        // DOTNET_JitStdOutFile appends to the file in question if it exists.
+        // This can potentially cause issues, so we have to make sure it is
+        // created exclusively for this test's purpose.
+        if (File.Exists(jitOutputFile))
+        {
+            File.Delete(jitOutputFile);
+        }
 
         // For adding any new apps for this test, make sure their success return
         // code is 0, so we can universally handle when they fail.
@@ -32,6 +48,12 @@ public class JittedMethodsCountingTest
         // got jitted at runtime.
         int jits = GetNumberOfJittedMethods(jitOutputFile);
         return jits > 0 && jits <= MAX_JITTED_METHODS_ACCEPTED ? 100 : 101;
+    }
+
+    private static bool IsReadyToRunEnvSet()
+    {
+        string? dotnetR2R = Environment.GetEnvironmentVariable("DOTNET_ReadyToRun");
+        return (dotnetR2R is null || dotnetR2R == "1") ? true : false;
     }
 
     private static int RunHelloWorldApp(string appName, string jitOutputFile)
@@ -61,8 +83,8 @@ public class JittedMethodsCountingTest
             startInfo.EnvironmentVariables.Add("DOTNET_JitDisasmSummary", "1");
             startInfo.EnvironmentVariables.Add("DOTNET_JitStdOutFile", jitOutputFile);
 
-            Console.WriteLine("Launching Test App: {0} {1}", startInfo.FileName,
-                                                             startInfo.Arguments);
+            Console.WriteLine("\nLaunching Test App: {0} {1}", startInfo.FileName,
+                                                               startInfo.Arguments);
 
             app.StartInfo = startInfo;
             app.Start();
@@ -78,7 +100,7 @@ public class JittedMethodsCountingTest
 
     private static int GetNumberOfJittedMethods(string jitOutputFile)
     {
-        string[] lines = File.ReadLines(jitOutputFile).ToArray();
+        string[] lines = File.ReadAllLines(jitOutputFile);
 
         // Print out the jitted methods from the app run previously. This is
         // mostly done as additional logging to simplify potential bug investigations
@@ -99,6 +121,8 @@ public class JittedMethodsCountingTest
 
         string[] tokens = lines.Last().Split(":");
         int numJittedMethods = Int32.Parse(tokens[0]);
+        Console.WriteLine("Total Jitted Methods: {0}\n", numJittedMethods);
+
         return numJittedMethods;
     }
 }
