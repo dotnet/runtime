@@ -193,7 +193,7 @@
     <value>C# language version not supported by the source generator.</value>
   </data>
   <data name="JsonUnsupportedLanguageVersionMessageFormat" xml:space="preserve">
-    <value>The System.Text.Json source generator is not available in C# '{0}'. Please use language version '{1}' or greater.</value>
+    <value>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</value>
   </data>
   <data name="JsonConstructorInaccessibleTitle" xml:space="preserve">
     <value>Constructor annotated with JsonConstructorAttribute is inaccessible.</value>
