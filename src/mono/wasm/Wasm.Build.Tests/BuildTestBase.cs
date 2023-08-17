@@ -233,7 +233,7 @@ namespace Wasm.Build.Tests
             {
                 // unicode chars in output on Windows are decoded in unknown way, so finding utf8 string is more complicated
                 string projectNameCore = buildArgs.ProjectName.Trim(new char[] {s_unicodeChar});
-                Assert.Matches(@$"AOT: image '{projectNameCore}\S+' found.", output);
+                TestUtils.AssertMatches(@$"AOT: image '{projectNameCore}\S+' found.", output, contains: buildArgs.AOT);
             }
             else
             {
