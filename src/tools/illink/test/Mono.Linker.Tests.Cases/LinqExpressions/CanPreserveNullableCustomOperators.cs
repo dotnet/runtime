@@ -5,6 +5,7 @@ namespace Mono.Linker.Tests.Cases.LinqExpressions
 {
 	[SetupCompileArgument ("/unsafe")]
 	[SetupLinkerArgument ("--used-attrs-only")]
+ 	[SetupLinkerArgument ("--skip-unresolved", "false")]
 	public class CanPreserveNullableCustomOperators
 	{
 		public static void Main ()
