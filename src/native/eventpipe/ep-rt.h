@@ -485,10 +485,6 @@ ep_rt_utf8_string_compare_ignore_case (
 	const ep_char8_t *str2);
 
 static
-bool
-ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str);
-
-static
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str);
 

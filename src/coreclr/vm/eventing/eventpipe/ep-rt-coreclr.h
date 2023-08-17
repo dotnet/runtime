@@ -1335,24 +1335,6 @@ ep_rt_utf8_string_compare_ignore_case (
 
 static
 inline
-bool
-ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	if (str == NULL)
-		return true;
-
-	while (*str) {
-		if (!isspace (*str))
-			return false;
-		str++;
-	}
-	return true;
-}
-
-static
-inline
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str)
 {

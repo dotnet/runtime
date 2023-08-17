@@ -9,6 +9,24 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-types.h"
 
+#include <ctype.h> // isspace
+
+static
+inline
+bool
+ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
+{
+	if (str == NULL)
+		return true;
+
+	while (*str) {
+		if (!isspace(*str))
+			return false;
+		str++;
+	}
+	return true;
+}
+
 ep_char16_t *
 ep_rt_utf8_to_utf16le_string (
 	const ep_char8_t *str,
