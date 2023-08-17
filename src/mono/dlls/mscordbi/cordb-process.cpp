@@ -278,8 +278,16 @@ HRESULT CordbProcess::GetHandle(HPROCESS* phProcessHandle)
 
 HRESULT CordbProcess::GetThread(DWORD dwThreadId, ICorDebugThread** ppThread)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbProcess - GetThread - NOT IMPLEMENTED\n"));
-    return S_OK;
+    LOG((LF_CORDB, LL_INFO100000, "CordbProcess - GetThread - IMPLEMENTED\n"));
+    HRESULT hr = S_OK;
+
+    CordbThread* thread    = FindThread(dwThreadId);
+    if (thread == NULL)
+        hr = E_INVALIDARG;
+
+    *ppThread = thread;
+
+    return hr;
 }
 
 HRESULT CordbProcess::EnumerateObjects(ICorDebugObjectEnum** ppObjects)
