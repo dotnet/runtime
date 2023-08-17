@@ -1582,6 +1582,63 @@ namespace __OptionValidationStaticInstances
         Assert.Equal(DiagDescriptors.NotEnumerableType.Id, diagnostics[0].Id);
     }
 
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public async Task LanguageVersionTest()
+    {
+        string source = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            public class FirstModel
+            {
+                [Required]
+                public string? P1 { get; set; }
+            }
+
+            [OptionsValidator]
+            public partial class FirstModelValidator : IValidateOptions<FirstModel>
+            {
+            }
+        """;
+
+        Assembly [] refAssemblies = new []
+        {
+            Assembly.GetAssembly(typeof(RequiredAttribute)),
+            Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
+            Assembly.GetAssembly(typeof(IValidateOptions<object>)),
+        };
+
+        // Run the generator with C# 7.0 and verify that it fails.
+        var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+                new Generator(), refAssemblies.ToArray(), new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp7).ConfigureAwait(false);
+
+        Assert.NotEmpty(diagnostics);
+        Assert.Equal("SYSLIB1216", diagnostics[0].Id);
+        Assert.Empty(generatedSources);
+
+        // Run the generator with C# 8.0 and verify that it succeeds.
+        (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+            new Generator(), refAssemblies.ToArray(), new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp8).ConfigureAwait(false);
+
+        Assert.Empty(diagnostics);
+        Assert.Single(generatedSources);
+
+        // Compile the generated code with C# 7.0 and verify that it fails.
+        CSharpParseOptions parseOptions = new CSharpParseOptions(LanguageVersion.CSharp7);
+        SyntaxTree syntaxTree = SyntaxFactory.ParseSyntaxTree(generatedSources[0].SourceText.ToString(), parseOptions);
+        var diags = syntaxTree.GetDiagnostics().ToArray();
+        Assert.Equal(1, diags.Length);
+        // error CS8107: Feature 'nullable reference types' is not available in C# 7.0. Please use language version 8.0 or greater.
+        Assert.Equal("CS8107", diags[0].Id);
+
+        // Compile the generated code with C# 8.0 and verify that it succeeds.
+        parseOptions = new CSharpParseOptions(LanguageVersion.CSharp8);
+        syntaxTree = SyntaxFactory.ParseSyntaxTree(generatedSources[0].SourceText.ToString(), parseOptions);
+        diags = syntaxTree.GetDiagnostics().ToArray();
+        Assert.Equal(0, diags.Length);
+    }
+
     private static CSharpCompilation CreateCompilationForOptionsSource(string assemblyName, string source, string? refAssemblyPath = null)
     {
         // Ensure the generated source compiles
