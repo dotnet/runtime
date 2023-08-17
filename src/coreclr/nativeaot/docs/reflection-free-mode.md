@@ -80,7 +80,7 @@ And here for CustomAttributes (will return an empty array):
 
 ## Internal implementation
 
-The reflection-free mode is implemented as a collection of features that can be controlled individually via the AOT compiler command line options for experiments, including:
+The reflection-free mode is implemented as a collection of features that can be controlled individually via the AOT compiler command line options for experiments and troubleshooting, including:
 - `--scanreflection` (also exposed as `IlcScanReflection` build property): Infer reflection usage by code analysis. This feature is disabled for reflection-free mode.
 - `--reflectiondata:none`: Disables generation of reflection data.
 - `--feature:System.Collections.Generic.DefaultComparers=false`: Disables `EqualityComparer<T>.Default` and `Comparer<T>.Default` optimizations that are based on reflection.
