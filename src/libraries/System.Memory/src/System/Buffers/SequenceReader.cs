@@ -246,8 +246,6 @@ namespace System.Buffers
                 return;
             }
 
-            Consumed -= count;
-
             if (_currentSpanIndex >= count)
             {
                 _currentSpanIndex -= (int)count;
@@ -276,7 +274,7 @@ namespace System.Buffers
             this = new(_sequence);
 
             // reinstate the length
-            Unsafe.AsRef(_length) = length;
+            Unsafe.AsRef(in _length) = length;
         }
 
         /// <summary>
