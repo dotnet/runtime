@@ -6674,6 +6674,40 @@ void Compiler::fgCompDominatedByExceptionalEntryBlocks()
 //
 bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred)
 {
+    struct HasTailCallCandidateVisitor : GenTreeVisitor<HasTailCallCandidateVisitor>
+    {
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        HasTailCallCandidateVisitor(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_CALL) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (node->IsCall() && node->AsCall()->CanTailCall())
+            {
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    HasTailCallCandidateVisitor visitor(this);
+    if (visitor.WalkTree(firstStmt->GetRootNodePointer(), nullptr) == WALK_ABORT)
+    {
+        return false;
+    }
+
     if (!pred->HasTerminator())
     {
         return true;
@@ -6731,7 +6765,7 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
 
         if (dsc->lvIsStructField && gtHasRef(tree1, dsc->lvParentLcl))
         {
-            JITDUMP("  cannot reorder with interferring use of parent struct local\n");
+            JITDUMP("  cannot reorder with interfering use of parent struct local\n");
             return false;
         }
 
@@ -6741,7 +6775,7 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
             {
                 if (gtHasRef(tree1, dsc->lvFieldLclStart + i))
                 {
-                    JITDUMP("  cannot reorder with interferring use of struct field\n");
+                    JITDUMP("  cannot reorder with interfering use of struct field\n");
                     return false;
                 }
             }
@@ -6786,6 +6820,15 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
 
     return true;
 }
+
+struct PredSuccInfo
+{
+    PredSuccInfo(BasicBlock* block, Statement* stmt) : m_block(block), m_stmt(stmt)
+    {
+    }
+    BasicBlock* m_block;
+    Statement*  m_stmt;
+};
 
 //------------------------------------------------------------------------
 // fgHeadTailMerge: merge common sequences of statements in block predecessors/successors
@@ -6842,15 +6885,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         JITDUMP("Tail merge disabled by JitEnableTailMergeRange\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
-
-    struct PredSuccInfo
-    {
-        PredSuccInfo(BasicBlock* block, Statement* stmt) : m_block(block), m_stmt(stmt)
-        {
-        }
-        BasicBlock* m_block;
-        Statement*  m_stmt;
-    };
 
     ArrayStack<PredSuccInfo> predSuccInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<PredSuccInfo> matchedPredSuccInfo(getAllocator(CMK_ArrayStack));
@@ -7168,140 +7202,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         iterateTailMerge(retryBlocks.Pop());
     }
 
-    // Try head merging a block.
-    // If return value is true, retry.
-    // May also add to retryBlocks.
-    //
-    auto headMerge = [&](BasicBlock* block) -> bool {
-
-        if (block->NumSucc(this) < 2)
-        {
-            // Nothing to merge here
-            return false;
-        }
-
-        matchedPredSuccInfo.Reset();
-
-        // Find the subset of preds that reach along non-critical edges
-        // and populate predSuccInfo.
-        //
-        for (BasicBlock* const succBlock : block->Succs(this))
-        {
-            if (succBlock->GetUniquePred(this) != block)
-            {
-                return false;
-            }
-
-            if (!BasicBlock::sameEHRegion(block, succBlock))
-            {
-                return false;
-            }
-
-            Statement* firstStmt = nullptr;
-            // Walk past any GT_NOPs.
-            //
-            for (Statement* stmt : succBlock->Statements())
-            {
-                if (stmt->GetRootNode()->OperIs(GT_NOP))
-                {
-                    continue;
-                }
-
-                firstStmt = stmt;
-                break;
-            }
-
-            // Block might be effectively empty.
-            //
-            if (firstStmt == nullptr)
-            {
-                return false;
-            }
-
-            // Cannot move terminator statement.
-            //
-            if ((firstStmt == succBlock->lastStmt()) && succBlock->HasTerminator())
-            {
-                return false;
-            }
-
-            if (firstStmt->GetRootNode()->IsCall() && firstStmt->GetRootNode()->AsCall()->CanTailCall())
-            {
-                return false;
-            }
-
-            if ((matchedPredSuccInfo.Height() == 0) ||
-                GenTree::Compare(firstStmt->GetRootNode(), matchedPredSuccInfo.BottomRef(0).m_stmt->GetRootNode()))
-            {
-                matchedPredSuccInfo.Emplace(succBlock, firstStmt);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        Statement* firstStmt = matchedPredSuccInfo.TopRef(0).m_stmt;
-        JITDUMP("All succs of " FMT_BB " start with the same tree\n", block->bbNum);
-        DISPSTMT(firstStmt);
-
-        JITDUMP("Checking if we can move it into the predecessor...\n");
-
-        if (!fgCanMoveFirstStatementIntoPred(early, firstStmt, block))
-        {
-            return false;
-        }
-
-        JITDUMP("Moving statement\n");
-
-        for (int i = 0; i < matchedPredSuccInfo.Height(); i++)
-        {
-            PredSuccInfo&     info      = matchedPredSuccInfo.TopRef(i);
-            Statement* const  stmt      = info.m_stmt;
-            BasicBlock* const succBlock = info.m_block;
-
-            fgUnlinkStmt(succBlock, stmt);
-
-            // Add one of the matching stmts to block, and
-            // update its flags.
-            //
-            if (i == 0)
-            {
-                fgInsertStmtNearEnd(block, stmt);
-                block->bbFlags |= succBlock->bbFlags & BBF_COPY_PROPAGATE;
-            }
-
-            madeChanges = true;
-        }
-
-        return true;
-    };
-
-    auto iterateHeadMerge = [&](BasicBlock* block) -> void {
-
-        int  numOpts = 0;
-        bool retry   = true;
-
-        while (retry)
-        {
-            retry = headMerge(block);
-            if (retry)
-            {
-                numOpts++;
-            }
-        }
-
-        if (numOpts > 0)
-        {
-            JITDUMP("Did %d head merges in " FMT_BB "\n", numOpts, block->bbNum);
-        }
-    };
-
     // Visit each block
     //
     for (BasicBlock* const block : Blocks())
     {
-        iterateHeadMerge(block);
+        madeChanges |= fgHeadMerge(block, matchedPredSuccInfo, early);
     }
 
     // If we altered flow, reset fgModified. Given where we sit in the
@@ -7311,4 +7216,118 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     fgModified = false;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+bool Compiler::fgTryOneHeadMerge(BasicBlock* block, ArrayStack<PredSuccInfo>& matchedPredSuccInfo, bool early)
+{
+    if (block->NumSucc(this) < 2)
+    {
+        // Nothing to merge here
+        return false;
+    }
+
+    matchedPredSuccInfo.Reset();
+
+    // Find the subset of preds that reach along non-critical edges
+    // and populate predSuccInfo.
+    //
+    for (BasicBlock* const succBlock : block->Succs(this))
+    {
+        if (succBlock->GetUniquePred(this) != block)
+        {
+            return false;
+        }
+
+        if (!BasicBlock::sameEHRegion(block, succBlock))
+        {
+            return false;
+        }
+
+        Statement* firstStmt = nullptr;
+        // Walk past any GT_NOPs.
+        //
+        for (Statement* stmt : succBlock->Statements())
+        {
+            if (!stmt->GetRootNode()->OperIs(GT_NOP))
+            {
+                firstStmt = stmt;
+                break;
+            }
+        }
+
+        // Block might be effectively empty.
+        //
+        if (firstStmt == nullptr)
+        {
+            return false;
+        }
+
+        // Cannot move terminator statement.
+        //
+        if ((firstStmt == succBlock->lastStmt()) && succBlock->HasTerminator())
+        {
+            return false;
+        }
+
+        if ((matchedPredSuccInfo.Height() == 0) ||
+            GenTree::Compare(firstStmt->GetRootNode(), matchedPredSuccInfo.BottomRef(0).m_stmt->GetRootNode()))
+        {
+            matchedPredSuccInfo.Emplace(succBlock, firstStmt);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    Statement* firstStmt = matchedPredSuccInfo.TopRef(0).m_stmt;
+    JITDUMP("All succs of " FMT_BB " start with the same tree\n", block->bbNum);
+    DISPSTMT(firstStmt);
+
+    JITDUMP("Checking if we can move it into the predecessor...\n");
+
+    if (!fgCanMoveFirstStatementIntoPred(early, firstStmt, block))
+    {
+        return false;
+    }
+
+    JITDUMP("Moving statement\n");
+
+    for (int i = 0; i < matchedPredSuccInfo.Height(); i++)
+    {
+        PredSuccInfo&     info      = matchedPredSuccInfo.TopRef(i);
+        Statement* const  stmt      = info.m_stmt;
+        BasicBlock* const succBlock = info.m_block;
+
+        fgUnlinkStmt(succBlock, stmt);
+
+        // Add one of the matching stmts to block, and
+        // update its flags.
+        //
+        if (i == 0)
+        {
+            fgInsertStmtNearEnd(block, stmt);
+            block->bbFlags |= succBlock->bbFlags & BBF_COPY_PROPAGATE;
+        }
+    }
+
+    return true;
+}
+
+bool Compiler::fgHeadMerge(BasicBlock* block, ArrayStack<PredSuccInfo>& matchedPredSuccInfo, bool early)
+{
+    bool madeChanges = false;
+    int numOpts = 0;
+    while (fgTryOneHeadMerge(block, matchedPredSuccInfo, early))
+    {
+        madeChanges = true;
+        numOpts++;
+    }
+
+    if (numOpts > 0)
+    {
+        JITDUMP("Did %d head merges in " FMT_BB "\n", numOpts, block->bbNum);
+    }
+
+    return madeChanges;
 }

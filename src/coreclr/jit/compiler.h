@@ -5520,6 +5520,8 @@ public:
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
     PhaseStatus fgHeadTailMerge(bool early);
+    bool fgTryOneHeadMerge(BasicBlock* block, ArrayStack<struct PredSuccInfo>& matchedPredSuccInfo, bool early);
+    bool fgHeadMerge(BasicBlock* block, ArrayStack<struct PredSuccInfo>& matchedPredSuccInfo, bool early);
     bool fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred);
 
     enum FG_RELOCATE_TYPE
