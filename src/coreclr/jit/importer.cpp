@@ -1381,18 +1381,26 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 //
 bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitProfileCasts() != 1))
+    if (!opts.IsInstrumented() || (JitConfig.JitProfileCasts() != 1))
     {
         return false;
     }
 
-    if (tree->IsCall() && tree->AsCall()->gtCallType == CT_HELPER)
+    if (tree->IsHelperCall())
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
-        if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
+        switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
         {
-            return true;
+            case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            case CORINFO_HELP_ISINSTANCEOFARRAY:
+            case CORINFO_HELP_ISINSTANCEOFCLASS:
+            case CORINFO_HELP_ISINSTANCEOFANY:
+            case CORINFO_HELP_CHKCASTINTERFACE:
+            case CORINFO_HELP_CHKCASTARRAY:
+            case CORINFO_HELP_CHKCASTCLASS:
+            case CORINFO_HELP_CHKCASTANY:
+                return true;
+            default:
+                break;
         }
     }
     return false;
@@ -1410,22 +1418,25 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 //
 bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 {
-    if (JitConfig.JitConsumeProfileForCasts() == 0)
+    if ((JitConfig.JitConsumeProfileForCasts() != 1) || !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         return false;
     }
 
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    switch (helper)
     {
-        return false;
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_CHKCASTANY:
+            return true;
+        default:
+            return false;
     }
-
-    if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-        (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
-    {
-        return true;
-    }
-    return false;
 }
 
 GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
