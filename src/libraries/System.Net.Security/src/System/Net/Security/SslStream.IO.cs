@@ -4,12 +4,14 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
@@ -705,7 +707,11 @@ namespace System.Net.Security
                 return frameSize;
             }
 
-            await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+            NetworkStream? ns = InnerStream as NetworkStream;
+            if (ns == null || ns.Socket.Available == 0)
+            {
+                await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+            }
 
             // If we don't have enough data to determine the frame size, use the provided estimate
             // (e.g. a full TLS frame for reads, and a somewhat shorter frame for handshake / renegotiation).
