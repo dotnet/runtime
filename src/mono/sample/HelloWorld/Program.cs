@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using MyLib;
 
 namespace HelloWorld
 {
@@ -9,11 +10,8 @@ namespace HelloWorld
     {
         private static void Main(string[] args)
         {
-            bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
-            Console.WriteLine($"Hello World {(isMono ? "from Mono!" : "from CoreCLR!")}");
-            Console.WriteLine(typeof(object).Assembly.FullName);
-            Console.WriteLine(System.Reflection.Assembly.GetEntryAssembly ());
-            Console.WriteLine(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
+           Class1 c = new Class1();
+           c.getCat(); 
         }
     }
 }

@@ -4392,7 +4392,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 				goto cleanup;
 #ifdef ENABLE_WIP_METHOD_NOLLVM_SELF_INIT
 			else 
-				mono_bitset_set (mono_aot_get_mono_inited(amodule), method_index);
+				mono_bitset_set (mono_aot_get_mono_inited (amodule), method_index);
 #endif
 		}
 	}

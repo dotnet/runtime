@@ -1,0 +1,7 @@
+Steps to run Program.cs
+
+- build runtime : ./build.sh mono+libs+clr.hosts -c Debug
+- cd src/mono/sample/HelloWorld
+- make publish
+- ./run build.sh (aot-compile)
+- ./run run (execute)
