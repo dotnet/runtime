@@ -54,6 +54,9 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryEnterSlow(int timeoutMs) => TryEnterSlow(timeoutMs, new ThreadId(0));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool GetIsHeldByCurrentThread(int currentManagedThreadId)
         {
             Debug.Assert(currentManagedThreadId != 0);

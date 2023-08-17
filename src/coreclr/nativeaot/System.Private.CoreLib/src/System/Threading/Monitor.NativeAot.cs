@@ -165,7 +165,7 @@ namespace System.Threading
         {
             using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorCriticalSection, millisecondsTimeout, out _))
             {
-                return lck.TryEnter(millisecondsTimeout);
+                return lck.TryEnterSlow(millisecondsTimeout);
             }
         }
 
