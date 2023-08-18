@@ -54,6 +54,7 @@ enable (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool disable_stacktrace,
 	IpcStream *stream,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
 	EventPipeSessionSynchronousCallback sync_callback,
