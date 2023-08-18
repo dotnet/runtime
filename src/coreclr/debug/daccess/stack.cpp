@@ -1253,8 +1253,8 @@ ClrDataFrame::GetLocalSig(MetaSig** sig,
     {
         // It turns out we cannot really get rid of this check.  Dynamic methods
         // (including IL stubs) do not have their local sig's available after JIT time.
-        // IL Methods with dynamically generated IL (for example, UnsafeAccessors) can
-        // may have not have an IL header.
+        // IL Methods with dynamically generated IL (for example, UnsafeAccessors) may
+        // not have an IL header.
         if (!m_methodDesc->IsIL()
             || m_methodDesc->GetILHeader() == NULL)
         {
