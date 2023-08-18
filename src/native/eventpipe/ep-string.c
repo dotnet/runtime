@@ -9,17 +9,12 @@
 #include "ep-rt.h"
 #include <minipal/utf8.h>
 
+static
 ep_char16_t *
-ep_rt_utf8_to_utf16le_string (
+ep_utf8_to_utf16le_string_impl (
 	const ep_char8_t *str,
 	size_t len)
 {
-	if (!str)
-		return NULL;
-
-	if (len == (size_t) -1)
-		len = strlen(str);
-
 	if (len == 0) {
 		// Return an empty string if the length is 0
 		ep_char16_t * empty_str = ep_rt_utf16_string_alloc(1);
@@ -44,6 +39,27 @@ ep_rt_utf8_to_utf16le_string (
 	return converted_str;
 }
 
+ep_char16_t *
+ep_rt_utf8_to_utf16le_string (
+	const ep_char8_t *str)
+{
+	if (!str)
+		return NULL;
+
+	return ep_utf8_to_utf16le_string_impl (str, strlen(str));
+}
+
+ep_char16_t *
+ep_rt_utf8_to_utf16le_string_n (
+	const ep_char8_t *str,
+	size_t len)
+{
+	if (!str)
+		return NULL;
+
+	return ep_utf8_to_utf16le_string_impl (str, len);
+}
+
 static
 ep_char8_t *
 ep_utf16_to_utf8_string_impl (
@@ -51,12 +67,6 @@ ep_utf16_to_utf8_string_impl (
 	size_t len,
 	bool treat_as_le)
 {
-	if (!str)
-		return NULL;
-
-	if (len == (size_t) -1)
-		len = ep_rt_utf16_string_len (str);
-
 	if (len == 0) {
 		// Return an empty string if the length is 0
 		ep_char8_t * empty_str = ep_rt_utf8_string_alloc(1);
@@ -83,17 +93,43 @@ ep_utf16_to_utf8_string_impl (
 
 ep_char8_t *
 ep_rt_utf16_to_utf8_string (
+	const ep_char16_t *str)
+{
+	if (!str)
+		return NULL;
+
+	return ep_utf16_to_utf8_string_impl(str, ep_rt_utf16_string_len (str), /*treat_as_le*/ false);
+}
+
+ep_char8_t *
+ep_rt_utf16_to_utf8_string_n (
 	const ep_char16_t *str,
 	size_t len)
 {
+	if (!str)
+		return NULL;
+
 	return ep_utf16_to_utf8_string_impl(str, len, /*treat_as_le*/ false);
 }
 
 ep_char8_t *
 ep_rt_utf16le_to_utf8_string (
+	const ep_char16_t *str)
+{
+	if (!str)
+		return NULL;
+
+	return ep_utf16_to_utf8_string_impl(str, ep_rt_utf16_string_len (str), /*treat_as_le*/ true);
+}
+
+ep_char8_t *
+ep_rt_utf16le_to_utf8_string_n (
 	const ep_char16_t *str,
 	size_t len)
 {
+	if (!str)
+		return NULL;
+
 	return ep_utf16_to_utf8_string_impl(str, len, /*treat_as_le*/ true);
 }
 

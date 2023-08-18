@@ -508,7 +508,7 @@ ep_rt_config_value_get_config (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeConfig));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
 }
 
 static
@@ -518,7 +518,7 @@ ep_rt_config_value_get_output_path (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputPath));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
 }
 
 static
@@ -1048,7 +1048,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
 	ep_return_null_if_nok (path_utf16 != NULL);
 
 	CFileStream *file_stream = new (nothrow) CFileStream ();
@@ -1506,7 +1506,7 @@ ep_rt_diagnostics_command_line_get (void)
 	extern ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
 
 	ep_char8_t *old_cmd_line = _ep_rt_coreclr_diagnostics_cmd_line;
-	ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+	ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()));
 	if (old_cmd_line && ep_rt_utf8_string_compare (old_cmd_line, new_cmd_line) == 0) {
 		// same as old, so free the new one
 		ep_rt_utf8_string_free (new_cmd_line);

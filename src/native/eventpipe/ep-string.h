@@ -27,18 +27,36 @@ ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
 	return true;
 }
 
+// Convert a null-terminated string from UTF-8 to UTF-16LE
 ep_char16_t *
 ep_rt_utf8_to_utf16le_string (
+	const ep_char8_t *str);
+
+// Convert the specified number of characters of a string from UTF-8 to UTF-16LE
+ep_char16_t *
+ep_rt_utf8_to_utf16le_string_n (
 	const ep_char8_t *str,
 	size_t len);
 
+// Convert a null-terminated string from UTF-16 to UTF-8
 ep_char8_t *
 ep_rt_utf16_to_utf8_string (
+	const ep_char16_t *str);
+
+// Convert the specified number of characters of a string from UTF-16 to UTF-8
+ep_char8_t *
+ep_rt_utf16_to_utf8_string_n (
 	const ep_char16_t *str,
 	size_t len);
 
+// Convert a null-terminated string from UTF-16LE to UTF-8
 ep_char8_t *
 ep_rt_utf16le_to_utf8_string (
+	const ep_char16_t *str);
+
+// Convert the specified number of characters of a string from UTF-16LE to UTF-8
+ep_char8_t *
+ep_rt_utf16le_to_utf8_string_n (
 	const ep_char16_t *str,
 	size_t len);
 
