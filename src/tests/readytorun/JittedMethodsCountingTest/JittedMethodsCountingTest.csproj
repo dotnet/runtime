@@ -3,6 +3,7 @@
   <PropertyGroup>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,8 +18,5 @@
     </ProjectReference>
   </ItemGroup>
 
-  <PropertyGroup>
-    <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark/obj/project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
 </Project>
 
