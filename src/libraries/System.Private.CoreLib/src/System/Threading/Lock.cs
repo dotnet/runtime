@@ -56,8 +56,17 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Enter()
         {
-            bool entered = TryEnter_Inlined(timeoutMs: -1);
-            Debug.Assert(entered);
+            ThreadId currentThreadId = TryEnter_Inlined(timeoutMs: -1);
+            Debug.Assert(currentThreadId.IsInitialized);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ThreadId EnterAndGetCurrentThreadId()
+        {
+            ThreadId currentThreadId = TryEnter_Inlined(timeoutMs: -1);
+            Debug.Assert(currentThreadId.IsInitialized);
+            Debug.Assert(currentThreadId.Id == _owningThreadId);
+            return currentThreadId;
         }
 
         /// <summary>
@@ -80,21 +89,22 @@ namespace System.Threading
         /// enough that it would typically not be reached when the lock is used properly.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Scope EnterScope()
-        {
-            var scope = new Scope(this);
-            Enter();
-            return scope;
-        }
+        public Scope EnterScope() => new Scope(this, EnterAndGetCurrentThreadId());
 
         /// <summary>
         /// A disposable structure that is returned by <see cref="EnterScope()"/>, which when disposed, exits the lock.
         /// </summary>
-        public struct Scope : IDisposable
+        public ref struct Scope
         {
             private Lock? _lockObj;
+            private ThreadId _currentThreadId;
 
-            internal Scope(Lock lockObj) => _lockObj = lockObj;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal Scope(Lock lockObj, ThreadId currentThreadId)
+            {
+                _lockObj = lockObj;
+                _currentThreadId = currentThreadId;
+            }
 
             /// <summary>
             /// Exits the lock.
@@ -113,7 +123,7 @@ namespace System.Threading
                 if (lockObj != null)
                 {
                     _lockObj = null;
-                    lockObj.Exit();
+                    lockObj.Exit(_currentThreadId);
                 }
             }
         }
@@ -135,7 +145,7 @@ namespace System.Threading
         /// enough that it would typically not be reached when the lock is used properly.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public bool TryEnter() => TryEnter_Inlined(timeoutMs: 0);
+        public bool TryEnter() => TryEnter_Inlined(timeoutMs: 0).IsInitialized;
 
         /// <summary>
         /// Tries to enter the lock, waiting for roughly the specified duration. If the lock is entered, the calling thread
@@ -199,10 +209,10 @@ namespace System.Threading
         public bool TryEnter(TimeSpan timeout) => TryEnter_Outlined(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs);
+        private bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs).IsInitialized;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryEnter_Inlined(int timeoutMs)
+        private ThreadId TryEnter_Inlined(int timeoutMs)
         {
             Debug.Assert(timeoutMs >= -1);
 
@@ -212,7 +222,7 @@ namespace System.Threading
                 Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
                 Debug.Assert(_recursionCount == 0);
                 _owningThreadId = currentThreadId.Id;
-                return true;
+                return currentThreadId;
             }
 
             return TryEnterSlow(timeoutMs, currentThreadId);
@@ -240,9 +250,25 @@ namespace System.Threading
             ExitImpl();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ExitImpl()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void Exit(ThreadId currentThreadId)
         {
+            Debug.Assert(currentThreadId.IsInitialized);
+            Debug.Assert(currentThreadId.Id == ThreadId.Current_NoInitialize.Id);
+
+            if (_owningThreadId != currentThreadId.Id)
+            {
+                ThrowHelper.ThrowSynchronizationLockException_LockExit();
+            }
+
+            ExitImpl();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ExitImpl()
+        {
+            Debug.Assert(new ThreadId(_owningThreadId).IsInitialized);
+            Debug.Assert(_owningThreadId == ThreadId.Current_NoInitialize.Id);
             Debug.Assert(new State(this).IsLocked);
 
             if (_recursionCount == 0)
@@ -262,10 +288,13 @@ namespace System.Threading
         }
 
         private static bool IsAdaptiveSpinEnabled(int minSpinCount) => minSpinCount <= 0;
-        private static int TickCount => (int)TimerQueue.TickCount64;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool TryEnterSlow(int timeoutMs, ThreadId currentThreadId)
+#if !NATIVEAOT
+        private ThreadId TryEnterSlow(int timeoutMs, ThreadId currentThreadId)
+#else
+        private ThreadId TryEnterSlow(int timeoutMs, ThreadId currentThreadId, object associatedObject)
+#endif
         {
             Debug.Assert(timeoutMs >= -1);
 
@@ -288,7 +317,7 @@ namespace System.Threading
                 if (newRecursionCount != 0)
                 {
                     _recursionCount = newRecursionCount;
-                    return true;
+                    return currentThreadId;
                 }
 
                 throw new LockRecursionException(SR.Lock_Enter_LockRecursionException);
@@ -296,7 +325,7 @@ namespace System.Threading
 
             if (timeoutMs == 0)
             {
-                return false;
+                return new ThreadId(0);
             }
 
             if (LazyInitializeOrEnter() == TryLockResult.Locked)
@@ -415,7 +444,7 @@ namespace System.Threading
             Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
             Debug.Assert(_recursionCount == 0);
             _owningThreadId = currentThreadId.Id;
-            return true;
+            return currentThreadId;
 
         Wait:
             bool areContentionEventsEnabled =
@@ -433,6 +462,15 @@ namespace System.Threading
             // exceptional paths.
             try
             {
+#if NATIVEAOT
+                using var debugBlockingScope =
+                    new Monitor.DebugBlockingScope(
+                        associatedObject,
+                        Monitor.DebugBlockingItemType.MonitorCriticalSection,
+                        timeoutMs,
+                        out _);
+#endif
+
                 Interlocked.Increment(ref s_contentionCount);
 
                 long waitStartTimeTicks = 0;
@@ -443,7 +481,7 @@ namespace System.Threading
                 }
 
                 bool acquiredLock = false;
-                int waitStartTimeMs = timeoutMs < 0 ? 0 : TickCount;
+                int waitStartTimeMs = timeoutMs < 0 ? 0 : Environment.TickCount;
                 int remainingTimeoutMs = timeoutMs;
                 while (true)
                 {
@@ -488,7 +526,7 @@ namespace System.Threading
                         continue;
                     }
 
-                    uint waitDurationMs = (uint)(TickCount - waitStartTimeMs);
+                    uint waitDurationMs = (uint)(Environment.TickCount - waitStartTimeMs);
                     if (waitDurationMs >= (uint)timeoutMs)
                     {
                         break;
@@ -499,6 +537,13 @@ namespace System.Threading
 
                 if (acquiredLock)
                 {
+                    // In NativeAOT, ensure that class construction cycles do not occur after the lock is acquired but before
+                    // the state is fully updated. Update the state to fully reflect that this thread owns the lock before doing
+                    // other things.
+                    Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
+                    Debug.Assert(_recursionCount == 0);
+                    _owningThreadId = currentThreadId.Id;
+
                     if (areContentionEventsEnabled)
                     {
                         double waitDurationNs =
@@ -506,7 +551,7 @@ namespace System.Threading
                         NativeRuntimeEventSource.Log.ContentionStop(waitDurationNs);
                     }
 
-                    goto Locked;
+                    return currentThreadId;
                 }
             }
             catch // run this code before exception filters in callers
@@ -516,7 +561,7 @@ namespace System.Threading
             }
 
             State.UnregisterWaiter(this);
-            return false;
+            return new ThreadId(0);
         }
 
         private void ResetWaiterStartTime() => _waiterStartTimeMs = 0;
@@ -524,7 +569,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RecordWaiterStartTime()
         {
-            int currentTimeMs = TickCount;
+            int currentTimeMs = Environment.TickCount;
             if (currentTimeMs == 0)
             {
                 // Don't record zero, that value is reserved for indicating that a time is not recorded
@@ -540,7 +585,9 @@ namespace System.Threading
             {
                 // If the recorded time is zero, a time has not been recorded yet
                 int waiterStartTimeMs = _waiterStartTimeMs;
-                return waiterStartTimeMs != 0 && (uint)(TickCount - waiterStartTimeMs) >= MaxDurationMsForPreemptingWaiters;
+                return
+                    waiterStartTimeMs != 0 &&
+                    (uint)(Environment.TickCount - waiterStartTimeMs) >= MaxDurationMsForPreemptingWaiters;
             }
         }
 

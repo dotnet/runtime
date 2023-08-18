@@ -15079,7 +15079,7 @@ namespace System.Threading
         public bool TryEnter() { throw null; }
         public bool TryEnter(int millisecondsTimeout) { throw null; }
         public bool TryEnter(System.TimeSpan timeout) { throw null; }
-        public struct Scope : System.IDisposable
+        public ref struct Scope
         {
             public void Dispose() { }
         }

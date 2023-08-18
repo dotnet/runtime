@@ -19,7 +19,7 @@ namespace System.Threading
         private static TryLockResult LazyInitializeOrEnter() => TryLockResult.Spin;
         private static bool IsSingleProcessor => Environment.IsSingleProcessor;
 
-        private partial struct ThreadId
+        internal partial struct ThreadId
         {
 #if TARGET_OSX
             [ThreadStatic]

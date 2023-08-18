@@ -284,23 +284,21 @@ namespace System.Threading
         // 0 - failed
         // syncIndex - retry with the Lock
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int Acquire(object obj)
+        public static unsafe int Acquire(object obj, int currentThreadID)
         {
-            return TryAcquire(obj, oneShot: false);
+            return TryAcquire(obj, currentThreadID, oneShot: false);
         }
 
         // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int TryAcquire(object obj, bool oneShot = true)
+        public static unsafe int TryAcquire(object obj, int currentThreadID, bool oneShot = true)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
             Debug.Assert(!(obj is Lock),
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
-
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
 
             // if thread ID is uninitialized or too big, we do "uncommon" part.
             if ((uint)(currentThreadID - 1) <= (uint)SBLK_MASK_LOCK_THREADID)
@@ -334,17 +332,19 @@ namespace System.Threading
                 }
             }
 
-            return TryAcquireUncommon(obj, oneShot);
+            return TryAcquireUncommon(obj, currentThreadID, oneShot);
         }
 
         // handling uncommon cases here - recursive lock, contention, retries
         // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
-        private static unsafe int TryAcquireUncommon(object obj, bool oneShot)
+        private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool oneShot)
         {
+            if (currentThreadID == 0)
+                currentThreadID = Environment.CurrentManagedThreadId;
+
             // does thread ID fit?
-            int currentThreadID = Environment.CurrentManagedThreadId;
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
                 return GetSyncIndex(obj);
 
@@ -422,9 +422,12 @@ namespace System.Threading
                     }
                 }
 
-                // spin a bit before retrying (1 spinwait is roughly 35 nsec)
-                // the object is not pinned here
-                Thread.SpinWaitInternal(i);
+                if (retries != 0)
+                {
+                    // spin a bit before retrying (1 spinwait is roughly 35 nsec)
+                    // the object is not pinned here
+                    Thread.SpinWaitInternal(i);
+                }
             }
 
             // owned by somebody else
