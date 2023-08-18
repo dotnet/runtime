@@ -11258,7 +11258,7 @@ mono_ldptr:
 			*sp++ = ins;
 			break;
 		}
-		case MONO_CEE_AOT_MODULE: {
+		case MONO_CEE_MONO_AOT_MODULE: {
 			g_assert (cfg->compile_aot);
 			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_AOT_MODULE, NULL);
 			*sp++ = ins;

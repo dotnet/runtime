@@ -3365,13 +3365,11 @@ static void
 emit_method_init_ilgen (MonoMethodBuilder *mb)
 {
 	// load aot_module
-	mono_mb_emit_op (mb, CEE_AOT_MODULE, NULL);
+	mono_mb_emit_op (mb, CEE_MONO_AOT_MODULE, NULL);
 	// load method_index
 	mono_mb_emit_ldarg (mb, 0);
 
 	mono_mb_emit_icall_id (mb, MONO_JIT_ICALL_mini_nollvm_init_method);
-
-	mono_mb_emit_byte (mb, CEE_RET);
 }
 
 void
@@ -3404,7 +3402,7 @@ mono_marshal_lightweight_init (void)
 	cb.emit_native_icall_wrapper = emit_native_icall_wrapper_ilgen;
 	cb.emit_icall_wrapper = emit_icall_wrapper_ilgen;
 	cb.emit_return = emit_return_ilgen;
-	cb.emit_method_init = emit_method_init_ilgen;
+	cb.emit_method_init_nollvm = emit_method_init_ilgen;
 	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_ilgen;
 	cb.mb_skip_visibility = mb_skip_visibility_ilgen;
 	cb.mb_emit_exception = mb_emit_exception_ilgen;
