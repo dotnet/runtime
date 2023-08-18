@@ -76,6 +76,6 @@ public class Runtime_71375
     public static bool Case4()
     {
         // Spit the vector but also pass some object types so the GC needs to know about them.
-        return VarArgs4(0, new object(), 0, new object(), 0, new object(), Vector128<int>.AllBitsSet, __arglist()) != -1;
+        return VarArgs4(0, new object(), 0, new object(), 0, new object(), Vector128<int>.AllBitsSet, __arglist(new object(), 1, new object())) != -1;
     }
 }
