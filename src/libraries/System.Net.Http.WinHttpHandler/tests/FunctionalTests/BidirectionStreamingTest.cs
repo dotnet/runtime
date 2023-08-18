@@ -143,6 +143,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 // Server sends RST_STREAM.
                 await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.EndStream, 0, streamId));
 
+                await Task.Delay(15);
+
                 await Assert.ThrowsAsync<IOException>(() => requestStream.WriteAsync(new byte[50]).AsTask());
             }
         }
