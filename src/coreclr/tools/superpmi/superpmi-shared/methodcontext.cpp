@@ -2364,11 +2364,9 @@ void MethodContext::recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection
     {
         DLDL oldValue = GetHelperFtn->Get(key);
 
-        // We can't use string concatenation in an argument to the `AssertCodeMsg` macro, so construct the string here.
-        char assertMsgBuff[200];
-        sprintf_s(assertMsgBuff, sizeof(assertMsgBuff), "old: %016" PRIX64 " %016" PRIX64 ", new: %016" PRIX64 " %016" PRIX64,
-            oldValue.A, oldValue.B, value.A, value.B);
-        AssertCodeMsg(oldValue.A == value.A && oldValue.B == oldValue.B, EXCEPTIONCODE_MC, "collision! %s", assertMsgBuff);
+        AssertCodeMsg(oldValue.A == value.A && oldValue.B == oldValue.B, EXCEPTIONCODE_MC,
+                      "collision! old: %016" PRIX64 " %016" PRIX64 ", new: %016" PRIX64 " %016" PRIX64, oldValue.A, oldValue.B, value.A,
+                      value.B);
     }
 
     GetHelperFtn->Add(key, value);
