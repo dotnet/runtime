@@ -37,6 +37,7 @@ public unsafe class Program
             NegativeTest_FromInstantiatedGenericClass();
             TestUnmanagedCallersOnlyViaUnmanagedCalli();
             TestPInvokeMarkedWithUnmanagedCallersOnly();
+            TestUnmanagedCallersOnlyWithGeneric();
 
             // Exception handling is only supported on CoreCLR Windows.
             if (TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsMonoRuntime)
@@ -217,4 +218,36 @@ public unsafe class Program
         int n = 1234;
         Assert.Throws<NotSupportedException>(() => ((delegate* unmanaged<int, int>)&CallingUnmanagedCallersOnlyDirectly.PInvokeMarkedWithUnmanagedCallersOnly)(n));
     }
+
+    public static void TestUnmanagedCallersOnlyWithGeneric()
+    {
+        Assert.Equal(0, ((delegate* unmanaged<Blittable<nint>, int>)&BlittableGeneric)(new Blittable<nint>()));
+
+        Assert.Equal(0, ((delegate* unmanaged<MaybeBlittable<nint>, int>)&MaybeBlittableGeneric)(new MaybeBlittable<nint>()));
+
+        // Assert.Throws(() => ((delegate* unmanaged<MaybeBlittable<NonBlittable<nint>>, int>)&NonBlittableGeneric)(new MaybeBlittable<NonBlittable<nint>>()));
+
+        // Assert.Throws(() => ((delegate* unmanaged<NonBlittable<nint>, int>)&GenericObject)(new NonBlittable<nint>()));
+    }
+
+    internal struct Blittable<T> where T : unmanaged
+    {
+        T Value;
+    }
+
+    internal struct MaybeBlittable<T>
+    {
+        T Value;
+    }
+
+    internal class NonBlittable<T> where T: unmanaged
+    {
+        T Value;
+    }
+
+    [UnmanagedCallersOnly]
+    internal static int BlittableGeneric(Blittable<nint> param) => 0;
+
+    [UnmanagedCallersOnly]
+    internal static int MaybeBlittableGeneric(MaybeBlittable<nint> param) => 0;
 }

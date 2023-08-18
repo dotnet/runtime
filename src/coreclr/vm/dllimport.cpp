@@ -3316,8 +3316,11 @@ BOOL NDirect::MarshalingRequired(
                 FALLTHROUGH;
 
             case ELEMENT_TYPE_VALUETYPE:
+            case ELEMENT_TYPE_GENERICINST:
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
+                if(!hndArgType.IsValueType())
+                    return true;
 
                 if (hndArgType.GetMethodTable()->IsInt128OrHasInt128Fields())
                 {
