@@ -108,6 +108,7 @@ CONFIG_INTEGER(JitInlineDepth, W("JITInlineDepth"), DEFAULT_MAX_INLINE_DEPTH)
 CONFIG_INTEGER(JitForceInlineDepth, W("JITForceInlineDepth"), DEFAULT_MAX_FORCE_INLINE_DEPTH)
 CONFIG_INTEGER(JitLongAddress, W("JitLongAddress"), 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, W("JitMaxUncheckedOffset"), 8)
+CONFIG_INTEGER(JitFullOptsForCctors, W("JitFullOptsForCctors"), 0)                   // Use FullOpts for cctors
 CONFIG_INTEGER(JitMinOpts, W("JITMinOpts"), 0)                                       // Forces MinOpts
 CONFIG_INTEGER(JitMinOptsBbCount, W("JITMinOptsBbCount"), DEFAULT_MIN_OPTS_BB_COUNT) // Internal jit control of MinOpts
 CONFIG_INTEGER(JitMinOptsCodeSize, W("JITMinOptsCodeSize"), DEFAULT_MIN_OPTS_CODE_SIZE)       // Internal jit control of

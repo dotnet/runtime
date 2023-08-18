@@ -76,6 +76,7 @@ public:
     unsigned int  GenOptimizeType(void)                     const {LIMITED_METHOD_CONTRACT;  return iJitOptimizeType; }
     bool          JitFramed(void)                           const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
     bool          JitMinOpts(void)                          const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
+    bool          JitFullOptsForCctors(void)                const {LIMITED_METHOD_CONTRACT;  return fJitFullOptsForCctors; }
     bool          JitEnableOptionalRelocs(void)             const {LIMITED_METHOD_CONTRACT;  return fJitEnableOptionalRelocs; }
 
     // Tiered Compilation config
@@ -479,6 +480,7 @@ private: //----------------------------------------------------------------
     bool fTrackDynamicMethodDebugInfo; //  Enable/Disable tracking dynamic method debug info
     bool fJitFramed;                   // Enable/Disable EBP based frames
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
+    bool fJitFullOptsForCctors;        // Enable FullOpts for cctors
     bool fJitEnableOptionalRelocs;     // Allow optional relocs
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended

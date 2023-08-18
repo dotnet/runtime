@@ -2434,9 +2434,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         opts.compFlags = CLFLG_MINOPT;
     }
-    // Don't optimize .cctors (except prejit) or if we're an inlinee
+    // Don't optimize .cctors (except prejit and JitFullOptsForCctors) or if we're an inlinee
     else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
-             !compIsForInlining())
+             !compIsForInlining() && !JitConfig.JitFullOptsForCctors())
     {
         opts.compFlags = CLFLG_MINOPT;
     }
