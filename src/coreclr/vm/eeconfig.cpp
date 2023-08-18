@@ -544,8 +544,8 @@ HRESULT EEConfig::sync()
 
     fJitFramed = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitFramed) != 0);
     fJitMinOpts = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITMinOpts) == 1);
-    fJitFullOptsForCctors = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITFullOptsForCctors) == 1);
     fJitEnableOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitEnableOptionalRelocs) == 1);
+    fJitFullOptsForCctors = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITFullOptsForCctors) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
