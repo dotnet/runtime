@@ -288,7 +288,6 @@ set(interp_sources
     interp/interp.h
     interp/interp-internals.h
     interp/interp.c
-    interp/interp-simd.c
     interp/interp-intrins.h
     interp/interp-intrins.c
     interp/mintops.h
@@ -297,11 +296,17 @@ set(interp_sources
     interp/tiering.h
     interp/tiering.c
     interp/jiterpreter.c)
+set(interp_simd_sources
+    interp/interp-simd.c)
 set(interp_stub_sources
     interp-stubs.c)
 
 if(NOT DISABLE_INTERPRETER)
-set(mini_interp_sources ${interp_sources})
+  if(HOST_WASM)
+    set(mini_interp_sources ${interp_sources})
+  else()
+    set(mini_interp_sources ${interp_sources} ${interp_simd_sources})
+  endif()
 else()
 set(mini_interp_sources ${interp_stub_sources})
 endif()
@@ -504,6 +509,19 @@ if(HOST_BROWSER)
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 
+if(HOST_BROWSER OR HOST_WASI)
+  add_library(mono-wasm-simd STATIC interp/interp-simd.c)
+  target_link_libraries (mono-wasm-simd PRIVATE monoapi eglib_api)
+  set_target_properties(mono-wasm-simd PROPERTIES COMPILE_FLAGS "-msimd128")
+  install(TARGETS mono-wasm-simd LIBRARY)
+endif()
+
+if(HOST_BROWSER OR HOST_WASI OR TARGET_WASM)
+  add_library(mono-wasm-nosimd STATIC interp/interp-nosimd.c)
+  target_link_libraries (mono-wasm-nosimd PRIVATE monoapi eglib_api)
+  install(TARGETS mono-wasm-nosimd LIBRARY)
+endif()
+
 find_package(Python3 COMPONENTS Interpreter)
 
 add_custom_command(
@@ -576,6 +594,9 @@ if(NOT DISABLE_EXECUTABLES)
     endif()
   endif()
   target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static)
+  if (HOST_WASM)
+    target_link_libraries(mono-sgen PRIVATE mono-wasm-nosimd)
+  endif()
   if(HAVE_ICU_SHIM)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
   endif()
