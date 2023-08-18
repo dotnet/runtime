@@ -56,6 +56,7 @@ namespace Internal.JitInterface
             ARM = 0x01c4,
             ARM64 = 0xaa64,
             LoongArch64 = 0x6264,
+            Riscv64 = 0x5064,
         }
 
         internal const string JitLibrary = "clrjitilc";
@@ -3883,6 +3884,22 @@ namespace Internal.JitInterface
                             return 0;
                     }
                 }
+                case TargetArchitecture.Riscv64:
+                {
+                    const ushort IMAGE_REL_RISCV64_PC = 3;
+                    const ushort IMAGE_REL_RISCV64_JALR = 4;
+
+                    switch (fRelocType)
+                    {
+                        case IMAGE_REL_RISCV64_PC:
+                            return RelocType.IMAGE_REL_BASED_RISCV64_PC;
+                        case IMAGE_REL_RISCV64_JALR:
+                            return RelocType.IMAGE_REL_BASED_RISCV64_JALR;
+                        default:
+                            Debug.Fail("Invalid RelocType: " + fRelocType);
+                            return 0;
+                    }
+                }
                 default:
                     return (RelocType)fRelocType;
             }
@@ -3984,6 +4001,8 @@ namespace Internal.JitInterface
                     return (uint)ImageFileMachine.ARM64;
                 case TargetArchitecture.LoongArch64:
                     return (uint)ImageFileMachine.LoongArch64;
+                case TargetArchitecture.Riscv64:
+                    return (uint)ImageFileMachine.Riscv64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }

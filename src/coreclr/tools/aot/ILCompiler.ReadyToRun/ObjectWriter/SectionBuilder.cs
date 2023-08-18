@@ -317,6 +317,10 @@ namespace ILCompiler.PEWriter
                     _codePadding = 0x002A0005u;
                     break;
 
+                case TargetArchitecture.Riscv64:
+                    _codePadding = 0x002A0005u;
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }

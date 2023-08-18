@@ -46,6 +46,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TargetArchitecture.LoongArch64:
                     return LoongArch64TransitionBlock.Instance;
 
+                case TargetArchitecture.Riscv64:
+                    return Riscv64TransitionBlock.Instance;
+
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
             }
@@ -64,6 +67,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool IsARM => Architecture == TargetArchitecture.ARM;
         public bool IsARM64 => Architecture == TargetArchitecture.ARM64;
         public bool IsLoongArch64 => Architecture == TargetArchitecture.LoongArch64;
+        public bool IsRiscv64 => Architecture == TargetArchitecture.Riscv64;
 
         /// <summary>
         /// This property is only overridden in AMD64 Unix variant of the transition block.
@@ -386,7 +390,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             {
                                 if (IsLoongArch64)
                                     fpReturnSize = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
+                                else if (IsRiscv64)
+                                    fpReturnSize = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
                                 break;
+
                             }
 
                         }
@@ -682,6 +689,49 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 int stackSlotSize = 8;
                 return ALIGN_UP(parmSize, stackSlotSize);
             }
+        }
+
+        private class Riscv64TransitionBlock : TransitionBlock
+        {
+            public static TransitionBlock Instance = new Riscv64TransitionBlock();
+            public override TargetArchitecture Architecture => TargetArchitecture.Riscv64;
+            public override int PointerSize => 8;
+            public override int FloatRegisterSize => 8;
+            public override int NumArgumentRegisters => 8;
+            public override int NumCalleeSavedRegisters => 12;
+            // Callee-saves, argument registers
+            public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
+            public override int OffsetOfFirstGCRefMapSlot => SizeOfCalleeSavedRegisters;
+            public override int OffsetOfArgumentRegisters => OffsetOfFirstGCRefMapSlot;
+
+            public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double);
+            public override int EnregisteredParamTypeMaxSize => 16;
+            public override int EnregisteredReturnTypeIntegerMaxSize => 16;
+
+            public override bool IsArgPassedByRef(TypeHandle th)
+            {
+                Debug.Assert(!th.IsNull());
+                Debug.Assert(th.IsValueType());
+
+                // Composites greater than 16 bytes are passed by reference
+                if (th.GetSize() > EnregisteredParamTypeMaxSize)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public sealed override int GetRetBuffArgOffset(bool hasThis) => OffsetOfFirstGCRefMapSlot + (hasThis ? 8 : 0);
+
+            public override int StackElemSize(int parmSize, bool isValueType = false, bool isFloatHfa = false)
+            {
+                int stackSlotSize = 8;
+                return ALIGN_UP(parmSize, stackSlotSize);
+            }
+            
         }
     }
 }

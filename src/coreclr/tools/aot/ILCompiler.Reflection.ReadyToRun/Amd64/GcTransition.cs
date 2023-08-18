@@ -69,6 +69,10 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                         regType = typeof(LoongArch64.Registers);
                         break;
 
+                    case (Machine)0x5064:
+                        regType = typeof(Riscv64.Registers);
+                        break;
+
                     default:
                         throw new NotImplementedException();
                 }
