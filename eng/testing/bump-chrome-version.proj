@@ -1,6 +1,6 @@
 <Project DefaultTargets="UpdateChromeVersion">
 
-  <Import Project="..\Directory.Build.props" />
+  <Import Project="..\..\Directory.Build.props" />
   <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskName="Microsoft.WebAssembly.Build.Tasks.GetChromeVersions" />
 
   <Target Name="UpdateChromeVersion">
@@ -47,6 +47,6 @@
     <WriteLinesToFile Lines="$(_PropsContent)" File="$(RepositoryEngineeringDir)testing\ChromeVersions.props" Overwrite="true" />
   </Target>
 
-  <Import Project="..\Directory.Build.targets" />
+  <Import Project="..\..\Directory.Build.targets" />
 
 </Project>
