@@ -429,10 +429,6 @@
     <PublishWindowsPdb>false</PublishWindowsPdb>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UsingMicrosoftNoTargetsSdk)' == 'true'">
-    <!-- Explicitly disable running analyzers to avoid trying to discover the correct ILLink tool pack for a NoTargets project. -->
-    <RunAnalyzers>false</RunAnalyzers>
-  </PropertyGroup>
 
   <!-- All reference assemblies should have a ReferenceAssemblyAttribute and the 0x70 flag which prevents them from loading. -->
   <ItemGroup Condition="'$(IsReferenceAssemblyProject)' == 'true'">
