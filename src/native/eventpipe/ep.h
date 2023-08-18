@@ -145,6 +145,11 @@ ep_enable_2 (
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data);
 
+EventPipeSessionID
+ep_enable_3 (
+	EventPipeSessionOptions* options
+);
+
 void
 ep_disable (EventPipeSessionID id);
 
