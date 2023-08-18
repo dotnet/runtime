@@ -73,19 +73,21 @@ internal sealed class DevServerStartup
 
         if (options.OnConsoleConnected is not null)
         {
-            app.UseRouter(router =>
+            app.Use(async (ctx, next) =>
             {
-                router.MapGet("/console", async context =>
+                if (ctx.Request.Path.StartsWithSegments("/console"))
                 {
-                    if (!context.WebSockets.IsWebSocketRequest)
+                    if (!ctx.WebSockets.IsWebSocketRequest)
                     {
-                        context.Response.StatusCode = 400;
+                        ctx.Response.StatusCode = 400;
                         return;
                     }
 
-                    using WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
+                    using WebSocket socket = await ctx.WebSockets.AcceptWebSocketAsync();
                     await options.OnConsoleConnected(socket);
-                });
+                }
+
+                await next(ctx);
             });
         }
 
