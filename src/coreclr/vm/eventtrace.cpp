@@ -4566,9 +4566,13 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
                 ulMethodToken = (ULONG)0;
         }
         else
+        {
             ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
+        }
 
-        if(pMethodDesc->IsIL())
+        // An IL method that has no IL header can occur for dynamically
+        // generated code during JIT (for example, UnsafeAccessor).
+        if(pMethodDesc->IsIL() && pMethodDesc->GetILHeader() != NULL)
         {
             COR_ILMETHOD_DECODER::DecoderStatus decoderstatus = COR_ILMETHOD_DECODER::FORMAT_ERROR;
             COR_ILMETHOD_DECODER ILHeader(pMethodDesc->GetILHeader(), pMethodDesc->GetMDImport(), &decoderstatus);
