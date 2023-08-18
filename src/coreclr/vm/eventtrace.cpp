@@ -3555,7 +3555,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 /*************************************************/
 /* This is called by the runtime when method jitting started */
 /*************************************************/
-VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
+VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
 {
     CONTRACTL {
         NOTHROW;
@@ -3570,7 +3570,7 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOr
                                         CLR_JIT_KEYWORD))
         {
             pMethodDesc->GetMethodInfo(*namespaceOrClassName, *methodName, *methodSignature);
-            ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, namespaceOrClassName, methodName, methodSignature);
+            ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, methodDecoder, namespaceOrClassName, methodName, methodSignature);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -4528,7 +4528,12 @@ VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc,
 /*****************************************************************/
 /* This routine is used to send an ETW event just before a method starts jitting*/
 /*****************************************************************/
-VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
+VOID ETW::MethodLog::SendMethodJitStartEvent(
+    MethodDesc *pMethodDesc,
+    COR_ILMETHOD_DECODER* methodDecoder,
+    SString *namespaceOrClassName,
+    SString *methodName,
+    SString *methodSignature)
 {
     CONTRACTL {
         THROWS;
@@ -4570,14 +4575,8 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
             ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
         }
 
-        // An IL method that has no IL header can occur for dynamically
-        // generated code during JIT (for example, UnsafeAccessor).
-        if(pMethodDesc->IsIL() && pMethodDesc->GetILHeader() != NULL)
-        {
-            COR_ILMETHOD_DECODER::DecoderStatus decoderstatus = COR_ILMETHOD_DECODER::FORMAT_ERROR;
-            COR_ILMETHOD_DECODER ILHeader(pMethodDesc->GetILHeader(), pMethodDesc->GetMDImport(), &decoderstatus);
-            ulMethodILSize = (ULONG)ILHeader.GetCodeSize();
-        }
+        if (methodDecoder != NULL)
+            ulMethodILSize = methodDecoder->GetCodeSize();
 
         SString tNamespace, tMethodName, tMethodSignature;
         if(!namespaceOrClassName|| !methodName|| !methodSignature || (methodName->IsEmpty() && namespaceOrClassName->IsEmpty() && methodSignature->IsEmpty()))
