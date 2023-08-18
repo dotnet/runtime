@@ -465,6 +465,7 @@ enable (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool disable_stacktrace,
 	IpcStream *stream,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
 	EventPipeSessionSynchronousCallback sync_callback,
@@ -492,6 +493,7 @@ enable (
 		session_type,
 		format,
 		rundown_requested,
+		disable_stacktrace,
 		circular_buffer_size_in_mb,
 		providers,
 		providers_len,
@@ -986,6 +988,7 @@ ep_enable (
 			session_type,
 			format,
 			rundown_requested,
+			false, // disable_stacktrace
 			stream,
 			provider_callback_data_queue,
 			sync_callback,
