@@ -72,7 +72,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
-        private void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
+        public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             bool testUnicode = true;
             string projectName = GetTestProjectPath(
