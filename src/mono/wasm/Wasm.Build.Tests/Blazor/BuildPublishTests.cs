@@ -39,7 +39,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     }
 
 
-    public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot=false)
+    public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
     {
         var data = new TheoryData<string, bool>();
         data.Add("Debug", false);
@@ -59,7 +59,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload))]
+    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { false })]
     public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
