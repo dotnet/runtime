@@ -8,6 +8,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[ExpectNonZeroExitCode (1)]
+	[NoLinkedOutput]
 	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	// NativeAOT will not compile a method with unresolved types in it - it will instead replace it with a throwing method body

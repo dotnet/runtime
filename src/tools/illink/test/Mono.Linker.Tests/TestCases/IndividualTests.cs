@@ -33,8 +33,10 @@ namespace Mono.Linker.Tests.TestCases
 			// We can't use the ResultChecker on the output because there will be unresolved types/methods
 			// Let's just make sure that the output assembly exists.  That's enough to verify that ILLink didn't throw due to the
 			// missing types/methods
-			if (!result.OutputAssemblyPath.Exists ())
-				Assert.Fail ($"The linked assembly is missing.  Should have existed at {result.OutputAssemblyPath}");
+			if (result.OutputAssemblyPath.Exists ())
+				Assert.Fail ($"The linked assembly is present at {result.OutputAssemblyPath}.  Should not have been produced.");
+			if (result.ExitCode != 1)
+				Assert.Fail ($"The linker returned exit code {result.ExitCode}.  Should have returned 1.");
 		}
 
 		[Test]

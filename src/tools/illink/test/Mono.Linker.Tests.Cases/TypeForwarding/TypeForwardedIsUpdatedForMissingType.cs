@@ -3,6 +3,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
+	[ExpectNonZeroExitCode (1)]
+	[NoLinkedOutput]
 	[SkipUnresolved (true)]
 	[SetupCompileBefore ("Lib.dll", new[] { "Dependencies/TypeForwardedIsUpdatedForMissingTypeLib.cs" })]
 	[SetupCompileBefore ("AnotherLibrary.dll", new[] { "Dependencies/TypeForwardedIsUpdatedForMissingTypeLib2.cs" })]

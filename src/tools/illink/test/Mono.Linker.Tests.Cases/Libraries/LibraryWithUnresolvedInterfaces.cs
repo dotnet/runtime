@@ -7,6 +7,8 @@ using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
+	[ExpectNonZeroExitCode (1)]
+	[NoLinkedOutput]
 	[SetupCompileBefore ("copylibrary.dll", new[] { "Dependencies/CopyLibrary.cs" }, removeFromLinkerInput: true)]
 	[SetupLinkerArgument ("-a", "test.exe", "library")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
