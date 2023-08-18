@@ -1289,6 +1289,7 @@ image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *e
 		 * determined at assembly save time.
 		 */
 		/*image = (MonoDynamicImage*)ab->dynamic_assembly->assembly.image; */
+		MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 		MonoStringHandle abname = MONO_HANDLE_NEW_GET (MonoString, ab, name);
 		char *name = mono_string_handle_to_utf8 (abname, error);
 		return_val_if_nok (error, FALSE);
@@ -1300,6 +1301,7 @@ image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *e
 		}
 		MonoDynamicAssembly *dynamic_assembly = MONO_HANDLE_GETVAL (ab, dynamic_assembly);
 		image = mono_dynamic_image_create (dynamic_assembly, name, fqname);
+		image->image.alc = alc;
 
 		MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoReflectionModule, moduleb), image, MonoImage*, &image->image);
 		MONO_HANDLE_SETVAL (moduleb, dynamic_image, MonoDynamicImage*, image);
