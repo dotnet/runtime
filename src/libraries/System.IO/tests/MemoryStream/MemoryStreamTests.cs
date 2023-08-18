@@ -109,6 +109,8 @@ namespace System.IO.Tests
             {
                 Seek(mode, ms, int.MaxValue - origin);
                 Assert.Throws<ArgumentOutOfRangeException>(() => Seek(mode, ms, (long)int.MaxValue - origin + 1));
+                Assert.ThrowsAny<Exception>(() => Seek(mode, ms, long.MinValue + 1));
+                Assert.ThrowsAny<Exception>(() => Seek(mode, ms, long.MaxValue - 1));
             }
         }
 
