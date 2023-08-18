@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -44,13 +43,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (BinderInvocation invocation in _invocations)
                 {
-                    IInvocationOperation invocationOperation = invocation.Operation!;
-                    if (!invocationOperation.TargetMethod.IsExtensionMethod)
-                    {
-                        continue;
-                    }
+                    IMethodSymbol targetMethod = invocation.Operation.TargetMethod;
+                    INamedTypeSymbol? candidateBinderType = targetMethod.ContainingType;
+                    Debug.Assert(targetMethod.IsExtensionMethod);
 
-                    INamedTypeSymbol? candidateBinderType = invocationOperation.TargetMethod.ContainingType;
                     if (SymbolEqualityComparer.Default.Equals(candidateBinderType, _typeSymbols.ConfigurationBinder))
                     {
                         RegisterMethodInvocation_ConfigurationBinder(invocation);

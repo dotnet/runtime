@@ -913,6 +913,7 @@ PCODE MethodDesc::GetNativeCode()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
+
     if (HasNativeCodeSlot())
     {
         // When profiler is enabled, profiler may ask to rejit a code even though we
@@ -934,7 +935,7 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
-PCODE MethodDesc::GetNativeCodeAnyVersion()
+PCODE MethodDesc::GetNativeCodeReJITAware()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -945,23 +946,19 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
         return pDefaultCode;
     }
 
-    else
     {
         CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-        ILCodeVersionCollection ilVersionCollection = pCodeVersionManager->GetILCodeVersions(PTR_MethodDesc(this));
-        for (ILCodeVersionIterator curIL = ilVersionCollection.Begin(), endIL = ilVersionCollection.End(); curIL != endIL; curIL++)
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
+        if (!ilVersion.IsDefaultVersion())
         {
-            NativeCodeVersionCollection nativeCollection = curIL->GetNativeCodeVersions(PTR_MethodDesc(this));
-            for (NativeCodeVersionIterator curNative = nativeCollection.Begin(), endNative = nativeCollection.End(); curNative != endNative; curNative++)
+            NativeCodeVersion activeNativeCodeVersion = ilVersion.GetActiveNativeCodeVersion(PTR_MethodDesc(this));
+            if (!activeNativeCodeVersion.IsNull())
             {
-                PCODE native = curNative->GetNativeCode();
-                if(native != NULL)
-                {
-                    return native;
-                }
+                return activeNativeCodeVersion.GetNativeCode();
             }
         }
+
         return NULL;
     }
 }
