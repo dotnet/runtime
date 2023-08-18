@@ -80,7 +80,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputAssemblyChecks (original, testResult);
 					PerformOutputSymbolChecks (original, testResult);
 
-					if (!HasActiveSkipKeptItemsValidationAttribute (original.MainModule.GetType (testResult.TestCase.ReconstructedFullTypeName))) {
+					if (!HasActiveSkipKeptItemsValidationAttribute (testResult.TestCase.FindTypeDefinition (original))) {
 						CreateAssemblyChecker (original, testResult).Verify ();
 					}
 				}
@@ -171,7 +171,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void AdditionalChecking (ILCompilerTestCaseResult linkResult, AssemblyDefinition original)
 		{
-			bool checkRemainingErrors = !HasAttribute (original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName), nameof (SkipRemainingErrorsValidationAttribute));
+			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.LogWriter, checkRemainingErrors);
 		}
 
@@ -204,7 +204,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private void VerifyLoggedMessages (AssemblyDefinition original, TestLogWriter logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
-			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
+			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByNativeAOT (attr))
@@ -307,10 +307,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											continue;
 									}
 								} else if (isCompilerGeneratedCode == true) {
-									if (loggedMessage.Origin?.MemberDefinition is MethodDesc methodDesc) {
-										if (attrProvider is not IMemberDefinition expectedMember)
-											continue;
+									if (loggedMessage.Origin?.MemberDefinition is not MethodDesc methodDesc)
+										continue;
 
+									if (attrProvider is IMemberDefinition expectedMember) {
 										string? actualName = NameUtils.GetActualOriginDisplayName (methodDesc);
 										string expectedTypeName = NameUtils.GetExpectedOriginDisplayName (expectedMember.DeclaringType);
 										if (actualName?.Contains (expectedTypeName) == true &&
@@ -328,6 +328,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										}
 										if (methodDesc.IsConstructor &&
 											new AssemblyQualifiedToken (methodDesc.OwningType).Equals(new AssemblyQualifiedToken (expectedMember))) {
+											expectedWarningFound = true;
+											loggedMessages.Remove (loggedMessage);
+											break;
+										}
+									} else if (attrProvider is AssemblyDefinition expectedAssembly) {
+										// Allow assembly-level attributes to match warnings from compiler-generated Main
+										if (NameUtils.GetActualOriginDisplayName (methodDesc) == "Program.<Main>$(String[])") {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
@@ -363,9 +370,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					case nameof (ExpectedNoWarningsAttribute):
 						// Postpone processing of negative checks, to make it possible to mark some warnings as expected (will be removed from the list above)
 						// and then do the negative check on the rest.
-						var memberDefinition = attrProvider as IMemberDefinition;
-						Assert.NotNull (memberDefinition);
-						expectedNoWarningsAttributes.Add ((memberDefinition, attr));
+						expectedNoWarningsAttributes.Add ((attrProvider, attr));
 						break;
 					}
 				}
@@ -388,7 +393,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						continue;
 
 					// This is a hacky way to say anything in the "subtree" of the attrProvider
-					if ((mc.Origin?.MemberDefinition is TypeSystemEntity member) && member.ToString ()?.Contains (attrProvider.FullName) != true)
+					if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.MemberDefinition is TypeSystemEntity member) && member.ToString ()?.Contains (attrMember.FullName) != true)
 						continue;
 
 					unexpectedWarningMessage = mc;

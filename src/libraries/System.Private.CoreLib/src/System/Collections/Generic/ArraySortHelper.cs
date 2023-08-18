@@ -128,6 +128,9 @@ namespace System.Collections.Generic
             }
         }
 
+        // IntroSort is recursive; block it from being inlined into itself as
+        // this is currenly not profitable.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void IntroSort(Span<T> keys, int depthLimit, Comparison<T> comparer)
         {
             Debug.Assert(!keys.IsEmpty);
@@ -402,6 +405,9 @@ namespace System.Collections.Generic
             j = t;
         }
 
+        // IntroSort is recursive; block it from being inlined into itself as
+        // this is currenly not profitable.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void IntroSort(Span<T> keys, int depthLimit)
         {
             Debug.Assert(!keys.IsEmpty);

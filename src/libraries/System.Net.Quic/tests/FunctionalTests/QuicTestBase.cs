@@ -108,13 +108,13 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        public SslClientAuthenticationOptions GetSslClientAuthenticationOptions()
+        public SslClientAuthenticationOptions GetSslClientAuthenticationOptions(string targetHost = "localhost")
         {
             return new SslClientAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
                 RemoteCertificateValidationCallback = RemoteCertificateValidationCallback,
-                TargetHost = "localhost"
+                TargetHost = targetHost
             };
         }
 
@@ -140,19 +140,20 @@ namespace System.Net.Quic.Tests
             return QuicConnection.ConnectAsync(clientOptions);
         }
 
-        internal QuicListenerOptions CreateQuicListenerOptions()
+        internal QuicListenerOptions CreateQuicListenerOptions(IPAddress address = null)
         {
+            address ??= IPAddress.Loopback;
             return new QuicListenerOptions()
             {
-                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ListenEndPoint = new IPEndPoint(address, 0),
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
                 ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
             };
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(int MaxInboundUnidirectionalStreams = 100, int MaxInboundBidirectionalStreams = 100)
+        internal ValueTask<QuicListener> CreateQuicListener(IPAddress address = null)
         {
-            var options = CreateQuicListenerOptions();
+            var options = CreateQuicListenerOptions(address);
             return CreateQuicListener(options);
         }
 

@@ -72,7 +72,7 @@ namespace System.Reflection
             Debug.Assert(_argCount == 1);
 
             object? arg = parameters[0];
-            ReadOnlySpan<object?> parametersSpan = new(arg);
+            var parametersSpan = new ReadOnlySpan<object?>(in arg);
 
             object? copyOfArg = null;
             Span<object?> copyOfArgs = new(ref copyOfArg);
@@ -80,13 +80,13 @@ namespace System.Reflection
             bool copyBack = false;
             Span<bool> shouldCopyBack = new(ref copyBack);
 
-            CheckArguments(parametersSpan, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
             object? ret;
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
                 DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
             }
+
+            CheckArguments(parametersSpan, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
             if (_invokeFunc_ObjSpanArgs is not null)
             {
@@ -98,12 +98,12 @@ namespace System.Reflection
                 {
                     throw new TargetInvocationException(e);
                 }
-
-                CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                return ret;
+            }
+            else
+            {
+                ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
             }
 
-            ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
             CopyBack(parameters, copyOfArgs, shouldCopyBack);
             return ret;
         }
@@ -121,13 +121,13 @@ namespace System.Reflection
             Span<object?> copyOfArgs = stackArgStorage._args.AsSpan(_argCount);
             Span<bool> shouldCopyBack = stackArgStorage._shouldCopyBack.AsSpan(_argCount);
 
-            CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
             object? ret;
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
                 DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
             }
+
+            CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
             if (_invokeFunc_ObjSpanArgs is not null)
             {
@@ -139,12 +139,13 @@ namespace System.Reflection
                 {
                     throw new TargetInvocationException(e);
                 }
-
-                CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                return ret;
             }
+            else
+            {
+                ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
 
-            ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
+           }
+
             CopyBack(parameters, copyOfArgs, shouldCopyBack);
             return ret;
         }
@@ -299,7 +300,7 @@ namespace System.Reflection
             bool copyBack = false;
             Span<bool> shouldCopyBack = new(ref copyBack, 1); // Not used for setters
 
-            CheckArguments(new ReadOnlySpan<object?>(parameter), copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+            CheckArguments(new ReadOnlySpan<object?>(in parameter), copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
             if (_invokeFunc_ObjSpanArgs is not null) // Fast path check
             {
@@ -378,7 +379,7 @@ namespace System.Reflection
                 }
                 else if (!ReferenceEquals(arg.GetType(), sigType))
                 {
-                    // Determine if we can use the fast path for byref types
+                    // Determine if we can use the fast path for byref types.
                     if (TryByRefFastPath(sigType, ref arg))
                     {
                         // Fast path when the value's type matches the signature type of a byref parameter.

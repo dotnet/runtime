@@ -9,7 +9,7 @@ set(CMAKE_EXECUTABLE_SUFFIX ".js")
 add_executable(dotnet.native corebindings.c driver.c pinvoke.c)
 
 target_include_directories(dotnet.native PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
-target_compile_options(dotnet.native PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DGEN_PINVOKE=1)
+target_compile_options(dotnet.native PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DGEN_PINVOKE=1 ${CONFIGURATION_COMPILE_OPTIONS})
 
 set_target_properties(dotnet.native PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
 
@@ -25,6 +25,7 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
+    ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-browser.a
     ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
@@ -38,7 +39,7 @@ set_target_properties(dotnet.native PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")
-set(ignoreMeWasmOptAdditionalFlags "${WASM_OPT_ADDITIONAL_FLAGS}")
+set(ignoreMeWasmOptAdditionalFlags "${CONFIGURATION_COMPILE_OPTIONS}")
 set(ignoreMeEmsdkPath "${EMSDK_PATH}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

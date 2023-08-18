@@ -1,18 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
-import { WasmOpcode } from "./jiterpreter-opcodes";
+import { WasmOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import {
-    WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
-    recordFailure, getOptions
+    WasmBuilder, addWasmFunctionPointer,
+    _now, getWasmFunctionTable, applyOptions,
+    recordFailure, getOptions,
+    getCounter, modifyCounter,
+    jiterpreter_allocate_tables
 } from "./jiterpreter-support";
+import { JiterpreterTable, JiterpCounter } from "./jiterpreter-enums";
 import {
     compileDoJitCall
 } from "./jiterpreter-feature-detect";
@@ -281,15 +285,17 @@ export function mono_jiterp_do_jit_call_indirect(
                     jit_call_cb: jitCallCb,
                 },
                 m: {
-                    h: (<any>Module).asm.memory
+                    h: (<any>Module).getMemory()
                 },
             });
             const impl = instance.exports.do_jit_call_indirect;
             if (typeof (impl) !== "function")
                 throw new Error("Did not find exported do_jit_call handler");
 
+            // Make sure we've allocated the jiterpreter tables first because we need to use them
+            jiterpreter_allocate_tables(Module);
             // We successfully instantiated it so we can register it as the new do_jit_call handler
-            const result = addWasmFunctionPointer(impl);
+            const result = addWasmFunctionPointer(JiterpreterTable.DoJitCall, impl);
             cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             failed = false;
         } catch (exc) {
@@ -300,9 +306,17 @@ export function mono_jiterp_do_jit_call_indirect(
     }
 
     if (failed) {
+        // This means that either wasm EH is unavailable or we failed to JIT the handler somehow
         try {
-            const result = Module.addFunction(do_jit_call_indirect_js, "viii");
-            cwraps.mono_jiterp_update_jit_call_dispatcher(result);
+            // HACK: It's not safe to use Module.addFunction in a multithreaded scenario
+            if (MonoWasmThreads) {
+                // Use mono_llvm_cpp_catch_exception instead
+                cwraps.mono_jiterp_update_jit_call_dispatcher(0);
+            } else {
+                // Use the JS helper function defined up above
+                const result = Module.addFunction(do_jit_call_indirect_js, "viii");
+                cwraps.mono_jiterp_update_jit_call_dispatcher(result);
+            }
         } catch {
             // CSP policy or some other problem could break Module.addFunction, so in that case, pass 0
             // This will cause the runtime to use mono_llvm_cpp_catch_exception
@@ -333,7 +347,7 @@ export function mono_interp_flush_jitcall_queue(): void {
     } else
         builder.clear(0);
 
-    if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
+    if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
         jitQueue.length = 0;
         return;
     }
@@ -449,7 +463,7 @@ export function mono_interp_flush_jitcall_queue(): void {
         const buffer = builder.getArrayView();
         if (trace > 0)
             mono_log_info(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
-        counters.bytesGenerated += buffer.length;
+        modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
         const traceModule = new WebAssembly.Module(buffer);
         const wasmImports = builder.getWasmImports();
 
@@ -458,22 +472,27 @@ export function mono_interp_flush_jitcall_queue(): void {
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
 
-            // Get the exported trace function
+            // Get the exported jit call thunk
             const jitted = <Function>traceInstance.exports[info.name];
-            const idx = addWasmFunctionPointer(jitted);
-            if (!idx)
-                throw new Error("add_function_pointer returned a 0 index");
-            else if (trace >= 2)
+            const idx = addWasmFunctionPointer(JiterpreterTable.JitCall, jitted);
+            if (trace >= 2)
                 mono_log_info(`${info.name} -> fn index ${idx}`);
 
             info.result = idx;
-            cwraps.mono_jiterp_register_jit_call_thunk(<any>info.cinfo, idx);
-            for (let j = 0; j < info.queue.length; j++)
-                cwraps.mono_jiterp_register_jit_call_thunk(<any>info.queue[j], idx);
+            if (idx > 0) {
+                // We successfully registered a function pointer for this thunk,
+                //  so now register it as the thunk for each call site in the queue
+                cwraps.mono_jiterp_register_jit_call_thunk(<any>info.cinfo, idx);
+                for (let j = 0; j < info.queue.length; j++)
+                    cwraps.mono_jiterp_register_jit_call_thunk(<any>info.queue[j], idx);
 
-            if (info.enableDirect)
-                counters.directJitCallsCompiled++;
-            counters.jitCallsCompiled++;
+                if (info.enableDirect)
+                    modifyCounter(JiterpCounter.DirectJitCallsCompiled, 1);
+                modifyCounter(JiterpCounter.JitCallsCompiled, 1);
+            }
+            // If we failed to register a function pointer we just continue, since it
+            //  means that the table is full
+
             info.queue.length = 0;
             rejected = false;
         }
@@ -487,10 +506,10 @@ export function mono_interp_flush_jitcall_queue(): void {
     } finally {
         const finished = _now();
         if (compileStarted) {
-            elapsedTimes.generation += compileStarted - started;
-            elapsedTimes.compilation += finished - compileStarted;
+            modifyCounter(JiterpCounter.ElapsedGenerationMs, compileStarted - started);
+            modifyCounter(JiterpCounter.ElapsedCompilationMs, finished - compileStarted);
         } else {
-            elapsedTimes.generation += finished - started;
+            modifyCounter(JiterpCounter.ElapsedGenerationMs, finished - started);
         }
 
         if (threw || rejected) {

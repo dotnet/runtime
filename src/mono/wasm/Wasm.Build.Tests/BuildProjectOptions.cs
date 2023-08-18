@@ -12,7 +12,7 @@ public record BuildProjectOptions
 (
     Action?             InitProject               = null,
     bool?               DotnetWasmFromRuntimePack = null,
-    GlobalizationMode?  GlobalizationMode         = null,
+    GlobalizationMode   GlobalizationMode         = GlobalizationMode.Sharded,
     string?             PredefinedIcudt           = null,
     bool                UseCache                  = true,
     bool                ExpectSuccess             = true,
@@ -23,8 +23,9 @@ public record BuildProjectOptions
     bool                HasV8Script               = true,
     string?             Verbosity                 = null,
     string?             Label                     = null,
-    string?             TargetFramework           = null,
+    string              TargetFramework           = BuildTestBase.DefaultTargetFramework,
     string?             MainJS                    = null,
     bool                IsBrowserProject          = true,
-    IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
+    IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
+    string?             BinFrameworkDir           = null
 );

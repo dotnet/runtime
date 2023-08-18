@@ -88,10 +88,10 @@ namespace System.Buffers
             {
                 T[] values = GetValues();
 
-                string display = $"{GetType().Name}, Count={values.Length}";
+                string display = $"{GetType().Name}, Count = {values.Length}";
                 if (values.Length > 0)
                 {
-                    display += ", Values=";
+                    display += ", Values = ";
                     display += typeof(T) == typeof(char) ?
                         "\"" + new string(Unsafe.As<T[], char[]>(ref values)) + "\"" :
                         string.Join(",", values);

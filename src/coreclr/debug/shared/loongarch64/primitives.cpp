@@ -61,6 +61,7 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
         CopyContextChunk(&pDst->F[0], &pSrc->F[0], &pDst->F[32],
                          DT_CONTEXT_FLOATING_POINT);
         pDst->Fcsr = pSrc->Fcsr;
+        pDst->Fcc  = pSrc->Fcc;
     }
 }
 

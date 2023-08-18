@@ -25,6 +25,7 @@ test_provider_callback_data_queue_setup (void)
 
 static
 void
+EP_CALLBACK_CALLTYPE
 provider_callback (
 	const uint8_t *source_id,
 	unsigned long is_enabled,

@@ -111,7 +111,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         // Method group. BindConfiguration_T is its own method group.
         Bind = Bind_T | Bind_T_BinderOptions,
 
-        Any = Bind | BindConfiguration_T_path_BinderOptions,
+        BindConfiguration = BindConfiguration_T_path_BinderOptions,
+
+        Any = Bind | BindConfiguration,
     }
 
     /// <summary>

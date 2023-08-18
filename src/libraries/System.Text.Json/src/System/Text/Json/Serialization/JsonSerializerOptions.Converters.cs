@@ -45,11 +45,14 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
             }
 
-            if (JsonSerializer.IsReflectionEnabledByDefault && _typeInfoResolver is null)
+            if (JsonSerializer.IsReflectionEnabledByDefault)
             {
                 // Backward compatibility -- root & query the default reflection converters
                 // but do not populate the TypeInfoResolver setting.
-                return DefaultJsonTypeInfoResolver.GetConverterForType(typeToConvert, this);
+                if (_typeInfoResolver is null)
+                {
+                    return DefaultJsonTypeInfoResolver.GetConverterForType(typeToConvert, this);
+                }
             }
 
             return GetConverterInternal(typeToConvert);

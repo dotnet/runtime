@@ -33,7 +33,6 @@
   <!-- For API comparison, ApiCompat needs the inbox assemblies (including shims) and to resolve type forwards, the out-of-band assemblies. -->
   <ItemGroup>
     <ProjectReference Include="..\sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
-    <ProjectReference Include="..\shims.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="..\oob-src.proj" OutputItemType="OOBAssembly" />
   </ItemGroup>
 
@@ -42,18 +41,52 @@
     <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
     <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" IsImplicitlyDefined="true" />
+
+    <!-- Restore and reference assemblies not built in runtime anymore, required for resolving type forward on both comparison sides. -->
+    <ApiCompatTypeForwardDestinationPackage Include="System.Data.SqlClient" PackageVersion="$(SystemDataSqlClientVersion)" TargetFramework="netcoreapp2.1" />
+    <ApiCompatTypeForwardDestinationPackage Include="System.Drawing.Common" PackageVersion="$(SystemDrawingCommonVersion)" TargetFramework="net7.0" />
+
+    <!-- Restore and reference assemblies required for resolving type forwards on the baseline (left) side. -->
+    <ApiCompatLeftTypeForwardDestinationPackage Include="@(ApiCompatTypeForwardDestinationPackage)"  />
+    <ApiCompatLeftTypeForwardDestinationPackage
+      Include="
+        Microsoft.Win32.SystemEvents;
+        System.CodeDom;
+        System.Configuration.ConfigurationManager;
+        System.Data.Odbc;
+        System.Data.OleDb;
+        System.Diagnostics.EventLog;
+        System.Diagnostics.PerformanceCounter;
+        System.IO.Packaging;
+        System.IO.Ports;
+        System.Runtime.Serialization.Schema;
+        System.Security.Cryptography.Pkcs;
+        System.Security.Cryptography.ProtectedData;
+        System.Security.Cryptography.Xml;
+        System.Security.Permissions;
+        System.ServiceModel.Syndication;
+        System.ServiceProcess.ServiceController;
+        System.Threading.AccessControl;
+        System.Windows.Extensions"
+      PackageVersion="$(ApiCompatNetCoreAppBaselineVersion)"
+      TargetFramework="$(ApiCompatNetCoreAppBaselineTFM)" />
+    <PackageDownload Include="@(ApiCompatLeftTypeForwardDestinationPackage)" Version="[%(PackageVersion)]" />
   </ItemGroup>
 
   <Target Name="RunApiCompat"
           DependsOnTargets="FindReferenceAssembliesForReferences;CollectApiCompatInputs"
           AfterTargets="Build"
-          Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
+          Inputs="$(MSBuildThisFileFullPath);@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
           Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
     <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard 2.x and .NETCoreApp $(ApiCompatNetCoreAppBaselineVersion)..." Importance="high"  />
 
     <ItemGroup>
+      <ApiCompatNetCoreAppLatestStableAssemblyReference Include="@(ApiCompatLeftTypeForwardDestinationPackage->'$(NuGetPackageRoot)$([System.String]::new('%(ApiCompatLeftTypeForwardDestinationPackage.Identity)').ToLowerInvariant())\%(ApiCompatLeftTypeForwardDestinationPackage.PackageVersion)\lib\%(ApiCompatLeftTypeForwardDestinationPackage.TargetFramework)\%(ApiCompatLeftTypeForwardDestinationPackage.Identity).dll')" />
+
       <ApiCompatRightAssembly Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('IsPrivateAssembly', 'false')->WithMetadataValue('OutputItemType', 'SharedFrameworkAssembly'))" />
-      <ApiCompatRightAssemblyReference Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('IsPrivateAssembly', 'false')->WithMetadataValue('OutputItemType', 'OOBAssembly'), ',')" />
+      <ApiCompatRightAssemblyReferenceFromPackage Include="@(ApiCompatTypeForwardDestinationPackage->'$(NuGetPackageRoot)$([System.String]::new('%(ApiCompatTypeForwardDestinationPackage.Identity)').ToLowerInvariant())\%(ApiCompatTypeForwardDestinationPackage.PackageVersion)\lib\%(ApiCompatTypeForwardDestinationPackage.TargetFramework)\%(ApiCompatTypeForwardDestinationPackage.Identity).dll')" />
+      <ApiCompatRightAssemblyReference Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('IsPrivateAssembly', 'false')->WithMetadataValue('OutputItemType', 'OOBAssembly'));
+                                                @(ApiCompatRightAssemblyReferenceFromPackage)" />
     </ItemGroup>
 
     <!-- ApiCompat: NetCoreAppCurrent <-> .NETCoreApp ApiCompatNetCoreAppBaselineVersion -->
@@ -68,7 +101,8 @@
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)"
-      RightAssembliesReferences="@(ApiCompatRightAssemblyReference)" />
+      LeftAssembliesReferences="@(ApiCompatNetCoreAppLatestStableAssemblyReference, ',')"
+      RightAssembliesReferences="@(ApiCompatRightAssemblyReference, ',')" />
 
     <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.1 -->
     <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
@@ -81,7 +115,7 @@
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard21LeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)"
-      RightAssembliesReferences="@(ApiCompatRightAssemblyReference)" />
+      RightAssembliesReferences="@(ApiCompatRightAssemblyReference, ',')" />
 
     <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.0 -->
     <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
@@ -94,7 +128,7 @@
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard20LeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)"
-      RightAssembliesReferences="@(ApiCompatRightAssemblyReference)" />
+      RightAssembliesReferences="@(ApiCompatRightAssemblyReference, ',')" />
 
     <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
     <Touch Files="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt"

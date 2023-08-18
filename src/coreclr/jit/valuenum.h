@@ -681,9 +681,16 @@ public:
 
     ValueNum VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size);
 
+    ValueNum VNForMapSelectInner(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
+
     // A method that does the work for VNForMapSelect and may call itself recursively.
-    ValueNum VNForMapSelectWork(
-        ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN);
+    ValueNum VNForMapSelectWork(ValueNumKind          vnk,
+                                var_types             type,
+                                ValueNum              map,
+                                ValueNum              index,
+                                int*                  pBudget,
+                                bool*                 pUsedRecursiveVN,
+                                ArrayStack<ValueNum>* loopMemoryDependencies);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
@@ -1800,6 +1807,33 @@ private:
             m_VNFunc4Map = new (m_alloc) VNFunc4ToValueNumMap(m_alloc);
         }
         return m_VNFunc4Map;
+    }
+
+    class MapSelectWorkCacheEntry
+    {
+        union {
+            ValueNum* m_memoryDependencies;
+            ValueNum  m_inlineMemoryDependencies[sizeof(ValueNum*) / sizeof(ValueNum)];
+        };
+
+        unsigned m_numMemoryDependencies = 0;
+
+    public:
+        ValueNum Result;
+
+        void SetMemoryDependencies(CompAllocator alloc, ArrayStack<ValueNum>& deps, unsigned startIndex);
+        void GetMemoryDependencies(ArrayStack<ValueNum>& deps);
+    };
+
+    typedef JitHashTable<VNDefFuncApp<2>, VNDefFuncAppKeyFuncs<2>, MapSelectWorkCacheEntry> MapSelectWorkCache;
+    MapSelectWorkCache* m_mapSelectWorkCache = nullptr;
+    MapSelectWorkCache* GetMapSelectWorkCache()
+    {
+        if (m_mapSelectWorkCache == nullptr)
+        {
+            m_mapSelectWorkCache = new (m_alloc) MapSelectWorkCache(m_alloc);
+        }
+        return m_mapSelectWorkCache;
     }
 
     // We reserve Chunk 0 for "special" VNs.

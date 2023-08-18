@@ -115,6 +115,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(IsNtlmAvailable))]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
         public async Task DefaultHandler_FakeServer_Success(bool useNtlm)
         {
             await LoopbackServer.CreateClientAndServerAsync(

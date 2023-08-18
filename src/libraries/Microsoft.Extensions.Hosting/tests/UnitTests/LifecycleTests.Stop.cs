@@ -320,7 +320,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [InlineData(false)]
         public async Task StopPhasesException(bool throwAfterAsyncCall)
         {
-            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall, throwOnStartup: false, throwOnShutdown: true);
+            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall, throwOnShutdown: true);
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddHostedService((token) => impl);

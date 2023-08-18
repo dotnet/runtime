@@ -5,14 +5,16 @@
 #include "pal_autoreleasepool.h"
 #import <Foundation/Foundation.h>
 
+#if __has_feature(objc_arc)
+#error This file uses manual memory management and must not use ARC, but ARC is enabled.
+#endif
+
 const char* SystemNative_iOSSupportVersion()
 {
-    EnsureNSThreadIsMultiThreaded();
+    NSDictionary *plist = [[NSDictionary alloc] initWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
+    NSString *iOSSupportVersion = (NSString *)[plist objectForKey:@"iOSSupportVersion"];
+    const char* version = strdup([iOSSupportVersion UTF8String]);
+    [plist release];
 
-    @autoreleasepool
-    {
-        NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
-        NSString *iOSSupportVersion = (NSString *)[plist objectForKey:@"iOSSupportVersion"];
-        return strdup([iOSSupportVersion UTF8String]);
-    }
+    return version;
 }

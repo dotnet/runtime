@@ -83,6 +83,10 @@ namespace Mono.Linker
 				Debug.Assert (context != null);
 				return context;
 			}
+			set {
+				Debug.Assert (context == null);
+				context = value;
+			}
 		}
 
 		private static readonly char[] s_separators = new char[] { ',', ';', ' ' };

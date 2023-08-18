@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Microsoft.NET.Sdk.WebAssembly;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
@@ -44,6 +42,12 @@ public class ComputeWasmPublishAssets : Task
 
     [Required]
     public bool InvariantGlobalization { get; set; }
+
+    [Required]
+    public bool HybridGlobalization { get; set; }
+
+    [Required]
+    public bool LoadFullICUData { get; set; }
 
     [Required]
     public bool CopySymbols { get; set; }
@@ -265,6 +269,7 @@ public class ComputeWasmPublishAssets : Task
 
                 ApplyPublishProperties(newDotNetWasm);
                 nativeStaticWebAssets.Add(newDotNetWasm);
+
                 if (resolvedNativeAssetToPublish.TryGetValue("dotnet.native.wasm", out var resolved))
                 {
                     filesToRemove.Add(resolved);
@@ -578,7 +583,7 @@ public class ComputeWasmPublishAssets : Task
         foreach (var candidate in resolvedFilesToPublish)
         {
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. Dictionary.TryAdd() not available in .Net framework.
-            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
+            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, HybridGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
             {
                 Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                 if (!resolvedFilesToPublishToRemove.ContainsKey(candidate.ItemSpec))
@@ -592,7 +597,14 @@ public class ComputeWasmPublishAssets : Task
                 continue;
             }
 
+            var fileName = candidate.GetMetadata("FileName");
             var extension = candidate.GetMetadata("Extension");
+            if (string.Equals(candidate.GetMetadata("AssetType"), "native", StringComparison.Ordinal) && (fileName == "dotnet" || fileName == "dotnet.native") && extension == ".wasm")
+            {
+                ResolveAsNativeAsset(Log, resolvedNativeAssetToPublish, candidate, extension);
+                continue;
+            }
+
             if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals(extension, Utils.WebcilInWasmExtension, StringComparison.Ordinal))
             {
                 var culture = candidate.GetMetadata("Culture");
@@ -644,6 +656,12 @@ public class ComputeWasmPublishAssets : Task
             // upgraded
             if (string.Equals(candidate.GetMetadata("AssetType"), "native", StringComparison.Ordinal))
             {
+                ResolveAsNativeAsset(Log, resolvedNativeAssetToPublish, candidate, extension);
+                continue;
+            }
+
+            static void ResolveAsNativeAsset(TaskLoggingHelper log, Dictionary<string, ITaskItem> resolvedNativeAssetToPublish, ITaskItem candidate, string extension)
+            {
                 var candidateName = $"{candidate.GetMetadata("FileName")}{extension}";
                 if (!resolvedNativeAssetToPublish.ContainsKey(candidateName))
                 {
@@ -651,9 +669,8 @@ public class ComputeWasmPublishAssets : Task
                 }
                 else
                 {
-                    Log.LogMessage(MessageImportance.Low, "Duplicate candidate '{0}' found in ResolvedFilesToPublish", candidate.ItemSpec);
+                    log.LogMessage(MessageImportance.Low, "Duplicate candidate '{0}' found in ResolvedFilesToPublish", candidate.ItemSpec);
                 }
-                continue;
             }
 #pragma warning restore CA1864
         }

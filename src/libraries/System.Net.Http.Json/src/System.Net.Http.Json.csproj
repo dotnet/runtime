@@ -11,7 +11,11 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.AsyncEnumerable.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.cs" />
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.AsyncEnumerable.cs" />
     <Compile Include="System\Net\Http\Json\JsonHelpers.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Delete.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
@@ -20,7 +24,6 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Patch.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
-    <Compile Include="System\Net\Http\Json\JsonContentOfT.cs" />
     <Compile Include="System\Net\Http\Json\LengthLimitReadStream.cs" />
   </ItemGroup>
 
@@ -31,7 +34,6 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netcoreapp.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
-    <Compile Include="System\Net\Http\Json\JsonContentOfT.netcoreapp.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

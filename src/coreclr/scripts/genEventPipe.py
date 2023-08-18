@@ -181,11 +181,9 @@ def generateClrEventPipeWriteEventsImpl(
     eventPipeCallbackCastExpr = ""
     if target_cpp:
         eventPipeCallbackCastExpr = "reinterpret_cast<EventPipeCallback>"
-    else:
-        eventPipeCallbackCastExpr = "(EventPipeCallback)"
 
     if runtimeFlavor.mono:
-        WriteEventImpl.append("void " + callbackName + "(const uint8_t *, unsigned long, uint8_t, uint64_t,	uint64_t, EventFilterDescriptor *, void *);\n\n")
+        WriteEventImpl.append("void EP_CALLBACK_CALLTYPE " + callbackName + "(const uint8_t *, unsigned long, uint8_t, uint64_t, uint64_t, EventFilterDescriptor *, void *);\n\n")
 
     if extern: WriteEventImpl.append('extern "C" ')
     WriteEventImpl.append(

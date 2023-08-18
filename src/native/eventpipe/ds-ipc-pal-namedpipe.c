@@ -132,6 +132,7 @@ ds_ipc_alloc (
 
 	instance->overlap.hEvent = INVALID_HANDLE_VALUE;
 	instance->pipe = INVALID_HANDLE_VALUE;
+	instance->owningPipe = INVALID_HANDLE_VALUE;
 
 	if (ipc_name) {
 		characters_written = sprintf_s (
@@ -350,14 +351,27 @@ ds_ipc_listen (
 
 	EP_ASSERT (ipc->pipe == INVALID_HANDLE_VALUE);
 
+    DWORD creationFlags = PIPE_ACCESS_DUPLEX    // read/write access
+                | FILE_FLAG_OVERLAPPED;	        // async listening.
+
+    bool ensure_pipe_creation = ipc->owningPipe == INVALID_HANDLE_VALUE;
+    if (ensure_pipe_creation)
+	{
+		// Fail if we can't own pipe. Other than manually iterating the DACL,
+        // this is the only way to ensure ownership of the pipe via creation,
+        // and by extension that it has the default DACL.
+        // Otherwise, Windows treats this as a FIFO queue get-or-create
+        // request and we might end up with DACLs set by other creators.
+		creationFlags |= FILE_FLAG_FIRST_PIPE_INSTANCE;
+	}
+
 	const uint32_t in_buffer_size = 16 * 1024;
 	const uint32_t out_buffer_size = 16 * 1024;
 
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	ipc->pipe = CreateNamedPipeA (
 		ipc->pipe_name,                                             // pipe name
-		PIPE_ACCESS_DUPLEX |                                        // read/write access
-		FILE_FLAG_OVERLAPPED,                                       // async listening
+		creationFlags,
 		PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,    // message type pipe, message-read and blocking mode
 		PIPE_UNLIMITED_INSTANCES,                                   // max. instances
 		out_buffer_size,                                            // output buffer size
@@ -370,6 +384,25 @@ ds_ipc_listen (
 		if (callback)
 			callback ("Failed to create an instance of a named pipe.", GetLastError());
 		ep_raise_error ();
+	}
+
+    if (ensure_pipe_creation)
+	{
+        // Dupe the handle and hang it off the IPC to ensure EP ownership for process duration.
+        bool createdSentinel = DuplicateHandle(
+                                    GetCurrentProcess(),
+                                    ipc->pipe,
+                                    GetCurrentProcess(),
+                                    &(ipc->owningPipe),
+                                    0,
+                                    FALSE,
+                                    DUPLICATE_SAME_ACCESS);
+        if (!createdSentinel)
+        {
+            if (callback)
+			    callback ("Failed to ownership sentinel.", GetLastError());
+            ep_raise_error();
+        }
 	}
 
 	EP_ASSERT (ipc->overlap.hEvent == INVALID_HANDLE_VALUE);
@@ -458,6 +491,9 @@ ds_ipc_accept (
 	CloseHandle (ipc->overlap.hEvent);
 	memset(&ipc->overlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
 	ipc->overlap.hEvent = INVALID_HANDLE_VALUE;
+    // We explicitly leave the ownership pipe handle untouched to root the IPC as long as the pipe has
+    // been bound to our process.
+	EP_ASSERT (ipc->owningPipe != INVALID_HANDLE_VALUE);
 
 	ep_raise_error_if_nok (ds_ipc_listen (ipc, callback));
 
@@ -533,6 +569,21 @@ ds_ipc_close (
 	ds_ipc_error_callback_func callback)
 {
 	EP_ASSERT (ipc != NULL);
+
+    // Always clean this resource - even on shutdown - since
+    // it roots resources accross embedding scenarios.
+	if (ipc->owningPipe != INVALID_HANDLE_VALUE) {
+        // Explicitly don't reset ownership if we fail to close.
+        // It gives us a diagnostic crumble.
+        if (CloseHandle(ipc->owningPipe) == TRUE) {
+            ipc->owningPipe = INVALID_HANDLE_VALUE;
+        }
+        else {
+            if (callback) {
+                callback ("Failed to IPC ownership sentinel handle", GetLastError());
+            }
+        }
+	}
 
 	// don't attempt cleanup on shutdown and let the OS handle it
 	if (is_shutdown) {

@@ -322,6 +322,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoCommands DetachDebugger(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_detach_debugger()");
 
         public static MonoCommands ReleaseObject(int runtimeId, DotnetObjectId objectId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_release_object('{objectId}')");
+
+        public static MonoCommands GetWasmFunctionIds(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_func_id_to_name_mappings()");
     }
 
     internal enum MonoErrorCodes
@@ -406,6 +408,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             SdbAgent = sdbAgent;
             PauseOnExceptions = pauseOnExceptions;
             Destroyed = false;
+            FrameworkScriptList = new();
         }
         public ExecutionContext CreateChildAsyncExecutionContext(SessionId sessionId)
             => new ExecutionContext(null, Id, AuxData, PauseOnExceptions)
@@ -434,6 +437,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int ThreadId { get; set; }
         public int Id { get; set; }
         public ExecutionContext ParentContext { get; private set; }
+
+        public List<int> FrameworkScriptList { get; init; }
         public SessionId SessionId { get; private set; }
 
         public bool PausedOnWasm { get; set; }
@@ -470,6 +475,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return store;
             }
         }
+        public string[] WasmFunctionIds { get; internal set; }
 
         public PerScopeCache GetCacheForScope(int scopeId)
         {

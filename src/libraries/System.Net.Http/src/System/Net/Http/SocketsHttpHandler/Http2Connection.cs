@@ -64,17 +64,14 @@ namespace System.Net.Http
         // (1) We received a GOAWAY frame from the server
         // (2) We have exhaustead StreamIds (i.e. _nextStream == MaxStreamId)
         // (3) A connection-level error occurred, in which case _abortException below is set.
+        // (4) The connection is being disposed.
+        // Requests currently in flight will continue to be processed.
+        // When all requests have completed, the connection will be torn down.
         private bool _shutdown;
-        private TaskCompletionSource? _shutdownWaiter;
 
         // If this is set, the connection is aborting due to an IO failure (IOException) or a protocol violation (Http2ProtocolException).
         // _shutdown above is true, and requests in flight have been (or are being) failed.
         private Exception? _abortException;
-
-        // This means that the user (i.e. the connection pool) has disposed us and will not submit further requests.
-        // Requests currently in flight will continue to be processed.
-        // When all requests have completed, the connection will be torn down.
-        private bool _disposed;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -132,8 +129,8 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream)
-            : base(pool)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, IPEndPoint? remoteEndPoint)
+            : base(pool, remoteEndPoint)
         {
             _pool = pool;
             _stream = stream;
@@ -248,30 +245,11 @@ namespace System.Net.Http
                     throw;
                 }
 
+                // TODO: Review this case!
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
             _ = ProcessOutgoingFramesAsync();
-        }
-
-        // This will complete when the connection begins to shut down and cannot be used anymore, or if it is disposed.
-        public ValueTask WaitForShutdownAsync()
-        {
-            lock (SyncObject)
-            {
-                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                ObjectDisposedException.ThrowIf(_disposed, this);
-
-                if (_shutdown)
-                {
-                    Debug.Assert(_shutdownWaiter is null);
-                    return default;
-                }
-
-                _shutdownWaiter ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                return new ValueTask(_shutdownWaiter.Task);
-            }
         }
 
         private void Shutdown()
@@ -280,25 +258,17 @@ namespace System.Net.Http
 
             Debug.Assert(Monitor.IsEntered(SyncObject));
 
-            SignalAvailableStreamsWaiter(false);
-            SignalShutdownWaiter();
-
-            // Note _shutdown could already be set, but that's fine.
-            _shutdown = true;
-        }
-
-        private void SignalShutdownWaiter()
-        {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_shutdownWaiter)}?={_shutdownWaiter is not null}");
-
-            Debug.Assert(Monitor.IsEntered(SyncObject));
-
-            if (_shutdownWaiter is not null)
+            if (!_shutdown)
             {
-                Debug.Assert(!_disposed);
-                Debug.Assert(!_shutdown);
-                _shutdownWaiter.SetResult();
-                _shutdownWaiter = null;
+                _pool.InvalidateHttp2Connection(this);
+                SignalAvailableStreamsWaiter(false);
+
+                _shutdown = true;
+
+                if (_streamsInUse == 0)
+                {
+                    FinalTeardown();
+                }
             }
         }
 
@@ -306,9 +276,6 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                ObjectDisposedException.ThrowIf(_disposed, this);
-
                 if (_shutdown)
                 {
                     return false;
@@ -352,7 +319,7 @@ namespace System.Net.Http
                 {
                     MarkConnectionAsIdle();
 
-                    if (_disposed)
+                    if (_shutdown)
                     {
                         FinalTeardown();
                     }
@@ -366,9 +333,6 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                ObjectDisposedException.ThrowIf(_disposed, this);
-
                 Debug.Assert(_availableStreamsWaiter is null, "As used currently, shouldn't already have a waiter");
 
                 if (_shutdown)
@@ -395,7 +359,6 @@ namespace System.Net.Http
 
             if (_availableStreamsWaiter is not null)
             {
-                Debug.Assert(!_disposed);
                 Debug.Assert(!_shutdown);
                 _availableStreamsWaiter.SetResult(result);
                 _availableStreamsWaiter = null;
@@ -488,10 +451,10 @@ namespace System.Net.Http
             return frameHeader;
 
             void ThrowPrematureEOF(int requiredBytes) =>
-                throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
+                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
 
             void ThrowMissingFrame() =>
-                throw new IOException(SR.net_http_invalid_response_missing_frame);
+                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_missing_frame);
         }
 
         private async Task ProcessIncomingFramesAsync()
@@ -523,10 +486,15 @@ namespace System.Net.Http
 
                     Debug.Assert(InitialSettingsReceived.Task.IsCompleted);
                 }
+                catch (HttpProtocolException e)
+                {
+                    InitialSettingsReceived.TrySetException(e);
+                    throw;
+                }
                 catch (Exception e)
                 {
-                    InitialSettingsReceived.TrySetException(new IOException(SR.net_http_http2_connection_not_established, e));
-                    throw new IOException(SR.net_http_http2_connection_not_established, e);
+                    InitialSettingsReceived.TrySetException(new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e));
+                    throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e);
                 }
 
                 // Keep processing frames as they arrive.
@@ -1207,7 +1175,7 @@ namespace System.Net.Http
                 // We must be trying to send something asynchronously (like RST_STREAM or a PING or a SETTINGS ACK) and it has raced with the connection tear down.
                 // As such, it should not matter that we were not able to actually send the frame.
                 // But just in case, throw ObjectDisposedException. Asynchronous callers will ignore the failure.
-                Debug.Assert(_disposed && _streamsInUse == 0);
+                Debug.Assert(_shutdown && _streamsInUse == 0);
                 return Task.FromException(new ObjectDisposedException(nameof(Http2Connection)));
             }
 
@@ -1336,7 +1304,7 @@ namespace System.Net.Http
 
         internal void HeartBeat()
         {
-            if (_disposed)
+            if (_shutdown)
                 return;
 
             try
@@ -1656,7 +1624,7 @@ namespace System.Net.Http
             ArrayBuffer headerBuffer = default;
             try
             {
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
                 // Serialize headers to a temporary buffer, and do as much work to prepare to send the headers as we can
                 // before taking the write lock.
@@ -1874,7 +1842,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
-            Debug.Assert(_disposed);
+            Debug.Assert(_shutdown);
             Debug.Assert(_streamsInUse == 0);
 
             GC.SuppressFinalize(this);
@@ -1895,20 +1863,7 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_disposed)}={_disposed}, {nameof(_streamsInUse)}={_streamsInUse}");
-
-                if (!_disposed)
-                {
-                    SignalAvailableStreamsWaiter(false);
-                    SignalShutdownWaiter();
-
-                    _disposed = true;
-
-                    if (_streamsInUse == 0)
-                    {
-                        FinalTeardown();
-                    }
-                }
+                Shutdown();
             }
         }
 
@@ -2096,17 +2051,13 @@ namespace System.Net.Http
 
                 return http2Stream.GetAndClearResponse();
             }
-            catch (Exception e)
+            catch (HttpIOException e)
             {
-                if (e is IOException ||
-                    e is ObjectDisposedException ||
-                    e is HttpProtocolException ||
-                    e is InvalidOperationException)
-                {
-                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
-                }
-
-                throw;
+                throw new HttpRequestException(e.HttpRequestError, e.Message, e);
+            }
+            catch (Exception e) when (e is IOException || e is ObjectDisposedException || e is InvalidOperationException)
+            {
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, e);
             }
         }
 
@@ -2203,10 +2154,10 @@ namespace System.Net.Http
 
         [DoesNotReturn]
         private static void ThrowRetry(string message, Exception? innerException = null) =>
-            throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
+            throw new HttpRequestException((innerException as HttpIOException)?.HttpRequestError ?? HttpRequestError.Unknown, message, innerException, RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            innerException as HttpProtocolException ?? new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpIOException ?? new IOException(SR.net_http_request_aborted, innerException);
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>

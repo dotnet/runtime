@@ -31,6 +31,7 @@ parameters:
   extraStepsParameters: {}
   extraVariablesTemplates: []
   isManualCodeQLBuild: false
+  preBuildSteps: []
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -182,6 +183,10 @@ jobs:
         displayName: Update machine certs
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
+
+    - ${{ if ne(parameters.preBuildSteps,'') }}:
+      - ${{ each preBuildStep in parameters.preBuildSteps }}:
+        - ${{ preBuildStep }}
 
     # Build
     - ${{ if eq(parameters.isSourceBuild, false) }}:

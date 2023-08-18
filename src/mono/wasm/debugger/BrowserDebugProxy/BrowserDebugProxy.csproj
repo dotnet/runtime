@@ -16,7 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.NET.WebAssembly.Webcil\src\Microsoft.NET.WebAssembly.Webcil.csproj" Private="true" />
+    <ProjectReference Include="$(RepoTasksDir)Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj"
+                      Private="true"
+                      SetConfiguration="Configuration=$(TasksConfiguration)" />
   </ItemGroup>
 
 </Project>

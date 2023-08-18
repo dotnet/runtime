@@ -987,7 +987,7 @@ bool BaseBucketParamsManager::IsCodeContractsFrame(MethodDesc* pMD)
     if (!pMD)
         return false;
 
-    MethodTable* pMT = pMD->GetMethodTable_NoLogging();
+    MethodTable* pMT = pMD->GetMethodTable();
     LPCUTF8 pszNamespace = NULL;
     LPCUTF8 pszName = NULL;
     pszName = pMT->GetFullyQualifiedNameInfo(&pszNamespace);

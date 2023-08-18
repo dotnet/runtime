@@ -159,6 +159,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var res in metadataProvider.GetLinkAttributesFiles ()) {
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
+
+			foreach (var delete in metadataProvider.GetDeleteBefore ())
+				InputDirectory.Combine (delete).FileMustExist ().Delete ();
 		}
 
 		private static NPath GetExpectationsAssemblyPath ()

@@ -65,7 +65,7 @@ mono_ldftn (MonoMethod *method)
 	} else {
 		addr = mono_create_jump_trampoline (method, FALSE, error);
 		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-                        addr = mono_create_static_rgctx_trampoline (method, addr);
+			addr = mono_create_static_rgctx_trampoline (method, addr);
 	}
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);

@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -93,7 +94,8 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Avoid a PackageReference to System.Drawing.Common this reference is only needed for TypeForwards -->
-    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" PrivateAssets="All" />
+    <!-- Avoid a product dependency to System.Drawing.Common, this reference is only needed for TypeForwards -->
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Drawing.Common.csproj" PrivateAssets="all" />
   </ItemGroup>
+
 </Project>
