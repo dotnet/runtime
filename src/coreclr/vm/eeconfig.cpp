@@ -826,6 +826,9 @@ bool EEConfig::ExcludeReadyToRun(LPCUTF8 assemblyName) const
 {
     LIMITED_METHOD_CONTRACT;
 
+    if (strncmp(assemblyName, "System.Private.CoreLib", 22) == 0)
+        return true;
+
     if (pReadyToRunExcludeList != NULL && pReadyToRunExcludeList->IsInList(assemblyName))
         return true;
 
