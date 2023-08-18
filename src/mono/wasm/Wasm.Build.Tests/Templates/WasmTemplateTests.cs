@@ -407,23 +407,21 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
-        [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
+        [InlineData("", BuildTestBase.DefaultTargetFramework)]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("-f net7.0", "net7.0")]
-        [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
-        [InlineData("-f net8.0", "net8.0", "./")]
-        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
+        [InlineData("-f net8.0", "net8.0")]
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework)
         {
             string config = "Debug";
             string id = $"browser_{config}_{GetRandomId()}";
             CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
 
-            UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
+            UpdateBrowserMainJs(targetFramework);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(runtimeAssetsRelativePath != DefaultRuntimeAssetsRelativePath ? "-p:WasmRuntimeAssetsLocation=" + runtimeAssetsRelativePath : "")}")
+                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
                     .EnsureSuccessful();
 
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
