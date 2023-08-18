@@ -45,6 +45,7 @@ extends:
        - template: /eng/common/templates/job/onelocbuild.yml
          parameters:
            MirrorRepo: runtime
+           MirrorBranch: release/8.0
            LclSource: lclFilesfromPackage
            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
