@@ -57,10 +57,9 @@ namespace System.Diagnostics
             {
                 long endTimeStamp = GetTimestamp();
                 long elapsedThisPeriod = endTimeStamp - _startTimeStamp;
-                _elapsed += elapsedThisPeriod;
                 _isRunning = false;
 
-                if (_elapsed < 0)
+                if (elapsedThisPeriod > 0)
                 {
                     // When measuring small time periods the Stopwatch.Elapsed*
                     // properties can return negative values.  This is due to
@@ -68,7 +67,7 @@ namespace System.Diagnostics
                     // abstraction layer (HAL) on machines with variable-speed CPUs
                     // (e.g. Intel SpeedStep).
 
-                    _elapsed = 0;
+                    _elapsed += elapsedThisPeriod;
                 }
             }
         }
@@ -125,18 +124,17 @@ namespace System.Diagnostics
                 // the Stopwatch is started last time.
                 long currentTimeStamp = GetTimestamp();
                 long elapsedUntilNow = currentTimeStamp - _startTimeStamp;
-                timeElapsed += elapsedUntilNow;
-            }
 
-            if (timeElapsed < 0)
-            {
-                // When measuring small time periods the Stopwatch.Elapsed*
-                // properties can return negative values.  This is due to
-                // bugs in the basic input/output system (BIOS) or the hardware
-                // abstraction layer (HAL) on machines with variable-speed CPUs
-                // (e.g. Intel SpeedStep).
+                if (elapsedUntilNow > 0)
+                {
+                    // When measuring small time periods the Stopwatch.Elapsed*
+                    // properties can return negative values.  This is due to
+                    // bugs in the basic input/output system (BIOS) or the hardware
+                    // abstraction layer (HAL) on machines with variable-speed CPUs
+                    // (e.g. Intel SpeedStep).
 
-                return 0;
+                    timeElapsed += elapsedUntilNow;
+                }
             }
 
             return timeElapsed;
