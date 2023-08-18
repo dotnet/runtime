@@ -127,6 +127,18 @@ namespace System.Diagnostics
                 long elapsedUntilNow = currentTimeStamp - _startTimeStamp;
                 timeElapsed += elapsedUntilNow;
             }
+
+            if (timeElapsed < 0)
+            {
+                // When measuring small time periods the Stopwatch.Elapsed*
+                // properties can return negative values.  This is due to
+                // bugs in the basic input/output system (BIOS) or the hardware
+                // abstraction layer (HAL) on machines with variable-speed CPUs
+                // (e.g. Intel SpeedStep).
+
+                return 0;
+            }
+
             return timeElapsed;
         }
 
