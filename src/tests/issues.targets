@@ -1174,6 +1174,10 @@
 
         <!-- Requires Debug build -->
         <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\*" />
+
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
+            <Issue>Dynamic code generation is not supported on this platform</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -3695,6 +3699,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
             <Issue>https://github.com/dotnet/runtime/issues/90012</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
+            <Issue>Dynamic code generation is not supported on this platform</Issue>
         </ExcludeList>
     </ItemGroup>
 
