@@ -19,6 +19,7 @@
 
 // Command = 0x0202
 // Command = 0x0203
+// Command = 0x0204
 #if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)
 struct _EventPipeCollectTracingCommandPayload {
 #else
@@ -38,6 +39,7 @@ struct _EventPipeCollectTracingCommandPayload_Internal {
 	uint32_t circular_buffer_size_in_mb;
 	EventPipeSerializationFormat serialization_format;
 	bool rundown_requested;
+	bool disable_stacktrace;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)

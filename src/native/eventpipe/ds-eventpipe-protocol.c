@@ -48,6 +48,13 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 
 static
 bool
+eventpipe_collect_tracing_command_try_parse_disable_stacktrace (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	bool *disable_stacktrace);
+
+static
+bool
 eventpipe_collect_tracing_command_try_parse_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
@@ -62,6 +69,12 @@ eventpipe_collect_tracing_command_try_parse_payload (
 static
 uint8_t *
 eventpipe_collect_tracing2_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len);
+
+static
+uint8_t *
+eventpipe_collect_tracing3_command_try_parse_payload (
 	uint8_t *buffer,
 	uint16_t buffer_len);
 
@@ -135,6 +148,21 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 	EP_ASSERT (rundown_requested != NULL);
 
 	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)rundown_requested, 1);
+}
+
+static
+inline
+bool
+eventpipe_collect_tracing_command_try_parse_disable_stacktrace (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	bool *disable_stacktrace)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (disable_stacktrace != NULL);
+
+	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)disable_stacktrace, 1);
 }
 
 static
@@ -270,6 +298,7 @@ eventpipe_collect_tracing_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
 		ep_raise_error ();
 	instance->rundown_requested = true;
+	instance->disable_stacktrace = false;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -299,6 +328,39 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 	if (!eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb ) ||
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
 		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
+		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
+		ep_raise_error ();
+	instance->disable_stacktrace = false;
+
+ep_on_exit:
+	return (uint8_t *)instance;
+
+ep_on_error:
+	ds_eventpipe_collect_tracing_command_payload_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+static
+uint8_t *
+eventpipe_collect_tracing3_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len)
+{
+	EP_ASSERT (buffer != NULL);
+
+	uint8_t * buffer_cursor = buffer;
+	uint32_t buffer_cursor_len = buffer_len;
+
+	EventPipeCollectTracingCommandPayload *instance = ds_eventpipe_collect_tracing_command_payload_alloc ();
+	ep_raise_error_if_nok (instance != NULL);
+
+	instance->incoming_buffer = buffer;
+
+	if (!eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb ) ||
+		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
+		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
+		!eventpipe_collect_tracing_command_try_parse_disable_stacktrace (&buffer_cursor, &buffer_cursor_len, &instance->disable_stacktrace) ||
 		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
 		ep_raise_error ();
 
@@ -471,6 +533,10 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 		break;
 	case EP_COMMANDID_COLLECT_TRACING_2:
 		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing2_command_try_parse_payload);
+		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
+		break;
+	case EP_COMMANDID_COLLECT_TRACING_3:
+		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing3_command_try_parse_payload);
 		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
 		break;
 	case EP_COMMANDID_STOP_TRACING:
