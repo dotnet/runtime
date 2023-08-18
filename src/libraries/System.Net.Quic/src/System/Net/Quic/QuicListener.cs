@@ -157,7 +157,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
         // Get the actual listening endpoint.
         address = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS);
-        LocalEndPoint = address.ToIPEndPoint(options.ListenEndPoint.AddressFamily);
+        LocalEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&address, options.ListenEndPoint.AddressFamily);
     }
 
     /// <summary>
@@ -287,7 +287,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"{this} Refusing connection from {data.Info->RemoteAddress->ToIPEndPoint()} due to backlog limit");
+                NetEventSource.Info(this, $"{this} Refusing connection from {MsQuicHelpers.QuicAddrToIPEndPoint(data.Info->RemoteAddress)} due to backlog limit");
             }
 
             Interlocked.Increment(ref _pendingConnectionsCapacity);

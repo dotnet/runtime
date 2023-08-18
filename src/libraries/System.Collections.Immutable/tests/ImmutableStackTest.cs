@@ -285,7 +285,7 @@ namespace System.Collections.Immutable.Tests
                 .Push(3);
 
             ref readonly int safeRef = ref stack.PeekRef();
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(3, stack.PeekRef());
 

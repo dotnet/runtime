@@ -198,7 +198,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("CustomDictionary")) is IConfigurationSection section1)
             {
-                Program.CustomDictionary<string, int> temp3 = obj.CustomDictionary;
+                Program.CustomDictionary<string, int>? temp3 = obj.CustomDictionary;
                 temp3 ??= new Program.CustomDictionary<string, int>();
                 BindCore(section1, ref temp3, binderOptions);
                 obj.CustomDictionary = temp3;
@@ -206,7 +206,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("CustomList")) is IConfigurationSection section4)
             {
-                Program.CustomList temp6 = obj.CustomList;
+                Program.CustomList? temp6 = obj.CustomList;
                 temp6 ??= new Program.CustomList();
                 BindCore(section4, ref temp6, binderOptions);
                 obj.CustomList = temp6;
@@ -214,7 +214,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section7)
             {
-                IReadOnlyList<int> temp9 = obj.IReadOnlyList;
+                IReadOnlyList<int>? temp9 = obj.IReadOnlyList;
                 temp9 = temp9 is null ? new List<int>() : new List<int>(temp9);
                 BindCore(section7, ref temp9, binderOptions);
                 obj.IReadOnlyList = temp9;
@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section10)
             {
-                IReadOnlyDictionary<string, int> temp12 = obj.IReadOnlyDictionary;
+                IReadOnlyDictionary<string, int>? temp12 = obj.IReadOnlyDictionary;
                 temp12 = temp12 is null ? new Dictionary<string, int>() : temp12.ToDictionary(pair => pair.Key, pair => pair.Value);
                 BindCore(section10, ref temp12, binderOptions);
                 obj.IReadOnlyDictionary = temp12;

@@ -97,8 +97,10 @@ namespace Microsoft.Interop
                         return _nativeTypeMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
                     }
                     break;
-                case StubCodeContext.Stage.Cleanup:
-                    return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
+                case StubCodeContext.Stage.CleanupCallerAllocated:
+                    return _nativeTypeMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(info, context);
+                case StubCodeContext.Stage.CleanupCalleeAllocated:
+                    return _nativeTypeMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(info, context);
                 default:
                     break;
             }
@@ -110,7 +112,7 @@ namespace Microsoft.Interop
         {
             return
             info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
-                && _byValueContentsMarshallingSupport.GetSupport(info.ByValueContentsMarshalKind, info, context, out _) == ByValueMarshalKindSupport.Supported
+                && _byValueContentsMarshallingSupport.GetSupport(info.ByValueContentsMarshalKind, info, context, out _) != ByValueMarshalKindSupport.NotSupported
                 && !info.IsByRef
                 && !_isPinned;
         }

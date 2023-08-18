@@ -21,6 +21,7 @@ void jiterp_preserve_module (void);
 #define jiterp_assert(b)
 #endif
 
+#include <stdatomic.h>
 #include <emscripten.h>
 
 #include <string.h>
@@ -380,13 +381,15 @@ mono_jiterp_conv (void *dest, void *src, int opcode) {
 	return 0;
 }
 
-#define JITERP_CNE_UN_R4 (0xFFFF + 0)
-#define JITERP_CGE_UN_R4 (0xFFFF + 1)
-#define JITERP_CLE_UN_R4 (0xFFFF + 2)
-#define JITERP_CNE_UN_R8 (0xFFFF + 3)
-#define JITERP_CGE_UN_R8 (0xFFFF + 4)
-#define JITERP_CLE_UN_R8 (0xFFFF + 5)
-
+// keep in sync with jiterpreter-opcodes.ts
+enum {
+	JITERP_CNE_UN_R4 = (0xFFFF + 0),
+	JITERP_CGE_UN_R4,
+	JITERP_CLE_UN_R4,
+	JITERP_CNE_UN_R8,
+	JITERP_CGE_UN_R8,
+	JITERP_CLE_UN_R8,
+};
 
 #define JITERP_RELOP(opcode, type, op, noorder) \
 	case opcode: \
@@ -707,15 +710,20 @@ static TraceInfo *
 trace_info_allocate_segment (gint32 index) {
 	g_assert (index < MAX_TRACE_SEGMENTS);
 
-	volatile gpointer *slot = (volatile gpointer *)&trace_segments[index];
-	gpointer segment = g_malloc0 (sizeof(TraceInfo) * TRACE_SEGMENT_SIZE);
-	gpointer result = mono_atomic_cas_ptr (slot, segment, NULL);
-	if (result != NULL) {
+	TraceInfo *segment = (TraceInfo *)g_malloc0 (sizeof(TraceInfo) * TRACE_SEGMENT_SIZE);
+
+#ifdef DISABLE_THREADS
+	trace_segments[index] = segment;
+	return segment;
+#else
+	TraceInfo *expected = NULL;
+	if (!atomic_compare_exchange_strong ((atomic_uintptr_t *)&trace_segments[index], (uintptr_t *)&expected, (uintptr_t)segment)) {
 		g_free (segment);
-		return (TraceInfo *)result;
+		return expected;
 	} else {
-		return (TraceInfo *)segment;
+		return segment;
 	}
+#endif
 }
 
 static TraceInfo *
@@ -842,7 +850,9 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 				td->cbb = bb;
 				imethod->contains_traces = TRUE;
 				InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
-				memcpy(ins->data, &trace_index, sizeof (trace_index));
+				// [opcode] [relative_fn_ptr] [trace_index_01] [trace_index_23]
+				ins->data[0] = 0;
+				memcpy(ins->data + 1, &trace_index, sizeof (trace_index));
 
 				// Clear the instruction counter
 				instruction_count = 0;
@@ -881,7 +891,7 @@ mono_jiterp_get_trace_hit_count (gint32 trace_index) {
 	return trace_info_get (trace_index)->hit_count;
 }
 
-JiterpreterThunk
+MONO_NEVER_INLINE JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter_fast (
 	void *_frame, const guint16 *ip
 ) {
@@ -892,8 +902,9 @@ mono_interp_tier_prepare_jiterpreter_fast (
 	MonoMethod *method = frame->imethod->method;
 	const guint16 *start_of_body = frame->imethod->jinfo->code_start;
 	int size_of_body = frame->imethod->jinfo->code_size;
+	JiterpreterOpcode *opcode = (JiterpreterOpcode *)ip;
 
-	guint32 trace_index = READ32 (ip + 1);
+	guint32 trace_index = opcode->trace_index;
 	TraceInfo *trace_info = trace_info_get (trace_index);
 	g_assert (trace_info);
 
@@ -903,13 +914,14 @@ mono_interp_tier_prepare_jiterpreter_fast (
 #ifdef DISABLE_THREADS
 	gint64 count = trace_info->hit_count++;
 #else
-	gint64 count = mono_atomic_inc_i64(&trace_info->hit_count);
+	gint64 count = atomic_fetch_add ((atomic_long *)&trace_info->hit_count, 1);
 #endif
 
 	if (count == mono_opt_jiterpreter_minimum_trace_hit_count) {
-		JiterpreterThunk result = mono_interp_tier_prepare_jiterpreter(
+		JiterpreterThunk result = mono_interp_tier_prepare_jiterpreter (
 			frame, method, ip, (gint32)trace_index,
-			start_of_body, size_of_body, frame->imethod->is_verbose
+			start_of_body, size_of_body, frame->imethod->is_verbose,
+			0
 		);
 		trace_info->thunk = result;
 		return result;
@@ -1098,46 +1110,29 @@ mono_jiterp_stelem_ref (
 	return 1;
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_trace_transfer (
-	int displacement, JiterpreterThunk trace, void *frame, void *pLocals, JiterpreterCallInfo *cinfo
-) {
-	// This indicates that we lost a race condition, so there's no trace to call. Just bail out.
-	// FIXME: Detect this at trace generation time and spin until the trace is available
-	if (!trace)
-		return displacement;
+// keep in sync with jiterpreter-enums.ts JiterpMember
+enum {
+	JITERP_MEMBER_VT_INITIALIZED = 0,
+	JITERP_MEMBER_ARRAY_DATA,
+	JITERP_MEMBER_STRING_LENGTH,
+	JITERP_MEMBER_STRING_DATA,
+	JITERP_MEMBER_IMETHOD,
+	JITERP_MEMBER_DATA_ITEMS,
+	JITERP_MEMBER_RMETHOD,
+	JITERP_MEMBER_SPAN_LENGTH,
+	JITERP_MEMBER_SPAN_DATA,
+	JITERP_MEMBER_ARRAY_LENGTH,
+	JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS,
+	JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT,
+	JITERP_MEMBER_CLAUSE_DATA_OFFSETS,
+	JITERP_MEMBER_PARAMS_COUNT,
+	JITERP_MEMBER_VTABLE,
+	JITERP_MEMBER_VTABLE_KLASS,
+	JITERP_MEMBER_CLASS_RANK,
+	JITERP_MEMBER_CLASS_ELEMENT_CLASS,
+	JITERP_MEMBER_BOXED_VALUE_DATA
+};
 
-	// When we transfer control to a trace that represents a loop body, at the end of the loop
-	//  body it may branch back to itself. In that case, we can just call it again - the
-	//  safepoint was already performed by the trace.
-	int relative_displacement = 0;
-	while (relative_displacement == 0)
-		relative_displacement = trace(frame, pLocals, cinfo);
-
-	// We got a relative displacement other than 0, so the trace bailed out somewhere or
-	//  branched to another branch target. Time to return (and our caller will return too.)
-	return displacement + relative_displacement;
-}
-
-#define JITERP_MEMBER_VT_INITIALIZED 0
-#define JITERP_MEMBER_ARRAY_DATA 1
-#define JITERP_MEMBER_STRING_LENGTH 2
-#define JITERP_MEMBER_STRING_DATA 3
-#define JITERP_MEMBER_IMETHOD 4
-#define JITERP_MEMBER_DATA_ITEMS 5
-#define JITERP_MEMBER_RMETHOD 6
-#define JITERP_MEMBER_SPAN_LENGTH 7
-#define JITERP_MEMBER_SPAN_DATA 8
-#define JITERP_MEMBER_ARRAY_LENGTH 9
-#define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS 10
-#define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
-#define JITERP_MEMBER_CLAUSE_DATA_OFFSETS 12
-#define JITERP_MEMBER_PARAMS_COUNT 13
-#define JITERP_MEMBER_VTABLE 14
-#define JITERP_MEMBER_VTABLE_KLASS 15
-#define JITERP_MEMBER_CLASS_RANK 16
-#define JITERP_MEMBER_CLASS_ELEMENT_CLASS 17
-#define JITERP_MEMBER_BOXED_VALUE_DATA 18
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -1187,10 +1182,62 @@ mono_jiterp_get_member_offset (int member) {
 	}
 }
 
-#define JITERP_NUMBER_MODE_U32 0
-#define JITERP_NUMBER_MODE_I32 1
-#define JITERP_NUMBER_MODE_F32 2
-#define JITERP_NUMBER_MODE_F64 3
+// keep in sync with jiterpreter-enums.ts JiterpCounter
+enum {
+	JITERP_COUNTER_TRACE_CANDIDATES = 0,
+	JITERP_COUNTER_TRACES_COMPILED,
+	JITERP_COUNTER_ENTRY_WRAPPERS_COMPILED,
+	JITERP_COUNTER_JIT_CALLS_COMPILED,
+	JITERP_COUNTER_DIRECT_JIT_CALLS_COMPILED,
+	JITERP_COUNTER_FAILURES,
+	JITERP_COUNTER_BYTES_GENERATED,
+	JITERP_COUNTER_NULL_CHECKS_ELIMINATED,
+	JITERP_COUNTER_NULL_CHECKS_FUSED,
+	JITERP_COUNTER_BACK_BRANCHES_EMITTED,
+	JITERP_COUNTER_BACK_BRANCHES_NOT_EMITTED,
+	JITERP_COUNTER_ELAPSED_GENERATION,
+	JITERP_COUNTER_ELAPSED_COMPILATION,
+	JITERP_COUNTER_MAX = JITERP_COUNTER_ELAPSED_COMPILATION
+};
+
+#define JITERP_COUNTER_UNIT 100
+
+static long counters[JITERP_COUNTER_MAX + 1] = {0};
+
+static long *
+mono_jiterp_get_counter_address (int counter) {
+	g_assert ((counter >= 0) && (counter <= JITERP_COUNTER_MAX));
+	return &counters[counter];
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_get_counter (int counter) {
+	long actual_result = *(mono_jiterp_get_counter_address (counter));
+	return ((double)actual_result) / JITERP_COUNTER_UNIT;
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_modify_counter (int counter, double delta) {
+	long actual_delta = (long)(delta * JITERP_COUNTER_UNIT);
+	long *counter_address = mono_jiterp_get_counter_address (counter);
+
+#ifdef DISABLE_THREADS
+	long actual_result = *counter_address;
+	*counter_address = actual_result + actual_delta;
+#else
+	long actual_result = atomic_fetch_add ((atomic_long *)counter_address, actual_delta);
+#endif
+
+	return ((double)actual_result) / JITERP_COUNTER_UNIT;
+}
+
+// keep in sync with jiterpreter-enums.ts JiterpNumberMode
+enum {
+	JITERP_NUMBER_MODE_U32 = 0,
+	JITERP_NUMBER_MODE_I32,
+	JITERP_NUMBER_MODE_F32,
+	JITERP_NUMBER_MODE_F64,
+};
 
 EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
@@ -1214,24 +1261,27 @@ mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
 
 #define TRACE_PENALTY_LIMIT 200
 
-ptrdiff_t
+MONO_NEVER_INLINE ptrdiff_t
 mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 {
-	gint32 index = READ32 (ip + 1);
-	TraceInfo *info = trace_info_get (index);
+	JiterpreterCallInfo cinfo;
+	cinfo.backward_branch_taken = 0;
+	cinfo.bailout_opcode_count = -1;
+	volatile JiterpreterOpcode *opcode = (volatile JiterpreterOpcode *)ip;
+
+	if (opcode->opcode != MINT_TIER_MONITOR_JITERPRETER)
+		return mono_interp_oplen [opcode->opcode] * 2;
+
+	TraceInfo *info = trace_info_get (opcode->trace_index);
 	g_assert (info);
 
 	JiterpreterThunk thunk = info->thunk;
 	// FIXME: This shouldn't be possible
 	g_assert (((guint32)(void *)thunk) > JITERPRETER_NOT_JITTED);
 
-	JiterpreterCallInfo cinfo;
-	cinfo.backward_branch_taken = 0;
-	cinfo.bailout_opcode_count = -1;
-
 	InterpFrame *frame = _frame;
 
-	ptrdiff_t result = thunk (frame, locals, &cinfo);
+	ptrdiff_t result = thunk (frame, locals, &cinfo, ip);
 	// If a backward branch was taken, we can treat the trace as if it successfully
 	//  executed at least one time. We don't know how long it actually ran, but back
 	//  branches are almost always going to be loops. It's fine if a bailout happens
@@ -1245,33 +1295,54 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 		float scaled = (float)(cinfo.bailout_opcode_count - mono_opt_jiterpreter_trace_monitoring_short_distance)
 			/ (mono_opt_jiterpreter_trace_monitoring_long_distance - mono_opt_jiterpreter_trace_monitoring_short_distance);
 		int penalty = MIN ((int)((1.0f - scaled) * TRACE_PENALTY_LIMIT), TRACE_PENALTY_LIMIT);
+
+#ifdef DISABLE_THREADS
 		info->penalty_total += penalty;
+#else
+		atomic_fetch_add ((atomic_int *)&info->penalty_total, penalty);
+#endif
 
 		if (mono_opt_jiterpreter_trace_monitoring_log > 2)
-			g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
+			g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", opcode->trace_index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
 	}
 
-	gint64 hit_count = info->hit_count++ - mono_opt_jiterpreter_minimum_trace_hit_count;
-	if (hit_count == mono_opt_jiterpreter_trace_monitoring_period) {
-		// Prepare to enable the trace
-		volatile guint16 *mutable_ip = (volatile guint16*)ip;
-		*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+#ifdef DISABLE_THREADS
+	gint64 hit_count = info->hit_count - mono_opt_jiterpreter_minimum_trace_hit_count;
+	info->hit_count += 1;
+#else
+	gint64 hit_count = atomic_fetch_add ((atomic_long *)&info->hit_count, 1) - mono_opt_jiterpreter_minimum_trace_hit_count;
+#endif
 
-		mono_memory_barrier ();
+	if (hit_count == mono_opt_jiterpreter_trace_monitoring_period) {
+		// Disable the monitoring point while we prepare to patch it
+		// This should never fail since we increment the hit count atomically
+		g_assert (mono_jiterp_patch_opcode (opcode, MINT_TIER_MONITOR_JITERPRETER, MINT_TIER_NOP_JITERPRETER));
+
 		float average_penalty = info->penalty_total / (float)hit_count / 100.0f,
 			threshold = (mono_opt_jiterpreter_trace_monitoring_max_average_penalty / 100.0f);
 
 		if (average_penalty <= threshold) {
-			*(volatile JiterpreterThunk*)(ip + 1) = thunk;
-			mono_memory_barrier ();
-			*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
+			if ((int)thunk < mono_jiterp_first_trace_fn_ptr)
+				g_error ("thunk ptr %d below start of trace table %d\n", thunk, mono_jiterp_first_trace_fn_ptr);
+			guint16 new_relative_fn_ptr = (int)thunk - mono_jiterp_first_trace_fn_ptr;
+
+#ifdef DISABLE_THREADS
+			g_assert (opcode->relative_fn_ptr == 0);
+			opcode->relative_fn_ptr = new_relative_fn_ptr;
+#else
+			guint16 zero = 0;
+			// atomically patch the relative fn ptr inside the opcode.
+			g_assert (atomic_compare_exchange_strong ((atomic_ushort *)&opcode->relative_fn_ptr, &zero, new_relative_fn_ptr));
+#endif
+			g_assert (mono_jiterp_patch_opcode (opcode, MINT_TIER_NOP_JITERPRETER, MINT_TIER_ENTER_JITERPRETER));
+
 			if (mono_opt_jiterpreter_trace_monitoring_log > 1)
-				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", index, ip, frame->imethod->method->name, average_penalty, threshold);
+				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", opcode->trace_index, ip, frame->imethod->method->name, average_penalty, threshold);
 		} else {
 			traces_rejected++;
 			if (mono_opt_jiterpreter_trace_monitoring_log > 0) {
 				char * full_name = mono_method_get_full_name (frame->imethod->method);
-				g_print ("trace #%d @%d '%s' rejected; average_penalty %f > %f\n", index, ip, full_name, average_penalty, threshold);
+				g_print ("trace #%d @%d '%s' rejected; average_penalty %f > %f\n", opcode->trace_index, ip, full_name, average_penalty, threshold);
 				g_free (full_name);
 			}
 		}
@@ -1287,27 +1358,30 @@ mono_jiterp_get_rejected_trace_count ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_boost_back_branch_target (guint16 *ip) {
-	if (*ip != MINT_TIER_PREPARE_JITERPRETER) {
-		// g_print ("Failed to boost back branch target %d because it was %s\n", ip,  mono_interp_opname(*ip));
-		return;
-	}
-
-	guint32 trace_index = READ32 (ip + 1);
-	if (!trace_index)
+mono_jiterp_boost_back_branch_target (const JiterpreterOpcode *ip) {
+	// If the back branch target isn't a prepare point we can't boost it.
+	if (ip->opcode != MINT_TIER_PREPARE_JITERPRETER)
 		return;
 
-	TraceInfo *trace_info = trace_info_get (trace_index);
+	TraceInfo *trace_info = trace_info_get (ip->trace_index);
+	if (!trace_info)
+		return;
+
 	// We need to make sure we don't boost the hit count too high, because if we do
 	//  it will increment past the compile threshold and never compile
 	int limit = mono_opt_jiterpreter_minimum_trace_hit_count - 1;
-	trace_info->hit_count = MIN (limit, trace_info->hit_count + mono_opt_jiterpreter_back_branch_boost);
-	/*
-	if (trace_info->hit_count > old_hit_count)
-		g_print ("Boosted entry point #%d at %d to %d\n", trace_index, ip, trace_info->hit_count);
-	else
-		g_print ("Entry point #%d at %d was already maxed out\n", trace_index, ip, trace_info->hit_count);
-	*/
+	gint64 old_hit_count = trace_info->hit_count,
+		new_hit_count = MIN (limit, old_hit_count + mono_opt_jiterpreter_back_branch_boost);
+	if (new_hit_count <= old_hit_count)
+		return;
+
+	// Atomically update the hit count. We may lose a race here, but that's not a big
+	//  problem since losing the race indicates that the trace entry point is probably hot.
+#ifdef DISABLE_THREADS
+	trace_info->hit_count = new_hit_count;
+#else
+	mono_atomic_cas_i64 (&trace_info->hit_count, new_hit_count, old_hit_count);
+#endif
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -1318,6 +1392,103 @@ mono_jiterp_is_imethod_var_address_taken (InterpMethod *imethod, int offset) {
 		return FALSE;
 
 	return mono_bitset_test (imethod->address_taken_bits, offset / MINT_STACK_SLOT_SIZE);
+}
+
+JiterpreterTableInfo tables[JITERPRETER_TABLE_LAST + 1] = { 0 };
+int mono_jiterp_first_trace_fn_ptr = 0;
+
+static void
+atomically_set_value_once (gint32 *address, gint32 value) {
+#ifdef DISABLE_THREADS
+	if (*address == value)
+		return;
+	if (*address != 0)
+		g_error ("MONO_WASM: Jiterpreter table already initialized with a different value (expected %d, found %d)\n", value, *address);
+	*address = value;
+#else
+	gint32 expected = 0;
+	if (atomic_compare_exchange_strong ((atomic_int *)address, &expected, value))
+		return;
+	if (expected == value)
+		return;
+	g_error ("MONO_WASM: Jiterpreter table already initialized with a different value (expected %d, found %d)\n", value, expected);
+#endif
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_initialize_table (int type, int first_index, int last_index) {
+	g_assert ((type >= 0) && (type <= JITERPRETER_TABLE_LAST));
+	JiterpreterTableInfo *table = &tables[type];
+	atomically_set_value_once (&table->first_index, first_index);
+	if (type == JITERPRETER_TABLE_TRACE)
+		atomically_set_value_once (&mono_jiterp_first_trace_fn_ptr, first_index);
+	atomically_set_value_once (&table->last_index, last_index);
+
+	// if we lose a race, someone else may have initialized next_index and then bumped it.
+	// that's totally fine though, so don't fail, just ensure it's initialized.
+#ifdef DISABLE_THREADS
+	if (table->next_index == 0)
+		table->next_index = first_index;
+#else
+	gint32 expected = 0;
+	atomic_compare_exchange_strong ((atomic_int *)&table->next_index, &expected, first_index);
+#endif
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_allocate_table_entry (int type) {
+	g_assert ((type >= 0) && (type <= JITERPRETER_TABLE_LAST));
+	JiterpreterTableInfo *table = &tables[type];
+	g_assert (table->first_index > 0);
+
+	// Handle extremely unlikely race condition (allocate_table_entry called while another thread is in initialize_table)
+#ifdef DISABLE_THREADS
+	if (table->next_index == 0)
+		table->next_index = table->first_index;
+	int index = table->next_index++;
+#else
+	gint32 expected = 0;
+	atomic_compare_exchange_strong ((atomic_int *)&table->next_index, &expected, table->first_index);
+	int index = atomic_fetch_add ((atomic_int *)&table->next_index, 1);
+#endif
+
+	if (index > table->last_index) {
+		if (index == (table->last_index + 1))
+			g_printf ("MONO_WASM: Jiterpreter table %d is out of space (%d entries allocated)\n", type, index - table->first_index + 1);
+		return 0;
+	}
+	return index;
+}
+
+int
+mono_jiterp_increment_counter (volatile int *counter) {
+#ifdef DISABLE_THREADS
+	int result = *counter;
+	*counter = result + 1;
+	return result;
+#else
+	return atomic_fetch_add ((atomic_int *)counter, 1);
+#endif
+}
+
+gboolean
+mono_jiterp_patch_opcode (volatile JiterpreterOpcode *ip, guint16 old_opcode, guint16 new_opcode) {
+#ifdef DISABLE_THREADS
+	if (ip->opcode == old_opcode) {
+		ip->opcode = new_opcode;
+		return TRUE;
+	} else
+		return FALSE;
+#else
+	// guint16 actual_old_opcode = old_opcode;
+	gboolean result = atomic_compare_exchange_strong ((atomic_ushort *)&ip->opcode, &old_opcode, new_opcode);
+	/*
+	if (!result)
+		g_printf ("MONO_WASM: Failed to patch opcode at %x from %d to %d. Actual value was %d!\n", ip, actual_old_opcode, new_opcode, old_opcode);
+	g_assert (result);
+	*/
+	return result;
+#endif
 }
 
 // HACK: fix C4206

@@ -838,6 +838,11 @@ namespace System.Reflection
                 Debug.Assert(type.IsPointer);
                 obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref byref), type);
             }
+            else if ((_returnTransform & Transform.FunctionPointer) != 0)
+            {
+                Debug.Assert(Type.GetTypeFromMethodTable(_returnType.ToPointer()).IsFunctionPointer);
+                obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref byref);
+            }
             else if ((_returnTransform & Transform.Reference) != 0)
             {
                 Debug.Assert((_returnTransform & Transform.ByRef) != 0);
@@ -887,7 +892,12 @@ namespace System.Reflection
         [InlineArray(MaxStackAllocArgCount)]
         internal ref struct StackAllocatedByRefs
         {
+            // We're intentionally taking advantage of the runtime functionality, even if the language functionality won't work
+            // CS9184: 'Inline arrays' language feature is not supported for inline array types with element field which is either a 'ref' field, or has type that is not valid as a type argument.
+
+#pragma warning disable CS9184
             internal ref byte _arg0;
+#pragma warning restore CS9184
         }
     }
 }

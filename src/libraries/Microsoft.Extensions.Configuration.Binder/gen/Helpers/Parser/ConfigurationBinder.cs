@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                if (GetOrCreateTypeSpec(type, invocation.Location) is TypeSpec typeSpec)
+                if (GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
                 {
                     Dictionary<MethodsToGen_ConfigurationBinder, HashSet<TypeSpec>> types = _sourceGenSpec.TypesForGen_ConfigurationBinder_BindMethods;
 
@@ -120,10 +120,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         IInstanceReferenceOperation i => i.Type,
                         ILocalReferenceOperation l => l.Local.Type,
                         IFieldReferenceOperation f => f.Field.Type,
+                        IPropertyReferenceOperation o => o.Type,
                         IMethodReferenceOperation m when m.Method.MethodKind == MethodKind.Constructor => m.Method.ContainingType,
                         IMethodReferenceOperation m => m.Method.ReturnType,
                         IAnonymousFunctionOperation f => f.Symbol.ReturnType,
                         IParameterReferenceOperation p => p.Parameter.Type,
+                        IObjectCreationOperation o => o.Type,
                         _ => null
                     };
             }
@@ -180,11 +182,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                if (GetBindingConfigType(type, invocation.Location) is TypeSpec typeSpec)
+                if (GetTargetTypeForRootInvocation(type, invocation.Location) is TypeSpec typeSpec)
                 {
                     _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
                     RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetCore, typeSpec);
                 }
+
             }
 
             private void RegisterGetValueInvocation(BinderInvocation invocation)
@@ -248,7 +251,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 if (IsParsableFromString(effectiveType, out _) &&
-                    GetOrCreateTypeSpec(type, invocation.Location) is TypeSpec typeSpec)
+                    GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
                 {
                     _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
                     RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetValueCore, typeSpec);

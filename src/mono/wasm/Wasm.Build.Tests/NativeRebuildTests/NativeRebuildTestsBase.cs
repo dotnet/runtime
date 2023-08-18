@@ -54,7 +54,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: false,
-                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Default,
+                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded,
                                 CreateProject: true));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
@@ -87,7 +87,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                                             id: id,
                                             new BuildProjectOptions(
                                                 DotnetWasmFromRuntimePack: false,
-                                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Default,
+                                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded,
                                                 CreateProject: false,
                                                 UseCache: false,
                                                 Verbosity: verbosity));

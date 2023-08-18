@@ -14,4 +14,9 @@
     <ProjectReference Include="..\src\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+  </ItemGroup>
+
 </Project>

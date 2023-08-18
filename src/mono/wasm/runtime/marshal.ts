@@ -331,7 +331,10 @@ export class ManagedError extends Error implements IDisposable {
 
     getSuperStack() {
         if (this.superStack) {
-            return this.superStack.value;
+            if (this.superStack.value !== undefined)
+                return this.superStack.value;
+            if (this.superStack.get !== undefined)
+                return this.superStack.get.call(this);
         }
         return super.stack; // this works on FF
     }

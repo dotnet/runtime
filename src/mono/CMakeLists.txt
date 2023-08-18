@@ -11,6 +11,10 @@ include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
+
+  if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+    add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+  endif()
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -83,8 +87,6 @@ endif()
 if(ENABLE_LAZY_GC_THREAD_CREATION)
   set(LAZY_GC_THREAD_CREATION 1)
 endif()
-
-set(DISABLED_FEATURES "\"\"")
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
   set(GCC 1)
@@ -240,14 +242,6 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
   add_compile_options(-Wno-strict-prototypes)
   add_compile_options(-Wno-unused-but-set-variable)
   add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
-  # Allow using WASM simd intrinsics in the interpreter
-  add_compile_options(-msimd128)
-  # Disable autovectorization (it is automatically turned on by msimd128)
-  add_compile_options(-disable-loop-vectorization)
-  add_compile_options(-disable-vectorization)
-  add_compile_options(-fno-vectorize)
-  add_compile_options(-fno-tree-vectorize)
-  add_compile_options(-fno-slp-vectorize)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)
@@ -945,6 +939,15 @@ if(CLR_CMAKE_HOST_ALPINE_LINUX)
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif()
+
+if(CLR_CMAKE_HOST_APPLE)
+  # TODO: this is already set by configurecompiler.cmake, remove this once mono uses that
+  check_c_compiler_flag(-fno-objc-msgsend-selector-stubs COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+  if(COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+    set(CLR_CMAKE_COMMON_OBJC_FLAGS "${CLR_CMAKE_COMMON_OBJC_FLAGS} -fno-objc-msgsend-selector-stubs")
+  endif()
+endif()
+
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")

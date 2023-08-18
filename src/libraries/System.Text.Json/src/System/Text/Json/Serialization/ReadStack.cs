@@ -406,6 +406,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo?.Converter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path = {JsonPath()}, Current = ConverterStrategy.{Current.JsonTypeInfo?.Converter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

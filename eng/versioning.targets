@@ -180,7 +180,11 @@
 
   <Target Name="GenerateNativeSourcelinkFile"
           Condition="'$(EnableSourceLink)' == 'true'"
-          DependsOnTargets="_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
+          DependsOnTargets="_CreateIntermediateOutputPath;_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
+
+  <Target Name="_CreateIntermediateOutputPath">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+  </Target>
 
   <Target Name="_CopyGeneratedSourcelinkFile"
           DependsOnTargets="GenerateSourceLinkFile"

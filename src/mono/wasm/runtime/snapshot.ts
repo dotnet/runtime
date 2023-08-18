@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
@@ -167,7 +166,7 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.exitAfterSnapshot;
     delete inputs.extensions;
 
-    inputs.GitHash = GitHash;
+    inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;
 
     const inputsJson = JSON.stringify(inputs);

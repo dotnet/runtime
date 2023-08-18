@@ -6,8 +6,11 @@
 // @TODO: Audit native events in NativeAOT Runtime
 
 #include <common.h>
-#include "eventpipeadapter.h"
-#include "gcheaputilities.h"
+#include <gcenv.h>
+
+#include <eventpipeadapter.h>
+#include <eventtrace_context.h>
+#include <gcheaputilities.h>
 
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
@@ -2935,136 +2938,6 @@ ULONG EventPipeWriteEventGCFitBucketInfo(
     return ERROR_SUCCESS;
 }
 
-typedef struct _MCGEN_TRACE_CONTEXT
-{
-    TRACEHANDLE            RegistrationHandle;
-    TRACEHANDLE            Logger;      // Used as pointer to provider traits.
-    ULONGLONG              MatchAnyKeyword;
-    ULONGLONG              MatchAllKeyword;
-    ULONG                  Flags;
-    ULONG                  IsEnabled;
-    unsigned char          Level;
-    unsigned char          Reserve;
-    unsigned short                 EnableBitsCount;
-    ULONG *                 EnableBitMask;
-    const ULONGLONG*       EnableKeyWords;
-    const unsigned char*   EnableLevel;
-} MCGEN_TRACE_CONTEXT, *PMCGEN_TRACE_CONTEXT;
-
-#if !defined(EVENTPIPE_TRACE_CONTEXT_DEF)
-#define EVENTPIPE_TRACE_CONTEXT_DEF
-typedef struct _EVENTPIPE_TRACE_CONTEXT
-{
-    const WCHAR * Name;
-    unsigned char  Level;
-    bool IsEnabled;
-    ULONGLONG EnabledKeywordsBitmask;
-} EVENTPIPE_TRACE_CONTEXT, *PEVENTPIPE_TRACE_CONTEXT;
-#endif // EVENTPIPE_TRACE_CONTEXT_DEF
-
-#if !defined(DOTNET_TRACE_CONTEXT_DEF)
-#define DOTNET_TRACE_CONTEXT_DEF
-typedef struct _DOTNET_TRACE_CONTEXT
-{
-    PMCGEN_TRACE_CONTEXT EtwProvider;
-    EVENTPIPE_TRACE_CONTEXT EventPipeProvider;
-} DOTNET_TRACE_CONTEXT, *PDOTNET_TRACE_CONTEXT;
-#endif // DOTNET_TRACE_CONTEXT_DEF
-
-
-enum CallbackProviderIndex
-{
-    DotNETRuntime = 0,
-    DotNETRuntimeRundown = 1,
-    DotNETRuntimeStress = 2,
-    DotNETRuntimePrivate = 3
-};
-
-void EtwCallbackCommon(
-    CallbackProviderIndex ProviderIndex,
-    ULONG ControlCode,
-    unsigned char Level,
-    ULONGLONG MatchAnyKeyword,
-    PVOID pFilterData,
-    BOOL isEventPipeCallback);
-
-void EventPipeEtwCallbackDotNETRuntime(
-    _In_ GUID * SourceId,
-    _In_ ULONG ControlCode,
-    _In_ unsigned char Level,
-    _In_ ULONGLONG MatchAnyKeyword,
-    _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ EventFilterDescriptor* FilterData,
-    _Inout_opt_ PVOID CallbackContext);
-
-
-void EventPipeEtwCallbackDotNETRuntime(
-    _In_ GUID * SourceId,
-    _In_ ULONG ControlCode,
-    _In_ unsigned char Level,
-    _In_ ULONGLONG MatchAnyKeyword,
-    _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ EventFilterDescriptor* FilterData,
-    _Inout_opt_ PVOID CallbackContext)
-{
-    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true);
-}
-
-DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
-
-// @TODO
-int const EVENT_CONTROL_CODE_ENABLE_PROVIDER=1;
-int const EVENT_CONTROL_CODE_DISABLE_PROVIDER=0;
-
-void EtwCallbackCommon(
-    CallbackProviderIndex ProviderIndex,
-    ULONG ControlCode,
-    unsigned char Level,
-    ULONGLONG MatchAnyKeyword,
-    PVOID pFilterData,
-    BOOL isEventPipeCallback)
-{
-//     LIMITED_METHOD_CONTRACT;
-
-    bool bIsPublicTraceHandle = ProviderIndex == DotNETRuntime;
-
-    DOTNET_TRACE_CONTEXT * ctxToUpdate;
-    switch(ProviderIndex)
-    {
-    case DotNETRuntime:
-        ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
-        break;
-    default:
-        _ASSERTE(!"EtwCallbackCommon was called with invalid context");
-        return;
-    }
-
-    // This callback gets called on both ETW/EventPipe session enable/disable.
-    // We need toupdate the EventPipe provider context if we are in a callback
-    // from EventPipe, but not from ETW.
-    if (isEventPipeCallback)
-    {
-        ctxToUpdate->EventPipeProvider.Level = Level;
-        ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
-        ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
-
-        // For EventPipe, ControlCode can only be either 0 or 1.
-        _ASSERTE(ControlCode == 0 || ControlCode == 1);
-    }
-
-    if (
-#if !defined(HOST_UNIX)
-        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
-#endif
-        (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
-    {
-        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
-        GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
-        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
-    }
-}
-
-
 void InitProvidersAndEvents(void)
 {
     InitDotNETRuntime();
@@ -3122,6 +2995,7 @@ void InitDotNETRuntime(void)
     EventPipeEventThreadPoolWorkerThreadAdjustmentStats = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,56,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventThreadPoolIOEnqueue = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,63,2147549184,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventThreadPoolIODequeue = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,64,2147549184,0,EP_EVENT_LEVEL_VERBOSE,true);
+    EventPipeEventThreadPoolIOPack = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,65,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventThreadPoolWorkingThreadCount = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,60,65536,0,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventGCAllocationTick_V4 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,10,1,4,EP_EVENT_LEVEL_VERBOSE,true);
     EventPipeEventGCHeapStats_V2 = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,4,1,2,EP_EVENT_LEVEL_INFORMATIONAL,false);
@@ -3139,7 +3013,7 @@ void InitDotNETRuntime(void)
 
 bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword)
 {
-    if (!EventPipeAdapter::Enabled())
+    if (!ep_enabled())
         return false;
 
     EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider;

@@ -6128,6 +6128,11 @@ private:
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
+    bool IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo);
+    bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max);
+    bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max);
+    bool TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, int& cur, int max);
+
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
     void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
@@ -8741,7 +8746,10 @@ private:
         }
         else
         {
-            return 0;
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
         if (compExactlyDependsOn(InstructionSet_VectorT128))
@@ -8750,7 +8758,10 @@ private:
         }
         else
         {
-            return 0;
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+
+            return FP_REGSIZE_BYTES;
         }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
