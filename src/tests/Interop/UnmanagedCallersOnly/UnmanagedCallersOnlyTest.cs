@@ -221,13 +221,9 @@ public unsafe class Program
 
     public static void TestUnmanagedCallersOnlyWithGeneric()
     {
-        Assert.Equal(0, ((delegate* unmanaged<Blittable<nint>, int>)&BlittableGeneric)(new Blittable<nint>()));
+        Assert.Equal(0, ((delegate* unmanaged<Blittable<nint>, int>)&BlittableGenericStruct)(new Blittable<nint>()));
 
-        Assert.Equal(0, ((delegate* unmanaged<MaybeBlittable<nint>, int>)&MaybeBlittableGeneric)(new MaybeBlittable<nint>()));
-
-        // Assert.Throws(() => ((delegate* unmanaged<MaybeBlittable<NonBlittable<nint>>, int>)&NonBlittableGeneric)(new MaybeBlittable<NonBlittable<nint>>()));
-
-        // Assert.Throws(() => ((delegate* unmanaged<NonBlittable<nint>, int>)&GenericObject)(new NonBlittable<nint>()));
+        Assert.Equal(0, ((delegate* unmanaged<MaybeBlittable<nint>, int>)&MaybeBlittableGenericStruct)(new MaybeBlittable<nint>()));
     }
 
     internal struct Blittable<T> where T : unmanaged
@@ -240,14 +236,9 @@ public unsafe class Program
         T Value;
     }
 
-    internal class NonBlittable<T> where T: unmanaged
-    {
-        T Value;
-    }
+    [UnmanagedCallersOnly]
+    internal static int BlittableGenericStruct(Blittable<nint> param) => 0;
 
     [UnmanagedCallersOnly]
-    internal static int BlittableGeneric(Blittable<nint> param) => 0;
-
-    [UnmanagedCallersOnly]
-    internal static int MaybeBlittableGeneric(MaybeBlittable<nint> param) => 0;
+    internal static int MaybeBlittableGenericStruct(MaybeBlittable<nint> param) => 0;
 }
