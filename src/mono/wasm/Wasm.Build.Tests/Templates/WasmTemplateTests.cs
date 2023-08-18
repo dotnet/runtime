@@ -39,7 +39,7 @@ namespace Wasm.Build.Tests
 
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
-            string mainJsPath = Path.Combine(_projectDir!, "main.js");
+            string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
             // .withExitOnUnhandledError() is available only only >net7.0
