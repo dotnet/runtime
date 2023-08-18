@@ -1933,6 +1933,8 @@ public:
 
     bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod);
 
+    int GetMethodEncNumber(MethodDesc * pMethod);
+
 
     bool FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SIZE_T currentSP);
 
@@ -1978,7 +1980,7 @@ public:
 #endif // EnC_SUPPORTED
 
     void GetVarInfo(MethodDesc *       fd,         // [IN] method of interest
-                    CORDB_ADDRESS nativeCodeAddress,    // [IN] which edit version
+                    void *DebuggerVersionToken,    // [IN] which edit version
                     SIZE_T *           cVars,      // [OUT] size of 'vars'
                     const ICorDebugInfo::NativeVarInfo **vars     // [OUT] map telling where local vars are stored
                     );
