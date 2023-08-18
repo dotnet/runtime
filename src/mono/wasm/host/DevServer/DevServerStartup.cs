@@ -1,14 +1,18 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.WebAssembly.AppHost;
 
 namespace Microsoft.WebAssembly.AppHost.DevServer;
@@ -27,16 +31,16 @@ internal sealed class DevServerStartup
         services.AddRouting();
     }
 
-    public static void Configure(IApplicationBuilder app, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs, ILogger logger, IHostApplicationLifetime applicationLifetime, IConfiguration configuration)
+    public static void Configure(IApplicationBuilder app, IOptions<DevServerOptions> optionsContainer, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs, ILogger logger, IHostApplicationLifetime applicationLifetime, IConfiguration configuration)
     {
         app.UseDeveloperExceptionPage();
         EnableConfiguredPathbase(app, configuration);
 
         app.UseWebAssemblyDebugging();
 
-        bool applyCopHeaders = configuration.GetValue<bool>("ApplyCopHeaders");
+        DevServerOptions options = optionsContainer.Value;
 
-        if (applyCopHeaders)
+        if (options.WebServerUseCrossOriginPolicy)
         {
             app.Use(async (ctx, next) =>
             {
@@ -63,6 +67,27 @@ internal sealed class DevServerStartup
         });
 
         app.UseRouting();
+        app.UseWebSockets();
+
+        Debugger.Launch();
+
+        if (options.OnConsoleConnected is not null)
+        {
+            app.UseRouter(router =>
+            {
+                router.MapGet("/console", async context =>
+                {
+                    if (!context.WebSockets.IsWebSocketRequest)
+                    {
+                        context.Response.StatusCode = 400;
+                        return;
+                    }
+
+                    using WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
+                    await options.OnConsoleConnected(socket);
+                });
+            });
+        }
 
         app.UseEndpoints(endpoints =>
         {
@@ -70,7 +95,7 @@ internal sealed class DevServerStartup
             {
                 OnPrepareResponse = fileContext =>
                 {
-                    if (applyCopHeaders)
+                    if (options.WebServerUseCrossOriginPolicy)
                     {
                         // Browser multi-threaded runtime requires cross-origin policy headers to enable SharedArrayBuffer.
                         ApplyCrossOriginPolicyHeaders(fileContext.Context);
