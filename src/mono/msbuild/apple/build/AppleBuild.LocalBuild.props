@@ -22,7 +22,7 @@
   <Import Project="$(MSBuildThisFileDirectory)AppleBuild.props" />
 
   <PropertyGroup>
-    <_NetCoreAppCurrent>net8.0</_NetCoreAppCurrent>
+    <_NetCoreAppCurrent>net9.0</_NetCoreAppCurrent>
     <TargetFramework>$(_NetCoreAppCurrent)</TargetFramework>
     <_NetCoreAppToolCurrent>$(_NetCoreAppCurrent)</_NetCoreAppToolCurrent>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
