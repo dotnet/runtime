@@ -1,28 +1,25 @@
 ## About
 
-[System.Runtime.Caching](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.caching?view=dotnet-plat-ext-7.0)/[System.Runtime.Caching.MemoryCache](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.caching.memorycache?view=dotnet-plat-ext-7.0) ([NuGet package](https://www.nuget.org/packages/System.Runtime.Caching/)) can be used with:
+[System.Runtime.Caching](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.caching?view=dotnet-plat-ext-7.0) ([NuGet package](https://www.nuget.org/packages/System.Runtime.Caching/)) is a packaged set of simple caching API's derived from those of the same namespace available in .Net Framework since 4.0. This package is intended for use as a bridge when porting .Net Framework applications to .Net Core.
 
-* .NET Standard 2.0 or later.
-* Any [.NET implementation](/dotnet/standard/net-standard#net-implementation-support) that targets .NET Standard 2.0 or later. For example, ASP.NET Core 3.1 or later.
-* .NET Framework 4.5 or later.
+This `System.Runtime.Caching` package can be used with any [.NET implementation](/dotnet/standard/net-standard#net-implementation-support) that targets .NET Standard 2.0 or later. For example:
+* .NET Core 3.1 or later.
+* .Net Framework 4.5 or later.
+* .Net 5.0 or late
 
-[Microsoft.Extensions.Caching.Memory](https://www.nuget.org/packages/Microsoft.Extensions.Caching.Memory/)/`IMemoryCache` (described in this article) is recommended over `System.Runtime.Caching`/`MemoryCache` because it's better integrated into ASP.NET Core. For example, `IMemoryCache` works natively with ASP.NET Core [dependency injection](xref:fundamentals/dependency-injection).
+[Microsoft.Extensions.Caching.Memory](https://www.nuget.org/packages/Microsoft.Extensions.Caching.Memory/)/[IMemoryCache](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/memory?view=aspnetcore-7.0) is recommended over `System.Runtime.Caching`/`MemoryCache` because it's better integrated into ASP.NET Core. For example, `IMemoryCache` works natively with ASP.NET Core [dependency injection](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-7.0).
 
-Use `System.Runtime.Caching`/`MemoryCache` as a compatibility bridge when porting code from ASP.NET 4.x to ASP.NET Core.
-
-## Key Features
-
-* MemoryCache feature represents the type that implements an in-memory cache.
+> Use `System.Runtime.Caching`/`MemoryCache` as a compatibility bridge when porting code from .NET 4.x to .NET Core.
 
 ## Main Types
 
 The main types provided by this library are:
 
-* `System.Runtime.Caching.MemmoryCache`
+* `System.Runtime.Caching.MemoryCache`
 
 ## Remarks
 
-[MemoryCache.PhysicalMemeoryLimit](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.caching.memorycache.physicalmemorylimit?view=dotnet-plat-ext-7.0) property is only supported on windows.
+[MemoryCache.PhysicalMemoryLimit](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.caching.memorycache.physicalmemorylimit?view=dotnet-plat-ext-7.0) property is only supported on windows.
 
 ## Addtional Documentation
 
