@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(name);
         }
 
-        private static bool IsBindingOperation(IInvocationOperation operation)
+        public static bool IsBindingOperation(IInvocationOperation operation)
         {
             if (operation.TargetMethod is not IMethodSymbol
                 {
