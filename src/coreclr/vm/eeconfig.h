@@ -77,7 +77,6 @@ public:
     bool          JitFramed(void)                           const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
     bool          JitMinOpts(void)                          const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
     bool          JitEnableOptionalRelocs(void)             const {LIMITED_METHOD_CONTRACT;  return fJitEnableOptionalRelocs; }
-    bool          JitFullOptsForCctors(void)                const {LIMITED_METHOD_CONTRACT;  return fJitFullOptsForCctors; }
 
     // Tiered Compilation config
 #if defined(FEATURE_TIERED_COMPILATION)
@@ -481,7 +480,6 @@ private: //----------------------------------------------------------------
     bool fJitFramed;                   // Enable/Disable EBP based frames
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
     bool fJitEnableOptionalRelocs;     // Allow optional relocs
-    bool fJitFullOptsForCctors;        // Enable FullOpts for cctors
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 

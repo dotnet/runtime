@@ -314,7 +314,6 @@ CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_JitHelperLogging, W("JitHelperLogging"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), 0, "Forces MinOpts")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITFullOptsForCctors, W("JitFullOptsForCctors"), 0, "Use FullOpts for cctors")
 
 // *Some* relocs are just opportunistic optimizations and can be non-deterministic - it might produce
 // noise for jit-diff like tools.

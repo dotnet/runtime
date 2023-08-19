@@ -91,11 +91,6 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != NULL);
 
-    if (pMethodDesc->IsClassConstructor() && g_pConfig->JitFullOptsForCctors())
-    {
-        return NativeCodeVersion::OptimizationTierOptimized;
-    }
-
 #ifdef FEATURE_TIERED_COMPILATION
     if (!pMethodDesc->IsEligibleForTieredCompilation())
     {
@@ -1071,12 +1066,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
     if (nativeCodeVersion.IsDefaultVersion() && !config->WasTieringDisabledBeforeJitting())
     {
         MethodDesc *methodDesc = nativeCodeVersion.GetMethodDesc();
-
-        if (methodDesc->IsClassConstructor() && g_pConfig->JitFullOptsForCctors())
-        {
-            return flags;
-        }
-
         if (!methodDesc->IsEligibleForTieredCompilation())
         {
             _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
