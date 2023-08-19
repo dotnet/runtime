@@ -270,3 +270,5 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 | Suppression ID           | Suppressed Diagnostic ID | Description |
 | :----------------------- | :----------------------- | :---------- |
 | __`SYSLIBSUPPRESS0001`__ | CA1822                   | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |
+| __`SYSLIBSUPPRESS0002`__ | IL2026                   | ConfigurationBindingGenerator: suppress RequiresUnreferencedCode diagnostic for binding call that has been intercepted by a generated static variant. |
+| __`SYSLIBSUPPRESS0003`__ | IL3050                   | ConfigurationBindingGenerator: suppress RequiresDynamicCode diagnostic for binding call that has been intercepted by a generated static variant. |
