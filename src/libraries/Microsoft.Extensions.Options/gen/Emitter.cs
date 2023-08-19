@@ -20,17 +20,17 @@ namespace Microsoft.Extensions.Options.Generators
         private const string StaticValidationResultType = "global::System.ComponentModel.DataAnnotations.ValidationResult";
         private const string StaticValidationAttributeType = "global::System.ComponentModel.DataAnnotations.ValidationAttribute";
 
-        private readonly string _staticValidationAttributeHolderClassName = "__Attributes";
-        private readonly string _staticValidatorHolderClassName = "__Validators";
-        private readonly string _staticValidationAttributeHolderClassFQN;
-        private readonly string _staticValidatorHolderClassFQN;
-        private readonly string _modifier;
+        private string _staticValidationAttributeHolderClassName = "__Attributes";
+        private string _staticValidatorHolderClassName = "__Validators";
+        private string _staticValidationAttributeHolderClassFQN;
+        private string _staticValidatorHolderClassFQN;
+        private string _modifier;
 
         private sealed record StaticFieldInfo(string FieldTypeFQN, int FieldOrder, string FieldName, IList<string> InstantiationLines);
 
         public Emitter(Compilation compilation, bool emitPreamble = true) : base(emitPreamble)
         {
-            if (((CSharpCompilation)compilation).LanguageVersion >= LanguageVersion.CSharp11)
+            if (((CSharpCompilation)compilation).LanguageVersion >= Microsoft.CodeAnalysis.CSharp.LanguageVersion.CSharp11)
             {
                 _modifier = "file";
             }
