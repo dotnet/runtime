@@ -63,6 +63,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.Basic/*">
             <Issue>https://github.com/dotnet/runtime/issues/57786</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.ResolutionFlow/*">
+            <Issue>https://github.com/dotnet/runtime/issues/90580</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>CoreCLR does not implement the mono embedding API</Issue>
         </ExcludeList>
@@ -71,6 +74,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_82535/Runtime_82535/*">
           <Issue>https://github.com/dotnet/runtime/issues/89585</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
+          <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -3463,9 +3469,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/**">
             <Issue>https://github.com/dotnet/runtime/issues/67359</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/InlineArray/**">
-            <Issue>https://github.com/dotnet/runtime/issues/90398</Issue>
         </ExcludeList>
     </ItemGroup>
 

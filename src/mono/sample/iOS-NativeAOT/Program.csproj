@@ -16,6 +16,8 @@
     <CustomNativeMain>true</CustomNativeMain>
     <!-- Escape NativeAOT bundling targets -->
     <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+    <IlcGenerateMstatFile Condition="'$(GenerateStats)' == 'true'">true</IlcGenerateMstatFile>
+    <IlcGenerateDgmlFile Condition="'$(GenerateStats)' == 'true'">true</IlcGenerateDgmlFile>
   </PropertyGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
@@ -62,7 +64,7 @@
   </Target>
 
   <Target Name="RunAppBundle"
-          AfterTargets="BuildAppBundle"
+          AfterTargets="_AppleGenerateAppBundle"
           Condition="'$(DeployAndRun)' == 'true'">
     <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
     <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />

@@ -48319,15 +48319,27 @@ HRESULT GCHeap::Initialize()
             // because ro segs are supposed to always be out of range
             // for regions.
             uint8_t* seg_mem = new (nothrow) uint8_t [ro_seg_size];
-            heap_segment* ro_seg = (heap_segment*) seg_mem;
-            uint8_t* start = seg_mem + gc_heap::segment_info_size;
-            heap_segment_mem (ro_seg) = start;
-            heap_segment_used (ro_seg) = start;
-            heap_segment_reserved (ro_seg) = seg_mem + ro_seg_size;
-            heap_segment_committed (ro_seg) = heap_segment_reserved (ro_seg);
-            gc_heap::init_heap_segment (ro_seg, hp, seg_mem, ro_seg_size, 2);
-            ro_seg->flags = heap_segment_flags_readonly;
-            hp->insert_ro_segment (ro_seg);
+
+            if (seg_mem == nullptr)
+            {
+                GCToEEInterface::LogErrorToHost("STRESS_REGIONS couldn't allocate ro segment");
+                hr = E_FAIL;
+                break;
+            }
+
+            segment_info seg_info;
+            seg_info.pvMem = seg_mem;
+            seg_info.ibFirstObject = 0; // nothing is there, don't fake it with sizeof(ObjHeader)
+            seg_info.ibAllocated = 0;
+            seg_info.ibCommit = ro_seg_size;
+            seg_info.ibReserved = seg_info.ibCommit;
+
+            if (!RegisterFrozenSegment(&seg_info))
+            {
+                GCToEEInterface::LogErrorToHost("STRESS_REGIONS failed to RegisterFrozenSegment");
+                hr = E_FAIL;
+                break;
+            }
         }
 #endif //STRESS_REGIONS && FEATURE_BASICFREEZE
     }
