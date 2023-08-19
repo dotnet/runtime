@@ -643,7 +643,7 @@ namespace Microsoft.Interop.Analyzers
             {
                 IAttributeOperation attr = (IAttributeOperation)context.Operation;
                 if (attr.Operation is IObjectCreationOperation attrCreation
-                    && attrCreation.Type.Equals(_customMarshallerAttribute))
+                    && attrCreation.Type.Equals(_customMarshallerAttribute, SymbolEqualityComparer.Default))
                 {
                     INamedTypeSymbol entryType = (INamedTypeSymbol)context.ContainingSymbol!;
                     IArgumentOperation? managedTypeArgument = attrCreation.GetArgumentByOrdinal(0);
