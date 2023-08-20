@@ -10,7 +10,10 @@
 #define FOH_COMMIT_SIZE (64 * 1024)
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
-    m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
+    // This lock is used in both COOP and PREEMP (by profiler) modes
+    m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE),
+    // This lock is used only in COOP mode
+    m_SegmentRegistrationCrst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
     m_CurrentSegment(nullptr)
 {
 }
@@ -33,6 +36,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 #else // FEATURE_BASICFREEZE
 
     Object* obj = nullptr;
+    FrozenObjectSegment* currentSegment = nullptr;
     {
         CrstHolder ch(&m_Crst);
 
@@ -60,24 +64,20 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
             return nullptr;
         }
 
-        if (m_CurrentSegment == nullptr)
-        {
-            // Create the first segment on first allocation
-            m_CurrentSegment = new FrozenObjectSegment(FOH_SEGMENT_DEFAULT_SIZE);
-            m_FrozenSegments.Append(m_CurrentSegment);
-            _ASSERT(m_CurrentSegment != nullptr);
-        }
-
-        obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
-
-        // The only case where it can be null is when the current segment is full and we need
-        // to create a new one
+        obj = m_CurrentSegment == nullptr ? nullptr : m_CurrentSegment->TryAllocateObject(type, objectSize);
+        // obj is nullptr if the current segment is full or hasn't been allocated yet
         if (obj == nullptr)
         {
-            // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
-            // Use the same size in case if prevSegmentSize*2 operation overflows.
-            size_t prevSegmentSize = m_CurrentSegment->GetSize();
-            m_CurrentSegment = new FrozenObjectSegment(max(prevSegmentSize, prevSegmentSize * 2));
+            size_t newSegmentSize = FOH_SEGMENT_DEFAULT_SIZE;
+            if (m_CurrentSegment != nullptr)
+            {
+                // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
+                // Use the same size in case if prevSegmentSize*2 operation overflows.
+                const size_t prevSegmentSize = m_CurrentSegment->GetSize();
+                newSegmentSize = max(prevSegmentSize, prevSegmentSize * 2);
+            }
+
+            m_CurrentSegment = new FrozenObjectSegment(newSegmentSize);
             m_FrozenSegments.Append(m_CurrentSegment);
 
             // Try again
@@ -86,7 +86,23 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
             // This time it's not expected to be null
             _ASSERT(obj != nullptr);
         }
+        currentSegment = m_CurrentSegment;
     }
+
+    // If the currently used segment hasn't been registered yet, do it now.
+    // We do it under a new lock because the main one (m_Crst) can be used by Profiler in a GC's thread
+    // and that might cause deadlocks since RegisterFrozenSegment may stuck on GC's lock.
+    if (!currentSegment->IsRegistered())
+    {
+        CrstHolder regLock(&m_SegmentRegistrationCrst);
+
+        // Double-checked locking
+        if (!currentSegment->IsRegistered())
+        {
+            currentSegment->Register();
+        }
+    }
+
     if (publish)
     {
         PublishFrozenObject(obj);
@@ -103,6 +119,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_pCurrent(nullptr),
     m_SizeCommitted(0),
     m_Size(sizeHint),
+    m_IsRegistered(false),
     m_SegmentHandle(nullptr)
     COMMA_INDEBUG(m_ObjectsCount(0))
 {
@@ -135,29 +152,36 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
         ThrowOutOfMemory();
     }
 
+    m_pStart = static_cast<uint8_t*>(committedAlloc);
+    m_pCurrent = m_pStart + sizeof(ObjHeader);
+    m_SizeCommitted = FOH_COMMIT_SIZE;
+    INDEBUG(m_ObjectsCount = 0);
+
     // ClrVirtualAlloc is expected to be PageSize-aligned so we can expect
     // DATA_ALIGNMENT alignment as well
     _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
+}
+
+void FrozenObjectSegment::Register()
+{
+    // Caller is expected to make sure it's not registered twice
+    _ASSERT(!VolatileLoad(&m_IsInitialized));
 
     segment_info si;
-    si.pvMem = committedAlloc;
+    si.pvMem = m_pStart;
     si.ibFirstObject = sizeof(ObjHeader);
-    si.ibAllocated = si.ibFirstObject;
-    si.ibCommit = FOH_COMMIT_SIZE;
+    si.ibAllocated = (size_t)m_pCurrent; // there can be multiple objects already allocated
+    si.ibCommit = m_SizeCommitted;
     si.ibReserved = m_Size;
 
+    // NOTE: RegisterFrozenSegment may take a GC lock inside.
     m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
     if (m_SegmentHandle == nullptr)
     {
-        ClrVirtualFree(alloc, 0, MEM_RELEASE);
+        ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
         ThrowOutOfMemory();
     }
-
-    m_pStart = static_cast<uint8_t*>(committedAlloc);
-    m_pCurrent = m_pStart + sizeof(ObjHeader);
-    m_SizeCommitted = si.ibCommit;
-    INDEBUG(m_ObjectsCount = 0);
-    return;
+    VolatileStore(&m_IsRegistered, true);
 }
 
 Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
@@ -201,8 +225,17 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 
     m_pCurrent += objectSize;
 
-    // Notify GC that we bumped the pointer and, probably, committed more memory in the reserved part
-    GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommitted);
+    if (m_IsRegistered)
+    {
+        // Notify GC that we bumped the pointer and, probably, committed more memory in the reserved part
+        // NOTE: UpdateFrozenSegment is not expected to take any lock inside
+        GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommitted);
+    }
+    else
+    {
+        // The segment is not yet registered so the upcoming RegisterFrozenSegment
+        // will let GC know about this object (and all others) as is.
+    }
 
     return object;
 }

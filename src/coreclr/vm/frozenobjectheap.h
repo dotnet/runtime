@@ -31,6 +31,7 @@ public:
 
 private:
     Crst m_Crst;
+    Crst m_SegmentRegistrationCrst;
     SArray<FrozenObjectSegment*> m_FrozenSegments;
     FrozenObjectSegment* m_CurrentSegment;
 
@@ -47,6 +48,11 @@ public:
     {
         return m_Size;
     }
+    bool IsRegistered() const
+    {
+        return VolatileLoad(&m_IsRegistered);
+    }
+    void Register();
 
 private:
     Object* GetFirstObject() const;
@@ -68,6 +74,9 @@ private:
 
     // Total memory reserved for the current segment
     size_t m_Size;
+
+    // Whether GC knows about this segment already or it hasn't been registered yet
+    bool m_IsRegistered;
 
     segment_handle m_SegmentHandle;
     INDEBUG(size_t m_ObjectsCount);
