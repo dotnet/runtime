@@ -165,7 +165,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
 void FrozenObjectSegment::Register()
 {
     // Caller is expected to make sure it's not registered twice
-    _ASSERT(!VolatileLoad(&m_IsInitialized));
+    _ASSERT(!VolatileLoad(&m_IsRegistered));
 
     segment_info si;
     si.pvMem = m_pStart;
