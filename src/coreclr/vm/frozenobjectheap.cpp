@@ -225,7 +225,7 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 
     m_pCurrent += objectSize;
 
-    if (!IsRegistered())
+    if (IsRegistered())
     {
         // Notify GC that we bumped the pointer and, probably, committed more memory in the reserved part
         // NOTE: UpdateFrozenSegment is not expected to take any lock inside
