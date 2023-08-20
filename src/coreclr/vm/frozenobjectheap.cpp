@@ -10,9 +10,9 @@
 #define FOH_COMMIT_SIZE (64 * 1024)
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
-    // This lock is used in both COOP and PREEMP (by profiler) modes
+    // This lock is used in PREEMP mode
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE),
-    // This lock is used only in COOP mode
+    // This lock is used in COOP mode
     m_SegmentRegistrationCrst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
     m_CurrentSegment(nullptr)
 {
@@ -180,7 +180,6 @@ void FrozenObjectSegment::Register()
     m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
     if (m_SegmentHandle == nullptr)
     {
-        ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
         ThrowOutOfMemory();
     }
     VolatileStore(&m_IsRegistered, true);
