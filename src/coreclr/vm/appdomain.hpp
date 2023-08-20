@@ -2449,14 +2449,21 @@ public:
         _ASSERTE(m_pGlobalStringLiteralMap);
         return m_pGlobalStringLiteralMap;
     }
-    static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManager(bool initialize = true)
     {
         WRAPPER_NO_CONTRACT;
-        if (m_FrozenObjectHeapManager == NULL)
+        if (VolatileLoad(&m_FrozenObjectHeapManager) == nullptr)
         {
-            LazyInitFrozenObjectsHeap();
+            if (initialize)
+            {
+                LazyInitFrozenObjectsHeap();
+            }
+            else
+            {
+                return nullptr;
+            }
         }
-        return m_FrozenObjectHeapManager;
+        return VolatileLoad(&m_FrozenObjectHeapManager);
     }
 #endif // DACCESS_COMPILE
 
