@@ -7108,9 +7108,12 @@ void gc_heap::gc_thread_function ()
             {
                 settings.init_mechanisms();
 #ifdef DYNAMIC_HEAP_COUNT
-                // make sure the other gc threads cannot see this as a request to change heap count
-                // see explanation below about the cases when we return from gc_start_event.Wait
-                assert (dynamic_heap_count_data.new_n_heaps == n_heaps);
+                if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+                {
+                    // make sure the other gc threads cannot see this as a request to change heap count
+                    // see explanation below about the cases when we return from gc_start_event.Wait
+                    assert (dynamic_heap_count_data.new_n_heaps == n_heaps);
+                }
 #endif //DYNAMIC_HEAP_COUNT
                 dprintf (9999, ("GC thread %d setting_gc_start_in_gc(h%d)", heap_number, n_heaps));
                 gc_start_event.Set();
@@ -7174,8 +7177,7 @@ void gc_heap::gc_thread_function ()
                 continue;
             }
 #endif //DYNAMIC_HEAP_COUNT
-            //dprintf (3, (ThreadStressLog::gcServerThreadNStartMsg(), heap_number));
-            dprintf (9999, ("GC thread %d wait_done(%d)", heap_number, n_heaps));
+            dprintf (3, (ThreadStressLog::gcServerThreadNStartMsg(), heap_number));
         }
 
         assert ((heap_number == 0) || proceed_with_gc_p);
@@ -12580,6 +12582,16 @@ void gc_heap::rearrange_uoh_segments()
     freeable_uoh_segment = 0;
 }
 
+void gc_heap::delay_free_segments()
+{
+    rearrange_uoh_segments();
+#ifdef BACKGROUND_GC
+    background_delay_delete_uoh_segments();
+    if (!gc_heap::background_running_p())
+        rearrange_small_heap_segments();
+#endif //BACKGROUND_GC
+}
+
 #ifndef USE_REGIONS
 void gc_heap::rearrange_heap_segments(BOOL compacting)
 {
@@ -17477,6 +17489,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                                                 gen_number, align_const);
                 dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
+                size_t saved_free_list_size = free_list_size;
 #ifdef FEATURE_LOH_COMPACTION
                 if (loh_pad)
                 {
@@ -17505,7 +17518,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 {
                     generation_free_obj_space (gen) += remain_size;
                 }
-                generation_free_list_space (gen) -= free_list_size;
+                generation_free_list_space (gen) -= saved_free_list_size;
                 assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
                 generation_free_list_allocated (gen) += limit;
 
@@ -22829,7 +22842,12 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         assert (free_list_space_decrease <= generation_free_list_space (gen));
         generation_free_list_space (gen) -= free_list_space_decrease;
 
-        assert (free_list_space_decrease <= dd_fragmentation (dd));
+        // TODO - I'm seeing for gen2 this is free_list_space_decrease can be a bit larger than frag.
+        // Need to fix this later.
+        if (gen_idx != max_generation)
+        {
+            assert (free_list_space_decrease <= dd_fragmentation (dd));
+        }
 
         size_t free_list_space_increase = 0;
         for (int from_hn = 0; from_hn < from_n_heaps; from_hn++)
@@ -23826,7 +23844,6 @@ void gc_heap::garbage_collect (int n)
 
 #ifdef MULTIPLE_HEAPS
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
-    dprintf (9999, ("h%d 1st join!", heap_number));
     Interlocked::Increment (&heaps_in_this_gc);
 #endif //STRESS_DYNAMIC_HEAP_COUNT
     //align all heaps on the max generation to condemn
@@ -23863,24 +23880,12 @@ void gc_heap::garbage_collect (int n)
             // check for card table growth
             if (g_gc_card_table != hp->card_table)
                 hp->copy_brick_card_table();
-
-            hp->rearrange_uoh_segments();
-#ifdef BACKGROUND_GC
-            hp->background_delay_delete_uoh_segments();
-            if (!gc_heap::background_running_p())
-                hp->rearrange_small_heap_segments();
-#endif //BACKGROUND_GC
+            hp->delay_free_segments();
         }
 #else //MULTIPLE_HEAPS
         if (g_gc_card_table != card_table)
             copy_brick_card_table();
-
-        rearrange_uoh_segments();
-#ifdef BACKGROUND_GC
-        background_delay_delete_uoh_segments();
-        if (!gc_heap::background_running_p())
-            rearrange_small_heap_segments();
-#endif //BACKGROUND_GC
+        delay_free_segments();
 #endif //MULTIPLE_HEAPS
 
         BOOL should_evaluate_elevation = TRUE;
@@ -24424,7 +24429,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
     // hope is to achieve better work balancing in relocate and compact phases
     // this is also used when the heap count changes to balance regions between heaps
     int highest_gen_number = ((condemned_gen_number == max_generation) ?
-                              (total_generation_count - 1) : condemned_gen_number);
+        (total_generation_count - 1) : condemned_gen_number);
     int stop_gen_idx = get_stop_generation_index (condemned_gen_number);
 
     for (int gen_idx = highest_gen_number; gen_idx >= stop_gen_idx; gen_idx--)
@@ -25215,6 +25220,7 @@ void gc_heap::check_heap_count ()
     {
         // can't have background gc running while we change the number of heaps
         // so it's useless to compute a new number of heaps here
+        dprintf (9999, ("BGC in progress, don't change"));
     }
     else
     {
@@ -25494,6 +25500,17 @@ bool gc_heap::prepare_to_change_heap_count (int new_n_heaps)
 
             to_heap_number = (to_heap_number + 1) % new_n_heaps;
         }
+    }
+
+    // Before we look at whether we have sufficient regions we should return regions that should be deleted to free
+    // so we don't lose them when we decommission heaps. We could do this for only heaps that we are about
+    // to decomission. But it's better to do this for all heaps because we don't need to worry about adding them to the
+    // heaps remain (freeable uoh/soh regions) and we get rid of regions with the heap_segment_flags_uoh_delete flag
+    // because background_delay_delete_uoh_segments makes the assumption it can't be the start region.
+    for (int i = 0; i < old_n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        hp->delay_free_segments ();
     }
 
     // if we want to increase the number of heaps, we have to make sure we can give
@@ -31591,7 +31608,6 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
 void gc_heap::grow_mark_list_piece()
 {
-    dprintf (9999, ("gml: mls %Id, total %Id, rc %Id, hn %d", g_mark_list_piece_size, g_mark_list_piece_total_size, region_count, get_num_heaps ()));
     if (g_mark_list_piece_total_size < region_count * 2 * get_num_heaps())
     {
         delete[] g_mark_list_piece;
@@ -31609,7 +31625,6 @@ void gc_heap::grow_mark_list_piece()
         {
             g_mark_list_piece_size = 0;
         }
-        dprintf (9999, ("RS mls->%Id total %Id->%Id", alloc_count, g_mark_list_piece_total_size, (alloc_count * 2 * get_num_heaps ())));
         g_mark_list_piece_total_size = g_mark_list_piece_size * 2 * get_num_heaps();
     }
     // update the size per heap in case the number of heaps has changed,
@@ -44900,7 +44915,6 @@ BOOL gc_heap::background_object_marked (uint8_t* o, BOOL clearp)
     return m;
 }
 
-// TODO - when we change heap count, the assumption that first region can never have the flag set is no longer true. 
 void gc_heap::background_delay_delete_uoh_segments()
 {
     for (int i = uoh_start_generation; i < total_generation_count; i++)
@@ -48467,16 +48481,16 @@ HRESULT GCHeap::Initialize()
                 //dprintf (9999, ("changing join hp %d->%d", n_heaps, new_n_heaps));
                 int max_threads_to_wake = max (gc_heap::n_heaps, initial_n_heaps);
                 gc_t_join.update_n_threads (max_threads_to_wake);
-                gc_heap::gc_start_event.Set();
+                gc_heap::gc_start_event.Set ();
             }
 
             gc_heap::g_heaps[0]->change_heap_count (initial_n_heaps);
-            gc_heap::gc_start_event.Reset();
+            gc_heap::gc_start_event.Reset ();
+
+            // This needs to be different from our initial heap count so we can make sure we wait for
+            // the idle threads correctly in gc_thread_function.
+            gc_heap::dynamic_heap_count_data.last_n_heaps = 0;
         }
-        //gc_heap::dynamic_heap_count_data.new_n_heaps = gc_heap::n_heaps;
-        // This needs to be different from our initial heap count so we can make sure we wait for
-        // the idle threads correctly in gc_thread_function.
-        gc_heap::dynamic_heap_count_data.last_n_heaps = 0;
 #endif //DYNAMIC_HEAP_COUNT
         GCScan::GcRuntimeStructuresValid (TRUE);
 
