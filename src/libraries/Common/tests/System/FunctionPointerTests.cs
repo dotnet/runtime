@@ -156,6 +156,11 @@ namespace System.Tests.Types
             Assert.True(fcnPtr2.IsFunctionPointer);
 
             Assert.True(fcnPtr1.IsFunctionPointerEqual(fcnPtr2));
+
+            MethodInfo m3 = t.GetMethod(nameof(FunctionPointerHolder.GenericMethodReturnValue), Bindings);
+            Type fcnPtr3 = m3.ReturnType;
+            Assert.True(fcnPtr3.IsFunctionPointer);
+            Assert.True(fcnPtr3.ContainsGenericParameters);
         }
 
         [Fact]
@@ -277,6 +282,8 @@ namespace System.Tests.Types
 
             public delegate* unmanaged[Stdcall, MemberFunction]<string, ref bool*, MyClass, in MyStruct, double> SeveralArguments() => default;
             public delegate*<in int, out int, void> RequiredModifiers() => default;
+
+            public delegate*<T> GenericMethodReturnValue<T>() => default;
 
             public class MyClass { }
             public struct MyStruct { }
