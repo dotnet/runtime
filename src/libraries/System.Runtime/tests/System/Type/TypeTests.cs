@@ -1135,6 +1135,9 @@ namespace System.Tests
                     }
                     else
                     {
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/90863")]
+                        if (classType.Type == typeof(SIMs.C2Implicit<string>) && interfaceType.Type == typeof(SIMs.I1<string>)) continue;
+
                         // It's implemented implicitly by the level 2 interface
                         MTarget = interfaceType.Level2InterfaceType.GetMethod(interfaceType.MethodNamePrefix + "M", bindingFlags);
                         GTarget = interfaceType.Level2InterfaceType.GetMethod(interfaceType.MethodNamePrefix + "G", bindingFlags);
