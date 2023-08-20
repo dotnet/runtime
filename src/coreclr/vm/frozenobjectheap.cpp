@@ -165,7 +165,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
 void FrozenObjectSegment::Register()
 {
     // Caller is expected to make sure it's not registered twice
-    _ASSERT(!VolatileLoad(&m_IsRegistered));
+    _ASSERT(!IsRegistered());
 
     segment_info si;
     si.pvMem = m_pStart;
@@ -225,7 +225,7 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 
     m_pCurrent += objectSize;
 
-    if (m_IsRegistered)
+    if (!IsRegistered())
     {
         // Notify GC that we bumped the pointer and, probably, committed more memory in the reserved part
         // NOTE: UpdateFrozenSegment is not expected to take any lock inside
