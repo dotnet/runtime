@@ -1,5 +1,5 @@
 import { dotnet } from '@microsoft/dotnet-runtime'
-import { color } from 'console-log-colors'
+import { red, blue } from 'ansis/colors'
 
 async function dotnetMeaning() {
     try {
@@ -15,5 +15,5 @@ async function dotnetMeaning() {
 
 export async function main() {
     const meaning = await dotnetMeaning()
-    console.log(color.blue("Answer to the Ultimate Question of Life, the Universe, and Everything is: ") + color.red(`${meaning}`));
+    console.log(blue`Answer to the Ultimate Question of Life, the Universe, and Everything is: ${red`${meaning}`}`);
 }
