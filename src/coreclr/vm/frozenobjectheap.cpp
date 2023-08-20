@@ -38,6 +38,8 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     Object* obj = nullptr;
     FrozenObjectSegment* currentSegment = nullptr;
     {
+        GCX_PREEMP();
+
         CrstHolder ch(&m_Crst);
 
         _ASSERT(type != nullptr);
