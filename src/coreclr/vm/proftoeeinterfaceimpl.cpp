@@ -7672,8 +7672,7 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
         return E_INVALIDARG;
     }
 
-    // initialize = false to avoid breaking the NOTHROW contract
-    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager(/*initialize*/ false);
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManagerNoThrow();
     if (foh == nullptr)
     {
         *pcObjectRanges = 0;
@@ -7685,25 +7684,37 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
     FrozenObjectSegment** segments = foh->m_FrozenSegments.GetElements();
     if (segments != nullptr && segmentsCount > 0)
     {
-        const ULONG segmentsToInspect = min(cObjectRanges, (ULONG)segmentsCount);
+        unsigned totalRegisteredSegments = 0;
 
-        for (unsigned segIdx = 0; segIdx < segmentsToInspect; segIdx++)
+        for (unsigned segIdx = 0; segIdx < segmentsCount; segIdx++)
         {
-            uint8_t* firstObj = segments[segIdx]->m_pStart + sizeof(ObjHeader);
+            if (segIdx >= cObjectRanges)
+            {
+                break;
+            }
+
+            FrozenObjectSegment* segment = segments[segIdx];
+            if (!segment->IsRegistered())
+            {
+                continue;
+            }
+            totalRegisteredSegments++;
+
+            uint8_t* firstObj = segment->m_pStart + sizeof(ObjHeader);
 
             // Start of the segment (first object)
             ranges[segIdx].rangeStart = (ObjectID)firstObj;
 
             // Total size reserved for a segment
-            ranges[segIdx].rangeLengthReserved = (UINT_PTR)segments[segIdx]->m_Size - sizeof(ObjHeader);
+            ranges[segIdx].rangeLengthReserved = (UINT_PTR)segment->m_Size - sizeof(ObjHeader);
 
             // Size of the segment that is currently in use
-            ranges[segIdx].rangeLength = (UINT_PTR)(segments[segIdx]->m_pCurrent - firstObj);
+            ranges[segIdx].rangeLength = (UINT_PTR)segment->m_pCurrent - firstObj);
         }
 
         if (pcObjectRanges != nullptr)
         {
-            *pcObjectRanges = (ULONG)segmentsCount;
+            *pcObjectRanges = (ULONG)totalRegisteredSegments;
         }
     }
     else

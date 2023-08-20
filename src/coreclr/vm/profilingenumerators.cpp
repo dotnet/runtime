@@ -103,8 +103,7 @@ BOOL ProfilerObjectEnum::Init()
     }
     CONTRACTL_END;
 
-    // initialize = false to avoid breaking the NOTHROW contract
-    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager(/*initialize*/ false);
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManagerNoThrow();
     if (foh == nullptr)
     {
         return TRUE;
@@ -119,6 +118,10 @@ BOOL ProfilerObjectEnum::Init()
         for (unsigned segmentIdx = 0; segmentIdx < segmentsCount; segmentIdx++)
         {
             const FrozenObjectSegment* segment = segments[segmentIdx];
+            if (!segment->IsRegistered())
+            {
+                continue;
+            }
 
             Object* currentObj = segment->GetFirstObject();
             while (currentObj != nullptr)

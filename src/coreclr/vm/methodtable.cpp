@@ -4187,8 +4187,9 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        CONTRACTL_END;
     }
+    CONTRACTL_END
+
     _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
 
     // Static fields are not pinned in collectible types so we need to protect the address
@@ -4222,8 +4223,8 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        CONTRACTL_END;
     }
+    CONTRACTL_END
 
     _ASSERTE(pFieldMT->IsValueType());
 
