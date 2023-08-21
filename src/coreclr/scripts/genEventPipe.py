@@ -73,7 +73,9 @@ def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     return ''.join(sig_pieces)
 
 def includeProvider(providerName, runtimeFlavor):
-    if runtimeFlavor.coreclr and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
+    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot) and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
+        return False
+    elif runtimeFlavor.nativeaot and (providerName == "Microsoft-Windows-DotNETRuntimeRundown" or providerName == "Microsoft-Windows-DotNETRuntimeStress" or providerName == "Microsoft-Windows-DotNETRuntimePrivate"):
         return False
     else:
         return True
@@ -123,7 +125,7 @@ def generateClrEventPipeWriteEventsImpl(
         eventIsEnabledFunc = ""
         if runtimeFlavor.coreclr:
             eventIsEnabledFunc = "EventPipeAdapter::EventIsEnabled"
-        elif runtimeFlavor.mono:
+        elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
             eventIsEnabledFunc = "ep_event_is_enabled"
 
         # generate EventPipeEventEnabled function
@@ -163,7 +165,7 @@ def generateClrEventPipeWriteEventsImpl(
                     "    EventPipeAdapter::WriteEvent(EventPipeEvent" +
                     eventName +
                     ", (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n")
-            elif runtimeFlavor.mono:
+            elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
                 WriteEventImpl.append(
                     "    ep_write_event (EventPipeEvent" +
                     eventName +
@@ -173,7 +175,7 @@ def generateClrEventPipeWriteEventsImpl(
     # EventPipeProvider and EventPipeEvent initialization
     callbackName = 'EventPipeEtwCallback' + providerPrettyName
     createProviderFunc = ""
-    if runtimeFlavor.coreclr:
+    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
         createProviderFunc = "EventPipeAdapter::CreateProvider"
     elif runtimeFlavor.mono:
         createProviderFunc = "create_provider"
@@ -198,9 +200,12 @@ def generateClrEventPipeWriteEventsImpl(
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
-        " = " + createProviderFunc + "(SL(" +
-        providerPrettyName +
-        "Name), " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
+        " = " + createProviderFunc + "(")
+    if not runtimeFlavor.nativeaot: WriteEventImpl.append("SL(")
+    WriteEventImpl.append(providerPrettyName +
+        "Name")
+    if not runtimeFlavor.nativeaot: WriteEventImpl.append(")")
+    WriteEventImpl.append(", " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -222,7 +227,7 @@ def generateClrEventPipeWriteEventsImpl(
                 needStack = "false"
 
         addEventFunc = ""
-        if runtimeFlavor.coreclr:
+        if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
             addEventFunc = "EventPipeAdapter::AddEvent"
         elif runtimeFlavor.mono:
             addEventFunc = "provider_add_event"
@@ -260,7 +265,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
         parameter = fnSig.getParam(paramName)
 
         if parameter.winType == "win:UnicodeString":
-            if runtimeFlavor.coreclr:
+            if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
                 pack_list.append(
                     "    if (!%s) { %s = W(\"NULL\"); }" %
                     (parameter.name, parameter.name))
@@ -283,7 +288,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
                 emittedWriteToBuffer = True
-            elif runtimeFlavor.coreclr:
+            elif (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
                 pack_list.append(
                     "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
                     (paramName, size))
@@ -299,7 +304,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
                 emittedWriteToBuffer = True
-            elif runtimeFlavor.coreclr:
+            elif (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
                 pack_list.append(
                     "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
                     (paramName, size))
@@ -374,7 +379,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                 "    success &= write_buffer((const uint8_t *)%s, sizeof(%s), &buffer, &offset, &size, &fixedBuffer);" %
                 (parameter.name,parameter.name,))
             emittedWriteToBuffer = True
-        elif runtimeFlavor.coreclr:
+        elif (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
             pack_list.append(
                 "    success &= WriteToBuffer(%s, buffer, offset, size, fixedBuffer);" %
                 (parameter.name,))
@@ -394,7 +399,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
         header += """    bool fixedBuffer = true;
     bool success = true;
 """
-        if runtimeFlavor.coreclr:
+        if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
             checking = """    if (!success)
     {
         if (!fixedBuffer)
@@ -405,7 +410,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             checking = """    ep_raise_error_if_nok (success);\n\n"""
 
     body = ""
-    if runtimeFlavor.coreclr:
+    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
         body = "    EventPipeAdapter::WriteEvent(EventPipeEvent" + \
             eventName + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
     elif runtimeFlavor.mono:
@@ -415,14 +420,14 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
     header += "\n"
     footer = ""
     if emittedWriteToBuffer:
-        if runtimeFlavor.coreclr:
+        if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
             footer = """
     if (!fixedBuffer)
         delete[] buffer;
 
 """
 
-    if runtimeFlavor.coreclr:
+    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
         footer += """
     return ERROR_SUCCESS;
 """
@@ -725,6 +730,99 @@ ep_on_error:
 def getMonoEventPipeHelperFileImplSuffix():
     return "#endif\n"
 
+def getAotEventPipeHelperFileImplPrefix():
+    return """
+#include <common.h>
+#include <gcenv.h>
+
+#include <eventpipeadapter.h>
+#include <eventtrace_context.h>
+#include <gcheaputilities.h>
+
+#ifndef ERROR_WRITE_FAULT
+#define ERROR_WRITE_FAULT 29L
+#endif
+
+#ifndef ERROR_SUCCESS
+#define ERROR_SUCCESS   0
+#endif
+
+bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
+{
+    newSize = (size_t)(newSize * 1.5);
+    _ASSERTE(newSize > size); // check for overflow
+
+    if (newSize < 32)
+        newSize = 32;
+
+    BYTE *newBuffer = new (nothrow) BYTE[newSize];
+
+    if (newBuffer == NULL)
+        return false;
+
+    memcpy(newBuffer, buffer, currLen);
+
+    if (!fixedBuffer)
+        delete[] buffer;
+
+    buffer = newBuffer;
+    size = newSize;
+    fixedBuffer = false;
+
+    return true;
+}
+
+bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+{
+    if (!src) return true;
+    if (offset + len > size)
+    {
+        if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
+            return false;
+    }
+
+    memcpy(buffer + offset, src, len);
+    offset += len;
+    return true;
+}
+
+bool WriteToBuffer(const WCHAR*  str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+{
+    if (!str) return true;
+    size_t byteCount = (ep_rt_utf16_string_len(reinterpret_cast<const ep_char16_t*>(str)) + 1) * sizeof(*str);
+
+    if (offset + byteCount > size)
+    {
+        if (!ResizeBuffer(buffer, size, offset, size + byteCount, fixedBuffer))
+            return false;
+    }
+
+    memcpy(buffer + offset, str, byteCount);
+    offset += byteCount;
+    return true;
+}
+
+bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+{
+    if (!str) return true;
+    size_t len = strlen(str) + 1;
+    if (offset + len > size)
+    {
+        if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
+            return false;
+    }
+
+    memcpy(buffer + offset, str, len);
+    offset += len;
+    return true;
+}
+
+"""
+
+def getAotEventPipeHelperFileImplSuffix():
+    return ""
+
+
 def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, runtimeFlavor, extern, dryRun):
     eventpipehelpersPath = os.path.join(eventpipe_directory, "eventpipehelpers" + (".cpp" if target_cpp else ".c"))
     if dryRun:
@@ -736,6 +834,8 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
                 helper.write(getCoreCLREventPipeHelperFileImplPrefix())
             elif runtimeFlavor.mono:
                 helper.write(getMonoEventPipeHelperFileImplPrefix())
+            elif runtimeFlavor.nativeaot:
+                helper.write(getAotEventPipeHelperFileImplPrefix())
 
             tree = DOM.parse(etwmanifest)
 
@@ -767,7 +867,7 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
                     helper.write("    Init" + providerPrettyName + "();\n")
             helper.write("}\n")
 
-            if runtimeFlavor.coreclr:
+            if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
                 helper.write(getCoreCLREventPipeHelperFileImplSuffix())
             elif runtimeFlavor.mono:
                 helper.write(getMonoEventPipeHelperFileImplSuffix())
@@ -1030,6 +1130,61 @@ create_provider (
 def getMonoEventPipeImplFileSuffix():
     return "#endif\n"
 
+def getAotEventPipeImplFilePrefix():
+    return """
+#include <common.h>
+#include <gcenv.h>
+
+#include <eventpipeadapter.h>
+#include <eventtrace_context.h>
+#include <gcheaputilities.h>
+
+#ifndef ERROR_WRITE_FAULT
+#define ERROR_WRITE_FAULT 29L
+#endif
+
+#ifndef ERROR_SUCCESS
+#define ERROR_SUCCESS   0
+#endif
+
+bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
+bool WriteToBuffer(const WCHAR* str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+
+template <typename T>
+bool WriteToBuffer(const T &value, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+{
+    if (sizeof(T) + offset > size)
+    {
+        if (!ResizeBuffer(buffer, size, offset, size + sizeof(T), fixedBuffer))
+            return false;
+    }
+
+    memcpy(buffer + offset, (char *)&value, sizeof(T));
+    offset += sizeof(T);
+    return true;
+}
+
+"""
+
+def getAotEventPipeImplFileSuffix():
+    return """
+bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword)
+{
+    if (!ep_enabled())
+        return false;
+
+    EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider;
+    if (!context.IsEnabled)
+        return false;
+
+    if (level > context.Level)
+        return false;
+
+    return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
+}
+"""
+
 def generateEventPipeImplFiles(
         etwmanifest, eventpipe_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
     tree = DOM.parse(etwmanifest)
@@ -1074,6 +1229,8 @@ def generateEventPipeImplFiles(
                     header = getCoreCLREventPipeImplFilePrefix()
                 elif runtimeFlavor.mono:
                     header = getMonoEventPipeImplFilePrefix()
+                elif runtimeFlavor.nativeaot:
+                    header = getAotEventPipeImplFilePrefix()
 
                 eventpipeImpl.write(header + "\n")
                 eventpipeImpl.write(
@@ -1106,6 +1263,8 @@ def generateEventPipeImplFiles(
                     eventpipeImpl.write(getCoreCLREventPipeImplFileSuffix())
                 elif runtimeFlavor.mono:
                     eventpipeImpl.write(getMonoEventPipeImplFileSuffix())
+                elif runtimeFlavor.nativeaot:
+                    eventpipeImpl.write(getAotEventPipeImplFileSuffix())
 
 def generateEventPipeFiles(
         etwmanifest, intermediate, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):

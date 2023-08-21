@@ -13,19 +13,26 @@ from __future__ import print_function
 
 import os
 import xml.dom.minidom as DOM
-from utilities import open_for_update
+from utilities import open_for_update, parseInclusionList
 
 class RuntimeFlavor:
     def __init__(self, runtime):
         if runtime.lower() == "coreclr":
             self.coreclr = True
             self.mono = False
+            self.nativeaot = False
         elif runtime.lower() == "mono":
             self.coreclr = False
             self.mono = True
+            self.nativeaot = False
+        elif runtime.lower() == "nativeaot":
+            self.coreclr = False
+            self.mono = False
+            self.nativeaot = True
         else:
             self.coreclr = True
             self.mono = False
+            self.nativeaot = False
 
 stdprolog="""
 // Licensed to the .NET Foundation under one or more agreements.
@@ -105,17 +112,54 @@ monoEventPipeDataTypeMapping={
     "BYTE"              : "uint8_t",
 }
 
+aotPalDataTypeMapping={
+    #constructed types
+    "win:null"          :" ",
+    "win:Int64"         :"const __int64",
+    "win:ULong"         :"const ULONG",
+    "win:count"         :"*",
+    "win:Struct"        :"const void",
+    #actual spec
+    "win:GUID"          :"const GUID",
+    "win:AnsiString"    :"LPCSTR",
+    "win:UnicodeString" :"const WCHAR*",
+    "win:Double"        :"const double",
+    "win:Int32"         :"const signed int",
+    "win:Boolean"       :"const BOOL",
+    "win:UInt64"        :"const unsigned __int64",
+    "win:UInt32"        :"const unsigned int",
+    "win:UInt16"        :"const unsigned short",
+    "win:UInt8"         :"const unsigned char",
+    "win:Pointer"       :"const void*",
+    "win:Binary"        :"const BYTE",
+}
+
+aotEventPipeDataTypeMapping={
+    "BOOL"              : "BOOL",
+    "LPCGUID"           : "const GUID *",
+    "UCHAR"             : "UCHAR",
+    "ULONG"             : "ULONG",
+    "ULONGLONG"         : "ULONGLONG",
+    "WCHAR"             : "WCHAR",
+    "BYTE"              : "BYTE",
+}
+
+
 def getEventPipeDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLREventPipeDataTypeMapping
     elif runtimeFlavor.mono:
         return monoEventPipeDataTypeMapping
+    elif runtimeFlavor.nativeaot:
+        return aotEventPipeDataTypeMapping
 
 def getPalDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLRPalDataTypeMapping
     elif runtimeFlavor.mono:
         return monoPalDataTypeMapping
+    elif runtimeFlavor.nativeaot:
+        return aotPalDataTypeMapping
 
 def getCoreCLRMonoTypeAdaptionDefines():
     return """
