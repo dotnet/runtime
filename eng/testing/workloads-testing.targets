@@ -61,9 +61,9 @@
 
     <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
       <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 8.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 9.0</_DotNetInstallCommand>
       <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 8.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 9.0</_DotNetInstallCommand>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
