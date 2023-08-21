@@ -86,8 +86,10 @@ internal sealed class DevServerStartup
                     using WebSocket socket = await ctx.WebSockets.AcceptWebSocketAsync();
                     await options.OnConsoleConnected(socket);
                 }
-
-                await next(ctx);
+                else
+                {
+                    await next(ctx);
+                }
             });
         }
 
