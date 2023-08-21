@@ -36,15 +36,18 @@ COOP_PINVOKE_CDECL_HELPER(void *, RhpGcSafeZeroMemory, (void * mem, size_t size)
 
 COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* pSrc, size_t cbDest))
 {
+#if TARGET_ARM64
+    // It is possible that the bulk write is publishing object references accessible so far only
+    // by the current thread to shared memory.
+    // The memory model requires that writes performed by current thread are observable no later
+    // than the writes that will actually publish the references.
+    MemoryBarrier();
+#endif
+
     if (pDest <= pSrc || pSrc + cbDest <= pDest)
         InlineForwardGCSafeCopy(pDest, pSrc, cbDest);
     else
         InlineBackwardGCSafeCopy(pDest, pSrc, cbDest);
 
     InlinedBulkWriteBarrier(pDest, cbDest);
-}
-
-void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, uint32_t cbMemSize)
-{
-    InlinedBulkWriteBarrier(pMemStart, cbMemSize);
 }

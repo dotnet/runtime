@@ -4,5 +4,3 @@
 //
 // Unmanaged GC memory helpers
 //
-
-EXTERN_C void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, uint32_t cbMemSize);
