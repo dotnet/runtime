@@ -51,8 +51,10 @@ ep_session_options_alloc (
 	ep_return_zero_if_nok (format < EP_SERIALIZATION_FORMAT_COUNT);
 	ep_return_zero_if_nok (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
 	ep_return_zero_if_nok (providers_len > 0 && providers != NULL);
-	ep_return_zero_if_nok ((session_type == EP_SESSION_TYPE_FILE || session_type == EP_SESSION_TYPE_FILESTREAM) && output_path == NULL);
-	ep_return_zero_if_nok (session_type == EP_SESSION_TYPE_IPCSTREAM && stream == NULL);
+	if ((session_type == EP_SESSION_TYPE_FILE || session_type == EP_SESSION_TYPE_FILESTREAM) && output_path == NULL)
+		return 0;
+	if (session_type == EP_SESSION_TYPE_IPCSTREAM && stream == NULL)
+		return 0;
 
 	EventPipeSessionOptions *options = NULL;
 	options = ep_rt_object_alloc(EventPipeSessionOptions);
