@@ -344,7 +344,7 @@ LEAF_ENTRY GetTlsIndexObjectDescOffset, _TEXT
         .byte 0x66
         .byte 0x66
         .byte 0x48 # rex.W prefix for padding
-        call    __tls_get_addr                      # dummy call to have linker see the code pattern to replace the offset
+        call    EXTERNAL_C_FUNC(__tls_get_addr)                      # dummy call to have linker see the code pattern to replace the offset
         int 3
 LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif

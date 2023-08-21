@@ -95,6 +95,7 @@ export class WasmBuilder {
     argumentCount!: number;
     activeBlocks!: number;
     base!: MintOpcodePtr;
+    traceIndex!: number;
     frame: NativePointer = <any>0;
     traceBuf: Array<string> = [];
     branchTargets = new Set<MintOpcodePtr>();
@@ -1462,7 +1463,7 @@ export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
 export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
-        builder.i32_const(builder.base);
+        builder.i32_const(builder.traceIndex);
         builder.i32_const(reason);
         builder.callImport("bailout");
     }
@@ -1487,7 +1488,7 @@ export function append_exit(builder: WasmBuilder, ip: MintOpcodePtr, opcodeCount
 
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
-        builder.i32_const(builder.base);
+        builder.i32_const(builder.traceIndex);
         builder.i32_const(reason);
         builder.callImport("bailout");
     }

@@ -133,10 +133,10 @@
     <value>The collection element type is not supported: '{0}'.</value>
   </data>
   <data name="Language VersionIsNotSupportedMessageFormat" xml:space="preserve">
-    <value>The project's language version has to be at least 'C# 11'.</value>
+    <value>The project's language version has to be at least 'C# 12'.</value>
   </data>
   <data name="LanguageVersionIsNotSupportedTitle" xml:space="preserve">
-    <value>Language version is required to be at least C# 11</value>
+    <value>Language version is required to be at least C# 12</value>
   </data>
   <data name="MissingPublicInstanceConstructor" xml:space="preserve">
     <value>Cannot create instance of type '{0}' because it is missing a public instance constructor.</value>

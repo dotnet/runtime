@@ -260,7 +260,6 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono
@@ -278,7 +277,6 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono
@@ -297,7 +295,6 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono
@@ -319,7 +316,6 @@ jobs:
       - windows_x86
       - linux_musl_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         projectFile: microbenchmarks.proj
@@ -352,7 +348,6 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         projectFile: microbenchmarks.proj
@@ -389,7 +384,6 @@ jobs:
       - windows_x64
       - windows_x86
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         projectFile: crossgen_perf.proj
