@@ -6249,12 +6249,14 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsEmbBroadcastCompatible() const;
     bool OperIsBroadcastScalar() const;
     bool OperIsCreateScalarUnsafe() const;
+    bool OperIsBitwiseHWIntrinsic() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
 
     unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
-
+    uint8_t GetTernaryControlByte(GenTreeHWIntrinsic* second) const;
+    
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;

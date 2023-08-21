@@ -25286,6 +25286,54 @@ bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
     }
 }
 
+//------------------------------------------------------------------------
+// OperIsBitwiseHWIntrinsic: Is this HWIntrinsic a bitwise logic intrinsic node.
+//
+// Return Value:
+//    Whether "this" is a bitwise logic intrinsic node.
+//
+bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
+{
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+    switch (intrinsicId)
+    {
+        case NI_SSE_And:
+        case NI_SSE2_And:
+        case NI_AVX_And:
+        case NI_AVX2_And:
+        case NI_AVX512F_And:
+        case NI_AVX512DQ_And:
+
+        case NI_SSE_Or:
+        case NI_SSE2_Or:
+        case NI_AVX_Or:
+        case NI_AVX2_Or:
+        case NI_AVX512F_Or:
+        case NI_AVX512DQ_Or:
+
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+
+        case NI_SSE_Xor:
+        case NI_SSE2_Xor:
+        case NI_AVX_Xor:
+        case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
+            return true;
+        default:
+            return false;
+    }
+#else // !TARGET_XARCH
+    return false;
+#endif  
+}
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.
@@ -26295,6 +26343,138 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree
 
     return 0;
 }
+
+//------------------------------------------------------------------------
+// GetTernaryControlByte: calculate the value of the control byte for ternary node
+// with given logic nodes on the input.
+//
+// Return value: the value of the ternary control byte.
+uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) const
+{
+    // we assume we have a structure like:
+    /*
+               /- A 
+               +- B 
+        t1 = binary logical op1
+
+               /- C
+               +- t1
+        t2 = binary logical op2
+    */
+
+    // To calculate the control byte value:
+    // The way the constants work is we have three keys:
+    // * A: 0xF0
+    // * B: 0xCC
+    // * C: 0xAA
+    //
+    // To compute the correct control byte, you simply perform the corresponding operation on these keys. So, if you
+    // wanted to do (A & B) ^ C, you would compute (0xF0 & 0xCC) ^ 0xAA or 0x6A.
+    assert(second->Op(1) == this || second->Op(2) == this);
+    const uint8_t A = 240; // 0xF0
+    const uint8_t B = 204; // 0xCC
+    const uint8_t C = 170; // 0xAA
+
+    NamedIntrinsic firstLogic = GetHWIntrinsicId();
+    NamedIntrinsic secondLogic = second->GetHWIntrinsicId();
+
+    uint8_t AB = 0;
+    uint8_t ABC = 0;
+
+    switch (firstLogic)
+    {
+        case NI_SSE_And:
+        case NI_SSE2_And:
+        case NI_AVX_And:
+        case NI_AVX2_And:
+        case NI_AVX512F_And:
+        case NI_AVX512DQ_And:
+        {
+            AB = A & B;
+            break;
+        }
+        case NI_SSE_Or:
+        case NI_SSE2_Or:
+        case NI_AVX_Or:
+        case NI_AVX2_Or:
+        case NI_AVX512F_Or:
+        case NI_AVX512DQ_Or:
+        {
+            AB = A | B;
+            break;
+        }
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+        {
+            AB = ~(A & B);
+            break;
+        }
+        case NI_SSE_Xor:
+        case NI_SSE2_Xor:
+        case NI_AVX_Xor:
+        case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
+        {
+            AB = A ^ B;
+            break;
+        }
+        default:
+            unreached();
+    }
+
+    switch (secondLogic)
+    {
+        case NI_SSE_And:
+        case NI_SSE2_And:
+        case NI_AVX_And:
+        case NI_AVX2_And:
+        case NI_AVX512F_And:
+        case NI_AVX512DQ_And:
+        {
+            ABC = AB & C;
+            break;
+        }
+        case NI_SSE_Or:
+        case NI_SSE2_Or:
+        case NI_AVX_Or:
+        case NI_AVX2_Or:
+        case NI_AVX512F_Or:
+        case NI_AVX512DQ_Or:
+        {
+            ABC = AB | C;
+            break;
+        }
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+        {
+            ABC = ~(AB & C);
+            break;
+        }
+        case NI_SSE_Xor:
+        case NI_SSE2_Xor:
+        case NI_AVX_Xor:
+        case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
+        {
+            ABC = AB ^ C;
+            break;
+        }
+        default:
+            unreached();
+    }
+
+    return ABC;
+ }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
 unsigned GenTreeLclFld::GetSize() const
