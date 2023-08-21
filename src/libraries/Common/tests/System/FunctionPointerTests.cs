@@ -156,11 +156,6 @@ namespace System.Tests.Types
             Assert.True(fcnPtr2.IsFunctionPointer);
 
             Assert.True(fcnPtr1.IsFunctionPointerEqual(fcnPtr2));
-
-            MethodInfo m3 = t.GetMethod(nameof(FunctionPointerHolder.GenericMethodReturnValue), Bindings);
-            Type fcnPtr3 = m3.ReturnType;
-            Assert.True(fcnPtr3.IsFunctionPointer);
-            Assert.True(fcnPtr3.ContainsGenericParameters);
         }
 
         [Fact]
@@ -176,6 +171,22 @@ namespace System.Tests.Types
             Assert.Equal(typeof(Runtime.InteropServices.InAttribute).Project(), parameters[0].GetRequiredCustomModifiers()[0]);
             Assert.Equal(1, parameters[1].GetRequiredCustomModifiers().Length);
             Assert.Equal(typeof(Runtime.InteropServices.OutAttribute).Project(), parameters[1].GetRequiredCustomModifiers()[0]);
+        }
+
+        [Fact]
+        public static unsafe void GenericFunctionPointer()
+        {
+            Type t = typeof(FunctionPointerHolder).Project();
+
+            MethodInfo m1 = t.GetMethod(nameof(FunctionPointerHolder.GenericReturnValue), Bindings);
+            Type fcnPtr1 = m1.ReturnType;
+            Assert.True(fcnPtr1.IsFunctionPointer);
+            Assert.True(fcnPtr1.ContainsGenericParameters);
+
+            MethodInfo m2 = t.GetMethod(nameof(FunctionPointerHolder.GenericArgument), Bindings);
+            Type fcnPtr2 = m2.GetParameters()[1].ParameterType;
+            Assert.True(fcnPtr2.IsFunctionPointer);
+            Assert.True(fcnPtr2.ContainsGenericParameters);
         }
 
         [Theory]
@@ -283,7 +294,8 @@ namespace System.Tests.Types
             public delegate* unmanaged[Stdcall, MemberFunction]<string, ref bool*, MyClass, in MyStruct, double> SeveralArguments() => default;
             public delegate*<in int, out int, void> RequiredModifiers() => default;
 
-            public delegate*<T> GenericMethodReturnValue<T>() => default;
+            public delegate*<T> GenericReturnValue<T>() => default;
+            public bool GenericArgument<T>(int x, delegate*<T[], void> fptr) => default;
 
             public class MyClass { }
             public struct MyStruct { }
