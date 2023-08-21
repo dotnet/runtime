@@ -1067,7 +1067,7 @@ namespace System.Tests
                 typeof(DIMs.C3),
                 new Tuple<MethodInfo, MethodInfo>[]
                 {
-                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M", BindingFlags.Instance | BindingFlags.NonPublic), typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic))
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M"), typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic))
                 }
             };
             yield return new object[]
@@ -1103,7 +1103,7 @@ namespace System.Tests
                 typeof(DIMs.C4),
                 new Tuple<MethodInfo, MethodInfo>[]
                 {
-                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), typeof(DIMs.C4).GetMethod("M"))
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M"), typeof(DIMs.C4).GetMethod("M"))
                 }
             };
 
