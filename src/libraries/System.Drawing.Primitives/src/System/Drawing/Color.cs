@@ -384,7 +384,7 @@ namespace System.Drawing
         // against best practices as the current project language parses the string with
         // language specific heuristics.
 
-        private string NameAndARGBValue => $"{{Name={Name}, ARGB=({A}, {R}, {G}, {B})}}";
+        private string NameAndARGBValue => $"{{Name = {Name}, ARGB = ({A}, {R}, {G}, {B})}}";
 
         public string Name
         {

@@ -461,11 +461,11 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 
                 if (offs < 0)
                 {
-                    printf("-%02XH", -offs);
+                    printf("-0x%02X", -offs);
                 }
                 else if (offs > 0)
                 {
-                    printf("+%02XH", +offs);
+                    printf("+0x%02X", +offs);
                 }
 
                 printf("]\n");
@@ -500,11 +500,11 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 
             if (offs < 0)
             {
-                printf("-%02XH", -offs);
+                printf("-0x%02X", -offs);
             }
             else if (offs > 0)
             {
-                printf("+%02XH", +offs);
+                printf("+0x%02X", +offs);
             }
 
             printf("]\n");

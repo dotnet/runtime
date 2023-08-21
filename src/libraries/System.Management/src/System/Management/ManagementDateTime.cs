@@ -194,11 +194,10 @@ namespace System.Management
             }
 
 
-            // Construct a new System.DateTime object, .NET Framework uses date kind unspecified so use the same
-            var datetime = new DateTime(year, month, day, hour, minute, second, 0, DateTimeKind.Unspecified);
+            var datetime = new DateTime(year, month, day, hour, minute, second, 0, DateTimeKind.Local);
             // Then add the ticks calculated from the microseconds
             datetime = datetime.AddTicks(ticks);
-            // Then adjust the offset, using a manual calulation to keep the same possible range as netfx
+            // Then adjust the offset, using a manual calculation to keep the same possible range as netfx
             datetime = datetime.AddMinutes(-(utcOffset - TimeZoneInfo.Local.GetUtcOffset(datetime).Ticks / TimeSpan.TicksPerMinute));
 
             return datetime;

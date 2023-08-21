@@ -22,12 +22,11 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof({|#1:MarshallerType|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|#2:MarshallerType|}))]
                 static class MarshallerType
                 {
                 }
@@ -37,10 +36,9 @@ namespace LibraryImportGenerator.UnitTests
                 using System.Runtime.InteropServices.Marshalling;
 
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof(MarshallerType))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof(MarshallerType))]
                 static class MarshallerType
                 {
                     public static nint ConvertToUnmanaged(ManagedType managed)
@@ -54,8 +52,7 @@ namespace LibraryImportGenerator.UnitTests
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(0).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(1).WithArguments("MarshallerType", MarshalMode.UnmanagedToManagedOut, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(2).WithArguments("MarshallerType", MarshalMode.ElementIn, "ManagedType"));
+                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(1).WithArguments("MarshallerType", MarshalMode.UnmanagedToManagedOut, "ManagedType"));
         }
 
         [Fact]
@@ -64,9 +61,9 @@ namespace LibraryImportGenerator.UnitTests
             string source = """
                 using System;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
                 static class MarshallerType
                 {
@@ -84,12 +81,11 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof({|#1:MarshallerType|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof({|#2:MarshallerType|}))]
                 static class MarshallerType
                 {
                 }
@@ -99,10 +95,9 @@ namespace LibraryImportGenerator.UnitTests
                 using System.Runtime.InteropServices.Marshalling;
 
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof(MarshallerType))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof(MarshallerType))]
                 static class MarshallerType
                 {
                     public static ManagedType ConvertToManaged(nint unmanaged)
@@ -116,8 +111,7 @@ namespace LibraryImportGenerator.UnitTests
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(StatelessRequiresConvertToManagedRule).WithLocation(0).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedOut, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessRequiresConvertToManagedRule).WithLocation(1).WithArguments("MarshallerType", MarshalMode.UnmanagedToManagedIn, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessRequiresConvertToManagedRule).WithLocation(2).WithArguments("MarshallerType", MarshalMode.ElementOut, "ManagedType"));
+                VerifyCS.Diagnostic(StatelessRequiresConvertToManagedRule).WithLocation(1).WithArguments("MarshallerType", MarshalMode.UnmanagedToManagedIn, "ManagedType"));
         }
 
         [Fact]
@@ -125,12 +119,14 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof({|#1:MarshallerType|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof({|#2:MarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|#2:MarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof({|#3:MarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof({|#4:MarshallerType|}))]
                 static class MarshallerType
                 {
                 }
@@ -140,17 +136,19 @@ namespace LibraryImportGenerator.UnitTests
                 using System.Runtime.InteropServices.Marshalling;
 
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof(MarshallerType))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof(MarshallerType))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof(MarshallerType))]
                 static class MarshallerType
                 {
                     public static nint ConvertToUnmanaged(ManagedType managed)
                     {
                         throw new System.NotImplementedException();
                     }
-                
+
                     public static ManagedType ConvertToManaged(nint unmanaged)
                     {
                         throw new System.NotImplementedException();
@@ -163,10 +161,14 @@ namespace LibraryImportGenerator.UnitTests
                 fixedSource,
                 VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.ManagedToUnmanagedRef, "ManagedType").WithLocation(0),
                 VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.UnmanagedToManagedRef, "ManagedType").WithLocation(1),
-                VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.ElementRef, "ManagedType").WithLocation(2),
+                VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.ElementIn, "ManagedType").WithLocation(2),
+                VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.ElementRef, "ManagedType").WithLocation(3),
+                VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.ElementOut, "ManagedType").WithLocation(4),
                 VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.ManagedToUnmanagedRef, "ManagedType").WithLocation(0),
                 VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.UnmanagedToManagedRef, "ManagedType").WithLocation(1),
-                VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.ElementRef, "ManagedType").WithLocation(2));
+                VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.ElementIn, "ManagedType").WithLocation(2),
+                VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.ElementRef, "ManagedType").WithLocation(3),
+                VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.ElementOut, "ManagedType").WithLocation(4));
         }
 
         [Fact]
@@ -174,9 +176,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof({|#1:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof({|#2:MarshallerType|}))]
@@ -193,7 +195,7 @@ namespace LibraryImportGenerator.UnitTests
                 using System.Runtime.InteropServices.Marshalling;
 
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof(MarshallerType))]
@@ -224,9 +226,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof({|#1:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof({|#2:MarshallerType|}))]
@@ -243,7 +245,7 @@ namespace LibraryImportGenerator.UnitTests
                 using System.Runtime.InteropServices.Marshalling;
 
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof(MarshallerType))]
@@ -274,9 +276,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof({|#1:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof({|#2:MarshallerType|}))]
@@ -299,9 +301,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.Default, typeof({|#0:MarshallerType|}))]
                 static class MarshallerType
                 {
@@ -312,7 +314,7 @@ namespace LibraryImportGenerator.UnitTests
                 using System.Runtime.InteropServices.Marshalling;
 
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.Default, typeof(MarshallerType))]
                 static class MarshallerType
                 {
@@ -320,7 +322,7 @@ namespace LibraryImportGenerator.UnitTests
                     {
                         throw new System.NotImplementedException();
                     }
-                
+
                     public static ManagedType ConvertToManaged(nint unmanaged)
                     {
                         throw new System.NotImplementedException();
@@ -341,9 +343,9 @@ namespace LibraryImportGenerator.UnitTests
             string source = """
                 using System;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
                 static class MarshallerType
                 {
@@ -354,9 +356,9 @@ namespace LibraryImportGenerator.UnitTests
             string fixedSource = """
                 using System;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
                 static class MarshallerType
                 {
@@ -385,10 +387,9 @@ namespace LibraryImportGenerator.UnitTests
                 using System.Runtime.InteropServices.Marshalling;
 
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof({|SYSLIB1057:OtherMarshallerType|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
                 static class MarshallerType
                 {
                 }
@@ -428,7 +429,6 @@ namespace LibraryImportGenerator.UnitTests
 
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof({|SYSLIB1057:OtherMarshallerType|}))]
-                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
                 static class MarshallerType
                 {
                 }

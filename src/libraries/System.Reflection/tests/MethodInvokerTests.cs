@@ -63,6 +63,72 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void Args_0_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_0)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, 42));
+        }
+
+        [Fact]
+        public void Args_1_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", 42));
+        }
+
+        [Fact]
+        public void Args_2_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_2)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", "2", 42));
+        }
+
+        [Fact]
+        public void Args_3_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_3)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", "2", "3", 42));
+        }
+
+        [Fact]
+        public void Args_Span_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, new Span<object?>(new object[] { "1", "2" })));
+        }
+
+        [Fact]
+        public void Args_1_NotEnoughArgs_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null));
+        }
+
+        [Fact]
+        public void Args_2_NotEnoughArgs_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_2)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1"));
+        }
+
+        [Fact]
+        public void Args_3_NotEnoughArgs_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_3)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1"));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", "2"));
+        }
+
+        [Fact]
+        public void Args_Span_NotEnoughArgs_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, new Span<object?>()));
+        }
+
+        [Fact]
         public void Args_ByRef()
         {
             string argValue = "Value";

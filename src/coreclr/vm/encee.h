@@ -247,12 +247,14 @@ public:
                                     SIZE_T newILOffset,
                                     T_CONTEXT *pContext);
 
+#ifdef FEATURE_ENC_SUPPORTED
     // Modify the thread context for EnC remap and resume execution
     void FixContextAndResume(MethodDesc *pMD,
                              void *oldDebuggerFuncHandle,
                              T_CONTEXT *pContext,
                              EECodeInfo *pOldCodeInfo,
                              EECodeInfo *pNewCodeInfo);
+#endif // FEATURE_ENC_SUPPORTED
 
     // Get a pointer to the value of a field added by EnC or return NULL if it doesn't exist
     PTR_CBYTE ResolveField(OBJECTREF thisPointer,

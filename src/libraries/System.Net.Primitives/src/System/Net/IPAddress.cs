@@ -331,7 +331,7 @@ namespace System.Net
         private void WriteIPv4Bytes(Span<byte> destination)
         {
             uint address = PrivateAddress;
-            MemoryMarshal.Write(destination, ref address);
+            MemoryMarshal.Write(destination, in address);
         }
 
         /// <devdoc>

@@ -10,4 +10,7 @@
     <Compile Include="EventActivityIdControl.cs" />
     <ProjectReference Include="../common/common.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>  
 </Project>

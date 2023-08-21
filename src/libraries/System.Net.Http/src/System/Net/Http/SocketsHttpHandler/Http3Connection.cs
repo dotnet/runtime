@@ -197,7 +197,7 @@ namespace System.Net.Http
                     {
                         TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
 
-                        _pool.Settings._metrics!.RequestLeftQueue(Pool, duration, versionMajor: 3);
+                        _pool.Settings._metrics!.RequestLeftQueue(request, Pool, duration, versionMajor: 3);
 
                         if (HttpTelemetry.Log.IsEnabled())
                         {

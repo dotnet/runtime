@@ -6,7 +6,7 @@ parameters:
   # do not set them when using the template
   _const_paths:
     _wasm_specific_only: [
-        eng/testing/ProvisioningVersions.props
+        eng/testing/ChromeVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
@@ -126,12 +126,16 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
 
     - subset: runtimetests
+      combined: true
       include:
       - src/tests/*
+      exclude:
+      - ${{ parameters._const_paths._wasm_specific_only }}
 
     - subset: tools_illink
       include:
       - src/tools/illink/*
+      - global.json
 
     - subset: installer
       include:
@@ -178,6 +182,7 @@ jobs:
       include:
       - eng/Version.Details.xml
       - eng/Versions.props
+        eng/testing/ChromeVersions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*
@@ -210,7 +215,7 @@ jobs:
     - subset: wasmdebuggertests
       combined: true
       include:
-      - eng/testing/ProvisioningVersions.props
+      - eng/testing/ChromeVersions.props
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*

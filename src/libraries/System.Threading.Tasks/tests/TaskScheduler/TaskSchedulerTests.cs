@@ -211,6 +211,7 @@ namespace System.Threading.Tasks.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         public static void RunSynchronizationContextTaskSchedulerTests()
         {
             // Remember the current SynchronizationContext, so that we can restore it

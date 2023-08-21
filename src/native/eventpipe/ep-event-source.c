@@ -19,7 +19,9 @@ const ep_char8_t* _ep_os_info = "tvOS";
 #elif defined(HOST_IOS)
 const ep_char8_t* _ep_os_info = "iOS";
 #elif defined(HOST_WATCHOS)
-const ep_char8_t* _ep_os_info = "WatchOS";
+const ep_char8_t* _ep_os_info = "watchOS";
+#elif defined(HOST_MACCAT)
+const ep_char8_t* _ep_os_info = "MacCatalyst";
 #elif defined(__APPLE__)
 const ep_char8_t* _ep_os_info = "macOS";
 #elif defined(HOST_ANDROID)

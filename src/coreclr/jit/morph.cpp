@@ -2269,13 +2269,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             hfaType  = comp->GetHfaType(argSigClass);
             isHfaArg = varTypeIsValidHfaType(hfaType);
 
-#if defined(TARGET_ARM64)
-            if (TargetOS::IsWindows)
+            if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && callIsVararg)
             {
                 // Make sure for vararg methods isHfaArg is not true.
-                isHfaArg = callIsVararg ? false : isHfaArg;
+                isHfaArg = false;
             }
-#endif // defined(TARGET_ARM64)
 
             if (isHfaArg)
             {
@@ -2614,7 +2612,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 //
                 if (!isRegArg && (size > 1))
                 {
-                    // Arm64 windows native varargs allows splitting a 16 byte struct between stack
+                    // Arm64 windows native varargs allows splitting a 16 byte struct (or SIMD type) between stack
                     // and the last general purpose register.
                     if (TargetOS::IsWindows && callIsVararg)
                     {
@@ -10915,8 +10913,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTree* vectorNode = op1->AsHWIntrinsic()->Op(1);
 
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(node);
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return vectorNode;
         }
@@ -10942,8 +10940,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTree* maskNode = op1->AsHWIntrinsic()->Op(1);
 
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(node);
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return maskNode;
         }

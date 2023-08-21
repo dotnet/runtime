@@ -52,15 +52,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
             ServiceCollection,
         }
 
-        [Fact]
-        public async Task LangVersionMustBeCharp11OrHigher()
+        [Theory]
+        [InlineData(LanguageVersion.CSharp11)]
+        [InlineData(LanguageVersion.CSharp10)]
+        public async Task LangVersionMustBeCharp12OrHigher(LanguageVersion langVersion)
         {
-            var (d, r) = await RunGenerator(BindCallSampleCode, LanguageVersion.CSharp10);
+            var (d, r) = await RunGenerator(BindCallSampleCode, langVersion);
             Assert.Empty(r);
 
             Diagnostic diagnostic = Assert.Single(d);
             Assert.True(diagnostic.Id == "SYSLIB1102");
-            Assert.Contains("C# 11", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
+            Assert.Contains("C# 12", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
 
@@ -250,9 +252,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
             Assert.Single(r);
 
             string generatedSource = string.Join('\n', r[0].SourceText.Lines.Select(x => x.ToString()));
-            Assert.Contains($"public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass0 obj) => {{ }};", generatedSource);
-            Assert.Contains($"public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass1 obj, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => {{ }};", generatedSource);
-            Assert.Contains($"public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, string key, global::Program.MyClass2 obj) => {{ }};", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass0(this IConfiguration configuration, object? obj)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass1(this IConfiguration configuration, object? obj, Action<BinderOptions>? configureOptions)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass2(this IConfiguration configuration, string key, object? obj)", generatedSource);
 
             Assert.Empty(d);
         }
@@ -395,7 +397,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
 
         private static async Task<(ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGenerator(
             string testSourceCode,
-            LanguageVersion langVersion = LanguageVersion.CSharp11,
+            LanguageVersion langVersion = LanguageVersion.Preview,
             IEnumerable<Assembly>? references = null) =>
             await RoslynTestUtils.RunGenerator(
                 new ConfigurationBindingGenerator(),

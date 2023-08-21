@@ -69,6 +69,7 @@ extern "C" {
 
 #include <pal_error.h>
 #include <pal_mstypes.h>
+#include <minipal/utils.h>
 
 // Native system libray handle.
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
@@ -405,7 +406,7 @@ PALIMPORT
 VOID
 PALAPI
 PAL_SetCreateDumpCallback(
-    IN PCREATEDUMP_CALLBACK callback); 
+    IN PCREATEDUMP_CALLBACK callback);
 
 PALIMPORT
 BOOL
@@ -1531,6 +1532,14 @@ typedef struct _XMM_SAVE_AREA32 {
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
+    _CONTEXT() = default;
+    _CONTEXT(const _CONTEXT& ctx)
+    {
+        *this = ctx;
+    }
+
+    _CONTEXT& operator=(const _CONTEXT& ctx);
+
     //
     // Register parameter home addresses.
     //
@@ -2085,7 +2094,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_INTEGER (CONTEXT_LOONGARCH64 | 0x2)
 #define CONTEXT_FLOATING_POINT  (CONTEXT_LOONGARCH64 | 0x4)
 #define CONTEXT_DEBUG_REGISTERS (CONTEXT_LOONGARCH64 | 0x8)
-
 #define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
 
 #define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
@@ -2161,10 +2169,9 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 Pc;
 
     //
-    // Floating Point Registers
+    // Floating Point Registers: FPR64/LSX/LASX.
     //
-    // TODO-LoongArch64: support the SIMD.
-    ULONGLONG F[32];
+    ULONGLONG F[4*32];
     DWORD64 Fcc;
     DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
@@ -2751,15 +2758,6 @@ PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalS
 PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI InitializeCriticalSection(OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
-
-#define SEM_FAILCRITICALERRORS          0x0001
-#define SEM_NOOPENFILEERRORBOX          0x8000
-
-PALIMPORT
-UINT
-PALAPI
-SetErrorMode(
-         IN UINT uMode);
 
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02
@@ -4491,6 +4489,7 @@ private:
         ExceptionPointers.ExceptionRecord = ex.ExceptionPointers.ExceptionRecord;
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
+        TargetIp = ex.TargetIp;
         RecordsOnStack = ex.RecordsOnStack;
         IsExternal = ex.IsExternal;
         ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
@@ -4513,6 +4512,8 @@ public:
     EXCEPTION_POINTERS ExceptionPointers;
     // Target frame stack pointer set before the 2nd pass.
     SIZE_T TargetFrameSp;
+    SIZE_T TargetIp;
+    SIZE_T ReturnValue;
     bool RecordsOnStack;
     // The exception is a hardware exception coming from a native code out of
     // the well known runtime helpers
@@ -4526,6 +4527,7 @@ public:
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
+        TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
@@ -4565,6 +4567,7 @@ public:
         ExceptionPointers.ExceptionRecord = NULL;
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
+        TargetIp = 0;
         RecordsOnStack = false;
         IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
