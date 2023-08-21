@@ -1054,6 +1054,24 @@ namespace System.Tests
             };
             yield return new object[]
             {
+                typeof(DIMs.I2),
+                typeof(DIMs.C3),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I1),
+                typeof(DIMs.C3),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M", BindingFlags.Instance | BindingFlags.NonPublic), typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic))
+                }
+            };
+            yield return new object[]
+            {
                 typeof(DIMs.I4),
                 typeof(DIMs.C4),
                 new Tuple<MethodInfo, MethodInfo>[]
@@ -1063,11 +1081,29 @@ namespace System.Tests
             };
             yield return new object[]
             {
+                typeof(DIMs.I3),
+                typeof(DIMs.C4),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic))
+                }
+            };
+            yield return new object[]
+            {
                 typeof(DIMs.I2),
                 typeof(DIMs.C4),
                 new Tuple<MethodInfo, MethodInfo>[]
                 {
                     new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I1),
+                typeof(DIMs.C4),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), typeof(DIMs.C4).GetMethod("M"))
                 }
             };
 
