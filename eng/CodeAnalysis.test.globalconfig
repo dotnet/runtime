@@ -483,6 +483,9 @@ dotnet_diagnostic.CA1864.severity = none
 # CA1868: Unnecessary call to 'Contains' for sets
 dotnet_diagnostic.CA1868.severity = none
 
+# CA1869: Cache and reuse 'JsonSerializerOptions' instances
+dotnet_diagnostic.CA1869.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
