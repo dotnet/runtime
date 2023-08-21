@@ -73,39 +73,39 @@ jobs:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
 
-      # Variables used for SuperPMI collection
-      - name: CollectionType
-        value: ''
-      - name: CollectionName
-        value: ''
-      - ${{ if eq(parameters.SuperPmiCollect, true) }}:
-        - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
+        # Variables used for SuperPMI collection
         - name: CollectionType
-          value: 'run'
+          value: ''
         - name: CollectionName
-          value: 'libraries_tests'
-        - ${{ if eq(parameters.osGroup, 'windows') }}:
-          - name: PythonScript
-            value: 'py -3'
-          - name: PipScript
-            value: 'py -3 -m pip'
-          - name: MchFilesLocation
-            value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
-          - name: MergedMchFileLocation
-            value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
-          - name: SpmiLogsLocation
-            value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
-        - ${{ if ne(parameters.osGroup, 'windows') }}:
-          - name: PythonScript
-            value: 'python3'
-          - name: PipScript
-            value: 'pip3'
-          - name: MchFilesLocation
-            value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
-          - name: MergedMchFileLocation
-            value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
-          - name: SpmiLogsLocation
-            value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
+          value: ''
+        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+          - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
+          - name: CollectionType
+            value: 'run'
+          - name: CollectionName
+            value: 'libraries_tests'
+          - ${{ if eq(parameters.osGroup, 'windows') }}:
+            - name: PythonScript
+              value: 'py -3'
+            - name: PipScript
+              value: 'py -3 -m pip'
+            - name: MchFilesLocation
+              value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+            - name: MergedMchFileLocation
+              value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
+            - name: SpmiLogsLocation
+              value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+          - ${{ if ne(parameters.osGroup, 'windows') }}:
+            - name: PythonScript
+              value: 'python3'
+            - name: PipScript
+              value: 'pip3'
+            - name: MchFilesLocation
+              value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+            - name: MergedMchFileLocation
+              value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
+            - name: SpmiLogsLocation
+              value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
 
         - ${{ parameters.variables }}
 
