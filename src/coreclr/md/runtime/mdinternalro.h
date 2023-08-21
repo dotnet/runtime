@@ -534,7 +534,7 @@ public:
         ULONG* pulSequence,                 // [OUT] Parameter sequence number
         DWORD* pdwAttr,                     // [OUT] Type parameter flags (for future use)
         mdToken *ptOwner,                   // [OUT] The owner (TypeDef or MethodDef)
-        mdToken *ptType,                    // [OUT] The Type (TypeDef/Ref, for const generics)
+        mdToken *ptType,                    // [OUT] The Type (TypeDef/Ref/Spec, for const generics)
         LPCSTR *szName);                    // [OUT] The name
 
     __checkReturn
