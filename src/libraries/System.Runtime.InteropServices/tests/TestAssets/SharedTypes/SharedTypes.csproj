@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Ancillary.Interop\Ancillary.Interop.csproj" />
-    <ProjectReference Include="..\..\..\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" />
+    <EnabledGenerators Remove="@(EnabledGenerators)" />
   </ItemGroup>
 
 </Project>

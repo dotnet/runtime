@@ -41,6 +41,7 @@ namespace Microsoft.Interop
                 ByValueMarshalKindSupport.Supported => generator,
                 ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic!)),
                 ByValueMarshalKindSupport.Unnecessary => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
+                ByValueMarshalKindSupport.NotRecommended => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
                 _ => throw new UnreachableException()
             };
         }

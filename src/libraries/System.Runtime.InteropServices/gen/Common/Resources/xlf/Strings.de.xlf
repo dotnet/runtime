@@ -147,6 +147,16 @@
         <target state="translated">Das .NET COM-Hosting mit "EnableComHosting" unterstützt keine Schnittstellen mit "GeneratedComInterfaceAttribute".</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The 'GeneratedComInterfaceAttribute' usage does not follow recommendations. {0}</source>
+        <target state="new">The 'GeneratedComInterfaceAttribute' usage does not follow recommendations. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
+        <source>The 'GeneratedComInterfaceAttribute' usage does not follow recommendations.</source>
+        <target state="new">The 'GeneratedComInterfaceAttribute' usage does not follow recommendations.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
         <target state="translated">Der Rückgabewert in der verwalteten Definition wird beim Aufrufen der nicht verwalteten COM-Methode in einen out-Parameter konvertiert. Wenn als Rückgabewert der von der nicht verwalteten COM-Methode zurückgegebene HRESULT-Code eingesetzt werden soll, verwenden Sie "[PreserveSig]" für die Methode.</target>
@@ -915,6 +925,11 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">Der Typ \"{0}\" gibt an, dass das Marshalling in der Out-Richtung unterstützt wird. Er stellt jedoch keine ToManaged-Methode bereit, die den verwalteten Typ zurückgibt.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PreferExplicitInOutAttributesOnArrays">
+        <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
+        <target state="new">It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
