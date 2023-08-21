@@ -964,9 +964,7 @@ ep_enable (
 	sessionId = ep_enable_3(options);
 
 ep_on_exit:
-	if (options) {
-		ep_rt_object_free(options);
-	}
+	ep_session_options_free(options);
 	return sessionId;
 
 ep_on_error:

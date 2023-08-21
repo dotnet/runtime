@@ -74,9 +74,8 @@ ep_on_exit:
 	return options;
 
 ep_on_error:
-	if (options != NULL) {
-		ep_rt_object_free(options);
-	}
+	ep_rt_object_free(options);
+	options = NULL;
 	ep_exit_error_handler ();
 }
 
