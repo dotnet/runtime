@@ -79,7 +79,7 @@ namespace System.Reflection
         private static InvokerStrategy GetStrategyForUsingEmit()
         {
             // This causes the emit strategy, if supported, to be used on the first call as well as subsequent calls.
-            return InvokerStrategy.HasBeenInvoked_Obj4Args | InvokerStrategy.HasBeenInvoked_ObjSpanArgs | InvokerStrategy.HasBeenInvoked_RefArgs; ;
+            return InvokerStrategy.HasBeenInvoked_Obj4Args | InvokerStrategy.HasBeenInvoked_ObjSpanArgs | InvokerStrategy.HasBeenInvoked_RefArgs;
         }
 
         /// <summary>
