@@ -80,7 +80,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>9.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>8.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
@@ -88,12 +88,12 @@
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
 
     <!-- The previous supported .NET version. -->
-    <NetCoreAppPreviousVersion>8.0</NetCoreAppPreviousVersion>
+    <NetCoreAppPreviousVersion>7.0</NetCoreAppPreviousVersion>
     <NetCoreAppPrevious>net$(NetCoreAppPreviousVersion)</NetCoreAppPrevious>
     <NetCoreAppPrevious Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
 
     <!-- The minimum supported .NET version. -->
-    <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
+    <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
     <NetCoreAppMinimum Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
 
     <!-- when this is updated, make sure to keep $(_TargetFrameworkForNETCoreTasks)
@@ -114,8 +114,8 @@
     <NetFrameworkCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
     <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
-    <ApiCompatNetCoreAppBaselineVersion>8.0.0-rc.1.23415.6</ApiCompatNetCoreAppBaselineVersion>
-    <ApiCompatNetCoreAppBaselineTFM>net8.0</ApiCompatNetCoreAppBaselineTFM>
+    <ApiCompatNetCoreAppBaselineVersion>7.0.0</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineTFM>net7.0</ApiCompatNetCoreAppBaselineTFM>
 
     <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
     <!-- Don't build for NETFramework during source-build. -->
@@ -428,7 +428,6 @@
     <!-- Don't try to publish PDBs for ref assemblies that have none. -->
     <PublishWindowsPdb>false</PublishWindowsPdb>
   </PropertyGroup>
-
 
   <!-- All reference assemblies should have a ReferenceAssemblyAttribute and the 0x70 flag which prevents them from loading. -->
   <ItemGroup Condition="'$(IsReferenceAssemblyProject)' == 'true'">
