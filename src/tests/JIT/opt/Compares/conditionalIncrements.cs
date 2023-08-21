@@ -23,6 +23,30 @@ public class ConditionalIncrementTest
     }
 
     [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 35)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_byte(byte op1, int expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        int result = op1 <= 44 ? op1 + 1 : 5;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 35)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_byte_reverse(byte op1, int expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        int result = op1 <= 44 ? 1 + op1 : 5;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
     [InlineData(72, byte.MinValue)]
     [InlineData(32, byte.MaxValue)]
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -59,6 +83,30 @@ public class ConditionalIncrementTest
     }
 
     [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 35)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_short(short op1, short expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        short result = (short) (op1 <= 44 ? op1 + 1 : 5);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 35)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_short_reverse(short op1, short expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        short result = (short) (op1 <= 44 ? 1 + op1 : 5);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
     [InlineData(76, short.MinValue)]
     [InlineData(-35, short.MaxValue)]
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -79,6 +127,66 @@ public class ConditionalIncrementTest
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #46
         //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         int result = op1 > 46 ? 6 : 5;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 35)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_int(int op1, int expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        int result = op1 <= 44 ? op1 + 1 : 5;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 35)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_int_reverse(int op1, int expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        int result = op1 <= 44 ? 1 + op1 : 5;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 69)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_int_postinc(int op1, int expected)
+    {
+        int result = 2 * op1;
+
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
+        if (op1 < 44) {
+            result++;
+        } else {
+            result = 5;
+        }
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(74, 149)]
+    [InlineData(34, 5)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_int_postinc_false(int op1, int expected)
+    {
+        int result = 2 * op1;
+
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
+        //ARM64-FULL-LINE-NEXT: csinc {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
+        if (op1 < 44) {
+            result = 5;
+        } else {
+            result++;
+        }
         Assert.Equal(expected, result);
     }
 
@@ -104,6 +212,30 @@ public class ConditionalIncrementTest
         //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
         //ARM64-FULL-LINE-NEXT: sxtw {{x[0-9]+}}, {{w[0-9]+}}
         long result = op1 < 48 ? 6 : 5;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 35)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_long(long op1, long expected)
+    {
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #48
+        //ARM64-FULL-LINE-NEXT: csinc {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{gt|le}}
+        long result = op1 <= 48 ? op1 + 1 : 5;
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(74, 5)]
+    [InlineData(34, 35)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void csinc_long_reverse(long op1, long expected)
+    {
+        //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #48
+        //ARM64-FULL-LINE-NEXT: csinc {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{gt|le}}
+        long result = op1 <= 48 ? 1 + op1 : 5;
         Assert.Equal(expected, result);
     }
 
