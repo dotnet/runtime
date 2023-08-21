@@ -1449,8 +1449,8 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 		m = info->method;
 		break;
 	default:
-		/* Object.GetType () is an intrinsic under netcore */
-		if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
+		/* Object.GetType () is an intrinsic under netcore or cmethod is static virtual methods where the receiver's type is null */
+		if ((!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) || (m_method_is_static (cmethod) && m_method_is_virtual (cmethod))) {
 			MonoVTable *vt;
 
 			vt = mono_class_vtable_checked (klass, error);
