@@ -204,8 +204,6 @@
     <GrpcCoreVersion>2.46.3</GrpcCoreVersion>
     <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
     <GrpcToolsVersion>2.45.0</GrpcToolsVersion>
-    <!-- Uncomment to set a fixed version, else the latest is used -->
-    <!--<SdkVersionForWorkloadTesting>8.0.100-rc.1.23415.5</SdkVersionForWorkloadTesting>-->
     <CompilerPlatformTestingVersion>1.1.2-beta1.23323.1</CompilerPlatformTestingVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20221010.1</MicrosoftPrivateIntellisenseVersion>
@@ -256,5 +254,8 @@
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
+    <!-- installer version, for testing workloads -->
+    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.23421.9</MicrosoftDotnetSdkInternalVersion>
+    <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
   </PropertyGroup>
 </Project>
