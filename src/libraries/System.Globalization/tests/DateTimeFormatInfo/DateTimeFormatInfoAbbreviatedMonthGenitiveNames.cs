@@ -170,7 +170,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("ms-BN").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
             yield return new object[] { new CultureInfo("ms-MY").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
             yield return new object[] { new CultureInfo("ms-SG").DateTimeFormat, new string[] { "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis", "" } };
-            string[] norwegianMonths = PlatformDetection.IsBrowser ? // dotnet responds like non-browser
+            string[] norwegianMonths = PlatformDetection.IsBrowserDomSupported ? // dotnet responds like non-browser
                 new string [] { "jan.", "feb.", "mars", "apr.", "mai", "juni", "juli", "aug.", "sep.", "okt.", "nov.", "des.", "" } :
                 new string [] { "jan.", "feb.", "mar.", "apr.", "mai", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "des.", "" };
             yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, norwegianMonths };
