@@ -1,0 +1,1 @@
+See [Profiled Ahead-Of-Time Compilation on Mono](https://github.com/dotnet/runtime/docs/design/mono/profiled-aot.md#android----running-through-the-android-profiled-aot-functional-test)
