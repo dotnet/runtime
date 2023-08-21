@@ -14,13 +14,13 @@ import {
     _now, getRawCwrap, importDef,
     getWasmFunctionTable, recordFailure, getOptions,
     JiterpreterOptions, getMemberOffset,
-    getCounter, modifyCounter,
+    getCounter, modifyCounter
 } from "./jiterpreter-support";
 import { WasmValtype } from "./jiterpreter-opcodes";
 import { mono_log_error, mono_log_info } from "./logging";
 import { utf8ToString } from "./strings";
 import {
-    JiterpreterTable, JiterpCounter, JiterpMember
+    JiterpreterTable, JiterpCounter, JiterpMember, JitQueue
 } from "./jiterpreter-enums";
 
 // Controls miscellaneous diagnostic output.
@@ -59,7 +59,6 @@ let trampBuilder: WasmBuilder;
 let trampImports: Array<[string, string, Function]> | undefined;
 let fnTable: WebAssembly.Table;
 let jitQueueTimeout = 0;
-const jitQueue: TrampolineInfo[] = [];
 const infoTable: { [ptr: number]: TrampolineInfo } = {};
 
 /*
@@ -135,6 +134,13 @@ class TrampolineInfo {
 
 let mostRecentOptions: JiterpreterOptions | undefined = undefined;
 
+// If a method is freed we need to remove its info (just in case another one gets
+//  allocated at that exact memory offset later) and more importantly, ensure it is
+//  not waiting in the jit queue
+export function mono_jiterp_free_method_data_interp_entry(imethod: number) {
+    delete infoTable[imethod];
+}
+
 // FIXME: move this counter into C and make it thread safe
 export function mono_interp_record_interp_entry(imethod: number) {
     // clear the unbox bit
@@ -154,8 +160,8 @@ export function mono_interp_record_interp_entry(imethod: number) {
     else if (info.hitCount !== mostRecentOptions!.interpEntryHitCount)
         return;
 
-    jitQueue.push(info);
-    if (jitQueue.length >= maxJitQueueLength)
+    const jitQueueLength = cwraps.mono_jiterp_tlqueue_add(JitQueue.InterpEntry, <any>imethod);
+    if (jitQueueLength >= maxJitQueueLength)
         flush_wasm_entry_trampoline_jit_queue();
     else
         ensure_jit_is_scheduled();
@@ -222,7 +228,18 @@ function ensure_jit_is_scheduled() {
 }
 
 function flush_wasm_entry_trampoline_jit_queue() {
-    if (jitQueue.length <= 0)
+    const jitQueue : TrampolineInfo[] = [];
+    let methodPtr = <MonoMethod><any>0;
+    while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.InterpEntry)) != 0) {
+        const info = infoTable[<any>methodPtr];
+        if (!info) {
+            mono_log_info(`Failed to find corresponding info for method ptr ${methodPtr} from jit queue!`);
+            continue;
+        }
+        jitQueue.push(info);
+    }
+
+    if (!jitQueue.length)
         return;
 
     // If the function signature contains types that need stackval_from_data, that'll use
@@ -268,7 +285,6 @@ function flush_wasm_entry_trampoline_jit_queue() {
         builder.clear(constantSlots);
 
     if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
-        jitQueue.length = 0;
         return;
     }
 
@@ -428,8 +444,6 @@ function flush_wasm_entry_trampoline_jit_queue() {
         } else if (rejected && !threw) {
             mono_log_error("failed to generate trampoline for unknown reason");
         }
-
-        jitQueue.length = 0;
     }
 }
 

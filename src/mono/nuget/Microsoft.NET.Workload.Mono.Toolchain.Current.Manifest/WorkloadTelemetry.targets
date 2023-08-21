@@ -19,6 +19,7 @@
       <WorkloadPublishProperties Include="LibraryMode" Value="$(_WorkloadUsesLibraryMode)" />
       <WorkloadPublishProperties Include="HybridGlobalization" Value="$(HybridGlobalization)" />
       <WorkloadPublishProperties Include="ResolvedRuntimePack" Value="$(_MonoWorkloadRuntimePackPackageVersion)" />
+      <WorkloadPublishProperties Include="WasmStripILAfterAOT" Value="$(_WorkloadUsesWasmStripILAfterAOT)" />
     </ItemGroup>
 
     <AllowEmptyTelemetry EventName="WorkloadPublishProperties" EventData="@(WorkloadPublishProperties)" />
@@ -35,6 +36,7 @@
       <_WorkloadUsesInterpreter Condition="'$(_WorkloadUsesInterpreter)' == '' and '$(UseInterpreter)' == 'true'">true</_WorkloadUsesInterpreter>
       <_WorkloadUsesInterpreter Condition="'$(_WorkloadUsesInterpreter)' == '' and '$(RunAOTCompilation)' != 'true' and ('$(_WorkloadUsesBlazorWasm)' == 'true' or '$(_WorkloadUsesWasmSDK)' == 'true')">true</_WorkloadUsesInterpreter>
       <_WorkloadUsesLibraryMode Condition="'$(NativeLib)' != '' and ('$(_WorkloadUsesMonoAOT)' == 'true' or '$(_WorkloadUsesNativeAOT)' == 'true')">true</_WorkloadUsesLibraryMode>
+      <_WorkloadUsesWasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == 'true'">true</_WorkloadUsesWasmStripILAfterAOT>
     </PropertyGroup>
 
     <PropertyGroup>
