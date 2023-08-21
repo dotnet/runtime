@@ -440,6 +440,27 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SearchValuesDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\EmptySearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticMap.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasick.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\CharacterFrequencyHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\EightPackedReferences.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\RabinKarp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\StringSearchValuesHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\TeddyBucketizer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\TeddyHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyBucketizedN2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyBucketizedN3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyNonBucketizedN2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyNonBucketizedN3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\MultiStringIgnoreCaseSearchValuesFallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesThreeChars.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesFallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesAhoCorasick.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesRabinKarp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientMemoryException.cs" />
@@ -1329,6 +1350,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Normalization.cs">
       <Link>Common\Interop\Interop.Normalization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Normalization.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Interop.Normalization.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.ResultCode.cs">
       <Link>Common\Interop\Interop.ResultCode.cs</Link>

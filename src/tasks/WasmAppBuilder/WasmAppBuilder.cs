@@ -27,6 +27,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public bool WasmIncludeFullIcuData { get; set; }
     public string? WasmIcuDataFileName { get; set; }
     public string? RuntimeAssetsLocation { get; set; }
+    public bool CacheBootResources { get; set; }
 
     // <summary>
     // Extra json elements to add to _framework/blazor.boot.json
@@ -101,6 +102,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             mainAssemblyName = MainAssemblyName,
             globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant()
         };
+
+        if (CacheBootResources)
+            bootConfig.cacheBootResources = CacheBootResources;
 
         // Create app
         var runtimeAssetsPath = !string.IsNullOrEmpty(RuntimeAssetsLocation)

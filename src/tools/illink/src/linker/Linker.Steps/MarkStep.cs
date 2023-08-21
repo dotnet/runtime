@@ -237,6 +237,7 @@ namespace Mono.Linker.Steps
 		public AnnotationStore Annotations => Context.Annotations;
 		public MarkingHelpers MarkingHelpers => Context.MarkingHelpers;
 		public Tracer Tracer => Context.Tracer;
+		public EmbeddedXmlInfo EmbeddedXmlInfo => Context.EmbeddedXmlInfo;
 
 		public virtual void Process (LinkContext context)
 		{
