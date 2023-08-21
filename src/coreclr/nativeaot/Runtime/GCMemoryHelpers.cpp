@@ -30,18 +30,25 @@ COOP_PINVOKE_CDECL_HELPER(void *, RhpGcSafeZeroMemory, (void * mem, size_t size)
     return mem;
 }
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64) 
+    // 
+    // Memory writes are already ordered
+    // 
+    #define GCHeapMemoryBarrier() 
+#else
+    #define GCHeapMemoryBarrier() MemoryBarrier() 
+#endif 
+
 // Move memory, in a way that is compatible with a move onto the heap, but
 // does not require the destination pointer to be on the heap.
 
 COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* pSrc, size_t cbDest))
 {
-#if TARGET_ARM64
     // It is possible that the bulk write is publishing object references accessible so far only
     // by the current thread to shared memory.
     // The memory model requires that writes performed by current thread are observable no later
     // than the writes that will actually publish the references.
-    MemoryBarrier();
-#endif
+    GCHeapMemoryBarrier();
 
     if (pDest <= pSrc || pSrc + cbDest <= pDest)
         InlineForwardGCSafeCopy(pDest, pSrc, cbDest);
