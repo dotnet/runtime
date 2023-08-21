@@ -64,6 +64,9 @@
 
     <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-latest</SdkForWorkloadTestingDirName>
     <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
+    <SuperPmiCollect Condition=" '$(SuperPmiCollect)' != 'true' ">false</SuperPmiCollect>
+    <SuperPmiCollectionType Condition=" '$(SuperPmiCollect)' != 'true' "></SuperPmiCollectionType>
+    <SuperPmiCollectionName Condition=" '$(SuperPmiCollect)' != 'true' "></SuperPmiCollectionName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -128,6 +131,50 @@
     <HelixPreCommand Include=". $__TestEnv" /> <!-- Use "." not "source"; some clients appear to run scripts with "sh" not "bash" -->
     <!-- Display the interesting DOTNET variables that are set in the environment -->
     <HelixPreCommand Include="printenv | grep DOTNET" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' == 'windows' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
+    <HelixPreCommand Include="set spmi_enable_collection=1" />
+    <!-- spmi_collect_dir can point to any temporary directory. We choose %HELIX_WORKITEM_PAYLOAD%\spmi_collect for convenience, and
+         because we know it can be used, but %TEMP%\spmi_collect might be better. -->
+    <HelixPreCommand Include="set spmi_collect_dir=%HELIX_WORKITEM_PAYLOAD%\spmi_collect" />
+    <HelixPreCommand Include="if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' == 'windows' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Merge all the per-test generated .MC files as a post-step -->
+    <HelixPostCommand Include="set spmi_collection_name=$(SuperPmiCollectionName)" />
+    <HelixPostCommand Include="set spmi_collection_type=$(SuperPmiCollectionType)" />
+    <HelixPostCommand Include="set spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="set spmi_superpmi_py=%HELIX_CORRELATION_PAYLOAD%\superpmi_scripts\superpmi.py" />
+    <HelixPostCommand Include="set spmi_upload_dir=%HELIX_WORKITEM_UPLOAD_ROOT%" />
+    <HelixPostCommand Include="if not exist %spmi_upload_dir% mkdir %spmi_upload_dir%" />
+    <HelixPostCommand Include="set spmi_output_base_name=%spmi_collection_name%.%spmi_collection_type%.%spmi_collection_mch_file_tag%" />
+    <HelixPostCommand Include="set spmi_finalmch=%spmi_upload_dir%\%spmi_output_base_name%.mch" />
+    <HelixPostCommand Include="set spmi_log_file=%spmi_upload_dir%\%spmi_output_base_name%.log" />
+    <HelixPostCommand Include="%HELIX_PYTHONPATH% %spmi_superpmi_py% collect -log_level DEBUG -core_root %CORE_ROOT% --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir %spmi_collect_dir% -output_mch_path %spmi_finalmch% -log_file %spmi_log_file%" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' != 'windows' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
+    <HelixPreCommand Include="export spmi_enable_collection=1" />
+    <HelixPreCommand Include="export spmi_collect_dir=$HELIX_WORKITEM_PAYLOAD/spmi_collect" />
+    <HelixPreCommand Include="mkdir -p $spmi_collect_dir" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' != 'windows' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Merge all the per-test generated .MC files as a post-step -->
+    <HelixPostCommand Include="export spmi_collection_name=$(SuperPmiCollectionName)" />
+    <HelixPostCommand Include="export spmi_collection_type=$(SuperPmiCollectionType)" />
+    <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD/superpmi_scripts/superpmi.py" />
+    <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
+    <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />
+    <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_mch_file_tag" />
+    <HelixPostCommand Include="export spmi_finalmch=$spmi_upload_dir/$spmi_output_base_name.mch" />
+    <HelixPostCommand Include="export spmi_log_file=$spmi_upload_dir/$spmi_output_base_name.log" />
+    <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $CORE_ROOT --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
@@ -288,6 +335,7 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).mch;$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
       </HelixWorkItem>
     </ItemGroup>
 

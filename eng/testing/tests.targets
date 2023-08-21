@@ -93,8 +93,19 @@
     <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'" Directories="$(PublishDir)" ContinueOnError="WarnAndContinue" />
   </Target>
 
+  <!-- SuperPMI collection -->
+  <!-- ExecutionScriptKind is used by the "magic" DependsOnTargets below to have GenerateRunScript depend on
+       either GetSuperPMICollectionBatchScript or GetSuperPMICollectionBashScript, as appropriate.
+  -->
+  <ItemGroup>
+    <ExecutionScriptKind Include="Batch" Condition="'$(RunScriptWindowsCmd)' == 'true'" />
+    <ExecutionScriptKind Include="Bash"  Condition="'$(RunScriptWindowsCmd)' != 'true'" />
+  </ItemGroup>
+
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateRunScript">
+  <Target Name="GenerateRunScript"
+    DependsOnTargets="Generate@(ExecutionScriptKind, 'ExecutionScript;Generate')ExecutionScript" />
+
     <PropertyGroup>
       <!-- RSP file support. -->
       <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true' and (('$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi') or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
@@ -111,6 +122,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <!-- SuperPMI collection -->
+      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' == 'true'" Include="$(SuperPMICollectionBatchScript)"/>
+      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="$(SuperPMICollectionBashScript)"/>
+
       <!--
         If the PreExecutionTestScript property is set, then it should be set to the full path to a script that will be directly incorporated
         into the generated runtests script, immediately before the test is run. This can be used to set a number of JIT stress modes,
@@ -195,5 +210,68 @@ TEST_ARCH=$(_AndroidArchitecture)
   <!-- Main test targets -->
   <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
 
-  <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
+  <!--
+  ***********************************************************************************************
+  SuperPMI collection
+
+  This is a copy of the code in src\tests\Common\CLRTest.Jit.targets.
+  ***********************************************************************************************
+  
+  You shouldn't have to escape characters in a CDATA block, but it appears that you do actually need
+  to escape semicolons with %3B here.
+  -->
+
+  <Target Name="GetSuperPMICollectionBashScript"
+          Returns="$(SuperPMICollectionBashScript)">
+    <PropertyGroup>
+      <SuperPMICollectionBashScript><![CDATA[
+# SuperPMI collection
+if [ ! -z $spmi_enable_collection ]%3B
+then
+  # spmi_collect_dir needs to be set before this script is run, if SuperPMI collection is enabled.
+  if [ -z $spmi_collect_dir ]%3B
+  then
+    echo "ERROR - spmi_collect_dir not defined"
+    exit 1
+  fi
+  mkdir -p $spmi_collect_dir
+  export spmi_file_extension=so
+  if [[ "$OSTYPE" == "darwin"* ]]%3B then
+    export spmi_file_extension=dylib
+  fi
+  export spmi_jitlib=$CORE_ROOT/libclrjit.$spmi_file_extension
+  export SuperPMIShimLogPath=$spmi_collect_dir
+  export SuperPMIShimPath=$spmi_jitlib
+  export DOTNET_EnableExtraSuperPmiQueries=1
+  export DOTNET_JitPath=$CORE_ROOT/libsuperpmi-shim-collector.$spmi_file_extension
+fi
+]]>
+      </SuperPMICollectionBashScript>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetSuperPMICollectionBatchScript"
+          Returns="$(SuperPMICollectionBatchScript)">
+    <PropertyGroup>
+      <SuperPMICollectionBatchScript><![CDATA[
+REM SuperPMI collection
+if not defined spmi_enable_collection goto :skip_spmi_enable_collection
+REM spmi_collect_dir needs to be set before this script is run, if SuperPMI collection is enabled.
+if not defined spmi_collect_dir echo ERROR: spmi_collect_dir not defined&goto :skip_spmi_enable_collection
+if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%
+set spmi_jitlib=%CORE_ROOT%\clrjit.dll
+set SuperPMIShimLogPath=%spmi_collect_dir%
+set SuperPMIShimPath=%spmi_jitlib%
+set DOTNET_EnableExtraSuperPmiQueries=1
+set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
+:skip_spmi_enable_collection
+]]>
+      </SuperPMICollectionBatchScript>
+    </PropertyGroup>
+  </Target>
+
+  <!-- ******************************************************************************************
+  end SuperPMI collection
+  ******************************************************************************************* -->
+
 </Project>
