@@ -14,51 +14,6 @@
 #include "ep-getter-setter.h"
 
 /*
-* EventPipeSessionOptions.
-*/
-
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
-struct _EventPipeSessionOptions {
-#else
-struct _EventPipeSessionOptions_Internal {
-#endif
-	const ep_char8_t *output_path;
-	uint32_t circular_buffer_size_in_mb;
-	const EventPipeProviderConfiguration *providers;
-	uint32_t providers_len;
-	EventPipeSessionType session_type;
-	EventPipeSerializationFormat format;
-	bool rundown_requested;
-	bool disable_stacktrace;
-	IpcStream *stream;
-	EventPipeSessionSynchronousCallback sync_callback;
-	void *callback_additional_data;
-};
-
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
-struct _EventPipeSessionOptions {
-	uint8_t _internal [sizeof (struct _EventPipeSessionOptions_Internal)];
-};
-#endif
-
-EventPipeSessionOptions *
-ep_session_options_alloc (
-	const ep_char8_t *output_path,
-	uint32_t circular_buffer_size_in_mb,
-	const EventPipeProviderConfiguration *providers,
-	uint32_t providers_len,
-	EventPipeSessionType session_type,
-	EventPipeSerializationFormat format,
-	bool rundown_requested,
-	bool disable_stacktrace,
-	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
-
-void
-ep_session_options_free(EventPipeSessionOptions* options);
-
-/*
  * EventPipeSession.
  */
 

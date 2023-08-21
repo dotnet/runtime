@@ -457,6 +457,8 @@ eventpipe_protocol_helper_collect_tracing (
 {
 	ep_return_false_if_nok (stream != NULL);
 
+	EventPipeSessionOptions *options = NULL;
+	EventPipeSessionID session_id = 0;
 	bool result = false;
 
 	if (!payload) {
@@ -464,18 +466,25 @@ eventpipe_protocol_helper_collect_tracing (
 		ep_raise_error ();
 	}
 
-	EventPipeSessionID session_id;
-	session_id = ep_enable (
-		NULL,
+	options = ep_session_options_alloc (
+		NULL,	// output_path
 		payload->circular_buffer_size_in_mb,
 		dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
 		dn_vector_size (payload->provider_configs),
 		EP_SESSION_TYPE_IPCSTREAM,
 		payload->serialization_format,
 		payload->rundown_requested,
+		payload->disable_stacktrace,
 		ds_ipc_stream_get_stream_ref (stream),
-		NULL,
-		NULL);
+		NULL,	// sync_callback
+		NULL	// callback_additional_data
+	);
+	if (options == NULL) {
+		ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
+		ep_raise_error ();
+	}
+
+	session_id = ep_enable_3(options);
 
 	if (session_id == 0) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
@@ -488,6 +497,7 @@ eventpipe_protocol_helper_collect_tracing (
 	result = true;
 
 ep_on_exit:
+	ep_session_options_free (options);
 	ds_eventpipe_collect_tracing_command_payload_free (payload);
 	return result;
 
