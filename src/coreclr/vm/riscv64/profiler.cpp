@@ -5,34 +5,10 @@
 
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
-
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
-
-// Scratch space to store HFA return values (max 16 bytes)
-#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE 16
-
-typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
-{
-    void*                  Fp;
-    void*                  Pc;
-    void*                  x8;
-    ArgumentRegisters      argumentRegisters;
-    FunctionID             functionId;
-    FloatArgumentRegisters floatArgumentRegisters;
-    void*                  probeSp;
-    void*                  profiledSp;
-    void*                  hiddenArg;
-    UINT32                 flags;
-    UINT32                 unused;
-    BYTE                   buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
-} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+#include "asmconstants.h"
 
 UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void* pPlatformSpecificHandle)
 {
-    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
-    _ASSERTE(!"RISCV64:NYI");
     LIMITED_METHOD_CONTRACT;
 
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(pPlatformSpecificHandle);
@@ -41,8 +17,6 @@ UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void* pPlatformSpecificHandle)
 
 void ProfileSetFunctionIDInPlatformSpecificHandle(void* pPlatformSpecificHandle, FunctionID functionId)
 {
-    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
-    _ASSERTE(!"RISCV64:NYI");
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(pPlatformSpecificHandle != nullptr);
@@ -55,8 +29,6 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void* pPlatformSpecificHandle,
 ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHandle)
     : m_argIterator(pSig)
 {
-    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
-    _ASSERTE(!"RISCV64:NYI");
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(pSig != nullptr);
@@ -119,8 +91,6 @@ ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHan
 
 ProfileArgIterator::~ProfileArgIterator()
 {
-    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
-    _ASSERTE(!"RISCV64:NYI");
     LIMITED_METHOD_CONTRACT;
 
     m_handle = nullptr;
@@ -128,8 +98,6 @@ ProfileArgIterator::~ProfileArgIterator()
 
 LPVOID ProfileArgIterator::GetNextArgAddr()
 {
-    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
-    _ASSERTE(!"RISCV64:NYI");
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(m_handle != nullptr);
@@ -177,8 +145,6 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
 
 LPVOID ProfileArgIterator::GetHiddenArgValue(void)
 {
-    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
-    _ASSERTE(!"RISCV64:NYI");
     LIMITED_METHOD_CONTRACT;
 
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(m_handle);
@@ -188,8 +154,6 @@ LPVOID ProfileArgIterator::GetHiddenArgValue(void)
 
 LPVOID ProfileArgIterator::GetThis(void)
 {
-    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
-    _ASSERTE(!"RISCV64:NYI");
     CONTRACTL
     {
         NOTHROW;
@@ -244,11 +208,11 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
     {
         if ((pData->flags & PROFILE_ENTER) != 0)
         {
-            return (LPVOID)pData->x8;
+            return (LPVOID)pData->t0;
         }
         else
         {
-            // On ARM64 there is no requirement for the method to preserve the value stored in x8.
+            // On ARM64 there is no requirement for the method to preserve the value stored in t0. (TODO: verify on RISC-V)
             // In order to workaround this JIT will explicitly return the return buffer address in x0.
             _ASSERTE((pData->flags & PROFILE_LEAVE) != 0);
             return (LPVOID)pData->argumentRegisters.a[0];

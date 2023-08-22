@@ -127,6 +127,28 @@ struct FloatArgumentRegisters {
     double  f[8];  // f0-f7
 };
 
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+#ifdef PROFILING_SUPPORTED
+
+struct PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    void*                  Fp;
+    void*                  Pc;
+    void*                  t0;
+    ArgumentRegisters      argumentRegisters;
+    FunctionID             functionId;
+    FloatArgumentRegisters floatArgumentRegisters;
+    void*                  probeSp;
+    void*                  profiledSp;
+    void*                  hiddenArg;
+    UINT32                 flags;
+    UINT32                 unused;
+    BYTE                   buffer[16];  // Scratch space to store HFA return values (max 16 bytes)
+};
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling
