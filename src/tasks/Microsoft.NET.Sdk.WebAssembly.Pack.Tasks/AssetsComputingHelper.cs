@@ -91,20 +91,20 @@ public class AssetsComputingHelper
         return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
-    public static string GetCandidateRelativePath(ITaskItem candidate)
+    public static string GetCandidateRelativePath(ITaskItem candidate, string? runtimeAssetsLocation)
     {
         var destinationSubPath = candidate.GetMetadata("DestinationSubPath");
         if (!string.IsNullOrEmpty(destinationSubPath))
-            return $"_framework/{destinationSubPath}";
+            return $"{runtimeAssetsLocation}/{destinationSubPath}";
 
         var relativePath = candidate.GetMetadata("FileName") + candidate.GetMetadata("Extension");
-        return $"_framework/{relativePath}";
+        return $"{runtimeAssetsLocation}/{relativePath}";
     }
 
-    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate)
+    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate, string? runtimeAssetsLocation)
     {
         var customIcuCandidate = new TaskItem(candidate);
-        var relativePath = GetCandidateRelativePath(customIcuCandidate);
+        var relativePath = GetCandidateRelativePath(customIcuCandidate, runtimeAssetsLocation);
         customIcuCandidate.SetMetadata("RelativePath", relativePath);
         customIcuCandidate.SetMetadata("AssetTraitName", "BlazorWebAssemblyResource");
         customIcuCandidate.SetMetadata("AssetTraitValue", "native");
