@@ -72,9 +72,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_82535/Runtime_82535/*">
           <Issue>https://github.com/dotnet/runtime/issues/89585</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
-          <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
