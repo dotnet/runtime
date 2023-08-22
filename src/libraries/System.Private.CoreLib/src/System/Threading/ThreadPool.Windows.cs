@@ -10,7 +10,8 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
-        private static readonly bool s_useWindowsThreadPool = // name relied on by sos
+        // name relied on by sos
+        private static readonly bool s_useWindowsThreadPool =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", "DOTNET_ThreadPool_UseWindowsThreadPool");
 
         internal static bool UseWindowsThreadPool => s_useWindowsThreadPool;
