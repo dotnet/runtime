@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
+using Reflection = System.Reflection;
+
 public class JittedMethodsCountingTest
 {
     private const int MAX_JITTED_METHODS_ACCEPTED = 120;
@@ -22,8 +24,13 @@ public class JittedMethodsCountingTest
             return 100;
         }
 
-        string appName = "HelloWorld.dll";
-        string jitOutputFile = "jits.txt";
+        string testAppLocation = Path.GetDirectoryName(Reflection
+                                                      .Assembly
+                                                      .GetExecutingAssembly()
+                                                      .Location);
+
+        string appName = Path.Combine(testAppLocation, "HelloWorld.dll");
+        string jitOutputFile = Path.Combine(testAppLocation, "jits.txt");
 
         // DOTNET_JitStdOutFile appends to the file in question if it exists.
         // This can potentially cause issues, so we have to make sure it is
