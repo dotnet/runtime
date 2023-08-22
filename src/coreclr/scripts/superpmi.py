@@ -286,6 +286,7 @@ collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pas
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
+collect_parser.add_argument("--nativeaot", action="store_true", help="Run nativeaot on a set of directories or assemblies.")
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
@@ -673,11 +674,19 @@ class SuperPMICollect:
                 self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
             logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
 
-        if coreclr_args.pmi or coreclr_args.crossgen2:
+        if coreclr_args.nativeaot:
+            self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+            if coreclr_args.dotnet_tool_path is None:
+                self.nativeaot_driver_tool = self.corerun
+            else:
+                self.nativeaot_driver_tool = coreclr_args.dotnet_tool_path
+            logging.debug("Using nativeaot driver tool %s", self.nativeaot_driver_tool)
+
+        if coreclr_args.pmi or coreclr_args.crossgen2 or coreclr_args.nativeaot:
             self.assemblies = coreclr_args.assemblies
             self.exclude = coreclr_args.exclude
             if coreclr_args.tiered_compilation or coreclr_args.tiered_pgo:
-               raise RuntimeError("Tiering options have no effect for pmi or crossgen2 collections.")
+               raise RuntimeError("Tiering options have no effect for pmi or crossgen2 or nativeaot collections.")
 
         if coreclr_args.tiered_compilation and coreclr_args.tiered_pgo:
             raise RuntimeError("Pass only one tiering option.")
@@ -740,7 +749,7 @@ class SuperPMICollect:
 
                 self.temp_location = temp_location
 
-                if self.coreclr_args.crossgen2:
+                if self.coreclr_args.crossgen2 or self.coreclr_args.nativeaot:
                     jit_name = os.path.basename(self.jit_path)
                     # There are issues when running SuperPMI and crossgen2 when using the same JIT binary. 
                     # Therefore, we produce a copy of the JIT binary for SuperPMI to use. 
@@ -851,7 +860,7 @@ class SuperPMICollect:
 
             # If we need them, collect all the assemblies we're going to use for the collection(s).
             # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
-            if self.coreclr_args.pmi or self.coreclr_args.crossgen2:
+            if self.coreclr_args.pmi or self.coreclr_args.crossgen2 or self.coreclr_args.nativeaot:
                 assemblies = []
                 for item in self.assemblies:
                     assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude)))
@@ -1100,6 +1109,137 @@ class SuperPMICollect:
                 os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.crossgen2 is True"
+
+            ################################################################################################ Do collection using nativeaot
+            if self.coreclr_args.nativeaot is True:
+                logging.debug("Starting collection using nativeaot")
+
+                async def run_nativeaot(print_prefix, assembly, self):
+                    """ Run nativeaot over all dlls
+                    """
+
+                    root_nativeaot_output_filename = make_safe_filename("nativeaot_" + assembly) + ".out.dll"
+                    nativeaot_output_assembly_filename = os.path.join(self.temp_location, root_nativeaot_output_filename)
+                    try:
+                        if os.path.exists(nativeaot_output_assembly_filename):
+                            os.remove(nativeaot_output_assembly_filename)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s", nativeaot_output_assembly_filename, ose)
+                            return
+                        else:
+                            raise ose
+
+                    root_output_filename = make_safe_filename("nativeaot_" + assembly + "_")
+
+                    # Create a temporary response file to put all the arguments to nativeaot (otherwise the path length limit could be exceeded):
+                    #
+                    # <dll to compile>
+                    # -o:<output dll>
+                    # -r:<Core_Root>\System.*.dll
+                    # -r:<Core_Root>\Microsoft.*.dll
+                    # -r:<Core_Root>\System.Private.CoreLib.dll
+                    # -r:<Core_Root>\netstandard.dll
+                    # --jitpath:<self.collection_shim_name>
+                    # --codegenopt:<option>=<value>   /// for each member of dotnet_env
+                    #
+                    # invoke with:
+                    #
+                    # dotnet <Core_Root>\nativeaot\nativeaot.dll @<temp.rsp>
+                    #
+                    # where "dotnet" is one of:
+                    # 1. <runtime_root>\dotnet.cmd/sh
+                    # 2. "dotnet" on PATH
+                    # 3. corerun in Core_Root
+
+                    aotsdk_directory_path = os.path.join(self.coreclr_args.artifacts_location, "bin", "coreclr", f'{self.coreclr_args.target_os}.{self.coreclr_args.target_arch}.{self.coreclr_args.build_type}', "aotsdk")
+                    ilc_directory_path = os.path.join(self.coreclr_args.artifacts_location, "bin", "coreclr", f'{self.coreclr_args.target_os}.{self.coreclr_args.target_arch}.{self.coreclr_args.build_type}', "ilc")
+
+                    rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
+                    with open(rsp_file_handle, "w") as rsp_write_handle:
+                        rsp_write_handle.write(assembly + "\n")
+                        rsp_write_handle.write("-o:" + nativeaot_output_assembly_filename + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(aotsdk_directory_path, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(ilc_directory_path, "System.*.dll") + "\n")
+                        # rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
+                        # rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
+                        # rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
+                        rsp_write_handle.write("--parallelism:1" + "\n")
+                        rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
+                        for var, value in dotnet_env.items():
+                            rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
+
+                    # Log what is in the response file
+                    write_file_to_log(rsp_filepath)
+
+                    command = [self.nativeaot_driver_tool, self.coreclr_args.nativeaot_tool_path, "@" + rsp_filepath]
+                    command_string = " ".join(command)
+                    logging.debug("%s%s", print_prefix, command_string)
+
+                    begin_time = datetime.datetime.now()
+
+                    # Save the stdout and stderr to files, so we can see if nativeaot wrote any interesting messages.
+                    # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
+                    # is unique.
+                    try:
+                        stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
+                        stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
+
+                        proc = await asyncio.create_subprocess_shell(
+                            command_string,
+                            stdout=stdout_file_handle,
+                            stderr=stderr_file_handle)
+
+                        await proc.communicate()
+
+                        os.close(stdout_file_handle)
+                        os.close(stderr_file_handle)
+
+                        # No need to keep zero-length files
+                        if is_zero_length_file(stdout_filepath):
+                            os.remove(stdout_filepath)
+                        if is_zero_length_file(stderr_filepath):
+                            os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s", root_output_filename, ose)
+                        else:
+                            raise ose
+
+                    # Delete the response file unless we are skipping cleanup
+                #    if not self.coreclr_args.skip_cleanup:
+                 #       os.remove(rsp_filepath)
+
+                    elapsed_time = datetime.datetime.now() - begin_time
+                    logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
+
+                # Set environment variables.
+                nativeaot_command_env = env_copy.copy()
+                set_and_report_env(nativeaot_command_env, root_env)
+
+                old_env = os.environ.copy()
+                os.environ.update(nativeaot_command_env)
+
+                # Note: nativeaot compiles in parallel by default. However, it seems to lead to sharing violations
+                # in SuperPMI collection, accessing the MC file. So, disable nativeaot parallism by using
+                # the "--parallelism:1" switch, and allowing coarse-grained (per-assembly) parallelism here.
+                # It turns out this works better anyway, as there is a lot of non-parallel time between
+                # nativeaot parallel compilations.
+                helper = AsyncSubprocessHelper(assemblies, verbose=True)
+                helper.run_to_completion(run_nativeaot, self)
+
+                os.environ.clear()
+                os.environ.update(old_env)
+            ################################################################################################ end of "self.coreclr_args.nativeaot is True"
 
         mc_files = [os.path.join(self.temp_location, item) for item in os.listdir(self.temp_location) if item.endswith(".mc")]
         if len(mc_files) == 0:
@@ -4054,6 +4194,11 @@ def setup_args(args):
                             "Unable to set crossgen2")
 
         coreclr_args.verify(args,
+                            "nativeaot",
+                            lambda unused: True,
+                            "Unable to set nativeaot")
+
+        coreclr_args.verify(args,
                             "assemblies",
                             lambda unused: True,
                             "Unable to set assemblies",
@@ -4140,8 +4285,8 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set pmi_path")
 
-        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False) and not coreclr_args.skip_collection_step:
-            print("Either a collection command or `--pmi` or `--crossgen2` or `--skip_collection_step` must be specified")
+        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False) and (args.nativeaot is False) and not coreclr_args.skip_collection_step:
+            print("Either a collection command or `--pmi` or `--crossgen2` or `--nativeaot` or `--skip_collection_step` must be specified")
             sys.exit(1)
 
         if (args.collection_command is not None) and (len(args.assemblies) > 0):
@@ -4152,7 +4297,7 @@ def setup_args(args):
             print("Don't specify `-exclude` if a collection command is given")
             sys.exit(1)
 
-        if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
+        if ((args.pmi is True) or (args.crossgen2 is True) or (args.nativeaot is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
 
@@ -4164,7 +4309,7 @@ def setup_args(args):
 
         if args.collection_command is None and args.merge_mch_files is not True and not coreclr_args.skip_collection_step:
             assert args.collection_args is None
-            assert (args.pmi is True) or (args.crossgen2 is True)
+            assert (args.pmi is True) or (args.crossgen2 is True) or (args.nativeaot is True)
             assert len(args.assemblies) > 0
 
         if coreclr_args.merge_mch_files:
@@ -4189,6 +4334,27 @@ def setup_args(args):
             coreclr_args.crossgen2_tool_path = crossgen2_tool_path
             coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
+            if coreclr_args.dotnet_tool_path is not None:
+                logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
+
+        if coreclr_args.nativeaot:
+            # Can we find nativeaot?
+            nativeaot_tool_name = "ilc.dll"
+            nativeaot_tool_path = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "bin", "coreclr", f'{coreclr_args.target_os}.{coreclr_args.target_arch}.{coreclr_args.build_type}', "ilc", nativeaot_tool_name))
+            if not os.path.exists(nativeaot_tool_path):
+                print("`--nativeaot` is specified, but couldn't find " + nativeaot_tool_path + ". (Is it built?)")
+                sys.exit(1)
+
+            # Which dotnet will we use to run it?
+            dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
+            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
+            if not os.path.exists(dotnet_tool_path):
+                dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
+                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
+
+            coreclr_args.nativeaot_tool_path = nativeaot_tool_path
+            coreclr_args.dotnet_tool_path = dotnet_tool_path
+            logging.debug("Using nativeaot tool %s", coreclr_args.nativeaot_tool_path)
             if coreclr_args.dotnet_tool_path is not None:
                 logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
 
