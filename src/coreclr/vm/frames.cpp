@@ -390,7 +390,7 @@ VOID Frame::Push(Thread *pThread)
     // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
-             pThread->IsStackPointerBefore(dac_cast<TADDR>(PBYTE(this)), dac_cast<TADDR>((PBYTE(m_Next) + (2 * GetOsPageSize()))))) &&
+             dac_cast<PBYTE>(pThread->GetRealStackPointer(dac_cast<PTR_VOID>(this))) < dac_cast<PBYTE>(pThread->GetRealStackPointer(dac_cast<PTR_VOID>(m_Next))) + (2 * GetOsPageSize())) &&
              "Pushing a frame out of order ?");
 
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
@@ -988,7 +988,7 @@ void GCFrame::Push(Thread* pThread)
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
     _ASSERTE(((m_Next == NULL) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+            dac_cast<PBYTE>(pThread->GetRealStackPointer(dac_cast<PTR_VOID>(this))) < dac_cast<PBYTE>(pThread->GetRealStackPointer(dac_cast<PTR_VOID>(m_Next))) + (2 * GetOsPageSize())) &&
              "Pushing a GCFrame out of order ?");
 
     pThread->SetGCFrame(this);
