@@ -700,7 +700,7 @@ public:
                                             LoadTypesFlag fLoadTypes = LoadTypes,
                                             ClassLoadLevel level = CLASS_LOADED);
 
-    static TypeHandle LoadConstValueTypeThrowing(CorElementType valueType,
+    static TypeHandle LoadConstValueTypeThrowing(TypeHandle valueType,
                                                  uint64_t value,
                                                  CorElementType typ = ELEMENT_TYPE_CTARG,
                                                  LoadTypesFlag fLoadTypes = LoadTypes,

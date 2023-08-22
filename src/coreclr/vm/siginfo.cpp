@@ -1345,7 +1345,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             IfFailThrowBF(psig.GetConstTypeArg(&valueType, &cb, &elem), BFA_BAD_SIGNATURE, pOrigModule);
             uint64_t value = 0;
             memcpy(&value, elem, cb);
-            thRet = ClassLoader::LoadConstValueTypeThrowing(valueType, value, typ, fLoadTypes, level);
+            TypeHandle th = TypeHandle(CoreLibBinder::GetElementType(valueType));
+            thRet = ClassLoader::LoadConstValueTypeThrowing(th, value, typ, fLoadTypes, level);
 #else
             DacNotImpl();
             thRet = TypeHandle();

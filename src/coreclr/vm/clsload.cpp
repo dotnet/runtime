@@ -1654,7 +1654,7 @@ TypeHandle ClassLoader::LoadFnptrTypeThrowing(BYTE callConv,
     RETURN(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
 }
 
-TypeHandle ClassLoader::LoadConstValueTypeThrowing(CorElementType valueType,
+TypeHandle ClassLoader::LoadConstValueTypeThrowing(TypeHandle valueType,
                                                    uint64_t value,
                                                    CorElementType typ /* ELEMENT_TYPE_CTARG */,
                                                    LoadTypesFlag fLoadTypes /* LoadTypes */,
@@ -1667,15 +1667,13 @@ TypeHandle ClassLoader::LoadConstValueTypeThrowing(CorElementType valueType,
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        PRECONDITION(valueType <= ELEMENT_TYPE_R8 && valueType != ELEMENT_TYPE_VOID);
         POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACT_END
     
-    TypeHandle th = TypeHandle(CoreLibBinder::GetElementType(valueType));
-    TypeKey key(th, value);
+    TypeKey key(valueType, value);
 
     TypeHandle typeHnd = LookupTypeHandleForTypeKey(&key);
     if (!typeHnd.IsNull())
