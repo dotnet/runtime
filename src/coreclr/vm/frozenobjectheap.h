@@ -52,7 +52,7 @@ public:
     {
         return VolatileLoad(&m_IsRegistered);
     }
-    void Register();
+    void RegisterOrUpdate();
 
 private:
     Object* GetFirstObject() const;
@@ -66,11 +66,13 @@ private:
     //
     // m_pCurrent <= m_SizeCommitted
     uint8_t* m_pCurrent;
+    uint8_t* m_pCurrentRegistered;
 
     // Memory committed in the current segment
     //
     // m_SizeCommitted <= m_pStart + FOH_SIZE_RESERVED
     size_t m_SizeCommitted;
+    size_t m_SizeCommittedRegistered;
 
     // Total memory reserved for the current segment
     size_t m_Size;

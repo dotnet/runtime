@@ -91,18 +91,12 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
         currentSegment = m_CurrentSegment;
     }
 
-    // If the currently used segment hasn't been registered yet, do it now.
+    // Let GC know about the new segment or changes in it.
     // We do it under a new lock because the main one (m_Crst) can be used by Profiler in a GC's thread
     // and that might cause deadlocks since RegisterFrozenSegment may stuck on GC's lock.
-    if (!currentSegment->IsRegistered())
     {
         CrstHolder regLock(&m_SegmentRegistrationCrst);
-
-        // Double-checked locking
-        if (!currentSegment->IsRegistered())
-        {
-            currentSegment->Register();
-        }
+        currentSegment->RegisterOrUpdate();
     }
 
     if (publish)
@@ -119,7 +113,9 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_pStart(nullptr),
     m_pCurrent(nullptr),
+    m_pCurrentRegistered(nullptr),
     m_SizeCommitted(0),
+    m_SizeCommittedRegistered(0),
     m_Size(sizeHint),
     m_IsRegistered(false),
     m_SegmentHandle(nullptr)
@@ -164,25 +160,33 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
 }
 
-void FrozenObjectSegment::Register()
+void FrozenObjectSegment::RegisterOrUpdate()
 {
-    // Caller is expected to make sure it's not registered twice
-    _ASSERT(!IsRegistered());
+    m_SizeCommittedRegistered = m_SizeCommitted;
+    m_pCurrentRegistered = m_pCurrent;
 
-    segment_info si;
-    si.pvMem = m_pStart;
-    si.ibFirstObject = sizeof(ObjHeader);
-    si.ibAllocated = (size_t)m_pCurrent; // there can be multiple objects already allocated
-    si.ibCommit = m_SizeCommitted;
-    si.ibReserved = m_Size;
-
-    // NOTE: RegisterFrozenSegment may take a GC lock inside.
-    m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
-    if (m_SegmentHandle == nullptr)
+    if (!IsRegistered())
     {
-        ThrowOutOfMemory();
+        segment_info si;
+        si.pvMem = m_pStart;
+        si.ibFirstObject = sizeof(ObjHeader);
+        si.ibAllocated = (size_t)m_pCurrentRegistered;
+        si.ibCommit = m_SizeCommittedRegistered;
+        si.ibReserved = m_Size;
+
+        // NOTE: RegisterFrozenSegment may take a GC lock inside.
+        m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
+        if (m_SegmentHandle == nullptr)
+        {
+            ThrowOutOfMemory();
+        }
+        VolatileStore(&m_IsRegistered, true);
     }
-    VolatileStore(&m_IsRegistered, true);
+    else
+    {
+        GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(
+            m_SegmentHandle, m_pCurrentRegistered, m_pStart + m_SizeCommittedRegistered);
+    }
 }
 
 Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
@@ -226,24 +230,12 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 
     m_pCurrent += objectSize;
 
-    if (IsRegistered())
-    {
-        // Notify GC that we bumped the pointer and, probably, committed more memory in the reserved part
-        // NOTE: UpdateFrozenSegment is not expected to take any lock inside
-        GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommitted);
-    }
-    else
-    {
-        // The segment is not yet registered so the upcoming RegisterFrozenSegment
-        // will let GC know about this object (and all others) as is.
-    }
-
     return object;
 }
 
 Object* FrozenObjectSegment::GetFirstObject() const
 {
-    if (m_pStart + sizeof(ObjHeader) == m_pCurrent)
+    if (m_pStart + sizeof(ObjHeader) == m_pCurrentRegistered)
     {
         // Segment is empty
         return nullptr;
@@ -255,11 +247,11 @@ Object* FrozenObjectSegment::GetNextObject(Object* obj) const
 {
     // Input must not be null and should be within the segment
     _ASSERT(obj != nullptr);
-    _ASSERT((uint8_t*)obj >= m_pStart + sizeof(ObjHeader) && (uint8_t*)obj < m_pCurrent);
+    _ASSERT((uint8_t*)obj >= m_pStart + sizeof(ObjHeader) && (uint8_t*)obj < m_pCurrentRegistered);
 
     // FOH doesn't support objects with non-DATA_ALIGNMENT alignment yet.
     uint8_t* nextObj = (reinterpret_cast<uint8_t*>(obj) + ALIGN_UP(obj->GetSize(), DATA_ALIGNMENT));
-    if (nextObj < m_pCurrent)
+    if (nextObj < m_pCurrentRegistered)
     {
         return reinterpret_cast<Object*>(nextObj);
     }
