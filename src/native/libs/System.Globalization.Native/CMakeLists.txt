@@ -97,7 +97,8 @@ if (CLR_CMAKE_TARGET_APPLE)
         pal_locale.m
         pal_collation.m
         pal_casing.m
-        pal_calendarData.m)
+        pal_calendarData.m
+        pal_normalization.m)
     set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES_OBJC} PROPERTIES COMPILE_FLAGS "-fobjc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} ${NATIVEGLOBALIZATION_SOURCES_OBJC})
 endif()

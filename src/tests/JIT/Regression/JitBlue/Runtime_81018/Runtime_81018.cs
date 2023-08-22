@@ -28,11 +28,10 @@ public class Runtime_81018
 {
     public static ulong s_2;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         var vr6 = new S0();
         var vr7 = new S0();
         new S0().M17(new S0().M17(vr7, 0).M17(vr6, s_2), s_2);
-        return 100;
     }
 }

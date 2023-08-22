@@ -1,5 +1,29 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)ProvisioningVersions.props" />
+  <PropertyGroup>
+    <!--
+      Set ChromeChannel properties to get the latest versions
+    -->
+    <ChromeChannel>stable</ChromeChannel>
+
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('windows'))">win</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="'$(ChromeOSIdentifier)' == ''">unsupported-platform</ChromeOSIdentifier>
+
+    <!-- disable by default on unsupported platforms -->
+    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ChromeOSIdentifier)' == ''">false</InstallChromeForTests>
+
+    <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
+    <FirefoxStampFile>$([MSBuild]::NormalizePath($(FirefoxDir), '.install-firefox-$(FirefoxRevision).stamp'))</FirefoxStampFile>
+    <_BrowserStampDir>$(ArtifactsBinDir)\</_BrowserStampDir>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)ChromeVersions.props" />
+
+  <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+    <FirefoxRevision>108.0.1</FirefoxRevision>
+    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
+    <FirefoxBinaryName>firefox</FirefoxBinaryName>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'linux'">
     <ChromeDirName>chrome-linux</ChromeDirName>
@@ -7,6 +31,13 @@
     <ChromeBinaryName>chrome</ChromeBinaryName>
     <ChromeDriverBinaryName>chromedriver</ChromeDriverBinaryName>
     <_ChromeOSPrefix>Linux_x64</_ChromeOSPrefix>
+
+    <ChromeVersion>$(linux_ChromeVersion)</ChromeVersion>
+    <ChromeRevision>$(linux_ChromeRevision)</ChromeRevision>
+    <_ChromeBaseSnapshotUrl>$(linux_ChromeBaseSnapshotUrl)</_ChromeBaseSnapshotUrl>
+
+    <ChromeUrl>$(linux_ChromeBaseSnapshotUrl)/chrome-linux.zip</ChromeUrl>
+    <ChromeDriverUrl>$(linux_ChromeBaseSnapshotUrl)/chromedriver_linux64.zip</ChromeDriverUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'win'">
@@ -15,17 +46,37 @@
     <ChromeBinaryName>chrome.exe</ChromeBinaryName>
     <ChromeDriverBinaryName>chromedriver.exe</ChromeDriverBinaryName>
     <_ChromeOSPrefix>Win_x64</_ChromeOSPrefix>
+
+    <ChromeVersion>$(win_ChromeVersion)</ChromeVersion>
+    <ChromeRevision>$(win_ChromeRevision)</ChromeRevision>
+    <_ChromeBaseSnapshotUrl>$(win_ChromeBaseSnapshotUrl)</_ChromeBaseSnapshotUrl>
+
+    <ChromeUrl>$(win_ChromeBaseSnapshotUrl)/chrome-win.zip</ChromeUrl>
+    <ChromeDriverUrl>$(win_ChromeBaseSnapshotUrl)/chromedriver_win32.zip</ChromeDriverUrl>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <_BrowserStampDir>$(ArtifactsBinDir)\</_BrowserStampDir>
+  <PropertyGroup Condition="'$(ChromeVersion)' != ''">
+    <ChromeDir>$(ArtifactsBinDir)chrome\</ChromeDir>
+    <ChromeDriverDir>$(ArtifactsBinDir)chromedriver\</ChromeDriverDir>
+    <ChromeStampFile>$([MSBuild]::NormalizePath('$(ChromeDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeStampFile>
+    <ChromeDriverStampFile>$([MSBuild]::NormalizePath('$(ChromeDriverDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeDriverStampFile>
+
     <ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromeDirName), $(ChromeBinaryName)))</ChromeBinaryPath>
     <ChromeDriverBinaryPath>$([MSBuild]::NormalizePath($(ChromeDriverDir), $(ChromeDriverDirName), $(ChromeDriverBinaryName)))</ChromeDriverBinaryPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+    <FirefoxRevision>108.0.1</FirefoxRevision>
+    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
+    <FirefoxBinaryName>firefox</FirefoxBinaryName>
+  </PropertyGroup>
+
   <Target Name="DownloadAndInstallChrome"
-          AfterTargets="GetChromeVersion"
+          AfterTargets="Build"
           Condition="(!Exists($(ChromeStampFile)) or !Exists($(ChromeBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
+
+    <Error Condition="'$(ChromeVersion)' == ''"
+           Text="No %24(ChromeVersion) set. This can be set in eng/testing/ChromeVersions.props" />
 
     <RemoveDir Directories="$(ChromeDir)" />
 
@@ -46,8 +97,11 @@
   </Target>
 
   <Target Name="DownloadAndInstallChromeDriver"
-          AfterTargets="GetChromeVersion"
+          AfterTargets="Build"
           Condition="(!Exists($(ChromeDriverStampFile)) or !Exists($(ChromeDriverBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
+
+    <Error Condition="'$(ChromeVersion)' == ''"
+           Text="No %24(ChromeVersion) set. This can be set in eng/testing/ChromeVersions.props" />
 
     <RemoveDir Directories="$(ChromeDriverDir)" />
 
@@ -93,36 +147,5 @@
     <Exec Command="chmod +x $(_FirefoxBinaryPath)"/>
 
     <Touch Files="$(FirefoxStampFile)" AlwaysCreate="true" />
-  </Target>
-
-  <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)"
-             TaskName="Microsoft.WebAssembly.Build.Tasks.GetChromeVersions" />
-
-  <Target Name="GetChromeVersion" AfterTargets="Build" Condition="'$(InstallChromeForTests)' == 'true'">
-    <GetChromeVersions
-                Condition="'$(ChromeVersion)' == ''"
-                OSIdentifier="$(ChromeOSIdentifier)"
-                OSPrefix="$(_ChromeOSPrefix)"
-                Channel="$(ChromeChannel)"
-                IntermediateOutputPath="$(ArtifactsObjDir)">
-      <Output TaskParameter="ChromeVersion"      PropertyName="ChromeVersion" />
-      <Output TaskParameter="V8Version"          PropertyName="V8Version" />
-      <Output TaskParameter="BranchPosition"     PropertyName="ChromeRevision" />
-      <Output TaskParameter="BaseSnapshotUrl"    PropertyName="_ChromeBaseSnapshotUrl" />
-    </GetChromeVersions>
-
-    <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'linux'">
-      <ChromeUrl>$(_ChromeBaseSnapshotUrl)/chrome-linux.zip</ChromeUrl>
-      <ChromeDriverUrl>$(_ChromeBaseSnapshotUrl)/chromedriver_linux64.zip</ChromeDriverUrl>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'win'">
-      <ChromeUrl>$(_ChromeBaseSnapshotUrl)/chrome-win.zip</ChromeUrl>
-      <ChromeDriverUrl>$(_ChromeBaseSnapshotUrl)/chromedriver_win32.zip</ChromeDriverUrl>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <ChromeStampFile>$([MSBuild]::NormalizePath('$(ChromeDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeStampFile>
-      <ChromeDriverStampFile>$([MSBuild]::NormalizePath('$(ChromeDriverDir)', '.install-$(ChromeVersion)-$(ChromeRevision).stamp'))</ChromeDriverStampFile>
-    </PropertyGroup>
   </Target>
 </Project>

@@ -12,7 +12,7 @@ using Xunit;
 public class ReadUtf8
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // Warm up for PGO
         for (int i=0; i<200; i++)
@@ -28,7 +28,6 @@ public class ReadUtf8
             Test_5();
             Thread.Sleep(10);
         }
-        return 100;
     }
 
     static void Test_empty()

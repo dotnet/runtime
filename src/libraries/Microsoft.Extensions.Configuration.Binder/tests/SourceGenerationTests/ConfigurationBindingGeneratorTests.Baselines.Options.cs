@@ -8,6 +8,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
 {
     public partial class ConfigurationBindingGeneratorTests
     {
+        #region IServiceCollection extensions.
         private string GetConfigureSource(string paramList) => $$"""
             using System.Collections.Generic;
             using Microsoft.Extensions.Configuration;
@@ -40,7 +41,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
                 }
             }
             """;
+        #endregion IServiceCollection extensions.
 
+        #region OptionsBuilder<T> extensions.
         [Fact]
         public async Task Configure_T() =>
             await VerifyAgainstBaselineUsingFile("Configure_T.generated.txt", GetConfigureSource("section"), extType: ExtensionClassType.ServiceCollection);
@@ -126,5 +129,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
             await VerifyAgainstBaselineUsingFile("BindConfiguration.generated.txt", GetSource(), extType: ExtensionClassType.OptionsBuilder);
             await VerifyAgainstBaselineUsingFile("BindConfiguration.generated.txt", GetSource(@", _ => { }"), extType: ExtensionClassType.OptionsBuilder);
         }
+        #endregion OptionsBuilder<T> extensions.
     }
 }

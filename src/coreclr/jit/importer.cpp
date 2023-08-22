@@ -1381,18 +1381,26 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 //
 bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitProfileCasts() != 1))
+    if (!opts.IsInstrumented() || (JitConfig.JitProfileCasts() != 1))
     {
         return false;
     }
 
-    if (tree->IsCall() && tree->AsCall()->gtCallType == CT_HELPER)
+    if (tree->IsHelperCall())
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
-        if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
+        switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
         {
-            return true;
+            case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            case CORINFO_HELP_ISINSTANCEOFARRAY:
+            case CORINFO_HELP_ISINSTANCEOFCLASS:
+            case CORINFO_HELP_ISINSTANCEOFANY:
+            case CORINFO_HELP_CHKCASTINTERFACE:
+            case CORINFO_HELP_CHKCASTARRAY:
+            case CORINFO_HELP_CHKCASTCLASS:
+            case CORINFO_HELP_CHKCASTANY:
+                return true;
+            default:
+                break;
         }
     }
     return false;
@@ -1410,22 +1418,25 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 //
 bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 {
-    if (JitConfig.JitConsumeProfileForCasts() == 0)
+    if ((JitConfig.JitConsumeProfileForCasts() != 1) || !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         return false;
     }
 
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    switch (helper)
     {
-        return false;
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_CHKCASTANY:
+            return true;
+        default:
+            return false;
     }
-
-    if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-        (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
-    {
-        return true;
-    }
-    return false;
 }
 
 GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -5394,6 +5405,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
     bool                  partialExpand   = false;
+    bool                  reversedMTCheck = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
     CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
@@ -5478,8 +5490,17 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 if ((likelyCls != NO_CLASS_HANDLE) &&
                     (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
                 {
-                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
-                         TypeCompareState::Must))
+                    TypeCompareState castResult =
+                        info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass);
+
+                    // If case of MustNot we still can optimize isinst (only), e.g.:
+                    //
+                    //   bool objIsDisposable = obj is IDisposable;
+                    //
+                    // when the profile tells us that obj is mostly Int32, hence, never implements that interface.
+                    // for castclass it makes little sense as it will always throw a cast exception anyway.
+                    if ((castResult == TypeCompareState::Must) ||
+                        (castResult == TypeCompareState::MustNot && !isCastClass))
                     {
                         bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
                                            (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
@@ -5489,6 +5510,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                             JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
                                     eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
 
+                            reversedMTCheck = castResult == TypeCompareState::MustNot;
                             canExpandInline = true;
                             partialExpand   = true;
                             exactCls        = likelyCls;
@@ -5567,12 +5589,12 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //             op1Copy CNS_INT
     //                      null
     //
-    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewIconNode(0, TYP_REF));
+    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
 
     //
     // expand the true and false trees for the condMT
     //
-    GenTree* condFalse = gtClone(op1);
+    GenTree* condFalse = reversedMTCheck ? gtNewNull() : gtClone(op1);
     GenTree* condTrue;
     if (isCastClass)
     {
@@ -5629,7 +5651,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //                      /     \.
     //                qmarkMT   op1Copy
     //
-    temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, gtClone(op1), qmarkMT);
+    temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, reversedMTCheck ? gtNewNull() : gtClone(op1), qmarkMT);
     qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
     qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
 
