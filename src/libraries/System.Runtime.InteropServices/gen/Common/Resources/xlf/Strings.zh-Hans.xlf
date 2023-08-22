@@ -148,13 +148,13 @@
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
-        <source>The 'GeneratedComInterfaceAttribute' usage does not follow recommendations. {0}</source>
-        <target state="new">The 'GeneratedComInterfaceAttribute' usage does not follow recommendations. {0}</target>
+        <source>The usage of'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
+        <target state="new">The usage of'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
-        <source>The 'GeneratedComInterfaceAttribute' usage does not follow recommendations.</source>
-        <target state="new">The 'GeneratedComInterfaceAttribute' usage does not follow recommendations.</target>
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
+        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
@@ -457,6 +457,11 @@
         <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
         <note />
       </trans-unit>
+      <trans-unit id="InAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
+        <target state="new">The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
         <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
         <target state="translated">不支持“[In]”属性，除非也使用“[Out]”属性。不能仅将 Blittable 数组封送为“[In]”。</target>
@@ -475,6 +480,11 @@
       <trans-unit id="InOutAttributeMarshalerNotSupported">
         <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
         <target state="translated">此参数上提供的 “[In]” 和 “[Out]” 属性在此参数上不受支持。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
+        <target state="new">The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributes">
@@ -712,6 +722,16 @@
         <target state="translated">“VirtualMethodIndexAttribute” 使用情况无效</target>
         <note />
       </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
+        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
+        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
         <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
         <target state="translated">“GetManagedValuesSource” 返回的 “ReadOnlySpan” 的元素类型必须与 “GetManagedValuesDestination” 返回的元素类型相同。</target>
@@ -913,8 +933,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="new">The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
+        <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="new">The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">

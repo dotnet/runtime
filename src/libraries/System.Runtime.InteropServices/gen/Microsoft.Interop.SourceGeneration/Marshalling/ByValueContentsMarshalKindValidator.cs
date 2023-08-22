@@ -27,7 +27,7 @@ namespace Microsoft.Interop
 
         private static ResolvedGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, ResolvedGenerator generator)
         {
-            if (generator.Generator is Forwarder || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Default)
+            if (generator.Generator is Forwarder)
             {
                 // Forwarder allows everything since it just forwards to a P/Invoke.
                 // The Default marshal kind is always valid.

@@ -485,6 +485,16 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true);
 
+        /// <inheritdoc cref="SR.ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails"/>
+        public static readonly DiagnosticDescriptor GeneratedComInterfaceUsageDoesNotFollowBestPractices =
+            new DiagnosticDescriptor(
+                Ids.NotRecommendedGeneratedComInterfaceUsage,
+                GetResourceString(nameof(SR.ComInterfaceUsageDoesNotFollowBestPracticesTitle)),
+                GetResourceString(nameof(SR.ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true);
+
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
         /// </summary>

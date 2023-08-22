@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Microsoft.Interop
 {
@@ -33,7 +34,7 @@ namespace Microsoft.Interop
                         NotSupportedDetails = details
                     },
                 _ => throw new UnreachableException()
-                };
+            };
             return Support;
         }
     }
@@ -52,9 +53,9 @@ namespace Microsoft.Interop
         /// </summary>
         public static readonly ByValueMarshalKindSupportDescriptor Default = new ByValueMarshalKindSupportDescriptor(
             DefaultSupport: new(ByValueMarshalKindSupport.Supported, null),
-            InSupport: new(ByValueMarshalKindSupport.NotSupported, SR.OutAttributeNotSupportedOnByValueParameters),
+            InSupport: new(ByValueMarshalKindSupport.NotSupported, SR.InAttributeNotSupportedOnByValueParameters),
             OutSupport: new(ByValueMarshalKindSupport.NotSupported, SR.OutAttributeNotSupportedOnByValueParameters),
-            InOutSupport: new(ByValueMarshalKindSupport.NotSupported, SR.OutAttributeNotSupportedOnByValueParameters));
+            InOutSupport: new(ByValueMarshalKindSupport.NotSupported, SR.InOutAttributeNotSupportedOnByValueParameters));
 
         /// <summary>
         /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by value array parameters. Default is allowed, but Not Recommended. [In], [Out], and [In, Out] are allowed
@@ -70,18 +71,25 @@ namespace Microsoft.Interop
         /// </summary>
         public ByValueMarshalKindSupport GetSupport(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
         {
-            if (info.IsByRef && marshalKind != ByValueContentsMarshalKind.Default)
+            if (info.IsByRef)
             {
-                diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+                // ByRef with ByValue attributes is not allowed
+                if (marshalKind != ByValueContentsMarshalKind.Default)
                 {
-                    NotSupportedDetails = SR.InOutAttributeByRefNotSupported
-                };
-                return ByValueMarshalKindSupport.NotSupported;
+                    diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+                    {
+                        NotSupportedDetails = SR.InOutAttributeByRefNotSupported
+                    };
+                    return ByValueMarshalKindSupport.NotSupported;
+                }
+                // ByRef with no ByValue attributes is supported
+                diagnostic = null;
+                return ByValueMarshalKindSupport.Supported;
             }
-            // Do return types ever get here?
-            // Return types should never have In or Out attributes
-            if (info.ManagedIndex < 0 && marshalKind is ByValueContentsMarshalKind.Default)
+            // Return can never have In or Out attributes, so can assume valid ByValue attributes
+            if (info.ManagedIndex < 0)
             {
+                Debug.Assert(marshalKind is ByValueContentsMarshalKind.Default);
                 diagnostic = null;
                 return ByValueMarshalKindSupport.Supported;
             }
