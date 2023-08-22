@@ -321,9 +321,8 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
     ctx.pCallback = EnumGcRefsCallback;
     ctx.f  = (EnumGcRefCallbackFunc *)pfnEnumCallback;
     ctx.sc = (EnumGcRefScanContext *)pvCallbackData;
-#ifdef USE_STACK_LIMIT
     ctx.sc->stack_limit = pRegisterSet->GetSP();
-#endif // USE_STACK_LIMIT
+
     pCodeManager->EnumGcRefs(pMethodInfo,
                              safePointAddress,
                              pRegisterSet,

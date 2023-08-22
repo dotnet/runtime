@@ -91,6 +91,10 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     Interop::OnAfterGCScanRoots(sc->concurrent);
 }
 
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#define USE_STACK_LIMIT
+#endif
+
 /*
  * Scan all stack roots
  */
@@ -128,6 +132,8 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 
 #ifdef USE_STACK_LIMIT
     sc->stack_limit = (uintptr_t)topStack;
+#else // USE_STACK_LIMIT
+    sc->stack_limit = 0;
 #endif // USE_STACK_LIMIT
 
 #ifdef FEATURE_CONSERVATIVE_GC
