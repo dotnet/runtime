@@ -43,6 +43,7 @@ jobs:
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
       testScope: ${{ parameters.testScope }}
+      SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
       runTests: true
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
@@ -138,6 +139,16 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
+
+        # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe on AzDO machine; see `SuperPmiMcsPath`.
+        - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              unpackFolder: $(_runtimeX64DownloadPath)
+              artifactFileName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
+              artifactName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_${{ parameters.liveRuntimeBuildConfig }}'
+              displayName: 'CoreCLR product build (x64)'
+
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             displayName: Build Assets
@@ -153,15 +164,6 @@ jobs:
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
-
-        # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe)
-        - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              unpackFolder: $(_runtimeX64DownloadPath)
-              artifactFileName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
-              artifactName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_${{ parameters.liveRuntimeBuildConfig }}'
-              displayName: 'CoreCLR product build (x64)'
 
         - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}

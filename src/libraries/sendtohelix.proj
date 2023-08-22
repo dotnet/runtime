@@ -210,9 +210,31 @@
       <_SuperPmiScriptsFiles Include="$(RepoRoot)src\coreclr\scripts\*.py" />
     </ItemGroup>
 
-    <Message Importance="High" Text="Copying $(RepoRoot)src\coreclr\scripts\*.py to $(NetCoreAppCurrentTestHostPath)\superpmi_scripts" />
-    <MakeDir Directories="$(NetCoreAppCurrentTestHostPath)\superpmi_scripts" />
-    <Copy SourceFiles="@(_SuperPmiScriptsFiles)" DestinationFolder="$(NetCoreAppCurrentTestHostPath)\superpmi_scripts" />
+    <Message Importance="High" Text="Copying $(RepoRoot)src\coreclr\scripts\*.py to $(NetCoreAppCurrentTestHostPath)spmi_scripts" />
+    <MakeDir Directories="$(NetCoreAppCurrentTestHostPath)spmi_scripts" />
+    <Copy SourceFiles="@(_SuperPmiScriptsFiles)" DestinationFolder="$(NetCoreAppCurrentTestHostPath)spmi_scripts" />
+
+    <!-- Copy the runtime build into the correlation payload. The normal libraries test run takes the pieces of the runtime needed and puts them into the
+         "testhost" directory structure (using the "build libs.pretest" build step). This doesn't include the SuperPMI shim or tools, and is also in a directory
+         structure we don't don't control. So copy the whole runtime build here to a directory we control. We probably only need a few things
+         (superpmi, mcs, superpmi-shim-collector, clrjit), but it's easier to just copy everything.
+    -->
+
+    <!--
+    <Message Importance="High" Text="Copying Runtime binaries from $(TestArchiveRoot)coreclr to $(NetCoreAppCurrentTestHostPath)coreclr" />
+    <MakeDir Directories="$(NetCoreAppCurrentTestHostPath)coreclr" />
+    <ItemGroup>
+      <SuperPMICoreClrFiles Include="$(TestArchiveRoot)coreclr\**\*.*"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(SuperPMICoreClrFiles)" DestinationFolder="$(NetCoreAppCurrentTestHostPath)coreclr\%(RecursiveDir)" />
+    -->
+
+    <Message Importance="High" Text="Copying Runtime binaries from $(ArtifactsDir)transport/coreclr to $(NetCoreAppCurrentTestHostPath)coreclr" />
+    <MakeDir Directories="$(NetCoreAppCurrentTestHostPath)coreclr" />
+    <ItemGroup>
+      <SuperPMICoreClrFiles Include="$(ArtifactsDir)transport\coreclr\**\*.*"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(SuperPMICoreClrFiles)" DestinationFolder="$(NetCoreAppCurrentTestHostPath)coreclr\%(RecursiveDir)" />
   </Target>
 
   <Target Name="CompressRuntimeDirectory"
@@ -228,6 +250,7 @@
     <Message Importance="High" Text="Creating directory $(TestArchiveRuntimeRoot)" />
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
 
+    <Message Importance="High" Text="Compressing $(NetCoreAppCurrentTestHostPath) to $(TestArchiveRuntimeFile)" />
     <ZipDirectory SourceDirectory="$(NetCoreAppCurrentTestHostPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
                   Overwrite="true" />
