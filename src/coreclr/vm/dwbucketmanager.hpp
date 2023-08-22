@@ -960,8 +960,8 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
         // if we failed to get the version info from the native image then fall back to the IL image.
         if (!succeeded)
         {
-            LPCWSTR modulePath = pPEAssembly->GetPath().GetUnicode();
-            if (modulePath != NULL && modulePath != SString::Empty() && SUCCEEDED(DwGetFileVersionInfo(modulePath, major, minor, build, revision)))
+            SString modulePath{ pPEAssembly->GetPath() };
+            if (!modulePath.IsEmpty() && SUCCEEDED(DwGetFileVersionInfo(modulePath.GetUnicode(), major, minor, build, revision)))
             {
                 succeeded = true;
             }
