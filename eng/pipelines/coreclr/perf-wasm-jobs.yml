@@ -194,4 +194,3 @@ jobs:
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
         hybridGlobalization: True
-        artifactNameAppendString: 'HybridGlobalization'
