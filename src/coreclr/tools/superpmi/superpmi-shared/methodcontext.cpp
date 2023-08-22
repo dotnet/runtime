@@ -2754,6 +2754,8 @@ void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExa
     key.A = CastHandle(baseType);
     key.B = maxExactClasses;
 
+    Assert(result >= 0);
+
     DWORDLONG* exactClassesAgnostic = new DWORDLONG[result];
     for (int i = 0; i < result; i++)
         exactClassesAgnostic[i] = CastHandle(exactClsRet[i]);
