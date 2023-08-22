@@ -1947,8 +1947,17 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
     const wasmTable = getWasmFunctionTable();
     const firstIndex = base, lastIndex = firstIndex + size - 1;
     mono_assert(lastIndex < wasmTable.length, () => `Last index out of range: ${lastIndex} >= ${wasmTable.length}`);
-    for (let i = firstIndex; i <= lastIndex; i++)
-        wasmTable.set(i, fillValue);
+    // In threaded builds we need to populate all the reserved slots with safe placeholder functions
+    // This operation is expensive in v8, so avoid doing it in single-threaded builds (which SHOULD
+    //  be safe, since it was previously not necessary)
+    if (MonoWasmThreads) {
+        wasmTable.set(firstIndex, fillValue);
+        // HACK: If possible, we want to copy any backing state associated with the first placeholder item,
+        //  so that additional work doesn't have to be done by the runtime for the following table sets
+        const preparedValue = wasmTable.get(firstIndex);
+        for (let i = firstIndex + 1; i <= lastIndex; i++)
+            wasmTable.set(i, preparedValue);
+    }
     cwraps.mono_jiterp_initialize_table(type, firstIndex, lastIndex);
     return base + size;
 }
@@ -1972,7 +1981,9 @@ export function jiterpreter_allocate_tables(module: any) {
         totalSize = (tableSize * 2) + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable(module);
     let base = wasmTable.length;
+    const beforeGrow = performance.now();
     wasmTable.grow(totalSize);
+    const afterGrow = performance.now();
     if (options.enableStats)
         mono_log_info(`Allocated ${totalSize} function table entries for jiterpreter, bringing total table size to ${wasmTable.length}`);
     base = jiterpreter_allocate_table(JiterpreterTable.Trace, base, tableSize, getRawCwrap("mono_jiterp_placeholder_trace"));
@@ -1981,4 +1992,7 @@ export function jiterpreter_allocate_tables(module: any) {
     base = jiterpreter_allocate_table(JiterpreterTable.JitCall, base, tableSize, getRawCwrap("mono_jiterp_placeholder_jit_call"));
     for (let table = JiterpreterTable.InterpEntryStatic0; table <= JiterpreterTable.LAST; table++)
         base = jiterpreter_allocate_table(table, base, interpEntryTableSize, wasmTable.get(cwraps.mono_jiterp_get_interp_entry_func(table)));
+    const afterTables = performance.now();
+    if (options.enableStats)
+        mono_log_info(`Growing wasm function table took ${afterGrow - beforeGrow}. Filling table took ${afterTables - afterGrow}.`);
 }
