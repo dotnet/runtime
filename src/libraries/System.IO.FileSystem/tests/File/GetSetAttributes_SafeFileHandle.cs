@@ -22,7 +22,7 @@ namespace System.IO.Tests
             using SafeFileHandle fileHandle = OpenFileHandle(path, FileAccess.Read);
             return File.GetAttributes(fileHandle);
         }
-        
+
         protected override void SetAttributes(string path, FileAttributes attributes)
         {
             using SafeFileHandle fileHandle = OpenFileHandle(path, FileAccess.ReadWrite);
@@ -33,7 +33,7 @@ namespace System.IO.Tests
         public void NullArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetAttributes(default(SafeFileHandle)!));
-            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetAttributes(default(SafeFileHandle)!, (FileAttributes)0));
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetAttributes(default(SafeFileHandle)!, FileAttributes.None));
         }
     }
 }

@@ -2221,8 +2221,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     // AddRef which we take inside the lock at the bottom of this method.
     CrstHolder holder(&m_ISymUnmanagedReaderCrst);
 
-    UINT lastErrorMode = 0;
-
     // If we haven't created a reader yet, do so now
     if (m_pISymUnmanagedReader == NULL)
     {
@@ -2278,7 +2276,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         // Note: we change the error mode here so we don't get any popups as the PDB symbol reader attempts to search the
         // hard disk for files.
-        lastErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+        ErrorModeHolder errorMode{};
 
         SafeComHolder<ISymUnmanagedReader> pReader;
 
@@ -2324,8 +2322,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             if (SUCCEEDED(hr))
                 hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
         }
-
-        SetErrorMode(lastErrorMode);
 
         if (SUCCEEDED(hr))
         {

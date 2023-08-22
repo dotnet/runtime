@@ -274,9 +274,10 @@
   <Target Name="AddBuildOutputToToolsPackage">
     <ItemGroup>
       <!-- Include build outputs in the package under tools directory. -->
-      <TfmSpecificPackageFile Include="$(OutputPath)**"
-                              Exclude="$(OutputPath)publish\**;
-                                       $(OutputPath)"
+      <_BuildOutputPackageFile Include="$(OutputPath)**"
+                               Exclude="$(OutputPath)publish\**;
+                                        $(OutputPath)" />
+      <TfmSpecificPackageFile Include="@(_BuildOutputPackageFile)"
                               PackagePath="tools/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
                                    TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"

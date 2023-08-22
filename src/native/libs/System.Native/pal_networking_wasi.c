@@ -61,7 +61,7 @@ int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength)
     return gethostname((char*)name, unsignedSize);
 }
 
-int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize)
+int32_t SystemNative_GetSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize, int32_t*udsSocketAddressSize, int* maxSocketAddressSize)
 {
     return Error_EFAULT;
 }

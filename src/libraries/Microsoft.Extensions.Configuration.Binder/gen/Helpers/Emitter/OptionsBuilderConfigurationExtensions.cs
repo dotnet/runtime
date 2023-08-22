@@ -9,19 +9,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             private bool ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder methods) => (_sourceGenSpec.MethodsToGen_OptionsBuilderExt & methods) != 0;
 
-            private void EmitBinder_Extensions_OptionsBuilder()
+            private void EmitBindingExtensions_OptionsBuilder()
             {
                 if (!ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Any))
                 {
                     return;
                 }
 
-                EmitRootBindingClassBlockStart(Identifier.GeneratedOptionsBuilderBinder);
-
+                EmitBindingExtStartRegion(TypeDisplayString.OptionsBuilderOfTOptions);
                 EmitBindMethods_Extensions_OptionsBuilder();
                 EmitBindConfigurationMethod();
-
-                _writer.WriteBlockEnd();
+                EmitBindingExtEndRegion();
             }
 
             private void EmitBindMethods_Extensions_OptionsBuilder()
@@ -32,28 +30,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 const string documentation = @"/// <summary>Registers a configuration instance which <typeparamref name=""TOptions""/> will bind against.</summary>";
-                const string paramList = $"{FullyQualifiedDisplayString.IConfiguration} {Identifier.configuration}";
+                const string paramList = $"{Identifier.IConfiguration} {Identifier.configuration}";
 
                 if (ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Bind_T))
                 {
-                    EmitMethodBlockStart("Bind", paramList, documentation);
-                    _writer.WriteLine($"return global::{Identifier.GeneratedOptionsBuilderBinder}.Bind({Identifier.optionsBuilder}, {Identifier.configuration}, {Identifier.configureOptions}: null);");
-                    _writer.WriteBlockEnd();
+                    EmitMethodStartBlock(MethodsToGen_Extensions_OptionsBuilder.Bind_T, "Bind", paramList, documentation);
+                    _writer.WriteLine($"return Bind({Identifier.optionsBuilder}, {Identifier.configuration}, {Identifier.configureOptions}: null);");
+                    EmitEndBlock();
                 }
 
-                EmitMethodBlockStart(
+                EmitMethodStartBlock(
+                    MethodsToGen_Extensions_OptionsBuilder.Bind_T_BinderOptions,
                     "Bind",
-                    paramList + $", {FullyQualifiedDisplayString.ActionOfBinderOptions}? {Identifier.configureOptions}",
+                    paramList + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}",
                     documentation);
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
 
-                _writer.WriteBlock($$"""
-                    global::{{Identifier.GeneratedServiceCollectionBinder}}.{{Identifier.Configure}}<{{Identifier.TOptions}}>({{Identifier.optionsBuilder}}.{{Identifier.Services}}, {{Identifier.optionsBuilder}}.Name, {{Identifier.configuration}}, {{Identifier.configureOptions}});
+                _writer.WriteLine($$"""
+                    {{Identifier.Configure}}<{{Identifier.TOptions}}>({{Identifier.optionsBuilder}}.{{Identifier.Services}}, {{Identifier.optionsBuilder}}.Name, {{Identifier.configuration}}, {{Identifier.configureOptions}});
                     return {{Identifier.optionsBuilder}};
                     """);
 
-                _writer.WriteBlockEnd();
+                EmitEndBlock();
             }
 
             private void EmitBindConfigurationMethod()
@@ -63,40 +62,41 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                const string documentation = $@"/// <summary>Registers the dependency injection container to bind <typeparamref name=""TOptions""/> against the <see cref=""{FullyQualifiedDisplayString.IConfiguration}""/> obtained from the DI service provider.</summary>";
-                string paramList = $"string {Identifier.configSectionPath}, {FullyQualifiedDisplayString.ActionOfBinderOptions}? {Identifier.configureOptions} = null";
+                const string documentation = $@"/// <summary>Registers the dependency injection container to bind <typeparamref name=""TOptions""/> against the <see cref=""{Identifier.IConfiguration}""/> obtained from the DI service provider.</summary>";
+                string paramList = $"string {Identifier.configSectionPath}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions} = null";
 
-                EmitMethodBlockStart("BindConfiguration", paramList, documentation);
+                EmitMethodStartBlock(MethodsToGen_Extensions_OptionsBuilder.BindConfiguration, "BindConfiguration", paramList, documentation);
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configSectionPath);
 
-                _writer.WriteBlockStart($"{Identifier.optionsBuilder}.{Identifier.Configure}<{FullyQualifiedDisplayString.IConfiguration}>(({Identifier.obj}, {Identifier.configuration}) =>");
+                EmitStartBlock($"{Identifier.optionsBuilder}.{Identifier.Configure}<{Identifier.IConfiguration}>(({Identifier.obj}, {Identifier.configuration}) =>");
+                EmitCheckForNullArgument_WithBlankLine(Identifier.obj);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+                _writer.WriteLine($$"""
+                    {{Identifier.IConfiguration}} {{Identifier.section}} = string.Equals(string.Empty, {{Identifier.configSectionPath}}, StringComparison.OrdinalIgnoreCase) ? {{Identifier.configuration}} : {{Identifier.configuration}}.{{Identifier.GetSection}}({{Identifier.configSectionPath}});
+                    {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.section}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}), {{Identifier.configureOptions}});
+                    """);
 
-                _writer.WriteBlock($$"""
-                {{FullyQualifiedDisplayString.IConfiguration}} {{Identifier.section}} = string.Equals(string.Empty, {{Identifier.configSectionPath}}, global::System.StringComparison.OrdinalIgnoreCase) ? {{Identifier.configuration}} : {{Identifier.configuration}}.{{Identifier.GetSection}}({{Identifier.configSectionPath}});
-                {{FullyQualifiedDisplayString.CoreBindingHelper}}.{{nameof(MethodsToGen_CoreBindingHelper.BindCoreUntyped)}}({{Identifier.section}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}), {{Identifier.configureOptions}});
-            """);
+                EmitEndBlock(endBraceTrailingSource: ");");
 
-                _writer.WriteBlockEnd(");");
+                _writer.WriteLine();
 
-                _writer.WriteBlankLine();
-
-                _writer.WriteBlock($$"""
-                    {{FullyQualifiedDisplayString.AddSingleton}}<{{FullyQualifiedDisplayString.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>, {{FullyQualifiedDisplayString.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>>({{Identifier.optionsBuilder}}.{{Identifier.Services}});
+                _writer.WriteLine($$"""
+                    {{Identifier.optionsBuilder}}.{{Identifier.Services}}.{{Identifier.AddSingleton}}<{{Identifier.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>, {{Identifier.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>>();
                     return {{Identifier.optionsBuilder}};
                     """);
 
-                _writer.WriteBlockEnd();
+                EmitEndBlock();
             }
 
-            private void EmitMethodBlockStart(string methodName, string paramList, string documentation)
+            private void EmitMethodStartBlock(MethodsToGen_Extensions_OptionsBuilder method, string methodName, string paramList, string documentation)
             {
-                paramList = $"this {FullyQualifiedDisplayString.OptionsBuilderOfTOptions} {Identifier.optionsBuilder}, {paramList}";
-
+                paramList = $"this {TypeDisplayString.OptionsBuilderOfTOptions} {Identifier.optionsBuilder}, {paramList}";
                 EmitBlankLineIfRequired();
                 _writer.WriteLine(documentation);
-                _writer.WriteBlockStart($"public static {FullyQualifiedDisplayString.OptionsBuilderOfTOptions} {methodName}<{Identifier.TOptions}>({paramList}) where {Identifier.TOptions} : class");
+                EmitInterceptsLocationAnnotations(method);
+                EmitStartBlock($"public static {TypeDisplayString.OptionsBuilderOfTOptions} {methodName}<{Identifier.TOptions}>({paramList}) where {Identifier.TOptions} : class");
             }
         }
     }

@@ -65,6 +65,80 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void Args_0_Extra_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { }));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(42));
+        }
+
+        [Fact]
+        public void Args_1_Extra_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { typeof(string) }));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1", 42));
+        }
+
+        [Fact]
+        public void Args_2_Extra_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string), typeof(string) }));
+
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1", "2", 42));
+        }
+
+        [Fact]
+        public void Args_3_Extra_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string), typeof(string), typeof(string) }));
+
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1", "2", "3", 42));
+        }
+
+        [Fact]
+        public void Args_Span_Extra_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { }));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(new Span<object?>(new object[]{"1", "2"})));
+        }
+
+        [Fact]
+        public void Args_1_NotEnoughArgs_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { typeof(string) }));
+            Assert.Throws<TargetParameterCountException>(invoker.Invoke);
+        }
+
+        [Fact]
+        public void Args_2_NotEnoughArgs_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string), typeof(string) }));
+
+            Assert.Throws<TargetParameterCountException>(invoker.Invoke);
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1"));
+        }
+
+        [Fact]
+        public void Args_3_NotEnoughArgs_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string), typeof(string), typeof(string) }));
+
+            Assert.Throws<TargetParameterCountException>(invoker.Invoke);
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1"));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1", "2"));
+        }
+
+        [Fact]
+        public void Args_Span_NotEnoughArgs_Throws()
+        {
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { typeof(string) }));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(new Span<object?>()));
+        }
+
+        [Fact]
         public void ThrowsNonWrappedException_0()
         {
             ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClassThrowsOnCreate).GetConstructor(new Type[] { }));

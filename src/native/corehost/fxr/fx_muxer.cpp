@@ -1070,13 +1070,8 @@ int fx_muxer_t::handle_cli(
         return StatusCode::LibHostSdkFindFailure;
     }
 
-    append_path(&sdk_dotnet, _X("dotnet.dll"));
-
-    if (!pal::file_exists(sdk_dotnet))
-    {
-        trace::error(_X("Found .NET SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
-        return StatusCode::LibHostSdkFindFailure;
-    }
+    append_path(&sdk_dotnet, SDK_DOTNET_DLL);
+    assert(pal::file_exists(sdk_dotnet));
 
     // Transform dotnet [command] [args] -> dotnet dotnet.dll [command] [args]
 

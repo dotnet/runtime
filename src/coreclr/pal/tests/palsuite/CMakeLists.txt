@@ -604,7 +604,6 @@ add_executable_clr(paltests
   threading/ResetEvent/test3/test3.cpp
   threading/ResetEvent/test4/test4.cpp
   threading/ResumeThread/test1/test1.cpp
-  threading/SetErrorMode/test1/test1.cpp
   threading/SetEvent/test1/test1.cpp
   threading/SetEvent/test2/test2.cpp
   threading/SetEvent/test3/test3.cpp

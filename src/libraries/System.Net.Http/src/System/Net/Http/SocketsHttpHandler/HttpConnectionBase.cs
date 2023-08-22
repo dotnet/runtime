@@ -42,27 +42,26 @@ namespace System.Net.Http
 
             SocketsHttpHandlerMetrics metrics = pool.Settings._metrics;
 
-            if (metrics.CurrentConnections.Enabled ||
-                metrics.IdleConnections.Enabled ||
-                metrics.ConnectionDuration.Enabled)
+            if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
             {
                 // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
                 string protocol =
-                    this is HttpConnection ? "HTTP/1.1" :
-                    this is Http2Connection ? "HTTP/2" :
-                    "HTTP/3";
+                    this is HttpConnection ? "1.1" :
+                    this is Http2Connection ? "2" :
+                    "3";
 
                 _connectionMetrics = new ConnectionMetrics(
                     metrics,
                     protocol,
                     pool.IsSecure ? "https" : "http",
                     pool.OriginAuthority.HostValue,
-                    pool.IsDefaultPort ? null : pool.OriginAuthority.Port);
+                    pool.IsDefaultPort ? null : pool.OriginAuthority.Port,
+                    remoteEndPoint?.Address?.ToString());
 
                 _connectionMetrics.ConnectionEstablished();
-
-                MarkConnectionAsIdle();
             }
+
+            _idleSinceTickCount = _creationTickCount;
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -97,13 +96,12 @@ namespace System.Net.Http
         public void MarkConnectionAsIdle()
         {
             _idleSinceTickCount = Environment.TickCount64;
-
-            _connectionMetrics?.MarkAsIdle();
+            _connectionMetrics?.IdleStateChanged(idle: true);
         }
 
         public void MarkConnectionAsNotIdle()
         {
-            _connectionMetrics?.MarkAsNotIdle();
+            _connectionMetrics?.IdleStateChanged(idle: false);
         }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
@@ -164,7 +162,7 @@ namespace System.Net.Http
                 !IsDigit(status2 = value[1]) ||
                 !IsDigit(status3 = value[2]))
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, System.Text.Encoding.ASCII.GetString(value)), httpRequestError: HttpRequestError.InvalidResponse);
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(value)));
             }
 
             return 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');

@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1</TargetFrameworks>
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
     <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
@@ -16,6 +14,10 @@ System.ComponentModel.Composition.Registration.PartBuilder&lt;T&gt;
 System.ComponentModel.Composition.Registration.ParameterImportBuilder
 System.ComponentModel.Composition.Registration.ImportBuilder
 System.ComponentModel.Composition.Registration.ExportBuilder</PackageDescription>
+
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

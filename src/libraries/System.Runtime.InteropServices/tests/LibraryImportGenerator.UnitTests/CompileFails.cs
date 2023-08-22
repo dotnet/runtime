@@ -832,11 +832,12 @@ namespace LibraryImportGenerator.UnitTests
                     .WithLocation(1)
                     .WithArguments("ref return", "Basic.RefReadonlyReturn()"),
             } };
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("In"), new[]
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}"), new[]
             {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
                     .WithLocation(0)
-                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, "p")
+                    .WithLocation(10)
+                    .WithArguments("[In] and [Out] attributes", "p", SR.InAttributeOnlyIsDefault)
             } };
         }
 

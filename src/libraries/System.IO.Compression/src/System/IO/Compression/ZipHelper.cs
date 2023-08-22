@@ -211,7 +211,7 @@ namespace System.IO.Compression
             }
 
             byte[] bytes;
-            if (isUTF8)
+            if (isUTF8 && encoding.GetMaxByteCount(text.Length) > maxBytes)
             {
                 int totalCodePoints = 0;
                 foreach (Rune rune in text.EnumerateRunes())

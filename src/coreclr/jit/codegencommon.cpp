@@ -68,13 +68,18 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
 {
+#if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-}
 #endif // TARGET_AMD64
+
+    rbmAllMask        = compiler->rbmAllMask;
+    rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
+}
+#endif // TARGET_XARCH
 
 /*****************************************************************************/
 
@@ -1966,7 +1971,7 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
-    if (compiler->opts.disAsm)
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
         printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
@@ -1990,7 +1995,7 @@ void CodeGen::genEmitMachineCode()
         ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
 #endif // DEBUG || LATE_DISASM
 
-    if (compiler->opts.disAsm)
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
         printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
@@ -2312,9 +2317,9 @@ void CodeGen::genReportEH()
 
         CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(HBtab->ebdHandlerType);
 
-        if (isNativeAOT && (XTnum > 0))
+        if (XTnum > 0)
         {
-            // For NativeAOT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
+            // CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try
@@ -2974,12 +2979,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // Change regType to the HFA type when we have a HFA argument
         if (varDsc->lvIsHfaRegArg())
         {
-#if defined(TARGET_ARM64)
-            if (TargetOS::IsWindows && compiler->info.compIsVarArgs)
+            if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && compiler->info.compIsVarArgs)
             {
                 assert(!"Illegal incoming HFA arg encountered in Vararg method.");
             }
-#endif // defined(TARGET_ARM64)
             regType = varDsc->GetHfaType();
         }
 
@@ -3041,7 +3044,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             for (unsigned slotCounter = 0; slotCounter < structDesc.eightByteCount; slotCounter++)
             {
                 regNumber regNum = varDsc->lvRegNumForSlot(slotCounter);
-                var_types regType;
+                var_types slotRegType;
 
 #ifdef FEATURE_SIMD
                 // Assumption 1:
@@ -3070,15 +3073,15 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 if (varDsc->lvType == TYP_SIMD12)
                 {
-                    regType = TYP_DOUBLE;
+                    slotRegType = TYP_DOUBLE;
                 }
                 else
 #endif
                 {
-                    regType = compiler->GetEightByteType(structDesc, slotCounter);
+                    slotRegType = compiler->GetEightByteType(structDesc, slotCounter);
                 }
 
-                regArgNum = genMapRegNumToRegArgNum(regNum, regType);
+                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType);
 
                 if ((!doingFloat && (structDesc.IsIntegralSlot(slotCounter))) ||
                     (doingFloat && (structDesc.IsSseSlot(slotCounter))))
@@ -3096,7 +3099,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                                                                   // register)
                     regArgTab[regArgNum].varNum = varNum;
                     regArgTab[regArgNum].slot   = (char)(slotCounter + 1);
-                    regArgTab[regArgNum].type   = regType;
+                    regArgTab[regArgNum].type   = slotRegType;
                     slots++;
                 }
             }
@@ -3115,7 +3118,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType);
             slots     = 1;
 
-            if (TargetArchitecture::IsArm32)
+            if (TargetArchitecture::IsArm32 ||
+                (TargetOS::IsWindows && TargetArchitecture::IsArm64 && compiler->info.compIsVarArgs))
             {
                 int lclSize = compiler->lvaLclSize(varNum);
                 if (lclSize > REGSIZE_BYTES)
@@ -4801,7 +4805,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
             offset += genSPtoFPdelta();
         }
 
-        JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (%02xH)\n",
+        JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (0x%02x)\n",
                 varNum, stkOffs, originalFrameSize, genSPtoFPdelta(), offset, offset);
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);

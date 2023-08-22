@@ -23,7 +23,7 @@ public class NativeTests : BlazorWasmTestBase
     [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
     public void WithNativeReference_AOTInProjectFile(string config)
     {
-        string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_nativeref_aot_{config}_{GetRandomId()}";
         string projectFile = CreateProjectWithNativeReference(id);
         string extraProperties = config == "Debug"
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
@@ -45,7 +45,7 @@ public class NativeTests : BlazorWasmTestBase
     [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
     public void WithNativeReference_AOTOnCommandLine(string config)
     {
-        string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_nativeref_aot_{config}_{GetRandomId()}";
         string projectFile = CreateProjectWithNativeReference(id);
         string extraProperties = config == "Debug"
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
@@ -66,7 +66,7 @@ public class NativeTests : BlazorWasmTestBase
     [InlineData("Release")]
     public void BlazorWasm_CanRunMonoAOTCross_WithNoTrimming(string config)
     {
-        string id = $"blazorwasm_{config}_aot_{Path.GetRandomFileName()}";
+        string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
         // We don't want to emcc compile, and link ~180 assemblies!

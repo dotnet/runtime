@@ -194,17 +194,7 @@ enum UnhandledExceptionLocation
 };
 
 #ifdef HOST_WINDOWS
-
-// Must be the same as the copy in pal.h and the WriteDumpFlags enum in the diagnostics repo
-enum
-{
-    GenerateDumpFlagsNone = 0x00,
-    GenerateDumpFlagsLoggingEnabled = 0x01,
-    GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
-    GenerateDumpFlagsCrashReportEnabled = 0x04,
-    GenerateDumpFlagsCrashReportOnlyEnabled = 0x08
-};
-
+#include <generatedumpflags.h>
 void InitializeCrashDump();
 void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
@@ -720,10 +710,9 @@ bool IsInterceptableException(Thread *pThread);
 // perform simple checking to see if the current exception is intercepted
 bool CheckThreadExceptionStateForInterception();
 
-#ifndef TARGET_UNIX
-// Currently, only Windows supports ClrUnwindEx (used inside ClrDebuggerDoUnwindAndIntercept)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
 #define DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
-#endif // !TARGET_UNIX
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
 
 #ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 // Intercept the current exception and start an unwind.  This function may never return.

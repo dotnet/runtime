@@ -695,7 +695,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(GetCallingAssembly_TestData))]
         public void GetCallingAssembly(Assembly assembly1, Assembly assembly2, bool expected)
         {
@@ -890,8 +890,8 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/77821", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77821", TestPlatforms.Android)]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;

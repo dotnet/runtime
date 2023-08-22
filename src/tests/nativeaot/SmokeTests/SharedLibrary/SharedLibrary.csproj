@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NativeLib>Shared</NativeLib>
+    <!-- Unable to compile a project with the Library output type for apple mobile devices -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <PropertyGroup>

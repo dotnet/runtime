@@ -568,6 +568,7 @@ function_name() to call the system's implementation
 #include <unistd.h>
 #include <fcntl.h>
 #include <glob.h>
+#include <minipal/utils.h>
 
 #ifdef __APPLE__
 

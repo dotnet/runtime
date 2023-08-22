@@ -54,6 +54,11 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName ();
 		}
 
+		public static IEnumerable<object[]> TopLevelStatements ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
 		public static IEnumerable<object[]> UnreachableBlock ()
 		{
 			return TestNamesBySuiteName ();
@@ -66,8 +71,8 @@ namespace Mono.Linker.Tests.TestCases
 
 		public static TestCaseCollector CreateCollector ()
 		{
-			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);
-			return new TestCaseCollector (rootSourceDirectory, testCaseAssemblyPath);
+			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyRoot);
+			return new TestCaseCollector (rootSourceDirectory, testCaseAssemblyRoot);
 		}
 
 		public static NPath TestCasesRootDirectory {
@@ -81,7 +86,6 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			_cachedAllCases ??= CreateCollector ()
 					.Collect ()
-					.Where (c => c != null)
 					.OrderBy (c => c.DisplayName)
 					.ToArray ();
 
@@ -102,10 +106,10 @@ namespace Mono.Linker.Tests.TestCases
 				.Select (c => new object[] { c });
 		}
 
-		private static void GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath)
+		private static void GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyRoot)
 		{
 			rootSourceDirectory = Path.GetFullPath (Path.Combine (PathUtilities.GetTestsSourceRootDirectory (), "Mono.Linker.Tests.Cases"));
-			testCaseAssemblyPath = PathUtilities.GetTestAssemblyPath ("Mono.Linker.Tests.Cases");
+			testCaseAssemblyRoot = PathUtilities.GetTestAssemblyRoot ("Mono.Linker.Tests.Cases");
 		}
 	}
 }

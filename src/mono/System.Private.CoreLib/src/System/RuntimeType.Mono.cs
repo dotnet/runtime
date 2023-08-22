@@ -1792,9 +1792,9 @@ namespace System
             }
             else if (IsPointer)
             {
-                Type? vtype = value.GetType();
-                if (vtype == typeof(IntPtr) || vtype == typeof(UIntPtr))
+                if (value is IntPtr or UIntPtr)
                     return CheckValueStatus.Success;
+
                 if (value is Pointer pointer)
                 {
                     Type pointerType = pointer.GetPointerType();
@@ -1804,6 +1804,14 @@ namespace System
                         return CheckValueStatus.Success;
                     }
                 }
+            }
+            else if (IsFunctionPointer)
+            {
+                if (value is IntPtr or UIntPtr)
+                    return CheckValueStatus.Success;
+
+                value = (IntPtr)value;
+                return CheckValueStatus.Success;
             }
 
             return CheckValueStatus.ArgumentException;
@@ -2039,6 +2047,16 @@ namespace System
 
                 if (HasElementType)
                     return GetElementType().ContainsGenericParameters;
+
+                if (IsFunctionPointer)
+                {
+                    if (GetFunctionPointerReturnType().ContainsGenericParameters)
+                        return true;
+
+                    foreach (Type arg in GetFunctionPointerParameterTypes())
+                        if (arg.ContainsGenericParameters)
+                            return true;
+                }
 
                 return false;
             }
@@ -2398,6 +2416,82 @@ namespace System
             {
                 return RuntimeTypeHandle.IsSzArray(this);
             }
+        }
+
+        public override bool IsFunctionPointer => RuntimeTypeHandle.IsFunctionPointer(this);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern bool IsUnmanagedFunctionPointerInternal(QCallTypeHandle type);
+        internal static bool IsUnmanagedFunctionPointerInternal(RuntimeType type)
+        {
+            return IsUnmanagedFunctionPointerInternal(new QCallTypeHandle(ref type));
+        }
+
+        public override bool IsUnmanagedFunctionPointer => IsUnmanagedFunctionPointerInternal(this);
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            Type[] parameters = FunctionPointerReturnAndParameterTypes(this, false);
+            return parameters.Length == 0 ? EmptyTypes : parameters;
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            return FunctionPointerReturnAndParameterTypes(this, true)[0];
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr FunctionPointerReturnAndParameterTypes(QCallTypeHandle type);
+        internal static Type[] FunctionPointerReturnAndParameterTypes(RuntimeType type, bool returnType)
+        {
+            if (!RuntimeTypeHandle.IsFunctionPointer(type))
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+            }
+
+            using (var arrayOfTypeHandles = new Mono.SafeGPtrArrayHandle(FunctionPointerReturnAndParameterTypes(new QCallTypeHandle(ref type))))
+            {
+                int typeNum = returnType ? 1 : arrayOfTypeHandles.Length - 1;
+                var fPtrReturnAndParameterTypes = new Type[typeNum];
+
+                if (returnType)
+                {
+                    var typeHandle = new RuntimeTypeHandle(arrayOfTypeHandles[0]);
+                    fPtrReturnAndParameterTypes[0] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
+                }
+                else
+                {
+                    for (int i = 1; i < typeNum + 1; i++)
+                    {
+                        var typeHandle = new RuntimeTypeHandle(arrayOfTypeHandles[i]);
+                        fPtrReturnAndParameterTypes[i-1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
+                    }
+                }
+                return fPtrReturnAndParameterTypes;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern Type[] GetFunctionPointerTypeModifiers(QCallTypeHandle type, int position, bool optional);
+
+        internal static Type[] GetFunctionPointerTypeModifiers(RuntimeType type, int position, bool optional) => GetFunctionPointerTypeModifiers(new QCallTypeHandle(ref type), position, optional) ?? Type.EmptyTypes;
+
+        public Type[] GetCustomModifiersFromFunctionPointer(int position, bool optional) => GetFunctionPointerTypeModifiers(this, position, optional);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern byte GetCallingConventionFromFunctionPointerInternal(QCallTypeHandle type);
+
+        internal static byte GetCallingConventionFromFunctionPointerInternal(RuntimeType type) => GetCallingConventionFromFunctionPointerInternal(new QCallTypeHandle(ref type));
+
+        public SignatureCallingConvention GetCallingConventionFromFunctionPointer() => (SignatureCallingConvention)GetCallingConventionFromFunctionPointerInternal(this);
+
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            if (!RuntimeTypeHandle.IsFunctionPointer(this))
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+
+            // Requires a modified type to return the modifiers.
+            return EmptyTypes;
         }
 
         internal override bool IsUserType

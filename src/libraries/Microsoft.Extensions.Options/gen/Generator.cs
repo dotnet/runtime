@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Options.Generators
             var validatorTypes = parser.GetValidatorTypes(types);
             if (validatorTypes.Count > 0)
             {
-                var emitter = new Emitter();
+                var emitter = new Emitter(compilation);
                 var result = emitter.Emit(validatorTypes, context.CancellationToken);
 
                 context.AddSource("Validators.g.cs", SourceText.From(result, Encoding.UTF8));

@@ -8502,7 +8502,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
                 assert(tmpArg <= REG_ARG_LAST);
                 assert(nextReg < MAX_REG_ARG);
-                assert(nextReg != i);
+                assert(nextReg != (unsigned)i);
 
                 regArg[i] = 0;
                 int count = 0;
@@ -8524,7 +8524,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     count++;
                 }
 
-                if (nextReg == i)
+                if (nextReg == (unsigned)i)
                 {
                     GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, (regNumber)tmpArg, 0);
                     regArgMaskLive &= ~genRegMask((regNumber)tmpArg);
@@ -8532,7 +8532,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 }
                 else if (count == 0)
                 {
-                    tmpRegs[0] = i;
+                    tmpRegs[0] = (unsigned)i;
                     regArg[i]  = tmpArg;
                 }
                 else
@@ -8555,14 +8555,14 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     assert(regArgNum >= 0);
                 } while (count >= 0);
 
-                if (nextReg == i)
+                if (nextReg == (unsigned)i)
                 {
                     instruction ins = (regArgMaskIsInt & (1 << regArg[i])) != 0 ? INS_slli_w : INS_ori;
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
                     regArgNum--;
                     assert(regArgNum >= 0);
                 }
-                else if (tmpRegs[0] != i)
+                else if (tmpRegs[0] != (unsigned)i)
                 {
                     instruction ins = (regArgMaskIsInt & (1 << (i + REG_ARG_FIRST))) != 0 ? INS_slli_w : INS_ori;
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i],

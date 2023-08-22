@@ -347,13 +347,6 @@
     <type fullname="System.Reflection.AssemblyMetadataAttribute">
       <attribute internal="RemoveAttributeInstances">
         <argument type="System.Object">
-          <argument>.NETFrameworkAssembly</argument>
-        </argument>
-      </attribute>
-    </type>
-    <type fullname="System.Reflection.AssemblyMetadataAttribute">
-      <attribute internal="RemoveAttributeInstances">
-        <argument type="System.Object">
           <argument>RepositoryUrl</argument>
         </argument>
       </attribute>

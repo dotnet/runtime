@@ -1168,7 +1168,7 @@ DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
-DEFINE_CLASS(CASTCACHE, CompilerServices, CastCache)
+DEFINE_CLASS(CASTCACHE, CompilerServices, CastHelpers)
 DEFINE_FIELD(CASTCACHE, TABLE, s_table)
 
 DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)

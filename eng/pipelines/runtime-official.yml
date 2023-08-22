@@ -26,6 +26,9 @@ variables:
 - template: /eng/pipelines/common/internal-variables.yml
   parameters:
     teamName: dotnet-core-acquisition
+# disable CodeQL here, we have a separate pipeline for it
+- name: Codeql.Enabled
+  value: False
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -38,10 +41,11 @@ extends:
       # Localization build
       #
 
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/8.0') }}:
         - template: /eng/common/templates/job/onelocbuild.yml
           parameters:
             MirrorRepo: runtime
+            MirrorBranch: release/8.0
             LclSource: lclFilesfromPackage
             LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
@@ -117,7 +121,7 @@ extends:
           - linux_bionic_arm64
           - linux_bionic_x64
           jobParameters:
-            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true
+            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
             nameSuffix: AllSubsets_NativeAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml

@@ -377,13 +377,13 @@ namespace SampleMetadata
         [MarshalAs(UnmanagedType.IDispatch, IidParameterIndex = 42)]
         public int F4;
 
-        [MarshalAs(UnmanagedType.ByValArray)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
         public int F5;
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 5)]
         public int F6;
 
-        [MarshalAs(UnmanagedType.ByValArray, ArraySubType = UnmanagedType.FunctionPtr)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1, ArraySubType = UnmanagedType.FunctionPtr)]
         public int F7;
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 87, ArraySubType = UnmanagedType.FunctionPtr)]

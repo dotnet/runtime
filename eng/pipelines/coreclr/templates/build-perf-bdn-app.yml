@@ -81,7 +81,21 @@ steps:
     displayName:  Clone Maui
     workingDirectory: $(Build.SourcesDirectory)
 
+  - script: |
+      set -x
+      pwd
+      git clone https://github.com/dotnet/performance.git --depth 1 -b ${{parameters.perfRepo}} --single-branch
+    displayName:  Clone performance
+    workingDirectory: $(Build.SourcesDirectory)
+
   - pwsh: |
+      $BenchmarkDotNetVersionCapture = Get-Content .\performance\eng\Versions.props | Select-String -Pattern '<BenchmarkDotNetVersion>(.+?)</BenchmarkDotNetVersion>'
+      if ($BenchmarkDotNetVersionCapture.Length -eq 0) {
+        Write-Error "BenchmarkDotNetVersion not found in Versions.props"
+        exit 1
+      }
+      $BenchmarkDotNetVersion = $BenchmarkDotNetVersionCapture.Matches.Groups[1].Value
+
       $instrumentationFileContent = Get-Content .\maui\src\Core\tests\Benchmarks.Droid\MainInstrumentation.cs
       $perfLabExportLine = $instrumentationFileContent | Select-String -Pattern 'using BenchmarkDotNet.Toolchains.InProcess.Emit;'
       $lineNumber = $perfLabExportLine.LineNumber
@@ -100,7 +114,7 @@ steps:
 
       $packageReferenceLine = $benchmarksDroidConfigFileContent | Select-String -Pattern '<PackageReference Include="BenchmarkDotNet"'
       $lineNumber = $packageReferenceLine.LineNumber
-      $benchmarksDroidConfigFileContent[$lineNumber-1] = "    <PackageReference Include=`"BenchmarkDotNet`" Version=`"`$(BenchmarkDotNetVersion)`" />"
+      $benchmarksDroidConfigFileContent[$lineNumber-1] = "    <PackageReference Include=`"BenchmarkDotNet`" Version=`"$BenchmarkDotNetVersion`" />"
 
       $projectReferenceLine = $benchmarksDroidConfigFileContent | Select-String -Pattern '<ProjectReference Include="..\\..\\src\\Core.csproj" />'
       $lineNumber = $projectReferenceLine.LineNumber
@@ -129,13 +143,6 @@ steps:
 
       $benchmarksDroidConfigFileContent | Set-Content .\maui\src\Core\tests\Benchmarks.Droid\Benchmarks.Droid.csproj
     displayName: Insert Target Replace, BDN config link, and PerfLabExporter
-    workingDirectory: $(Build.SourcesDirectory)
-
-  - script: |
-      set -x
-      pwd
-      git clone https://github.com/dotnet/performance.git --depth 1 -b ${{parameters.perfRepo}} --single-branch
-    displayName:  Clone performance
     workingDirectory: $(Build.SourcesDirectory)
 
 # Remove the embed assemblies from source

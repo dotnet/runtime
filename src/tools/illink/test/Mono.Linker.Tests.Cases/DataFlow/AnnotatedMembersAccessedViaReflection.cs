@@ -9,9 +9,6 @@ using Mono.Linker.Tests.Cases.DataFlow;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
-[assembly: ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeType--")]
-[assembly: AnnotatedMembersAccessedViaReflection.AnnotatedAttributeConstructorAttribute (typeof (AnnotatedMembersAccessedViaReflection.RequiresUnreferencedCodeType))]
-
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
@@ -785,12 +782,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GetValueWithAnnotatedField ();
 				AcceptValueWithAnnotatedField (default (ValueWithAnnotatedField));
 			}
-		}
-
-		public class AnnotatedAttributeConstructorAttribute : Attribute
-		{
-			public AnnotatedAttributeConstructorAttribute ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type type)
-			{ }
 		}
 
 		class TestType { }
