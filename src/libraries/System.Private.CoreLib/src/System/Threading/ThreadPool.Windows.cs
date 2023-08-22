@@ -10,11 +10,12 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
-        // name relied on by sos
-        private static readonly bool s_useWindowsThreadPool =
+        internal static bool UseWindowsThreadPool { get; } =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", "DOTNET_ThreadPool_UseWindowsThreadPool");
 
-        internal static bool UseWindowsThreadPool => s_useWindowsThreadPool;
+        // The field should reflect what the property returns because the property can be stubbed by trimming,
+        // such that sos reflects the actual state of what thread pool is being used and not just the config value.
+        private static readonly bool s_useWindowsThreadPool = UseWindowsThreadPool; // Name relied on by sos
 
 #if NATIVEAOT
         private const bool IsWorkerTrackingEnabledInConfig = false;
