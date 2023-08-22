@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         public void AddMetrics_InitializesListeners()
         {
             var serviceCollection = new ServiceCollection();
+            serviceCollection.AddMetrics(); // Duplicate call, should not add things twice.
             serviceCollection.AddMetrics(l => l.AddListener<FakeListener>());
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
