@@ -167,7 +167,7 @@ internal sealed class BrowserHost
                 devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
 
             if (devServerOptions == null)
-                throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}'");
+                throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}' .");
         }
 
         return devServerOptions;
