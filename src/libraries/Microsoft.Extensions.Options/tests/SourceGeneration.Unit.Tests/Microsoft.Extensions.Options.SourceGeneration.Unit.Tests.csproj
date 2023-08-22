@@ -20,6 +20,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Annotations\src\System.ComponentModel.Annotations.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options.DataAnnotations\src\Microsoft.Extensions.Options.DataAnnotations.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>

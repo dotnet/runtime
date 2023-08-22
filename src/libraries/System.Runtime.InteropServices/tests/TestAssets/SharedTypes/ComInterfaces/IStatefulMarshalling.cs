@@ -50,6 +50,7 @@ namespace SharedTypes.ComInterfaces
     [CustomMarshaller(typeof(StatefulType), MarshalMode.ManagedToUnmanagedRef, typeof(Bidirectional))]
     internal struct StatefulTypeMarshaller
     {
+        public static int FreeCount => Bidirectional.FreeCount + ManagedToUnmanaged.FreeCount + UnmanagedToManaged.FreeCount;
         internal struct Bidirectional
         {
             public static int FreeCount { get; private set; }

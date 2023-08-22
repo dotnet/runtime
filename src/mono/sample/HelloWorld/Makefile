@@ -8,7 +8,7 @@ TARGET_OS?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${os})
 AOT?=false
 USE_LLVM?=false
 StripILCode?=false
-CompiledMethodsOutputDirectory?= #<path-to-a-writable-directory>
+TrimmingEligibleMethodsOutputDirectory?= #<path-to-a-writable-directory>
 
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
@@ -21,7 +21,7 @@ publish:
 	/p:RunAOTCompilation=$(AOT) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:StripILCode=$(StripILCode) \
-	/p:CompiledMethodsOutputDirectory=$(CompiledMethodsOutputDirectory) \
+	/p:TrimmingEligibleMethodsOutputDirectory=$(TrimmingEligibleMethodsOutputDirectory) \
 	'/p:MibcProfilePath="$(MIBC_PROFILE_PATH)"' \
 	/bl
 

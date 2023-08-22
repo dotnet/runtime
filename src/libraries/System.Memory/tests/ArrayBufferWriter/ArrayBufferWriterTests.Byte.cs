@@ -22,13 +22,15 @@ namespace System.Buffers.Tests
             bufferWriter.Advance(numBytes);
         }
 
-        [Fact]
-        public void WriteAndCopyToStream()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WriteAndCopyToStream(bool clearContent)
         {
-            var output = new ArrayBufferWriter<byte>();
+            ArrayBufferWriter<byte> output = new();
             WriteData(output, 100);
 
-            using var memStream = new MemoryStream(100);
+            using MemoryStream memStream = new(100);
 
             Assert.Equal(100, output.WrittenCount);
 
@@ -40,13 +42,23 @@ namespace System.Buffers.Tests
             Assert.True(transientSpan.SequenceEqual(transientMemory.Span));
 
             Assert.True(transientSpan[0] != 0);
+            byte expectedFirstByte = transientSpan[0];
 
             memStream.Write(transientSpan.ToArray(), 0, transientSpan.Length);
-            output.Clear();
-
-            Assert.True(transientSpan[0] == 0);
-            Assert.True(transientMemory.Span[0] == 0);
-
+            
+            if (clearContent)
+            {
+                expectedFirstByte = 0;
+                output.Clear();
+            }
+            else
+            {
+                output.ResetWrittenCount();
+            }
+            
+            Assert.Equal(expectedFirstByte, transientSpan[0]);
+            Assert.Equal(expectedFirstByte, transientMemory.Span[0]);
+            
             Assert.Equal(0, output.WrittenCount);
             byte[] streamOutput = memStream.ToArray();
 
@@ -58,13 +70,15 @@ namespace System.Buffers.Tests
             Assert.True(outputSpan.SequenceEqual(streamOutput));
         }
 
-        [Fact]
-        public async Task WriteAndCopyToStreamAsync()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WriteAndCopyToStreamAsync(bool clearContent)
         {
-            var output = new ArrayBufferWriter<byte>();
+            ArrayBufferWriter<byte> output = new();
             WriteData(output, 100);
 
-            using var memStream = new MemoryStream(100);
+            using MemoryStream memStream = new(100);
 
             Assert.Equal(100, output.WrittenCount);
 
@@ -73,11 +87,21 @@ namespace System.Buffers.Tests
             ReadOnlyMemory<byte> transient = output.WrittenMemory;
 
             Assert.True(transient.Span[0] != 0);
+            byte expectedFirstByte = transient.Span[0];
 
             await memStream.WriteAsync(transient.ToArray(), 0, transient.Length);
-            output.Clear();
 
-            Assert.True(transient.Span[0] == 0);
+            if (clearContent)
+            {
+                expectedFirstByte = 0;
+                output.Clear();
+            }
+            else
+            {
+                output.ResetWrittenCount();
+            }
+
+            Assert.True(transient.Span[0] == expectedFirstByte);
 
             Assert.Equal(0, output.WrittenCount);
             byte[] streamOutput = memStream.ToArray();

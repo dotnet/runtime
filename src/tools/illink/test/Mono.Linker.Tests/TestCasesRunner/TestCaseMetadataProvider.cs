@@ -152,6 +152,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
+		public IEnumerable<string> GetDeleteBefore ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (DeleteBeforeAttribute))
+				.Select (attr => (string)attr.ConstructorArguments[0].Value);
+		}
+
 		public virtual IEnumerable<NPath> GetExtraLinkerReferences ()
 		{
 			var netcoreappDir = Path.GetDirectoryName (typeof (object).Assembly.Location);

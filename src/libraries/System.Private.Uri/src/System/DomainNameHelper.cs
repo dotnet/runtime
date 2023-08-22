@@ -77,11 +77,7 @@ namespace System
             if (index >= 0)
             {
                 // We saw uppercase letters. Avoid allocating both the substring and the lower-cased variant.
-                return string.Create(end - start, (str, start), static (buffer, state) =>
-                {
-                    int newLength = state.str.AsSpan(state.start, buffer.Length).ToLowerInvariant(buffer);
-                    Debug.Assert(newLength == buffer.Length);
-                });
+                return UriHelper.SpanToLowerInvariantString(str.AsSpan(start, end - start));
             }
 
             if (str.AsSpan(start, end - start) is Localhost or Loopback)

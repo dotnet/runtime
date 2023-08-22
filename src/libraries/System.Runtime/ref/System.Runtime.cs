@@ -7392,6 +7392,7 @@ namespace System.Buffers
     {
         public static System.Buffers.SearchValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
         public static System.Buffers.SearchValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+        public static System.Buffers.SearchValues<string> Create(System.ReadOnlySpan<string> values, System.StringComparison comparisonType) { throw null; }
     }
     public partial interface IPinnable
     {
@@ -13045,6 +13046,12 @@ namespace System.Runtime.CompilerServices
     public sealed class RequiredMemberAttribute : System.Attribute
     {
         public RequiredMemberAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class RequiresLocationAttribute : System.Attribute
+    {
+        public RequiresLocationAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute

@@ -3058,68 +3058,69 @@ void emitter::emitSplit(emitLocation*         startLoc,
     UNATIVE_OFFSET curSize;
     UNATIVE_OFFSET candidateSize;
 
+    auto splitIfNecessary = [&]() {
+        if (curSize < maxSplitSize)
+        {
+            return;
+        }
+
+        // Is there a candidate?
+        if (igLastCandidate == NULL)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; we don't have a candidate to report\n", ig->igNum);
+#endif
+            return;
+        }
+
+        // Don't report the same thing twice (this also happens for the first block, since igLastReported is
+        // initialized to igStart).
+        if (igLastCandidate == igLastReported)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; we already reported it\n", igLastCandidate->igNum);
+#endif
+            return;
+        }
+
+        // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
+        // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
+        // the split size will be much larger than the maximum size of an instruction group. The invariant we want
+        // to maintain is that each fragment contains a non-zero amount of code.
+        if (candidateSize == 0)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
+#endif
+            return;
+        }
+
+// Report it!
+
+#ifdef DEBUG
+        if (EMITVERBOSE)
+        {
+            printf("emitSplit: split at IG%02u is size %x, %s than requested maximum size of %x\n",
+                   igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
+                   maxSplitSize);
+        }
+#endif
+
+        // hand memory ownership to the callback function
+        emitLocation* pEmitLoc = new (emitComp, CMK_Unknown) emitLocation(igLastCandidate);
+        callbackFunc(context, pEmitLoc);
+        igLastReported  = igLastCandidate;
+        igLastCandidate = NULL;
+        curSize -= candidateSize;
+    };
+
     for (igPrev = NULL, ig = igLastReported = igStart, igLastCandidate = NULL, candidateSize = 0, curSize = 0;
          ig != igEnd && ig != NULL; igPrev = ig, ig = ig->igNext)
     {
-        // Keep looking until we've gone past the maximum split size
-        if (curSize >= maxSplitSize)
-        {
-            bool reportCandidate = true;
-
-            // Is there a candidate?
-            if (igLastCandidate == NULL)
-            {
-#ifdef DEBUG
-                if (EMITVERBOSE)
-                    printf("emitSplit: can't split at IG%02u; we don't have a candidate to report\n", ig->igNum);
-#endif
-                reportCandidate = false;
-            }
-
-            // Don't report the same thing twice (this also happens for the first block, since igLastReported is
-            // initialized to igStart).
-            if (igLastCandidate == igLastReported)
-            {
-#ifdef DEBUG
-                if (EMITVERBOSE)
-                    printf("emitSplit: can't split at IG%02u; we already reported it\n", igLastCandidate->igNum);
-#endif
-                reportCandidate = false;
-            }
-
-            // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
-            // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
-            // the split size will be much larger than the maximum size of an instruction group. The invariant we want
-            // to maintain is that each fragment contains a non-zero amount of code.
-            if (reportCandidate && (candidateSize == 0))
-            {
-#ifdef DEBUG
-                if (EMITVERBOSE)
-                    printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
-#endif
-                reportCandidate = false;
-            }
-
-            // Report it!
-            if (reportCandidate)
-            {
-#ifdef DEBUG
-                if (EMITVERBOSE)
-                {
-                    printf("emitSplit: split at IG%02u is size %d, %s than requested maximum size of %d\n",
-                           igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
-                           maxSplitSize);
-                }
-#endif
-
-                // hand memory ownership to the callback function
-                emitLocation* pEmitLoc = new (emitComp, CMK_Unknown) emitLocation(igLastCandidate);
-                callbackFunc(context, pEmitLoc);
-                igLastReported  = igLastCandidate;
-                igLastCandidate = NULL;
-                curSize -= candidateSize;
-            }
-        }
+        splitIfNecessary();
 
         // Update the current candidate to be this block, if it isn't in the middle of a
         // prolog or epilog, which we can't split. All we know is that certain
@@ -3140,6 +3141,9 @@ void emitter::emitSplit(emitLocation*         startLoc,
         curSize += ig->igSize;
 
     } // end for loop
+
+    splitIfNecessary();
+    assert(curSize < maxSplitSize);
 }
 
 /*****************************************************************************

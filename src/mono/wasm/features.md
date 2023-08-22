@@ -6,7 +6,7 @@
 - [Hosting the application](#Hosting-the-application)
 - [Resources consumed on the target device](#Resources-consumed-on-the-target-device)
 - [Choosing the right platform target](#Choosing-the-right-platform-target)
-- [wasm-tools workload](#wasm-tools-workload)
+- [Developer tools](#Developer-tools)
 
 
 ## Configuring browser features
@@ -40,10 +40,14 @@ It can be enabled with `<WasmEnableSIMD>true</WasmEnableSIMD>` and disabled with
 
 For more information on this feature, see [SIMD.md](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md).
 
+Older versions of NodeJS hosts may need `--experimental-wasm-simd` command line option.
+
 ### EH - Exception handling
 WebAssembly exception handling provides higher performance for code containing `try` blocks by allowing exceptions to be caught and thrown natively without the use of JavaScript. It is currently enabled by default and can be disabled via `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>`.
 
 For more information on this feature, see [Exceptions.md](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
+
+Older versions of NodeJS hosts may need `--experimental-wasm-eh` command line option.
 
 ### BigInt
 Passing Int64 and UInt64 values between JavaScript and C# requires support for the JavaScript `BigInt` type. See [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration) for more information on this API.
@@ -312,12 +316,91 @@ it may be better if you re/write your logic in Web native technologies like HTML
 
 Sometimes it makes sense to implement a mix of both.
 
-## wasm-tools workload
+## Developer tools
+
+### wasm-tools workload
 The `wasm-tools` workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application.
 
-Although it's optional for Blazor, we strongly recommend using it!
+Although it's optional for Blazor, **we strongly recommend using it!**
 
 You can install it by running `dotnet workload install wasm-tools` from the command line.
 
 You can also install `dotnet workload install wasm-experimental` to test out new experimental features and templates.
 It includes the WASM templates for `dotnet new` and also preview version of multi-threading flavor of the runtime pack.
+
+### Debugging
+
+You can use browser dev tools to debug the JavaScript of the application and the runtime.
+
+You could also debug the C# code using our integration with browser dev tools or Visual Studio.
+See detailed [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/debug)
+
+You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
+
+### Native debug symbols
+
+You can add following elements in your .csproj
+```xml
+<PropertyGroup>
+  <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+  <WasmNativeStrip>false</WasmNativeStrip>
+</PropertyGroup>
+```
+
+See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
+For more details see also [debugger.md](debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
+
+### Runtime logging and tracing
+
+You can enable detailed runtime logging.
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet
+        .withDiagnosticTracing(true) // enable JavaScript tracing
+        .withConfig({environmentVariables: {
+            "MONO_LOG_LEVEL":"debug", //enable Mono VM detailed logging by
+            "MONO_LOG_MASK":"all", // categories, could be also gc,aot,type,...
+        }})
+        .run();
+```
+
+See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
+
+### Profiling
+
+You can enable integration with browser profiler via following elements in your .csproj
+```xml
+<PropertyGroup>
+  <WasmProfilers>browser;</WasmProfilers>
+</PropertyGroup>
+```
+
+In Blazor, you can customize the startup in your index.html
+```html
+<script src="_framework/blazor.webassembly.js" autostart="false"></script>
+<script>
+Blazor.start({
+    configureRuntime: function (builder) {
+        builder.withConfig({
+            browserProfilerOptions: {}
+        });
+    }
+});
+</script>
+```
+
+In simple browser template, you can add following to your `main.js`
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet.withConfig({browserProfilerOptions: {}}).run();
+```
+
+### Diagnostic tools
+
+We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe)
+
+At the moment it requires multi-threaded build of the runtime.
+
+For more details see [diagnostic-server.md](runtime\diagnostics\diagnostic-server.md)

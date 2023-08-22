@@ -2360,15 +2360,6 @@ void MethodContext::recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection
     value.A = CastPointer(*ppIndirection);
     value.B = CastPointer(result);
 
-    if (GetHelperFtn->GetIndex(key) != -1)
-    {
-        DLDL oldValue = GetHelperFtn->Get(key);
-
-        AssertCodeMsg(oldValue.A == value.A && oldValue.B == oldValue.B, EXCEPTIONCODE_MC,
-                      "collision! old: %016" PRIX64 " %016" PRIX64 ", new: %016" PRIX64 " %016" PRIX64 " \n", oldValue.A, oldValue.B, value.A,
-                      value.B);
-    }
-
     GetHelperFtn->Add(key, value);
     DEBUG_REC(dmpGetHelperFtn(key, value));
 }
@@ -2379,19 +2370,7 @@ void MethodContext::dmpGetHelperFtn(DWORD key, DLDL value)
 void* MethodContext::repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
 {
     DWORD key = (DWORD)ftnNum;
-
-    if ((GetHelperFtn == nullptr) || (GetHelperFtn->GetIndex(key) == -1))
-    {
-#ifdef sparseMC
-        LogDebug("Sparse - repGetHelperFtn returning nullptr and 0XCAFE0003");
-        *ppIndirection = nullptr;
-        return (void*)(size_t)0xCAFE0003;
-#else
-        LogException(EXCEPTIONCODE_MC, "Encountered an empty LWM while looking for %08X", (DWORD)ftnNum);
-#endif
-    }
-
-    DLDL value = GetHelperFtn->Get(key);
+    DLDL value = LookupByKeyOrMiss(GetHelperFtn, key, ": key %u", key);
     DEBUG_REP(dmpGetHelperFtn(key, value));
 
     *ppIndirection = (void*)value.A;
@@ -3014,6 +2993,32 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
     bool result    = value.result;
     *exceptionCode = (DWORD)value.exceptionCode;
     return result;
+}
+
+void MethodContext::recHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2, bool result)
+{
+    if (HaveSameMethodDefinition == nullptr)
+        HaveSameMethodDefinition = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    key.A = CastHandle(methHnd1);
+    key.B = CastHandle(methHnd2);
+
+    DWORD value = result ? 1 : 0;
+    HaveSameMethodDefinition->Add(key, value);
+}
+void MethodContext::dmpHaveSameMethodDefinition(const DLDL& key, DWORD value)
+{
+    printf("HaveSameMethodDefinition key methHnd1-%016" PRIX64 ", methHnd2-%016" PRIX64 ", value %u", key.A, key.B, value);
+}
+bool MethodContext::repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2)
+{
+    DLDL key;
+    key.A = CastHandle(methHnd1);
+    key.B = CastHandle(methHnd2);
+
+    DWORD value = LookupByKeyOrMiss(HaveSameMethodDefinition, key, "key %016" PRIX64 ", %016" PRIX64, key.A, key.B);
+    return value != 0;
 }
 
 void MethodContext::recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,

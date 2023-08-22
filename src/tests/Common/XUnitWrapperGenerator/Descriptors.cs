@@ -18,4 +18,13 @@ public static class Descriptors
             "XUnitWrapperGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor XUWG1002 =
+        new DiagnosticDescriptor(
+            "XUW1002",
+            "Tests should not unconditionally return 100",
+            "Tests should not unconditionally return 100. Convert to a void return.",
+            "XUnitWrapperGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
 }

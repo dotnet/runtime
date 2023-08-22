@@ -109,7 +109,6 @@ namespace SharedTypes.ComInterfaces
             }
 
             public static void Free(NativeCollection<T> unmanaged) => throw new NotImplementedException();
-
         }
 
         internal static class UnmanagedToManaged

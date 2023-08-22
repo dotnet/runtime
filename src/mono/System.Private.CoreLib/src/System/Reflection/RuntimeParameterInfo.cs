@@ -394,7 +394,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Type[] GetTypeModifiers(Type type, MemberInfo member, int position, bool optional);
+        internal static extern Type[] GetTypeModifiers(Type type, MemberInfo member, int position, bool optional, int genericArgumentPosition = -1);
 
         internal static ParameterInfo New(ParameterInfo pinfo, Type? type, MemberInfo member, int position)
         {
@@ -422,5 +422,9 @@ namespace System.Reflection
         }
 
         private Type[] GetCustomModifiers(bool optional) => GetTypeModifiers(ParameterType, Member, Position, optional) ?? Type.EmptyTypes;
+
+        internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(ParameterType, Member, Position, optional, genericArgumentPosition) ?? Type.EmptyTypes;
+
+        public override Type GetModifiedParameterType() => ModifiedType.Create(ParameterType, this, PositionImpl + 1);
     }
 }

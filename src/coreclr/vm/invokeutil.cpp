@@ -906,9 +906,13 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         {
             void* pFieldData;
             if (pField->IsStatic())
+            {
                 pFieldData = pField->GetCurrentStaticAddress();
+            }
             else
-                pFieldData = (*((BYTE**)target)) + pField->GetOffset() + sizeof(Object);
+            {
+                pFieldData = pField->GetInstanceAddress(*target);
+            }
 
             if (*valueObj == NULL)
                 InitValueClass(pFieldData, pMT);
@@ -1049,9 +1053,12 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         GCPROTECT_BEGIN(obj);
         // calculate the offset to the field...
         if (pField->IsStatic())
+        {
             p = pField->GetCurrentStaticAddress();
-        else {
-                p = (*((BYTE**)target)) + pField->GetOffset() + sizeof(Object);
+        }
+        else
+        {
+            p = pField->GetInstanceAddress(*target);
         }
         GCPROTECT_END();
 
