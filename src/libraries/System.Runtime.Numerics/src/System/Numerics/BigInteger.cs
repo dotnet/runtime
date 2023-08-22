@@ -422,9 +422,16 @@ namespace System.Numerics
                     NumericsHelpers.DangerousMakeTwosComplement(val); // Mutates val
 
                     // Pack _bits to remove any wasted space after the twos complement
-                    int len = val.Length - 1;
-                    while (len >= 0 && val[len] == 0) len--;
-                    len++;
+                    int len = val.Length;
+                    if (val[len - 1] == 0)
+                    {
+                        len--;
+                        if (len > 0 && val[len - 1] == 0)
+                        {
+                            len = val.AsSpan().LastIndexOfAnyExcept((uint)0);
+                            len++;
+                        }
+                    }
 
                     if (len == 1)
                     {
