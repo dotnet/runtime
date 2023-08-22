@@ -2648,8 +2648,7 @@ ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, _Inout_u
     // Turn from bytes to wide characters
     if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetPEAssembly()->GetPath().
-            DacGetUnicode(count, location, pNeeded))
+        if (!pAssembly->GetPEAssembly()->GetPath().DacGetUnicode(count, location, pNeeded))
         {
             hr = E_FAIL;
         }
