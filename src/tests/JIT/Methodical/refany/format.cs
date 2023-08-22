@@ -280,12 +280,11 @@ namespace JitTest_format_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             TestLocals();
             new TestClass().TestFields();
             TestArrayElem();
-            return 100;
         }
     }
 }

@@ -28,7 +28,7 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
@@ -38,7 +38,6 @@ namespace Test
                 Func4(ref bb, ref l, ref al);
             }
             catch (NullReferenceException) { }
-            return 100;
         }
     }
 }

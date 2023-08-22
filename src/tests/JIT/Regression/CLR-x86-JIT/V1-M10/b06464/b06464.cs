@@ -28,9 +28,8 @@ public class Test_b06464
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         A()[F()] = G();
-        return 100;
     }
 }
