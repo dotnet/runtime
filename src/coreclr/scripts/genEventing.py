@@ -161,6 +161,28 @@ def getPalDataTypeMapping(runtimeFlavor):
     elif runtimeFlavor.nativeaot:
         return aotPalDataTypeMapping
 
+def includeProvider(providerName, runtimeFlavor):
+    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot) and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
+        return False
+    elif runtimeFlavor.nativeaot and (providerName == "Microsoft-Windows-DotNETRuntimeRundown" or providerName == "Microsoft-Windows-DotNETRuntimeStress" or providerName == "Microsoft-Windows-DotNETRuntimePrivate"):
+        return False
+    else:
+        return True
+    
+def includeEvent(inclusionList, providerName, eventName):
+    if len(inclusionList) == 0:
+        return True
+    if providerName in inclusionList and eventName in inclusionList[providerName]:
+        return True
+    elif providerName in inclusionList and "*" in inclusionList[providerName]:
+        return True
+    elif "*" in inclusionList and eventName in inclusionList["*"]:
+        return True
+    elif "*" in inclusionList and "*" in inclusionList["*"]:
+        return True
+    else:
+        return False
+
 def getCoreCLRMonoTypeAdaptionDefines():
     return """
 #ifndef W
@@ -389,37 +411,52 @@ def parseTemplateNodes(templateNodes):
 
     return allTemplates
 
-def generateClrallEvents(eventNodes,allTemplates, target_cpp, runtimeFlavor, write_xplatheader):
+def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusionList, aot_header):
     clrallEvents = []
     for eventNode in eventNodes:
-        eventName    = eventNode.getAttribute('symbol')
+        eventName = eventNode.getAttribute('symbol')
+
+        if runtimeFlavor.nativeaot and not includeEvent(inclusionList, providerName, eventName):
+            continue
+
         templateName = eventNode.getAttribute('template')
 
         #generate EventEnabled
-        if not target_cpp:
-            clrallEvents.append("static ")
-        clrallEvents.append("inline %s EventEnabled" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"]))
-        clrallEvents.append(eventName)
-        clrallEvents.append("(void) {return ")
-        clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
-
-        if runtimeFlavor.coreclr or write_xplatheader:
-            if os.name == 'posix':
-                clrallEvents.append(" || (XplatEventLogger" +
-                ("::" if target_cpp else "_") +
-                "IsEventLoggingEnabled() && EventXplatEnabled" +
-                eventName + "());}\n\n")
+        # @TODO currently nativeaot doesn't support Microsoft-Windows-DotNETRuntimePrivate except for ETW events
+        if not (runtimeFlavor.nativeaot and not providerName == "Microsoft-Windows-DotNETRuntime"):
+            if not target_cpp:
+                clrallEvents.append("static ")
+            if not runtimeFlavor.nativeaot:
+                clrallEvents.append("inline ")
+            clrallEvents.append("%s EventEnabled" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"]))
+            clrallEvents.append(eventName)
+            clrallEvents.append("(void)")
+            if runtimeFlavor.nativeaot and aot_header:
+                clrallEvents.append(";\n")
             else:
-                clrallEvents.append(" || EventXplatEnabled" + eventName + "();}\n\n")
-        else:
-            clrallEvents.append(";}\n\n")
+                clrallEvents.append(" {return ")
+                clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
+
+                # @TODO does nativeaot need this?
+                if runtimeFlavor.coreclr or write_xplatheader:
+                    if os.name == 'posix':
+                        clrallEvents.append(" || (XplatEventLogger" +
+                        ("::" if target_cpp else "_") +
+                        "IsEventLoggingEnabled() && EventXplatEnabled" +
+                        eventName + "());}\n\n")
+                    else:
+                        clrallEvents.append(" || EventXplatEnabled" + eventName + "();}\n\n")
+                else:
+                    clrallEvents.append(";}\n\n")
 
         #generate FireEtw functions
         fnptype     = []
         fnbody      = []
         if not target_cpp:
             clrallEvents.append("static ")
-        fnptype.append("inline %s FireEtw" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
+        if not runtimeFlavor.nativeaot:
+            fnptype.append("inline ")
+        fnptype.append("%s FireEtw" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
         fnptype.append(eventName)
         fnptype.append("(\n")
 
@@ -465,30 +502,54 @@ def generateClrallEvents(eventNodes,allTemplates, target_cpp, runtimeFlavor, wri
 
         #add activity IDs
         fnptypeline.append(lindent)
-        fnptypeline.append("%s ActivityId%s\n" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"], " = nullptr," if target_cpp else ","))
+        # nativeaot source file can't have the parameter initializer
+        fnptypeline.append("%s ActivityId%s\n" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"], " = nullptr," if (target_cpp and not (runtimeFlavor.nativeaot and not aot_header)) else ","))
         fnptypeline.append(lindent)
-        fnptypeline.append("%s RelatedActivityId%s" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"], " = nullptr" if target_cpp else ""))
+        fnptypeline.append("%s RelatedActivityId" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"]))
+        if  (target_cpp and not (runtimeFlavor.nativeaot and not aot_header)):
+            fnptypeline.append(" = nullptr")
+        else:
+            fnptypeline.append("")
 
         fnptype.extend(fnptypeline)
-        fnptype.append("\n)\n{\n")
-        fnbody.append(lindent)
-
-        fnbody.append("%s status = EventPipeWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]) + eventName + "(" + ''.join(line))
-        if len(line) > 0:
-            fnbody.append(",")
-
-        fnbody.append("ActivityId,RelatedActivityId);\n")
-
-        if runtimeFlavor.coreclr or write_xplatheader:
+        fnptype.append("\n)")
+        if runtimeFlavor.nativeaot and aot_header:
+            fnptype.append(";\n\n")
+        else:
+            fnptype.append("\n{\n")
             fnbody.append(lindent)
-            fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
 
-        fnbody.append(lindent)
-        fnbody.append("return status;\n")
-        fnbody.append("}\n\n")
+            if not (runtimeFlavor.nativeaot and not providerName == "Microsoft-Windows-DotNETRuntime"):
+                fnbody.append("%s status = EventPipeWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]) + eventName + "(" + ''.join(line))
+                if len(line) > 0:
+                    fnbody.append(",")
+
+                fnbody.append("ActivityId,RelatedActivityId);\n")
+
+            if runtimeFlavor.coreclr or write_xplatheader:
+                fnbody.append(lindent)
+                fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
+            
+            if runtimeFlavor.nativeaot:
+                if not eventName == "GCPerHeapHistory_V3":
+                    if providerName == "Microsoft-Windows-DotNETRuntime":
+                        fnbody.append("#ifndef TARGET_UNIX\n")
+                        fnbody.append(lindent)
+                        fnbody.append("status &= ")
+                    else:
+                        fnbody.append("return ")
+                    fnbody.append("FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
+                    if providerName == "Microsoft-Windows-DotNETRuntime":
+                        fnbody.append("#endif\n")
+
+            if not (runtimeFlavor.nativeaot and not providerName == "Microsoft-Windows-DotNETRuntime"):
+                fnbody.append(lindent)
+                fnbody.append("return status;\n")
+            fnbody.append("}\n\n")
 
         clrallEvents.extend(fnptype)
-        clrallEvents.extend(fnbody)
+        if not (runtimeFlavor.nativeaot and aot_header):
+            clrallEvents.extend(fnbody)
 
     return ''.join(clrallEvents)
 
@@ -544,10 +605,13 @@ def generateClrXplatEvents(eventNodes, allTemplates, extern, runtimeFlavor):
 
     return ''.join(clrallEvents)
 
-def generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp, runtimeFlavor):
+def generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, providerName, inclusion_list):
     clrallEvents = []
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol')
+        if runtimeFlavor.nativeaot and not includeEvent(inclusion_list, providerName, eventName):
+            continue
+
         templateName = eventNode.getAttribute('template')
 
         #generate EventPipeEventEnabled and EventPipeWriteEvent functions
@@ -680,7 +744,78 @@ def getKeywordsMaskCombined(keywords, keywordsToMask):
 
     return mask
 
-def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor):
+def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, aot_header):
+    is_windows = os.name == 'nt'
+    with open_for_update(clrallevents) as Clrallevents:
+        Clrallevents.write(stdprolog)
+        if runtimeFlavor.mono:
+            Clrallevents.write(getCoreCLRMonoTypeAdaptionDefines() + "\n")
+        if runtimeFlavor.coreclr or write_xplatheader:
+            Clrallevents.write('#include "clrxplatevents.h"\n')
+        if runtimeFlavor.nativeaot:
+            if aot_header:
+                Clrallevents.write('#ifndef CLR_ETW_ALL_MAIN_H\n')
+                Clrallevents.write('#define CLR_ETW_ALL_MAIN_H\n\n')
+            else:
+                Clrallevents.write('#include <common.h>\n')
+                Clrallevents.write('#include <PalRedhawk.h>\n')
+                Clrallevents.write('#include "clretwallmain.h"\n')
+                Clrallevents.write('#include "clreventpipewriteevents.h"\n')
+                Clrallevents.write('#include "EtwEvents.h"\n\n')
+        else:
+            Clrallevents.write('#include "clreventpipewriteevents.h"\n')
+
+        # define DOTNET_TRACE_CONTEXT depending on the platform
+        if is_windows and not runtimeFlavor.nativeaot:
+            Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
+            if runtimeFlavor.coreclr or write_xplatheader:
+                Clrallevents.write(dotnet_trace_context_typedef_windows + "\n")
+            else:
+                Clrallevents.write("\n")
+
+        if not is_windows and not write_xplatheader:
+            Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
+            Clrallevents.write("\n")
+
+        # Hack to write etw specific information to nativeaot
+        nativeaotEtwflag = False
+        for providerNode in tree.getElementsByTagName('provider'):
+            providerName = providerNode.getAttribute('name')
+            templateNodes = providerNode.getElementsByTagName('template')
+            allTemplates  = parseTemplateNodes(templateNodes)
+            eventNodes = providerNode.getElementsByTagName('event')
+
+            if runtimeFlavor.nativeaot and providerName == "Microsoft-Windows-DotNETRuntimePrivate" and not nativeaotEtwflag:
+                nativeaotEtwflag = True
+                Clrallevents.write("\n#ifdef FEATURE_ETW\n\n")
+                Clrallevents.write("// ==================================================================\n")
+                Clrallevents.write("// Events currently only fired via ETW (private runtime provider)\n")
+                Clrallevents.write("// ==================================================================\n\n")
+
+            #vm header:
+            Clrallevents.write(generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusion_list, aot_header))
+
+            nativeaotEtwflag = False
+
+            providerName = providerNode.getAttribute('name')
+            providerSymbol = providerNode.getAttribute('symbol')
+
+            eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
+            if is_windows and not (write_xplatheader or runtimeFlavor.nativeaot):
+                Clrallevents.write(('constexpr ' if target_cpp else 'static const ') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+
+            if not is_windows and not write_xplatheader:
+                Clrallevents.write('__attribute__((weak)) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+
+            if runtimeFlavor.nativeaot:
+                if providerName == "Microsoft-Windows-DotNETRuntimePrivate":
+                    Clrallevents.write("#endif // FEATURE_ETW\n")
+
+        if runtimeFlavor.nativeaot:
+            if aot_header:
+                Clrallevents.write("#endif // __CLR_ETW_ALL_MAIN_H__\n")
+
+def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor, inclusion_list):
 
     generateEtmDummyHeader(sClrEtwAllMan,etmDummyFile)
     tree           = DOM.parse(sClrEtwAllMan)
@@ -740,46 +875,19 @@ typedef struct _DOTNET_TRACE_CONTEXT
 """
 
     # Write the main header for FireETW* functions
-    clrallevents = os.path.join(incDir, "clretwallmain.h")
+    if runtimeFlavor.nativeaot:
+        # nativeaot requires header and source file to be separated
+        clrallevents = os.path.join(incDir, "clretwallmain.cpp")
+        clralleventsheader = os.path.join(incDir, "clretwallmain.h")
+    else:
+        clrallevents = os.path.join(incDir, "clretwallmain.h")
     is_windows = os.name == 'nt'
-    with open_for_update(clrallevents) as Clrallevents:
-        Clrallevents.write(stdprolog)
-        if runtimeFlavor.mono:
-            Clrallevents.write(getCoreCLRMonoTypeAdaptionDefines() + "\n")
-        if runtimeFlavor.coreclr or write_xplatheader:
-            Clrallevents.write('#include "clrxplatevents.h"\n')
-        Clrallevents.write('#include "clreventpipewriteevents.h"\n')
-
-        # define DOTNET_TRACE_CONTEXT depending on the platform
-        if is_windows:
-            Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
-            if runtimeFlavor.coreclr or write_xplatheader:
-                Clrallevents.write(dotnet_trace_context_typedef_windows + "\n")
-            else:
-                Clrallevents.write("\n")
-
-        if not is_windows and not write_xplatheader:
-            Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
-            Clrallevents.write("\n")
-
-        for providerNode in tree.getElementsByTagName('provider'):
-            templateNodes = providerNode.getElementsByTagName('template')
-            allTemplates  = parseTemplateNodes(templateNodes)
-            eventNodes = providerNode.getElementsByTagName('event')
-
-            #vm header:
-            Clrallevents.write(generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader))
-
-            providerName = providerNode.getAttribute('name')
-            providerSymbol = providerNode.getAttribute('symbol')
-
-            eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
-            if is_windows:
-                Clrallevents.write(('constexpr ' if target_cpp else 'static const ') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
-
-            if not is_windows and not write_xplatheader:
-                Clrallevents.write('__attribute__((weak)) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
-
+    
+    updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, False)
+    if runtimeFlavor.nativeaot:
+        # generate the header file
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clralleventsheader, inclusion_list, True)
+    
     if write_xplatheader:
         clrproviders = os.path.join(incDir, "clrproviders.h")
         with open_for_update(clrproviders) as Clrproviders:
@@ -843,12 +951,13 @@ typedef struct _EVENT_DESCRIPTOR
         Clreventpipewriteevents.write(stdprolog + "\n")
 
         for providerNode in tree.getElementsByTagName('provider'):
+            providerName = providerNode.getAttribute('name')
             templateNodes = providerNode.getElementsByTagName('template')
             allTemplates  = parseTemplateNodes(templateNodes)
             eventNodes = providerNode.getElementsByTagName('event')
 
             #eventpipe: create clreventpipewriteevents.h
-            Clreventpipewriteevents.write(generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp, runtimeFlavor) + "\n")
+            Clreventpipewriteevents.write(generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, providerName, inclusion_list) + "\n")
 
     # Write secondary headers for FireEtXplat* and EventPipe* functions
     if write_xplatheader:
@@ -885,6 +994,8 @@ def main(argv):
                                     help='if specified, will not generated extern function stub headers' )
     required.add_argument('--noxplatheader', action='store_true',
                                     help='if specified, will not write a generated cross-platform header' )
+    required.add_argument('--incList',  type=str,default="",
+                                    help='full path to inclusion list')
     args, unknown = parser.parse_known_args(argv)
     if unknown:
         print('Unknown argument(s): ', ', '.join(unknown))
@@ -896,6 +1007,7 @@ def main(argv):
     runtimeFlavor     = RuntimeFlavor(args.runtimeflavor)
     extern            = not args.nonextern
     write_xplatheader = not args.noxplatheader
+    inclusion_filename = args.incList
 
     target_cpp = True
     if runtimeFlavor.mono:
@@ -903,7 +1015,9 @@ def main(argv):
         target_cpp = False
         write_xplatheader = False
 
-    generatePlatformIndependentFiles(sClrEtwAllMan, incdir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor)
+    inclusion_list = parseInclusionList(inclusion_filename)
+
+    generatePlatformIndependentFiles(sClrEtwAllMan, incdir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor, inclusion_list)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])

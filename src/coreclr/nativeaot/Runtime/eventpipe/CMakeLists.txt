@@ -11,6 +11,27 @@ set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(NONEXTERN_ARG "--nonextern")
 set(NOXPLATHEADER_ARG "--noxplatheader")
 
+# Platform agnostic source generation, clretwallmain.h/cpp, disabledclretwallmain.cpp, clreventpipewriteevents.h, etmdummy.h
+set(GENEVENTING_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
+
+# add_custom_command(
+#   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/eventing_headers.timestamp
+#   COMMAND ${Python_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+#   # COMMAND ${GEN_ETW_PROVIDER_COMMAND}
+#   COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/eventing_headers.timestamp
+#   DEPENDS ${GEN_EVENTING_SCRIPT} ${EVENT_MANIFEST} ${GENERATED_INCLUDE_DIR}
+#   VERBATIM
+# )
+
+# add_custom_target(${CMAKE_CURRENT_BINARY_DIR}/eventing_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/eventing_headers.timestamp)
+
+# message(STATUS \"CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}\")
+
+execute_process(
+  COMMAND ${Python_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+)
+
+# Provider source, currently dotnetruntime provider and helper file
 set(GENERATE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
 set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --inc ${EVENT_INCLUSION_FILE} --intermediate ${CMAKE_CURRENT_BINARY_DIR} --runtimeflavor nativeaot ${NONEXTERN_ARG})
 

@@ -72,28 +72,6 @@ def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     sig_pieces.append(")")
     return ''.join(sig_pieces)
 
-def includeProvider(providerName, runtimeFlavor):
-    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot) and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
-        return False
-    elif runtimeFlavor.nativeaot and (providerName == "Microsoft-Windows-DotNETRuntimeRundown" or providerName == "Microsoft-Windows-DotNETRuntimeStress" or providerName == "Microsoft-Windows-DotNETRuntimePrivate"):
-        return False
-    else:
-        return True
-
-def includeEvent(inclusionList, providerName, eventName):
-    if len(inclusionList) == 0:
-        return True
-    if providerName in inclusionList and eventName in inclusionList[providerName]:
-        return True
-    elif providerName in inclusionList and "*" in inclusionList[providerName]:
-        return True
-    elif "*" in inclusionList and eventName in inclusionList["*"]:
-        return True
-    elif "*" in inclusionList and "*" in inclusionList["*"]:
-        return True
-    else:
-        return False
-
 def generateClrEventPipeWriteEventsImpl(
         providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList):
     providerPrettyName = providerName.replace("Windows-", '')
