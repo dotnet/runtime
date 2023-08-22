@@ -115,16 +115,20 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
+#if defined(FEATURE_CONSERVATIVE_GC) || defined(USE_STACK_LIMIT)
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
-    if ((pTopFrame != ((Frame*)-1))
-        && (pTopFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())) {
-        // It is an InlinedCallFrame. Get SP from it.
+    if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
+    {
+        // It is an InlinedCallFrame with active call. Get SP from it.
         InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
+#endif // FEATURE_CONSERVATIVE_GC || USE_STACK_LIMIT
 
+#ifdef USE_STACK_LIMIT
     sc->stack_limit = (uintptr_t)topStack;
+#endif // USE_STACK_LIMIT
 
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())

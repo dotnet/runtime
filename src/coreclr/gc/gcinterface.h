@@ -1066,12 +1066,18 @@ inline GC_ALLOC_FLAGS& operator&=(GC_ALLOC_FLAGS& a, GC_ALLOC_FLAGS b)
 #define UNCHECKED_OBJECTREF_TO_OBJECTREF(obj)       (obj)
 #endif
 
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#define USE_STACK_LIMIT
+#endif
+
 struct ScanContext
 {
     Thread* thread_under_crawl;
     int thread_number;
     int thread_count;
+#ifdef USE_STACK_LIMIT
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
+#endif // USE_STACK_LIMIT
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
     bool concurrent; //TRUE: concurrent scanning
     void* _unused1;
@@ -1089,7 +1095,9 @@ struct ScanContext
         thread_under_crawl = 0;
         thread_number = -1;
         thread_count = -1;
+#ifdef USE_STACK_LIMIT
         stack_limit = 0;
+#endif // USE_STACK_LIMIT
         promotion = false;
         concurrent = false;
         pMD = NULL;

@@ -4962,11 +4962,11 @@ void PromoteCarefully(promote_func   fn,
 
 #if !defined(DACCESS_COMPILE)
 
+#ifdef USE_STACK_LIMIT
     //
     // Sanity check the stack scan limit
     //
     assert(sc->stack_limit != 0);
-
     // Note that the base is at a higher address than the limit, since the stack
     // grows downwards.
     // To check whether the object is in the stack or not, we also need to check the sc->stack_limit.
@@ -4974,10 +4974,12 @@ void PromoteCarefully(promote_func   fn,
     // shrink the current reserved stack space. That causes the real limit of the stack to move up and
     // the range can be reused for other purposes. But the sc->stack_limit is stable during the scan.
     // Even on Windows, we care just about the stack above the stack_limit.
-    if ((sc->thread_under_crawl->IsAddressInStack(*ppObj)) && (PTR_TO_TADDR(*ppObj) >= sc->stack_limit))
-    {
-        return;
-    }
+    if ((PTR_TO_TADDR(*ppObj) >= sc->stack_limit))
+#endif // USE_STACK_LIMIT
+        if (sc->thread_under_crawl->IsAddressInStack(*ppObj))
+        {
+            return;
+        }
 
     if (sc->promotion)
     {
