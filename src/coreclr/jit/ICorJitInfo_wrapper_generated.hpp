@@ -877,11 +877,11 @@ uint64_t WrapICorJitInfo::getConstValue(
     return temp;
 }
 
-CorInfoType WrapICorJitInfo::getConstValueType(
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getConstValueType(
           CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(getConstValueType);
-    CorInfoType temp = wrapHnd->getConstValueType(cls);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getConstValueType(cls);
     API_LEAVE(getConstValueType);
     return temp;
 }

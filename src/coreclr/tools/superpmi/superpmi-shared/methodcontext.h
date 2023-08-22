@@ -657,9 +657,9 @@ public:
     void dmpGetConstValue(DWORDLONG key, DWORDLONG value);
     DWORDLONG repGetConstValue(CORINFO_CLASS_HANDLE cls);
 
-    void recGetConstValueType(CORINFO_CLASS_HANDLE cls, CorInfoType result);
-    void dmpGetConstValueType(DWORDLONG key, DWORD value);
-    CorInfoType repGetConstValueType(CORINFO_CLASS_HANDLE cls);
+    void recGetConstValueType(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
+    void dmpGetConstValueType(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetConstValueType(CORINFO_CLASS_HANDLE cls);
 
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);

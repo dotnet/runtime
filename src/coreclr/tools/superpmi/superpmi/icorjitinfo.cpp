@@ -842,7 +842,7 @@ uint64_t MyICJI::getConstValue(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetConstValue(cls);
 }
 
-CorInfoType MyICJI::getConstValueType(CORINFO_CLASS_HANDLE cls)
+CORINFO_CLASS_HANDLE MyICJI::getConstValueType(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getConstValueType");
     return jitInstance->mc->repGetConstValueType(cls);

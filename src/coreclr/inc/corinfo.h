@@ -2780,7 +2780,7 @@ public:
             ) = 0;
 
     // Return the type of the const value if this is a const value type
-    virtual CorInfoType getConstValueType(
+    virtual CORINFO_CLASS_HANDLE getConstValueType(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 

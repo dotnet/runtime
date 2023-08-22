@@ -102,12 +102,12 @@ void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 //    valueType - the value type
 //    value - the value
 //
-void Compiler::eePrintConstValue(StringPrinter* printer, CorInfoType valueType, uint64_t value)
+void Compiler::eePrintConstValue(StringPrinter* printer, CORINFO_CLASS_HANDLE valueType, uint64_t value)
 {
-    printer->Append(varTypeName(JitType2PreciseVarType(valueType)));
+    eePrintType(printer, valueType, true);
     printer->Append("(");
     char buffer[64];
-    switch (valueType)
+    switch (info.compCompHnd->asCorInfoType(valueType))
     {
         case CORINFO_TYPE_BOOL:
             printer->Append(*(uint8_t*)&value == 0 ? "true" : "false");

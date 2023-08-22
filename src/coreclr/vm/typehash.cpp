@@ -357,7 +357,7 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
             if (!pSearch->GetTypeHandle().IsConstValue())
                 continue;
 
-            CorElementType valueType = pKey->GetConstValueType().GetInternalCorElementType();
+            TypeHandle valueType = pKey->GetConstValueType();
             if ((pSearch->GetTypeHandle().GetConstValueType() != valueType))
                 continue;
 

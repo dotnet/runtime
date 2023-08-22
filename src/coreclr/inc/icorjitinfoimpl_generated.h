@@ -369,7 +369,7 @@ bool isConstValue(
 uint64_t getConstValue(
           CORINFO_CLASS_HANDLE cls) override;
 
-CorInfoType getConstValueType(
+CORINFO_CLASS_HANDLE getConstValueType(
           CORINFO_CLASS_HANDLE cls) override;
 
 CorInfoIsAccessAllowedResult canAccessClass(

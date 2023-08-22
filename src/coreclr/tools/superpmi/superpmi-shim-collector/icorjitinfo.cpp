@@ -1015,10 +1015,10 @@ uint64_t interceptor_ICJI::getConstValue(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-CorInfoType interceptor_ICJI::getConstValueType(CORINFO_CLASS_HANDLE cls)
+CORINFO_CLASS_HANDLE interceptor_ICJI::getConstValueType(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getConstValueType");
-    CorInfoType temp = original_ICorJitInfo->getConstValueType(cls);
+    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getConstValueType(cls);
     mc->recGetConstValueType(cls, temp);
     return temp;
 }

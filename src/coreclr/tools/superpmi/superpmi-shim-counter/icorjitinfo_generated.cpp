@@ -716,7 +716,7 @@ uint64_t interceptor_ICJI::getConstValue(
     return original_ICorJitInfo->getConstValue(cls);
 }
 
-CorInfoType interceptor_ICJI::getConstValueType(
+CORINFO_CLASS_HANDLE interceptor_ICJI::getConstValueType(
           CORINFO_CLASS_HANDLE cls)
 {
     mcs->AddCall("getConstValueType");

@@ -3019,12 +3019,12 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private CorInfoType getConstValueType(CORINFO_CLASS_STRUCT_* cls)
+        private CORINFO_CLASS_STRUCT_* getConstValueType(CORINFO_CLASS_STRUCT_* cls)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
 
-            return (CorInfoType)0;
+            return (CORINFO_CLASS_STRUCT_*)0;
         }
 
         private nuint printFieldName(CORINFO_FIELD_STRUCT_* fld, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)

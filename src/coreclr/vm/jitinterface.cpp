@@ -5004,7 +5004,7 @@ uint64_t CEEInfo::getConstValue(CORINFO_CLASS_HANDLE cls)
 }
 
 // Return the type of the const value if this is a const value type
-CorInfoType CEEInfo::getConstValueType(CORINFO_CLASS_HANDLE cls)
+CORINFO_CLASS_HANDLE CEEInfo::getConstValueType(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         THROWS;
@@ -5012,11 +5012,11 @@ CorInfoType CEEInfo::getConstValueType(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
     
-    CorInfoType result = CorInfoType::CORINFO_TYPE_COUNT;
+    CORINFO_CLASS_HANDLE result = nullptr;
     
     JIT_TO_EE_TRANSITION();
     
-    result = CEEInfo::asCorInfoType(((TypeHandle)cls).GetConstValueType());
+    result = (CORINFO_CLASS_HANDLE)((TypeHandle)cls).GetConstValueType().AsTAddr();
 
     EE_TO_JIT_TRANSITION();
 

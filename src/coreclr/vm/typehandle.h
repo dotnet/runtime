@@ -482,7 +482,7 @@ public:
     // CTARG
     BOOL IsConstValue() const;
     uint64_t GetConstValue() const;
-    CorElementType GetConstValueType() const;
+    TypeHandle GetConstValueType() const;
 
     // BYREF
     BOOL IsByRef() const;

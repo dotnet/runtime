@@ -251,7 +251,7 @@ FUNCTIONS
     void* getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t size)
     bool isConstValue(CORINFO_CLASS_HANDLE cls)
     uint64_t getConstValue(CORINFO_CLASS_HANDLE cls)
-    CorInfoType getConstValueType(CORINFO_CLASS_HANDLE cls)
+    CORINFO_CLASS_HANDLE getConstValueType(CORINFO_CLASS_HANDLE cls)
     CorInfoIsAccessAllowedResult canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper)
     size_t printFieldName(CORINFO_FIELD_HANDLE field, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field)

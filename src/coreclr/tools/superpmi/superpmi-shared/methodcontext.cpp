@@ -5204,29 +5204,28 @@ DWORDLONG MethodContext::repGetConstValue(CORINFO_CLASS_HANDLE cls)
     return value;
 }
 
-void MethodContext::recGetConstValueType(CORINFO_CLASS_HANDLE cls, CorInfoType result)
+void MethodContext::recGetConstValueType(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetConstValueType == nullptr)
-        GetConstValueType = new LightWeightMap<DWORDLONG, DWORD>();
+        GetConstValueType = new LightWeightMap<DWORDLONG, DWORDLONG>();
 
     DWORDLONG key = CastHandle(cls);
-    GetConstValueType->Add(key, result);
+    GetConstValueType->Add(key, CastHandle(result));
     DEBUG_REC(dmpGetConstValueType(key, result));
 }
 
-void MethodContext::dmpGetConstValueType(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetConstValueType(DWORDLONG key, DWORDLONG value)
 {
-    printf("GetConstValueType key cls-%016" PRIX64 ", value res-%u(%s)", key, value, toString((CorInfoType)value));
+    printf("GetConstValueType key cls-%016" PRIX64 ", value res-%016" PRIX64 "", key, value);
 }
 
-CorInfoType MethodContext::repGetConstValueType(CORINFO_CLASS_HANDLE cls)
+CORINFO_CLASS_HANDLE MethodContext::repGetConstValueType(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    DWORD value = LookupByKeyOrMissNoMessage(GetConstValueType, key);
+    DWORDLONG value = LookupByKeyOrMissNoMessage(GetConstValueType, key);
 
     DEBUG_REP(dmpGetConstValueType(key, value));
-    CorInfoType result = (CorInfoType)value;
-    return result;
+    return (CORINFO_CLASS_HANDLE)value;
 }
 
 void MethodContext::recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup)

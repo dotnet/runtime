@@ -100,7 +100,7 @@ struct JitInterfaceCallbacks
     void* (* getArrayInitializationData)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint32_t size);
     bool (* isConstValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     uint64_t (* getConstValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    CorInfoType (* getConstValueType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    CORINFO_CLASS_HANDLE (* getConstValueType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoIsAccessAllowedResult (* canAccessClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper);
     size_t (* printFieldName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     CORINFO_CLASS_HANDLE (* getFieldClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
@@ -1064,11 +1064,11 @@ public:
     return temp;
 }
 
-    virtual CorInfoType getConstValueType(
+    virtual CORINFO_CLASS_HANDLE getConstValueType(
           CORINFO_CLASS_HANDLE cls)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CorInfoType temp = _callbacks->getConstValueType(_thisHandle, &pException, cls);
+    CORINFO_CLASS_HANDLE temp = _callbacks->getConstValueType(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

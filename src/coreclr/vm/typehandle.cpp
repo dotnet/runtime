@@ -1046,12 +1046,12 @@ uint64_t TypeHandle::GetConstValue() const
     return AsConstValue()->GetConstValue();
 }
 
-CorElementType TypeHandle::GetConstValueType() const
+TypeHandle TypeHandle::GetConstValueType() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     
     _ASSERTE(IsTypeDesc());
-    return AsConstValue()->GetConstValueType().GetInternalCorElementType();
+    return AsConstValue()->GetConstValueType();
 }
 
 BOOL TypeHandle::IsRestored() const
