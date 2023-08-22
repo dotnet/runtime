@@ -58,6 +58,8 @@ public class ComputeWasmBuildAssets : Task
 
     public bool EmitSourceMap { get; set; }
 
+    public string? RuntimeAssetsLocation { get; set; }
+
     [Output]
     public ITaskItem[] AssetCandidates { get; set; }
 
@@ -110,8 +112,8 @@ public class ComputeWasmBuildAssets : Task
                     assetCandidate.SetMetadata("AssetRole", "Related");
                     assetCandidate.SetMetadata("AssetTraitName", "Culture");
                     assetCandidate.SetMetadata("AssetTraitValue", inferredCulture);
-                    assetCandidate.SetMetadata("RelativePath", $"_framework/{inferredCulture}/{satelliteAssembly.GetMetadata("FileName")}{satelliteAssembly.GetMetadata("Extension")}");
-                    assetCandidate.SetMetadata("RelatedAsset", Path.GetFullPath(Path.Combine(OutputPath, "wwwroot", "_framework", Path.GetFileName(assetCandidate.GetMetadata("ResolvedFrom")))));
+                    assetCandidate.SetMetadata("RelativePath", $"{RuntimeAssetsLocation}/{inferredCulture}/{satelliteAssembly.GetMetadata("FileName")}{satelliteAssembly.GetMetadata("Extension")}");
+                    assetCandidate.SetMetadata("RelatedAsset", Path.GetFullPath(Path.Combine(OutputPath, "wwwroot", RuntimeAssetsLocation, Path.GetFileName(assetCandidate.GetMetadata("ResolvedFrom")))));
 
                     assetCandidates.Add(assetCandidate);
                     continue;
@@ -141,7 +143,7 @@ public class ComputeWasmBuildAssets : Task
                     var newDotNetJs = new TaskItem(newDotNetJSFullPath, candidate.CloneCustomMetadata());
                     newDotNetJs.SetMetadata("OriginalItemSpec", candidate.ItemSpec);
 
-                    var newRelativePath = $"_framework/{newDotnetJSFileName}";
+                    var newRelativePath = $"{RuntimeAssetsLocation}/{newDotnetJSFileName}";
                     newDotNetJs.SetMetadata("RelativePath", newRelativePath);
 
                     newDotNetJs.SetMetadata("AssetTraitName", "WasmResource");
@@ -152,7 +154,7 @@ public class ComputeWasmBuildAssets : Task
                 }
                 else
                 {
-                    string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate);
+                    string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate, RuntimeAssetsLocation);
                     candidate.SetMetadata("RelativePath", relativePath);
                 }
 
@@ -176,7 +178,7 @@ public class ComputeWasmBuildAssets : Task
                     var relatedAssetPath = Path.GetFullPath(Path.Combine(
                         OutputPath,
                         "wwwroot",
-                        "_framework",
+                        RuntimeAssetsLocation,
                         fileName.Substring(0, suffixIndex) + ProjectAssembly[0].GetMetadata("Extension")));
 
                     candidate.SetMetadata("RelatedAsset", relatedAssetPath);
@@ -188,13 +190,13 @@ public class ComputeWasmBuildAssets : Task
             }
 
             var intermediateAssembly = new TaskItem(ProjectAssembly[0]);
-            intermediateAssembly.SetMetadata("RelativePath", $"_framework/{intermediateAssembly.GetMetadata("FileName")}{intermediateAssembly.GetMetadata("Extension")}");
+            intermediateAssembly.SetMetadata("RelativePath", $"{RuntimeAssetsLocation}/{intermediateAssembly.GetMetadata("FileName")}{intermediateAssembly.GetMetadata("Extension")}");
             assetCandidates.Add(intermediateAssembly);
 
             if (ProjectDebugSymbols.Length > 0)
             {
                 var debugSymbols = new TaskItem(ProjectDebugSymbols[0]);
-                debugSymbols.SetMetadata("RelativePath", $"_framework/{debugSymbols.GetMetadata("FileName")}{debugSymbols.GetMetadata("Extension")}");
+                debugSymbols.SetMetadata("RelativePath", $"{RuntimeAssetsLocation}/{debugSymbols.GetMetadata("FileName")}{debugSymbols.GetMetadata("Extension")}");
                 assetCandidates.Add(debugSymbols);
             }
 
@@ -212,7 +214,7 @@ public class ComputeWasmBuildAssets : Task
                 var projectAssemblyAssetPath = Path.GetFullPath(Path.Combine(
                     OutputPath,
                     "wwwroot",
-                    "_framework",
+                    RuntimeAssetsLocation,
                     ProjectAssembly[0].GetMetadata("FileName") + ProjectAssembly[0].GetMetadata("Extension")));
 
                 var normalizedPath = assetCandidate.GetMetadata("TargetPath").Replace('\\', '/');
@@ -221,7 +223,7 @@ public class ComputeWasmBuildAssets : Task
                 assetCandidate.SetMetadata("AssetRole", "Related");
                 assetCandidate.SetMetadata("AssetTraitName", "Culture");
                 assetCandidate.SetMetadata("AssetTraitValue", candidateCulture);
-                assetCandidate.SetMetadata("RelativePath", Path.Combine("_framework", normalizedPath));
+                assetCandidate.SetMetadata("RelativePath", Path.Combine(RuntimeAssetsLocation, normalizedPath));
                 assetCandidate.SetMetadata("RelatedAsset", projectAssemblyAssetPath);
 
                 assetCandidates.Add(assetCandidate);
