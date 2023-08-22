@@ -30,7 +30,7 @@
       <_WorkloadUsesBlazorWasm>$(UsingMicrosoftNETSdkBlazorWebAssembly)</_WorkloadUsesBlazorWasm>
       <_WorkloadUsesWasmSDK>$(UsingMicrosoftNETSdkWebAssembly)</_WorkloadUsesWasmSDK>
       <_WorkloadUsesMonoAOT>$(RunAOTCompilation)</_WorkloadUsesMonoAOT>
-      <_WorkloadUsesMonoAOT Condition="'$(RunAOTCompilation)' == '' and '$(PublishAot)' != 'true' and ('$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos')">$(_RunAotCompiler)</_WorkloadUsesMonoAOT>
+      <_WorkloadUsesMonoAOT Condition="'$(_WorkloadUsesMonoAOT)' == '' and '$(PublishAot)' != 'true' and ('$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos')">$(_RunAotCompiler)</_WorkloadUsesMonoAOT>
       <_WorkloadUsesNativeAOT>$(PublishAot)</_WorkloadUsesNativeAOT>
       <_WorkloadUsesInterpreter>$(MonoForceInterpreter)</_WorkloadUsesInterpreter>
       <_WorkloadUsesInterpreter Condition="'$(_WorkloadUsesInterpreter)' == '' and '$(UseInterpreter)' == 'true'">true</_WorkloadUsesInterpreter>
