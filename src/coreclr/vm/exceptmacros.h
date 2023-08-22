@@ -272,7 +272,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #else // DACCESS_COMPILE
 
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
-VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException);
+VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
@@ -349,7 +349,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             SCAN_EHMARKER_TRY();                                                            \
             DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH);
 
-#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE                                      \
+#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE(nativeRethrow)                      \
             DEBUG_ASSURE_NO_RETURN_END(IUACH)                                               \
             SCAN_EHMARKER_END_TRY();                                                        \
         }                                                                                   \
@@ -366,12 +366,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         if (__fExceptionCaught)                                                            \
         {                                                                                   \
             SCAN_EHMARKER_CATCH();                                                          \
-            UnwindAndContinueRethrowHelperAfterCatch(__pUnCEntryFrame, __pUnCException);    \
+            UnwindAndContinueRethrowHelperAfterCatch(__pUnCEntryFrame, __pUnCException, nativeRethrow);    \
         }                                                                                   \
     }                                                                                       \
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE(false);
 
 #endif // DACCESS_COMPILE
 
