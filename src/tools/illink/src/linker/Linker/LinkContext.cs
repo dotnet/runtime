@@ -688,6 +688,33 @@ namespace Mono.Linker
 			LogMessage (error);
 		}
 
+		/// <summary>
+		/// Throws a LinkerFatalErrorException
+		/// </summary>
+		/// <param name="text">Humanly readable message describing the error</param>
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="subcategory">Optionally, further categorize this error</param>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		public static void FatalError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+		{
+			throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (text, code, subcategory, origin));
+		}
+
+		/// <summary>
+		/// Throws a LinkerFatalErrorException
+		/// </summary>
+		/// <param name="text">Humanly readable message describing the error</param>
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="subcategory">Optionally, further categorize this error</param>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		/// <param name="innerException">Optional, an inner exception</param>
+		public static void FatalError (string text, int code, Exception innerException, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+		{
+			throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (text, code, subcategory, origin), innerException);
+		}
+
 		public void FlushCachedWarnings ()
 		{
 			_cachedWarningMessageContainers.Sort ();

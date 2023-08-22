@@ -13,12 +13,11 @@ namespace DefaultNamespace
     {
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Object v1 = new DateTime(1952, 2, 19);
             Object v2 = new DateTime(1968, 12, 8);
             Console.WriteLine(DateTime.Compare((DateTime)v1, (DateTime)v2));
-            return 100;
         }
     }
 }

@@ -211,6 +211,6 @@
     <value>C# language version not supported by the source generator.</value>
   </data>
   <data name="OptionsUnsupportedLanguageVersionMessage" xml:space="preserve">
-    <value>The options validation source generator is not available in C# '{0}'. Please use language version '{1}' or greater.</value>
+    <value>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</value>
   </data>
 </root>

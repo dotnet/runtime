@@ -621,6 +621,38 @@ public:
     bool EvaluateReplacement(
         Compiler* comp, unsigned lclNum, const Access& access, unsigned inducedCount, weight_t inducedCountWtd)
     {
+        // Verify that this replacement has proper GC ness compared to the
+        // layout. While reinterpreting GC fields to integers can be considered
+        // UB, there are scenarios where it can happen safely:
+        //
+        // * The user code could have guarded the access with a dynamic check
+        //   that it doesn't contain a GC pointer, so that the access is actually
+        //   in dead code. This happens e.g. in span functions in SPC.
+        //
+        // * For byrefs, reinterpreting as an integer could be ok in a
+        //   restricted scope due to pinning.
+        //
+        // In theory we could allow these promotions in the restricted scope,
+        // but currently physical promotion works on a function-wide basis.
+
+        LclVarDsc*   lcl    = comp->lvaGetDesc(lclNum);
+        ClassLayout* layout = lcl->GetLayout();
+        if (layout->IntersectsGCPtr(access.Offset, genTypeSize(access.AccessType)))
+        {
+            if (((access.Offset % TARGET_POINTER_SIZE) != 0) ||
+                (layout->GetGCPtrType(access.Offset / TARGET_POINTER_SIZE) != access.AccessType))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (varTypeIsGC(access.AccessType))
+            {
+                return false;
+            }
+        }
+
         unsigned countOverlappedCallArg        = 0;
         unsigned countOverlappedStoredFromCall = 0;
 
@@ -678,9 +710,8 @@ public:
 
         // Now look at the overlapping struct uses that promotion will make more expensive.
 
-        unsigned   countReadBacks    = 0;
-        weight_t   countReadBacksWtd = 0;
-        LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
+        unsigned countReadBacks    = 0;
+        weight_t countReadBacksWtd = 0;
         // For parameters or OSR locals we always need one read back.
         if (lcl->lvIsParam || lcl->lvIsOSRLocal)
         {
