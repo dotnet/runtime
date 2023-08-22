@@ -1077,6 +1077,8 @@ struct ScanContext
     int thread_count;
 #ifdef USE_STACK_LIMIT
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
+#else // USE_STACK_LIMIT
+    uintptr_t _unused4;
 #endif // USE_STACK_LIMIT
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
     bool concurrent; //TRUE: concurrent scanning
