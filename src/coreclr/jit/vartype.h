@@ -348,6 +348,8 @@ inline bool varTypeUsesFloatArgReg(T vt)
 {
 #ifdef TARGET_ARM64
     // Arm64 passes SIMD types in floating point registers.
+    // Exception: Windows arm64 native varargs passes them using general-purpose (integer) registers or
+    // by value on the stack, or split between registers and stack.
     return varTypeUsesFloatReg(vt);
 #else
     // Other targets pass them as regular structs - by reference or by value.

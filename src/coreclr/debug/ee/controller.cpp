@@ -1247,26 +1247,8 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
             startAddr = (CORDB_ADDRESS_TYPE *) CORDB_ADDRESS_TO_PTR(patch->GetDJI()->m_addrOfCode);
             _ASSERTE(startAddr != NULL);
         }
-        if (startAddr == NULL)
-        {
-            // Should not be trying to place patches on MethodDecs's for stubs.
-            // These stubs will never get jitted.
-            CONSISTENCY_CHECK_MSGF(!pMD->IsWrapperStub(), ("Can't place patch at stub md %p, %s::%s",
-                                   pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-            startAddr = (CORDB_ADDRESS_TYPE *)g_pEEInterface->GetFunctionAddress(pMD);
-            //
-            // Code is not available yet to patch.  The prestub should
-            // notify us when it is executed.
-            //
-            if (startAddr == NULL)
-            {
-                LOG((LF_CORDB, LL_INFO10000,
-                    "DC::BP: Patch at 0x%zx not bindable yet.\n", patch->offset));
-
-                return false;
-            }
-        }
+        //We should never be calling this function with both a NULL startAddr and a DJI that doesn't have code.
+        _ASSERTE(startAddr != NULL);
     }
 
     _ASSERTE(!g_pEEInterface->IsStub((const BYTE *)startAddr));
@@ -8656,7 +8638,7 @@ bool DebuggerFuncEvalComplete::SendEvent(Thread *thread, bool fIpChanged)
 // DebuggerEnCBreakpoint constructor - creates and activates a new EnC breakpoint
 //
 // Arguments:
-//    offset        - native offset in the function to place the patch
+//    offset        - IL offset in the function to place the patch
 //    jitInfo       - identifies the function in which the breakpoint is being placed
 //    fTriggerType  - breakpoint type: either REMAP_PENDING or REMAP_COMPLETE
 //    pAppDomain    - the breakpoint applies to the specified AppDomain only

@@ -1276,7 +1276,6 @@ else
 fi
 
 scriptPath=$(dirname $0)
-${scriptPath}/setup-stress-dependencies.sh --arch=$ARCH --outputDir=$coreOverlayDir
 
 export __TestEnv=$testEnv
 

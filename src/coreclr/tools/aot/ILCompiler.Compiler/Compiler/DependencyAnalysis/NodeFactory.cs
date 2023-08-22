@@ -203,22 +203,20 @@ namespace ILCompiler.DependencyAnalysis
 
             _threadStatics = new NodeCache<MetadataType, ISymbolDefinitionNode>(CreateThreadStaticsNode);
 
-            TypeThreadStaticIndexNode inlinedThreadStatiscIndexNode = null;
             if (_inlinedThreadStatics.IsComputed())
             {
                 _inlinedThreadStatiscNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
-                inlinedThreadStatiscIndexNode = new TypeThreadStaticIndexNode(_inlinedThreadStatiscNode);
             }
 
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
-                if (inlinedThreadStatiscIndexNode != null &&
-                _inlinedThreadStatics.GetOffsets().ContainsKey(type))
+                if (_inlinedThreadStatics.IsComputed() &&
+                    _inlinedThreadStatics.GetOffsets().ContainsKey(type))
                 {
-                    return inlinedThreadStatiscIndexNode;
+                    return new TypeThreadStaticIndexNode(type, _inlinedThreadStatiscNode);
                 }
 
-                return new TypeThreadStaticIndexNode(type);
+                return new TypeThreadStaticIndexNode(type, null);
             });
 
             _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
