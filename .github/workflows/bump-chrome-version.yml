@@ -26,7 +26,8 @@ jobs:
         run: >-
           make -C src/mono/wasm build-tasks &&
           .dotnet/dotnet build eng/testing/bump-chrome-version.proj -p:Configuration=Release &&
-          git add eng/testing/ChromeVersions.props
+          git add eng/testing/ChromeVersions.props &&
+          cat eng/testing/bump-chrome-pr.env >> "$GITHUB_ENV"
 
       - name: Check for changes
         id: check_changes
@@ -48,18 +49,26 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const { CHROME_LINUX_VER, CHROME_WIN_VER } = process.env;
+            const title = `[wasm] Bump chrome for testing - linux: ${CHROME_LINUX_VER}, windows: ${CHROME_WIN_VER}`;
             const { data: pullRequest } = await github.rest.pulls.create({
               base: context.ref,
               head: "update-chrome-version-${{ github.run_id }}",
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: '[wasm] Bump chrome version used for testing',
+              title: title,
               body: ''
+            });
+            await github.rest.issues.setLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullRequest.number,
+              labels: ['arch-wasm', 'area-infrastructure-mono']
             });
             await github.rest.pulls.requestReviewers({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pullRequest.number,
-              reviewers: ["radical"]
+              reviewers: ["lewing", "pavelsavara", "maraf", "ilonatommy", "radical"]
             });
             return pullRequest.number;
