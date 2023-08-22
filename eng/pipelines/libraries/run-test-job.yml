@@ -70,6 +70,23 @@ jobs:
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', 'coreclr', '', parameters.osGroup, parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
 
       variables:
+        # Convenience variables
+        - name: buildConfig
+          value: ${{ parameters.buildConfig }}
+        - name: archType
+          value: ${{ parameters.archType }}
+        - name: osGroup
+          value: ${{ parameters.osGroup }}
+        - name: osSubgroup
+          value: ${{ parameters.osSubgroup }}
+        - name: buildConfigUpper
+          ${{ if eq(parameters.buildConfig, 'debug') }}:
+            value: 'Debug'
+          ${{ if eq(parameters.buildConfig, 'release') }}:
+            value: 'Release'
+          ${{ if eq(parameters.buildConfig, 'checked') }}:
+            value: 'Checked'
+
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
 
@@ -78,12 +95,23 @@ jobs:
           value: ''
         - name: CollectionName
           value: ''
+        - name: _runtimeX64DownloadPath
+          value: ''
+        # superpmi.py 'merge-mch' needs to be able to find the mcs tool. Point SuperPmiMcsPath at the downloaded CoreCLR binaries. For non-x64 targets, download an x64
+        # build and point at that. Pass this to superpmi.py as the '-core_root' argument. It's not actually a "Core_Root" directory, but all it needs is to find mcs.
+        - name: SuperPmiMcsPath
+          value: $(_runtimeDownloadPath)
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
           - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
           - name: CollectionType
             value: 'run'
           - name: CollectionName
             value: 'libraries_tests'
+          - ${{ if ne(parameters.archType, 'x64') }}:
+            - name: _runtimeX64DownloadPath
+              value: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}.x64'
+            - name: SuperPmiMcsPath
+              value: $(_runtimeX64DownloadPath)
           - ${{ if eq(parameters.osGroup, 'windows') }}:
             - name: PythonScript
               value: 'py -3'
@@ -126,6 +154,15 @@ jobs:
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
 
+        # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe)
+        - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              unpackFolder: $(_runtimeX64DownloadPath)
+              artifactFileName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
+              artifactName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_${{ parameters.liveRuntimeBuildConfig }}'
+              displayName: 'CoreCLR product build (x64)'
+
         - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
@@ -137,15 +174,6 @@ jobs:
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
             displayName: Prepare TestHost with runtime $(runtimeFlavorName)
-
-        # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe)
-        - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
-              artifactFileName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
-              artifactName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
-              displayName: 'CoreCLR product build (x64)'
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
@@ -274,16 +302,16 @@ jobs:
             - script: |
                 mkdir -p $(MergedMchFileLocation)
                 mkdir -p $(SpmiLogsLocation)
-              displayName: Create SuperPMI directories
+              displayName: 'Create SuperPMI directories $(MergedMchFileLocation), $(SpmiLogsLocation)'
               condition: always()
           - ${{ if eq(parameters.osGroup, 'windows') }}:
             - script: |
                 mkdir $(MergedMchFileLocation)
                 mkdir $(SpmiLogsLocation)
-              displayName: Create SuperPMI directories
+              displayName: 'Create SuperPMI directories $(MergedMchFileLocation), $(SpmiLogsLocation)'
               condition: always()
 
-          - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+          - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(SuperPmiMcsPath)
             displayName: 'Merge $(CollectionName)-$(CollectionType) SuperPMI collections'
             condition: always()
 
