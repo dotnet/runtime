@@ -19,8 +19,8 @@
 
   <!-- Profiled AOT with .nettrace -->
   <PropertyGroup>
-    <NetTraceFilePath Condition="'$(Configuration)' == 'Release'">$(MSBuildThisFileDirectory)\test_release.nettrace</NetTraceFilePath>
-    <NetTraceFilePath Condition="'$(Configuration)' == 'Debug'">$(MSBuildThisFileDirectory)\test_debug.nettrace</NetTraceFilePath>
+    <!-- <NetTraceFilePath Condition="'$(Configuration)' == 'Release'">$(MSBuildThisFileDirectory)\test_release.nettrace</NetTraceFilePath> -->
+    <!-- <NetTraceFilePath Condition="'$(Configuration)' == 'Debug'">$(MSBuildThisFileDirectory)\test_debug.nettrace</NetTraceFilePath> -->
   </PropertyGroup>
 
   <!-- Profiled AOT with .mibc-->
