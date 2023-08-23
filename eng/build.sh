@@ -133,7 +133,7 @@ usage()
 
 initDistroRid()
 {
-    source "$scriptroot"/native/init-distro-rid.sh
+    source "$scriptroot"/common/native/init-distro-rid.sh
 
     local passedRootfsDir=""
     local targetOs="$1"

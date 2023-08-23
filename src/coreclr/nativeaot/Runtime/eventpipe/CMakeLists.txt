@@ -14,6 +14,12 @@ set (EVENTPIPE_SOURCES "")
 set (EVENTPIPE_HEADERS "")
 set (GEN_EVENTPIPE_SOURCES "")
 
+# Use TCP for EventPipe on mobile platforms
+if (CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
+  set(FEATURE_PERFTRACING_PAL_TCP 1)
+  set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
+endif()
+
 set (SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers")
 set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
 set (SHARED_MINIPAL_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/minipal")
@@ -152,12 +158,15 @@ add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
 
 if (CLR_CMAKE_TARGET_WIN32)
+  add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
   add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
+  target_compile_options(eventpipe-enabled.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
   target_compile_options(eventpipe-disabled.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 install_static_library(eventpipe-enabled aotsdk nativeaot)
 install_static_library(eventpipe-disabled aotsdk nativeaot)
 if (CLR_CMAKE_TARGET_WIN32)
+  install_static_library(eventpipe-enabled.GuardCF aotsdk nativeaot)
   install_static_library(eventpipe-disabled.GuardCF aotsdk nativeaot)
 endif (CLR_CMAKE_TARGET_WIN32)

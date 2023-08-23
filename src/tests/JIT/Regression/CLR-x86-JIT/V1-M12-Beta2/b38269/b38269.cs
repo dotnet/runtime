@@ -21,13 +21,12 @@ namespace Test
         static AA s_aa = new AA(0);
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             s_aa = null;
             GC.Collect();
             GC.WaitForPendingFinalizers();
             Console.WriteLine("If you see this, test passed.");
-            return 100;
         }
     }
 }

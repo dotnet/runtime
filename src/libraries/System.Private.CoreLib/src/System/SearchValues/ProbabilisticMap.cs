@@ -365,8 +365,7 @@ namespace System.Buffers
 
                     if (result != Vector256<byte>.Zero)
                     {
-                        // Account for how ContainsMask32CharsAvx2 packed the source chars (Avx2.PackUnsignedSaturate).
-                        result = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
+                        result = PackedSpanHelpers.FixUpPackedVector256Result(result);
 
                         uint mask = result.ExtractMostSignificantBits();
                         do

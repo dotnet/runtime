@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
@@ -506,6 +508,29 @@ namespace Microsoft.Extensions.Http
             }
 
             return cleanupEntry;
+        }
+
+        [Fact]
+        public void ServiceProviderDispose_DebugLoggingDoesNotThrow()
+        {
+            var sink = new TestSink();
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging();
+            serviceCollection.AddSingleton<ILoggerFactory>(new TestLoggerFactory(sink, enabled: true));
+            serviceCollection.AddHttpClient("test");
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            var httpClientFactory = (DefaultHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
+            _ =  httpClientFactory.CreateClient("test");
+
+            serviceProvider.Dispose();
+
+            httpClientFactory.StartCleanupTimer(); // we need to create a timer instance before triggering cleanup; normally it happens after the first expiry
+            httpClientFactory.CleanupTimer_Tick(); // trigger cleanup to (try to) write debug logs
+            // but no log is added, because ILogger couldn't be created
+            Assert.Equal(0, sink.Writes.Count(w => w.LoggerName == typeof(DefaultHttpClientFactory).FullName));
         }
 
         private class TestHttpClientFactory : DefaultHttpClientFactory

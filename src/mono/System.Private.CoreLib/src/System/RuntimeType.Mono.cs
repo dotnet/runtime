@@ -1805,6 +1805,14 @@ namespace System
                     }
                 }
             }
+            else if (IsFunctionPointer)
+            {
+                if (value is IntPtr or UIntPtr)
+                    return CheckValueStatus.Success;
+
+                value = (IntPtr)value;
+                return CheckValueStatus.Success;
+            }
 
             return CheckValueStatus.ArgumentException;
         }
@@ -2039,6 +2047,16 @@ namespace System
 
                 if (HasElementType)
                     return GetElementType().ContainsGenericParameters;
+
+                if (IsFunctionPointer)
+                {
+                    if (GetFunctionPointerReturnType().ContainsGenericParameters)
+                        return true;
+
+                    foreach (Type arg in GetFunctionPointerParameterTypes())
+                        if (arg.ContainsGenericParameters)
+                            return true;
+                }
 
                 return false;
             }

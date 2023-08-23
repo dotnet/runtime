@@ -93,11 +93,10 @@ public class Test_structref1_1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
 
         c(ref sM);
-        return 100;
     }
 }

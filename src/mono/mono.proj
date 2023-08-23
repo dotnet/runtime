@@ -1061,6 +1061,12 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-eh-wasm.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-eh-wasm.a</Destination>
       </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-simd.a">
+        <Destination>$(RuntimeBinDir)libmono-wasm-simd.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-nosimd.a">
+        <Destination>$(RuntimeBinDir)libmono-wasm-nosimd.a</Destination>
+      </_MonoRuntimeArtifacts>
       <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibSuffix)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibSuffix)</Destination>
       </_MonoICorDebugArtifacts>

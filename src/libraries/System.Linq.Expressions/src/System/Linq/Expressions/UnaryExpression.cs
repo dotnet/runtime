@@ -371,7 +371,7 @@ namespace System.Linq.Expressions
                 method = nnOperandType.GetAnyStaticMethodValidated(name, types);
                 if (method != null && method.ReturnType.IsValueType && !method.ReturnType.IsNullableType())
                 {
-                    return new UnaryExpression(unaryType, operand, method.ReturnType.GetNullableType(), method);
+                    return new UnaryExpression(unaryType, operand, method.ReturnType.LiftPrimitiveOrThrow(), method);
                 }
             }
             return null;
@@ -394,7 +394,7 @@ namespace System.Linq.Expressions
                 ParameterIsAssignable(pms[0], operand.Type.GetNonNullableType()) &&
                 method.ReturnType.IsValueType && !method.ReturnType.IsNullableType())
             {
-                return new UnaryExpression(unaryType, operand, method.ReturnType.GetNullableType(), method);
+                return new UnaryExpression(unaryType, operand, method.ReturnType.LiftPrimitiveOrThrow(), method);
             }
 
             throw Error.OperandTypesDoNotMatchParameters(unaryType, method.Name);
