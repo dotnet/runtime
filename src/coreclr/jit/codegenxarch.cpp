@@ -6735,7 +6735,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
         if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
         {
             instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-            targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+            targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
         }
     }
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
@@ -6906,7 +6906,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
             if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
             {
                 instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-                targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+                targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
             }
         }
 
