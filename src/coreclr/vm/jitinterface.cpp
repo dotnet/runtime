@@ -12578,12 +12578,12 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
 #endif // _DEBUG
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     if (pModule->IsEditAndContinueEnabled())
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_EnC);
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
     // Debug info is always tracked
     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);

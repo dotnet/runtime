@@ -17,7 +17,7 @@
 #include "field.h"
 #include "class.h"
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
 
 class FieldDesc;
 struct EnCAddedField;
@@ -372,7 +372,7 @@ private:
 // The DPTR is actually defined in syncblk.h to make it visible to SyncBlock
 // typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_ENC_SUPPORTED
 
 
 //---------------------------------------------------------------------------------------
@@ -407,7 +407,7 @@ public:
         OnlyEncFields,
     };
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     // Create and initialize the iterator
     EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, uint32_t flags = None);
 
@@ -423,7 +423,7 @@ public:
     PTR_FieldDesc Next() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Next(); }
 
     int Count() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Count(); }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
     int GetIteratorType()
     {
@@ -437,7 +437,7 @@ private:
     // We delegate to this for alll non-EnC specific stuff
     ApproxFieldDescIterator m_nonEnCIter;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     // Return the next available EnC FieldDesc or NULL when done
     PTR_EnCFieldDesc NextEnC();
 

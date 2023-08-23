@@ -22,9 +22,9 @@ class ComPlusCallMethodDesc;
 #include <cgencpu.h>
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
 void ResumeAtJit(PT_CONTEXT pContext, LPVOID oldFP);
-#endif
+#endif // FEATURE_ENC_SUPPORTED
 
 #if defined(TARGET_X86)
 void ResumeAtJitEH   (CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr, DWORD nestingLevel, Thread *pThread, BOOL unwindStack);

@@ -15,7 +15,7 @@ VPTR_CLASS(RangeList)
 VPTR_CLASS(LockedRangeList)
 VPTR_CLASS(CodeRangeMapRangeList)
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
 VPTR_CLASS(EditAndContinueModule)
 #endif
 VPTR_CLASS(Module)

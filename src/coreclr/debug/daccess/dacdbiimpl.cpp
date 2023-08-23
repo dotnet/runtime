@@ -725,7 +725,7 @@ void DacDbiInterfaceImpl::GetCompilerFlags (
 bool DacDbiInterfaceImpl::CanSetEnCBits(Module * pModule)
 {
     _ASSERTE(pModule != NULL);
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     // If we're using explicit sequence points (from the PDB), then we can't do EnC
     // because EnC won't get updated pdbs and so the sequence points will be wrong.
     bool fIgnorePdbs = ((pModule->GetDebuggerInfoBits() & DACF_IGNORE_PDBS) != 0);
@@ -736,10 +736,10 @@ bool DacDbiInterfaceImpl::CanSetEnCBits(Module * pModule)
         !CORProfilerPresent() && // this queries target
 #endif
         fIgnorePdbs;
-#else   // ! EnC_SUPPORTED
+#else   // ! FEATURE_ENC_SUPPORTED
     // Enc not supported on any other platforms.
     bool fAllowEnc = false;
-#endif
+#endif // ! FEATURE_ENC_SUPPORTED
 
     return fAllowEnc;
 } // DacDbiInterfaceImpl::SetEnCBits
@@ -1517,7 +1517,7 @@ unsigned int DacDbiInterfaceImpl::GetTotalFieldCount(TypeHandle thApprox)
     unsigned int IFCount = pMT->GetNumIntroducedInstanceFields();
     unsigned int SFCount = pMT->GetNumStaticFields();
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     PTR_Module pModule = pMT->GetModule();
 
     // Stats above don't include EnC fields. So add them now.
@@ -1535,7 +1535,7 @@ unsigned int DacDbiInterfaceImpl::GetTotalFieldCount(TypeHandle thApprox)
             SFCount += pEncData->GetAddedStaticFields();
         }
     }
-#endif
+#endif // FEATURE_ENC_SUPPORTED
     return IFCount + SFCount;
 } // DacDbiInterfaceImpl::GetTotalFieldCount
 
@@ -1612,7 +1612,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
 {
     pCurrentFieldData->Initialize(pFD->IsStatic(), pFD->IsPrimitive(), pFD->GetMemberDef());
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     // If the field was newly introduced via EnC, and hasn't yet
     // been fixed up, then we'll send back a marker indicating
     // that it isn't yet available.
@@ -1627,7 +1627,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
         pCurrentFieldData->m_fFldIsCollectibleStatic = FALSE;
     }
     else
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
     {
         // Otherwise, we'll compute the info & send it back.
         pCurrentFieldData->m_fFldStorageAvailable = TRUE;
@@ -3934,7 +3934,7 @@ FieldDesc * DacDbiInterfaceImpl::GetEnCFieldDesc(const EnCHangingFieldInfo * pEn
 //-----------------------------------------------------------------------------
 PTR_CBYTE DacDbiInterfaceImpl::GetPtrToEnCField(FieldDesc * pFD, const EnCHangingFieldInfo * pEnCFieldInfo)
 {
-#ifndef EnC_SUPPORTED
+#ifndef FEATURE_ENC_SUPPORTED
     _ASSERTE(!"Trying to get the address of an EnC field where EnC is not supported! ");
     return NULL;
 #else
@@ -3971,7 +3971,7 @@ PTR_CBYTE DacDbiInterfaceImpl::GetPtrToEnCField(FieldDesc * pFD, const EnCHangin
         ThrowHR(CORDBG_E_ENC_HANGING_FIELD);
     }
     return pORField;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 } // DacDbiInterfaceImpl::GetPtrToEnCField
 
 //-----------------------------------------------------------------------------
@@ -4047,11 +4047,11 @@ void DacDbiInterfaceImpl::GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEn
     _ASSERTE(pFD->IsEnCNew()); // We shouldn't be here if it wasn't added to an
                                // already loaded class.
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     pORField = GetPtrToEnCField(pFD, pEnCFieldInfo);
 #else
     _ASSERTE(!"We shouldn't be here: EnC not supported");
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
     InitFieldData(pFD, pORField, pEnCFieldInfo, pFieldData);
     *pfStatic = (pFD->IsStatic() != 0);
@@ -4237,11 +4237,11 @@ HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isMo
 bool DacDbiInterfaceImpl::MetadataUpdatesApplied()
 {
     DD_ENTER_MAY_THROW;
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     return g_metadataUpdatesApplied;
 #else
     return false;
-#endif
+#endif // !FEATURE_ENC_SUPPORTED
 }
 
 // Helper to initialize a TargetBuffer from a MemoryRange
@@ -7424,7 +7424,7 @@ HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdM
 #else
     pOptimizationsDisabled->SetDacTargetPtr(0);
 #endif
-    
+
     return S_OK;
 }
 

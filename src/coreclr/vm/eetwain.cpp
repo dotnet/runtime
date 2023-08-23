@@ -1471,7 +1471,7 @@ ErrExit:
 
     return hr;
 }
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_ENC_SUPPORTED
 
 #endif // #ifndef DACCESS_COMPILE
 

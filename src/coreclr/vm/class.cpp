@@ -247,7 +247,7 @@ MethodTable *MethodTable::LoadEnclosingMethodTable(ClassLoadLevel targetLevel)
 
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
 
 //*******************************************************************************
 VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdFieldDef fieldDef)
@@ -843,7 +843,7 @@ HRESULT EEClass::AddMethodDesc(
     return S_OK;
 }
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
 //---------------------------------------------------------------------------------------
 //
@@ -1118,7 +1118,7 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
 
 namespace
 {
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     void CreateAllEnCStaticFields(MethodTable* pMT, MethodTable* pMTCanon, EditAndContinueModule* pModule)
     {
         CONTRACTL
@@ -1188,7 +1188,7 @@ namespace
             }
         }
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 }
 
 // CLASS_LOAD_EXACTPARENTS phase of loading:
@@ -1221,7 +1221,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
         PropagateCovariantReturnMethodImplSlots(pMT);
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     // Generics for EnC - create static FieldDescs.
     // Instance FieldDescs don't need to be created here because they
     // are added during type load by reading the updated metadata tables.
@@ -1236,7 +1236,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
                 CreateAllEnCStaticFields(pMT, pMTCanon, (EditAndContinueModule*)pModule);
         }
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();

@@ -183,7 +183,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
     }
 }
 
-#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_ENC_SUPPORTED)
 void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
@@ -241,7 +241,7 @@ void Module::UpdateNewlyAddedTypes()
     m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
     m_dwCustomAttributeCount = countCustomAttributeCount;
 }
-#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_ENC_SUPPORTED
 
 #if PROFILING_SUPPORTED
 void Module::NotifyProfilerLoadFinished(HRESULT hr)
@@ -578,7 +578,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
 
     // Create the module
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     if (::IsEditAndContinueCapable(pAssembly, pPEAssembly))
     {
         // if file is EnCCapable, always create an EnC-module, but EnC won't necessarily be enabled.
@@ -588,7 +588,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
         pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
     }
     else
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
     {
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(Module))));
         pModule = new (pMemory) Module(pAssembly, pPEAssembly);
@@ -616,9 +616,9 @@ void Module::ApplyMetaData()
     HRESULT hr = S_OK;
     ULONG ulCount;
 
-#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_ENC_SUPPORTED)
     UpdateNewlyAddedTypes();
-#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_ENC_SUPPORTED
 
     // Ensure for TypeRef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtTypeRef) + 1;
@@ -5122,7 +5122,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 
     ECall::EnumFCallMethods();
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     m_ClassList.EnumMemoryRegions();
 
     DPTR(PTR_EnCEEClassData) classData = m_ClassList.Table();
@@ -5137,7 +5137,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 
         classData++;
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 }
 
 FieldDesc *Module::LookupFieldDef(mdFieldDef token)

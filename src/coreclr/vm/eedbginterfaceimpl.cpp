@@ -1088,7 +1088,7 @@ void EEDbgInterfaceImpl::MarkDebuggerUnattached(void)
 }
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
 
 // Apply an EnC edit to the specified module
 HRESULT EEDbgInterfaceImpl::EnCApplyChanges(EditAndContinueModule *pModule,
@@ -1131,7 +1131,7 @@ void EEDbgInterfaceImpl::ResumeInUpdatedFunction(EditAndContinueModule *pModule,
                                      pContext);
 }
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
 bool EEDbgInterfaceImpl::CrawlFrameIsGcSafe(CrawlFrame *pCF)
 {

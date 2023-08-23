@@ -5120,13 +5120,13 @@ public:
                                mdFieldDef fieldDef);
     mdTypeDef GetTypeDef() { return (mdTypeDef)m_id; }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     // when we get an added field or method, mark the class to force re-init when we access it
     void MakeOld()
     {
         m_loadLevel = Constructed;
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
     //-----------------------------------------------------------
     // Data members
@@ -5458,9 +5458,9 @@ public:
                                       CordbReJitILCode** ppILCode);
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     void MakeOld();
-#endif
+#endif // FEATURE_ENC_SUPPORTED
 
     //-----------------------------------------------------------
     // Accessors
@@ -5755,9 +5755,9 @@ public:
     // get total size of the IL code
     ULONG32 GetSize() { return m_codeRegionInfo.cbSize; }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     void MakeOld();
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
     HRESULT GetLocalVarSig(SigParser *pLocalsSigParser, ULONG *pLocalVarCount);
     HRESULT GetLocalVariableType(DWORD dwIndex, const Instantiation * pInst, CordbType ** ppResultType);
@@ -5775,7 +5775,7 @@ private:
     //-----------------------------------------------------------
 
 private:
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     UINT m_fIsOld : 1;           // marks this instance as an old EnC version
     bool m_encBreakpointsApplied;
 #endif

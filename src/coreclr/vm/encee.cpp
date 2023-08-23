@@ -21,7 +21,7 @@
 #include "../debug/daccess/gcinterface.dac.h"
 #endif // DACCESS_COMPILE
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
 
 // can't get this on the helper thread at runtime in ResolveField, so make it static and get when add a field.
 #ifdef _DEBUG
@@ -1825,4 +1825,4 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
     return fd;
 }
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
