@@ -993,7 +993,8 @@ namespace System.ComponentModel
         protected MemberDescriptor(System.ComponentModel.MemberDescriptor oldMemberDescriptor, System.Attribute[]? newAttributes) { }
         protected MemberDescriptor(string name) { }
         protected MemberDescriptor(string name, System.Attribute[]? attributes) { }
-        protected virtual System.Attribute[]? AttributeArray { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        protected virtual System.Attribute[] AttributeArray { get { throw null; } set { } }
         public virtual System.ComponentModel.AttributeCollection Attributes { get { throw null; } }
         public virtual string Category { get { throw null; } }
         public virtual string Description { get { throw null; } }

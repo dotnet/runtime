@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
@@ -120,7 +121,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets or sets an array of attributes.
         /// </summary>
-        protected virtual Attribute[]? AttributeArray
+        [AllowNull]
+        protected virtual Attribute[] AttributeArray
         {
             get
             {
@@ -320,6 +322,7 @@ namespace System.ComponentModel
             }
         }
 
+        [MemberNotNull(nameof(_attributes))]
         private void FilterAttributesIfNeeded()
         {
             if (!_attributesFiltered)
@@ -374,6 +377,8 @@ namespace System.ComponentModel
                     _metadataVersion = TypeDescriptor.MetadataVersion;
                 }
             }
+
+            Debug.Assert(_attributes is not null);
         }
 
         /// <summary>
