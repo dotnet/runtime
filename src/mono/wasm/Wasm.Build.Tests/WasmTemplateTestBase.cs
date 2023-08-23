@@ -99,15 +99,9 @@ public abstract class WasmTemplateTestBase : BuildTestBase
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildProjectOptions.TargetFramework ?? DefaultTargetFramework);
 
         var projectProvider = new WasmSdkBasedProjectProvider(_testOutput, _projectDir!);
-        projectProvider.AssertBundle(assertAppBundleOptions ?? new(
-            Config: buildArgs.Config,
-            IsPublish: buildProjectOptions.Publish,
-            TargetFramework: buildProjectOptions.TargetFramework ?? DefaultTargetFramework,
-            BinFrameworkDir: buildProjectOptions.BinFrameworkDir ?? projectProvider.FindBinFrameworkDir(buildArgs.Config, buildProjectOptions.Publish, buildProjectOptions.TargetFramework ?? DefaultTargetFramework),
-            PredefinedIcudt: buildProjectOptions.PredefinedIcudt,
-            GlobalizationMode: buildProjectOptions.GlobalizationMode,
-            AssertSymbolsFile: false,
-            ExpectedFileType: buildProjectOptions.Publish && buildArgs.Config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack
-        ));
+        if (assertAppBundleOptions is not null)
+            projectProvider.AssertBundle(assertAppBundleOptions);
+        else
+            projectProvider.AssertBundle(buildArgs, buildProjectOptions);
     }
 }
