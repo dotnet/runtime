@@ -1155,6 +1155,7 @@ class SuperPMICollect:
 
                     aotsdk_directory_path = os.path.join(self.coreclr_args.artifacts_location, "bin", "coreclr", f'{self.coreclr_args.target_os}.{self.coreclr_args.target_arch}.{self.coreclr_args.build_type}', "aotsdk")
                     ilc_directory_path = os.path.join(self.coreclr_args.artifacts_location, "bin", "coreclr", f'{self.coreclr_args.target_os}.{self.coreclr_args.target_arch}.{self.coreclr_args.build_type}', "ilc")
+                    ilc_published_directory_path = os.path.join(self.coreclr_args.artifacts_location, "bin", "coreclr", f'{self.coreclr_args.target_os}.{self.coreclr_args.target_arch}.{self.coreclr_args.build_type}', "ilc-pulished")
 
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
@@ -1173,7 +1174,7 @@ class SuperPMICollect:
                     # Log what is in the response file
                     write_file_to_log(rsp_filepath)
 
-                    command = [self.nativeaot_driver_tool, self.coreclr_args.nativeaot_tool_path, "@" + rsp_filepath]
+                    command = [self.coreclr_args.nativeaot_tool_path, "@" + rsp_filepath]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
@@ -4339,8 +4340,8 @@ def setup_args(args):
 
         if coreclr_args.nativeaot:
             # Can we find nativeaot?
-            nativeaot_tool_name = "ilc.dll"
-            nativeaot_tool_path = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "bin", "coreclr", f'{coreclr_args.target_os}.{coreclr_args.target_arch}.{coreclr_args.build_type}', "ilc", nativeaot_tool_name))
+            nativeaot_tool_name = "ilc.exe"
+            nativeaot_tool_path = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "bin", "coreclr", f'{coreclr_args.target_os}.{coreclr_args.target_arch}.{coreclr_args.build_type}', "ilc-published", nativeaot_tool_name))
             if not os.path.exists(nativeaot_tool_path):
                 print("`--nativeaot` is specified, but couldn't find " + nativeaot_tool_path + ". (Is it built?)")
                 sys.exit(1)
