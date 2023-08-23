@@ -663,7 +663,7 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static long CopySign(long value, long sign)
         {
-            if (long.MinValue != value || 0 > sign)
+            if (value != long.MinValue || sign < 0)
             {
                 return value * Math.SignZeroToOne(value ^ sign);
             }

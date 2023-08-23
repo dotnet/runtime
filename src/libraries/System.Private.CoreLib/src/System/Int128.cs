@@ -1291,7 +1291,7 @@ namespace System
         public static Int128 CopySign(Int128 value, Int128 sign)
         {
             // Int128.MinValue != value || 0 > sign
-            if (long.MinValue != unchecked((long)value._upper) || 0 != value._lower || Int128.IsNegative(sign))
+            if (unchecked((long)value._upper) != long.MinValue || value._lower != 0 || Int128.IsNegative(sign))
             {
                 return value * Math.SignZeroToOne(unchecked((long)value._upper ^ (long)sign._upper));
             }

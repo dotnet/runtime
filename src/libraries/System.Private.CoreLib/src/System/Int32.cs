@@ -666,7 +666,7 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static int CopySign(int value, int sign)
         {
-            if (int.MinValue != value || 0 > sign)
+            if (value != int.MinValue || sign < 0)
             {
                 return value * Math.SignZeroToOne(value ^ sign);
             }

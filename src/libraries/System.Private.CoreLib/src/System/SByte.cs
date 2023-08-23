@@ -592,7 +592,7 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static sbyte CopySign(sbyte value, sbyte sign)
         {
-            if (sbyte.MinValue != value || 0 > sign)
+            if (value != sbyte.MinValue || sign < 0)
             {
                 return unchecked((sbyte)(value * Math.SignZeroToOne(value ^ sign)));
             }

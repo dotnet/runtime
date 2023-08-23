@@ -631,7 +631,7 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static short CopySign(short value, short sign)
         {
-            if (short.MinValue != value || 0 > sign)
+            if (value != short.MinValue || sign < 0)
             {
                 return unchecked((short)(value * Math.SignZeroToOne(value ^ sign)));
             }

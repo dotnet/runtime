@@ -674,7 +674,7 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static nint CopySign(nint value, nint sign)
         {
-            if (nint.MinValue != value || 0 > sign)
+            if (value != nint.MinValue || sign < 0)
             {
                 return value * Math.SignZeroToOne(value ^ sign);
             }
