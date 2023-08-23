@@ -45,7 +45,7 @@ namespace Mono.Linker
 			}
 
 			if (mmodule.HasExportedTypes)
-				WalkTypeScope (mmodule.ExportedTypes);
+				WalkTypeScope (mmodule.ExportedTypes, mmodule);
 
 			ProcessExtra ();
 		}
@@ -152,10 +152,10 @@ namespace Mono.Linker
 			}
 		}
 
-		void WalkTypeScope (Collection<ExportedType> forwarders)
+		void WalkTypeScope (Collection<ExportedType> forwarders, ModuleDefinition module)
 		{
 			foreach (var f in forwarders)
-				ProcessExportedType (f);
+				ProcessExportedType (f, module);
 		}
 
 		void WalkTypeScope (MethodBody body)
@@ -373,7 +373,7 @@ namespace Mono.Linker
 
 		protected abstract void ProcessTypeReference (TypeReference type);
 
-		protected abstract void ProcessExportedType (ExportedType exportedType);
+		protected abstract void ProcessExportedType (ExportedType exportedType, ModuleDefinition module);
 	}
 
 }

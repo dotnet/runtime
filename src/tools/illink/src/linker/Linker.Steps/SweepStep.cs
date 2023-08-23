@@ -628,10 +628,10 @@ namespace Mono.Linker.Steps
 				ChangedAnyScopes = true;
 			}
 
-			protected override void ProcessExportedType (ExportedType exportedType)
+			protected override void ProcessExportedType (ExportedType exportedType, ModuleDefinition module)
 			{
 #pragma warning disable RS0030 // Cecil's Resolve is banned -- it's necessary when the metadata graph is unstable
-				TypeDefinition? td = exportedType.Resolve ();
+				TypeDefinition? td = exportedType.TryResolve (module);
 #pragma warning restore RS0030
 				if (td == null) {
 					// Forwarded type cannot be resolved but it was marked.

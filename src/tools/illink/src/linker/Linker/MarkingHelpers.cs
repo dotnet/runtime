@@ -37,7 +37,7 @@ namespace Mono.Linker
 				return;
 
 			if (typeReference.Scope is AssemblyNameReference) {
-				var assembly = Context.Resolve (typeReference.Scope);
+				var assembly = Context.TryResolve (typeReference.Scope);
 				if (assembly != null &&
 					Context.TryResolve (typeReference) is TypeDefinition typeDefinition &&
 					assembly.MainModule.GetMatchingExportedType (typeDefinition, Context, out var exportedType))

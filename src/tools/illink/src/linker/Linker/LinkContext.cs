@@ -289,6 +289,12 @@ namespace Mono.Linker
 			return _resolver.Resolve (reference);
 		}
 
+		public AssemblyDefinition? TryResolve (IMetadataScope scope)
+		{
+			AssemblyNameReference reference = GetReference (scope);
+			return _resolver.Resolve (reference, probing: true);
+		}
+
 		public AssemblyDefinition? Resolve (AssemblyNameReference name)
 		{
 			return _resolver.Resolve (name);
@@ -342,7 +348,7 @@ namespace Mono.Linker
 				return references;
 
 			foreach (AssemblyNameReference reference in assembly.MainModule.AssemblyReferences) {
-				AssemblyDefinition? definition = Resolve (reference);
+				AssemblyDefinition? definition = TryResolve (reference);
 				if (definition != null)
 					references.Add (definition);
 			}
@@ -472,9 +478,7 @@ namespace Mono.Linker
 
 			while (toProcess.Count > 0) {
 				var assembly = toProcess.Dequeue ();
-				Resolver.IgnoreUnresolved = true;
 				var references = ResolveReferences (assembly);
-				Resolver.IgnoreUnresolved = false;
 				foreach (var reference in references) {
 					if (!loaded.Add (reference))
 						continue;

@@ -51,8 +51,6 @@ namespace Mono.Linker
 		HashSet<string>? _unresolvedAssemblies;
 		HashSet<string>? _reportedUnresolvedAssemblies;
 
-		public bool IgnoreUnresolved { get; set; }
-
 		public AssemblyResolver (LinkContext context)
 		{
 			_context = context;
@@ -126,8 +124,7 @@ namespace Mono.Linker
 			if (!_reportedUnresolvedAssemblies.Add (reference.Name))
 				return;
 
-			if (!IgnoreUnresolved)
-				_context.LogError (null, DiagnosticId.CouldNotFindAssemblyReference, reference.Name);
+			_context.LogError (null, DiagnosticId.CouldNotFindAssemblyReference, reference.Name);
 		}
 
 		public void AddSearchDirectory (string directory)
