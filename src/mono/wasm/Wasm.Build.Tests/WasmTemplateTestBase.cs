@@ -59,19 +59,23 @@ public abstract class WasmTemplateTestBase : BuildTestBase
 
     public (string projectDir, string buildOutput) BuildTemplateProject(BuildArgs buildArgs,
         string id,
-        BuildProjectOptions buildProjectOptions,
-        AssertTestMainJsAppBundleOptions? assertAppBundleOptions = null)
+        BuildProjectOptions buildProjectOptions)
     {
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions);
         if (buildProjectOptions.UseCache)
             _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
 
         if (buildProjectOptions.AssertAppBundle)
-            AssertBundle(buildArgs, buildProjectOptions, res.Output, assertAppBundleOptions);
+        {
+            if (buildProjectOptions.IsBrowserProject)
+                AssertWasmSdkBundle(buildArgs, buildProjectOptions, res.Output);
+            else
+                AssertTestMainJsBundle(buildArgs, buildProjectOptions, res.Output);
+        }
         return (_projectDir!, res.Output);
     }
 
-    public void AssertBundle(BuildArgs buildArgs,
+    public void AssertTestMainJsBundle(BuildArgs buildArgs,
                               BuildProjectOptions buildProjectOptions,
                               string? buildOutput = null,
                               AssertTestMainJsAppBundleOptions? assertAppBundleOptions = null)
@@ -79,11 +83,25 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         if (buildOutput is not null)
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildProjectOptions.TargetFramework ?? DefaultTargetFramework);
 
-        // TODO: templates don't use wasm sdk yet
         var testMainJsProvider = new TestMainJsProjectProvider(_testOutput, _projectDir!);
         if (assertAppBundleOptions is not null)
             testMainJsProvider.AssertBundle(assertAppBundleOptions);
         else
             testMainJsProvider.AssertBundle(buildArgs, buildProjectOptions);
+    }
+
+    public void AssertWasmSdkBundle(BuildArgs buildArgs,
+                              BuildProjectOptions buildProjectOptions,
+                              string? buildOutput = null,
+                              AssertWasmSdkBundleOptions? assertAppBundleOptions = null)
+    {
+        if (buildOutput is not null)
+            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildProjectOptions.TargetFramework ?? DefaultTargetFramework);
+
+        var projectProvider = new WasmSdkBasedProjectProvider(_testOutput, _projectDir!);
+        if (assertAppBundleOptions is not null)
+            projectProvider.AssertBundle(assertAppBundleOptions);
+        else
+            projectProvider.AssertBundle(buildArgs, buildProjectOptions);
     }
 }
