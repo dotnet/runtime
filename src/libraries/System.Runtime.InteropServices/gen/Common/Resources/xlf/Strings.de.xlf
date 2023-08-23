@@ -439,12 +439,12 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">Der Typ '{0}' wird als Struktur in der nativen Signatur und nicht als natives HRESULT behandelt. Um ihn als HRESULT zu behandeln, fügen Sie der Methode "[return:MarshalAs(UnmanagedType.Error)]" hinzu.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">Dieser Typ wird als Struktur in der nativen Signatur und nicht als natives HRESULT behandelt</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -904,7 +904,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="new">The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
+        <target state="translated">Das [Out]-Attribut wird nur für Arrayparameter gemarshallt werden. Erwägen Sie die Verwendung der Schlüsselwörter "out" oder "ref", um den Parameter änderbar zu machen.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">

@@ -439,12 +439,12 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">'{0}' 형식은 네이티브 HRESULT가 아니라 네이티브 서명에서 구조체로 처리됩니다. HRESULT로 처리하려면 메서드에 '[return:MarshalAs(UnmanagedType.Error)]'를 추가하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">이 형식은 네이티브 HRESULT가 아니라 네이티브 서명의 구조체로 처리됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -904,7 +904,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="new">The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
+        <target state="translated">'[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경할 수 있도록 'out' 또는 'ref' 키워드를 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">

@@ -439,12 +439,12 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">El tipo '{0}' se tratará como un struct en la firma nativa, no como un HRESULT nativo. Para tratarlo como un HRESULT, añade '[return:MarshalAs(UnmanagedType.Error)]' al método.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">Este tipo se tratará como una estructura en la firma nativa, no como un HRESULT nativo.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -904,7 +904,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="new">The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
+        <target state="translated">El atributo "[Out]" solo se admite en parámetros de matriz. Considere la posibilidad de usar palabras clave "out" o "ref" para hacer que el parámetro sea mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
