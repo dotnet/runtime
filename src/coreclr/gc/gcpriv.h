@@ -4636,12 +4636,30 @@ class CFinalize
 
 private:
 
-    //adjust the count and add a constant to add a segment
+    // Segments are bounded by m_Array (the overall start), each element of
+    // m_FillPointers, and then m_EndArray (the overall end). m_Array could
+    // be considered the first element of (i.e., before all of) m_FillPointers
+    // and m_EndArray the last.
+    //
+    // Therefore, the lower bound on segment X is m_FillPointers[x-1] with a
+    // special case for the first, and the upper bound on segment X is
+    // m_FillPointers[x] with special cases for the last.
+    //
+    // The "generation" segments [0, FreeListSeg) grow/shrink on the 'End' side
+    // (high index), and the "finalizer" segments grow/shrink on the 'Start'
+    // side (low index).
+
+    // Adjust the count and add a constant to add a segment
     static const int ExtraSegCount = 2;
+    static const int FreeListSeg = total_generation_count;
     static const int FinalizerListSeg = total_generation_count + 1;
-    static const int CriticalFinalizerListSeg = total_generation_count;
-    //Does not correspond to a segment
-    static const int FreeList = total_generation_count + ExtraSegCount;
+    // The end of this segment is m_EndArray, not an entry in m_FillPointers.
+    static const int CriticalFinalizerListSeg = total_generation_count + 2;
+
+    static const int FinalizerStartSeg = FinalizerListSeg;
+    static const int FinalizerMaxSeg = CriticalFinalizerListSeg;
+
+    static const int MaxSeg = CriticalFinalizerListSeg;
 
     PTR_PTR_Object m_FillPointers[total_generation_count + ExtraSegCount];
     PTR_PTR_Object m_Array;
@@ -4664,14 +4682,18 @@ private:
     }
     inline PTR_PTR_Object& SegQueueLimit (unsigned int Seg)
     {
-        return m_FillPointers [Seg];
+        return (Seg == MaxSeg ? m_EndArray : m_FillPointers[Seg]);
+    }
+
+    size_t UsedCount ()
+    {
+        return (SegQueue(FreeListSeg) - m_Array) + (m_EndArray - SegQueueLimit(FreeListSeg));
     }
 
     BOOL IsSegEmpty ( unsigned int i)
     {
-        ASSERT ( (int)i < FreeList);
+        ASSERT ((int)i <= MaxSeg);
         return (SegQueueLimit(i) == SegQueue (i));
-
     }
 
 public:
