@@ -674,11 +674,11 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static nint CopySign(nint value, nint sign)
         {
-            if (value != nint.MinValue || sign < 0)
+            if (value == nint.MinValue && sign >= 0)
             {
-                return value * Math.SignZeroToOne(value ^ sign);
+                Math.ThrowNegateTwosCompOverflow();
             }
-            return checked(-value); // throws an OverflowException
+            return value * Math.SignZeroToOne(value ^ sign);
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />

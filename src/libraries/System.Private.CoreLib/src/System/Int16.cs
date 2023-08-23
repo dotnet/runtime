@@ -631,11 +631,11 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static short CopySign(short value, short sign)
         {
-            if (value != short.MinValue || sign < 0)
+            if (value == short.MinValue && sign >= 0)
             {
-                return unchecked((short)(value * Math.SignZeroToOne(value ^ sign)));
+                Math.ThrowNegateTwosCompOverflow();
             }
-            return checked((short)unchecked(-value)); // throws an OverflowException
+            return unchecked((short)(value * Math.SignZeroToOne(value ^ sign)));
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />

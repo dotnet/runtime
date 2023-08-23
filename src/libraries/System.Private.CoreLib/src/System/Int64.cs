@@ -663,11 +663,11 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static long CopySign(long value, long sign)
         {
-            if (value != long.MinValue || sign < 0)
+            if (value == long.MinValue && sign >= 0)
             {
-                return value * Math.SignZeroToOne(value ^ sign);
+                Math.ThrowNegateTwosCompOverflow();
             }
-            return checked(-value); // throws an OverflowException
+            return value * Math.SignZeroToOne(value ^ sign);
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />

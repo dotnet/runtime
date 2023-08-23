@@ -666,11 +666,11 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static int CopySign(int value, int sign)
         {
-            if (value != int.MinValue || sign < 0)
+            if (value == int.MinValue && sign >= 0)
             {
-                return value * Math.SignZeroToOne(value ^ sign);
+                Math.ThrowNegateTwosCompOverflow();
             }
-            return checked(-value); // throws an OverflowException
+            return value * Math.SignZeroToOne(value ^ sign);
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />

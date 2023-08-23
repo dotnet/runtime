@@ -592,11 +592,11 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static sbyte CopySign(sbyte value, sbyte sign)
         {
-            if (value != sbyte.MinValue || sign < 0)
+            if (value == sbyte.MinValue && sign >= 0)
             {
-                return unchecked((sbyte)(value * Math.SignZeroToOne(value ^ sign)));
+                Math.ThrowNegateTwosCompOverflow();
             }
-            return checked((sbyte)unchecked(-value)); // throws an OverflowException
+            return unchecked((sbyte)(value * Math.SignZeroToOne(value ^ sign)));
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
