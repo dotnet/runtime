@@ -22,7 +22,7 @@ namespace Mono.Linker
 				return false;
 
 			foreach (var et in module.ExportedTypes) {
-				if (et.TryResolve (module) == typeDefinition) {
+				if (context.TryResolve (et, module) == typeDefinition) {
 					exportedType = et;
 					return true;
 				}

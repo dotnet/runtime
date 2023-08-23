@@ -913,9 +913,9 @@ namespace Mono.Linker
 		/// <summary>
 		/// Tries to resolve the ExportedType to a TypeDefinition and logs a warning if it can't
 		/// </summary>
-		public TypeDefinition? Resolve (ExportedType et)
+		public TypeDefinition? Resolve (ExportedType et, ModuleDefinition module)
 		{
-			if (TryResolve (et) is not TypeDefinition td) {
+			if (TryResolve (et, module) is not TypeDefinition td) {
 				ReportUnresolved (et);
 				return null;
 			}
@@ -925,13 +925,13 @@ namespace Mono.Linker
 		/// <summary>
 		/// Tries to resolve the ExportedType to a TypeDefinition and returns null if it can't
 		/// </summary>
-		public TypeDefinition? TryResolve (ExportedType et)
+		public TypeDefinition? TryResolve (ExportedType et, ModuleDefinition module)
 		{
 			if (exportedTypeResolveCache.TryGetValue (et, out var td)) {
 				return td;
 			}
 #pragma warning disable RS0030 // Cecil's Resolve is banned -- this method provides the wrapper
-			td = et.Resolve ();
+			td = et.TryResolve (module);
 #pragma warning restore RS0030
 			exportedTypeResolveCache.Add (et, td);
 			return td;

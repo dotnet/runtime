@@ -25,7 +25,7 @@ namespace Mono.Linker.Steps
 			if (!context.Annotations.TryGetPreservedMembers (exportedType, out TypePreserveMembers members))
 				return;
 
-			TypeDefinition? type = context.TryResolve (exportedType);
+			TypeDefinition? type = context.TryResolve (exportedType, assembly.MainModule);
 			if (type == null) {
 				context.LogError (null, DiagnosticId.ExportedTypeCannotBeResolved, exportedType.Name);
 				return;
