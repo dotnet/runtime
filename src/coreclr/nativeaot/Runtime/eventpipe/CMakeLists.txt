@@ -12,13 +12,23 @@ set(NONEXTERN_ARG "--nonextern")
 set(NOXPLATHEADER_ARG "--noxplatheader")
 
 # Platform agnostic source generation, clretwallmain.h/cpp, disabledclretwallmain.cpp, clreventpipewriteevents.h, etmdummy.h
+
+set (GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES "")
+list(APPEND GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES
+  ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
+)
+
 set(GENERATE_PLAT_AGNOSTIC_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
 
 # we set the output to 1 file, disabledclretwallmain.cpp, although build downstream depends on clretwallmain.cpp as well.
-add_custom_command(
-  OUTPUT ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp
+# add_custom_command(
+#   OUTPUT ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
+#   COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+#   DEPENDS ${GENERATE_PLAT_AGNOSTIC_SCRIPT} ${EVENT_MANIFEST} ${GENERATED_INCLUDE_DIR}
+# )
+
+execute_process(
   COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
-  DEPENDS ${GENERATE_PLAT_AGNOSTIC_SCRIPT} ${EVENT_MANIFEST} ${GENERATED_INCLUDE_DIR}
 )
 
 # EventPipe provider source, currently dotnetruntime provider and helper file
@@ -141,8 +151,7 @@ endif()
 
 list(APPEND AOT_EVENTPIPE_SHIM_SOURCES
   ${AOT_EVENTPIPE_SHIM_DIR}/ep-rt-aot.cpp
-  ${AOT_EVENTPIPE_SHIM_DIR}/ds-rt-aot.cpp
-  ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
+  ${AOT_EVENTPIPE_SHIM_DIR}/ds-rt-aot.cpp  
 )
 
 list(APPEND AOT_EVENTPIPE_SHIM_HEADERS
@@ -185,6 +194,7 @@ list(APPEND EVENTPIPE_SOURCES
   ${AOT_EVENTTRACE_SOURCES}
   ${SHARED_EVENTPIPE_CONFIG_HEADERS}
   ${GEN_EVENTPIPE_PROVIDER_SOURCES}
+  ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
   ${CONTAINER_SOURCES}
   ${CONTAINER_HEADERS}
   ${MINIPAL_SOURCES}
