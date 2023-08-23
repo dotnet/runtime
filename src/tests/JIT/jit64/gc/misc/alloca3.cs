@@ -9,7 +9,7 @@ public class Test_alloca3
     private static int s_x = 25;
 
     [Fact]
-    public static unsafe int TestEntryPoint()
+    public static unsafe void TestEntryPoint()
     {
         int* px = stackalloc int[s_x];
 
@@ -19,8 +19,6 @@ public class Test_alloca3
         String s4 = foo(s3);
 
         s4 = s1 + s2 + s3 + s4;
-
-        return 100;
     }
 
     public static String foo(String s3)
