@@ -26,14 +26,13 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
         THROWS;
         MODE_COOPERATIVE;
     }
-    CONTRACTL_END
+        CONTRACTL_END
 
 #ifndef FEATURE_BASICFREEZE
-    // GC is required to support frozen segments
-    return nullptr;
+        // GC is required to support frozen segments
+        return nullptr;
 #else // FEATURE_BASICFREEZE
 
-    GCX_PREEMP();
 
     Object* obj = nullptr;
     FrozenObjectSegment* curSeg = nullptr;
@@ -41,66 +40,70 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     size_t curSegSizeCommitted = 0;
 
     {
-        CrstHolder ch(&m_Crst);
-
-        _ASSERT(type != nullptr);
-        _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
-
-        // Currently we don't support frozen objects with special alignment requirements
-        // TODO: We should also give up on arrays of doubles on 32-bit platforms.
-        // (we currently never allocate them on frozen segments)
-    #ifdef FEATURE_64BIT_ALIGNMENT
-        if (type->RequiresAlign8())
+        GCX_PREEMP();
         {
-            // Align8 objects are not supported yet
-            return nullptr;
-        }
-    #endif
+            CrstHolder ch(&m_Crst);
 
-        // NOTE: objectSize is expected be the full size including header
-        _ASSERT(objectSize >= MIN_OBJECT_SIZE);
+            _ASSERT(type != nullptr);
+            _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
 
-        if (objectSize > FOH_COMMIT_SIZE)
-        {
-            // The current design doesn't allow objects larger than FOH_COMMIT_SIZE and
-            // since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
-            return nullptr;
-        }
-
-        obj = m_CurrentSegment == nullptr ? nullptr : m_CurrentSegment->TryAllocateObject(type, objectSize);
-        // obj is nullptr if the current segment is full or hasn't been allocated yet
-        if (obj == nullptr)
-        {
-            size_t newSegmentSize = FOH_SEGMENT_DEFAULT_SIZE;
-            if (m_CurrentSegment != nullptr)
+            // Currently we don't support frozen objects with special alignment requirements
+            // TODO: We should also give up on arrays of doubles on 32-bit platforms.
+            // (we currently never allocate them on frozen segments)
+#ifdef FEATURE_64BIT_ALIGNMENT
+            if (type->RequiresAlign8())
             {
-                // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
-                // Use the same size in case if prevSegmentSize*2 operation overflows.
-                const size_t prevSegmentSize = m_CurrentSegment->m_Size;
-                newSegmentSize = max(prevSegmentSize, prevSegmentSize * 2);
+                // Align8 objects are not supported yet
+                return nullptr;
+            }
+#endif
+
+            // NOTE: objectSize is expected be the full size including header
+            _ASSERT(objectSize >= MIN_OBJECT_SIZE);
+
+            if (objectSize > FOH_COMMIT_SIZE)
+            {
+                // The current design doesn't allow objects larger than FOH_COMMIT_SIZE and
+                // since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
+                return nullptr;
             }
 
-            m_CurrentSegment = new FrozenObjectSegment(newSegmentSize);
-            m_FrozenSegments.Append(m_CurrentSegment);
+            obj = m_CurrentSegment == nullptr ? nullptr : m_CurrentSegment->TryAllocateObject(type, objectSize);
+            // obj is nullptr if the current segment is full or hasn't been allocated yet
+            if (obj == nullptr)
+            {
+                size_t newSegmentSize = FOH_SEGMENT_DEFAULT_SIZE;
+                if (m_CurrentSegment != nullptr)
+                {
+                    // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
+                    // Use the same size in case if prevSegmentSize*2 operation overflows.
+                    const size_t prevSegmentSize = m_CurrentSegment->m_Size;
+                    newSegmentSize = max(prevSegmentSize, prevSegmentSize * 2);
+                }
 
-            // Try again
-            obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
+                m_CurrentSegment = new FrozenObjectSegment(newSegmentSize);
+                m_FrozenSegments.Append(m_CurrentSegment);
 
-            // This time it's not expected to be null
-            _ASSERT(obj != nullptr);
+                // Try again
+                obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
+
+                // This time it's not expected to be null
+                _ASSERT(obj != nullptr);
+            }
+            curSeg = m_CurrentSegment;
+            curSegSizeCommitted = curSeg->m_SizeCommitted;
+            curSegmentCurrent = curSeg->m_pCurrent;
+        } // end of m_Crst lock
+
+        // Let GC know about the new segment or changes in it.
+        // We do it under a new lock because the main one (m_Crst) can be used by Profiler in a GC's thread
+        // and that might cause deadlocks since RegisterFrozenSegment may stuck on GC's lock.
+        {
+            CrstHolder regLock(&m_SegmentRegistrationCrst);
+            curSeg->RegisterOrUpdate(curSegmentCurrent, curSegSizeCommitted);
         }
-        curSeg = m_CurrentSegment;
-        curSegSizeCommitted = curSeg->m_SizeCommitted;
-        curSegmentCurrent = curSeg->m_pCurrent;
-    }
 
-    // Let GC know about the new segment or changes in it.
-    // We do it under a new lock because the main one (m_Crst) can be used by Profiler in a GC's thread
-    // and that might cause deadlocks since RegisterFrozenSegment may stuck on GC's lock.
-    {
-        CrstHolder regLock(&m_SegmentRegistrationCrst);
-        curSeg->RegisterOrUpdate(curSegmentCurrent, curSegSizeCommitted);
-    }
+    } // end of GCX_PREEMP
 
     if (publish)
     {
