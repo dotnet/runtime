@@ -225,9 +225,9 @@ public unsafe class Program
 
         Assert.Equal(0, ((delegate* unmanaged<MaybeBlittable<nint>, int>)&MaybeBlittableGenericStruct)(new MaybeBlittable<nint>()));
 
-        Assert.Throws<InvalidProgramException> (() => ((delegate* unmanaged<NotBlittable<int>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericClass)(new NotBlittable<int>()));
+        Assert.Throws<MarshalDirectiveException> (() => ((delegate* unmanaged<NotBlittable<int>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericClass)(new NotBlittable<int>()));
 
-        Assert.Throws<InvalidProgramException> (() => ((delegate* unmanaged<MaybeBlittable<object>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericStructWithObjectField)(new MaybeBlittable<object>()));
+        Assert.Throws<MarshalDirectiveException> (() => ((delegate* unmanaged<MaybeBlittable<object>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericStructWithObjectField)(new MaybeBlittable<object>()));
     }
 
     internal struct Blittable<T> where T : unmanaged
