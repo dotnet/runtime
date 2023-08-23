@@ -91,10 +91,6 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     Interop::OnAfterGCScanRoots(sc->concurrent);
 }
 
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
-#define USE_STACK_LIMIT
-#endif
-
 /*
  * Scan all stack roots
  */
@@ -119,7 +115,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
-#if defined(FEATURE_CONSERVATIVE_GC) || defined(USE_STACK_LIMIT)
+#if defined(FEATURE_CONSERVATIVE_GC) || defined(USE_FEF)
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
     if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
@@ -128,13 +124,19 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
         InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
-#endif // FEATURE_CONSERVATIVE_GC || USE_STACK_LIMIT
+#endif // FEATURE_CONSERVATIVE_GC || USE_FEF
 
-#ifdef USE_STACK_LIMIT
+#ifdef USE_FEF
+    // We only set the stack_limit when FEF (FaultingExceptionFrame) is enabled, because without the
+    // FEF, the code above would have to check if hardware exception is being handled and get the limit
+    // from the exception frame. Since the stack_limit is strictly necessary only on Unix and FEF is
+    // not enabled on Window x86 only, it is sufficient to keep the stack_limit set to 0 in this case.
+    // See the comment on the stack_limit usage in the PromoteCarefully function for more details.
     sc->stack_limit = (uintptr_t)topStack;
-#else // USE_STACK_LIMIT
-    sc->stack_limit = 0;
-#endif // USE_STACK_LIMIT
+#else // USE_FEF
+    // It should be set to 0 in the ScanContext constructor
+    _ASSERTE(sc->stack_limit == 0);
+#endif // USE_FEF
 
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())
