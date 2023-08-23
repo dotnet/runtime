@@ -214,10 +214,10 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
     }
 
     bool heap_allocated = size > 256;
-    uint8_t* buf = nullptr;
+    uint8_t* buf;
     if (heap_allocated)
     {
-        new (nothrow) uint8_t[size];
+        buf = new (nothrow) uint8_t[size];
     }
     else
     {
