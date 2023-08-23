@@ -38,8 +38,6 @@ public class GenerateWasmBootJson : Task
     [Required]
     public bool LinkerEnabled { get; set; }
 
-    public bool WasmAotFlag { get; set; }
-
     [Required]
     public bool CacheBootResources { get; set; }
 
@@ -112,9 +110,6 @@ public class GenerateWasmBootJson : Task
 
             if (LinkerEnabled)
                 result.linkerEnabled = LinkerEnabled;
-
-            if (WasmAotFlag)
-                result.aot = WasmAotFlag;
         }
         else
         {

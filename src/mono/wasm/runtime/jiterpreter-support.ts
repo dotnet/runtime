@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
 import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -1978,8 +1978,8 @@ export function jiterpreter_allocate_tables(module: any) {
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
     const traceTableSize = options.tableSize,
-        jitCallTableSize = runtimeHelpers.aot ? options.tableSize : 1,
-        interpEntryTableSize = runtimeHelpers.aot ? options.aotTableSize : 1,
+        jitCallTableSize = linkerRunAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
         totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable(module);

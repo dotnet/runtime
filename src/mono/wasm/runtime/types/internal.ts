@@ -167,7 +167,6 @@ export type RuntimeHelpers = {
     moduleGitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
-    aot: boolean;
 
     runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;
@@ -282,6 +281,7 @@ export type EmscriptenInternals = {
     linkerWasmEnableEH: boolean,
     linkerEnableAotProfiler: boolean,
     linkerEnableBrowserProfiler: boolean,
+    linkerRunAOTCompilation: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
     gitHash: string,

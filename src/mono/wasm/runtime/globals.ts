@@ -29,6 +29,7 @@ export let linkerWasmEnableSIMD = true;
 export let linkerWasmEnableEH = true;
 export let linkerEnableAotProfiler = false;
 export let linkerEnableBrowserProfiler = false;
+export let linkerRunAOTCompilation = false;
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
 export function passEmscriptenInternals(internals: EmscriptenInternals): void {
@@ -38,6 +39,7 @@ export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     linkerWasmEnableEH = internals.linkerWasmEnableEH;
     linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
     linkerEnableBrowserProfiler = internals.linkerEnableBrowserProfiler;
+    linkerRunAOTCompilation = internals.linkerRunAOTCompilation;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
     runtimeHelpers.moduleGitHash = internals.gitHash;

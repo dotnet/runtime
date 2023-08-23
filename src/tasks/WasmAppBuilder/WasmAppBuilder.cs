@@ -28,7 +28,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public string? WasmIcuDataFileName { get; set; }
     public string? RuntimeAssetsLocation { get; set; }
     public bool CacheBootResources { get; set; }
-    public bool WasmAotFlag { get; set; }
 
     // <summary>
     // Extra json elements to add to _framework/blazor.boot.json
@@ -106,9 +105,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         if (CacheBootResources)
             bootConfig.cacheBootResources = CacheBootResources;
-
-        if (WasmAotFlag)
-            bootConfig.aot = WasmAotFlag;
 
         // Create app
         var runtimeAssetsPath = !string.IsNullOrEmpty(RuntimeAssetsLocation)
