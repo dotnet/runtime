@@ -225,10 +225,16 @@ mono_class_setup_basic_field_info (MonoClass *klass)
 			field->name = mono_field_get_name (&gtd->fields [i]);
 		} else {
 			int idx = first_field_idx + i;
-			/* first_field_idx and idx points into the fieldptr table */
-			guint32 name_idx = mono_metadata_decode_table_row_col (image, MONO_TABLE_FIELD, idx, MONO_FIELD_NAME);
-			/* The name is needed for fieldrefs */
-			field->name = mono_metadata_string_heap (image, name_idx);
+
+			/* first_field_idx and idx can point into the indirection table. Check there first. */
+			mdcursor_t c;
+			if (md_token_to_cursor(image->metadata_handle, mono_metadata_make_token (MONO_TABLE_FIELD_POINTER, idx + 1), &c))
+				md_resolve_indirect_cursor (c, &c);
+			else
+				md_token_to_cursor(image->metadata_handle, mono_metadata_make_token (MONO_TABLE_FIELD, idx + 1), &c);
+
+			if (1 != md_get_column_value_as_utf8 (c, mdtField_Name, 1, &field->name))
+				g_assert_not_reached();
 		}
 	}
 

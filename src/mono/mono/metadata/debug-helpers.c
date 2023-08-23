@@ -30,6 +30,7 @@
 #include <mono/metadata/class-private-definition.h>
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
+#include <dnmd.h>
 
 
 struct MonoMethodDesc {
@@ -593,7 +594,6 @@ MonoMethod*
 mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 {
 	MonoClass *klass;
-	const MonoTableInfo *methods;
 	MonoMethod *method;
 
 	/* Handle short names for system classes */
@@ -610,17 +610,25 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 		return mono_method_desc_search_in_class (desc, klass);
 	}
 
-	/* FIXME: Is this call necessary?  We don't use its result. */
-	mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
-	methods = mono_image_get_table_info (image, MONO_TABLE_METHOD);
-	for (guint32 i = 0; i < table_info_get_rows (methods); ++i) {
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_MethodDef, &c, &count))
+		return NULL;
+	
+	for (guint32 i = 0; i < count; ++i, md_cursor_next (&c)) {
 		ERROR_DECL (error);
-		guint32 token = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);
-		const char *n = mono_metadata_string_heap (image, token);
-
+		const char *n;
+		if (1 != md_get_column_value_as_utf8 (c, mdtMethodDef_Name, 1, &n))
+			continue;
+		
 		if (strcmp (n, desc->name))
 			continue;
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
+		
+		guint32 token;
+		if (!md_cursor_to_token (c, &token))
+			g_assert_not_reached();
+		
+		method = mono_get_method_checked (image, token, NULL, NULL, error);
 		if (!method) {
 			mono_error_cleanup (error);
 			continue;

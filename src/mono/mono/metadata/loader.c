@@ -51,6 +51,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-path.h>
+#include <dnmd.h>
 
 /*
  * This lock protects the hash tables inside MonoImage used by the metadata
@@ -249,54 +250,61 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 {
 	MonoClass *klass = NULL;
 	MonoClassField *field;
-	MonoTableInfo *tables = image->tables;
 	MonoType *sig_type;
-	guint32 cols[6];
-	guint32 nindex, class_index;
 	const char *fname;
 	const char *ptr;
-	guint32 idx = mono_metadata_token_index (token);
+	guint32 sig_lenth;
 
 	error_init (error);
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
-	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
-	class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-
-	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
-
-	switch (class_index) {
-	case MONO_MEMBERREF_PARENT_TYPEDEF:
-		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | nindex, error);
+	mdcursor_t c;
+	if (!md_token_to_cursor (image->metadata_handle, token, &c))
+		return NULL;
+	
+	guint32 parent_token;
+	if (1 != md_get_column_value_as_token (c, mdtMemberRef_Class, 1, &parent_token))
+		return NULL;
+	
+	if (1 != md_get_column_value_as_utf8 (c, mdtMemberRef_Name, 1, &fname))
+		return NULL;
+	
+	switch (mono_metadata_token_table (parent_token)) {
+	case MONO_TABLE_TYPEDEF:
+		klass = mono_class_get_checked (image, parent_token, error);
 		break;
-	case MONO_MEMBERREF_PARENT_TYPEREF:
-		klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
+	case MONO_TABLE_TYPEREF:
+		klass = mono_class_from_typeref_checked (image, parent_token, error);
 		break;
-	case MONO_MEMBERREF_PARENT_TYPESPEC:
-		klass = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_SPEC | nindex, context, error);
+	case MONO_TABLE_TYPESPEC:
+		klass = mono_class_get_and_inflate_typespec_checked (image, parent_token, context, error);
 		break;
 	default:
-		mono_error_set_bad_image (error, image, "Bad field field '%u' signature 0x%08x", class_index, token);
+		mono_error_set_bad_image (error, image, "Bad field field '%u' signature 0x%08x", parent_token, token);
 	}
 
 	if (!klass)
 		return NULL;
-
-	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
-	mono_metadata_decode_blob_size (ptr, &ptr);
-	/* we may want to check the signature here... */
-
+	
+	if (1 != md_get_column_value_as_blob (c, mdtMemberRef_Signature, 1, (uint8_t const**)&ptr, &sig_lenth))
+		return NULL;
+	
 	if (*ptr++ != 0x6) {
-		mono_error_set_field_missing (error, klass, fname, NULL, "Bad field signature class token %08x field token %08x", class_index, token);
+		mono_error_set_field_missing (error, klass, fname, NULL, "Bad field signature class token %08x field token %08x", parent_token, token);
 		return NULL;
 	}
+
+	bool raw_fields_to_read[MONO_MEMBERREF_SIZE] = { 0 };
+	raw_fields_to_read[MONO_MEMBERREF_SIGNATURE] = true;
+	guint32 raw_fields[MONO_MEMBERREF_SIZE];
+	if (!md_get_column_values_raw (c, MONO_MEMBERREF_SIZE, raw_fields_to_read, raw_fields))
+		return NULL;
 
 	/* FIXME: This needs a cache, especially for generic instances, since
 	 * we ask mono_metadata_parse_type_checked () to allocates everything from a mempool.
 	 * FIXME part2, mono_metadata_parse_type_checked actually allows for a transient type instead.
 	 * FIXME part3, transient types are not 100% transient, so we need to take care of that first.
 	 */
-	sig_type = (MonoType *)find_cached_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE]);
+	sig_type = (MonoType *)find_cached_memberref_sig (image, raw_fields[MONO_MEMBERREF_SIGNATURE]);
 	if (!sig_type) {
 		ERROR_DECL (inner_error);
 		sig_type = mono_metadata_parse_type_checked (image, NULL, 0, FALSE, ptr, &ptr, inner_error);
@@ -305,7 +313,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 			mono_error_cleanup (inner_error);
 			return NULL;
 		}
-		sig_type = (MonoType *)cache_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE], sig_type);
+		sig_type = (MonoType *)cache_memberref_sig (image, raw_fields[MONO_MEMBERREF_SIGNATURE], sig_type);
 	}
 
 	mono_class_init_internal (klass); /*FIXME is this really necessary?*/
@@ -420,14 +428,16 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		int first_idx = mono_class_get_first_method_idx (klass);
 		int mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
-			guint32 cols [MONO_METHOD_SIZE];
+			mdcursor_t c;
+			if (!md_token_to_cursor (klass_image->metadata_handle, MONO_TOKEN_METHOD_DEF | (first_idx + i + 1), &c))
+				continue;
+			
 			MonoMethod *method;
 			const char *m_name;
 			MonoMethodSignature *other_sig;
 
-			mono_metadata_decode_table_row (klass_image, MONO_TABLE_METHOD, first_idx + i, cols, MONO_METHOD_SIZE);
-
-			m_name = mono_metadata_string_heap (klass_image, cols [MONO_METHOD_NAME]);
+			if (1 != md_get_column_value_as_utf8 (c, mdtMethodDef_Name, 1, &m_name))
+				continue;
 
 			if (!((fqname && !strcmp (m_name, fqname)) ||
 				  (qname && !strcmp (m_name, qname)) ||
@@ -833,28 +843,30 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 	return NULL;
 }
 
+
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typespec_context,
 		       gboolean *used_context, MonoError *error)
 {
 	MonoClass *klass = NULL;
 	MonoMethod *method = NULL;
-	MonoTableInfo *tables = image->tables;
-	guint32 cols[6];
-	guint32 nindex, class_index, sig_idx;
+	guint32 class_token, sig_len;
 	const char *mname;
 	MonoMethodSignature *sig;
-	const char *ptr;
+	const guint8 *ptr;
 
 	error_init (error);
+	
+	mdcursor_t mr;
+	if (!md_token_to_cursor (image->metadata_handle, MONO_TOKEN_MEMBER_REF | idx, &mr))
+		goto fail;
+	
+	if (1 != md_get_column_value_as_token (mr, mdtMemberRef_Class, 1, &class_token))
+		goto fail;
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
-	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
-	class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
-		mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));*/
-
-	mname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
+	if (1 != md_get_column_value_as_utf8 (mr, mdtMemberRef_Name, 1, &mname))
+		goto fail;
+	/*g_print ("methodref: 0x%x %s\n", class, mname);*/
 
 	/*
 	 * Whether we actually used the `typespec_context' or not.
@@ -862,62 +874,66 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	 * method into a cache.
 	 */
 	if (used_context)
-		*used_context = class_index == MONO_MEMBERREF_PARENT_TYPESPEC;
+		*used_context = class_token == mono_metadata_token_table(class_token) == MONO_TABLE_TYPESPEC;
 
-	switch (class_index) {
-	case MONO_MEMBERREF_PARENT_TYPEREF:
-		klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
+	switch (mono_metadata_token_table(class_token)) {
+	case MONO_TABLE_TYPEREF:
+		klass = mono_class_from_typeref_checked (image, class_token, error);
 		if (!klass)
 			goto fail;
 		break;
-	case MONO_MEMBERREF_PARENT_TYPESPEC:
+	case MONO_TABLE_TYPESPEC:
 		/*
 		 * Parse the TYPESPEC in the parent's context.
 		 */
-		klass = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_SPEC | nindex, typespec_context, error);
+		klass = mono_class_get_and_inflate_typespec_checked (image, class_token, typespec_context, error);
 		if (!klass)
 			goto fail;
 		break;
-	case MONO_MEMBERREF_PARENT_TYPEDEF:
-		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | nindex, error);
+	case MONO_TABLE_TYPEDEF:
+		klass = mono_class_get_checked (image, class_token, error);
 		if (!klass)
 			goto fail;
 		break;
-	case MONO_MEMBERREF_PARENT_METHODDEF: {
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, NULL, error);
+	case MONO_TABLE_METHOD: {
+		method = mono_get_method_checked (image, class_token, NULL, NULL, error);
 		if (!method)
 			goto fail;
 		return method;
 	}
 	default:
-		mono_error_set_bad_image (error, image, "Memberref parent unknown: class: %d, index %d", class_index, nindex);
+		mono_error_set_bad_image (error, image, "Memberref parent unknown: class: %d", class_token);
 		goto fail;
 	}
 
 	g_assert (klass);
 	mono_class_init_internal (klass);
 
-	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
+	if (1 != md_get_column_value_as_blob (mr, mdtMemberRef_Signature, 1, &ptr, &sig_len))
+		goto fail;
 
-	ptr = mono_metadata_blob_heap (image, sig_idx);
-	mono_metadata_decode_blob_size (ptr, &ptr);
+	bool raw_fields_to_read[MONO_MEMBERREF_SIZE] = { 0 };
+	raw_fields_to_read[MONO_MEMBERREF_SIGNATURE] = true;
+	guint32 raw_fields[MONO_MEMBERREF_SIZE];
+	if (!md_get_column_values_raw (mr, MONO_MEMBERREF_SIZE, raw_fields_to_read, raw_fields))
+		return NULL;
 
-	sig = (MonoMethodSignature *)find_cached_memberref_sig (image, sig_idx);
+	sig = (MonoMethodSignature *)find_cached_memberref_sig (image, raw_fields[MONO_MEMBERREF_SIGNATURE]);
 	if (!sig) {
-		sig = mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, error);
+		sig = mono_metadata_parse_method_signature_full (image, NULL, 0, (const char*)ptr, NULL, error);
 		if (sig == NULL)
 			goto fail;
 
-		sig = (MonoMethodSignature *)cache_memberref_sig (image, sig_idx, sig);
+		sig = (MonoMethodSignature *)cache_memberref_sig (image, raw_fields[MONO_MEMBERREF_SIGNATURE], sig);
 	}
 
-	switch (class_index) {
-	case MONO_MEMBERREF_PARENT_TYPEREF:
-	case MONO_MEMBERREF_PARENT_TYPEDEF:
+	switch (mono_metadata_token_table(class_token)) {
+	case MONO_TABLE_TYPEREF:
+	case MONO_TABLE_TYPEDEF:
 		method = find_method (klass, NULL, mname, sig, klass, error);
 		break;
 
-	case MONO_MEMBERREF_PARENT_TYPESPEC: {
+	case MONO_TABLE_TYPESPEC: {
 		MonoType *type;
 
 		type = m_class_get_byval_arg (klass);
@@ -933,7 +949,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		break;
 	}
 	default:
-		mono_error_set_bad_image (error, image,"Memberref parent unknown: class: %d, index %d", class_index, nindex);
+		mono_error_set_bad_image (error, image,"Memberref parent unknown: class: %d", class_token);
 		goto fail;
 	}
 
@@ -952,22 +968,23 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 {
 	MonoMethod *method;
 	MonoClass *klass;
-	MonoTableInfo *tables = image->tables;
 	MonoGenericContext new_context;
 	MonoGenericInst *inst;
 	const char *ptr;
-	guint32 cols [MONO_METHODSPEC_SIZE];
-	guint32 token, nindex, param_count;
+	guint32 token, param_count, sig_len;
+	mdcursor_t spec;
 
 	error_init (error);
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
-	token = cols [MONO_METHODSPEC_METHOD];
-	nindex = token >> MONO_METHODDEFORREF_BITS;
+	if (!md_token_to_cursor (image->metadata_handle, MONO_TOKEN_METHOD_SPEC | idx, &spec))
+		return NULL;
+	
+	if (1 != md_get_column_value_as_token (spec, mdtMethodSpec_Method, 1, &token))
+		return NULL;
 
-	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
+	if (1 != md_get_column_value_as_blob (spec, mdtMethodSpec_Instantiation, 1, (guint8 const**)&ptr, &sig_len))
+		return NULL;
 
-	mono_metadata_decode_value (ptr, &ptr);
 	ptr++;
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
@@ -981,12 +998,12 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 			return NULL;
 	}
 
-	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF) {
-		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context, error);
+	if (mono_metadata_token_table(token) == MONO_TABLE_METHOD) {
+		method = mono_get_method_checked (image, token, NULL, context, error);
 		if (!method)
 			return NULL;
 	} else {
-		method = method_from_memberref (image, nindex, context, NULL, error);
+		method = method_from_memberref (image, mono_metadata_token_index(token), context, NULL, error);
 	}
 
 	if (!method)
@@ -1016,10 +1033,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	MonoMethod *result;
 	int table = mono_metadata_token_table (token);
 	int idx = mono_metadata_token_index (token);
-	MonoTableInfo *tables = image->tables;
 	MonoGenericContainer *generic_container = NULL, *container = NULL;
-	const char *sig = NULL;
-	guint32 cols [MONO_METHOD_SIZE];
+	const guint8 *sig = NULL;
 
 	error_init (error);
 
@@ -1067,10 +1082,24 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			return NULL;
 	}
 
-	mono_metadata_decode_row (&image->tables [MONO_TABLE_METHOD], idx - 1, cols, MONO_METHOD_SIZE);
+	mdcursor_t method;
+	if (!md_token_to_cursor (image->metadata_handle, token, &method))
+		return NULL;
 
-	if ((cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+	uint32_t flags;
+	if (1 != md_get_column_value_as_constant (method, mdtMethodDef_Flags, 1, &flags))
+		return NULL;
+	
+	uint32_t impl_flags;
+	if (1 != md_get_column_value_as_constant (method, mdtMethodDef_ImplFlags, 1, &impl_flags))
+		return NULL;
+	
+	const char* name;
+	if (1 != md_get_column_value_as_utf8 (method, mdtMethodDef_Name, 1, &name))
+		return NULL;
+
+	if ((flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	    (impl_flags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodPInvoke));
 	} else {
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethod));
@@ -1081,10 +1110,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	result->slot = -1;
 	result->klass = klass;
-	result->flags = GUINT32_TO_UINT16 (cols [MONO_METHOD_FLAGS]);
-	result->iflags = GUINT32_TO_UINT16 (cols [MONO_METHOD_IMPLFLAGS]);
+	result->flags = GUINT32_TO_UINT16 (flags);
+	result->iflags = GUINT32_TO_UINT16 (impl_flags);
 	result->token = token;
-	result->name = mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]);
+	result->name = name;
 
 	/* If a method is abstract and marked as an icall, silently ignore the
 	 * icall attribute so that we don't later emit a warning that the icall
@@ -1094,9 +1123,9 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	    (result->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		result->iflags &= ~METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 
-	if (!sig) /* already taken from the methodref */
-		sig = mono_metadata_blob_heap (image, cols [MONO_METHOD_SIGNATURE]);
-	/* size = */ mono_metadata_decode_blob_size (sig, &sig);
+	guint32 sig_size;
+	if (1 != md_get_column_value_as_blob (method, mdtMethodDef_Signature, 1, &sig, &sig_size))
+		return NULL;
 
 	container = mono_class_try_get_generic_container (klass);
 
@@ -1116,23 +1145,34 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		container = generic_container;
 	}
 
-	if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+	if (impl_flags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (result->klass == mono_defaults.string_class && !strcmp (result->name, ".ctor"))
 			result->string_ctor = 1;
-	} else if (cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+	} else if (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
 
 #ifdef TARGET_WIN32
+		guint32 rva;
+		if (1 != md_get_column_value_as_constant (method, mdtMethodDef_Rva, 1, &rva))
+			return NULL;
 		/* IJW is P/Invoke with a predefined function pointer. */
-		if (m_image_is_module_handle (image) && (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
-			piinfo->addr = mono_image_rva_map (image, cols [MONO_METHOD_RVA]);
+		if (m_image_is_module_handle (image) && (impl_flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+			piinfo->addr = mono_image_rva_map (image, rva);
 			g_assert (piinfo->addr);
 		}
 #endif
 		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 		/* Native methods can have no map. */
-		if (piinfo->implmap_idx)
-			piinfo->piflags = GUINT32_TO_UINT16 (mono_metadata_decode_row_col (&tables [MONO_TABLE_IMPLMAP], piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS));
+		if (piinfo->implmap_idx) {
+			mdcursor_t c;
+			if (!md_token_to_cursor (image->metadata_handle, mono_metadata_make_token(MONO_TABLE_IMPLMAP, piinfo->implmap_idx), &c))
+				return NULL;
+			
+			guint32 implmap_flags;
+			if (1 != md_get_column_value_as_constant (c, mdtImplMap_MappingFlags, 1, &implmap_flags))
+				return NULL;
+			piinfo->piflags = GUINT32_TO_UINT16 (implmap_flags);
+		}
 	}
 
  	if (generic_container)
@@ -1422,9 +1462,8 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 void
 mono_method_get_param_names_internal (MonoMethod *method, const char **names)
 {
-	int i, lastp;
+	int i;
 	MonoClass *klass;
-	MonoTableInfo *paramt;
 	MonoMethodSignature *signature;
 	guint32 idx;
 
@@ -1477,22 +1516,35 @@ mono_method_get_param_names_internal (MonoMethod *method, const char **names)
 		return;
 	}
 
-	paramt = &klass_image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
+		
+		mdcursor_t method_cursor;
 
-		guint32 cols [MONO_PARAM_SIZE];
-		guint param_index;
-
-		param_index = mono_metadata_get_method_params (klass_image, idx, (uint32_t*)&lastp);
-
-		if (!param_index)
+		if (!md_token_to_cursor (klass_image->metadata_handle, mono_metadata_make_token (MONO_TABLE_METHOD, idx), &method_cursor))
 			return;
 
-		for (i = param_index; i < lastp; ++i) {
-			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
-			if (cols [MONO_PARAM_SEQUENCE] && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) /* skip return param spec and bounds check*/
-				names [cols [MONO_PARAM_SEQUENCE] - 1] = mono_metadata_string_heap (klass_image, cols [MONO_PARAM_NAME]);
+		mdcursor_t paramList;
+		uint32_t count;
+
+		if (!md_get_column_value_as_range (method_cursor, mdtMethodDef_ParamList, &paramList, &count))
+			return;
+
+		for (i = 0; i < count; ++i, md_cursor_next(&paramList)) {
+			mdcursor_t p;
+			if (!md_resolve_indirect_cursor (paramList, &p))
+				return;
+			
+			guint32 sequence;
+			if (1 != md_get_column_value_as_constant (p, mdtParam_Sequence, 1, &sequence))
+				return;
+
+			const char *name;
+			if (1 != md_get_column_value_as_utf8 (p, mdtParam_Name, 1, &name))
+				return;
+
+			if (sequence && sequence <= signature->param_count) /* skip return param spec and bounds check*/
+				names [sequence - 1] = name;
 		}
 	}
 }
@@ -1531,9 +1583,8 @@ mono_method_get_param_token (MonoMethod *method, int index)
 void
 mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 {
-	int i, lastp;
+	int i;
 	MonoClass *klass = method->klass;
-	MonoTableInfo *paramt;
 	MonoMethodSignature *signature;
 	guint32 idx;
 
@@ -1570,27 +1621,39 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	mono_class_init_internal (klass);
 
 	MonoImage *klass_image = m_class_get_image (klass);
-	paramt = &klass_image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
-		guint32 cols [MONO_PARAM_SIZE];
-		guint param_index = mono_metadata_get_method_params (klass_image, idx, (uint32_t*)&lastp);
+		mdcursor_t method_cursor;
 
-		if (!param_index)
+		if (!md_token_to_cursor (klass_image->metadata_handle, mono_metadata_make_token (MONO_TABLE_METHOD, idx), &method_cursor))
 			return;
 
-		for (i = param_index; i < lastp; ++i) {
-			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
+		mdcursor_t paramList;
+		uint32_t count;
 
-			if (cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) {
+		if (!md_get_column_value_as_range (method_cursor, mdtMethodDef_ParamList, &paramList, &count))
+			return;
+
+		for (i = 0; i < count; ++i, md_cursor_next(&paramList)) {
+			mdcursor_t p;
+			if (!md_resolve_indirect_cursor (paramList, &p))
+				return;
+			
+			guint32 sequence;
+			if (1 != md_get_column_value_as_constant (p, mdtParam_Sequence, 1, &sequence))
+				return;
+			
+			guint32 flags;
+			if (1 != md_get_column_value_as_constant (p, mdtParam_Flags, 1, &flags))
+				return;
+
+			if (flags & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL && sequence <= signature->param_count) {
 				const char *tp;
 				tp = mono_metadata_get_marshal_info (klass_image, i - 1, FALSE);
 				g_assert (tp);
-				mspecs [cols [MONO_PARAM_SEQUENCE]]= mono_metadata_parse_marshal_spec (klass_image, tp);
+				mspecs [sequence]= mono_metadata_parse_marshal_spec (klass_image, tp);
 			}
 		}
-
-		return;
 	}
 }
 
@@ -1600,9 +1663,8 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 gboolean
 mono_method_has_marshal_info (MonoMethod *method)
 {
-	int i, lastp;
+	int i;
 	MonoClass *klass = method->klass;
-	MonoTableInfo *paramt;
 	guint32 idx;
 
 	if (image_is_dynamic (m_class_get_image (method->klass))) {
@@ -1621,21 +1683,33 @@ mono_method_has_marshal_info (MonoMethod *method)
 	mono_class_init_internal (klass);
 
 	MonoImage *klass_image = m_class_get_image (klass);
-	paramt = &klass_image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
-		guint32 cols [MONO_PARAM_SIZE];
-		guint param_index = mono_metadata_get_method_params (klass_image, idx, (uint32_t*)&lastp);
+		mdcursor_t method_cursor;
 
-		if (!param_index)
+		if (!md_token_to_cursor (klass_image->metadata_handle, mono_metadata_make_token (MONO_TABLE_METHOD, idx), &method_cursor))
 			return FALSE;
 
-		for (i = param_index; i < lastp; ++i) {
-			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
+		mdcursor_t paramList;
+		uint32_t count;
 
-			if (cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL)
+		if (!md_get_column_value_as_range (method_cursor, mdtMethodDef_ParamList, &paramList, &count))
+			return FALSE;
+
+		for (i = 0; i < count; ++i, md_cursor_next(&paramList)) {
+			mdcursor_t p;
+			if (!md_resolve_indirect_cursor (paramList, &p))
+				continue;
+
+			guint32 flags;
+			if (1 != md_get_column_value_as_constant (p, mdtParam_Flags, 1, &flags))
+				continue;
+
+			if (flags & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL) {
 				return TRUE;
+			}
 		}
+
 		return FALSE;
 	}
 	return FALSE;

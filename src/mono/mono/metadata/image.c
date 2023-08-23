@@ -443,7 +443,7 @@ mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
  * Return the module mvid GUID or FALSE if the image doesn't have a module table.
  */
 static const gboolean
-mono_metadata_module_mvid (MonoImage *image, md_guid_t* pmvid)
+mono_metadata_module_mvid (MonoImage *image, mdguid_t* pmvid)
 {
 	if (image->metadata_handle == NULL)
 		return FALSE;
@@ -579,7 +579,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 		image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
 	} else {
-		md_guid_t mvid;
+		mdguid_t mvid;
 		if (mono_metadata_module_mvid(image, &mvid))
 			image->guid = mono_guid_to_string ((const guint8*)&mvid);
 		else {
@@ -2743,8 +2743,6 @@ const char*
 mono_image_get_public_key (MonoImage *image, guint32 *size)
 {
 	const char *pubkey;
-	guint32 len, tok;
-
 	if (image_is_dynamic (image)) {
 		if (size)
 			*size = ((MonoDynamicImage*)image)->public_key_len;
@@ -2760,8 +2758,10 @@ mono_image_get_public_key (MonoImage *image, guint32 *size)
 	if (1 != md_get_column_value_as_blob(c, mdtAssembly_PublicKey, 1, &public_key, &public_key_len))
 		return NULL;
 
+	pubkey = (const char*)public_key;
+
 	if (size)
-		*size = len;
+		*size = public_key_len;
 	return pubkey;
 }
 

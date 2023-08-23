@@ -14,6 +14,7 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/metadata/unsafe-accessor.h"
+#include <dnmd.h>
 
 
 
@@ -32,21 +33,27 @@ find_method_simple (MonoClass *klass, const char *name, const char *qname, const
 		int first_idx = mono_class_get_first_method_idx (klass);
 		int mcount = mono_class_get_method_count (klass);
 		for (int i = 0; i < mcount; ++i) {
-			guint32 cols [MONO_METHOD_SIZE];
 			MonoMethod *method;
 			const char *m_name;
 			MonoMethodSignature *other_sig;
 
-			mono_metadata_decode_table_row (klass_image, MONO_TABLE_METHOD, first_idx + i, cols, MONO_METHOD_SIZE);
-
-			m_name = mono_metadata_string_heap (klass_image, cols [MONO_METHOD_NAME]);
+			guint32 token = mono_metadata_make_token(MONO_TABLE_METHOD, first_idx + i + 1);
+			mdcursor_t c;
+			if (!md_token_to_cursor (klass_image->metadata_handle, token, &c))
+				continue;
+			
+			if (!md_resolve_indirect_cursor (c, &c))
+				continue;
+			
+			if (1 != md_get_column_value_as_utf8 (c, mdtMethodDef_Name, 1, &m_name))
+				continue;
 
 			if (!((fqname && !strcmp (m_name, fqname)) ||
 				  (qname && !strcmp (m_name, qname)) ||
 				  (name && !strcmp (m_name, name))))
 				continue;
 
-			method = mono_get_method_checked (klass_image, MONO_TOKEN_METHOD_DEF | (first_idx + i + 1), klass, NULL, error);
+			method = mono_get_method_checked (klass_image, token, klass, NULL, error);
 			if (!is_ok (error)) //bail out if we hit a loader error
 				return NULL;
 

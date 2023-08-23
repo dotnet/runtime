@@ -52,6 +52,7 @@
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
 #include "icall-decl.h"
+#include <dnmd.h>
 
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, gboolean *type_resolve, MonoError *error);
@@ -333,10 +334,7 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 MonoReflectionModuleHandle
 mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError *error)
 {
-	MonoTableInfo *table;
-	guint32 cols [MONO_FILE_SIZE];
 	const char *name;
-	guint32 name_idx;
 	const char *val;
 
 	error_init (error);
@@ -344,25 +342,29 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 	MonoReflectionModuleHandle res = MONO_HANDLE_CAST (MonoReflectionModule, mono_object_new_handle (mono_class_get_mono_module_class (), error));
 	goto_if_nok (error, fail);
 
-	table = &image->tables [MONO_TABLE_FILE];
-	g_assert (GINT_TO_UINT32(table_index) < table_info_get_rows (table));
-	mono_metadata_decode_row (table, table_index, cols, MONO_FILE_SIZE);
+	mdcursor_t c;
+	if (!md_token_to_cursor (image->metadata_handle, mono_metadata_make_token (MONO_TABLE_FILE, table_index + 1), &c))
+		goto fail;
 
 	MONO_HANDLE_SETVAL (res, image, MonoImage*, NULL);
 	MonoReflectionAssemblyHandle assm_obj;
 	assm_obj = mono_assembly_get_object_handle (image->assembly, error);
 	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (res, assembly, assm_obj);
-	name = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
+
+	if (1 != md_get_column_value_as_utf8 (c, mdtFile_Name, 1, &name))
+		goto fail;
 
 	/* Check whenever the row has a corresponding row in the moduleref table */
-	table = &image->tables [MONO_TABLE_MODULEREF];
-	guint32 rows = table_info_get_rows (table);
-	for (guint32 i = 0; i < rows; ++i) {
-		name_idx = mono_metadata_decode_row_col (table, i, MONO_MODULEREF_NAME);
-		val = mono_metadata_string_heap (image, name_idx);
-		if (strcmp (val, name) == 0)
-			MONO_HANDLE_SETVAL (res, image, MonoImage*, image->modules [i]);
+	mdcursor_t module_ref;
+	uint32_t count;
+	if (md_create_cursor (image->metadata_handle, mdtid_ModuleRef, &module_ref, &count)) {
+		for (guint32 i = 0; i < count; ++i, md_cursor_next(&module_ref)) {
+			if (1 != md_get_column_value_as_utf8 (module_ref, mdtModuleRef_Name, 1, &val))
+				goto fail;
+			if (strcmp (val, name) == 0)
+				MONO_HANDLE_SETVAL (res, image, MonoImage*, image->modules [i]);
+		}
 	}
 
 	MONO_HANDLE_SET (res, fqname, mono_string_new_handle (name, error));
@@ -371,7 +373,12 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 	goto_if_nok (error, fail);
 	MONO_HANDLE_SET (res, scopename, mono_string_new_handle (name, error));
 	goto_if_nok (error, fail);
-	MONO_HANDLE_SETVAL (res, is_resource, MonoBoolean, cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA);
+
+	guint32 flags;
+	if (1 != md_get_column_value_as_constant (c, mdtFile_Flags, 1, &flags))
+		goto fail;
+
+	MONO_HANDLE_SETVAL (res, is_resource, MonoBoolean, flags & FILE_CONTAINS_NO_METADATA);
 	MONO_HANDLE_SETVAL (res, token, guint32, mono_metadata_make_token (MONO_TABLE_FILE, table_index + 1));
 
 	return res;
