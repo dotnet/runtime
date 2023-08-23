@@ -10,10 +10,8 @@
 #define FOH_COMMIT_SIZE (64 * 1024)
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
-    // This lock is used in PREEMP mode
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE),
-    // This lock is used in COOP mode
-    m_SegmentRegistrationCrst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
+    m_SegmentRegistrationCrst(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE),
     m_CurrentSegment(nullptr)
 {
 }
@@ -35,14 +33,14 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     return nullptr;
 #else // FEATURE_BASICFREEZE
 
+    GCX_PREEMP();
+
     Object* obj = nullptr;
     FrozenObjectSegment* curSeg = nullptr;
     uint8_t* curSegmentCurrent = nullptr;
     size_t curSegSizeCommitted = 0;
 
     {
-        GCX_PREEMP();
-
         CrstHolder ch(&m_Crst);
 
         _ASSERT(type != nullptr);
