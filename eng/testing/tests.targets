@@ -163,18 +163,22 @@ set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
   <!-- ExecutionScriptKind is used by the "magic" DependsOnTargets below to have GenerateRunScript depend on
        either GetSuperPMICollectionBatchScript or GetSuperPMICollectionBashScript, as appropriate.
   -->
+  <!-- delete?
   <ItemGroup>
-    <ExecutionScriptKind Include="Batch" Condition="'$(RunScriptWindowsCmd)' == 'true'" />
-    <ExecutionScriptKind Include="Bash"  Condition="'$(RunScriptWindowsCmd)' != 'true'" />
+    <ExecutionScriptKind Condition="'$(RunScriptWindowsCmd)' == 'true'" Include="Batch" />
+    <ExecutionScriptKind Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="Bash" />
   </ItemGroup>
+  -->
 
   <!-- ******************************************************************************************
   end SuperPMI collection
+
+  // save: DependsOnTargets="GetSuperPMICollection@(ExecutionScriptKind, 'Script;GetSuperPMICollection')Script">
   ******************************************************************************************* -->
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateRunScript"
-          DependsOnTargets="GetSuperPMICollection@(ExecutionScriptKind, 'Script;GetSuperPMICollection')Script">
+          DependsOnTargets="GetSuperPMICollectionBatchScript;GetSuperPMICollectionBashScript">
 
     <PropertyGroup>
       <!-- RSP file support. -->
@@ -198,6 +202,10 @@ set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
       <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="echo 'testing 1'"/>
 
       <!-- SuperPMI collection -->
+      <!--
+      ***** why does the Windows collection work and the bash/Linux/OSX collection doesn't get the collection commands added?
+      ***** secondarily, why aren't there newlines in the "echo" version of the windows commands?
+      -->
       <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' == 'true'" Include="$(SuperPMICollectionBatchScript)"/>
       <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="$(SuperPMICollectionBashScript)"/>
 
