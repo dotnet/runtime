@@ -19,12 +19,14 @@
 
   <!-- Profiled AOT with .nettrace -->
   <PropertyGroup>
-    <NetTraceFilePath>$(MSBuildThisFileDirectory)\test.nettrace</NetTraceFilePath>
+    <NetTraceFilePath Condition="'$(Configuration)' == 'Release'">$(MSBuildThisFileDirectory)\test_release.nettrace</NetTraceFilePath>
+    <NetTraceFilePath Condition="'$(Configuration)' == 'Debug'">$(MSBuildThisFileDirectory)\test_debug.nettrace</NetTraceFilePath>
   </PropertyGroup>
 
   <!-- Profiled AOT with .mibc-->
   <PropertyGroup>
-    <ProfiledAOTProfilePaths>$(MSBuildThisFileDirectory)\test.mibc</ProfiledAOTProfilePaths>
+    <ProfiledAOTProfilePaths Condition="'$(Configuration)' == 'Release'">$(MSBuildThisFileDirectory)\test_release.mibc</ProfiledAOTProfilePaths>
+    <ProfiledAOTProfilePaths Condition="'$(Configuration)' == 'Debug'">$(MSBuildThisFileDirectory)\test_debug.mibc</ProfiledAOTProfilePaths>
   </PropertyGroup>
 
   <ItemGroup>
