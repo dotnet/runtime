@@ -3429,7 +3429,7 @@ void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
     CONTRACTL_END;
 
     Frame* pFrame = pThread->m_pFrame;
-    if (pFrame < pvLimitSP)
+    if (pThread->IsStackPointerBefore(dac_cast<TADDR>(pFrame), dac_cast<TADDR>(pvLimitSP)))
     {
         GCX_COOP_THREAD_EXISTS(pThread);
 
