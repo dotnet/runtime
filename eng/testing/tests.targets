@@ -195,6 +195,15 @@ set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
       <RunScriptCommand Condition=" $(TestDebugger.Contains('devenv'))">$(TestDebugger) /debugexe $(RunScriptCommand)</RunScriptCommand>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <SuperPMITest><![CDATA[
+# SuperPMI collection test 1
+# SuperPMI collection test 2
+# SuperPMI collection test 3
+]]>
+      </SuperPMITest>
+    </PropertyGroup>
+
     <ItemGroup>
 
       <!-- testing! -->
@@ -206,6 +215,7 @@ set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
       ***** why does the Windows collection work and the bash/Linux/OSX collection doesn't get the collection commands added?
       ***** secondarily, why aren't there newlines in the "echo" version of the windows commands?
       -->
+      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="$(SuperPMITest)"/>
       <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' == 'true'" Include="$(SuperPMICollectionBatchScript)"/>
       <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="$(SuperPMICollectionBashScript)"/>
 
