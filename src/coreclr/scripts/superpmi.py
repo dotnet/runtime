@@ -4332,7 +4332,7 @@ def setup_args(args):
 
         if coreclr_args.nativeaot:
             # Can we find nativeaot?
-            nativeaot_tool_name = "ilc.exe"
+            nativeaot_tool_name = "ilc.exe" if platform.system() == "Windows" else "ilc"
             nativeaot_tool_path = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "bin", "coreclr", f'{coreclr_args.target_os}.{coreclr_args.target_arch}.{coreclr_args.build_type}', "ilc-published", nativeaot_tool_name))
             nativeaot_aotsdk_path = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "bin", "coreclr", f'{coreclr_args.target_os}.{coreclr_args.target_arch}.{coreclr_args.build_type}', "aotsdk"))
             if not os.path.exists(nativeaot_tool_path):

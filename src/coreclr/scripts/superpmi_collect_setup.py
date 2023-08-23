@@ -47,7 +47,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (crossgen2, pmi, run, run_tiered, run_pgo)")
+parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo)")
 parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
@@ -60,7 +60,7 @@ parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi
 
 is_windows = platform.system() == "Windows"
 
-legal_collection_types = [ "crossgen2", "pmi", "run", "run_tiered", "run_pgo" ]
+legal_collection_types = [ "nativeaot", "crossgen2", "pmi", "run", "run_tiered", "run_pgo" ]
 
 directories_to_ignore = [
     "runtimes", # This appears to be the result of a nuget package that includes a bunch of native code
@@ -255,13 +255,13 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "input_directory",
-                        lambda input_directory: coreclr_args.collection_type not in [ "pmi", "crossgen2" ] or os.path.isdir(input_directory),
+                        lambda input_directory: coreclr_args.collection_type not in [ "pmi", "crossgen2", "nativeaot" ] or os.path.isdir(input_directory),
                         "input_directory doesn't exist",
                         modify_arg=lambda input_directory: None if input_directory is None else os.path.abspath(input_directory))
 
     coreclr_args.verify(args,
                         "max_size",
-                        lambda max_size: coreclr_args.collection_type not in [ "pmi", "crossgen2" ] or max_size > 0,
+                        lambda max_size: coreclr_args.collection_type not in [ "pmi", "crossgen2", "nativeaot" ] or max_size > 0,
                         "Please enter valid positive numeric max_size",
                         modify_arg=lambda max_size: int(
                             max_size) * 1000 * 1000 if max_size is not None and max_size.isnumeric() else 0
@@ -445,7 +445,7 @@ def main(main_args):
     core_root_dst_directory = superpmi_dst_directory
 
     # Workitem directories
-    # input_artifacts is only used for pmi/crossgen2 collections.
+    # input_artifacts is only used for pmi/crossgen2/nativeaot collections.
     input_artifacts = ""
 
     arch = coreclr_args.arch
@@ -489,7 +489,7 @@ def main(main_args):
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
     else:
-        # Setup for pmi/crossgen2 runs
+        # Setup for pmi/crossgen2/nativeaot runs
 
         # For libraries tests, copy all the test files to the single 
         # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
