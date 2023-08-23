@@ -478,8 +478,7 @@ namespace Mono.Linker
 
 			while (toProcess.Count > 0) {
 				var assembly = toProcess.Dequeue ();
-				var references = ResolveReferences (assembly);
-				foreach (var reference in references) {
+				foreach (var reference in ResolveReferences (assembly)) {
 					if (!loaded.Add (reference))
 						continue;
 					yield return reference;

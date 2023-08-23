@@ -7,11 +7,11 @@ namespace Mono.Linker
 {
 	public class MarkingHelpers
 	{
-		public LinkContext Context { get; }
+		protected readonly LinkContext _context;
 
 		public MarkingHelpers (LinkContext context)
 		{
-			Context = context;
+			_context = context;
 		}
 
 		public void MarkMatchingExportedType (TypeDefinition typeToMatch, AssemblyDefinition assembly, in DependencyInfo reason, in MessageOrigin origin)
@@ -19,16 +19,16 @@ namespace Mono.Linker
 			if (typeToMatch == null || assembly == null)
 				return;
 
-			if (assembly.MainModule.GetMatchingExportedType (typeToMatch, Context, out var exportedType))
+			if (assembly.MainModule.GetMatchingExportedType (typeToMatch, _context, out var exportedType))
 				MarkExportedType (exportedType, assembly.MainModule, reason, origin);
 		}
 
 		public void MarkExportedType (ExportedType exportedType, ModuleDefinition module, in DependencyInfo reason, in MessageOrigin origin)
 		{
-			if (!Context.Annotations.MarkProcessed (exportedType, reason))
+			if (!_context.Annotations.MarkProcessed (exportedType, reason))
 				return;
 
-			Context.Annotations.Mark (module, reason, origin);
+			_context.Annotations.Mark (module, reason, origin);
 		}
 
 		public void MarkForwardedScope (TypeReference typeReference, in MessageOrigin origin)
@@ -37,10 +37,10 @@ namespace Mono.Linker
 				return;
 
 			if (typeReference.Scope is AssemblyNameReference) {
-				var assembly = Context.TryResolve (typeReference.Scope);
+				var assembly = _context.TryResolve (typeReference.Scope);
 				if (assembly != null &&
-					Context.TryResolve (typeReference) is TypeDefinition typeDefinition &&
-					assembly.MainModule.GetMatchingExportedType (typeDefinition, Context, out var exportedType))
+					_context.TryResolve (typeReference) is TypeDefinition typeDefinition &&
+					assembly.MainModule.GetMatchingExportedType (typeDefinition, _context, out var exportedType))
 					MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, typeReference), origin);
 			}
 		}
