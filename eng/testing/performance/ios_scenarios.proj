@@ -23,6 +23,7 @@
     This will ensure that PowerBI's using the test name rather than the run configuration for the data continue to work properly and defaults are connected -->
     <HybridGlobalizationPath></HybridGlobalizationPath>
     <HybridGlobalizationPath Condition="'$(hybridGlobalization)' == 'True'"> HybridGlobalization</HybridGlobalizationPath>
+    <RunConfigsString>$(LlvmPath)$(SymbolsPath)$(HybridGlobalizationPath)</RunConfigsString>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
@@ -34,19 +35,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) .app Size$(LlvmPath)$(SymbolsPath)$(HybridGlobalizationPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) .app Size$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld ./app;$(Python) pre.py --name app</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) Zip Size$(LlvmPath)$(SymbolsPath)$(HybridGlobalizationPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) Zip Size$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <XHarnessAppBundleToTest Include="Device Startup - iOS $(RuntimeType) HelloWorld$(LlvmPath)$(SymbolsPath)$(HybridGlobalizationPath)">
+    <XHarnessAppBundleToTest Include="Device Startup - iOS $(RuntimeType) HelloWorld$(RunConfigsString)">
       <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
       <WorkItemTimeout>00:15:00</WorkItemTimeout>
       <TestTarget>ios-device</TestTarget>
