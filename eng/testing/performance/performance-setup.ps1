@@ -101,7 +101,7 @@ if ($iOSNativeAOT) {
     $Configurations += " iOSStripSymbols=$iOSStripSymbols"
 }
 
-if ($HybridGlobalization) {
+if ($HybridGlobalization -eq "True") {
     $Configurations += " HybridGlobalization=$HybridGlobalization"
 }
 

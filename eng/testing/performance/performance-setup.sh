@@ -364,7 +364,7 @@ if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
 
-if [[ "$hybridglobalization" != "" ]]; then
+if [[ "$hybridglobalization" == "True" ]]; then
     configurations="$configurations HybridGlobalization=$hybridglobalization"
 fi
 
