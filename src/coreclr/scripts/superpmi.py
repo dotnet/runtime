@@ -1146,26 +1146,18 @@ class SuperPMICollect:
                     #
                     # invoke with:
                     #
-                    # dotnet <Core_Root>\nativeaot\nativeaot.dll @<temp.rsp>
+                    # ilc.exe @<temp.rsp>
                     #
-                    # where "dotnet" is one of:
-                    # 1. <runtime_root>\dotnet.cmd/sh
-                    # 2. "dotnet" on PATH
-                    # 3. corerun in Core_Root
-
-                    aotsdk_directory_path = os.path.join(self.coreclr_args.artifacts_location, "bin", "coreclr", f'{self.coreclr_args.target_os}.{self.coreclr_args.target_arch}.{self.coreclr_args.build_type}', "aotsdk")
-                    ilc_directory_path = os.path.join(self.coreclr_args.artifacts_location, "bin", "coreclr", f'{self.coreclr_args.target_os}.{self.coreclr_args.target_arch}.{self.coreclr_args.build_type}', "ilc")
-                    ilc_published_directory_path = os.path.join(self.coreclr_args.artifacts_location, "bin", "coreclr", f'{self.coreclr_args.target_os}.{self.coreclr_args.target_arch}.{self.coreclr_args.build_type}', "ilc-pulished")
 
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
                         rsp_write_handle.write(assembly + "\n")
                         rsp_write_handle.write("-o:" + nativeaot_output_assembly_filename + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(aotsdk_directory_path, "System.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(ilc_directory_path, "System.*.dll") + "\n")
-                        # rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
-                        # rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
-                        # rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.coreclr_args.nativeaot_aotsdk_path, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         for var, value in dotnet_env.items():
@@ -1217,8 +1209,8 @@ class SuperPMICollect:
                             raise ose
 
                     # Delete the response file unless we are skipping cleanup
-                #    if not self.coreclr_args.skip_cleanup:
-                 #       os.remove(rsp_filepath)
+                    if not self.coreclr_args.skip_cleanup:
+                        os.remove(rsp_filepath)
 
                     elapsed_time = datetime.datetime.now() - begin_time
                     logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
@@ -4342,11 +4334,15 @@ def setup_args(args):
             # Can we find nativeaot?
             nativeaot_tool_name = "ilc.exe"
             nativeaot_tool_path = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "bin", "coreclr", f'{coreclr_args.target_os}.{coreclr_args.target_arch}.{coreclr_args.build_type}', "ilc-published", nativeaot_tool_name))
+            nativeaot_aotsdk_path = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "bin", "coreclr", f'{coreclr_args.target_os}.{coreclr_args.target_arch}.{coreclr_args.build_type}', "aotsdk"))
             if not os.path.exists(nativeaot_tool_path):
                 print("`--nativeaot` is specified, but couldn't find " + nativeaot_tool_path + ". (Is it built?)")
                 sys.exit(1)
+            if not os.path.exists(nativeaot_aotsdk_path):
+                print("`--nativeaot` is specified, but couldn't find directory " + nativeaot_aotsdk_path + ". (Is it built?)")
+                sys.exit(1)
 
-            # Which dotnet will we use to run it?
+            # dotnet will not be used to run ilc.exe, but we need to establish the dotnet tool path regardless
             dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
             dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
             if not os.path.exists(dotnet_tool_path):
@@ -4354,6 +4350,7 @@ def setup_args(args):
                 dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
 
             coreclr_args.nativeaot_tool_path = nativeaot_tool_path
+            coreclr_args.nativeaot_aotsdk_path = nativeaot_aotsdk_path
             coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using nativeaot tool %s", coreclr_args.nativeaot_tool_path)
             if coreclr_args.dotnet_tool_path is not None:
