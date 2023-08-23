@@ -41,9 +41,6 @@ namespace System.Threading
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
         public static void Enter(object obj, ref bool lockTaken)
         {
-            if (lockTaken)
-                ThrowLockTakenException();
-
             ReliableEnter(obj, ref lockTaken);
             Debug.Assert(lockTaken);
         }
