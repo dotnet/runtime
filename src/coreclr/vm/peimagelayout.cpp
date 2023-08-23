@@ -552,7 +552,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
     }
 
 #ifdef LOGGING
-    SString ownerPath = pOwner->GetPath();
+    SString ownerPath{ pOwner->GetPath() };
     LOG((LF_LOADER, LL_INFO1000, "PEImage: image %s (hFile %p) mapped @ %p\n",
         ownerPath.GetUTF8(), hFile, (void*)m_LoadedFile));
 #endif // LOGGING
