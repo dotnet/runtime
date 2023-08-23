@@ -28,6 +28,12 @@
       <Output TaskParameter="BaseSnapshotUrl"    PropertyName="win_ChromeBaseSnapshotUrl" />
     </GetChromeVersions>
 
+    <ItemGroup>
+      <!-- ensure newline at the end -->
+      <EnvVarForPR Include="CHROME_LINUX_VER=$(linux_ChromeVersion)" />
+      <EnvVarForPR Include="CHROME_WIN_VER=$(win_ChromeVersion)" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_PropsContent>
 &lt;Project&gt;
@@ -43,8 +49,11 @@
 &lt;/Project&gt;
       </_PropsContent>
     </PropertyGroup>
+
     <Message Text="Writing version props: $(_PropsContent)" Importance="High" />
     <WriteLinesToFile Lines="$(_PropsContent)" File="$(RepositoryEngineeringDir)testing\ChromeVersions.props" Overwrite="true" />
+
+    <WriteLinesToFile Lines="@(EnvVarForPR)" File="$(RepositoryEngineeringDir)testing\bump-chrome-pr.env" Overwrite="true" />
   </Target>
 
   <Import Project="..\..\Directory.Build.targets" />

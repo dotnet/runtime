@@ -37,12 +37,11 @@ namespace BoxTest_enum_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new Test().Fibonacci(20, ToPrintOrNotToPrint.Print);
             Console.WriteLine();
             Console.WriteLine("*** PASSED ***");
-            return 100;
         }
     }
 }

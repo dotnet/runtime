@@ -142,8 +142,6 @@ export function generateWasmBody(
     let result = 0,
         prologueOpcodeCounter = 0,
         conditionalOpcodeCounter = 0;
-    const traceIp = ip;
-
     eraseInferredState();
 
     // Skip over the enter opcode
@@ -161,7 +159,7 @@ export function generateWasmBody(
         builder.cfg.ip = ip;
 
         if (ip >= endOfBody) {
-            record_abort(traceIp, ip, traceName, "end-of-body");
+            record_abort(builder.traceIndex, ip, traceName, "end-of-body");
             if (instrumentedTraceId)
                 mono_log_info(`instrumented trace ${traceName} exited at end of body @${(<any>ip).toString(16)}`);
             break;
@@ -174,7 +172,7 @@ export function generateWasmBody(
             spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
             // mono_log_info(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
-            record_abort(traceIp, ip, traceName, "trace-too-big");
+            record_abort(builder.traceIndex, ip, traceName, "trace-too-big");
             if (instrumentedTraceId)
                 mono_log_info(`instrumented trace ${traceName} exited because of size limit at @${(<any>ip).toString(16)} (spaceLeft=${spaceLeft}b)`);
             break;
@@ -795,7 +793,7 @@ export function generateWasmBody(
                     bailoutOnFailure = (opcode === MintOpcode.MINT_CASTCLASS_INTERFACE),
                     destOffset = getArgU16(ip, 1);
                 if (!klass) {
-                    record_abort(traceIp, ip, traceName, "null-klass");
+                    record_abort(builder.traceIndex, ip, traceName, "null-klass");
                     ip = abort;
                     continue;
                 }
@@ -880,7 +878,7 @@ export function generateWasmBody(
                         (opcode === MintOpcode.MINT_CASTCLASS_COMMON),
                     destOffset = getArgU16(ip, 1);
                 if (!klass) {
-                    record_abort(traceIp, ip, traceName, "null-klass");
+                    record_abort(builder.traceIndex, ip, traceName, "null-klass");
                     ip = abort;
                     continue;
                 }
@@ -1014,7 +1012,7 @@ export function generateWasmBody(
                     elementClass = getU32_unaligned(klass + elementClassOffset);
 
                 if (!klass || !elementClass) {
-                    record_abort(traceIp, ip, traceName, "null-klass");
+                    record_abort(builder.traceIndex, ip, traceName, "null-klass");
                     ip = abort;
                     continue;
                 }
@@ -1603,7 +1601,7 @@ export function generateWasmBody(
         } else {
             if (instrumentedTraceId)
                 mono_log_info(`instrumented trace ${traceName} aborted for opcode ${opname} @${(<any>_ip).toString(16)}`);
-            record_abort(traceIp, _ip, traceName, opcode);
+            record_abort(builder.traceIndex, _ip, traceName, opcode);
         }
     }
 
@@ -1813,7 +1811,7 @@ function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: Mint
         if (nullCheckValidation) {
             builder.local("cknull_ptr");
             append_ldloc(builder, localOffset, WasmOpcode.i32_load);
-            builder.i32_const(builder.base);
+            builder.i32_const(builder.traceIndex);
             builder.i32_const(ip);
             builder.callImport("notnull");
         }
@@ -2103,7 +2101,7 @@ function emit_fieldop(
                     // cknull_ptr was not used here so all we can do is verify that the target object is not null
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
-                    builder.i32_const(builder.base);
+                    builder.i32_const(builder.traceIndex);
                     builder.i32_const(ip);
                     builder.callImport("notnull");
                 }

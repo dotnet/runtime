@@ -28,6 +28,10 @@ void jiterp_preserve_module (void);
 #include <stdlib.h>
 #include <math.h>
 
+#ifndef DISABLE_THREADS
+#include <pthread.h>
+#endif
+
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/gc-internals.h>
@@ -48,6 +52,7 @@ void jiterp_preserve_module (void);
 #include <mono/mini/llvmonly-runtime.h>
 #include <mono/utils/options.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-tls.h>
 
 #include "jiterpreter.h"
 
@@ -478,6 +483,7 @@ mono_jiterp_type_get_raw_value_size (MonoType *type) {
 EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_trace_bailout (int reason)
 {
+	// FIXME: Harmless race condition if threads are in use
 	if (reason < 256)
 		jiterp_trace_bailout_counts[reason]++;
 }
@@ -670,6 +676,7 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int value = jiterp_get_opcode_value(ins, &inside_branch_block);
 			if (value < 0) {
+				// FIXME: Harmless race condition if threads are in use
 				jiterpreter_abort_counts[ins->opcode]++;
 				return current_trace_value >= mono_opt_jiterpreter_minimum_trace_value;
 			} else if (value >= VALUE_SIMD) {
@@ -743,7 +750,11 @@ trace_info_get (gint32 index) {
 
 static gint32
 trace_info_alloc () {
+#ifdef DISABLE_THREADS
 	gint32 index = trace_count++,
+#else
+	gint32 index = atomic_fetch_add ((atomic_int *)&trace_count, 1),
+#endif
 		limit = (MAX_TRACE_SEGMENTS * TRACE_SEGMENT_SIZE);
 	// Make sure we're not out of space in the trace info table.
 	if (index == limit)
@@ -928,6 +939,52 @@ mono_interp_tier_prepare_jiterpreter_fast (
 	} else {
 		// Hit count not reached, or already reached but compilation is not done yet
 		return (JiterpreterThunk)(void*)JITERPRETER_TRAINING;
+	}
+}
+
+void
+mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
+{
+	MonoJitInfo *jinfo = imethod->jinfo;
+	const guint8 *start;
+	gboolean need_extra_free = TRUE;
+
+	// Erase the method and interpmethod from all of the thread local JIT queues
+	mono_jiterp_tlqueue_purge_all (method);
+	mono_jiterp_tlqueue_purge_all (imethod);
+
+	// FIXME: Enumerate all active threads and ensure we perform the free_method_data_js
+	//  call on every thread.
+
+	// Scan through the interp opcodes for the method and ensure that any jiterp traces
+	//  owned by it are cleaned up. This will automatically clean up any AOT related data for
+	//  the method in the process
+	if (jinfo) {
+		start = (const guint8*) jinfo->code_start;
+		const guint16 *p = (const guint16 *)start,
+			*end = (const guint16 *)(start + jinfo->code_size);
+
+		while (p < end) {
+			switch (*p) {
+				case MINT_TIER_PREPARE_JITERPRETER:
+				case MINT_TIER_NOP_JITERPRETER:
+				case MINT_TIER_ENTER_JITERPRETER:
+				case MINT_TIER_MONITOR_JITERPRETER: {
+					JiterpreterOpcode *opcode = (JiterpreterOpcode *)p;
+					guint32 trace_index = opcode->trace_index;
+					need_extra_free = FALSE;
+					mono_jiterp_free_method_data_js (method, imethod, trace_index);
+					break;
+				}
+			}
+			p = mono_interp_dis_mintop_len (p);
+		}
+	}
+
+	if (need_extra_free) {
+		// HACK: Perform a single free operation to clear out any stuff from the jit queues
+		// This will happen if we didn't encounter any jiterpreter traces in the method
+		mono_jiterp_free_method_data_js (method, imethod, 0);
 	}
 }
 
@@ -1339,6 +1396,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 			if (mono_opt_jiterpreter_trace_monitoring_log > 1)
 				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", opcode->trace_index, ip, frame->imethod->method->name, average_penalty, threshold);
 		} else {
+			// FIXME: Harmless race condition if threads are in use
 			traces_rejected++;
 			if (mono_opt_jiterpreter_trace_monitoring_log > 0) {
 				char * full_name = mono_method_get_full_name (frame->imethod->method);
@@ -1489,6 +1547,135 @@ mono_jiterp_patch_opcode (volatile JiterpreterOpcode *ip, guint16 old_opcode, gu
 	*/
 	return result;
 #endif
+}
+
+/*
+ * Unordered thread-local pointer queue (used for do_jit_call and interp_entry wrappers)
+ * The queues are all tracked in a global list so that it is possible to perform a global
+ *  'purge item with this value from all queues' operation, which means queue operations
+ *  are protected by a mutex
+ */
+
+#define NUM_QUEUES 2
+static MonoNativeTlsKey queue_keys[NUM_QUEUES] = { 0 };
+#ifdef DISABLE_THREADS
+gboolean queue_keys_initialized = FALSE;
+#else
+pthread_once_t queue_keys_initialized = PTHREAD_ONCE_INIT;
+#endif
+// NOTE: We're using OS mutexes here not coop mutexes, because we need to be able to run
+//  during a GC and at any point (before runtime startup or after shutdown)
+// This means if we aren't careful we could deadlock, so we have to be cautious about
+//  what operations we perform while holding this mutex.
+static mono_mutex_t queue_mutex;
+static GPtrArray *shared_queues = NULL;
+
+static void
+free_queue (void *ptr) {
+	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	g_ptr_array_remove_fast (shared_queues, ptr);
+	g_ptr_array_free ((GPtrArray *)ptr, TRUE);
+	mono_os_mutex_unlock (&queue_mutex);
+}
+
+static void
+initialize_queue_keys () {
+	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	shared_queues = g_ptr_array_new ();
+
+	for (int i = 0; i < NUM_QUEUES; i++)
+		g_assert (mono_native_tls_alloc (&queue_keys[i], free_queue));
+
+#ifdef DISABLE_THREADS
+	queue_keys_initialized = TRUE;
+#endif
+
+	mono_os_mutex_unlock (&queue_mutex);
+}
+
+static MonoNativeTlsKey
+get_queue_key (int queue) {
+	g_assert ((queue >= 0) && (queue < NUM_QUEUES));
+
+#ifdef DISABLE_THREADS
+	if (!queue_keys_initialized)
+		initialize_queue_keys ();
+#else
+	pthread_once (&queue_keys_initialized, initialize_queue_keys);
+#endif
+
+	return queue_keys[queue];
+}
+
+static GPtrArray *
+get_queue (int queue) {
+	MonoNativeTlsKey key = get_queue_key (queue);
+	GPtrArray *result = NULL;
+	if ((result = (GPtrArray *)mono_native_tls_get_value (key)) == NULL) {
+		g_assert (mono_native_tls_set_value (key, result = g_ptr_array_new ()));
+		mono_os_mutex_lock (&queue_mutex);
+		// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+		g_ptr_array_add (shared_queues, result);
+		mono_os_mutex_unlock (&queue_mutex);
+	}
+	return result;
+}
+
+// Purges this item from all queues
+void
+mono_jiterp_tlqueue_purge_all (gpointer item) {
+	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	for (int i = 0; i < shared_queues->len; i++) {
+		GPtrArray *queue = (GPtrArray *)g_ptr_array_index (shared_queues, i);
+		gboolean ok = g_ptr_array_remove_fast (queue, item);
+		if (ok) {
+			// g_printf ("Purged %x from queue %x\n", (unsigned int)item, (unsigned int)queue);
+		}
+	}
+	mono_os_mutex_unlock (&queue_mutex);
+}
+
+// Removes the next item from the queue, if any, and returns it (NULL if empty)
+EMSCRIPTEN_KEEPALIVE gpointer
+mono_jiterp_tlqueue_next (int queue) {
+	// This lock-per-call is unpleasant, but the queue is usually only going to contain
+	//  a handful of items and will only be enumerated a few hundred times total during
+	//  execution, so performance is not especially important compared to safety/simplicity
+	GPtrArray *items = get_queue (queue);
+	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	gpointer result = NULL;
+	if (items->len) {
+		result = g_ptr_array_index (items, 0);
+		g_ptr_array_remove_index_fast (items, 0);
+	}
+	mono_os_mutex_unlock (&queue_mutex);
+	return result;
+}
+
+// Adds a new item to the end of the queue and returns the new size of the queue
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_tlqueue_add (int queue, gpointer item) {
+	int result;
+	GPtrArray *items = get_queue (queue);
+	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	g_ptr_array_add (items, item);
+	result = items->len;
+	mono_os_mutex_unlock (&queue_mutex);
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_tlqueue_clear (int queue) {
+	GPtrArray *items = get_queue (queue);
+	mono_os_mutex_lock (&queue_mutex);
+	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	g_ptr_array_set_size (items, 0);
+	mono_os_mutex_unlock (&queue_mutex);
 }
 
 // HACK: fix C4206
