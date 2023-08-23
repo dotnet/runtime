@@ -159,6 +159,7 @@ fi
 
 # ========================= BEGIN support for SuperPMI collection ==============================
 if [ ! -z $spmi_enable_collection ]; then
+  echo "SuperPMI collection enabled"
   # spmi_collect_dir and spmi_core_root need to be set before this script is run, if SuperPMI collection is enabled.
   if [ -z $spmi_collect_dir ]; then
     echo "ERROR - spmi_collect_dir not defined"
@@ -173,19 +174,22 @@ if [ ! -z $spmi_enable_collection ]; then
   if [[ "$(uname -s)" == "Darwin" ]]; then
     export spmi_file_extension=dylib
   fi
-  export spmi_jitlib=$spmi_core_root/libclrjit.$spmi_file_extension
   export SuperPMIShimLogPath=$spmi_collect_dir
-  export SuperPMIShimPath=$spmi_jitlib
+  export SuperPMIShimPath=$spmi_core_root/libclrjit.$spmi_file_extension
   export DOTNET_EnableExtraSuperPmiQueries=1
   export DOTNET_JitPath=$spmi_core_root/libsuperpmi-shim-collector.$spmi_file_extension
-  if [ ! -e $spmi_jitlib ]; then
-    echo "ERROR - $spmi_jitlib not found"
+  if [ ! -e $SuperPMIShimPath ]; then
+    echo "ERROR - $SuperPMIShimPath not found"
     exit 1
   fi
   if [ ! -e $DOTNET_JitPath ]; then
     echo "ERROR - $DOTNET_JitPath not found"
     exit 1
   fi
+  echo "SuperPMIShimLogPath=$SuperPMIShimLogPath"
+  echo "SuperPMIShimPath=$SuperPMIShimPath"
+  echo "DOTNET_EnableExtraSuperPmiQueries=$DOTNET_EnableExtraSuperPmiQueries"
+  echo "DOTNET_JitPath=$DOTNET_JitPath"
 fi
 # ========================= END support for SuperPMI collection ==============================
 
