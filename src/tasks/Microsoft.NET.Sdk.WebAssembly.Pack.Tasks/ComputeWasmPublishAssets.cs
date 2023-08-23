@@ -66,8 +66,6 @@ public class ComputeWasmPublishAssets : Task
 
     public bool IsWebCilEnabled { get; set; }
 
-    public string? RuntimeAssetsLocation { get; set; }
-
     [Output]
     public ITaskItem[] NewCandidates { get; set; }
 
@@ -225,8 +223,8 @@ public class ComputeWasmPublishAssets : Task
                     newDotNetJs.SetMetadata("OriginalItemSpec", aotDotNetJs.ItemSpec);
 
                     string relativePath = baseName != "dotnet" || FingerprintDotNetJs
-                        ? $"{RuntimeAssetsLocation}/{$"{baseName}.{DotNetJsVersion}.{FileHasher.GetFileHash(aotDotNetJs.ItemSpec)}.js"}"
-                        : $"{RuntimeAssetsLocation}/{baseName}.js";
+                        ? $"_framework/{$"{baseName}.{DotNetJsVersion}.{FileHasher.GetFileHash(aotDotNetJs.ItemSpec)}.js"}"
+                        : $"_framework/{baseName}.js";
 
                     newDotNetJs.SetMetadata("RelativePath", relativePath);
 
@@ -578,7 +576,7 @@ public class ComputeWasmPublishAssets : Task
         var resolvedFilesToPublish = ResolvedFilesToPublish.ToList();
         if (AssetsComputingHelper.TryGetAssetFilename(CustomIcuCandidate, out string customIcuCandidateFilename))
         {
-            var customIcuCandidate = AssetsComputingHelper.GetCustomIcuAsset(CustomIcuCandidate, RuntimeAssetsLocation);
+            var customIcuCandidate = AssetsComputingHelper.GetCustomIcuAsset(CustomIcuCandidate);
             resolvedFilesToPublish.Add(customIcuCandidate);
         }
 

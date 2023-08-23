@@ -48,12 +48,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net8.0</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksAssembly>$(WebAssemblySdkDirectoryRoot)tools\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
-    
-    <_WasmRuntimeAssetsLocation>$(WasmRuntimeAssetsLocation)</_WasmRuntimeAssetsLocation>
-    <_WasmRuntimeAssetsLocation Condition="'$(_WasmRuntimeAssetsLocation)' == ''">_framework</_WasmRuntimeAssetsLocation>
 
     <!-- Compression -->
-    <CompressionIncludePatterns>$(CompressionIncludePatterns);$(_WasmRuntimeAssetsLocation)\**</CompressionIncludePatterns>
+    <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
     <DisableBuildCompression Condition="'$(WasmBuildingForNestedPublish)' == 'true'">true</DisableBuildCompression>
   </PropertyGroup>
 
@@ -265,7 +262,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
       EnableThreads="$(_WasmEnableThreads)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
-      RuntimeAssetsLocation="$(_WasmRuntimeAssetsLocation)"
     >
       <Output TaskParameter="AssetCandidates" ItemName="_BuildAssetsCandidates" />
       <Output TaskParameter="FilesToRemove" ItemName="_WasmBuildFilesToRemove" />
@@ -319,7 +315,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <_BuildWasmBootJson
         Include="$(_WasmBuildBootJsonPath)"
-        RelativePath="$(_WasmRuntimeAssetsLocation)/blazor.boot.json" />
+        RelativePath="_framework/blazor.boot.json" />
     </ItemGroup>
 
     <DefineStaticWebAssets
@@ -443,7 +439,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableThreads="$(_WasmEnableThreads)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
-      RuntimeAssetsLocation="$(_WasmRuntimeAssetsLocation)"
     >
       <Output TaskParameter="NewCandidates" ItemName="_NewWasmPublishStaticWebAssets" />
       <Output TaskParameter="FilesToRemove" ItemName="_PublishResolvedFilesToRemove" />
@@ -515,7 +510,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <_PublishWasmBootJson
         Include="$(IntermediateOutputPath)blazor.publish.boot.json"
-        RelativePath="$(_WasmRuntimeAssetsLocation)/blazor.boot.json" />
+        RelativePath="_framework/blazor.boot.json" />
     </ItemGroup>
 
     <DefineStaticWebAssets
