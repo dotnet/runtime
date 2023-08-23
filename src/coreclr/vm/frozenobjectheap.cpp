@@ -36,7 +36,10 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 #else // FEATURE_BASICFREEZE
 
     Object* obj = nullptr;
-    FrozenObjectSegment* currentSegment = nullptr;
+    FrozenObjectSegment* curSeg = nullptr;
+    uint8_t* curSegmentCurrent = nullptr;
+    size_t curSegSizeCommitted = 0;
+
     {
         GCX_PREEMP();
 
@@ -75,7 +78,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
             {
                 // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
                 // Use the same size in case if prevSegmentSize*2 operation overflows.
-                const size_t prevSegmentSize = m_CurrentSegment->GetSize();
+                const size_t prevSegmentSize = m_CurrentSegment->m_Size;
                 newSegmentSize = max(prevSegmentSize, prevSegmentSize * 2);
             }
 
@@ -88,7 +91,9 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
             // This time it's not expected to be null
             _ASSERT(obj != nullptr);
         }
-        currentSegment = m_CurrentSegment;
+        curSeg = m_CurrentSegment;
+        curSegSizeCommitted = curSeg->m_SizeCommitted;
+        curSegmentCurrent = curSeg->m_pCurrent;
     }
 
     // Let GC know about the new segment or changes in it.
@@ -96,7 +101,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     // and that might cause deadlocks since RegisterFrozenSegment may stuck on GC's lock.
     {
         CrstHolder regLock(&m_SegmentRegistrationCrst);
-        currentSegment->RegisterOrUpdate();
+        curSeg->RegisterOrUpdate(curSegmentCurrent, curSegSizeCommitted);
     }
 
     if (publish)
@@ -119,7 +124,6 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_Size(sizeHint),
     m_IsRegistered(false),
     m_SegmentHandle(nullptr)
-    COMMA_INDEBUG(m_ObjectsCount(0))
 {
     _ASSERT(m_Size > FOH_COMMIT_SIZE);
     _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
@@ -153,20 +157,20 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_pStart = static_cast<uint8_t*>(committedAlloc);
     m_pCurrent = m_pStart + sizeof(ObjHeader);
     m_SizeCommitted = FOH_COMMIT_SIZE;
-    INDEBUG(m_ObjectsCount = 0);
 
     // ClrVirtualAlloc is expected to be PageSize-aligned so we can expect
     // DATA_ALIGNMENT alignment as well
     _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
 }
 
-void FrozenObjectSegment::RegisterOrUpdate()
+void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited)
 {
-    m_SizeCommittedRegistered = m_SizeCommitted;
-    m_pCurrentRegistered = m_pCurrent;
-
     if (!IsRegistered())
     {
+        // Other threads won't touch these fields until we set m_IsRegistered to true
+        m_SizeCommittedRegistered = sizeCommited;
+        m_pCurrentRegistered = current;
+
         segment_info si;
         si.pvMem = m_pStart;
         si.ibFirstObject = sizeof(ObjHeader);
@@ -184,8 +188,23 @@ void FrozenObjectSegment::RegisterOrUpdate()
     }
     else
     {
-        GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(
-            m_SegmentHandle, m_pCurrentRegistered, m_pStart + m_SizeCommittedRegistered);
+        if (current > VolatileLoad(&m_pCurrentRegistered))
+        {
+            GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(
+                m_SegmentHandle, current, m_pStart + sizeCommited);
+
+            // Profiler thread won't hold the registration lock, but, presumably, it won't see these values randomly
+            // because UpdateFrozenSegment will stuck in GC's lock while profiler is enumerating frozen segments
+            // (it's generally recommended to enumerate heaps in GarbageCollectionFinished/Started events).
+            // If profiler is invoked outside of GC's lock, then the accuracy is not guaranteed, but let's at least
+            // bump SizeCommited first:
+            VolatileStore(&m_SizeCommittedRegistered, sizeCommited);
+            VolatileStore(&m_pCurrentRegistered, current);
+        }
+        else
+        {
+            // Some other thread already advanced it.
+        }
     }
 }
 
@@ -222,8 +241,6 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
         }
         m_SizeCommitted += FOH_COMMIT_SIZE;
     }
-
-    INDEBUG(m_ObjectsCount++);
 
     Object* object = reinterpret_cast<Object*>(m_pCurrent);
     object->SetMethodTable(type);
