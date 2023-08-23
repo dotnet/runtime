@@ -6048,7 +6048,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
             ThreadPreventAsyncHolder preventAsync;
             ResetProcessorStateHolder procState;
 
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
 
             GCPROTECT_BEGIN(result)
 
@@ -6063,7 +6063,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
 
             GCPROTECT_END();
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE(true);
         }
         EX_CATCH
         {
