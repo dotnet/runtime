@@ -1212,7 +1212,7 @@ namespace System.Tests
                 }
 
                 // Check we have the expected implementation for the level 3 interfaces (abstract explicit implementations - I1.M and I1.G methods)
-[ActiveIssue("https://github.com/dotnet/runtime/issues/TODO")]
+                // Fails on mono: [ActiveIssue("https://github.com/dotnet/runtime/issues/TODO")]
                 if (!PlatformDetection.IsMonoRuntime && classType.Index >= 3)
                 {
                     foreach ((Type Type, string MethodNamePrefix) interfaceType in new (Type, string)[]
