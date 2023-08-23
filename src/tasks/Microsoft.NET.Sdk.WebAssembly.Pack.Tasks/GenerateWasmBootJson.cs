@@ -100,7 +100,6 @@ public class GenerateWasmBootJson : Task
         {
             resources = new ResourcesData(),
             startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
-            aot = WasmAotFlag,
         };
 
         if (IsTargeting80OrLater())
@@ -114,6 +113,9 @@ public class GenerateWasmBootJson : Task
 
             if (LinkerEnabled)
                 result.linkerEnabled = LinkerEnabled;
+
+            if (WasmAotFlag)
+                result.aot = WasmAotFlag;
         }
         else
         {

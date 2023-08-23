@@ -538,7 +538,6 @@
       <_MonoRollupEnvironmentVariable Include="WasmObjDir:$(WasmObjDir)" />
       <_MonoRollupEnvironmentVariable Include="ProductVersion:$(ProductVersion)" />
       <_MonoRollupEnvironmentVariable Include="MonoWasmThreads:$(MonoWasmThreads)" />
-      <_MonoRollupEnvironmentVariable Include="RunAOTCompilation:$(RunAOTCompilation)" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:0" Condition="'$(WasmEnableSIMD)' == 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />

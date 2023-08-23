@@ -102,11 +102,13 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             mainAssemblyName = MainAssemblyName,
             globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant(),
-            aot = WasmAotFlag,
         };
 
         if (CacheBootResources)
             bootConfig.cacheBootResources = CacheBootResources;
+
+        if (WasmAotFlag)
+            bootConfig.aot = WasmAotFlag;
 
         // Create app
         var runtimeAssetsPath = !string.IsNullOrEmpty(RuntimeAssetsLocation)
