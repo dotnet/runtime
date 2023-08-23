@@ -97,7 +97,7 @@
   ***********************************************************************************************
   SuperPMI collection
 
-  GetSuperPMICollectionBashScript/GetSuperPMICollectionBatchScript are similar to or exact copies of
+  SuperPMICollectionBashScript/SuperPMICollectionBatchScript are similar to or exact copies of
   code in src\tests\Common\CLRTest.Jit.targets.
   ***********************************************************************************************
   
@@ -105,10 +105,8 @@
   to escape semicolons with %3B here.
   -->
 
-  <Target Name="GetSuperPMICollectionBashScript"
-          Returns="$(SuperPMICollectionBashScript)">
-    <PropertyGroup>
-      <SuperPMICollectionBashScript><![CDATA[
+  <PropertyGroup>
+    <SuperPMICollectionBashScript Condition="'$(RunScriptWindowsCmd)' != 'true'"><![CDATA[
 # SuperPMI collection
 if [ ! -z $spmi_enable_collection ]%3B
 then
@@ -135,14 +133,9 @@ then
   export DOTNET_JitPath=$spmi_core_root/libsuperpmi-shim-collector.$spmi_file_extension
 fi
 ]]>
-      </SuperPMICollectionBashScript>
-    </PropertyGroup>
-  </Target>
+    </SuperPMICollectionBashScript>
 
-  <Target Name="GetSuperPMICollectionBatchScript"
-          Returns="$(SuperPMICollectionBatchScript)">
-    <PropertyGroup>
-      <SuperPMICollectionBatchScript><![CDATA[
+    <SuperPMICollectionBatchScript Condition="'$(RunScriptWindowsCmd)' == 'true'"><![CDATA[
 REM SuperPMI collection
 if not defined spmi_enable_collection goto :skip_spmi_enable_collection
 REM spmi_collect_dir and spmi_core_root need to be set before this script is run, if SuperPMI collection is enabled.
@@ -156,9 +149,8 @@ set DOTNET_EnableExtraSuperPmiQueries=1
 set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
 :skip_spmi_enable_collection
 ]]>
-      </SuperPMICollectionBatchScript>
-    </PropertyGroup>
-  </Target>
+    </SuperPMICollectionBatchScript>
+  </PropertyGroup>
 
   <!-- ExecutionScriptKind is used by the "magic" DependsOnTargets below to have GenerateRunScript depend on
        either GetSuperPMICollectionBatchScript or GetSuperPMICollectionBashScript, as appropriate.
@@ -174,11 +166,11 @@ set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
   end SuperPMI collection
 
   // save: DependsOnTargets="GetSuperPMICollection@(ExecutionScriptKind, 'Script;GetSuperPMICollection')Script">
+  // save: DependsOnTargets="GetSuperPMICollectionBatchScript;GetSuperPMICollectionBashScript">
   ******************************************************************************************* -->
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateRunScript"
-          DependsOnTargets="GetSuperPMICollectionBatchScript;GetSuperPMICollectionBashScript">
+  <Target Name="GenerateRunScript">
 
     <PropertyGroup>
       <!-- RSP file support. -->
