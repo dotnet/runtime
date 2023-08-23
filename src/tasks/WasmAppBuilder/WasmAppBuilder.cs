@@ -28,6 +28,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public string? WasmIcuDataFileName { get; set; }
     public string? RuntimeAssetsLocation { get; set; }
     public bool CacheBootResources { get; set; }
+    public bool WasmAotFlag { get; set; }
 
     // <summary>
     // Extra json elements to add to _framework/blazor.boot.json
@@ -100,7 +101,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         var bootConfig = new BootJsonData()
         {
             mainAssemblyName = MainAssemblyName,
-            globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant()
+            globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant(),
+            aot = WasmAotFlag,
         };
 
         if (CacheBootResources)

@@ -201,6 +201,7 @@ export function normalizeConfig() {
     }
 
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
+    runtimeHelpers.aot = config.aot || false;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
     config.startupMemoryCache = !!config.startupMemoryCache;
     if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {

@@ -82,6 +82,7 @@ export type MonoConfigInternal = MonoConfig & {
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number
     loadAllSatelliteResources?: boolean
+    aot?: boolean
 };
 
 export type RunArguments = {
@@ -166,6 +167,7 @@ export type RuntimeHelpers = {
     moduleGitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
+    aot: boolean;
 
     runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;

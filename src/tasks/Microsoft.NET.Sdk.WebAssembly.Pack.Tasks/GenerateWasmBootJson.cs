@@ -39,6 +39,9 @@ public class GenerateWasmBootJson : Task
     public bool LinkerEnabled { get; set; }
 
     [Required]
+    public bool WasmAotFlag { get; set; }
+
+    [Required]
     public bool CacheBootResources { get; set; }
 
     public bool LoadFullICUData { get; set; }
@@ -97,6 +100,7 @@ public class GenerateWasmBootJson : Task
         {
             resources = new ResourcesData(),
             startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
+            aot = WasmAotFlag,
         };
 
         if (IsTargeting80OrLater())
