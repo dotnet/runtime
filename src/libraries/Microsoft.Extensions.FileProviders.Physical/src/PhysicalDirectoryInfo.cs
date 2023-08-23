@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
     {
         private readonly DirectoryInfo _info;
         private IEnumerable<IFileInfo>? _entries;
+        private readonly ExclusionFilters _filters;
 
         /// <summary>
         /// Initializes an instance of <see cref="PhysicalDirectoryInfo"/> that wraps an instance of <see cref="System.IO.DirectoryInfo"/>
@@ -25,6 +26,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
         public PhysicalDirectoryInfo(DirectoryInfo info)
         {
             _info = info;
+        }
+
+        internal PhysicalDirectoryInfo(DirectoryInfo info, ExclusionFilters filters)
+        {
+            _info = info;
+            _filters = filters;
         }
 
         /// <inheritdoc />
@@ -61,7 +68,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             throw new InvalidOperationException(SR.CannotCreateStream);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc/>
         public IEnumerator<IFileInfo> GetEnumerator()
         {
             EnsureInitialized();
@@ -81,6 +88,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 _entries = _info
                     .EnumerateFileSystemInfos()
+                    .Where(info => !FileSystemInfoHelper.IsExcluded(info, _filters))
                     .Select<FileSystemInfo, IFileInfo>(info => info switch
                     {
                         FileInfo file => new PhysicalFileInfo(file),
