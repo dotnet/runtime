@@ -38,7 +38,6 @@ public class GenerateWasmBootJson : Task
     [Required]
     public bool LinkerEnabled { get; set; }
 
-    [Required]
     public bool WasmAotFlag { get; set; }
 
     [Required]
