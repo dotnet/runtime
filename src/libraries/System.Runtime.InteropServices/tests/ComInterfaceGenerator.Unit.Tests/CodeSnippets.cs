@@ -49,6 +49,51 @@ namespace ComInterfaceGenerator.Unit.Tests
                 + arguments + "]";
         }
 
+        public static string GetCustomCollectionType(string elementName) => $"StatelessCollectionAllShapes<{elementName}>";
+
+        public const string CustomCollectionAndMarshaller = CustomCollectionDefinition + CustomCollectionAllShapesMarshaller;
+        public const string CustomCollectionDefinition = """
+            internal class StatelessCollectionAllShapes<T>
+            {
+                public T _field;
+            }
+            """;
+        public const string CustomCollectionAllShapesMarshaller = """
+            [ContiguousCollectionMarshaller]
+            [CustomMarshaller(typeof(StatelessCollectionAllShapes<>), MarshalMode.Default, typeof(StatelessCollectionAllShapesMarshaller<,>))]
+            internal unsafe static class StatelessCollectionAllShapesMarshaller<TManagedElement, TUnmanagedElement> where TUnmanagedElement : unmanaged
+            {
+                public static void Free(TUnmanagedElement* unmanaged) { }
+
+                // ToUnmanaged
+                public static TUnmanagedElement* AllocateContainerForUnmanagedElements(StatelessCollectionAllShapes<TManagedElement> managed, out int numElements)
+                    => throw null;
+                public static System.ReadOnlySpan<TManagedElement> GetManagedValuesSource(StatelessCollectionAllShapes<TManagedElement> managed) // Can throw exceptions
+                    => throw null;
+                public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) // Can throw exceptions
+                    => throw null;
+                public static ref TUnmanagedElement* GetPinnableReference(StatelessCollectionAllShapes<TManagedElement> managed)
+                    => throw null;
+
+                // Caller Allocated buffer ToUnmanaged
+                public static int BufferSize { get; } = 10;
+                public static TUnmanagedElement* AllocateContainerForUnmanagedElements(StatelessCollectionAllShapes<TManagedElement> managed, System.Span<byte> buffer, out int numElements)
+                    => throw null;
+
+                // ToManaged
+                public static StatelessCollectionAllShapes<TManagedElement> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
+                    => throw null;
+                public static System.Span<TManagedElement> GetManagedValuesDestination(StatelessCollectionAllShapes<TManagedElement> managed)
+                    => throw null;
+                public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
+                    => throw null;
+
+                //ToManaged Guaranteed marshalling
+                public static StatelessCollectionAllShapes<TManagedElement> AllocateContainerForManagedElementsFinally(TUnmanagedElement* unmanaged, int numElements)
+                    => throw null;
+            }
+            """;
+
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
         public const string IntMarshaller = """

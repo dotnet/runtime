@@ -3,16 +3,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
-using Microsoft.Interop.UnitTests;
 using Xunit;
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
-
 
 
 namespace ComInterfaceGenerator.Unit.Tests
@@ -43,8 +38,9 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
-                CompilerDiagnostics = CompilerDiagnostics.Suggestions,
+                CompilerDiagnostics = CompilerDiagnostics.All,
             };
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             test.ExpectedDiagnostics.AddRange([diagnostic.WithLocation(0), diagnostic.WithLocation(1), diagnostic.WithLocation(2)]);
             await test.RunAsync();
         }

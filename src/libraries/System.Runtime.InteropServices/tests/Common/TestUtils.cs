@@ -1,13 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Testing;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,6 +12,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using ComInterfaceGenerator.Unit.Tests;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace Microsoft.Interop.UnitTests
@@ -51,6 +53,10 @@ namespace Microsoft.Interop.UnitTests
 
     public static class TestUtils
     {
+        public static string ID(
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerFilePath] string? filePath = null)
+            => TestUtils.GetFileLineName(lineNumber, filePath);
         internal static string GetFileLineName(
             [CallerLineNumber] int lineNumber = 0,
             [CallerFilePath] string? filePath = null)
@@ -60,6 +66,16 @@ namespace Microsoft.Interop.UnitTests
         {
             // Workaround for - xUnit1026 // Theory methods should use all of their parameters
         }
+
+        internal static IComInterfaceAttributeProvider GetAttributeProvider(GeneratorKind generator)
+            => generator switch
+            {
+                GeneratorKind.VTableIndexStubGenerator => new VirtualMethodIndexAttributeProvider(),
+                GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ManagedObjectWrapper),
+                GeneratorKind.ComInterfaceGeneratorComObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ComObjectWrapper),
+                GeneratorKind.ComInterfaceGenerator => new GeneratedComInterfaceAttributeProvider(),
+                _ => throw new UnreachableException(),
+            };
 
         /// <summary>
         /// Disable binding redirect warnings. They are disabled by default by the .NET SDK, but not by Roslyn.
@@ -298,7 +314,7 @@ namespace Microsoft.Interop.UnitTests
                 int count = Interlocked.Decrement(ref _count);
                 if (count == 0)
                 {
-                   Environment.SetEnvironmentVariable(EnvVarName, null);
+                    Environment.SetEnvironmentVariable(EnvVarName, null);
                 }
             }
         }

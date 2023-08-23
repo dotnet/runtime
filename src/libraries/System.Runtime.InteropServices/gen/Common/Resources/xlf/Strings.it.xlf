@@ -148,8 +148,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
-        <source>The usage of'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
+        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
