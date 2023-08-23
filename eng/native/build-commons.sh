@@ -2,7 +2,7 @@
 
 initTargetDistroRid()
 {
-    source "$__RepoRootDir/eng/native/init-distro-rid.sh"
+    source "$__RepoRootDir/eng/common/native/init-distro-rid.sh"
 
     local passedRootfsDir=""
 
