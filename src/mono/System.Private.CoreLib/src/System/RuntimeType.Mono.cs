@@ -2048,6 +2048,16 @@ namespace System
                 if (HasElementType)
                     return GetElementType().ContainsGenericParameters;
 
+                if (IsFunctionPointer)
+                {
+                    if (GetFunctionPointerReturnType().ContainsGenericParameters)
+                        return true;
+
+                    foreach (Type arg in GetFunctionPointerParameterTypes())
+                        if (arg.ContainsGenericParameters)
+                            return true;
+                }
+
                 return false;
             }
         }
