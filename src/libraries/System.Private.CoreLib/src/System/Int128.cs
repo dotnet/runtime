@@ -1290,22 +1290,12 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static Int128 CopySign(Int128 value, Int128 sign)
         {
-            Int128 absValue = value;
-
-            if (IsNegative(absValue))
+            // Int128.MinValue != value || 0 > sign
+            if (long.MinValue != unchecked((long)value._upper) || 0 != value._lower || Int128.IsNegative(sign))
             {
-                absValue = -absValue;
+                return value * Math.SignZeroToOne(unchecked((long)value._upper ^ (long)sign._upper));
             }
-
-            if (IsPositive(sign))
-            {
-                if (IsNegative(absValue))
-                {
-                    Math.ThrowNegateTwosCompOverflow();
-                }
-                return absValue;
-            }
-            return -absValue;
+            return checked(-unchecked((long)value._upper)); // throws an OverflowException
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />

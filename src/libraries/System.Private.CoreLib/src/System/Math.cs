@@ -1468,6 +1468,27 @@ namespace System
             throw new ArithmeticException(SR.Arithmetic_NaN);
         }
 
+        // Helper functions for CopySign
+        // >= 0: returns 1
+        // < 0: returns -1
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int SignZeroToOne(int value)
+        {
+            return unchecked((value >> (32 - 1)) - (~value >> (32 - 1)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int SignZeroToOne(nint value)
+        {
+            return unchecked((int)(value >> (8 * nint.Size - 1)) - (int)(~value >> (8 * nint.Size - 1)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int SignZeroToOne(long value)
+        {
+            return unchecked((int)(value >> (64 - 1)) - (int)(~value >> (64 - 1)));
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Truncate(decimal d)
         {
