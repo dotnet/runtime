@@ -1773,6 +1773,18 @@ HRESULT validateOneArg(
                     //@todo GENERICS: check that index is in range
                     break;
 
+                case ELEMENT_TYPE_CTARG:
+                    {
+                        CorElementType argType;
+                        uint32_t argCb;
+                        PCCOR_SIGNATURE argSig;
+                        if (FAILED(pSig->GetConstTypeArg(&argType, &argCb, &argSig)))
+                        {
+                            IfFailGo(VLDTR_E_SIG_BADELTYPE);
+                        }
+                    }
+                    break;
+
                 case ELEMENT_TYPE_GENERICINST:
                     // Validate the generic type.
                     IfFailGo(validateOneArg(tk, pSig, pulNSentinels, pImport, TRUE));
