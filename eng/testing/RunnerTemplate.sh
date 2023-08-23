@@ -157,6 +157,38 @@ elif [[ "$(uname -s)" == "Linux" ]]; then
 fi
 # ========================= END Core File Setup ==============================
 
+# ========================= BEGIN support for SuperPMI collection ==============================
+if [ ! -z $spmi_enable_collection ]; then
+  # spmi_collect_dir and spmi_core_root need to be set before this script is run, if SuperPMI collection is enabled.
+  if [ -z $spmi_collect_dir ]; then
+    echo "ERROR - spmi_collect_dir not defined"
+    exit 1
+  fi
+  if [ -z $spmi_core_root ]; then
+    echo "ERROR - spmi_core_root not defined"
+    exit 1
+  fi
+  mkdir -p $spmi_collect_dir
+  export spmi_file_extension=so
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    export spmi_file_extension=dylib
+  fi
+  export spmi_jitlib=$spmi_core_root/libclrjit.$spmi_file_extension
+  export SuperPMIShimLogPath=$spmi_collect_dir
+  export SuperPMIShimPath=$spmi_jitlib
+  export DOTNET_EnableExtraSuperPmiQueries=1
+  export DOTNET_JitPath=$spmi_core_root/libsuperpmi-shim-collector.$spmi_file_extension
+  if [ ! -e $spmi_jitlib ]; then
+    echo "ERROR - $spmi_jitlib not found"
+    exit 1
+  fi
+  if [ ! -e $DOTNET_JitPath ]; then
+    echo "ERROR - $DOTNET_JitPath not found"
+    exit 1
+  fi
+fi
+# ========================= END support for SuperPMI collection ==============================
+
 # ========================= BEGIN Test Execution =============================
 echo ----- start $(date) ===============  To repro directly: =====================================================
 echo pushd $EXECUTION_DIR

@@ -114,12 +114,6 @@ jobs:
         # we need to override this value to support build-coreclr-and-libraries-job.yml
         - _BuildConfig: ${{ parameters.buildConfig }}
 
-        # For SuperPMI we also download the runtime artifacts to a location that gets added to the Helix correlation payload, so we have access to the SuperPMI tools
-        # superpmi, mcs, and the SuperPMI shim, as well as easy access to the path of the JIT being used.
-        #- _SpmiRuntimeDownloadPath: ''
-        #- ${{ if eq(parameters.SuperPmiCollect, true) }}:
-          #- _SpmiRuntimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/helix/coreclr'
-
       dependsOn:
       - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
         - evaluate_paths
@@ -142,16 +136,5 @@ jobs:
             artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
             artifactName: '$(_runtimeArtifactName)'
             displayName: '$(runtimeFlavorName) build drop'
-
-        # SuperPMI needs the runtime in an additional location -- which is added to the Helix correlation payload -- so copy it there.
-        # (We might only need the mcs.exe/superpmi.exe/superpmi-shim-collector.dll/clrjit.dll (equivalent on non-Windows)
-        # so we could potentially copy less here.)
-        #- ${{ if eq(parameters.SuperPmiCollect, true) }}:
-          #- task: CopyFiles@2
-            #displayName: 'Copy $(runtimeFlavorName) build drop to SuperPMI location'
-            #inputs:
-              #sourceFolder: '$(_runtimeDownloadPath)'
-              #contents: '**'
-              #targetFolder: '$(_SpmiRuntimeDownloadPath)'
 
       - ${{ parameters.steps }}

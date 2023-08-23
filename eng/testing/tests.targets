@@ -93,82 +93,6 @@
     <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'" Directories="$(PublishDir)" ContinueOnError="WarnAndContinue" />
   </Target>
 
-  <!--
-  ***********************************************************************************************
-  SuperPMI collection
-
-  SuperPMICollectionBashScript/SuperPMICollectionBatchScript are similar to or exact copies of
-  code in src\tests\Common\CLRTest.Jit.targets.
-  ***********************************************************************************************
-  
-  You shouldn't have to escape characters in a CDATA block, but it appears that you do actually need
-  to escape semicolons with %3B here.
-  -->
-
-  <PropertyGroup>
-    <SuperPMICollectionBashScript Condition="'$(RunScriptWindowsCmd)' != 'true'"><![CDATA[
-# SuperPMI collection
-if [ ! -z $spmi_enable_collection ]%3B
-then
-  # spmi_collect_dir and spmi_core_root need to be set before this script is run, if SuperPMI collection is enabled.
-  if [ -z $spmi_collect_dir ]%3B
-  then
-    echo "ERROR - spmi_collect_dir not defined"
-    exit 1
-  fi
-  if [ -z $spmi_core_root ]%3B
-  then
-    echo "ERROR - spmi_core_root not defined"
-    exit 1
-  fi
-  mkdir -p $spmi_collect_dir
-  export spmi_file_extension=so
-  if [[ "$OSTYPE" == "darwin"* ]]%3B then
-    export spmi_file_extension=dylib
-  fi
-  export spmi_jitlib=$spmi_core_root/libclrjit.$spmi_file_extension
-  export SuperPMIShimLogPath=$spmi_collect_dir
-  export SuperPMIShimPath=$spmi_jitlib
-  export DOTNET_EnableExtraSuperPmiQueries=1
-  export DOTNET_JitPath=$spmi_core_root/libsuperpmi-shim-collector.$spmi_file_extension
-fi
-]]>
-    </SuperPMICollectionBashScript>
-
-    <SuperPMICollectionBatchScript Condition="'$(RunScriptWindowsCmd)' == 'true'"><![CDATA[
-REM SuperPMI collection
-if not defined spmi_enable_collection goto :skip_spmi_enable_collection
-REM spmi_collect_dir and spmi_core_root need to be set before this script is run, if SuperPMI collection is enabled.
-if not defined spmi_collect_dir echo ERROR: spmi_collect_dir not defined&goto :skip_spmi_enable_collection
-if not defined spmi_core_root echo ERROR: spmi_core_root not defined&goto :skip_spmi_enable_collection
-if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%
-set spmi_jitlib=%spmi_core_root%\clrjit.dll
-set SuperPMIShimLogPath=%spmi_collect_dir%
-set SuperPMIShimPath=%spmi_jitlib%
-set DOTNET_EnableExtraSuperPmiQueries=1
-set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
-:skip_spmi_enable_collection
-]]>
-    </SuperPMICollectionBatchScript>
-  </PropertyGroup>
-
-  <!-- ExecutionScriptKind is used by the "magic" DependsOnTargets below to have GenerateRunScript depend on
-       either GetSuperPMICollectionBatchScript or GetSuperPMICollectionBashScript, as appropriate.
-  -->
-  <!-- delete?
-  <ItemGroup>
-    <ExecutionScriptKind Condition="'$(RunScriptWindowsCmd)' == 'true'" Include="Batch" />
-    <ExecutionScriptKind Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="Bash" />
-  </ItemGroup>
-  -->
-
-  <!-- ******************************************************************************************
-  end SuperPMI collection
-
-  // save: DependsOnTargets="GetSuperPMICollection@(ExecutionScriptKind, 'Script;GetSuperPMICollection')Script">
-  // save: DependsOnTargets="GetSuperPMICollectionBatchScript;GetSuperPMICollectionBashScript">
-  ******************************************************************************************* -->
-
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateRunScript">
 
@@ -187,30 +111,7 @@ set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
       <RunScriptCommand Condition=" $(TestDebugger.Contains('devenv'))">$(TestDebugger) /debugexe $(RunScriptCommand)</RunScriptCommand>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <SuperPMITest><![CDATA[
-# SuperPMI collection test 1
-# SuperPMI collection test 2
-# SuperPMI collection test 3
-]]>
-      </SuperPMITest>
-    </PropertyGroup>
-
     <ItemGroup>
-
-      <!-- testing! -->
-      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' == 'true'" Include="echo testing 1"/>
-      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="echo 'testing 1'"/>
-
-      <!-- SuperPMI collection -->
-      <!--
-      ***** why does the Windows collection work and the bash/Linux/OSX collection doesn't get the collection commands added?
-      ***** secondarily, why aren't there newlines in the "echo" version of the windows commands?
-      -->
-      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="$(SuperPMITest)"/>
-      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' == 'true'" Include="$(SuperPMICollectionBatchScript)"/>
-      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="$(SuperPMICollectionBashScript)"/>
-
       <!--
         If the PreExecutionTestScript property is set, then it should be set to the full path to a script that will be directly incorporated
         into the generated runtests script, immediately before the test is run. This can be used to set a number of JIT stress modes,
@@ -220,10 +121,6 @@ set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
         written in managed code).
       -->
       <RunScriptCommands Condition="'$(PreExecutionTestScript)' != ''" Include="$([System.IO.File]::ReadAllText('$(PreExecutionTestScript)'))" />
-
-      <!-- testing! -->
-      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' == 'true'" Include="echo testing 2"/>
-      <RunScriptCommands Condition="'$(RunScriptWindowsCmd)' != 'true'" Include="echo 'testing 2'"/>
 
       <RunScriptCommands Include="$(RunScriptCommand)" />
 

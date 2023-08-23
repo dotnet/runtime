@@ -47,6 +47,22 @@ set DOTNET_MULTILEVEL_LOOKUP=0
 :: Assume failure
 set HAS_TEST_RESULTS=0
 
+:: Support for SuperPMI collection
+REM SuperPMI collection
+if not defined spmi_enable_collection goto :skip_spmi_enable_collection
+REM spmi_collect_dir and spmi_core_root need to be set before this script is run, if SuperPMI collection is enabled.
+if not defined spmi_collect_dir echo ERROR: spmi_collect_dir not defined&goto :skip_spmi_enable_collection
+if not defined spmi_core_root echo ERROR: spmi_core_root not defined&goto :skip_spmi_enable_collection
+if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%
+set spmi_jitlib=%spmi_core_root%\clrjit.dll
+if not exist %spmi_jitlib% echo ERROR: %spmi_jitlib% not found&goto :skip_spmi_enable_collection
+set SuperPMIShimLogPath=%spmi_collect_dir%
+set SuperPMIShimPath=%spmi_jitlib%
+set DOTNET_EnableExtraSuperPmiQueries=1
+set DOTNET_JitPath=%spmi_core_root%\superpmi-shim-collector.dll
+if not exist %DOTNET_JitPath% echo ERROR: %DOTNET_JitPath% not found&goto :skip_spmi_enable_collection
+:skip_spmi_enable_collection
+
 :: ========================= BEGIN Test Execution =============================
 echo ----- start %DATE% %TIME% ===============  To repro directly: =====================================================
 echo pushd %EXECUTION_DIR%
