@@ -57,12 +57,12 @@ steps:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }}
           displayName: "LLVM AOT compile CoreCLR tests"
-          - ${{ if ne(parameters.osGroup, 'osx') }}:
+          ${{ if ne(parameters.osGroup, 'osx') }}:
             target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
       - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }}
           displayName: "LLVM AOT compile CoreCLR tests"
-          - ${{ if ne(parameters.osGroup, 'osx') }}:
+          ${{ if ne(parameters.osGroup, 'osx') }}:
             target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
     - ${{ if eq(parameters.archType, 'arm64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
