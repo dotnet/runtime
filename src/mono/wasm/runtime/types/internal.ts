@@ -82,7 +82,6 @@ export type MonoConfigInternal = MonoConfig & {
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number
     loadAllSatelliteResources?: boolean
-    aot?: boolean
 };
 
 export type RunArguments = {

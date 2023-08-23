@@ -100,7 +100,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         var bootConfig = new BootJsonData()
         {
             mainAssemblyName = MainAssemblyName,
-            globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant(),
+            globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant()
         };
 
         if (CacheBootResources)

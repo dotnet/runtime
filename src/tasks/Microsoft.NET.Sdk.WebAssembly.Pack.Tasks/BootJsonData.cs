@@ -111,11 +111,6 @@ public class BootJsonData
     /// Gets or sets pthread pool size.
     /// </summary>
     public int? pthreadPoolSize { get; set; }
-
-    /// <summary>
-    /// Must be set to enable the jiterpreter's AOT optimizations.
-    /// </summary>
-    public bool? aot { get; set; }
 }
 
 public class ResourcesData
