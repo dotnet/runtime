@@ -873,8 +873,7 @@ leave:
 gboolean
 mono_assembly_get_assemblyref_checked (MonoImage *image, int index, MonoAssemblyName *aname, MonoError *error)
 {
-
-	g_assert(!image_is_dynamic (image)); // TODO: Reimplement for dynamic images once we decide what a dynamic image with DNMD looks like.
+	g_assert(!image_is_dynamic (image)); // TODO-DNMD: Reimplement for dynamic images once we decide what a dynamic image with DNMD looks like.
 
 	mdcursor_t c;
 	uint32_t count;
