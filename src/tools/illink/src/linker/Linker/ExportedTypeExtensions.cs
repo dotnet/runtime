@@ -7,7 +7,15 @@ using Mono.Cecil;
 namespace Mono.Linker;
 
 public static class ExportedTypeExtensions {
+
+	// Logic copied from cecil, to allow resolving exported types without errors on assembly resolution failures.
+	// This replaces the call to AssemblyResolver.Resolve (which logs errors on resolution failure) with a call to
+	// an overload that doesn't log errors.
+	// The ModuleDefinition containing the ExportedType must be passed in because it is not accessible
+	// on ExportedType.
 	public static TypeDefinition? TryResolve (this ExportedType exportedType, ModuleDefinition module) {
+		// Note: the cast from IMetadataResolver to Metadataresolver should always succeed because cecil only
+		// creates a MetadataResolver.
 		return ((MetadataResolver) module.MetadataResolver).TryResolve (exportedType.CreateReference (module));
 	}
 
@@ -27,6 +35,8 @@ public static class ExportedTypeExtensions {
 
 		switch (scope.MetadataScopeType) {
 		case MetadataScopeType.AssemblyNameReference:
+			// Note: the cast to AssemblyResolver assumes that the IAssemblyResolver we get back from cecil
+			// is the same one that we originally passed in using ReaderParameters.
 			var assembly = ((AssemblyResolver) metadataResolver.AssemblyResolver).Resolve ((AssemblyNameReference) scope, probing: true);
 			if (assembly == null)
 				return null;
