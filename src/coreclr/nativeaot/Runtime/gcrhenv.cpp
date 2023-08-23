@@ -42,7 +42,6 @@
 
 #include "daccess.h"
 
-#include "GCMemoryHelpers.h"
 #include "interoplibinterface.h"
 
 #include "holder.h"
