@@ -14,6 +14,7 @@ from __future__ import print_function
 import os
 import xml.dom.minidom as DOM
 from utilities import open_for_update, parseInclusionList
+from enum import Enum
 
 class RuntimeFlavor:
     def __init__(self, runtime):
@@ -144,6 +145,10 @@ aotEventPipeDataTypeMapping={
     "BYTE"              : "BYTE",
 }
 
+class aotFileType(Enum):
+    clretwallmainSource = 1
+    clretwallmainHeader = 2
+    disabledclretwallmainSource = 3
 
 def getEventPipeDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
@@ -411,7 +416,7 @@ def parseTemplateNodes(templateNodes):
 
     return allTemplates
 
-def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusionList, aot_header):
+def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusionList, aotFileType):
     clrallEvents = []
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
@@ -431,8 +436,11 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
             clrallEvents.append("%s EventEnabled" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"]))
             clrallEvents.append(eventName)
             clrallEvents.append("(void)")
-            if runtimeFlavor.nativeaot and aot_header:
-                clrallEvents.append(";\n")
+            if runtimeFlavor.nativeaot and (aotFileType == aotFileType.clretwallmainHeader or aotFileType == aotFileType.disabledclretwallmainSource):
+                if aotFileType == aotFileType.clretwallmainHeader:
+                    clrallEvents.append(";\n")
+                elif aotFileType == aotFileType.disabledclretwallmainSource:
+                    clrallEvents.append(" { return 0; }\n")
             else:
                 clrallEvents.append(" {return ")
                 clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
@@ -503,18 +511,21 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
         #add activity IDs
         fnptypeline.append(lindent)
         # nativeaot source file can't have the parameter initializer
-        fnptypeline.append("%s ActivityId%s\n" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"], " = nullptr," if (target_cpp and not (runtimeFlavor.nativeaot and not aot_header)) else ","))
+        fnptypeline.append("%s ActivityId%s\n" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"], " = nullptr," if (target_cpp and not (runtimeFlavor.nativeaot and not (aotFileType == aotFileType.clretwallmainHeader))) else ","))
         fnptypeline.append(lindent)
         fnptypeline.append("%s RelatedActivityId" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"]))
-        if  (target_cpp and not (runtimeFlavor.nativeaot and not aot_header)):
+        if  (target_cpp and not (runtimeFlavor.nativeaot and not (aotFileType == aotFileType.clretwallmainHeader))):
             fnptypeline.append(" = nullptr")
         else:
             fnptypeline.append("")
 
         fnptype.extend(fnptypeline)
         fnptype.append("\n)")
-        if runtimeFlavor.nativeaot and aot_header:
-            fnptype.append(";\n\n")
+        if runtimeFlavor.nativeaot and (aotFileType == aotFileType.clretwallmainHeader or aotFileType == aotFileType.disabledclretwallmainSource):
+            if aotFileType == aotFileType.clretwallmainHeader:
+                fnptype.append(";\n\n")
+            elif aotFileType == aotFileType.disabledclretwallmainSource:
+                fnptype.append("\n{ return ERROR_SUCCESS; }\n\n")
         else:
             fnptype.append("\n{\n")
             fnbody.append(lindent)
@@ -548,7 +559,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
             fnbody.append("}\n\n")
 
         clrallEvents.extend(fnptype)
-        if not (runtimeFlavor.nativeaot and aot_header):
+        if not (runtimeFlavor.nativeaot and (aotFileType == aotFileType.clretwallmainHeader or aotFileType == aotFileType.disabledclretwallmainSource)):
             clrallEvents.extend(fnbody)
 
     return ''.join(clrallEvents)
@@ -744,7 +755,7 @@ def getKeywordsMaskCombined(keywords, keywordsToMask):
 
     return mask
 
-def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, aot_header):
+def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, aotFileType):
     is_windows = os.name == 'nt'
     with open_for_update(clrallevents) as Clrallevents:
         Clrallevents.write(stdprolog)
@@ -753,15 +764,21 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
         if runtimeFlavor.coreclr or write_xplatheader:
             Clrallevents.write('#include "clrxplatevents.h"\n')
         if runtimeFlavor.nativeaot:
-            if aot_header:
+            if aotFileType==aotFileType.clretwallmainHeader:
                 Clrallevents.write('#ifndef CLR_ETW_ALL_MAIN_H\n')
                 Clrallevents.write('#define CLR_ETW_ALL_MAIN_H\n\n')
-            else:
+            elif aotFileType==aotFileType.clretwallmainSource:
                 Clrallevents.write('#include <common.h>\n')
                 Clrallevents.write('#include <PalRedhawk.h>\n')
                 Clrallevents.write('#include "clretwallmain.h"\n')
                 Clrallevents.write('#include "clreventpipewriteevents.h"\n')
                 Clrallevents.write('#include "EtwEvents.h"\n\n')
+            elif aotFileType==aotFileType.disabledclretwallmainSource:
+                Clrallevents.write('#include <CommonTypes.h>\n')
+                Clrallevents.write('#include <CommonMacros.h>\n\n')
+                Clrallevents.write('#ifndef ERROR_SUCCESS\n')
+                Clrallevents.write('#define ERROR_SUCCESS 0L\n')
+                Clrallevents.write('#endif\n\n')
         else:
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
 
@@ -793,7 +810,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
                 Clrallevents.write("// ==================================================================\n\n")
 
             #vm header:
-            Clrallevents.write(generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusion_list, aot_header))
+            Clrallevents.write(generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusion_list, aotFileType))
 
             nativeaotEtwflag = False
 
@@ -812,7 +829,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
                     Clrallevents.write("#endif // FEATURE_ETW\n")
 
         if runtimeFlavor.nativeaot:
-            if aot_header:
+            if aotFileType == aotFileType.clretwallmainHeader:
                 Clrallevents.write("#endif // __CLR_ETW_ALL_MAIN_H__\n")
 
 def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor, inclusion_list):
@@ -879,14 +896,16 @@ typedef struct _DOTNET_TRACE_CONTEXT
         # nativeaot requires header and source file to be separated
         clrallevents = os.path.join(incDir, "clretwallmain.cpp")
         clralleventsheader = os.path.join(incDir, "clretwallmain.h")
+        clralleventsdisabledsource = os.path.join(incDir, "disabledclretwallmain.cpp")
     else:
         clrallevents = os.path.join(incDir, "clretwallmain.h")
     is_windows = os.name == 'nt'
     
-    updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, False)
+    updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, aotFileType.clretwallmainSource)
     if runtimeFlavor.nativeaot:
-        # generate the header file
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clralleventsheader, inclusion_list, True)
+        # generate the header file and the disabled source file
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clralleventsheader, inclusion_list, aotFileType.clretwallmainHeader)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clralleventsdisabledsource, inclusion_list, aotFileType.disabledclretwallmainSource)
     
     if write_xplatheader:
         clrproviders = os.path.join(incDir, "clrproviders.h")

@@ -12,28 +12,18 @@ set(NONEXTERN_ARG "--nonextern")
 set(NOXPLATHEADER_ARG "--noxplatheader")
 
 # Platform agnostic source generation, clretwallmain.h/cpp, disabledclretwallmain.cpp, clreventpipewriteevents.h, etmdummy.h
-set(GENEVENTING_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
+set(GENERATE_PLAT_AGNOSTIC_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
 
-# add_custom_command(
-#   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/eventing_headers.timestamp
-#   COMMAND ${Python_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
-#   # COMMAND ${GEN_ETW_PROVIDER_COMMAND}
-#   COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/eventing_headers.timestamp
-#   DEPENDS ${GEN_EVENTING_SCRIPT} ${EVENT_MANIFEST} ${GENERATED_INCLUDE_DIR}
-#   VERBATIM
-# )
-
-# add_custom_target(${CMAKE_CURRENT_BINARY_DIR}/eventing_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/eventing_headers.timestamp)
-
-# message(STATUS \"CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}\")
-
-execute_process(
-  COMMAND ${Python_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+# we set the output to 1 file, disabledclretwallmain.cpp, although build downstream depends on clretwallmain.cpp as well.
+add_custom_command(
+  OUTPUT ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp
+  COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+  DEPENDS ${GENERATE_PLAT_AGNOSTIC_SCRIPT} ${EVENT_MANIFEST} ${GENERATED_INCLUDE_DIR}
 )
 
-# Provider source, currently dotnetruntime provider and helper file
-set(GENERATE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
-set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --inc ${EVENT_INCLUSION_FILE} --intermediate ${CMAKE_CURRENT_BINARY_DIR} --runtimeflavor nativeaot ${NONEXTERN_ARG})
+# EventPipe provider source, currently dotnetruntime provider and helper file
+set(GENERATE_EVENTPIPE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
+set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_EVENTPIPE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --inc ${EVENT_INCLUSION_FILE} --intermediate ${CMAKE_CURRENT_BINARY_DIR} --runtimeflavor nativeaot ${NONEXTERN_ARG})
 
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run
@@ -57,7 +47,7 @@ endforeach()
 # Generate the provider source files via python auto-gen
 add_custom_command(OUTPUT ${GEN_EVENTPIPE_PROVIDER_SOURCES}
   COMMAND ${GENERATE_COMMAND}
-  DEPENDS ${GENERATE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
+  DEPENDS ${GENERATE_EVENTPIPE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
 
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
@@ -152,7 +142,7 @@ endif()
 list(APPEND AOT_EVENTPIPE_SHIM_SOURCES
   ${AOT_EVENTPIPE_SHIM_DIR}/ep-rt-aot.cpp
   ${AOT_EVENTPIPE_SHIM_DIR}/ds-rt-aot.cpp
-  ${AOT_EVENTPIPE_SHIM_DIR}/clretwallmain.cpp
+  ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
 )
 
 list(APPEND AOT_EVENTPIPE_SHIM_HEADERS
@@ -205,7 +195,7 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${RUNTIME_DIR}/disabledeventpipeinternal.cpp
   ${RUNTIME_DIR}/disabledeventtrace.cpp
   ${RUNTIME_DIR}/disabledruntimeeventinternal.cpp
-  ${AOT_EVENTPIPE_SHIM_DIR}/disabledclretwallmain.cpp
+  ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp
 )
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
