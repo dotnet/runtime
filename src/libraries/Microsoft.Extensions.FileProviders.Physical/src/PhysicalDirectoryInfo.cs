@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         _ => throw new InvalidOperationException(SR.UnexpectedFileSystemInfo)
                     });
             }
-            catch (Exception ex) when (ex is DirectoryNotFoundException || ex is IOException)
+            catch (Exception ex) when (ex is DirectoryNotFoundException or IOException)
             {
                 _entries = Enumerable.Empty<IFileInfo>();
             }
