@@ -19,12 +19,12 @@
 
   <!-- Profiled AOT with .nettrace -->
   <PropertyGroup>
-    <NetTraceFilePath>$(MSBuildThisFileDirectory)\adeapt.nettrace</NetTraceFilePath>
+    <NetTraceFilePath>$(MSBuildThisFileDirectory)\test.nettrace</NetTraceFilePath>
   </PropertyGroup>
 
   <!-- Profiled AOT with .mibc-->
   <PropertyGroup>
-    <ProfiledAOTProfilePaths>$(MSBuildThisFileDirectory)\adeapt.mibc</ProfiledAOTProfilePaths>
+    <ProfiledAOTProfilePaths>$(MSBuildThisFileDirectory)\test.mibc</ProfiledAOTProfilePaths>
   </PropertyGroup>
 
   <ItemGroup>
