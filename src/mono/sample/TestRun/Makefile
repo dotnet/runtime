@@ -17,7 +17,7 @@ GitHubKey=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
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
 MONO_ENV_DEBUG_OPTIONS = "-v"
-MONO_ENV_RUN_OPTIONS = "-v -v -v"
+MONO_ENV_RUN_OPTIONS = ""
 
 build: TestRun.cs
 	@mcs TestRun.cs
@@ -97,8 +97,23 @@ debug-any:
 
 clean:
 	rm -f *.exe *.exe.mdb
-
+# System.Func`1<object> System.Text.Json.Serialization.Metadata.ReflectionEmitCachingMemberAccessor/<>cni(System.ValueTuple`3<string, System.Type, System.Reflection.MemberInfo>)
+# 1969
+# System.ValueTuple`3<string, System.Type, System.Reflection.MemberInfo>: a0: 0x4001815f50
+# 
+# System.Text.Json.Serialization.Metadata.ReflectionEmitMemberAccessor:CreateConstructor (System.Type) 1970
+# a1: 0x4001815f50
+# 0(a1): 0x0000004001815fb0
+# 728(a1): 0x0000004002c154d8
+# System.Reflection.ConstructorInfo System.Type:GetConstructor 1971
+# a0: 0x4001815f50
+# 0(a0): 0x0000004001815fb0
+# 728(a0): 0x0000004002c154d8
 # System.Reflection.ConstructorInfo System.Type:GetConstructor 1972
+# s6: 0x4001815f50
+# 0(s6): 0x0000004001815fb0
+# 728(a6): 0x0000004002c154d8
+
 
 # COMPlus_DebugWriteToStdErr="1" MONO_LOG_LEVEL="debug" MONO_LOG_MASK="all" COREHOST_TRACE="1" COREHOST_TRACE_VERBOSITY="4" MONO_ENV_OPTIONS="--compile-all --trace=all" qemu-riscv64 -L ../../../..//.tools/rootfs/riscv64/ -g 12345 ../../../../artifacts/bin/testhost/net8.0-Linux-Debug-riscv64/dotnet TestRun.exe
 
@@ -189,9 +204,9 @@ FibonacciBetterMsBuild:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)core/console-apps/FibonacciBetterMsBuild/bin/Debug/net8.0/Fibonacci.dll
 
-fibonacci-msbuild:
+serialization:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)core/console-apps/fibonacci-msbuild/bin/Debug/net8.0/Hello.dll
+	$(TEST_PATH)csharp/serialization/bin/Debug/net8.0/serialization.dll
 
 
 test: customer-relationship exploration toll-calculator mixins-with-interfaces delegates-and-events branches-quickstart \
