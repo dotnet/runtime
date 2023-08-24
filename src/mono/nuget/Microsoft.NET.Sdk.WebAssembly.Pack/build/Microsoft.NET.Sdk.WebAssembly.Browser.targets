@@ -19,9 +19,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <WasmAppHostDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'WasmAppHost'))</WasmAppHostDir>
-    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(OutputPath), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
+
+    <_RunWorkingDirectory>$(OutputPath)</_RunWorkingDirectory>
+    <_RunWorkingDirectory Condition="'$(_RunWorkingDirectory)' != '' and !$([System.IO.Path]::IsPathRooted($(_RunWorkingDirectory)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_RunWorkingDirectory)))</_RunWorkingDirectory>
+    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_RunWorkingDirectory), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
+    
     <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
-    <RunWorkingDirectory>$(OutputPath)</RunWorkingDirectory>
+    <RunWorkingDirectory>$(_RunWorkingDirectory)</RunWorkingDirectory>
   </PropertyGroup>
 
   <PropertyGroup>
