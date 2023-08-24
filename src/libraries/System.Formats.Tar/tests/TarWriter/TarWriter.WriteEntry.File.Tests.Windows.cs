@@ -52,7 +52,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
         }
     }
 
-    [Theory]
+    [ConditionalTheory]
     [InlineData(TarEntryFormat.V7)]
     [InlineData(TarEntryFormat.Ustar)]
     [InlineData(TarEntryFormat.Pax)]
@@ -66,7 +66,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
         }
 
         using MemoryStream archive = new MemoryStream();
-        using TarWriter writer = new TarWriter(archive, format, leaveOpen: true);
+        using TarWriter writer = new TarWriter(archive, format);
         Assert.Throws<IOException>(() => writer.WriteEntry(fileName: appExecLinkPath, "UnsupportedAppExecLink"));
     }
 }
