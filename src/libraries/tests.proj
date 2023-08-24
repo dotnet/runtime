@@ -238,6 +238,13 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'android'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/tests/**/*.Tests.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/**/*.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/mono/sample/Android/AndroidSampleApp.csproj" />
+    <ProjectExclusions Remove="$(RepoRoot)/src/tests/FunctionalTests/Android/Device_Emulator/AOT_PROFILED/Android.Device_Emulator.Aot_Profiled.Test.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
   </ItemGroup>
@@ -627,6 +634,11 @@
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'android'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT_PROFILED\**\*.Test.csproj"
+                    Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 
 
