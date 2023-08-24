@@ -596,7 +596,7 @@ namespace System
             {
                 Math.ThrowNegateTwosCompOverflow();
             }
-            return unchecked((sbyte)(value * Math.SignZeroToOne(value ^ sign)));
+            return (sbyte)(value * Math.SignZeroToOne(value ^ sign));
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />

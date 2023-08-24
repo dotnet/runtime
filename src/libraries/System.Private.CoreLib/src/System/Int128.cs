@@ -1291,11 +1291,11 @@ namespace System
         public static Int128 CopySign(Int128 value, Int128 sign)
         {
             // Int128.MinValue == value && 0 <= sign
-            if (unchecked((long)value._upper == long.MinValue && value._lower == 0 && (long)sign._upper >= 0))
+            if ((long)value._upper == long.MinValue && value._lower == 0 && (long)sign._upper >= 0)
             {
                 Math.ThrowNegateTwosCompOverflow();
             }
-            return value * Math.SignZeroToOne(unchecked((long)value._upper ^ (long)sign._upper));
+            return value * Math.SignZeroToOne((long)value._upper ^ (long)sign._upper);
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
