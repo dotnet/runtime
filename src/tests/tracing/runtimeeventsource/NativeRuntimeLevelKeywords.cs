@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Linq;
 
 using System.Buffers; // Copied from https://github.com/dotnet/runtime/pull/86370 by @davmason:
 {
@@ -13,47 +14,54 @@ using System.Buffers; // Copied from https://github.com/dotnet/runtime/pull/8637
     byte[] localBuffer = ArrayPool<byte>.Shared.Rent(10);
     Console.WriteLine($"buffer length={localBuffer.Length}");
 }
+Console.WriteLine();
 
-using GCListener informational = new(EventLevel.Informational);
-using GCListener verbose = new(EventLevel.Verbose);
-using GCListener logAlways = new(EventLevel.LogAlways);
+using GCListener informational = GCListener.StartNew(EventLevel.Informational);
+using GCListener verbose = GCListener.StartNew(EventLevel.Verbose);
+using GCListener logAlways = GCListener.StartNew(EventLevel.LogAlways);
 
 Stopwatch stopwatch = Stopwatch.StartNew();
 do
 {
-    for (long i1 = 0, i2 = stopwatch.ElapsedMilliseconds; i1 < i2; i1++)
+    int nanoseconds = (int)double.Min(stopwatch.Elapsed.TotalNanoseconds, 1000000d);
+
+    for (int i = 0; i < nanoseconds; i++)
     {
         _ = new object();
     }
-    GC.AddMemoryPressure(1L);
-    GC.RemoveMemoryPressure(1L);
     GC.Collect();
+
+    if (informational.Contains("GCStart_V2") && verbose.Contains("GCAllocationTick_V4"))
+    {
+        break;
+    }
 }
 while (stopwatch.Elapsed.TotalSeconds <= 0.25d);
 
 GCListener.DumpEvents(informational, verbose, logAlways);
-Console.WriteLine($"\n{nameof(stopwatch.Elapsed.TotalSeconds)} {stopwatch.Elapsed.TotalSeconds}");
 
-AssertContains(("GCStart_V2", EventLevel.Informational), informational, verbose, logAlways);
-AssertContains(("GCAllocationTick_V4", EventLevel.Verbose), informational, verbose, logAlways);
+Console.WriteLine($"\nElapsed Seconds: {stopwatch.Elapsed.TotalSeconds}\n");
+
+AssertContains("GCStart_V2", EventLevel.Informational, informational, verbose, logAlways);
+AssertContains("GCAllocationTick_V4", EventLevel.Verbose, informational, verbose, logAlways);
 
 return 100;
 
-static void AssertContains((string name, EventLevel level) e, params GCListener[] listeners)
+static void AssertContains(string eventName, EventLevel level, params GCListener[] listeners)
 {
-    int eventLevel = (e.level is EventLevel.LogAlways) ? int.MinValue : (int)e.level;
+    int eventLevel = (level is EventLevel.LogAlways) ? int.MinValue : (int)level;
 
     foreach (GCListener listener in listeners)
     {
         int listenerLevel = (listener.Level is EventLevel.LogAlways) ? int.MaxValue : (int)listener.Level;
 
-        if ((eventLevel > listenerLevel) && listener.Contains(e.name))
+        if ((eventLevel > listenerLevel) && listener.Contains(eventName))
         {
-            throw new Exception($"{e} is in {listener}");
+            throw new Exception($"{eventName} is in {listener}");
         }
-        else if ((eventLevel <= listenerLevel) && !listener.Contains(e.name))
+        else if ((eventLevel <= listenerLevel) && !listener.Contains(eventName))
         {
-            throw new Exception($"{e} is not in {listener}");
+            throw new Exception($"{eventName} is not in {listener}");
         }
     }
 }
@@ -62,24 +70,32 @@ internal sealed class GCListener : EventListener
 {
     public EventLevel Level { get; private set; }
 
-    private const string sourceName = "Microsoft-Windows-DotNETRuntime";
     private static EventLevel nextLevel;
-    private readonly ConcurrentDictionary<string, EventLevel> events = new();
+    private readonly ConcurrentDictionary<string, (int id, EventLevel level)> events = new();
 
-    public GCListener(EventLevel level)
+    private GCListener()
+    {
+        Console.WriteLine($"{this} Listening...");
+    }
+
+    public static GCListener StartNew(EventLevel level)
     {
         nextLevel = level;
+        return new();
     }
 
     public static void DumpEvents(params GCListener[] listeners)
     {
         foreach (GCListener listener in listeners)
         {
-            Console.WriteLine($"\n{listener}\n\\");
+            Console.WriteLine($"\n{listener} Dump:\n\\");
 
-            foreach (KeyValuePair<string, EventLevel> e in listener.events)
+            foreach (KeyValuePair<string, (int id, EventLevel level)> e in listener.events.OrderBy(e =>
             {
-                Console.WriteLine($"({$"\"{e.Key}\"",-24}, EventLevel.{e.Value,-13})");
+                return e.Value.id;
+            }))
+            {
+                Console.WriteLine($"{e.Value.id,3}: {$"\"{e.Key}\"",-24}, EventLevel.{e.Value.level,-13}");
             }
         }
     }
@@ -89,18 +105,17 @@ internal sealed class GCListener : EventListener
     }
     public override string ToString()
     {
-        return $"{nameof(GCListener)}({sourceName}, EventLevel.{Level}, {events.Count})";
+        return $"{nameof(GCListener)}({Level,-13}, {events.Count,2})";
     }
     public override void Dispose()
     {
-        Console.WriteLine($"\n{this}\n\\\nDisposing...");
+        Console.WriteLine($"{this} Disposing... ");
         base.Dispose();
-        Console.WriteLine("Disposed");
     }
 
     protected override void OnEventSourceCreated(EventSource source)
     {
-        if (source.Name is sourceName)
+        if (source.Name is "Microsoft-Windows-DotNETRuntime")
         {
             Level = nextLevel;
             EnableEvents(source, Level, (EventKeywords)1);
@@ -108,6 +123,6 @@ internal sealed class GCListener : EventListener
     }
     protected override void OnEventWritten(EventWrittenEventArgs e)
     {
-        events.TryAdd(e.EventName ?? "", e.Level);
+        events.TryAdd(e.EventName ?? "", (e.EventId, e.Level));
     }
 }
