@@ -1,7 +1,7 @@
 is_global = true
 
 # AD0001: Analyzer threw an exception
-dotnet_diagnostic.AD0001.severity = suggestion
+dotnet_diagnostic.AD0001.severity = warning
 
 # BCL0001: Ensure minimum API surface is respected
 dotnet_diagnostic.BCL0001.severity = warning

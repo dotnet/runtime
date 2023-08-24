@@ -27,3 +27,15 @@ PALEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normaliz
                                                       int32_t cwSrcLength,
                                                       UChar* lpDst,
                                                       int32_t cwDstLength);
+
+#ifdef __APPLE__
+PALEXPORT int32_t GlobalizationNative_IsNormalizedNative(NormalizationForm normalizationForm,
+                                                         const uint16_t* lpStr,
+                                                         int32_t cwStrLength);
+
+PALEXPORT int32_t GlobalizationNative_NormalizeStringNative(NormalizationForm normalizationForm,
+                                                            const uint16_t* lpSource,
+                                                            int32_t cwSourceLength,
+                                                            uint16_t* lpDst,
+                                                            int32_t cwDstLength);
+#endif

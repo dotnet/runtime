@@ -131,11 +131,6 @@ jobs:
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
     # run ci-setup
-    - script: wget https://bootstrap.pypa.io/pip/3.6/get-pip.py && $(Python) get-pip.py --user
-      displayName: Ensure pip is installed (non-Windows)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(Python) -m pip install --user dataclasses
-      displayName: Install dataclasses library used in ci_setup.py
     - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)\machine-setup.cmd
       displayName: Run ci setup script (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))

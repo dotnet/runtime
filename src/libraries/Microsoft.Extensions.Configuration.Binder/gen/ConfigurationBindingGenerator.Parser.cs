@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -44,13 +45,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (BinderInvocation invocation in _invocations)
                 {
-                    IInvocationOperation invocationOperation = invocation.Operation!;
-                    if (!invocationOperation.TargetMethod.IsExtensionMethod)
-                    {
-                        continue;
-                    }
+                    IMethodSymbol targetMethod = invocation.Operation.TargetMethod;
+                    INamedTypeSymbol? candidateBinderType = targetMethod.ContainingType;
+                    Debug.Assert(targetMethod.IsExtensionMethod);
 
-                    INamedTypeSymbol? candidateBinderType = invocationOperation.TargetMethod.ContainingType;
                     if (SymbolEqualityComparer.Default.Equals(candidateBinderType, _typeSymbols.ConfigurationBinder))
                     {
                         RegisterMethodInvocation_ConfigurationBinder(invocation);
@@ -151,7 +149,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     // List<string> is used in generated code as a temp holder for formatting
                     // an error for config properties that don't map to object properties.
-                    _sourceGenSpec.TypeNamespaces.Add("System.Collections.Generic");
+                    _sourceGenSpec.Namespaces.Add("System.Collections.Generic");
 
                     spec = CreateObjectSpec(namedType);
                 }
@@ -173,10 +171,34 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string @namespace = spec.Namespace;
                 if (@namespace is not null and not "<global namespace>")
                 {
-                    _sourceGenSpec.TypeNamespaces.Add(@namespace);
+                    _sourceGenSpec.Namespaces.Add(@namespace);
                 }
 
                 return _createdSpecs[type] = spec;
+            }
+
+            private void RegisterTypeForBindCoreMainGen(TypeSpec typeSpec)
+            {
+                if (typeSpec.NeedsMemberBinding)
+                {
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCoreMain, typeSpec);
+                    RegisterTypeForBindCoreGen(typeSpec);
+                    _sourceGenSpec.MethodsToGen_CoreBindingHelper |= MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
+                }
+            }
+
+            private void RegisterTypeForBindCoreGen(TypeSpec typeSpec)
+            {
+                if (typeSpec.NeedsMemberBinding)
+                {
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, typeSpec);
+                }
+            }
+
+            private void RegisterTypeForGetCoreGen(TypeSpec typeSpec)
+            {
+                RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetCore, typeSpec);
+                _sourceGenSpec.MethodsToGen_CoreBindingHelper |= MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
             }
 
             private void RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper method, TypeSpec type)
@@ -190,14 +212,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _sourceGenSpec.MethodsToGen_CoreBindingHelper |= method;
             }
 
-            private void RegisterTypeForBindCoreUntypedGen(TypeSpec typeSpec)
-            {
-                if (typeSpec.NeedsMemberBinding)
-                {
-                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, typeSpec);
-                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCoreUntyped, typeSpec);
-                }
-            }
+            /// <summary>
+            /// Registers interceptors for root binding methods, except for ConfigurationBinder.Bind,
+            /// which is handled by <see cref="RegisterAsInterceptor_ConfigBinder_BindMethod"/>
+            /// </summary>
+            private void RegisterAsInterceptor(Enum method, IInvocationOperation operation) =>
+                _sourceGenSpec.InterceptionInfo.RegisterCacheEntry(method, new InterceptorLocationInfo(operation));
 
             private static bool IsNullable(ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? underlyingType)
             {
@@ -339,7 +359,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 // We want a BindCore method for List<TElement> as a temp holder for the array values. We know the element type is supported.
                 EnumerableSpec listSpec = (GetOrCreateTypeSpec(_typeSymbols.List.Construct(arrayType.ElementType)) as EnumerableSpec)!;
-                RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, listSpec);
+                RegisterTypeForBindCoreGen(listSpec);
 
                 EnumerableSpec spec = new EnumerableSpec(arrayType)
                 {
@@ -351,7 +371,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
 
                 Debug.Assert(spec.CanInitialize);
-                RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, spec);
+                RegisterTypeForBindCoreGen(spec);
 
                 return spec;
             }
@@ -387,7 +407,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (spec is not null)
                 {
-                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, spec);
+                    RegisterTypeForBindCoreGen(spec);
                     spec.InitExceptionMessage ??= spec.ElementType.InitExceptionMessage;
                 }
 
@@ -446,7 +466,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     constructionStrategy = InitializationStrategy.ToEnumerableMethod;
                     populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                     toEnumerableMethodCall = "ToDictionary(pair => pair.Key, pair => pair.Value)";
-                    _sourceGenSpec.TypeNamespaces.Add("System.Linq");
+                    _sourceGenSpec.Namespaces.Add("System.Linq");
                 }
                 else
                 {
@@ -715,7 +735,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (objectSpec.NeedsMemberBinding)
                 {
-                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, objectSpec);
+                    RegisterTypeForBindCoreGen(objectSpec);
                 }
 
                 return objectSpec;
@@ -892,6 +912,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _typeDiagnostics[causingType] = typeDiags;
                 }
             }
+        }
+    }
+
+    public static class ParserExtensions
+    {
+        public static void RegisterCacheEntry<TKey, TValue, TEntry>(this Dictionary<TKey, TValue> cache, TKey key, TEntry entry)
+            where TKey : notnull
+            where TValue : ICollection<TEntry>, new()
+        {
+            if (!cache.TryGetValue(key, out TValue? entryCollection))
+            {
+                cache[key] = entryCollection = new TValue();
+            }
+
+            entryCollection.Add(entry);
         }
     }
 }

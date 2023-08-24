@@ -37,7 +37,7 @@ public class AA
 public class App
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -50,7 +50,6 @@ public class App
         }
 
         Console.WriteLine("Passed.");
-        return 100;
     }
 
 }

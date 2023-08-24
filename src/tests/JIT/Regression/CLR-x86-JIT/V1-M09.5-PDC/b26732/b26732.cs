@@ -19,7 +19,7 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int L = 2;
             int[] F = new int[2];
@@ -31,7 +31,6 @@ namespace Test
             CheckHeap(ref new WeirdObject().Member, F, ref Static,
             CheckHeap(ref new WeirdObject().Member, F, ref F, null)
             ))))));
-            return 100;
         }
     }
 }

@@ -6,10 +6,9 @@ using Xunit;
 public class ReproBoxProblem
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Console.WriteLine(DoOp(77.5, 77.5));
-        return 100;
     }
 
     private static Object DoOp(Object v1, Object v2)

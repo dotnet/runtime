@@ -194,17 +194,17 @@ namespace System.Linq.Expressions.Tests
             TestUserDefinedMathOperators<U, U>();
             TestUserDefinedComparisonOperators<U, U>();
             TestUserDefinedBitwiseOperators<U, U>();
-            TestUserDefinedMathOperators<U?, U?>();
-            TestUserDefinedComparisonOperators<U?, U?>();
-            TestUserDefinedBitwiseOperators<U?, U?>();
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(TestUserDefinedMathOperators<U?, U?>);
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(TestUserDefinedComparisonOperators<U?, U?>);
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(TestUserDefinedBitwiseOperators<U?, U?>);
 
             TestUserDefinedComparisonOperators<B, B>();
             TestUserDefinedLogicalOperators<B, B>();
-            TestUserDefinedComparisonOperators<B?, B?>();
-            TestUserDefinedLogicalOperators<B?, B?>();
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(TestUserDefinedComparisonOperators<B?, B?>);
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(TestUserDefinedLogicalOperators<B?, B?>);
 
             TestUserDefinedMathOperators<M, N>();
-            TestUserDefinedMathOperators<M?, N?>();
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(TestUserDefinedMathOperators<M?, N?>);
         }
 
         internal static bool IsNullableType(Type type)

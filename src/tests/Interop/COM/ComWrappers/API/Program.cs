@@ -927,7 +927,6 @@ namespace ComWrappersTests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85137", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public void ValidateAggregationWithComObject()
         {
@@ -944,7 +943,6 @@ namespace ComWrappersTests
             Assert.Equal(0, allocTracker.GetCount());
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85137", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public void ValidateAggregationWithReferenceTrackerObject()
         {

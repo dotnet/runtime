@@ -205,7 +205,14 @@ export interface AssetEntry {
      * If provided, runtime doesn't have to fetch the data. 
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
-    buffer?: ArrayBuffer
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>,
+
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>,
+
     /**
      * It's metadata + fetch-like Promise<Response>
      * If provided, the runtime doesn't have to initiate the download. It would just await the response.

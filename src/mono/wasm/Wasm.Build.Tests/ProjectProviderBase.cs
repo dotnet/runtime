@@ -470,9 +470,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         expected = expected.Order().Select(f => Path.GetFileName(f)).Distinct();
         var actualFileNames = actual.Order().Select(f => Path.GetFileName(f));
-        Assert.True(expected.Count() == actualFileNames.Count(),
+        if (expected.Count() != actualFileNames.Count())
+        {
+            throw new XunitException(
                     $"Expected: {string.Join(", ", expected)}{Environment.NewLine}" +
                     $"Actual:   {string.Join(", ", actualFileNames)}");
+        }
 
         Assert.Equal(expected, actualFileNames);
     }

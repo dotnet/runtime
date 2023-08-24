@@ -1,18 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
-import { WasmOpcode } from "./jiterpreter-opcodes";
+import { WasmOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import {
-    WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
-    recordFailure, getOptions
+    WasmBuilder, addWasmFunctionPointer,
+    _now, getWasmFunctionTable, applyOptions,
+    recordFailure, getOptions,
+    getCounter, modifyCounter,
+    jiterpreter_allocate_tables
 } from "./jiterpreter-support";
+import { JiterpreterTable, JiterpCounter, JitQueue } from "./jiterpreter-enums";
 import {
     compileDoJitCall
 } from "./jiterpreter-feature-detect";
@@ -65,7 +69,7 @@ let wasmEhSupported: boolean | undefined = undefined;
 let nextDisambiguateIndex = 0;
 const fnCache: Array<Function | undefined> = [];
 const targetCache: { [target: number]: TrampolineInfo } = {};
-const jitQueue: TrampolineInfo[] = [];
+const infosByMethod: { [method: number]: TrampolineInfo[] } = {};
 
 class TrampolineInfo {
     method: MonoMethod;
@@ -191,6 +195,21 @@ export function mono_interp_invoke_wasm_jit_call_trampoline(
     }
 }
 
+// If a method is freed we need to remove its info (just in case another one gets
+//  allocated at that exact memory offset later) and more importantly, ensure it is
+//  not waiting in the jit queue
+export function mono_jiterp_free_method_data_jit_call(method: MonoMethod) {
+    // FIXME
+    const infoArray = infosByMethod[<any>method];
+    if (!infoArray)
+        return;
+
+    for (let i = 0; i < infoArray.length; i++)
+        delete targetCache[infoArray[i].addr];
+
+    delete infosByMethod[<any>method];
+}
+
 export function mono_interp_jit_wasm_jit_call_trampoline(
     method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
     arg_offsets: VoidPtr, catch_exceptions: number
@@ -223,12 +242,17 @@ export function mono_interp_jit_wasm_jit_call_trampoline(
         arg_offsets, catch_exceptions !== 0
     );
     targetCache[cacheKey] = info;
-    jitQueue.push(info);
+    const jitQueueLength = cwraps.mono_jiterp_tlqueue_add(JitQueue.JitCall, <any>method);
+
+    let ibm = infosByMethod[<any>method];
+    if (!ibm)
+        ibm = infosByMethod[<any>method] = [];
+    ibm.push(info);
 
     // we don't want the queue to get too long, both because jitting too many trampolines
     //  at once can hit the 4kb limit and because it makes it more likely that we will
     //  fail to jit them early enough
-    if (jitQueue.length >= maxJitQueueLength)
+    if (jitQueueLength >= maxJitQueueLength)
         mono_interp_flush_jitcall_queue();
 }
 
@@ -281,15 +305,17 @@ export function mono_jiterp_do_jit_call_indirect(
                     jit_call_cb: jitCallCb,
                 },
                 m: {
-                    h: (<any>Module).asm.memory
+                    h: (<any>Module).getMemory()
                 },
             });
             const impl = instance.exports.do_jit_call_indirect;
             if (typeof (impl) !== "function")
                 throw new Error("Did not find exported do_jit_call handler");
 
+            // Make sure we've allocated the jiterpreter tables first because we need to use them
+            jiterpreter_allocate_tables(Module);
             // We successfully instantiated it so we can register it as the new do_jit_call handler
-            const result = addWasmFunctionPointer(impl);
+            const result = addWasmFunctionPointer(JiterpreterTable.DoJitCall, impl);
             cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             failed = false;
         } catch (exc) {
@@ -300,9 +326,17 @@ export function mono_jiterp_do_jit_call_indirect(
     }
 
     if (failed) {
+        // This means that either wasm EH is unavailable or we failed to JIT the handler somehow
         try {
-            const result = Module.addFunction(do_jit_call_indirect_js, "viii");
-            cwraps.mono_jiterp_update_jit_call_dispatcher(result);
+            // HACK: It's not safe to use Module.addFunction in a multithreaded scenario
+            if (MonoWasmThreads) {
+                // Use mono_llvm_cpp_catch_exception instead
+                cwraps.mono_jiterp_update_jit_call_dispatcher(0);
+            } else {
+                // Use the JS helper function defined up above
+                const result = Module.addFunction(do_jit_call_indirect_js, "viii");
+                cwraps.mono_jiterp_update_jit_call_dispatcher(result);
+            }
         } catch {
             // CSP policy or some other problem could break Module.addFunction, so in that case, pass 0
             // This will cause the runtime to use mono_llvm_cpp_catch_exception
@@ -314,7 +348,21 @@ export function mono_jiterp_do_jit_call_indirect(
 }
 
 export function mono_interp_flush_jitcall_queue(): void {
-    if (jitQueue.length === 0)
+    const jitQueue : TrampolineInfo[] = [];
+    let methodPtr = <MonoMethod><any>0;
+    while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.JitCall)) != 0) {
+        const infos = infosByMethod[<any>methodPtr];
+        if (!infos) {
+            mono_log_info(`Failed to find corresponding info list for method ptr ${methodPtr} from jit queue!`);
+            continue;
+        }
+
+        for (let i = 0; i < infos.length; i++)
+            if (infos[i].result === 0)
+                jitQueue.push(infos[i]);
+    }
+
+    if (!jitQueue.length)
         return;
 
     let builder = trampBuilder;
@@ -333,8 +381,8 @@ export function mono_interp_flush_jitcall_queue(): void {
     } else
         builder.clear(0);
 
-    if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
-        jitQueue.length = 0;
+    if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
+        cwraps.mono_jiterp_tlqueue_clear(JitQueue.JitCall);
         return;
     }
 
@@ -363,7 +411,6 @@ export function mono_interp_flush_jitcall_queue(): void {
 
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
-
             const sig: any = {};
 
             if (info.enableDirect) {
@@ -449,7 +496,7 @@ export function mono_interp_flush_jitcall_queue(): void {
         const buffer = builder.getArrayView();
         if (trace > 0)
             mono_log_info(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
-        counters.bytesGenerated += buffer.length;
+        modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
         const traceModule = new WebAssembly.Module(buffer);
         const wasmImports = builder.getWasmImports();
 
@@ -458,22 +505,27 @@ export function mono_interp_flush_jitcall_queue(): void {
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
 
-            // Get the exported trace function
+            // Get the exported jit call thunk
             const jitted = <Function>traceInstance.exports[info.name];
-            const idx = addWasmFunctionPointer(jitted);
-            if (!idx)
-                throw new Error("add_function_pointer returned a 0 index");
-            else if (trace >= 2)
+            const idx = addWasmFunctionPointer(JiterpreterTable.JitCall, jitted);
+            if (trace >= 2)
                 mono_log_info(`${info.name} -> fn index ${idx}`);
 
             info.result = idx;
-            cwraps.mono_jiterp_register_jit_call_thunk(<any>info.cinfo, idx);
-            for (let j = 0; j < info.queue.length; j++)
-                cwraps.mono_jiterp_register_jit_call_thunk(<any>info.queue[j], idx);
+            if (idx > 0) {
+                // We successfully registered a function pointer for this thunk,
+                //  so now register it as the thunk for each call site in the queue
+                cwraps.mono_jiterp_register_jit_call_thunk(<any>info.cinfo, idx);
+                for (let j = 0; j < info.queue.length; j++)
+                    cwraps.mono_jiterp_register_jit_call_thunk(<any>info.queue[j], idx);
 
-            if (info.enableDirect)
-                counters.directJitCallsCompiled++;
-            counters.jitCallsCompiled++;
+                if (info.enableDirect)
+                    modifyCounter(JiterpCounter.DirectJitCallsCompiled, 1);
+                modifyCounter(JiterpCounter.JitCallsCompiled, 1);
+            }
+            // If we failed to register a function pointer we just continue, since it
+            //  means that the table is full
+
             info.queue.length = 0;
             rejected = false;
         }
@@ -487,10 +539,10 @@ export function mono_interp_flush_jitcall_queue(): void {
     } finally {
         const finished = _now();
         if (compileStarted) {
-            elapsedTimes.generation += compileStarted - started;
-            elapsedTimes.compilation += finished - compileStarted;
+            modifyCounter(JiterpCounter.ElapsedGenerationMs, compileStarted - started);
+            modifyCounter(JiterpCounter.ElapsedCompilationMs, finished - compileStarted);
         } else {
-            elapsedTimes.generation += finished - started;
+            modifyCounter(JiterpCounter.ElapsedGenerationMs, finished - started);
         }
 
         if (threw || rejected) {
@@ -533,8 +585,6 @@ export function mono_interp_flush_jitcall_queue(): void {
         } else if (rejected && !threw) {
             mono_log_error("failed to generate trampoline for unknown reason");
         }
-
-        jitQueue.length = 0;
     }
 }
 
