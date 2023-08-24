@@ -168,11 +168,10 @@ export async function mono_download_assets(): Promise<void> {
             countAndStartDownload(asset);
         }
 
-        // continue after the dotnet.runtime.js was loaded
-        await loaderHelpers.runtimeModuleLoaded.promise;
-
-        // continue after we know if memory snapshot is available or not
-        await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
+        if (loaderHelpers.config.startupMemoryCache) {
+            // continue after we know if memory snapshot is available or not
+            await loaderHelpers.memorySnapshotSkippedOrDone.promise;
+        }
 
         // start fetching assets in parallel, only if memory snapshot is not available.
         for (const asset of containedInSnapshotAssets) {
@@ -193,6 +192,8 @@ export async function mono_download_assets(): Promise<void> {
         }
 
         loaderHelpers.allDownloadsQueued.promise_control.resolve();
+
+        // continue after the dotnet.runtime.js was loaded
         await loaderHelpers.runtimeModuleLoaded.promise;
 
         const promises_of_asset_instantiation: Promise<void>[] = [];
@@ -211,7 +212,7 @@ export async function mono_download_assets(): Promise<void> {
                         // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
 
                         await runtimeHelpers.beforeOnRuntimeInitialized.promise;
-                        await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
+                        await loaderHelpers.memorySnapshotSkippedOrDone.promise;
                         runtimeHelpers.instantiate_asset(asset, url, data);
                     }
                 } else {

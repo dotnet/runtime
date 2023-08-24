@@ -128,6 +128,7 @@ export type LoaderHelpers = {
     allDownloadsQueued: PromiseAndController<void>,
     wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
     runtimeModuleLoaded: PromiseAndController<void>,
+    memorySnapshotSkippedOrDone: PromiseAndController<void>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -194,7 +195,6 @@ export type RuntimeHelpers = {
 
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
-    memorySnapshotSkippedOrDone: PromiseAndController<void>,
     afterInstantiateWasm: PromiseAndController<void>,
     beforePreInit: PromiseAndController<void>,
     afterPreInit: PromiseAndController<void>,

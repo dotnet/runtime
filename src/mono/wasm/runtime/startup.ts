@@ -119,7 +119,7 @@ function instantiateWasm(
     const mark = startMeasure();
     if (userInstantiateWasm) {
         // user wasm instantiation doesn't support memory snapshots
-        runtimeHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
+        loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => {
             endMeasure(mark, MeasuredBlock.instantiateWasm);
             runtimeHelpers.afterInstantiateWasm.promise_control.resolve();
@@ -467,10 +467,10 @@ async function instantiate_wasm_module(
             memorySize = await getMemorySnapshotSize();
             runtimeHelpers.loadedMemorySnapshot = !!memorySize;
             runtimeHelpers.storeMemorySnapshotPending = !runtimeHelpers.loadedMemorySnapshot;
-        }
-        if (!runtimeHelpers.loadedMemorySnapshot) {
-            // we should start downloading DLLs etc as they are not in the snapshot
-            runtimeHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
+            if (!runtimeHelpers.loadedMemorySnapshot) {
+                // we should start downloading DLLs etc as they are not in the snapshot
+                loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
+            }
         }
 
         await runtimeHelpers.beforePreInit.promise;
@@ -498,7 +498,7 @@ async function instantiate_wasm_module(
                 runtimeHelpers.loadedMemorySnapshot = false;
             }
             // now we know if the loading of memory succeeded or not, we can start loading the rest of the assets
-            runtimeHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
+            loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
         }
         runtimeHelpers.afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
