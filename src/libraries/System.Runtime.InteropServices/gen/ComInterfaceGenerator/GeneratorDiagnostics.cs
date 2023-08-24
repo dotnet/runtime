@@ -493,7 +493,8 @@ namespace Microsoft.Interop
                 GetResourceString(nameof(SR.ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails)),
                 Category,
                 DiagnosticSeverity.Info,
-                isEnabledByDefault: true);
+                isEnabledByDefault: true,
+                helpLinkUri: "aka.ms/GeneratedComInterfaceUsage");
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,10 +13,24 @@ namespace ComInterfaceGenerator.Unit.Tests
 {
     internal partial class CodeSnippets
     {
+        internal static IComInterfaceAttributeProvider GetAttributeProvider(GeneratorKind generator)
+            => generator switch
+            {
+                GeneratorKind.VTableIndexStubGenerator => new VirtualMethodIndexAttributeProvider(),
+                GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ManagedObjectWrapper),
+                GeneratorKind.ComInterfaceGeneratorComObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ComObjectWrapper),
+                GeneratorKind.ComInterfaceGenerator => new GeneratedComInterfaceAttributeProvider(),
+                _ => throw new UnreachableException(),
+            };
+
         private readonly IComInterfaceAttributeProvider _attributeProvider;
         public CodeSnippets(IComInterfaceAttributeProvider attributeProvider)
         {
             _attributeProvider = attributeProvider;
+        }
+
+        public CodeSnippets(GeneratorKind generator) : this(GetAttributeProvider(generator))
+        {
         }
 
         private string VirtualMethodIndex(

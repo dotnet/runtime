@@ -20,7 +20,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 {
     public class CompileFails
     {
-
         public static IEnumerable<object[]> ComInterfaceGeneratorSnippetsToCompile()
         {
             CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
@@ -51,7 +50,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static IEnumerable<object[]> InvalidUnmanagedToManagedCodeSnippetsToCompile(GeneratorKind generator)
         {
-            CodeSnippets codeSnippets = new(GetAttributeProvider(generator));
+            CodeSnippets codeSnippets = new(generator);
 
             string safeHandleMarshallerDoesNotSupportManagedToUnmanaged = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>");
             string safeHandleMarshallerDoesNotSupportUnmanagedToManaged = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>");
@@ -83,7 +82,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             DiagnosticResult invalidReturnTypeDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                 .WithLocation(0)
                 .WithArguments(marshallerDoesNotSupportManagedToUnmanaged, "Method");
-            CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets.Bidirectional(GetAttributeProvider(generator)));
+            CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets.Bidirectional(CodeSnippets.GetAttributeProvider(generator)));
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.NativeToManagedOnlyOutParameter, new[] { invalidManagedToUnmanagedParameterDiagnostic } };
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.NativeToManagedOnlyReturnValue, new[] { invalidReturnTypeDiagnostic } };
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.ByValueInParameter, new[] { invalidUnmanagedToManagedParameterDiagnostic } };
@@ -98,7 +97,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             string CustomTypeSpecifiedWithNoStringMarshallingCustom = SR.InvalidStringMarshallingConfigurationNotCustom;
             string StringMarshallingMustMatchBase = SR.GeneratedComInterfaceStringMarshallingMustMatchBase;
 
-            CodeSnippets codeSnippets = new(GetAttributeProvider(generator));
+            CodeSnippets codeSnippets = new(generator);
             (StringMarshalling, Type?) utf8Marshalling = (StringMarshalling.Utf8, null);
             (StringMarshalling, Type?) utf16Marshalling = (StringMarshalling.Utf16, null);
             (StringMarshalling, Type?) customUtf16Marshalling = (StringMarshalling.Custom, typeof(Utf16StringMarshaller));
@@ -327,7 +326,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             // Marshallers with only support for their expected places in the signatures in
             // UnmanagedToManaged marshal modes.
-            CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets.Bidirectional(GetAttributeProvider(generator)));
+            CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets.Bidirectional(CodeSnippets.GetAttributeProvider(generator)));
 
             yield return new[] { ID(), customStructMarshallingCodeSnippets.Stateless.NativeToManagedOnlyInParameter };
             yield return new[] { ID(), customStructMarshallingCodeSnippets.Stateless.ByValueOutParameter };
@@ -686,7 +685,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static IEnumerable<object[]> CountParameterIsOutSnippets()
         {
-            var g = GetAttributeProvider(GeneratorKind.ComInterfaceGenerator);
+            var g = CodeSnippets.GetAttributeProvider(GeneratorKind.ComInterfaceGenerator);
             CodeSnippets a = new(g);
             DiagnosticResult returnValueDiag = new DiagnosticResult(GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue)
                 .WithLocation(1)

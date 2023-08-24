@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,7 +11,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using ComInterfaceGenerator.Unit.Tests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -66,16 +64,6 @@ namespace Microsoft.Interop.UnitTests
         {
             // Workaround for - xUnit1026 // Theory methods should use all of their parameters
         }
-
-        internal static IComInterfaceAttributeProvider GetAttributeProvider(GeneratorKind generator)
-            => generator switch
-            {
-                GeneratorKind.VTableIndexStubGenerator => new VirtualMethodIndexAttributeProvider(),
-                GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ManagedObjectWrapper),
-                GeneratorKind.ComInterfaceGeneratorComObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ComObjectWrapper),
-                GeneratorKind.ComInterfaceGenerator => new GeneratedComInterfaceAttributeProvider(),
-                _ => throw new UnreachableException(),
-            };
 
         /// <summary>
         /// Disable binding redirect warnings. They are disabled by default by the .NET SDK, but not by Roslyn.

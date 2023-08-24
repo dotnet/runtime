@@ -282,8 +282,8 @@ namespace ComInterfaceGenerator.Unit.Tests
 
 
         [Theory]
-        //[MemberData(nameof(ByValueMarshalAttributeOnPinnedMarshalledTypes))]
-        //[MemberData(nameof(ByValueMarshalAttributeOnValueTypes))]
+        [MemberData(nameof(ByValueMarshalAttributeOnPinnedMarshalledTypes))]
+        [MemberData(nameof(ByValueMarshalAttributeOnValueTypes))]
         [MemberData(nameof(ByValueMarshalAttributeOnCustomCollections))]
         public async Task VerifyByValueMarshallingAttributeUsageInfoMessages(string id, string source, DiagnosticResult[] diagnostics)
         {

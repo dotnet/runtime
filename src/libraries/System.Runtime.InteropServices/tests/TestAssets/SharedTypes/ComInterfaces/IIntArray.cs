@@ -5,51 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace SharedTypes.ComInterfaces.asdf
+namespace SharedTypes.ComInterfaces
 {
-    [global::System.Runtime.InteropServices.Marshalling.GeneratedComInterface(), global::System.Runtime.InteropServices.Guid("0A52B77C-E08B-4274-A1F4-1A2BF2C07E60")]
-    partial interface INaiveAPI
-    {
-
-        void Method([MarshalUsing(ConstantElementCount = 10)] StatelessCollectionAllShapes<int> p);
-    }
-    internal class StatelessCollectionAllShapes<T>
-    {
-        public T _field;
-    }
-    [ContiguousCollectionMarshaller]
-    [CustomMarshaller(typeof(StatelessCollectionAllShapes<>), MarshalMode.Default, typeof(StatelessCollectionAllShapesMarshaller<,>))]
-    internal unsafe static class StatelessCollectionAllShapesMarshaller<TManagedElement, TUnmanagedElement> where TUnmanagedElement : unmanaged
-    {
-        public static void Free(TUnmanagedElement* unmanaged) { }
-
-        // ToUnmanaged
-        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(StatelessCollectionAllShapes<TManagedElement> managed, out int numElements)
-            => throw null;
-        public static System.ReadOnlySpan<TManagedElement> GetManagedValuesSource(StatelessCollectionAllShapes<TManagedElement> managed) // Can throw exceptions
-            => throw null;
-        public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) // Can throw exceptions
-            => throw null;
-        public static ref TUnmanagedElement* GetPinnableReference(StatelessCollectionAllShapes<TManagedElement> managed)
-            => throw null;
-
-        // Caller Allocated buffer ToUnmanaged
-        public static int BufferSize { get; } = 10;
-        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(StatelessCollectionAllShapes<TManagedElement> managed, System.Span<byte> buffer, out int numElements)
-            => throw null;
-
-        // ToManaged
-        public static StatelessCollectionAllShapes<TManagedElement> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
-            => throw null;
-        public static System.Span<TManagedElement> GetManagedValuesDestination(StatelessCollectionAllShapes<TManagedElement> managed)
-            => throw null;
-        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
-            => throw null;
-
-        //ToManaged Guaranteed marshalling
-        public static StatelessCollectionAllShapes<TManagedElement> AllocateContainerForManagedElementsFinally(TUnmanagedElement* unmanaged, int numElements)
-            => throw null;
-    }
     [GeneratedComInterface]
     [Guid("9FA4A8A9-3D8F-48A8-B6FB-B45B5F1B9FB6")]
     internal partial interface IIntArray
