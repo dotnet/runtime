@@ -564,7 +564,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     }
     else if (JitConfig.JitCounterPadding() > 0)
     {
-        numCountersPerProbe = (unsigned) JitConfig.JitCounterPadding();
+        numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
     }
 
     // Remember the schema index for this block.
@@ -1749,7 +1749,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
     }
     else if (JitConfig.JitCounterPadding() > 0)
     {
-        numCountersPerProbe = (unsigned) JitConfig.JitCounterPadding();
+        numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
     }
 
     // Walk the bbSparseProbeList, emitting one schema element per...
