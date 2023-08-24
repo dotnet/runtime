@@ -7284,11 +7284,11 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             //
             // Without unwind_and_continue_handler below, the exception will fly up the stack to
             // this point, where it will be rethrown and thus leak out.
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
             EX_RETHROW;
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE(true);
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
     EX_END_CATCH(SwallowAllExceptions);

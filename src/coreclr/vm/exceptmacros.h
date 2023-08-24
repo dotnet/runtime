@@ -267,8 +267,8 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER
 
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE
-#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE
+#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
+#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 #else // DACCESS_COMPILE
 
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
@@ -322,7 +322,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #endif // TARGET_UNIX
 
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE                                        \
+#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                        \
     {                                                                                       \
         MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
         Exception* __pUnCException  = NULL;                                                 \
@@ -334,7 +334,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH)
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER                                                 \
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE                                            \
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                            \
     /* The purpose of the INSTALL_UNWIND_AND_CONTINUE_HANDLER is to translate an exception to a managed */ \
     /* exception before it hits managed code. */
 
@@ -349,7 +349,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             SCAN_EHMARKER_TRY();                                                            \
             DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH);
 
-#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE(nativeRethrow)                      \
+#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                      \
             DEBUG_ASSURE_NO_RETURN_END(IUACH)                                               \
             SCAN_EHMARKER_END_TRY();                                                        \
         }                                                                                   \
@@ -371,7 +371,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     }                                                                                       \
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE(false);
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(false);
 
 #endif // DACCESS_COMPILE
 

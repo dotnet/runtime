@@ -92,11 +92,11 @@ __thread uint32_t t_GCThreadStaticBlocksSize;
 //
 
 #define JIT_TO_EE_TRANSITION()          MAKE_CURRENT_THREAD_AVAILABLE_EX(m_pThread);                \
-                                        INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;               \
+                                        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;               \
                                         COOPERATIVE_TRANSITION_BEGIN();                             \
 
 #define EE_TO_JIT_TRANSITION()          COOPERATIVE_TRANSITION_END();                               \
-                                        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE(true);
+                                        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
 
 #define JIT_TO_EE_TRANSITION_LEAF()
 #define EE_TO_JIT_TRANSITION_LEAF()
