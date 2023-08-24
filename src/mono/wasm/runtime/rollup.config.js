@@ -23,7 +23,8 @@ const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
 const wasmEnableLegacyJsInterop = process.env.DISABLE_LEGACY_JS_INTEROP !== "1" ? true : false;
-const runAOTCompilation = process.env.RUN_AOT_COMPILATION === "1" ? true : false;
+// Rollup is engaged when building the runtime from source, so AOT compilation is never in effect
+const runAOTCompilation = false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
 // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
 // and unit test at src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\timers.mjs
