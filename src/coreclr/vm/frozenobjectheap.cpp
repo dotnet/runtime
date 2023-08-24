@@ -165,6 +165,13 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
 
 void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited)
 {
+    CONTRACTL
+    {
+        THROWS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END
+
     if (!IsRegistered())
     {
         // Other threads won't touch these fields until we set m_IsRegistered to true
