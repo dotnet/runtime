@@ -118,11 +118,6 @@ BOOL ProfilerObjectEnum::Init()
         for (unsigned segmentIdx = 0; segmentIdx < segmentsCount; segmentIdx++)
         {
             const FrozenObjectSegment* segment = segments[segmentIdx];
-            if (!segment->IsRegistered())
-            {
-                continue;
-            }
-
             Object* currentObj = segment->GetFirstObject();
             while (currentObj != nullptr)
             {
