@@ -224,6 +224,9 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     if (!configFilePath) {
         normalizeConfig();
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
+        if (!loaderHelpers.config.startupMemoryCache) {
+            loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
+        }
         return;
     }
     mono_log_debug("mono_wasm_load_config");
