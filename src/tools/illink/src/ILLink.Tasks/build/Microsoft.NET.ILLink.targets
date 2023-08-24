@@ -49,9 +49,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == ''">true</VerifyDependencyInjectionOpenGenericServiceTrimmability>
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(JsonSerializerIsReflectionEnabledByDefault)' == ''">false</JsonSerializerIsReflectionEnabledByDefault>
     <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
-    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux-bionic')">true</_UseManagedNtlm>
+    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux-bionic'))">true</_UseManagedNtlm>
     <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
-    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux')">false</_UseManagedNtlm>
+    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux'))">false</_UseManagedNtlm>
   </PropertyGroup>
 
 
