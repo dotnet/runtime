@@ -11,7 +11,7 @@
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE),
-    m_SegmentRegistrationCrst(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE),
+    m_SegmentRegistrationCrst(CrstFrozenObjectHeap),
     m_CurrentSegment(nullptr)
 {
 }
