@@ -24,6 +24,7 @@ parameters:
   # eng/pipelines/common/templates/runtimes/run-test-job.yml.
   coreclrTestGroup: ''
   SuperPmiCollect: false
+  SuperPmiCollectionName: ''
   dependsOn: []
 
 jobs:
@@ -92,22 +93,26 @@ jobs:
         - _archiveTestsParameter: /p:ArchiveTests=true
 
         # Variables used for SuperPMI collection
-        - name: CollectionType
-          value: ''
-        - name: CollectionName
-          value: ''
+        - name: SuperPmiCollectionType
+          value: 'run'
+
+        ${{ if eq(parameters.SuperPmiCollectionName, '') }}:
+          - name: SuperPmiCollectionName
+            value: 'libraries_tests'
+        ${{ else }}:
+          - name: SuperPmiCollectionName
+            value: ${{ parameters.SuperPmiCollectionName }}
+
         - name: _runtimeX64DownloadPath
           value: ''
+
         # superpmi.py 'merge-mch' needs to be able to find the mcs tool. Point SuperPmiMcsPath at the downloaded CoreCLR binaries. For non-x64 targets, download an x64
         # build and point at that. Pass this to superpmi.py as the '-core_root' argument. It's not actually a "Core_Root" directory, but all it needs is to find mcs.
         - name: SuperPmiMcsPath
           value: $(_runtimeDownloadPath)
+
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
           - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
-          - name: CollectionType
-            value: 'run'
-          - name: CollectionName
-            value: 'libraries_tests'
           - ${{ if ne(parameters.archType, 'x64') }}:
             - name: _runtimeX64DownloadPath
               value: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}.x64'
@@ -215,8 +220,8 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
             SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
-            SuperPmiCollectionType: $(CollectionType)
-            SuperPmiCollectionName: $(CollectionName)
+            SuperPmiCollectionType: $(SuperPmiCollectionType)
+            SuperPmiCollectionName: $(SuperPmiCollectionName)
 
             # coreclrTestGroup: The following mappings of 'coreclrTestGroup' to 'scenarios' is copied from
             # eng/pipelines/common/templates/runtimes/run-test-job.yml (with 'testGroup' replaced by 'coreclrTestGroup'
@@ -244,6 +249,8 @@ jobs:
             ${{ if in(parameters.coreclrTestGroup, 'superpmi_collection') }}:
               scenarios:
               - normal
+            ${{ if in(parameters.coreclrTestGroup, 'superpmi_collection_no_tiered_compilation') }}:
+              scenarios:
               - no_tiered_compilation
             ${{ if in(parameters.coreclrTestGroup, 'jitstress') }}:
               scenarios:
@@ -351,8 +358,8 @@ jobs:
               displayName: 'Create SuperPMI directories $(MergedMchFileLocation), $(SpmiLogsLocation)'
               condition: always()
 
-          - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(SuperPmiMcsPath)
-            displayName: 'Merge $(CollectionName)-$(CollectionType) SuperPMI collections'
+          - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(SuperPmiCollectionName).$(SuperPmiCollectionType)*.mch -output_mch_path $(MergedMchFileLocation)$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(MchFileTag).mch -core_root $(SuperPmiMcsPath)
+            displayName: 'Merge $(SuperPmiCollectionName)-$(SuperPmiCollectionType) SuperPMI collections'
             condition: always()
 
           - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -362,8 +369,8 @@ jobs:
               archiveType: $(archiveType)
               tarCompression: $(tarCompression)
               archiveExtension: $(archiveExtension)
-              artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
-              displayName: 'Upload artifacts SuperPMI $(CollectionName)-$(CollectionType) collection'
+              artifactName: 'SuperPMI_Collection_$(SuperPmiCollectionName)_$(SuperPmiCollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+              displayName: 'Upload artifacts SuperPMI $(SuperPmiCollectionName)-$(SuperPmiCollectionType) collection'
               condition: always()
 
           # Add authenticated pip feed
@@ -379,8 +386,8 @@ jobs:
             displayName: Upgrade Pip to latest and install azure-storage-blob Python package
             condition: always()
 
-          - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
-            displayName: 'Upload SuperPMI $(CollectionName)-$(CollectionType) collection to Azure Storage'
+          - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+            displayName: 'Upload SuperPMI $(SuperPmiCollectionName)-$(SuperPmiCollectionType) collection to Azure Storage'
             condition: always()
             env:
               CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
@@ -389,7 +396,7 @@ jobs:
             displayName: Copying superpmi.log of all partitions
             inputs:
               sourceFolder: '$(MchFilesLocation)'
-              contents: '**/$(CollectionName).$(CollectionType)*.log'
+              contents: '**/$(SuperPmiCollectionName).$(SuperPmiCollectionType)*.log'
               targetFolder: '$(SpmiLogsLocation)'
             condition: always()
 
@@ -397,7 +404,7 @@ jobs:
             displayName: Publish SuperPMI logs
             inputs:
               targetPath: $(SpmiLogsLocation)
-              artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+              artifactName: 'SuperPMI_Logs_$(SuperPmiCollectionName)_$(SuperPmiCollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
             condition: always()
 
         ########################################################################################################
