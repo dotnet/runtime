@@ -141,14 +141,15 @@ jobs:
       steps:
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
-          # Show disk space
           - ${{ if ne(parameters.osGroup, 'windows') }}:
             - script: |
+                echo 'df -H'
                 df -H
-                du -a $(MchFilesLocation)
-                du -a $(MchFilesLocation)/..
+                echo 'df -H Build.SourcesDirectory'
+                df -H $(Build.SourcesDirectory)
               displayName: 'Display disk space before'
               condition: always()
+              continueOnError: true
 
         # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe on AzDO machine; see `SuperPmiMcsPath`.
         - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
@@ -186,6 +187,19 @@ jobs:
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
             displayName: Prepare TestHost with runtime $(runtimeFlavorName)
+
+        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+          - ${{ if ne(parameters.osGroup, 'windows') }}:
+            - script: |
+                echo 'df -H'
+                df -H
+                echo 'df -H Build.SourcesDirectory'
+                df -H $(Build.SourcesDirectory)
+                echo 'du Build.SourcesDirectory/artifacts'
+                du $(Build.SourcesDirectory)/artifacts
+              displayName: 'Display disk space before Helix'
+              condition: always()
+              continueOnError: true
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
@@ -309,16 +323,19 @@ jobs:
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
 
-          # Show disk space
           - ${{ if ne(parameters.osGroup, 'windows') }}:
             - script: |
+                echo 'df -H'
                 df -H
+                echo 'df -H Build.SourcesDirectory'
+                df -H $(Build.SourcesDirectory)
+                echo 'du -a MchFilesLocation'
                 du -a $(MchFilesLocation)
-                du -a $(MergedMchFileLocation)
-                du -a $(SpmiLogsLocation)
-                du -a $(SpmiLogsLocation)/..
-              displayName: 'Display disk space'
+                echo 'du Build.SourcesDirectory/artifacts'
+                du $(Build.SourcesDirectory)/artifacts
+              displayName: 'Display disk space before merging'
               condition: always()
+              continueOnError: true
 
           # Create required directories for merged mch collection and superpmi logs
           - ${{ if ne(parameters.osGroup, 'windows') }}:
