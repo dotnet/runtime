@@ -39,10 +39,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
     <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
-    <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
-    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">true</_UseManagedNtlm>
-    <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
-    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and '$(_targetOS)' == 'linux'">false</_UseManagedNtlm>
   </PropertyGroup>
 
   <!-- Configure LINQ expressions -->

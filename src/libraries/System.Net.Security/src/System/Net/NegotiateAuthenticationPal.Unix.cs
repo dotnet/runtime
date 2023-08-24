@@ -19,7 +19,7 @@ namespace System.Net
 {
     internal partial class NegotiateAuthenticationPal
     {
-        public static bool UseManagedNtlm { get; } =
+        private static bool UseManagedNtlm { get; } =
             AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
             useManagedNtlm :
             OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst();
