@@ -534,7 +534,10 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 
     IfFailThrow(Init(m_Module, true));
 
-    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", pOwner->GetPath().GetUTF8()));
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
+    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", ownerPath.GetUTF8()));
+#endif // LOGGING
 
 #else
     HANDLE hFile = pOwner->GetFileHandle();
@@ -548,8 +551,11 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
     LOG((LF_LOADER, LL_INFO1000, "PEImage: image %s (hFile %p) mapped @ %p\n",
-        pOwner->GetPath().GetUTF8(), hFile, (void*)m_LoadedFile));
+        ownerPath.GetUTF8(), hFile, (void*)m_LoadedFile));
+#endif // LOGGING
 
     IfFailThrow(Init((void*)m_LoadedFile));
 
@@ -616,7 +622,10 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     INT64 offset = pOwner->GetOffset();
     INT64 size = pOwner->GetSize();
 
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", pOwner->GetPath().GetUTF8()));
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
+    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", ownerPath.GetUTF8()));
+#endif // LOGGING
 
     // If a size is not specified, load the whole file
     if (size == 0)
