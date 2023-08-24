@@ -9,6 +9,16 @@
 
 //This class contains only static members and doesn't require serialization.
 
+//For most of this implementation for .NET Framework we just defer to System.Math and do a cast internally from single to double.
+//We do this because it safer and less likely to break people since that is what they are alrady doing. Also, adding in the
+//extra pinvokes needed to not do this route would probably incur an extra overhead that would be undersired.
+
+//For any version of .NET Core this just forwards directly to the MathF implementation inside the runtime.
+
+//There are a few cases where .NET Framework handles things differently than .NET Core does. For example, it returns -0 and +0
+//when using things like Min/Max, and they count as different values from each other. This is fixed in .NET Core, but since its
+//inherent in .NET Framework we decided to leave that behavior as is for this BCL.
+
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
 using System.Drawing;
