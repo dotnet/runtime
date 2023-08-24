@@ -81,7 +81,7 @@ jobs:
 
         # Build CoreCLR, the Libraries, and the Packs.
         - script: $(_buildScript) -subset $(_preTestSubsets) $(_buildArguments)
-        - displayName: Build CoreCLR, Libraries, and Packs
+          displayName: Build CoreCLR, Libraries, and Packs
 
         # When working in Apple platforms, we need to keep track of the Disk Usage.
         - ${{ if in(parameters.osGroup, 'osx') }}:
@@ -92,4 +92,4 @@ jobs:
 
         # Build and run the libraries tests with TestReadyToRun.
         - script: $(_buildScript) -subset $(_libsTestsSubset) $(_libsTestsArguments)
-        - displayName: Build and Run Libraries Tests with TestReadyToRun Enabled
+          displayName: Build and Run Libraries Tests with TestReadyToRun Enabled
