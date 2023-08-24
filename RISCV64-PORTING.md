@@ -26,7 +26,7 @@
  - [fibonacci-msbuild](https://github.com/dotnet/samples/tree/main/core/console-apps/fibonacci-msbuild)
  - [Fibonacci](https://github.com/dotnet/samples/tree/main/core/console-apps/FibonacciBetterMsBuild)
  - [serialization](https://github.com/dotnet/samples/tree/main/csharp/)
- - [](https://github.com/dotnet/samples/tree/main/csharp/serialization/)
+ - [string.format](https://github.com/dotnet/samples/tree/main/csharp/api/string.format/bin/Debug/net8.0/string.format.examples.dll)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
