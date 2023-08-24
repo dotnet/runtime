@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">Versione del linguaggio C# non supportata dal generatore di origine.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
