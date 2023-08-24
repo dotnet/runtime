@@ -27,17 +27,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         None = 0x0,
 
         /// <summary>
-        /// Bind(IConfiguration, object).
+        /// Bind(IConfiguration, object?).
         /// </summary>
         Bind_instance = 0x1,
 
         /// <summary>
-        /// Bind(IConfiguration, object, Action<BinderOptions>).
+        /// Bind(IConfiguration, object?, Action<BinderOptions>?).
         /// </summary>
         Bind_instance_BinderOptions = 0x2,
 
         /// <summary>
-        /// Bind(IConfiguration, string, object).
+        /// Bind(IConfiguration, string, object?).
         /// </summary>
         Bind_key_instance = 0x4,
 
@@ -47,17 +47,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         Get_T = 0x8,
 
         /// <summary>
-        /// Get<T>(IConfiguration, Action<BinderOptions>).
+        /// Get<T>(IConfiguration, Action<BinderOptions>?).
         /// </summary>
         Get_T_BinderOptions = 0x10,
 
         /// <summary>
-        /// Get<T>(IConfiguration, Type).
+        /// Get(IConfiguration, Type).
         /// </summary>
         Get_TypeOf = 0x20,
 
         /// <summary>
-        /// Get<T>(IConfiguration, Type, Action<BinderOptions>).
+        /// Get(IConfiguration, Type, Action<BinderOptions>?).
         /// </summary>
         Get_TypeOf_BinderOptions = 0x40,
 
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         GetValue_TypeOf_key = 0x80,
 
         /// <summary>
-        /// GetValue(IConfiguration, Type, object).
+        /// GetValue(IConfiguration, Type, object?).
         /// </summary>
         GetValue_TypeOf_key_defaultValue = 0x100,
 
