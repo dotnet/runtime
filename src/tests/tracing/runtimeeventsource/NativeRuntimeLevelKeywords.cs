@@ -72,6 +72,7 @@ internal sealed class GCListener : EventListener
 
     private static EventLevel nextLevel;
     private readonly ConcurrentDictionary<string, (int id, EventLevel level)> events = new();
+    private bool eventsReceived = false;
 
     private GCListener()
     {
@@ -105,7 +106,7 @@ internal sealed class GCListener : EventListener
     }
     public override string ToString()
     {
-        return $"{nameof(GCListener)}({Level,-13}, {events.Count,2})";
+        return $"{nameof(GCListener)}({Level,-13}, {eventsReceived,-5}, {events.Count,2})";
     }
     public override void Dispose()
     {
@@ -124,5 +125,12 @@ internal sealed class GCListener : EventListener
     protected override void OnEventWritten(EventWrittenEventArgs e)
     {
         events.TryAdd(e.EventName ?? "", (e.EventId, e.Level));
+
+        if (eventsReceived)
+        {
+            return;
+        }
+        eventsReceived = true;
+        Console.WriteLine($"{this} Events Received");
     }
 }
