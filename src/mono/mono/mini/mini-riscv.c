@@ -2581,38 +2581,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = temp->dreg;
 				ins->inst_imm = 0;
 			}
-			// TODO: Move This to Optimisation
-			if ((ins->next) && (ins->next->opcode >= OP_ZEXT_I1 && ins->next->opcode <= OP_ZEXT_I4)) {
-				switch (ins->opcode) {
-				case OP_LOADI1_MEMBASE:
-					ins->opcode = OP_LOADU1_MEMBASE;
-					ins->dreg = ins->next->dreg;
-					NULLIFY_INS (ins->next);
-					break;
-				case OP_LOADI2_MEMBASE:
-					ins->opcode = OP_LOADU2_MEMBASE;
-					ins->dreg = ins->next->dreg;
-					NULLIFY_INS (ins->next);
-					break;
-				case OP_LOADI4_MEMBASE:
-					ins->opcode = OP_LOADU4_MEMBASE;
-					ins->dreg = ins->next->dreg;
-					NULLIFY_INS (ins->next);
-					break;
-				case OP_LOADU1_MEMBASE:
-				case OP_LOADU2_MEMBASE:
-				case OP_LOADU4_MEMBASE:
-					ins->dreg = ins->next->dreg;
-					NULLIFY_INS (ins->next);
-					break;
-				case OP_LOAD_MEMBASE:
-				case OP_LOADI8_MEMBASE:
-					break;
-				default:
-					g_print (mono_inst_name (ins->opcode));
-					g_assert_not_reached ();
-				}
-			}
 			break;
 
 		case OP_COMPARE_IMM:
