@@ -50738,19 +50738,20 @@ bool CFinalize::Initialize()
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    m_Array = new (nothrow)(Object*[100]);
+    const int INITIAL_FINALIZER_ARRAY_SIZE = 100;
+    m_Array = new (nothrow)(Object*[INITIAL_FINALIZER_ARRAY_SIZE]);
 
     if (!m_Array)
     {
         ASSERT (m_Array);
-        STRESS_LOG_OOM_STACK(sizeof(Object*[100]));
+        STRESS_LOG_OOM_STACK(sizeof(Object*[INITIAL_FINALIZER_ARRAY_SIZE]));
         if (GCConfig::GetBreakOnOOM())
         {
             GCToOSInterface::DebugBreak();
         }
         return false;
     }
-    m_EndArray = &m_Array[100];
+    m_EndArray = &m_Array[INITIAL_FINALIZER_ARRAY_SIZE];
 
     for (int i =0; i < FreeList; i++)
     {
@@ -50840,8 +50841,8 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
     unsigned int dest = gen_segment (gen);
 
     // Adjust boundary for segments so that GC will keep objects alive.
-    Object*** s_i = &SegQueue (FreeList);
-    if ((*s_i) == m_EndArray)
+    Object*** s_i = &SegQueue (FreeListSeg);
+    if ((*s_i) == SegQueueLimit(FreeListSeg))
     {
         if (!GrowArray())
         {
@@ -50864,10 +50865,11 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
     Object*** end_si = &SegQueueLimit (dest);
     do
     {
+        assert (s_i > &SegQueue(0));
         //is the segment empty?
         if (!(*s_i == *(s_i-1)))
         {
-            //no, swap the end elements.
+            //no, move the first element of the segment to the (new) last location in the segment
             *(*s_i) = *(*(s_i-1));
         }
         //increment the fill pointer
@@ -50915,7 +50917,7 @@ CFinalize::GetNextFinalizableObject (BOOL only_non_critical)
 size_t
 CFinalize::GetNumberFinalizableObjects()
 {
-    return SegQueueLimit(FinalizerListSeg) - SegQueue(FinalizerListSeg);
+    return SegQueueLimit(FinalizerMaxSeg) - SegQueue(FinalizerStartSeg);
 }
 
 void
@@ -50930,11 +50932,16 @@ CFinalize::MoveItem (Object** fromIndex,
         step = -1;
     else
         step = +1;
-    // Place the element at the boundary closest to dest
+    // Each iteration places the element at the boundary closest to dest
+    // and then adjusts the boundary to move that element one segment closer
+    // to dest.
     Object** srcIndex = fromIndex;
     for (unsigned int i = fromSeg; i != toSeg; i+= step)
     {
+        // Select SegQueue[i] for step==-1, SegQueueLimit[i] for step==1
         Object**& destFill = m_FillPointers[i+(step - 1 )/2];
+        // Select SegQueue[i] for step==-1, SegQueueLimit[i]-1 for step==1
+        //   (SegQueueLimit[i]-1 is the last entry in segment i)
         Object** destIndex = destFill - (step + 1)/2;
         if (srcIndex != destIndex)
         {
@@ -50957,8 +50964,8 @@ CFinalize::GcScanRoots (promote_func* fn, int hn, ScanContext *pSC)
     pSC->thread_number = hn;
 
     //scan the finalization queue
-    Object** startIndex  = SegQueue (CriticalFinalizerListSeg);
-    Object** stopIndex  = SegQueueLimit (FinalizerListSeg);
+    Object** startIndex  = SegQueue (FinalizerStartSeg);
+    Object** stopIndex  = SegQueueLimit (FinalizerMaxSeg);
 
     for (Object** po = startIndex; po < stopIndex; po++)
     {
@@ -50972,12 +50979,20 @@ CFinalize::GcScanRoots (promote_func* fn, int hn, ScanContext *pSC)
 
 void CFinalize::WalkFReachableObjects (fq_walk_fn fn)
 {
-    Object** startIndex = SegQueue (CriticalFinalizerListSeg);
-    Object** stopCriticalIndex = SegQueueLimit (CriticalFinalizerListSeg);
-    Object** stopIndex  = SegQueueLimit (FinalizerListSeg);
+    Object** startIndex = SegQueue (FinalizerListSeg);
+    Object** stopIndex = SegQueueLimit (FinalizerListSeg);
     for (Object** po = startIndex; po < stopIndex; po++)
     {
-        fn(po < stopCriticalIndex, *po);
+        bool isCriticalFinalizer = false;
+        fn(isCriticalFinalizer, *po);
+    }
+
+    startIndex = SegQueue (CriticalFinalizerListSeg);
+    stopIndex = SegQueueLimit (CriticalFinalizerListSeg);
+    for (Object** po = startIndex; po < stopIndex; po++)
+    {
+        bool isCriticalFinalizer = true;
+        fn(isCriticalFinalizer, *po);
     }
 }
 
@@ -51016,13 +51031,13 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, BOOL mark_only_p,
 
                     if (GCToEEInterface::EagerFinalized(obj))
                     {
-                        MoveItem (i, Seg, FreeList);
+                        MoveItem (i, Seg, FreeListSeg);
                     }
                     else if ((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN)
                     {
                         //remove the object because we don't want to
                         //run the finalizer
-                        MoveItem (i, Seg, FreeList);
+                        MoveItem (i, Seg, FreeListSeg);
 
                         //Reset the bit so it will be put back on the queue
                         //if resurrected and re-registered.
@@ -51199,14 +51214,14 @@ CFinalize::GrowArray()
 bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
 {
     // compute how much space we will need for the merged data
-    size_t otherNeededArraySize = other_fq->SegQueue (FreeList) - other_fq->m_Array;
+    size_t otherNeededArraySize = other_fq->UsedCount();
     if (otherNeededArraySize == 0)
     {
         // the other queue is empty - nothing to do!
         return true;
     }
     size_t thisArraySize = (m_EndArray - m_Array);
-    size_t thisNeededArraySize = SegQueue (FreeList) - m_Array;
+    size_t thisNeededArraySize = UsedCount();
     size_t neededArraySize = thisNeededArraySize + otherNeededArraySize;
 
     Object ** newArray = m_Array;
@@ -51224,6 +51239,11 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
             return false;
         }
     }
+
+    // Since the target might be the original array (with the original data),
+    // the order of copying must not overwrite any data until it has been
+    // copied. Both loops skip 'FreeListSeg' because there is no need to copy
+    // the unused data in the freelist.
 
     // copy the finalization data from this and the other finalize queue
     for (int i = FreeList - 1; i >= 0; i--)
@@ -51264,10 +51284,10 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
 bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
 {
     // the other finalization queue is assumed to be empty at this point
-    size_t otherCurrentArraySize = other_fq->SegQueue (FreeList) - other_fq->m_Array;
+    size_t otherCurrentArraySize = other_fq->UsedCount();
     assert (otherCurrentArraySize == 0);
 
-    size_t thisCurrentArraySize = SegQueue (FreeList) - m_Array;
+    size_t thisCurrentArraySize = UsedCount();
     if (thisCurrentArraySize == 0)
     {
         // this queue is empty - nothing to split!
@@ -51293,7 +51313,7 @@ bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
     }
 
     // move half of the items in each section over to the other queue
-    PTR_PTR_Object newFillPointers[FreeList];
+    PTR_PTR_Object newFillPointers[MaxSeg];
     PTR_PTR_Object segQueue = m_Array;
     for (int i = 0; i < FreeList; i++)
     {
@@ -51309,14 +51329,15 @@ bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
         memmove (&other_fq->m_Array[otherIndex], &m_Array[thisIndex + thisNewSize], sizeof(other_fq->m_Array[0])*otherSize);
         other_fq->SegQueueLimit (i) = &other_fq->m_Array[otherIndex + otherSize];
 
-        // we delete the moved half from this queue
+        // slide the unmoved half to its new position in the queue
+        // (this will delete the moved half once copies and m_FillPointers updates are completed)
         memmove (segQueue, &m_Array[thisIndex], sizeof(m_Array[0])*thisNewSize);
         segQueue += thisNewSize;
         newFillPointers[i] = segQueue;
     }
 
     // finally update the fill pointers from the new copy we generated
-    for (int i = 0; i < FreeList; i++)
+    for (int i = 0; i < MaxSeg; i++)
     {
         m_FillPointers[i] = newFillPointers[i];
     }
