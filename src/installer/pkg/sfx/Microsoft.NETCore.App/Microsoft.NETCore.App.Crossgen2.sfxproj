@@ -37,6 +37,10 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
+    <!-- Run strip on the singlefilehost, in case it was built with symbols -->
+    <Exec Condition="'$(KeepNativeSymbols)' == 'true' and '$(HostOS)' != 'windows'"
+          Command="strip $(SingleFileHostSourcePath)" />
+
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
              Targets="Restore"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
