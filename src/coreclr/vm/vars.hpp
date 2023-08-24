@@ -389,6 +389,11 @@ GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
 
+#ifdef FEATURE_EH_FUNCLETS
+GPTR_DECL(MethodTable,      g_pEHClass);
+GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
+#endif
+
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
 
