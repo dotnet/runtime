@@ -898,8 +898,8 @@ LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
-    //   t1 = functionIDOrClientID
-    //   t2 = profiledSp
+    //   t0 = functionIDOrClientID
+    //   t1 = profiledSp
     //   t6 = throwable
     //
     // On exit:
@@ -912,15 +912,15 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     SAVE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
     sd     zero, PROFILE_PLATFORM_SPECIFIC_DATA__functionId(sp)
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
-    addi     t6, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
+    addi     t6, sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
     sd  t6, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp(sp)
-    sd  t2, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp(sp)
+    sd  t1, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp(sp)
     sd  zero, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg(sp)
     addi  t6, zero, \flags
     sw  t6, PROFILE_PLATFORM_SPECIFIC_DATA__flags(sp)
     sw  zero, PROFILE_PLATFORM_SPECIFIC_DATA__unused(sp)
 
-    addi  a0, t1, 0
+    addi  a0, t0, 0
     addi  a1, sp, 0
     call  C_FUNC(\helper)
 
