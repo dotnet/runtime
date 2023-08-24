@@ -140,6 +140,16 @@ jobs:
 
       steps:
 
+        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+          # Show disk space
+          - ${{ if ne(parameters.osGroup, 'windows') }}:
+            - script: |
+                df -H
+                du -a $(MchFilesLocation)
+                du -a $(MchFilesLocation)/..
+              displayName: 'Display disk space before'
+              condition: always()
+
         # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe on AzDO machine; see `SuperPmiMcsPath`.
         - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
           - template: /eng/pipelines/common/download-artifact-step.yml
@@ -298,6 +308,17 @@ jobs:
         ########################################################################################################
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+
+          # Show disk space
+          - ${{ if ne(parameters.osGroup, 'windows') }}:
+            - script: |
+                df -H
+                du -a $(MchFilesLocation)
+                du -a $(MergedMchFileLocation)
+                du -a $(SpmiLogsLocation)
+                du -a $(SpmiLogsLocation)/..
+              displayName: 'Display disk space'
+              condition: always()
 
           # Create required directories for merged mch collection and superpmi logs
           - ${{ if ne(parameters.osGroup, 'windows') }}:
