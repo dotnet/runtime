@@ -76,6 +76,7 @@ static const gint16 opidx [] = {
 #endif
 //#define ARCH_PREFIX "powerpc64-linux-gnu-"
 
+#ifndef DISABLE_LOGGING
 const char*
 mono_inst_name (int op) {
 #ifndef DISABLE_LOGGING
@@ -90,6 +91,7 @@ mono_inst_name (int op) {
 	g_assert_not_reached ();
 #endif
 }
+#endif
 
 void
 mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom)
