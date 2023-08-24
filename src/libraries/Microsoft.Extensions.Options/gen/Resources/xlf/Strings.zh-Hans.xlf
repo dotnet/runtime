@@ -129,7 +129,7 @@
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">源生成器不支持 C# 语言版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
