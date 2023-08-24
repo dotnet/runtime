@@ -11,7 +11,7 @@ namespace SharedTypes.ComInterfaces
     [Guid("4731FA5D-C103-4A22-87A1-58DCEDD4A9B3")]
     internal partial interface IStatelessCollectionAllShapes
     {
-        void Method([MarshalUsing(ConstantElementCount = 10)] StatelessCollectionAllShapes<int> param, int size);
+        void Method([MarshalUsing(CountElementName = nameof(size))] StatelessCollectionAllShapes<StatelessType> param, int size);
         void MethodIn([MarshalUsing(CountElementName = nameof(size))] in StatelessCollectionAllShapes<StatelessType> param, int size);
         void MethodOut([MarshalUsing(CountElementName = nameof(size))] out StatelessCollectionAllShapes<StatelessType> param, out int size);
         void MethodRef([MarshalUsing(CountElementName = nameof(size))] ref StatelessCollectionAllShapes<StatelessType> param, int size);

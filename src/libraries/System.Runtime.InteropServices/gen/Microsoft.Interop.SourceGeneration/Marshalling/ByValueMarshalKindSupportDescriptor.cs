@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace Microsoft.Interop
 {
-    public record struct ByValueMarshalKindSupportVariant(ByValueMarshalKindSupport Support, string? details)
+    public record struct ByValueMarshalKindSupportInfo(ByValueMarshalKindSupport Support, string? details)
     {
         public ByValueMarshalKindSupport GetSupport(TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
         {
@@ -43,10 +43,10 @@ namespace Microsoft.Interop
     /// Provides an implementation of <see cref="IMarshallingGenerator.SupportsByValueMarshalKind(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/> through <see cref="GetSupport(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/>
     /// </summary>
     public record ByValueMarshalKindSupportDescriptor(
-        ByValueMarshalKindSupportVariant DefaultSupport,
-        ByValueMarshalKindSupportVariant InSupport,
-        ByValueMarshalKindSupportVariant OutSupport,
-        ByValueMarshalKindSupportVariant InOutSupport)
+        ByValueMarshalKindSupportInfo DefaultSupport,
+        ByValueMarshalKindSupportInfo InSupport,
+        ByValueMarshalKindSupportInfo OutSupport,
+        ByValueMarshalKindSupportInfo InOutSupport)
     {
         /// <summary>
         /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by value parameters. [In] is allowed, but unnecessary. Out is not allowed.
