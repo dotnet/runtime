@@ -110,6 +110,7 @@ template<typename T>
 using malloc_span = owning_span<T, free_deleter>;
 
 bool read_in_file(char const* file, malloc_span<uint8_t>& b);
+bool write_out_file(char const* file, malloc_span<uint8_t> b);
 bool get_metadata_from_pe(malloc_span<uint8_t>& b);
 bool get_metadata_from_file(malloc_span<uint8_t>& b);
 
@@ -126,6 +127,7 @@ bool apply_deltas(mdhandle_t handle, std::vector<char const*>& deltas, std::vect
 {
     for (char const* p : deltas)
     {
+        std::printf("Reading in delta image '%s'.\n", p);
         malloc_span<uint8_t> d;
         if (!read_in_file(p, d) || !get_metadata_from_file(d))
         {
@@ -143,25 +145,24 @@ bool apply_deltas(mdhandle_t handle, std::vector<char const*>& deltas, std::vect
     return true;
 }
 
-struct dump_config_t
+struct merge_config_t
 {
-    dump_config_t()
+    merge_config_t()
         : path{}
         , delta_paths{}
         , data{}
-        , table_id{ -1 }
     { }
 
-    dump_config_t(dump_config_t const& other) = delete;
-    dump_config_t(dump_config_t&& other) = default;
+    merge_config_t(merge_config_t const& other) = delete;
+    merge_config_t(merge_config_t&& other) = default;
 
     char const* path;
+    char const* output_path;
     std::vector<char const*> delta_paths;
     std::vector<malloc_span<uint8_t>> data;
-    int32_t table_id;
 };
 
-void dump(dump_config_t cfg)
+void merge(merge_config_t cfg)
 {
     malloc_span<uint8_t> b;
     if (!read_in_file(cfg.path, b))
@@ -177,20 +178,32 @@ void dump(dump_config_t cfg)
     }
 
     std::printf("Loaded '%s'.\n    Metadata blob size %zu bytes\n", cfg.path, b.size());
-    if (cfg.table_id != -1)
-        std::printf("    Reading in table %d (0x%x)\n", cfg.table_id, cfg.table_id);
 
     mdhandle_ptr handle;
     if (!create_mdhandle(b, handle)
         || !apply_deltas(handle.get(), cfg.delta_paths, cfg.data)
-        || !md_validate(handle.get())
-        || !md_dump_tables(handle.get(), cfg.table_id))
+        || !md_validate(handle.get()))
     {
         std::fprintf(stderr, "invalid metadata!\n");
     }
+
+    size_t save_size;
+    md_write_to_buffer(handle.get(), nullptr, &save_size);
+    malloc_span<uint8_t> out_buffer { (uint8_t*)malloc(save_size), save_size };
+    if (!md_write_to_buffer(handle.get(), out_buffer, &save_size))
+    {
+        std::fprintf(stderr, "Failed to save image.\n");
+    }
+
+    if (!write_out_file(cfg.output_path, std::move(out_buffer)))
+    {
+        std::fprintf(stderr, "Failed to write out '%s'\n", cfg.output_path);
+        return;
+    }
+    std::printf("Wrote out '%s'.\n", cfg.output_path);
 }
 
-static char const* s_usage = "Syntax: mddump [-t <table_id>]? [-d <path_to_delta>]* <path ecma-335 data>";
+static char const* s_usage = "Syntax: mdmerge [-o <output_path>] [-d <path_to_delta>]* <path ecma-335 data>";
 
 int main(int ac, char** av)
 {
@@ -200,7 +213,7 @@ int main(int ac, char** av)
         return EXIT_FAILURE;
     }
 
-    dump_config_t cfg;
+    merge_config_t cfg;
 
     // Process arguments
     span<char*> args{ &av[1], (size_t)ac - 1 };
@@ -218,21 +231,15 @@ int main(int ac, char** av)
         {
             switch (arg[1])
             {
-            case 't':
+            case 'o':
             {
                 i++;
                 if (i >= args.size())
                 {
-                    std::fprintf(stderr, "Missing table ID.\n");
+                    std::fprintf(stderr, "Missing output file path.\n");
                     return EXIT_FAILURE;
                 }
-
-                cfg.table_id = (int32_t)::strtoul(args[i], nullptr, 0);
-                if ((errno == ERANGE) || cfg.table_id >= 64)
-                {
-                    std::fprintf(stderr, "Invalid table ID: '%s'. Must be [0, 64)\n", args[i]);
-                    return EXIT_FAILURE;
-                }
+                cfg.output_path = args[i];
                 continue;
             }
             case 'd':
@@ -259,7 +266,7 @@ int main(int ac, char** av)
         return EXIT_FAILURE;
     }
 
-    dump(std::move(cfg));
+    merge(std::move(cfg));
 
     return EXIT_SUCCESS;
 }
@@ -313,6 +320,17 @@ bool read_in_file(char const* file, malloc_span<uint8_t>& b)
 
     b = { (uint8_t*)std::malloc(size), size };
     fd.read((char*)(uint8_t*)b, b.size());
+    return true;
+}
+
+bool write_out_file(char const* file, malloc_span<uint8_t> b)
+{
+    // Read in the entire file
+    std::ofstream fd{ file, std::ios::binary | std::ios::out };
+    if (!fd)
+        return false;
+
+    fd.write((char*)(uint8_t*)b, b.size());
     return true;
 }
 

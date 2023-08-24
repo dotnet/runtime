@@ -524,6 +524,7 @@ void md_commit_row_add(mdcursor_t row);
 // Add a user string to the #US heap.
 mduserstringcursor_t md_add_userstring_to_heap(mdhandle_t handle, char16_t const* userstring);
 
+bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len);
 #ifdef __cplusplus
 }
 #endif

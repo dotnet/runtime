@@ -3,9 +3,10 @@ include(../configure.cmake)
 
 include_directories(BEFORE ./inc)
 
-add_subdirectory(dnmd/)
-add_subdirectory(interfaces/)
-add_subdirectory(mddump/)
+add_subdirectory(dnmd)
+add_subdirectory(interfaces)
+add_subdirectory(mddump)
+add_subdirectory(mdmerge)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(config.cmake.in

@@ -268,7 +268,7 @@ bool validate_tables(mdcxt_t* cxt)
     (void)cxt;
     // [TODO] Reference ECMA-335 and encode table verification.
     // [TODO] Validate that tables marked as sorted are actually sorted.
-    // [TODO] Do not allow the EncMap and *Ptr tables to be present in a compressed table heap.
+    // [TODO] Do not allow the *Ptr tables to be present in a compressed table heap.
     return true;
 }
 

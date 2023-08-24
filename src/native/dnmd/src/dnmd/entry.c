@@ -488,3 +488,387 @@ void free_mdmem(mdcxt_t* cxt, void* mem)
     // Now that we aren't tracking the memory, free it.
     free(m);
 }
+
+static size_t get_stream_header_and_contents_size(char const* heap_name, size_t heap_size)
+{
+    assert(heap_name != NULL);
+    // II.24.2.2 Stream header
+    size_t const base_stream_header_size =
+        sizeof(uint32_t) // Offset
+        + sizeof(uint32_t) // Size
+        // Name is variable length and calculated below
+    ;
+
+    // Add the size of the stream header
+    // II.24.2.2 Stream name is padded to a 4-byte boundary
+    size_t save_size = base_stream_header_size;
+    save_size += align_to((uint32_t)strlen(heap_name) + 1, 4);
+    // Add the size of the stream itself.
+    // It's not placed directly after the header in the image,
+    // but we might as well account for it here while we're checking
+    // the heap's existence.
+    save_size += heap_size;
+
+    return save_size;
+}
+
+static size_t get_table_stream_size(mdcxt_t* cxt)
+{
+    // II.24.2.6 #~ stream
+    size_t const table_stream_header_size =        
+        + sizeof(uint32_t) // Reserved
+        + sizeof(uint8_t) // MajorVersion
+        + sizeof(uint8_t) // MinorVersion
+        + sizeof(uint8_t) // HeapSizes
+        + sizeof(uint8_t) // Reserved
+        + sizeof(uint64_t) // Valid tables
+        + sizeof(uint64_t) // Sorted tables
+        // Rows and Tables entries are both variable length and calculated below
+    ;
+    
+    size_t save_size = table_stream_header_size;
+    
+    for (uint8_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+    {
+        if (cxt->tables[i].cxt != NULL && cxt->tables[i].row_count != 0)
+        {
+            save_size += sizeof(uint32_t); // Row count
+            save_size += cxt->tables[i].data.size; // Table data
+        }
+    }
+    
+    return save_size;
+}
+
+static size_t get_image_size(mdcxt_t* cxt)
+{    
+    if (cxt->editor == NULL)
+        return cxt->raw_metadata.size;
+    
+    // II.24.2.1 Metadata Root size
+    size_t const image_header_size =
+        sizeof(uint32_t) // Signature
+        + sizeof(uint16_t) // MajorVersion
+        + sizeof(uint16_t) // MinorVersion
+        + sizeof(uint32_t) // Reserved
+        + sizeof(uint32_t) // Length (of version string)
+        + align_to((uint32_t)strlen(cxt->version) + 1, 4) // Version String
+        + sizeof(uint16_t) // Flags
+        + sizeof(uint16_t) // Streams (number of streams)
+    ;
+    
+    size_t save_size = image_header_size;
+
+    if (cxt->blob_heap.size != 0)
+        save_size += get_stream_header_and_contents_size("#Blob", cxt->blob_heap.size);
+    if (cxt->guid_heap.size != 0)
+        save_size += get_stream_header_and_contents_size("#GUID", cxt->guid_heap.size);
+    if (cxt->strings_heap.size != 0)
+        save_size += get_stream_header_and_contents_size("#Strings", align_to((uint32_t)cxt->strings_heap.size, 4));
+    if (cxt->user_string_heap.size != 0)
+        save_size += get_stream_header_and_contents_size("#US", cxt->user_string_heap.size);
+
+    if (cxt->context_flags & mdc_minimal_delta)
+        save_size += get_stream_header_and_contents_size("#JTD", 0);
+    
+    // All names of the tables stream are the same length,
+    // so pick the one in the standard.
+    save_size += get_stream_header_and_contents_size("#~", get_table_stream_size(cxt));
+
+    return save_size;
+}
+
+static bool advance_output_stream(uint8_t** data, size_t* data_len, size_t b)
+{
+    return advance_stream((uint8_t const**)data, data_len, b);
+}
+
+// II.24.2.2 Stream header
+static bool write_stream_header(char const* name, size_t size, mddata_t* offset_space, uint8_t** buffer, size_t* buffer_len)
+{
+    assert(offset_space != NULL);
+    size_t name_len = strlen(name);
+    size_t name_buf_len = align_to((uint32_t)name_len + 1, 4);
+
+    offset_space->ptr = *buffer;
+    offset_space->size = 4;
+
+    if (!advance_output_stream(buffer, buffer_len, 4) // Offset
+        || !write_u32(buffer, buffer_len, (uint32_t)size)) // Size
+    {
+        return false;
+    }
+
+    if (*buffer_len < name_buf_len)
+        return false;
+
+    // Name
+    memcpy(*buffer, name, name_len + 1);
+    advance_output_stream(buffer, buffer_len, name_len + 1);
+    // Pad the name to a 4-byte boundary.
+    advance_output_stream(buffer, buffer_len, name_buf_len - name_len - 1);
+
+    return true;
+}
+
+bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
+{
+    if (len == NULL)
+        return false;
+
+    mdcxt_t* cxt = extract_mdcxt(handle);
+    if (cxt == NULL)
+        return false;
+
+    size_t image_size = get_image_size(cxt);
+    size_t const full_buffer_len = *len;
+
+    // Handle the case where no edits have occurred.
+    // This operation is basically a "copy to new buffer".
+    if (cxt->editor == NULL)
+    {
+        if (buffer == NULL || full_buffer_len < cxt->raw_metadata.size)
+        {
+            *len = cxt->raw_metadata.size;
+            return false;
+        }
+        memcpy(buffer, cxt->raw_metadata.ptr, cxt->raw_metadata.size);
+        return true;
+    }
+    
+    if (buffer == NULL || full_buffer_len < image_size)
+    {
+        *len = image_size;
+        return false;
+    }
+
+    uint8_t* const buffer_start = buffer;
+    size_t remaining_buffer_len = full_buffer_len;
+    if (!write_u32(&buffer, &remaining_buffer_len, METADATA_SIG)
+        || !write_u16(&buffer, &remaining_buffer_len, cxt->major_ver)
+        || !write_u16(&buffer, &remaining_buffer_len, cxt->minor_ver)
+        || !write_u32(&buffer, &remaining_buffer_len, 0))
+    {
+        return false;
+    }
+    
+    size_t version_str_len = strlen(cxt->version);
+    uint32_t version_buf_len = align_to((uint32_t)version_str_len + 1, 4);
+
+    if (!write_u32(&buffer, &remaining_buffer_len, (uint32_t)version_str_len + 1))
+        return false;
+    
+    if (remaining_buffer_len < version_buf_len)
+        return false;
+    
+    memcpy(buffer, cxt->version, version_str_len + 1);
+    // Pad the version string to a 4-byte boundary.
+    memset(buffer + version_str_len + 1, 0, version_buf_len - version_str_len - 1);
+    advance_output_stream(&buffer, &remaining_buffer_len, version_buf_len);
+
+    if (!write_u16(&buffer, &remaining_buffer_len, cxt->flags))
+        return false;
+    
+    uint16_t stream_count = 0;
+    if (cxt->blob_heap.size != 0)
+        stream_count++;
+    if (cxt->guid_heap.size != 0)
+        stream_count++;
+    if (cxt->strings_heap.size != 0)
+        stream_count++;
+    if (cxt->user_string_heap.size != 0)
+        stream_count++;
+
+    char const* tables_stream_name = "#~";
+
+    if (cxt->context_flags & mdc_minimal_delta)
+    {
+        tables_stream_name = "#-";
+        stream_count++;
+    }
+
+    uint64_t valid_tables = 0;
+    uint64_t sorted_tables = 0;
+    for (uint8_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+    {
+        if (cxt->tables[i].cxt != NULL && cxt->tables[i].row_count != 0)
+        {
+            // We don't support saving if we are in the process of adding a new row.
+            if (cxt->tables[i].is_adding_new_row)
+                return false;
+
+            valid_tables |= (1ULL << i);
+            if (cxt->tables[i].is_sorted)
+                sorted_tables |= (1ULL << i);
+            
+            // Indirect tables only exist in images that use the uncompresed stream.
+            if (table_is_indirect_table((mdtable_id_t)i))
+                tables_stream_name = "#-";
+        }
+    }
+
+    // The tables stream is always included.
+    stream_count++;
+    
+    if (!write_u16(&buffer, &remaining_buffer_len, stream_count))
+        return false;
+
+    mddata_t blob_heap_offset_space = { 0 };
+    mddata_t strings_heap_offset_space = { 0 };
+    mddata_t guid_heap_offset_space = { 0 };
+    mddata_t user_string_heap_offset_space = { 0 };
+    mddata_t tables_heap_offset_space = { 0 };
+#ifdef DNMD_PORTABLE_PDB
+    mddata_t pdb_offset_space = { 0 };
+#endif
+
+    // Write the stream headers.
+    if (cxt->context_flags & mdc_minimal_delta)
+    {
+        mddata_t offset_space;
+        if (!write_stream_header("#JTD", 0, &offset_space, &buffer, &remaining_buffer_len))
+            return false;
+        
+        // Set the stream offset to the location of the stream header.
+        // There's no content in this stream, but the offset must be valid.
+        write_u32(&offset_space.ptr, &offset_space.size, (uint32_t)((uint8_t*)offset_space.ptr - buffer_start));
+    }
+
+    if (cxt->strings_heap.size != 0)
+    {
+        // The strings heap should be aligned to 4 bytes.
+        if (!write_stream_header("#Strings", align_to((uint32_t)cxt->strings_heap.size, 4), &strings_heap_offset_space, &buffer, &remaining_buffer_len))
+            return false;
+    }
+
+    if (cxt->blob_heap.size != 0)
+    {
+        if (!write_stream_header("#Blob", cxt->blob_heap.size, &blob_heap_offset_space, &buffer, &remaining_buffer_len))
+            return false;
+    }
+
+    if (cxt->guid_heap.size != 0)
+    {
+        if (!write_stream_header("#GUID", cxt->guid_heap.size, &guid_heap_offset_space, &buffer, &remaining_buffer_len))
+            return false;
+    }
+
+    if (cxt->user_string_heap.size != 0)
+    {
+        if (!write_stream_header("#US", cxt->user_string_heap.size, &user_string_heap_offset_space, &buffer, &remaining_buffer_len))
+            return false;
+    }
+
+#ifdef DNMD_PORTABLE_PDB
+    if (cxt->pdb.size != 0)
+    {
+        if (!write_stream_header("#Pdb", cxt->pdb.size, &pdb_offset_space, &buffer, &remaining_buffer_len))
+            return false;
+    }
+#endif // DNMD_PORTABLE_PDB
+
+    size_t table_stream_size = get_table_stream_size(cxt);
+
+    if (table_stream_size > UINT32_MAX)
+        return false;
+
+    if (!write_stream_header(tables_stream_name, (uint32_t)table_stream_size, &tables_heap_offset_space, &buffer, &remaining_buffer_len))
+        return false;
+
+    // Write the stream data
+    if (cxt->strings_heap.size != 0)
+    {
+        assert(strings_heap_offset_space.ptr != NULL && strings_heap_offset_space.size == 4);
+        write_u32(&strings_heap_offset_space.ptr, &strings_heap_offset_space.size, (uint32_t)(buffer - buffer_start));
+        uint32_t string_heap_size = align_to((uint32_t)cxt->strings_heap.size, 4);
+        if (remaining_buffer_len < string_heap_size)
+            return false;
+        memcpy(buffer, cxt->strings_heap.ptr, cxt->strings_heap.size);
+        memset((uint8_t*)buffer + cxt->strings_heap.size, 0, string_heap_size - cxt->strings_heap.size);
+        advance_output_stream(&buffer, &remaining_buffer_len, string_heap_size);
+    }
+
+    if (cxt->blob_heap.size != 0)
+    {
+        assert(blob_heap_offset_space.ptr != NULL && blob_heap_offset_space.size == 4);
+        write_u32(&blob_heap_offset_space.ptr, &blob_heap_offset_space.size, (uint32_t)(buffer - buffer_start));
+        if (remaining_buffer_len < cxt->blob_heap.size)
+            return false;
+        memcpy(buffer, cxt->blob_heap.ptr, cxt->blob_heap.size);
+        advance_output_stream(&buffer, &remaining_buffer_len, cxt->blob_heap.size);
+    }
+
+    if (cxt->guid_heap.size != 0)
+    {
+        assert(guid_heap_offset_space.ptr != NULL && guid_heap_offset_space.size == 4);
+        write_u32(&guid_heap_offset_space.ptr, &guid_heap_offset_space.size, (uint32_t)(buffer - buffer_start));
+        if (remaining_buffer_len < cxt->guid_heap.size)
+            return false;
+        memcpy(buffer, cxt->guid_heap.ptr, cxt->guid_heap.size);
+        advance_output_stream(&buffer, &remaining_buffer_len, cxt->guid_heap.size);
+    }
+
+    if (cxt->user_string_heap.size != 0)
+    {
+        assert(user_string_heap_offset_space.ptr != NULL && user_string_heap_offset_space.size == 4);
+        write_u32(&user_string_heap_offset_space.ptr, &user_string_heap_offset_space.size, (uint32_t)(buffer - buffer_start));
+        if (remaining_buffer_len < cxt->user_string_heap.size)
+            return false;
+        memcpy(buffer, cxt->user_string_heap.ptr, cxt->user_string_heap.size);
+        advance_output_stream(&buffer, &remaining_buffer_len, cxt->user_string_heap.size);
+    }
+
+#ifdef DNMD_PORTABLE_PDB
+    if (cxt->pdb.size != 0)
+    {
+        assert(pdb_offset_space.ptr != NULL && pdb_offset_space.size == 4);
+        write_u32(&pdb_offset_space.ptr, &pdb_offset_space.size, (uint32_t)(buffer - buffer_start));
+        if (remaining_buffer_len < cxt->pdb.size)
+            return false;
+        memcpy(buffer, cxt->pdb.ptr, cxt->pdb.size);
+        advance_output_stream(&buffer, &remaining_buffer_len, cxt->pdb.size);
+    }
+#endif // DNMD_PORTABLE_PDB
+
+    if (remaining_buffer_len < table_stream_size)
+        return false;
+
+    // Always write the table stream header. This is required for a valid image.
+    assert(tables_heap_offset_space.ptr != NULL && tables_heap_offset_space.size == 4);
+    write_u32(&tables_heap_offset_space.ptr, &tables_heap_offset_space.size, (uint32_t)(buffer - buffer_start));
+    if (!write_u32(&buffer, &remaining_buffer_len, 0) // Reserved
+        || !write_u8(&buffer, &remaining_buffer_len, 2) // MajorVersion
+        || !write_u8(&buffer, &remaining_buffer_len, 0) // MinorVersion
+        || !write_u8(&buffer, &remaining_buffer_len, (uint8_t)(cxt->context_flags & mdc_image_flags & ~mdc_extra_data)) // HeapOffsetSizes, excluding the extra data flag as we don't save it to write out.
+        || !write_u8(&buffer, &remaining_buffer_len, 1) // Reserved
+        || !write_u64(&buffer, &remaining_buffer_len, valid_tables)
+        || !write_u64(&buffer, &remaining_buffer_len, sorted_tables))
+    {
+        return false;
+    }
+
+    if (valid_tables != 0)
+    {
+        for (uint8_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+        {
+            if (valid_tables & (1ULL << i))
+            {
+                if (!write_u32(&buffer, &remaining_buffer_len, cxt->tables[i].row_count))
+                    return false;
+            }
+        }
+
+        for (uint8_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+        {
+            if (valid_tables & (1ULL << i))
+            {
+                assert (remaining_buffer_len >= cxt->tables[i].data.size);
+                memcpy(buffer, cxt->tables[i].data.ptr, cxt->tables[i].data.size);
+                advance_output_stream(&buffer, &remaining_buffer_len, cxt->tables[i].data.size);
+            }
+        }
+    }
+
+    assert(full_buffer_len - remaining_buffer_len == image_size);
+    return true;
+}
