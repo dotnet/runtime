@@ -89,6 +89,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return app;
         }
 
+        // The fallback RID is a compile-time define for the host. On Windows, it is always win10 and on
+        // other platforms, it matches the build RID (non-portable for source-builds, portable otherwise)
+        private static string FallbackRid = OperatingSystem.IsWindows()
+            ? $"win10-{RepoDirectoriesProvider.Default.BuildArchitecture}"
+            : RepoDirectoriesProvider.Default.BuildRID;
+
         protected const string UnknownRid = "unknown-rid";
 
         private const string LinuxAssembly = "linux/LinuxAssembly.dll";
@@ -166,6 +172,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 new TestSetup() { Rid = rid, HasRidGraph = hasRuntimeFallbacks, UseRidGraph = useRidGraph },
                 includedPath,
                 excludedPath);
+        }
+
+        [Fact]
+        public void RidSpecificAssembly_FallbackRid()
+        {
+            // When there is no RID graph and the host is configured to use the RID graph, it should still be able to
+            // resolve an exact match to the fallback RID
+            string assetPath = $"{FallbackRid}/{FallbackRid}Asset";
+            RunTest(
+                p => p.WithAssemblyGroup(FallbackRid, g => g.WithAsset(assetPath)),
+                new TestSetup() { Rid = null, HasRidGraph = false, UseRidGraph = true },
+                new ResolvedPaths() { IncludedAssemblyPaths = assetPath });
         }
 
         [Theory]
@@ -253,6 +271,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 new TestSetup() { Rid = rid, HasRidGraph = hasRuntimeFallbacks, UseRidGraph = useRidGraph },
                 includedPath,
                 excludedPath);
+        }
+
+        [Fact]
+        public void RidSpecificNativeLibrary_FallbackRid()
+        {
+            // When there is no RID graph and the host is configured to use the RID graph, it should still be able to
+            // resolve an exact match to the fallback RID
+            string assetPath = $"{FallbackRid}/{FallbackRid}Asset";
+            RunTest(
+                p => p.WithNativeLibraryGroup(FallbackRid, g => g.WithAsset(assetPath)),
+                new TestSetup() { Rid = null, HasRidGraph = false, UseRidGraph = true },
+                new ResolvedPaths() { IncludedNativeLibraryPaths = $"{FallbackRid}/" });
         }
 
         [Theory]
