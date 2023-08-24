@@ -26,13 +26,12 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
         THROWS;
         MODE_COOPERATIVE;
     }
-        CONTRACTL_END
+    CONTRACTL_END
 
 #ifndef FEATURE_BASICFREEZE
-        // GC is required to support frozen segments
-        return nullptr;
+    // GC is required to support frozen segments
+    return nullptr;
 #else // FEATURE_BASICFREEZE
-
 
     Object* obj = nullptr;
     FrozenObjectSegment* curSeg = nullptr;
@@ -169,8 +168,8 @@ void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited
     if (!IsRegistered())
     {
         // Other threads won't touch these fields until we set m_IsRegistered to true
-        m_SizeCommittedRegistered = sizeCommited;
-        m_pCurrentRegistered = current;
+        VolatileStore(&m_SizeCommittedRegistered, sizeCommited);
+        VolatileStore(&m_pCurrentRegistered, current);
 
         segment_info si;
         si.pvMem = m_pStart;
@@ -191,16 +190,11 @@ void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited
     {
         if (current > VolatileLoad(&m_pCurrentRegistered))
         {
-            GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(
-                m_SegmentHandle, current, m_pStart + sizeCommited);
-
-            // Profiler thread won't hold the registration lock, but, presumably, it won't see these values randomly
-            // because UpdateFrozenSegment will stuck in GC's lock while profiler is enumerating frozen segments
-            // (it's generally recommended to enumerate heaps in GarbageCollectionFinished/Started events).
-            // If profiler is invoked outside of GC's lock, then the accuracy is not guaranteed, but let's at least
-            // bump SizeCommited first:
             VolatileStore(&m_SizeCommittedRegistered, sizeCommited);
             VolatileStore(&m_pCurrentRegistered, current);
+
+            GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(
+                m_SegmentHandle, current, m_pStart + sizeCommited);
         }
         else
         {
