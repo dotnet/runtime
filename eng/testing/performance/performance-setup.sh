@@ -270,7 +270,7 @@ benchmark_directory=$payload_directory/BenchmarkDotNet
 workitem_directory=$source_directory/workitem
 extra_benchmark_dotnet_arguments="--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --stopOnFirstError true"
 perflab_arguments=
-queue=Ubuntu.1804.Amd64.Open
+queue=Ubuntu.2204.Amd64.Open
 creator=$BUILD_DEFINITIONNAME
 helix_source_prefix="pr"
 
@@ -285,12 +285,12 @@ if [[ "$internal" == true ]]; then
     elif [[ "$logical_machine" == "perfampere" ]]; then
         queue=Ubuntu.2004.Arm64.Perf
     elif [[ "$logical_machine" == "cloudvm" ]]; then
-        queue=Ubuntu.1804.Amd64
+        queue=Ubuntu.2204.Amd64
     elif [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
         if [[ "$logical_machine" == "perfowl" ]]; then
-            queue=Ubuntu.1804.Amd64.Owl.Perf
+            queue=Ubuntu.2204.Amd64.Owl.Perf
         elif [[ "$logical_machine" == "perftiger_crossgen" ]]; then
             queue=Ubuntu.1804.Amd64.Tiger.Perf
         else
@@ -305,7 +305,7 @@ else
     if [[ "$architecture" == "arm64" ]]; then
         queue=ubuntu.1804.armarch.open
     else
-        queue=Ubuntu.1804.Amd64.Open
+        queue=Ubuntu.2204.Amd64.Open
     fi
 
     if [[ "$alpine" == "true" ]]; then
