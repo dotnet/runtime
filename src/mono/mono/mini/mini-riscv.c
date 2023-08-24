@@ -2459,6 +2459,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CALL_REG:
 		case OP_VOIDCALL_REG:
+		case OP_VCALL2_REG:
 			break;
 
 		/* Throw */
@@ -4643,6 +4644,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CALL_REG:
 		case OP_VOIDCALL_REG:
+		case OP_VCALL2_REG:
 			// JALR x1, 0(src1)
 			riscv_jalr (code, RISCV_RA, ins->sreg1, 0);
 			code = emit_move_return_value (cfg, code, ins);

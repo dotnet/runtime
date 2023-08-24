@@ -59,6 +59,7 @@ voidcall: len:4 clob:c
 voidcall_reg: src1:i len:4 clob:c
 voidcall_membase: src1:b len:8 clob:c
 vcall2: len:16 clob:c
+vcall2_reg: src1:i len:16 clob:c
 vcall2_membase: src1:b len:20 clob:c
 fcall: dest:f len:8 clob:c
 rcall: dest:f len:8 clob:c
