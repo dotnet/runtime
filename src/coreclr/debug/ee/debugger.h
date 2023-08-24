@@ -1454,6 +1454,7 @@ public:
             "           m_callsiteMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
             m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+        (void)encState;
 #endif //LOGGING
     }
 
