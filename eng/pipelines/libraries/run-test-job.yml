@@ -96,11 +96,10 @@ jobs:
         - name: SuperPmiCollectionType
           value: 'run'
 
-        ${{ if eq(parameters.SuperPmiCollectionName, '') }}:
-          - name: SuperPmiCollectionName
+        - name: SuperPmiCollectionName
+          ${{ if eq(parameters.SuperPmiCollectionName, '') }}:
             value: 'libraries_tests'
-        ${{ else }}:
-          - name: SuperPmiCollectionName
+          ${{ else }}:
             value: ${{ parameters.SuperPmiCollectionName }}
 
         - name: _runtimeX64DownloadPath
