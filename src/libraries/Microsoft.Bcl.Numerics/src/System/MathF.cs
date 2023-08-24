@@ -11,20 +11,15 @@
 
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
+using System.Drawing;
 
 namespace System
 {
+    /// <summary>
+    /// Provides constants and static methods for trigonometric, logarithmic, and other common mathematical functions.
+    /// </summary>
     public static class MathF
     {
-        private static float singleRoundLimit = 1e8f;
-
-        private const int maxRoundingDigits = 6;
-
-        // This table is required for the Round function which can specify the number of digits to round to
-        private static float[] roundPower10Single = new float[] {
-            1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
-        };
-
         public const float PI = 3.14159265f;
 
         public const float E = 2.71828183f;
@@ -42,26 +37,83 @@ namespace System
             return (*(uint*)(&f) & 0x80000000) == 0x80000000;
         }
 
+        /// <summary>
+        /// Returns the absolute value of a single-precision floating-point number.
+        /// </summary>
+        /// <param name="x">The number to take the absolute value of.</param>
+        /// <returns>The absolute value of <paramref name="x"/></returns>
         public static float Abs(float x) => Math.Abs(x);
 
+        /// <summary>
+        /// Returns the angle whose cosine is the specified number.
+        /// </summary>
+        /// <param name="x">The number to take the acos of.</param>
+        /// <returns>The acos of <paramref name="x"/></returns>
         public static float Acos(float x) => (float)Math.Acos(x);
 
+        /// <summary>
+        /// Returns the angle whose sine is the specified number.
+        /// </summary>
+        /// <param name="x">The number to take the asin of.</param>
+        /// <returns>The asin of <paramref name="x"/></returns>
         public static float Asin(float x) => (float)Math.Asin(x);
 
+        /// <summary>
+        /// Returns the angle whose tangent is the specified number.
+        /// </summary>
+        /// <param name="x">The number to take the atan of.</param>
+        /// <returns>The atan of <paramref name="x"/></returns>
         public static float Atan(float x) => (float)Math.Atan(x);
 
+        /// <summary>
+        /// Returns the angle whose tangent is the quotient of two specified numbers.
+        /// </summary>
+        /// <param name="y">The first number.</param>
+        /// <param name="x">The second number.</param>
+        /// <returns>The angle whose tangent is the quotient of <paramref name="y"/> and <paramref name="x"/></returns>
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
 
+        /// <summary>
+        /// Returns the smallest integral value that is greater than or equal to the specified single-precision floating-point number.
+        /// </summary>
+        /// <param name="x">The number to take the ceiling of.</param>
+        /// <returns>The ceiling of <paramref name="x"/></returns>
         public static float Ceiling(float x) => (float)Math.Ceiling(x);
 
+        /// <summary>
+        /// Returns the cosine of the specified angle.
+        /// </summary>
+        /// <param name="x">The angle to take the cosine of.</param>
+        /// <returns>The cosine of <paramref name="x"/></returns>
         public static float Cos(float x) => (float)Math.Cos(x);
 
+        /// <summary>
+        /// Returns the hyperbolic cosine of the specified angle.
+        /// </summary>
+        /// <param name="x">The angle to take the hyperbolic cosine of.</param>
+        /// <returns>The hyperbolic cosine of <paramref name="x"/></returns>
         public static float Cosh(float x) => (float)Math.Cosh(x);
 
+        /// <summary>
+        /// Returns e raised to the specified power.
+        /// </summary>
+        /// <param name="x">The number to raise e to.</param>
+        /// <returns>e raised to the power of <paramref name="x"/></returns>
         public static float Exp(float x) => (float)Math.Exp(x);
 
+        /// <summary>
+        /// Returns the largest integral value less than or equal to the specified single-precision floating-point number.
+        /// </summary>
+        /// <param name="x">The number to take the floor of.</param>
+        /// <returns>The floor of <paramref name="x"/></returns>
         public static float Floor(float x) => (float)Math.Floor(x);
 
+        /// <summary>
+        /// Returns the remainder resulting from the division of a specified number by another specified number.
+        /// </summary>
+        /// <param name="x">The numerator</param>
+        /// <param name="y">The denominator</param>
+        /// <returns>The result of dividing <paramref name="x"/> by <paramref name="y"/></returns>
         public static float IEEERemainder(float x, float y)
         {
             if (float.IsNaN(x))
@@ -113,8 +165,19 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Returns the natural (base e) logarithm of a specified number.
+        /// </summary>
+        /// <param name="x">The number to take the natural log of.</param>
+        /// <returns>The natural log of <paramref name="x"/></returns>
         public static float Log(float x) => (float)Math.Log(x);
 
+        /// <summary>
+        /// Returns the logarithm of a specified number in a specified base.
+        /// </summary>
+        /// <param name="x">The number to take the log of.</param>
+        /// <param name="y">The base of the log</param>
+        /// <returns>The log of <paramref name="x"/> with base <paramref name="y"/></returns>
         public static float Log(float x, float y)
         {
             if (float.IsNaN(x))
@@ -140,103 +203,116 @@ namespace System
             return Log(x) / Log(y);
         }
 
+        /// <summary>
+        /// Returns the base 10 logarithm of a specified number.
+        /// </summary>
+        /// <param name="x">The number to take the base 10 log of.</param>
+        /// <returns>The base 10 log of <paramref name="x"/></returns>
         public static float Log10(float x) => (float)Math.Log10(x);
 
+        /// <summary>
+        /// Returns the larger of two single-precision floating-point numbers.
+        /// </summary>
+        /// <param name="x">The first number to compare.</param>
+        /// <param name="y">The second number to compare.</param>
+        /// <returns>The larger of <paramref name="x"/> and <paramref name="y"/></returns>
         public static float Max(float x, float y) => Math.Max(x, y);
 
+        /// <summary>
+        /// Returns the smaller of two single-precision floating-point numbers.
+        /// </summary>
+        /// <param name="x">The first number to compare.</param>
+        /// <param name="y">The second number to compare.</param>
+        /// <returns>The smaller of <paramref name="x"/> and <paramref name="y"/></returns>
         public static float Min(float x, float y) => Math.Min(x, y);
 
+        /// <summary>
+        /// Returns a specified number raised to the specified power.
+        /// </summary>
+        /// <param name="x">The base number.</param>
+        /// <param name="y">The specified power.</param>
+        /// <returns><paramref name="x"/> raised to the power of <paramref name="y"/></returns>
         public static float Pow(float x, float y) => (float)Math.Pow(x, y);
 
+        /// <summary>
+        /// Rounds a single-precision floating-point value to the nearest integral value, and rounds midpoint values to the nearest even number.
+        /// </summary>
+        /// <param name="x">The number to round.</param>
+        /// <returns>The rounded representation of <paramref name="x"/></returns>
         public static float Round(float x) => (float)Math.Round(x);
 
-        public static float Round(float x, int digits)
-        {
-            if ((digits < 0) || (digits > maxRoundingDigits))
-            {
-                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
-            }
-            Contract.EndContractBlock();
+        /// <summary>
+        /// Rounds a single-precision floating-point value to a specified number of fractional digits, and rounds midpoint values to the nearest even number.
+        /// </summary>
+        /// <param name="x">The number to round.</param>
+        /// <param name="digits">How many fractional digits to keep.</param>
+        /// <returns>The rounded representation of <paramref name="x"/> with <paramref name="digits"/> fractional digits</returns>
+        public static float Round(float x, int digits) => (float)Math.Round(x, digits);
 
-            return InternalRound(x, digits, MidpointRounding.ToEven);
-        }
+        /// <summary>
+        /// Rounds a single-precision floating-point value to a specified number of fractional digits using the specified rounding convention.
+        /// </summary>
+        /// <param name="x">The number to round.</param>
+        /// <param name="digits">How many fractional digits to keep.</param>
+        /// <param name="mode">The rounding convention to use.</param>
+        /// <returns>The rounded representation of <paramref name="x"/> with <paramref name="digits"/> fractional digits using <paramref name="mode"/> rounding convention</returns>
+        public static float Round(float x, int digits, MidpointRounding mode) => (float)Math.Round(x, digits, mode);
 
-        public static float Round(float x, int digits, MidpointRounding mode)
-        {
-            if ((digits < 0) || (digits > maxRoundingDigits))
-            {
-                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
-            }
+        /// <summary>
+        /// Rounds a single-precision floating-point value to an integer using the specified rounding convention.
+        /// </summary>
+        /// <param name="x">The number to round.</param>
+        /// <param name="mode">The rounding convention to use.</param>
+        /// <returns>The rounded representation of <paramref name="x"/> using <paramref name="mode"/> rounding convention</returns>
+        public static float Round(float x, MidpointRounding mode) => (float)Math.Round(x, mode);
 
-            if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnum, mode, nameof(MidpointRounding)), nameof(mode));
-            }
-            Contract.EndContractBlock();
-
-            return InternalRound(x, digits, mode);
-        }
-
-        public static float Round(float x, MidpointRounding mode)
-        {
-            if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnum, mode, nameof(MidpointRounding)), nameof(mode));
-            }
-            Contract.EndContractBlock();
-
-            return InternalRound(x, 0, mode);
-        }
-
+        /// <summary>
+        /// Returns an integer that indicates the sign of a single-precision floating-point number.
+        /// </summary>
+        /// <param name="x">The number check the sign of.</param>
+        /// <returns>The sign of <paramref name="x"/></returns>
         public static int Sign(float x) => Math.Sign(x);
 
+        /// <summary>
+        /// Returns the sine of the specified angle.
+        /// </summary>
+        /// <param name="x">The angle to take the sine of.</param>
+        /// <returns>The sine of <paramref name="x"/></returns>
         public static float Sin(float x) => (float)Math.Sin(x);
 
+        /// <summary>
+        /// Returns the hyperbolic sine of the specified angle.
+        /// </summary>
+        /// <param name="x">The angle to take the hyperbolic sine of.</param>
+        /// <returns>The hyperbolic sine of <paramref name="x"/></returns>
         public static float Sinh(float x) => (float)Math.Sinh(x);
 
+        /// <summary>
+        /// Returns the square root of a specified number.
+        /// </summary>
+        /// <param name="x">The number to take the square root of.</param>
+        /// <returns>The square root of <paramref name="x"/></returns>
         public static float Sqrt(float x) => (float)Math.Sqrt(x);
 
+        /// <summary>
+        /// Returns the tangent of the specified angle.
+        /// </summary>
+        /// <param name="x">The angle to take the tangent of.</param>
+        /// <returns>The tangent of <paramref name="x"/></returns>
         public static float Tan(float x) => (float)Math.Tan(x);
 
+        /// <summary>
+        /// Returns the hyperbolic tangent of the specified angle.
+        /// </summary>
+        /// <param name="x">The angle to take the hyperbolic tangent of.</param>
+        /// <returns>The hyperbolic tangent of <paramref name="x"/></returns>
         public static float Tanh(float x) => (float)Math.Tanh(x);
 
-        public static float Truncate(float x) => InternalTruncate(x);
-
-        private static unsafe float InternalRound(float x, int digits, MidpointRounding mode)
-        {
-            if (Abs(x) < singleRoundLimit)
-            {
-                var power10 = roundPower10Single[digits];
-
-                x *= power10;
-
-                if (mode == MidpointRounding.AwayFromZero)
-                {
-                    var fraction = SplitFractionSingle(&x);
-
-                    if (Abs(fraction) >= 0.5f)
-                    {
-                        x += Sign(fraction);
-                    }
-                }
-                else
-                {
-                    x = Round(x);
-                }
-
-                x /= power10;
-            }
-
-            return x;
-        }
-
-        private static unsafe float InternalTruncate(float x)
-        {
-            SplitFractionSingle(&x);
-            return x;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe float SplitFractionSingle(float* x);
+        /// <summary>
+        /// Calculates the integral part of a specified single-precision floating-point number.
+        /// </summary>
+        /// <param name="x">The number to truncate.</param>
+        /// <returns>The truncated representation of <paramref name="x"/></returns>
+        public static float Truncate(float x) => (float)Math.Truncate(x);
     }
 }

@@ -5,7 +5,7 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
 
     <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
-    <PackageDescription>Provides MathF</PackageDescription>
+    <PackageDescription>Provides the System.MathF for .NET Standard 2.0</PackageDescription>
         <!-- Disabling baseline validation since this is a brand new package.
        Once this package has shipped a stable version, the following line
        should be removed in order to re-enable validation. -->
@@ -20,6 +20,10 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\MathF.cs" />
     <EmbeddedResource Include="Resources/strings.resx" />
+  </ItemGroup>
+
+   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Microsoft.Bcl.Numerics.Forwards.cs" />
   </ItemGroup>
 
 </Project>
