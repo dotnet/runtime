@@ -2030,8 +2030,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			MONO_INST_NEW (cfg, vtaddr, 0);
 			vtaddr->opcode = OP_REGOFFSET;
 			vtaddr->inst_basereg = cfg->frame_reg;
-			vtaddr->inst_offset = offset;
 			offset += sizeof (host_mgreg_t);
+			vtaddr->inst_offset = -offset;
 
 			/* Need an indirection */
 			ins->opcode = OP_VTARG_ADDR;
