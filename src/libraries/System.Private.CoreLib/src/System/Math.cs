@@ -1474,19 +1474,19 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SignZeroToOne(int value)
         {
-            return unchecked((value >> (32 - 1)) - (~value >> (32 - 1)));
+            return unchecked((value >> (32 - 2)) | 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SignZeroToOne(nint value)
         {
-            return unchecked((int)(value >> (8 * nint.Size - 1)) - (int)(~value >> (8 * nint.Size - 1)));
+            return unchecked((int)(value >> (8 * nint.Size - 2)) | 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SignZeroToOne(long value)
         {
-            return unchecked((int)(value >> (64 - 1)) - (int)(~value >> (64 - 1)));
+            return unchecked((int)(value >> (64 - 2)) | 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
