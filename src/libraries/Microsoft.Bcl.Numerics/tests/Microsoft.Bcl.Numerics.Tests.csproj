@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFramework>$(NetFrameworkMinimum)</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="MathF.cs" />
   </ItemGroup>
@@ -9,4 +11,5 @@
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Bcl.Numerics.csproj" />
   </ItemGroup>
+
 </Project>

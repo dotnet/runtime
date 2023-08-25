@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
-   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' And '$(TargetFramework)' != 'netstandard2.1'">
-    <Compile Include="Microsoft.Bcl.Numerics.cs" />
-  </ItemGroup> 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' Or '$(TargetFramework)' == 'netstandard2.1'">
-    <Compile Include="Microsoft.Bcl.Numerics.Forwards.cs" />
+  
+  <ItemGroup>
+    <Compile Include="Microsoft.Bcl.Numerics.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and '$(TargetFramework)' != 'netstandard2.1'" />
+    <Compile Include="Microsoft.Bcl.Numerics.Forwards.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' or '$(TargetFramework)' == 'netstandard2.1'" />
   </ItemGroup>
+
 </Project>

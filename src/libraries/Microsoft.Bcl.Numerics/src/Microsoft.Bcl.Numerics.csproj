@@ -1,19 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
 
     <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
     <PackageDescription>Provides the System.MathF for .NET Standard 2.0</PackageDescription>
-        <!-- Disabling baseline validation since this is a brand new package.
-       Once this package has shipped a stable version, the following line
-       should be removed in order to re-enable validation. -->
+    <!-- Disabling baseline validation since this is a brand new package.
+         Once this package has shipped a stable version, the following line
+         should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <PropertyGroup>
-    <OmitResources Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</OmitResources>
+    <OmitResources Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">true</OmitResources>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
