@@ -12,6 +12,12 @@ namespace System.Reflection.Emit
         [ThreadStatic]
         private static bool t_allowDynamicCode;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="AssemblyBuilder"/> class.
+        /// </summary>
+        /// <remarks>
+        /// This constructor is invoked by derived classes.
+        /// </remarks>
         protected AssemblyBuilder()
         {
         }
@@ -23,6 +29,14 @@ namespace System.Reflection.Emit
             return DefineDynamicModuleCore(name);
         }
 
+        /// <summary>
+        /// When overridden in a derived class, defines a dynamic module in this assembly.
+        /// </summary>
+        /// <param name="name">The name of the dynamic module.</param>
+        /// <remarks>
+        /// .NET core currently support only one module.
+        /// </remarks>
+        /// <returns>A <see cref="ModuleBuilder"/> representing the defined dynamic module</returns>
         protected abstract ModuleBuilder DefineDynamicModuleCore(string name);
 
         public ModuleBuilder? GetDynamicModule(string name)
@@ -32,6 +46,14 @@ namespace System.Reflection.Emit
             return GetDynamicModuleCore(name);
         }
 
+        /// <summary>
+        /// When overridden in a derived class, returns the dynamic module with the specified name.
+        /// </summary>
+        /// <param name="name">The name of the requested dynamic module.</param>
+        /// <remarks>
+        /// .NET core currently support only one module.
+        /// </remarks>
+        /// <returns>A <see cref="ModuleBuilder"/> representing the requested dynamic module</returns>
         protected abstract ModuleBuilder? GetDynamicModuleCore(string name);
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
@@ -42,6 +64,11 @@ namespace System.Reflection.Emit
             SetCustomAttributeCore(con, binaryAttribute);
         }
 
+        /// <summary>
+        /// When overridden in a derived class, sets a custom attribute on this assembly.
+        /// </summary>
+        /// <param name="con">The constructor for the custom attribute.</param>
+        /// <param name="binaryAttribute">A <see cref="ReadOnlySpan{T}"/> of bytes representing the attribute.</param>
         protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)

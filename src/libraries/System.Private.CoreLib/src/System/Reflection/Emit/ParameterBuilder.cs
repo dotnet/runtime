@@ -9,6 +9,12 @@ namespace System.Reflection.Emit
 {
     public abstract partial class ParameterBuilder
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="ParameterBuilder"/> class.
+        /// </summary>
+        /// <remarks>
+        /// This constructor is invoked by derived classes.
+        /// </remarks>
         protected ParameterBuilder() { }
         public virtual int Attributes => throw new NotImplementedException();
         public bool IsIn => ((ParameterAttributes)Attributes & ParameterAttributes.In) != 0;
@@ -24,6 +30,11 @@ namespace System.Reflection.Emit
 
             SetCustomAttributeCore(con, binaryAttribute);
         }
+        /// <summary>
+        /// When overridden in a derived class, sets a custom attribute on this assembly.
+        /// </summary>
+        /// <param name="con">The constructor for the custom attribute.</param>
+        /// <param name="binaryAttribute">A <see cref="ReadOnlySpan{T}"/> of bytes representing the attribute.</param>
         protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
