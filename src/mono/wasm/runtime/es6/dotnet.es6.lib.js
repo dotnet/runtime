@@ -12,6 +12,7 @@ const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
 const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
+const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
 var methodIndexByName = undefined;
 var gitHash = undefined;
 
@@ -98,6 +99,7 @@ function injectDependencies() {
         `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
         `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
         `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `linkerRunAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
         `gitHash: "${gitHash}", ` +
         `});`;
 

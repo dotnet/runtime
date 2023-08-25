@@ -139,13 +139,12 @@ initDistroRid()
     local targetOs="$1"
     local targetArch="$2"
     local isCrossBuild="$3"
-    local isPortableBuild="$4"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
     if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
-    initDistroRidGlobal "${targetOs}" "${targetArch}" "${isPortableBuild}" "${passedRootfsDir}"
+    initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
 }
 
 showSubsetHelp()
@@ -549,7 +548,7 @@ if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError 0"
 fi
 
-initDistroRid "$os" "$arch" "$crossBuild" "$portableBuild"
+initDistroRid "$os" "$arch" "$crossBuild"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.

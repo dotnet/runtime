@@ -280,6 +280,7 @@ export type EmscriptenInternals = {
     linkerWasmEnableEH: boolean,
     linkerEnableAotProfiler: boolean,
     linkerEnableBrowserProfiler: boolean,
+    linkerRunAOTCompilation: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
     gitHash: string,

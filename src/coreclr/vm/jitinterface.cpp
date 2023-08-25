@@ -92,11 +92,11 @@ __thread uint32_t t_GCThreadStaticBlocksSize;
 //
 
 #define JIT_TO_EE_TRANSITION()          MAKE_CURRENT_THREAD_AVAILABLE_EX(m_pThread);                \
-                                        INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;               \
+                                        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;               \
                                         COOPERATIVE_TRANSITION_BEGIN();                             \
 
 #define EE_TO_JIT_TRANSITION()          COOPERATIVE_TRANSITION_END();                               \
-                                        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
+                                        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
 
 #define JIT_TO_EE_TRANSITION_LEAF()
 #define EE_TO_JIT_TRANSITION_LEAF()
@@ -5982,10 +5982,7 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
 
     JIT_TO_EE_TRANSITION();
 
-    bool fClassMustBeRestored;
-    result = getCastingHelperStatic(TypeHandle(pResolvedToken->hClass), fThrowing, &fClassMustBeRestored);
-    if (fClassMustBeRestored)
-        classMustBeLoadedBeforeCodeIsRun(pResolvedToken->hClass);
+    result = getCastingHelperStatic(TypeHandle(pResolvedToken->hClass), fThrowing);
 
     EE_TO_JIT_TRANSITION();
 
@@ -5993,14 +5990,12 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing, bool * pfClassMustBeRestored)
+CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing)
 {
     STANDARD_VM_CONTRACT;
 
     // Slow helper is the default
     int helper = CORINFO_HELP_ISINSTANCEOFANY;
-
-    *pfClassMustBeRestored = false;
 
     if (clsHnd == TypeHandle(g_pCanonMethodTableClass))
     {
@@ -6014,9 +6009,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     else
     if (!clsHnd.IsTypeDesc() && clsHnd.AsMethodTable()->HasVariance())
     {
-        // Casting to variant type requires the type to be fully loaded
-        *pfClassMustBeRestored = true;
-
         _ASSERTE(helper == CORINFO_HELP_ISINSTANCEOFANY);
     }
     else
@@ -6036,12 +6028,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     else
     if (clsHnd.IsArray())
     {
-        if (clsHnd.GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
-        {
-            // Casting to multidimensional array type requires restored pointer to EEClass to fetch rank
-            *pfClassMustBeRestored = true;
-        }
-
         // If it is an array, use the fast array helper
         helper = CORINFO_HELP_ISINSTANCEOFARRAY;
     }
@@ -14729,6 +14715,43 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
     *pRBPOffset = StackOffset;
 }
 #undef kRBP
+
+ULONG EECodeInfo::GetFrameOffsetFromUnwindInfo()
+{
+    WRAPPER_NO_CONTRACT;
+    
+    SUPPORTS_DAC;
+
+    // moduleBase is a target address.
+    TADDR moduleBase = GetModuleBase();
+
+    DWORD unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(GetFunctionEntry());
+
+    if ((unwindInfo & RUNTIME_FUNCTION_INDIRECT) != 0)
+    {
+        unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(PTR_RUNTIME_FUNCTION(moduleBase + (unwindInfo & ~RUNTIME_FUNCTION_INDIRECT)));
+    }
+
+    UNWIND_INFO * pInfo = GetUnwindInfoHelper(unwindInfo);
+    _ASSERTE((pInfo->Flags & UNW_FLAG_CHAININFO) == 0);
+
+    // Either we are not using a frame pointer, or we are using rbp as the frame pointer.
+    if ( (pInfo->FrameRegister != 0) && (pInfo->FrameRegister != kRBP) )
+    {
+        _ASSERTE(!"GetRbpOffset() - non-RBP frame pointer used, violating assumptions of the security stackwalk cache");
+        DebugBreak();
+    }
+
+    ULONG frameOffset = pInfo->FrameOffset;
+#ifdef UNIX_AMD64_ABI
+    if ((frameOffset == 15) && (pInfo->UnwindCode[0].UnwindOp == UWOP_SET_FPREG_LARGE))
+    {
+        frameOffset = *(ULONG*)&pInfo->UnwindCode[1];
+    }
+#endif
+
+    return frameOffset;
+}
 
 
 #if defined(_DEBUG) && defined(HAVE_GCCOVER)
