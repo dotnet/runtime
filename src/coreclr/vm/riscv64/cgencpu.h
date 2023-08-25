@@ -381,8 +381,6 @@ private:
     void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
     void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
     void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
-
-    void EmitRet(IntReg reg);
 };
 
 extern "C" void SinglecastDelegateInvokeStub();
