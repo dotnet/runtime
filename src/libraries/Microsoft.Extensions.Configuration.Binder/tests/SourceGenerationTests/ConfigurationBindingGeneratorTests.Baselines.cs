@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -44,7 +43,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
 
         [Theory]
         [InlineData(LanguageVersion.Preview)]
-        [InlineData(LanguageVersion.CSharp11)]
         public async Task Bind(LanguageVersion langVersion) =>
             await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, langVersion, extType: ExtensionClassType.ConfigurationBinder);
 
@@ -651,7 +649,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
 
             await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, assessDiagnostics: (d) =>
             {
-                Console.WriteLine((d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count() , d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count()));
+                Console.WriteLine((d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count(), d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count()));
                 Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
                 Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
             });

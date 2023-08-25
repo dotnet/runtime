@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
@@ -2037,6 +2036,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             ValidateGeolocation(obj);
         }
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void TraceSwitchTest()
         {
@@ -2056,6 +2056,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("Info", ts.Value);
 #endif // NETCOREAPP
         }
+#endif
 
         private void ValidateGeolocation(IGeolocation location)
         {

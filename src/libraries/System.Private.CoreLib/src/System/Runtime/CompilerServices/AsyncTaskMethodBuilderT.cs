@@ -93,6 +93,9 @@ namespace System.Runtime.CompilerServices
             AwaitUnsafeOnCompleted(ref awaiter, box);
         }
 
+        // Tier0 codegen for this function may still allocate (while FullOpts won't).
+        // TODO: remove once https://github.com/dotnet/runtime/issues/90965 is implemented
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static void AwaitUnsafeOnCompleted<TAwaiter>(
             ref TAwaiter awaiter, IAsyncStateMachineBox box)
             where TAwaiter : ICriticalNotifyCompletion

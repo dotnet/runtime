@@ -68,8 +68,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
-        <source>The Logging source generator is not available in C# '{0}'. Please use language version '{1}' or greater.</source>
-        <target state="new">The Logging source generator is not available in C# '{0}'. Please use language version '{1}' or greater.</target>
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">

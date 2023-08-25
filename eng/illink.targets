@@ -2,10 +2,13 @@
 
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
-    <!-- Don't use SDK's trimming functionality. 
-         TODO: Remove this once we build using preview 6 SDK. -->
-    <_IsTrimmingEnabled>false</_IsTrimmingEnabled>
-    <!-- Same fix for preview 6 SDK. -->
+    <!-- Don't use SDK's trimming functionality.
+         Once we have an SDK with
+         https://github.com/dotnet/sdk/commit/bdce224bba472ccad4bade07b757ac5275040c0e
+         and
+         https://github.com/dotnet/sdk/commit/f051b536cc12190488231f3a889df44214c1bc2e,
+         we might be able to use built-in functionality instead of a packagereference.
+         -->
     <_RequiresILLinkPack>false</_RequiresILLinkPack>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
@@ -39,6 +42,14 @@
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
     <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
   </PropertyGroup>
+
+  <!-- Use ILLink.Tasks version matching the SDK used to build. See comment about _RequiresILLinkPack. -->
+  <PropertyGroup>
+    <SuppressILLinkExplicitPackageReferenceWarning>true</SuppressILLinkExplicitPackageReferenceWarning>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="$(BundledNETCoreAppPackageVersion)" PrivateAssets="all" />
+  </ItemGroup>
 
   <ItemGroup>
     <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsXmlFile)"

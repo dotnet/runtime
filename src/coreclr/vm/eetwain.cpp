@@ -4458,7 +4458,7 @@ FCIMPL1(void, GCReporting::Unregister, GCFrame* frame)
 
     // Destroy the GCFrame.
     _ASSERTE(frame != NULL);
-    frame->Pop();
+    frame->Remove();
 }
 FCIMPLEND
 #endif // !DACCESS_COMPILE
