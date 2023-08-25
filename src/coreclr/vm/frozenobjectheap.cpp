@@ -175,12 +175,12 @@ void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited
     }
     CONTRACTL_END
 
-    if (VolatileLoad(&m_pCurrentRegistered) == nullptr)
+    if (m_pCurrentRegistered == nullptr)
     {
         segment_info si;
         si.pvMem = m_pStart;
         si.ibFirstObject = sizeof(ObjHeader);
-        si.ibAllocated = (size_t)m_pCurrentRegistered;
+        si.ibAllocated = (size_t)current;
         si.ibCommit = sizeCommited;
         si.ibReserved = m_Size;
 
@@ -190,15 +190,15 @@ void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited
         {
             ThrowOutOfMemory();
         }
-        VolatileStore(&m_pCurrentRegistered, current);
+        m_pCurrentRegistered = current;
     }
     else
     {
-        if (current > VolatileLoad(&m_pCurrentRegistered))
+        if (current > m_pCurrentRegistered)
         {
             GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(
                 m_SegmentHandle, current, m_pStart + sizeCommited);
-            VolatileStore(&m_pCurrentRegistered, current);
+            m_pCurrentRegistered = current;
         }
         else
         {
