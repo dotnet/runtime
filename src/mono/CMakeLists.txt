@@ -899,6 +899,14 @@ if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
 else()
   set(DISABLE_DLLMAP 1)
 endif()
+
+if(TARGET_DARWIN)
+  check_c_compiler_flag(-fno-objc-msgsend-selector-stubs COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+  if(COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+    set(CLR_CMAKE_COMMON_OBJC_FLAGS "${CLR_CMAKE_COMMON_OBJC_FLAGS} -fno-objc-msgsend-selector-stubs")
+  endif()
+endif()
+
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
