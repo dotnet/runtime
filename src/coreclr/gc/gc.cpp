@@ -2312,9 +2312,7 @@ size_t      gc_heap::g_mark_list_piece_total_size;
 
 seg_mapping* seg_mapping_table;
 
-#ifdef FEATURE_BASICFREEZE
 sorted_table* gc_heap::seg_table;
-#endif //FEATURE_BASICFREEZE
 
 #ifdef MULTIPLE_HEAPS
 GCEvent     gc_heap::ee_suspend_event;
@@ -3536,7 +3534,6 @@ in_range_for_segment(uint8_t* add, heap_segment* seg)
     return ((add >= heap_segment_mem (seg)) && (add < heap_segment_reserved (seg)));
 }
 
-#ifdef FEATURE_BASICFREEZE
 // The array we allocate is organized as follows:
 // 0th element is the address of the last array we allocated.
 // starting from the 1st element are the segment addresses, that's
@@ -3768,7 +3765,6 @@ sorted_table::clear()
     count = 1;
     buckets()[0].add = MAX_PTR;
 }
-#endif //FEATURE_BASICFREEZE
 
 #ifdef USE_REGIONS
 inline
@@ -4357,7 +4353,6 @@ size_t seg_mapping_word_of (uint8_t* add)
     return (size_t)add >> gc_heap::min_segment_size_shr;
 }
 
-#ifdef FEATURE_BASICFREEZE
 inline
 size_t ro_seg_begin_index (heap_segment* seg)
 {
@@ -4414,8 +4409,6 @@ heap_segment* ro_segment_lookup (uint8_t* o)
     else
         return 0;
 }
-
-#endif //FEATURE_BASICFREEZE
 
 void gc_heap::seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp)
 {
@@ -4549,10 +4542,8 @@ gc_heap* seg_mapping_table_heap_of_worker (uint8_t* o)
 
 #ifdef _DEBUG
     heap_segment* seg = ((o > entry->boundary) ? entry->seg1 : entry->seg0);
-#ifdef FEATURE_BASICFREEZE
     if ((size_t)seg & ro_in_entry)
         seg = (heap_segment*)((size_t)seg & ~ro_in_entry);
-#endif //FEATURE_BASICFREEZE
 
 #ifdef TRACE_GC
     if (seg)
@@ -4587,10 +4578,8 @@ gc_heap* seg_mapping_table_heap_of (uint8_t* o)
 
 gc_heap* seg_mapping_table_heap_of_gc (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     if ((o < g_gc_lowest_address) || (o >= g_gc_highest_address))
         return 0;
-#endif //FEATURE_BASICFREEZE
 
     return seg_mapping_table_heap_of_worker (o);
 }
@@ -4599,10 +4588,8 @@ gc_heap* seg_mapping_table_heap_of_gc (uint8_t* o)
 // Only returns a valid seg if we can actually find o on the seg.
 heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     if ((o < g_gc_lowest_address) || (o >= g_gc_highest_address))
         return ro_segment_lookup (o);
-#endif //FEATURE_BASICFREEZE
 
     size_t index = (size_t)o >> gc_heap::min_segment_size_shr;
     seg_mapping* entry = &seg_mapping_table[index];
@@ -4633,10 +4620,8 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
         (uint8_t*)(entry->seg0), (uint8_t*)(entry->seg1)));
 
     heap_segment* seg = ((o > entry->boundary) ? entry->seg1 : entry->seg0);
-#ifdef FEATURE_BASICFREEZE
     if ((size_t)seg & ro_in_entry)
         seg = (heap_segment*)((size_t)seg & ~ro_in_entry);
-#endif //FEATURE_BASICFREEZE
 #endif //USE_REGIONS
 
     if (seg)
@@ -4657,7 +4642,6 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
         dprintf (2, ("could not find obj %p in any existing segments", o));
     }
 
-#ifdef FEATURE_BASICFREEZE
     // TODO: This was originally written assuming that the seg_mapping_table would always contain entries for ro
     // segments whenever the ro segment falls into the [g_gc_lowest_address,g_gc_highest_address) range.  I.e., it had an
     // extra "&& (size_t)(entry->seg1) & ro_in_entry" expression.  However, at the moment, grow_brick_card_table does
@@ -4670,7 +4654,6 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
         if (seg && !in_range_for_segment (o, seg))
             seg = 0;
     }
-#endif //FEATURE_BASICFREEZE
 
     return seg;
 }
@@ -4776,11 +4759,7 @@ public:
 #endif
         if (fSmallObjectHeapPtr)
         {
-#ifdef FEATURE_BASICFREEZE
             _ASSERTE(!g_theGCHeap->IsLargeObject(this) || g_theGCHeap->IsInFrozenSegment(this));
-#else
-            _ASSERTE(!g_theGCHeap->IsLargeObject(this));
-#endif
         }
     }
 
@@ -8880,7 +8859,6 @@ uint32_t* translate_mark_array (uint32_t* ma)
     return (uint32_t*)((uint8_t*)ma - size_mark_array_of (0, g_gc_lowest_address));
 }
 
-#ifdef FEATURE_BASICFREEZE
 // end must be page aligned addresses.
 void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end)
 {
@@ -8932,7 +8910,6 @@ void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end)
 #endif //_DEBUG
     }
 }
-#endif // FEATURE_BASICFREEZE
 #endif //BACKGROUND_GC
 
 //These work on untranslated card tables
@@ -9902,7 +9879,6 @@ void gc_heap::copy_brick_card_table()
     release_card_table (&old_card_table[card_word (card_of(la))]);
 }
 
-#ifdef FEATURE_BASICFREEZE
 // Note that we always insert at the head of the max_generation segment list.
 BOOL gc_heap::insert_ro_segment (heap_segment* seg)
 {
@@ -10018,7 +9994,6 @@ void gc_heap::remove_ro_segment (heap_segment* seg)
 
     leave_spin_lock (&gc_heap::gc_lock);
 }
-#endif //FEATURE_BASICFREEZE
 
 BOOL gc_heap::set_ro_segment_in_range (heap_segment* seg)
 {
@@ -11479,7 +11454,6 @@ inline size_t my_get_size (Object* ob)
 #endif //COLLECTIBLE_CLASS
 
 #ifdef BACKGROUND_GC
-#ifdef FEATURE_BASICFREEZE
 inline
 void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
 {
@@ -11511,7 +11485,6 @@ void gc_heap::seg_set_mark_array_bits_soh (heap_segment* seg)
         memset (&mark_array[beg_word], 0xFF, (end_word - beg_word)*sizeof (uint32_t));
     }
 }
-#endif //FEATURE_BASICFREEZE
 
 void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 {
@@ -14347,12 +14320,10 @@ gc_heap::init_semi_shared()
     max_decommit_step_size = max (max_decommit_step_size, MIN_DECOMMIT_SIZE);
 #endif //MULTIPLE_HEAPS
 
-#ifdef FEATURE_BASICFREEZE
     seg_table = sorted_table::make_sorted_table();
 
     if (!seg_table)
         goto cleanup;
-#endif //FEATURE_BASICFREEZE
 
 #ifndef USE_REGIONS
     segment_standby_list = 0;
@@ -15179,10 +15150,8 @@ gc_heap::destroy_semi_shared()
     if (seg_mapping_table)
         delete seg_mapping_table;
 
-#ifdef FEATURE_BASICFREEZE
     //destroy the segment map
     seg_table->delete_sorted_table();
-#endif //FEATURE_BASICFREEZE
 }
 
 void
@@ -23767,9 +23736,7 @@ void gc_heap::garbage_collect (int n)
     if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-#ifdef FEATURE_BASICFREEZE
         seg_table->delete_old_slots();
-#endif //FEATURE_BASICFREEZE
 
 #ifdef MULTIPLE_HEAPS
         for (int i = 0; i < n_heaps; i++)
@@ -25988,32 +25955,19 @@ BOOL gc_heap::gc_mark1 (uint8_t* o)
 #ifdef USE_REGIONS
 inline bool is_in_heap_range (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     // we may have frozen objects in read only segments
     // outside of the reserved address range of the gc heap
     assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
         (o == nullptr) || (ro_segment_lookup (o) != nullptr));
     return ((g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#else //FEATURE_BASICFREEZE
-    // without frozen objects, every non-null pointer must be
-    // within the heap
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-    return (o != nullptr);
-#endif //FEATURE_BASICFREEZE
 }
 
 inline bool gc_heap::is_in_gc_range (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     // we may have frozen objects in read only segments
     // outside of the reserved address range of the gc heap
     assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
         (o == nullptr) || (ro_segment_lookup (o) != nullptr));
-#else //FEATURE_BASICFREEZE
-    // without frozen objects, every non-null pointer must be
-    // within the heap
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#endif //FEATURE_BASICFREEZE
     return ((gc_low <= o) && (o < gc_high));
 }
 #endif //USE_REGIONS
@@ -29032,7 +28986,6 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             }
         }
 
-#ifdef FEATURE_BASICFREEZE
 #ifdef USE_REGIONS
         assert (!ro_segments_in_range);
 #else //USE_REGIONS
@@ -29043,7 +28996,6 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             // Should fire an ETW event here.
         }
 #endif //USE_REGIONS
-#endif //FEATURE_BASICFREEZE
 
         dprintf(3,("Marking Roots"));
 
@@ -30094,7 +30046,6 @@ retry:
 }
 #endif //!USE_REGIONS
 
-#ifdef FEATURE_BASICFREEZE
 inline
 void gc_heap::seg_set_mark_bits (heap_segment* seg)
 {
@@ -30188,7 +30139,6 @@ void gc_heap::sweep_ro_segments()
     }
 #endif //USE_REGIONS
 }
-#endif // FEATURE_BASICFREEZE
 
 #ifdef FEATURE_LOH_COMPACTION
 inline
@@ -31750,9 +31700,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         dprintf (3, ("mark_list not used"));
     }
 
-#ifdef FEATURE_BASICFREEZE
     sweep_ro_segments();
-#endif //FEATURE_BASICFREEZE
 
 #ifndef MULTIPLE_HEAPS
     int condemned_gen_index = get_stop_generation_index (condemned_gen_number);
@@ -35201,11 +35149,7 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 #endif
         {
             size_t flags = pSegment->flags;
-            if ((flags & heap_segment_flags_loh)
-#ifdef FEATURE_BASICFREEZE
-                && !(flags & heap_segment_flags_readonly)
-#endif
-                )
+            if ((flags & heap_segment_flags_loh) && !(flags & heap_segment_flags_readonly))
             {
                 new_address = old_address + loh_node_relocation_distance (old_address);
                 dprintf (4, (ThreadStressLog::gcRelocateReferenceMsg(), pold_address, old_address, new_address));
@@ -37866,7 +37810,6 @@ void gc_heap::background_mark_phase ()
 
     dprintf (GTC_LOG, ("FM: h%d: loh: %zd, soh: %zd, poh: %zd", heap_number, total_loh_size, total_soh_size, total_poh_size));
 
-#ifdef FEATURE_BASICFREEZE
 #ifdef USE_REGIONS
     assert (!ro_segments_in_range);
 #else //USE_REGIONS
@@ -37878,7 +37821,6 @@ void gc_heap::background_mark_phase ()
         concurrent_print_time_delta ("NRRO");
     }
 #endif //USE_REGIONS
-#endif //FEATURE_BASICFREEZE
 
     dprintf (2, ("nonconcurrent marking stack roots"));
     GCScan::GcScanRoots(background_promote,
@@ -45323,9 +45265,7 @@ void gc_heap::background_sweep()
     current_sweep_pos = 0;
 #endif //DOUBLY_LINKED_FL
 
-#ifdef FEATURE_BASICFREEZE
     sweep_ro_segments();
-#endif //FEATURE_BASICFREEZE
 
     if (current_c_gc_state != c_gc_state_planning)
     {
@@ -48318,7 +48258,7 @@ HRESULT GCHeap::Initialize()
 
         GCToEEInterface::DiagUpdateGenerationBounds();
 
-#if defined(STRESS_REGIONS) && defined(FEATURE_BASICFREEZE)
+#if defined(STRESS_REGIONS)
 #ifdef MULTIPLE_HEAPS
         gc_heap* hp = gc_heap::g_heaps[0];
 #else
@@ -48355,7 +48295,7 @@ HRESULT GCHeap::Initialize()
                 break;
             }
         }
-#endif //STRESS_REGIONS && FEATURE_BASICFREEZE
+#endif //STRESS_REGIONS
     }
 
     return hr;
@@ -48453,7 +48393,6 @@ void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
 unsigned int GCHeap::WhichGeneration (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
-#ifdef FEATURE_BASICFREEZE
     if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
     {
         return INT32_MAX;
@@ -48466,7 +48405,6 @@ unsigned int GCHeap::WhichGeneration (Object* object)
         return INT32_MAX;
     }
 #endif
-#endif //FEATURE_BASICFREEZE
     gc_heap* hp = gc_heap::heap_of (o);
     unsigned int g = hp->object_gennum (o);
     dprintf (3, ("%zx is in gen %d", (size_t)object, g));
@@ -48556,13 +48494,13 @@ unsigned int GCHeap::GetGenerationWithRange (Object* object, uint8_t** ppStart, 
 bool GCHeap::IsEphemeral (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
-#if defined(FEATURE_BASICFREEZE) && defined(USE_REGIONS)
+#if defined(USE_REGIONS)
     if (!is_in_heap_range (o))
     {
         // Objects in frozen segments are not ephemeral
         return FALSE;
     }
-#endif
+#endif //USE_REGIONS
     gc_heap* hp = gc_heap::heap_of (o);
     return !!hp->ephemeral_pointer_p (o);
 }
@@ -48574,13 +48512,6 @@ Object * GCHeap::NextObj (Object * object)
 {
 #ifdef VERIFY_HEAP
     uint8_t* o = (uint8_t*)object;
-
-#ifndef FEATURE_BASICFREEZE
-    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
-    {
-        return NULL;
-    }
-#endif //!FEATURE_BASICFREEZE
 
     heap_segment * hs = gc_heap::find_segment (o, FALSE);
     if (!hs)
@@ -48641,11 +48572,6 @@ Object * GCHeap::NextObj (Object * object)
 bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
 {
     uint8_t* object = (uint8_t*) vpObject;
-#ifndef FEATURE_BASICFREEZE
-    if (!((object < g_gc_highest_address) && (object >= g_gc_lowest_address)))
-        return FALSE;
-#endif //!FEATURE_BASICFREEZE
-
     heap_segment * hs = gc_heap::find_segment (object, small_heap_only);
     return !!hs;
 }
@@ -51895,10 +51821,8 @@ inline void testGCShadow(Object** ptr)
         // TODO: erroneous asserts in here.
         if(*shadow!=INVALIDGCVALUE)
         {
-#ifdef FEATURE_BASICFREEZE
             // Write barriers for stores of references to frozen objects may be optimized away.
             if (!g_theGCHeap->IsInFrozenSegment (*ptr))
-#endif // FEATURE_BASICFREEZE
             {
                 _ASSERTE(!"Pointer updated without using write barrier");
             }
@@ -51958,7 +51882,6 @@ void checkGCWriteBarrier()
 }
 #endif //WRITE_BARRIER_CHECK && !SERVER_GC
 
-#ifdef FEATURE_BASICFREEZE
 void gc_heap::walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef)
 {
     uint8_t *o = heap_segment_mem(seg);
@@ -51982,7 +51905,6 @@ void gc_heap::walk_read_only_segment(heap_segment *seg, void *pvContext, object_
         o += Align(size(o), alignment);
     }
 }
-#endif // FEATURE_BASICFREEZE
 
 HRESULT GCHeap::WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout)
 {

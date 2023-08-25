@@ -2043,12 +2043,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
     {
         if (!GCHeapUtilities::IsGCInProgress () && !GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress ())
         {
-#ifdef FEATURE_BASICFREEZE
             ASSERT_AND_CHECK (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj));
-#else //FEATURE_BASICFREEZE
-            _ASSERTE(!"Reserve bit not cleared");
-            return FALSE;
-#endif //FEATURE_BASICFREEZE
         }
     }
 

@@ -370,7 +370,6 @@ void RedhawkGCInterface::BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, uint32_t cRefs
 // static
 GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_t SizeSection)
 {
-#ifdef FEATURE_BASICFREEZE
     segment_info seginfo;
 
     seginfo.pvMem           = pSection;
@@ -380,9 +379,6 @@ GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_
     seginfo.ibReserved      = seginfo.ibAllocated;
 
     return (GcSegmentHandle)GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
-#else // FEATURE_BASICFREEZE
-    return NULL;
-#endif // FEATURE_BASICFREEZE
 }
 
 // static

@@ -42,7 +42,6 @@
                 "DEBUGGING_SUPPORTED",
                 "EnC_SUPPORTED",
                 "FEATURE_ARRAYSTUB_AS_IL",
-                "FEATURE_BASICFREEZE",
                 "FEATURE_CODE_VERSIONING",
                 "FEATURE_COLLECTIBLE_TYPES",
                 "FEATURE_COMINTEROP",

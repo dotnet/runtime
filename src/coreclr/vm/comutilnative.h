@@ -201,11 +201,10 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
 
 extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
-#ifdef FEATURE_BASICFREEZE
+
 extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
 
 extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void *segmentHandle);
-#endif // FEATURE_BASICFREEZE
 
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
 

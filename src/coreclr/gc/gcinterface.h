@@ -965,7 +965,6 @@ public:
     /*
     ===========================================================================
     Routines to register read only segments for frozen objects.
-    Only valid if FEATURE_BASICFREEZE is defined.
     ===========================================================================
     */
 

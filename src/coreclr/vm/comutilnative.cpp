@@ -1034,8 +1034,6 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 }
 FCIMPLEND;
 
-#ifdef FEATURE_BASICFREEZE
-
 /*===============================RegisterFrozenSegment===============================
 **Action: Registers the frozen segment
 **Returns: segment_handle
@@ -1089,8 +1087,6 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
 
     END_QCALL;
 }
-
-#endif // FEATURE_BASICFREEZE
 
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system
