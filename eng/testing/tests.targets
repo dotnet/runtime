@@ -95,7 +95,6 @@
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateRunScript">
-
     <PropertyGroup>
       <!-- RSP file support. -->
       <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true' and (('$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi') or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
@@ -196,4 +195,5 @@ TEST_ARCH=$(_AndroidArchitecture)
   <!-- Main test targets -->
   <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
 
+  <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>
