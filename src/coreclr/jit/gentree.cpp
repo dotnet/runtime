@@ -25312,13 +25312,6 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
         case NI_AVX512F_Or:
         case NI_AVX512DQ_Or:
 
-        case NI_SSE_AndNot:
-        case NI_SSE2_AndNot:
-        case NI_AVX_AndNot:
-        case NI_AVX2_AndNot:
-        case NI_AVX512F_AndNot:
-        case NI_AVX512DQ_AndNot:
-
         case NI_SSE_Xor:
         case NI_SSE2_Xor:
         case NI_AVX_Xor:
@@ -26403,16 +26396,6 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
             AB = A | B;
             break;
         }
-        case NI_SSE_AndNot:
-        case NI_SSE2_AndNot:
-        case NI_AVX_AndNot:
-        case NI_AVX2_AndNot:
-        case NI_AVX512F_AndNot:
-        case NI_AVX512DQ_AndNot:
-        {
-            AB = ~(A & B);
-            break;
-        }
         case NI_SSE_Xor:
         case NI_SSE2_Xor:
         case NI_AVX_Xor:
@@ -26447,16 +26430,6 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
         case NI_AVX512DQ_Or:
         {
             ABC = AB | C;
-            break;
-        }
-        case NI_SSE_AndNot:
-        case NI_SSE2_AndNot:
-        case NI_AVX_AndNot:
-        case NI_AVX2_AndNot:
-        case NI_AVX512F_AndNot:
-        case NI_AVX512DQ_AndNot:
-        {
-            ABC = ~(AB & C);
             break;
         }
         case NI_SSE_Xor:

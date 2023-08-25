@@ -1674,12 +1674,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX2_Or:
         case NI_AVX512F_Or:
         case NI_AVX512DQ_Or:
-        case NI_SSE_AndNot:
-        case NI_SSE2_AndNot:
-        case NI_AVX_AndNot:
-        case NI_AVX2_AndNot:
-        case NI_AVX512F_AndNot:
-        case NI_AVX512DQ_AndNot:
         case NI_SSE_Xor:
         case NI_SSE2_Xor:
         case NI_AVX_Xor:
