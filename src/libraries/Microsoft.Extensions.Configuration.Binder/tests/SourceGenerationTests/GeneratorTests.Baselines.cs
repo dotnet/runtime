@@ -649,7 +649,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, assessDiagnostics: (d) =>
             {
-                Console.WriteLine((d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count(), d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count()));
                 Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
                 Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
             });
