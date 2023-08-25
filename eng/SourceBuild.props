@@ -62,11 +62,6 @@
 
       <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.DotNet.ILCompiler.*.nupkg" Category="ILCompiler" />
 
-      <IntermediateNupkgArtifactFile
-        Include="
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
-        Category="Crossgen2Pack" />
     </ItemGroup>
   </Target>
 
