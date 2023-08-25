@@ -1142,7 +1142,7 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
 #endif // FEATURE_64BIT_ALIGNMENT
 
     FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-    Object* orObject = foh->TryAllocateObject(pObjMT, PtrAlign(pObjMT->GetBaseSize()), /*publish*/ true);
+    Object* orObject = foh->TryAllocateObject(pObjMT, PtrAlign(pObjMT->GetBaseSize()));
 
     return ObjectToOBJECTREF(orObject);
 }
