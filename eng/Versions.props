@@ -23,7 +23,6 @@
     <!-- Opt-in/out repo features -->
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
-    <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <!-- Use SDK compilers in full source-build. -->
     <UsingToolMicrosoftNetCompilers Condition="'$(DotNetBuildFromSourceFlavor)' != 'Product'">true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
