@@ -963,6 +963,14 @@ BOOL Thread::ReadyForAsyncException()
         return FALSE;
     }
 
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        // TODO: make thread abort work for the new exception handling
+        return FALSE;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
     REGDISPLAY rd;
 
     Frame *pStartFrame = NULL;
@@ -2255,7 +2263,16 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            DispatchManagedException(exceptObj);
+        }
+        else
+#endif // FEATURE_EH_FUNCLETS
+        {
+            RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+        }
     }
 
     END_PRESERVE_LAST_ERROR;
@@ -3955,10 +3972,27 @@ ThrowControlForThread(
 
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
-    // Here we raise an exception.
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER
-    RaiseComPlusException();
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        GCX_COOP();
+
+        EXCEPTION_RECORD exceptionRecord = {0};
+        exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation);
+        exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+        exceptionRecord.ExceptionFlags = 0;
+
+        OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+        DispatchManagedException(throwable);
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        // Here we raise an exception.
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER
+        RaiseComPlusException();
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+    }
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)

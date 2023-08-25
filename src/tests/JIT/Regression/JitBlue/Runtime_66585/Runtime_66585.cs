@@ -12,10 +12,9 @@ using Xunit;
 public unsafe class Runtime_66585
 {
     [Fact]
-    public static unsafe int TestEntryPoint()
+    public static unsafe void TestEntryPoint()
     {
         GetCaller()(0, 1, 2, 3);
-        return 100;
     }
 
     private static SLarge s_s;

@@ -243,7 +243,29 @@ namespace System.Runtime
         [RuntimeExport("RhTypeCast_IsInstanceOfException")]
         public static unsafe bool IsInstanceOfException(MethodTable* pTargetType, object? obj)
         {
-            return IsInstanceOfClass(pTargetType, obj) != null;
+            // Based on IsInstanceOfClass
+
+            if (obj == null)
+                return false;
+
+            MethodTable* pObjType = obj.GetMethodTable();
+
+            if (pObjType == pTargetType)
+                return true;
+
+            // arrays can be cast to System.Object and System.Array
+            if (pObjType->IsArray)
+                return WellKnownEETypes.IsValidArrayBaseType(pTargetType);
+
+            while (true)
+            {
+                pObjType = pObjType->NonArrayBaseType;
+                if (pObjType == null)
+                    return false;
+
+                if (pObjType == pTargetType)
+                    return true;
+            }
         }
 
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
