@@ -14,7 +14,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <OmitResources Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">true</OmitResources>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -25,13 +24,5 @@
    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Microsoft.Bcl.Numerics.Forwards.cs" />
   </ItemGroup>
-
-   <ItemGroup>
-     <Compile Remove="C:\repos\runtime\src\libraries\Common\src\/System/SR.cs" />
-   </ItemGroup>
-
-   <ItemGroup>
-     <Compile Remove="C:\repos\runtime\src\libraries\Common\src\/System/SR.cs" />
-   </ItemGroup>
 
 </Project>
