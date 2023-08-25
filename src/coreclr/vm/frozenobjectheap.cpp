@@ -19,7 +19,9 @@ FrozenObjectHeapManager::FrozenObjectHeapManager():
 // Allocates an object of the give size (including header) on a frozen segment.
 // May return nullptr if object is too large (larger than FOH_COMMIT_SIZE)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
-Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize, bool publish)
+
+Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize,
+    void(*initFunc)(Object*, void*), void* pParam)
 {
     CONTRACTL
     {
@@ -85,6 +87,10 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 
                 // Try again
                 obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
+                if (initFunc != nullptr)
+                {
+                    initFunc(obj, pParam);
+                }
 
                 // This time it's not expected to be null
                 _ASSERT(obj != nullptr);
@@ -104,10 +110,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 
     } // end of GCX_PREEMP
 
-    if (publish)
-    {
-        PublishFrozenObject(obj);
-    }
+    PublishFrozenObject(obj);
 
     return obj;
 #endif // !FEATURE_BASICFREEZE
@@ -254,7 +257,7 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 
 Object* FrozenObjectSegment::GetFirstObject() const
 {
-    if (m_pStart + sizeof(ObjHeader) == m_pCurrentRegistered)
+    if (m_pStart + sizeof(ObjHeader) == m_pCurrent)
     {
         // Segment is empty
         return nullptr;
@@ -266,11 +269,11 @@ Object* FrozenObjectSegment::GetNextObject(Object* obj) const
 {
     // Input must not be null and should be within the segment
     _ASSERT(obj != nullptr);
-    _ASSERT((uint8_t*)obj >= m_pStart + sizeof(ObjHeader) && (uint8_t*)obj < m_pCurrentRegistered);
+    _ASSERT((uint8_t*)obj >= m_pStart + sizeof(ObjHeader) && (uint8_t*)obj < m_pCurrent);
 
     // FOH doesn't support objects with non-DATA_ALIGNMENT alignment yet.
     uint8_t* nextObj = (reinterpret_cast<uint8_t*>(obj) + ALIGN_UP(obj->GetSize(), DATA_ALIGNMENT));
-    if (nextObj < m_pCurrentRegistered)
+    if (nextObj < m_pCurrent)
     {
         return reinterpret_cast<Object*>(nextObj);
     }
