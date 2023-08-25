@@ -6053,7 +6053,7 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
         DWORD logCount = 0;
         BitScanReverse64(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
             delta = 1LL << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
