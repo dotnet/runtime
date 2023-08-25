@@ -47,10 +47,10 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(TEnum);
+        public sealed override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(TEnum);
 
         /// <inheritdoc />
-        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+        public sealed override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             if (typeToConvert != typeof(TEnum))
             {

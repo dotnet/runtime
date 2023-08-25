@@ -31,7 +31,7 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 
 #else
 
-#if defined(HAVE_POLL) && !defined(__APPLE__)
+#if defined(HAVE_POLL)
 
 int
 mono_poll_can_add (mono_pollfd *ufds, unsigned int nfds, int fd)
@@ -64,7 +64,9 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 	struct timeval tv, *tvptr;
 	int fd, events, affected, count;
 	fd_set rfds, wfds, efds;
+#ifdef HOST_WIN32
 	int nexc = 0;
+#endif
 	int maxfd = 0;
 
 	if (timeout < 0) {
@@ -105,7 +107,9 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 			FD_SET (fd, &wfds);
 
 		FD_SET (fd, &efds);
+#ifdef HOST_WIN32
 		nexc++;
+#endif
 		if (fd > maxfd)
 			maxfd = fd;
 

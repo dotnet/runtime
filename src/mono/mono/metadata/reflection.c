@@ -13,7 +13,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/tabledefs.h"
@@ -243,7 +243,7 @@ MonoReflectionAssemblyHandle
 mono_assembly_get_object_handle (MonoAssembly *assembly, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionAssembly, m_image_get_mem_manager (assembly->image), assembly, NULL, assembly_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionAssembly, m_image_get_mem_manager (assembly->image), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, assembly, NULL, assembly_object_construct, NULL);
 }
 
 /**
@@ -311,7 +311,7 @@ MonoReflectionModuleHandle
 mono_module_get_object_handle (MonoImage *image, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionModule, m_image_get_mem_manager (image), image, NULL, module_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionModule, m_image_get_mem_manager (image), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, image, NULL, module_object_construct, NULL);
 }
 
 /**
@@ -670,7 +670,7 @@ mono_method_get_object_handle (MonoMethod *method, MonoClass *refclass, MonoErro
 		refclass = method->klass;
 
 	// FIXME: For methods/params etc., use the mem manager for refclass or a merged one ?
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethod, m_method_get_mem_manager (method), method, refclass, method_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethod, m_method_get_mem_manager (method), MONO_REFL_CACHE_DEFAULT, method, refclass, method_object_construct, NULL);
 }
 /*
  * mono_method_get_object_checked:
@@ -776,7 +776,7 @@ MonoReflectionFieldHandle
 mono_field_get_object_handle (MonoClass *klass, MonoClassField *field, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, m_class_get_mem_manager (m_field_get_parent (field)), field, klass, field_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, m_class_get_mem_manager (m_field_get_parent (field)), MONO_REFL_CACHE_DEFAULT, field, klass, field_object_construct, NULL);
 }
 
 /*
@@ -844,7 +844,7 @@ fail:
 MonoReflectionPropertyHandle
 mono_property_get_object_handle (MonoClass *klass, MonoProperty *property, MonoError *error)
 {
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionProperty, m_class_get_mem_manager (property->parent), property, klass, property_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionProperty, m_class_get_mem_manager (property->parent), MONO_REFL_CACHE_DEFAULT, property, klass, property_object_construct, NULL);
 }
 
 /**
@@ -909,7 +909,7 @@ MonoReflectionEventHandle
 mono_event_get_object_handle (MonoClass *klass, MonoEvent *event, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionEvent, m_class_get_mem_manager (event->parent), event, klass, event_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionEvent, m_class_get_mem_manager (event->parent), MONO_REFL_CACHE_DEFAULT, event, klass, event_object_construct, NULL);
 }
 
 
@@ -1167,7 +1167,7 @@ mono_param_get_objects_internal (MonoMethod *method, MonoClass *refclass, MonoEr
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
 	 */
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoArray, m_method_get_mem_manager (method), &method->signature, refclass, param_objects_construct, method);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoArray, m_method_get_mem_manager (method), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, &method->signature, refclass, param_objects_construct, method);
 fail:
 	return MONO_HANDLE_NEW (MonoArray, NULL);
 }
@@ -1392,7 +1392,7 @@ MonoReflectionMethodBodyHandle
 mono_method_body_get_object_handle (MonoMethod *method, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethodBody, m_method_get_mem_manager (method), method, NULL, method_body_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethodBody, m_method_get_mem_manager (method), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, method, NULL, method_body_object_construct, NULL);
 }
 
 /**

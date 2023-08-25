@@ -21,6 +21,11 @@ namespace System.Diagnostics.Tracing
         internal const string EventSourceName = "Microsoft-Windows-DotNETRuntime";
         public static readonly NativeRuntimeEventSource Log = new NativeRuntimeEventSource();
 
+        // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
+        // multiple instances of the runtime within the same process, but then it seems unlikely that both instances' thread
+        // pools would be in moderate use.
+        private const ushort DefaultClrInstanceId = 0;
+
         // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
         // as you can't make a constructor partial.
         private NativeRuntimeEventSource(int _) { }

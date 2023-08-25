@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
 // https://docs.microsoft.com/previous-versions/windows/desktop/ms681790(v=vs.85)
-[ComImport, Guid(Guids.IID_IResourceManager), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IResourceManager
+[GeneratedComInterface, Guid(Guids.IID_IResourceManager), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal partial interface IResourceManager
 {
     internal void Enlist(
         [MarshalAs(UnmanagedType.Interface)] ITransaction pTransaction,
@@ -20,7 +21,7 @@ internal interface IResourceManager
         [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pPrepInfo,
         uint cbPrepInfom,
         uint lTimeout,
-        [MarshalAs(UnmanagedType.I4)] out OletxXactStat pXactStat);
+        out OletxXactStat pXactStat);
 
     void ReenlistmentComplete();
 

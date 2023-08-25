@@ -167,11 +167,6 @@
         <target state="translated">無法在已失敗的對應 (Match) 上呼叫結果。</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">RegexOptions.NonBacktracking 不支援以替代群組取代 Regex。</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">集合是唯讀的。</target>

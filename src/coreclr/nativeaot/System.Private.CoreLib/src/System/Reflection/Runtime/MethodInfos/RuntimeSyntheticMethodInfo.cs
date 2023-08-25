@@ -171,7 +171,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected sealed override MethodInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType, _runtimeParameterTypes, _options, _action);
+        protected sealed override MethodBaseInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType, _runtimeParameterTypes, _options, _action);
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
         {

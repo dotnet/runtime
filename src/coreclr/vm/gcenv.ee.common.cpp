@@ -97,7 +97,7 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 // such methods require a generic context, but since we didn't resolve the
 // method to an implementation yet, we don't have the right context (in fact,
 // there's no context provided by the caller).
-// See code:CEEInfo::getMethodSigInternal
+// See code:getMethodSigInternal
 //
 inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {

@@ -27,7 +27,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? Version { get; }
 
         public INamedTypeSymbol? ActionOfBinderOptions { get; }
+        public INamedTypeSymbol? ConfigurationBinder { get; }
         public INamedTypeSymbol? ConfigurationKeyNameAttribute { get; }
+        public INamedTypeSymbol? OptionsBuilderConfigurationExtensions { get; }
+        public INamedTypeSymbol? OptionsBuilderOfT { get; }
+        public INamedTypeSymbol? OptionsBuilderOfT_Unbound { get; }
+        public INamedTypeSymbol? OptionsConfigurationServiceCollectionExtensions { get; }
 
         public INamedTypeSymbol GenericIList_Unbound { get; }
         public INamedTypeSymbol GenericICollection_Unbound { get; }
@@ -68,11 +73,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             // Used to verify input configuation binding API calls.
             INamedTypeSymbol? binderOptions = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.BinderOptions");
             ActionOfBinderOptions = binderOptions is null ? null : compilation.GetBestTypeByMetadataName(typeof(Action<>))?.Construct(binderOptions);
-
+            ConfigurationBinder = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationBinder");
             ConfigurationKeyNameAttribute = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationKeyNameAttribute");
             IConfiguration = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.IConfiguration");
             IConfigurationSection = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.IConfigurationSection");
             IServiceCollection = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.DependencyInjection.IServiceCollection");
+            OptionsBuilderConfigurationExtensions = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.DependencyInjection.OptionsBuilderConfigurationExtensions");
+            OptionsBuilderOfT = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Options.OptionsBuilder`1");
+            OptionsBuilderOfT_Unbound = OptionsBuilderOfT?.ConstructUnboundGenericType();
+            OptionsConfigurationServiceCollectionExtensions = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.DependencyInjection.OptionsConfigurationServiceCollectionExtensions");
 
             // Used to test what kind of collection a type is.
             IEnumerable = compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);

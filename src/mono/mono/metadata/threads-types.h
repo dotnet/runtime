@@ -19,7 +19,7 @@
 #include <mono/metadata/object.h>
 #include "mono/metadata/handle.h"
 #include "mono/utils/mono-compiler.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-threads.h"
 #include "mono/metadata/class-internals.h"
 #include <mono/metadata/icalls.h>

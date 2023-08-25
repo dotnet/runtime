@@ -203,7 +203,7 @@ namespace System.Net.Security.Tests
                         server.AuthenticateAsServerAsync(serverOptions, default));
 
             Assert.Equal(string.Empty, server.TargetHostName);
-            Assert.Equal(string.Empty, client.TargetHostName);
+            Assert.Equal(target, client.TargetHostName);
         }
 
         [Theory]

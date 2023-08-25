@@ -209,6 +209,17 @@ mono_error_get_exception_name (MonoError *oerror)
 	return error->exception_name;
 }
 
+const char*
+mono_error_get_exception_name_space (MonoError *oerror)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+
+	if (error->error_code == MONO_ERROR_NONE)
+		return NULL;
+
+	return error->exception_name_space;
+}
+
 /*Return a pointer to the internal error message, might be NULL.
 Caller should not release it.*/
 const char*

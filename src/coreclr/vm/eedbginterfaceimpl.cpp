@@ -630,7 +630,6 @@ PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-
     return pFD->GetNativeCode();
 }
 
@@ -1572,5 +1571,4 @@ BOOL EEDbgInterfaceImpl::AdjustContextForJITHelpersForDebugger(CONTEXT* context)
     return AdjustContextForJITHelpers(nullptr, context);
 }
 #endif
-
 #endif // DEBUGGING_SUPPORTED

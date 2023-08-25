@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             JsonElement element = JsonElement.ParseValue(ref reader);
-            JsonValue value = new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options.GetNodeOptions());
+            JsonValue value = new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options.GetNodeOptions());
             return value;
         }
     }

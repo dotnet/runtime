@@ -25,7 +25,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "dz", "d", CompareOptions.None, true, 1 };
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
                 yield return new object[] { s_hungarianCompare, "dz", "d", CompareOptions.None, false, 0 };
             yield return new object[] { s_hungarianCompare, "dz", "d", CompareOptions.Ordinal, true, 1 };
 
@@ -35,7 +35,8 @@ namespace System.Globalization.Tests
             if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.IgnoreCase, false, 0 };
-                yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, true, 1 };
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                   yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, true, 1 };
             }
             yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "interesting", "I", CompareOptions.IgnoreCase, true, 1 };
@@ -71,7 +72,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
 
             // Ignore symbols
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
                 yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false, 0 };
@@ -83,7 +84,7 @@ namespace System.Globalization.Tests
                 (PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsBrowserDomSupportedOrNodeJS);
             if (behavesLikeNls)
             {
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
                 {
                     yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, true, 7 };
                     yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, true, 7 };
@@ -95,11 +96,14 @@ namespace System.Globalization.Tests
             else
             {
                 yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, false, 0 };
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
                     yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
-                yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, false, 0 };
-                yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, false, 0 };
+                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                {
+                    yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, false, 0 };
+                    yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, false, 0 };
+                }
             }
 
             // ICU bugs
@@ -110,7 +114,7 @@ namespace System.Globalization.Tests
             }
 
             // Prefixes where matched length does not equal value string length
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 yield return new object[] { s_invariantCompare, "dzxyz", "\u01F3", supportedIgnoreNonSpaceOption, true, 2 };
                 yield return new object[] { s_invariantCompare, "\u01F3xyz", "dz", supportedIgnoreNonSpaceOption, true, 1 };
@@ -147,7 +151,7 @@ namespace System.Globalization.Tests
             valueBoundedMemory.MakeReadonly();
 
             Assert.Equal(expected, compareInfo.IsPrefix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 Assert.Equal(expected, compareInfo.IsPrefix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options, out int actualMatchLength));
                 Assert.Equal(expectedMatchLength, actualMatchLength);

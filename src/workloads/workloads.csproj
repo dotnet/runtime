@@ -148,6 +148,7 @@
     <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
                                 AllowMissingPacks="True"
                                 BaseOutputPath="$(WorkloadOutputPath)"
+                                EnableSideBySideManifests="true"
                                 ComponentResources="@(ComponentResources)"
                                 PackageSource="$(PackageSource)"
                                 ShortNames="@(ShortNames)"

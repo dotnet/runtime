@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 using System.Transactions.DtcProxyShim.DtcInterfaces;
 using System.Transactions.Oletx;
 
 namespace System.Transactions.DtcProxyShim;
 
-internal sealed class EnlistmentNotifyShim : NotificationShimBase, ITransactionResourceAsync
+[GeneratedComClass]
+internal sealed partial class EnlistmentNotifyShim : NotificationShimBase, ITransactionResourceAsync
 {
     internal ITransactionEnlistmentAsync? EnlistmentAsync;
 

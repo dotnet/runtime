@@ -13,6 +13,7 @@ namespace System
         //
         // All public ctors go through here
         //
+        [MemberNotNull(nameof(_string))]
         private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             DebugAssertInCtor();
@@ -910,6 +911,7 @@ namespace System
         //
         // Only a ctor time call
         //
+        [MemberNotNull(nameof(_string))]
         private void CreateThisFromUri(Uri otherUri)
         {
             DebugAssertInCtor();

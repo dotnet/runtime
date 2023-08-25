@@ -137,6 +137,7 @@ namespace Tracing.Tests.Common
                         Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
                     }
                     Logger.logger.Log($"SubProcess exited - Exit code: {process.ExitCode}");
+                    fSuccess &= process.ExitCode == 0;
                 }
                 catch (Exception e)
                 {

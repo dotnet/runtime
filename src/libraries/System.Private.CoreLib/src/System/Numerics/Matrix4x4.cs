@@ -264,40 +264,92 @@ namespace System.Numerics
         public static Matrix4x4 CreateFromYawPitchRoll(float yaw, float pitch, float roll)
             => Impl.CreateFromYawPitchRoll(yaw, pitch, roll).AsM4x4();
 
-        /// <summary>Creates a view matrix.</summary>
+        /// <summary>Creates a right-handed view matrix.</summary>
         /// <param name="cameraPosition">The position of the camera.</param>
         /// <param name="cameraTarget">The target towards which the camera is pointing.</param>
         /// <param name="cameraUpVector">The direction that is "up" from the camera's point of view.</param>
-        /// <returns>The view matrix.</returns>
+        /// <returns>The right-handed view matrix.</returns>
         public static Matrix4x4 CreateLookAt(Vector3 cameraPosition, Vector3 cameraTarget, Vector3 cameraUpVector)
-            => Impl.CreateLookAt(in cameraPosition, in cameraTarget, in cameraUpVector).AsM4x4();
+        {
+            Vector3 cameraDirection = cameraTarget - cameraPosition;
+            return Impl.CreateLookTo(in cameraPosition, in cameraDirection, in cameraUpVector).AsM4x4();
+        }
 
-        /// <summary>Creates an orthographic perspective matrix from the given view volume dimensions.</summary>
+        /// <summary>Creates a left-handed view matrix.</summary>
+        /// <param name="cameraPosition">The position of the camera.</param>
+        /// <param name="cameraTarget">The target towards which the camera is pointing.</param>
+        /// <param name="cameraUpVector">The direction that is "up" from the camera's point of view.</param>
+        /// <returns>The left-handed view matrix.</returns>
+        public static Matrix4x4 CreateLookAtLeftHanded(Vector3 cameraPosition, Vector3 cameraTarget, Vector3 cameraUpVector)
+        {
+            Vector3 cameraDirection = cameraTarget - cameraPosition;
+            return Impl.CreateLookToLeftHanded(in cameraPosition, in cameraDirection, in cameraUpVector).AsM4x4();
+        }
+
+        /// <summary>Creates a right-handed view matrix.</summary>
+        /// <param name="cameraPosition">The position of the camera.</param>
+        /// <param name="cameraDirection">The direction in which the camera is pointing.</param>
+        /// <param name="cameraUpVector">The direction that is "up" from the camera's point of view.</param>
+        /// <returns>The right-handed view matrix.</returns>
+        public static Matrix4x4 CreateLookTo(Vector3 cameraPosition, Vector3 cameraDirection, Vector3 cameraUpVector)
+            => Impl.CreateLookTo(in cameraPosition, in cameraDirection, in cameraUpVector).AsM4x4();
+
+        /// <summary>Creates a left-handed view matrix.</summary>
+        /// <param name="cameraPosition">The position of the camera.</param>
+        /// <param name="cameraDirection">The direction in which the camera is pointing.</param>
+        /// <param name="cameraUpVector">The direction that is "up" from the camera's point of view.</param>
+        /// <returns>The left-handed view matrix.</returns>
+        public static Matrix4x4 CreateLookToLeftHanded(Vector3 cameraPosition, Vector3 cameraDirection, Vector3 cameraUpVector)
+        {
+            return Impl.CreateLookToLeftHanded(in cameraPosition, in cameraDirection, in cameraUpVector).AsM4x4();
+        }
+
+        /// <summary>Creates a right-handed orthographic perspective matrix from the given view volume dimensions.</summary>
         /// <param name="width">The width of the view volume.</param>
         /// <param name="height">The height of the view volume.</param>
         /// <param name="zNearPlane">The minimum Z-value of the view volume.</param>
         /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
-        /// <returns>The orthographic projection matrix.</returns>
+        /// <returns>The right-handed orthographic projection matrix.</returns>
         public static Matrix4x4 CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane)
             => Impl.CreateOrthographic(width, height, zNearPlane, zFarPlane).AsM4x4();
 
-        /// <summary>Creates a customized orthographic projection matrix.</summary>
+        /// <summary>Creates a left-handed orthographic perspective matrix from the given view volume dimensions.</summary>
+        /// <param name="width">The width of the view volume.</param>
+        /// <param name="height">The height of the view volume.</param>
+        /// <param name="zNearPlane">The minimum Z-value of the view volume.</param>
+        /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
+        /// <returns>The left-handed orthographic projection matrix.</returns>
+        public static Matrix4x4 CreateOrthographicLeftHanded(float width, float height, float zNearPlane, float zFarPlane)
+            => Impl.CreateOrthographicLeftHanded(width, height, zNearPlane, zFarPlane).AsM4x4();
+
+        /// <summary>Creates a right-handed customized orthographic projection matrix.</summary>
         /// <param name="left">The minimum X-value of the view volume.</param>
         /// <param name="right">The maximum X-value of the view volume.</param>
         /// <param name="bottom">The minimum Y-value of the view volume.</param>
         /// <param name="top">The maximum Y-value of the view volume.</param>
         /// <param name="zNearPlane">The minimum Z-value of the view volume.</param>
         /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
-        /// <returns>The orthographic projection matrix.</returns>
+        /// <returns>The right-handed orthographic projection matrix.</returns>
         public static Matrix4x4 CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
             => Impl.CreateOrthographicOffCenter(left, right, bottom, top, zNearPlane, zFarPlane).AsM4x4();
 
-        /// <summary>Creates a perspective projection matrix from the given view volume dimensions.</summary>
+        /// <summary>Creates a left-handed customized orthographic projection matrix.</summary>
+        /// <param name="left">The minimum X-value of the view volume.</param>
+        /// <param name="right">The maximum X-value of the view volume.</param>
+        /// <param name="bottom">The minimum Y-value of the view volume.</param>
+        /// <param name="top">The maximum Y-value of the view volume.</param>
+        /// <param name="zNearPlane">The minimum Z-value of the view volume.</param>
+        /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
+        /// <returns>The left-handed orthographic projection matrix.</returns>
+        public static Matrix4x4 CreateOrthographicOffCenterLeftHanded(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
+            => Impl.CreateOrthographicOffCenterLeftHanded(left, right, bottom, top, zNearPlane, zFarPlane).AsM4x4();
+
+        /// <summary>Creates a right-handed perspective projection matrix from the given view volume dimensions.</summary>
         /// <param name="width">The width of the view volume at the near view plane.</param>
         /// <param name="height">The height of the view volume at the near view plane.</param>
         /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
         /// <param name="farPlaneDistance">The distance to the far view plane.</param>
-        /// <returns>The perspective projection matrix.</returns>
+        /// <returns>The right-handed perspective projection matrix.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="nearPlaneDistance" /> is less than or equal to zero.
         /// -or-
         /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
@@ -306,12 +358,26 @@ namespace System.Numerics
         public static Matrix4x4 CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
             => Impl.CreatePerspective(width, height, nearPlaneDistance, farPlaneDistance).AsM4x4();
 
-        /// <summary>Creates a perspective projection matrix based on a field of view, aspect ratio, and near and far view plane distances.</summary>
+        /// <summary>Creates a left-handed perspective projection matrix from the given view volume dimensions.</summary>
+        /// <param name="width">The width of the view volume at the near view plane.</param>
+        /// <param name="height">The height of the view volume at the near view plane.</param>
+        /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
+        /// <param name="farPlaneDistance">The distance to the far view plane.</param>
+        /// <returns>The left-handed perspective projection matrix.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="nearPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
+        public static Matrix4x4 CreatePerspectiveLeftHanded(float width, float height, float nearPlaneDistance, float farPlaneDistance)
+            => Impl.CreatePerspectiveLeftHanded(width, height, nearPlaneDistance, farPlaneDistance).AsM4x4();
+
+        /// <summary>Creates a right-handed perspective projection matrix based on a field of view, aspect ratio, and near and far view plane distances.</summary>
         /// <param name="fieldOfView">The field of view in the y direction, in radians.</param>
         /// <param name="aspectRatio">The aspect ratio, defined as view space width divided by height.</param>
         /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
         /// <param name="farPlaneDistance">The distance to the far view plane.</param>
-        /// <returns>The perspective projection matrix.</returns>
+        /// <returns>The right-handed perspective projection matrix.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="fieldOfView" /> is less than or equal to zero.
         /// -or-
         /// <paramref name="fieldOfView" /> is greater than or equal to <see cref="Math.PI" />.
@@ -323,14 +389,31 @@ namespace System.Numerics
         public static Matrix4x4 CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
             => Impl.CreatePerspectiveFieldOfView(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance).AsM4x4();
 
-        /// <summary>Creates a customized perspective projection matrix.</summary>
+        /// <summary>Creates a left-handed perspective projection matrix based on a field of view, aspect ratio, and near and far view plane distances.</summary>
+        /// <param name="fieldOfView">The field of view in the y direction, in radians.</param>
+        /// <param name="aspectRatio">The aspect ratio, defined as view space width divided by height.</param>
+        /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
+        /// <param name="farPlaneDistance">The distance to the far view plane.</param>
+        /// <returns>The left-handed perspective projection matrix.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="fieldOfView" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="fieldOfView" /> is greater than or equal to <see cref="Math.PI" />.
+        /// <paramref name="nearPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
+        public static Matrix4x4 CreatePerspectiveFieldOfViewLeftHanded(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
+            => Impl.CreatePerspectiveFieldOfViewLeftHanded(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance).AsM4x4();
+
+        /// <summary>Creates a right-handed customized perspective projection matrix.</summary>
         /// <param name="left">The minimum x-value of the view volume at the near view plane.</param>
         /// <param name="right">The maximum x-value of the view volume at the near view plane.</param>
         /// <param name="bottom">The minimum y-value of the view volume at the near view plane.</param>
         /// <param name="top">The maximum y-value of the view volume at the near view plane.</param>
         /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
         /// <param name="farPlaneDistance">The distance to the far view plane.</param>
-        /// <returns>The perspective projection matrix.</returns>
+        /// <returns>The right-handed perspective projection matrix.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="nearPlaneDistance" /> is less than or equal to zero.
         /// -or-
         /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
@@ -338,6 +421,22 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
             => Impl.CreatePerspectiveOffCenter(left, right, bottom, top, nearPlaneDistance, farPlaneDistance).AsM4x4();
+
+        /// <summary>Creates a left-handed customized perspective projection matrix.</summary>
+        /// <param name="left">The minimum x-value of the view volume at the near view plane.</param>
+        /// <param name="right">The maximum x-value of the view volume at the near view plane.</param>
+        /// <param name="bottom">The minimum y-value of the view volume at the near view plane.</param>
+        /// <param name="top">The maximum y-value of the view volume at the near view plane.</param>
+        /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
+        /// <param name="farPlaneDistance">The distance to the far view plane.</param>
+        /// <returns>The left-handed perspective projection matrix.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="nearPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
+        public static Matrix4x4 CreatePerspectiveOffCenterLeftHanded(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
+            => Impl.CreatePerspectiveOffCenterLeftHanded(left, right, bottom, top, nearPlaneDistance, farPlaneDistance).AsM4x4();
 
         /// <summary>Creates a matrix that reflects the coordinate system about a specified plane.</summary>
         /// <param name="value">The plane about which to create a reflection.</param>
@@ -447,6 +546,42 @@ namespace System.Numerics
         /// <returns>The translation matrix.</returns>
         public static Matrix4x4 CreateTranslation(float xPosition, float yPosition, float zPosition)
             => Impl.CreateTranslation(xPosition, yPosition, zPosition).AsM4x4();
+
+        /// <summary>Creates a right-handed viewport matrix from the specified parameters.</summary>
+        /// <param name="x">X coordinate of the viewport upper left corner.</param>
+        /// <param name="y">Y coordinate of the viewport upper left corner.</param>
+        /// <param name="width">Viewport width.</param>
+        /// <param name="height">Viewport height.</param>
+        /// <param name="minDepth">Viewport minimum depth.</param>
+        /// <param name="maxDepth">Viewport maximum depth.</param>
+        /// <returns>The right-handed viewport matrix.</returns>
+        /// <remarks>
+        /// Viewport matrix
+        /// |   width / 2   |        0       |          0          | 0 |
+        /// |       0       |   -height / 2  |          0          | 0 |
+        /// |       0       |        0       | minDepth - maxDepth | 0 |
+        /// | x + width / 2 | y + height / 2 |       minDepth      | 1 |
+        /// </remarks>
+        public static Matrix4x4 CreateViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+            => Impl.CreateViewport(x, y, width, height, minDepth, maxDepth).AsM4x4();
+
+        /// <summary>Creates a left-handed viewport matrix from the specified parameters.</summary>
+        /// <param name="x">X coordinate of the viewport upper left corner.</param>
+        /// <param name="y">Y coordinate of the viewport upper left corner.</param>
+        /// <param name="width">Viewport width.</param>
+        /// <param name="height">Viewport height.</param>
+        /// <param name="minDepth">Viewport minimum depth.</param>
+        /// <param name="maxDepth">Viewport maximum depth.</param>
+        /// <returns>The left-handed viewport matrix.</returns>
+        /// <remarks>
+        /// Viewport matrix
+        /// |   width / 2   |        0       |          0          | 0 |
+        /// |       0       |   -height / 2  |          0          | 0 |
+        /// |       0       |        0       | maxDepth - minDepth | 0 |
+        /// | x + width / 2 | y + height / 2 |       minDepth      | 1 |
+        /// </remarks>
+        public static Matrix4x4 CreateViewportLeftHanded(float x, float y, float width, float height, float minDepth, float maxDepth)
+            => Impl.CreateViewportLeftHanded(x, y, width, height, minDepth, maxDepth).AsM4x4();
 
         /// <summary>Creates a world matrix with the specified parameters.</summary>
         /// <param name="position">The position of the object.</param>

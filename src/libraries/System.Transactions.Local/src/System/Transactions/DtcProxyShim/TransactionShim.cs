@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Transactions.DtcProxyShim.DtcInterfaces;
 using System.Transactions.Oletx;
 
@@ -52,12 +54,12 @@ internal sealed class TransactionShim
         cookieBuffer = buffer;
     }
 
-    public void GetITransactionNative(out IDtcTransaction transactionNative)
+    public void GetITransactionNative(out ITransaction transactionNative)
     {
         var cloner = (ITransactionCloner)Transaction;
         cloner.CloneWithCommitDisabled(out ITransaction returnTransaction);
 
-        transactionNative = (IDtcTransaction)returnTransaction;
+        transactionNative = returnTransaction;
     }
 
     public unsafe byte[] GetPropagationToken()

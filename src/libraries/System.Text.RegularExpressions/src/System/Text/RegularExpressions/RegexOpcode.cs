@@ -27,9 +27,11 @@ namespace System.Text.RegularExpressions
         /// <summary>Repeater of the specified character.</summary>
         /// <remarks>Operand 0 is the character. Operand 1 is the repetition count.</remarks>
         Onerep = 0,
+
         /// <summary>Repeater of a single character other than the one specified.</summary>
         /// <remarks>Operand 0 is the character. Operand 1 is the repetition count.</remarks>
         Notonerep = 1,
+
         /// <summary>Repeater of a single character matching the specified set</summary>
         /// <remarks>Operand 0 is index into the strings table of the character class description. Operand 1 is the repetition count.</remarks>
         Setrep = 2,
@@ -37,9 +39,11 @@ namespace System.Text.RegularExpressions
         /// <summary>Greedy loop of the specified character.</summary>
         /// <remarks>Operand 0 is the character. Operand 1 is the max iteration count.</remarks>
         Oneloop = 3,
+
         /// <summary>Greedy loop of a single character other than the one specified.</summary>
         /// <remarks>Operand 0 is the character. Operand 1 is the max iteration count.</remarks>
         Notoneloop = 4,
+
         /// <summary>Greedy loop of a single character matching the specified set</summary>
         /// <remarks>Operand 0 is index into the strings table of the character class description. Operand 1 is the repetition count.</remarks>
         Setloop = 5,
@@ -47,9 +51,11 @@ namespace System.Text.RegularExpressions
         /// <summary>Lazy loop of the specified character.</summary>
         /// <remarks>Operand 0 is the character. Operand 1 is the max iteration count.</remarks>
         Onelazy = 6,
+
         /// <summary>Lazy loop of a single character other than the one specified.</summary>
         /// <remarks>Operand 0 is the character. Operand 1 is the max iteration count.</remarks>
         Notonelazy = 7,
+
         /// <summary>Lazy loop of a single character matching the specified set</summary>
         /// <remarks>Operand 0 is index into the strings table of the character class description. Operand 1 is the repetition count.</remarks>
         Setlazy = 8,
@@ -57,9 +63,11 @@ namespace System.Text.RegularExpressions
         /// <summary>Single specified character.</summary>
         /// <remarks>Operand 0 is the character.</remarks>
         One = 9,
+
         /// <summary>Single character other than the one specified.</summary>
         /// <remarks>Operand 0 is the character.</remarks>
         Notone = 10,
+
         /// <summary>Single character matching the specified set.</summary>
         /// <remarks>Operand 0 is index into the strings table of the character class description.</remarks>
         Set = 11,

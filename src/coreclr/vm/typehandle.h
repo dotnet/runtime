@@ -486,8 +486,6 @@ public:
     // PTR
     BOOL IsPointer() const;
 
-    BOOL IsUnmanagedFunctionPointer() const;
-
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;
 
@@ -496,7 +494,6 @@ public:
     // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
 
-    BOOL IsRestored_NoLogging() const;
     BOOL IsRestored() const;
 
     // Does this type have zap-encoded components (generic arguments, etc)?

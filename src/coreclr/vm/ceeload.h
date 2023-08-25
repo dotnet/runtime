@@ -565,6 +565,7 @@ public:
         return NULL;
     };
 
+    const ReadyToRun_EnclosingTypeMap *m_pEnclosingTypeMap = &ReadyToRun_EnclosingTypeMap::EmptyInstance;
 
 #ifndef DACCESS_COMPILE
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of ThrowTypeLoadException in the DAC
@@ -677,10 +678,6 @@ private:
 
         // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
         COLLECTIBLE_MODULE          = 0x00000080,
-
-        // Caches metadata version
-        COMPUTED_IS_PRE_V4_ASSEMBLY = 0x00000100,
-        IS_PRE_V4_ASSEMBLY          = 0x00000200,
 
         //If attribute value has been cached before
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED   = 0x00000400,
@@ -1182,8 +1179,6 @@ public:
     // the class load, which avoids the need for a 'being loaded' list
     MethodTable* CreateArrayMethodTable(TypeHandle elemType, CorElementType kind, unsigned rank, class AllocMemTracker *pamTracker);
 
-    CHECK CheckStringRef(RVA rva);
-
     // Module/Assembly traversal
     Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
@@ -1618,6 +1613,9 @@ public:
     // Self-initializing accessor for domain-independent IJW thunk heap
     LoaderHeap              *GetDllThunkHeap();
 
+    const ReadyToRun_MethodIsGenericMap *m_pMethodIsGenericMap = &ReadyToRun_MethodIsGenericMap::EmptyInstance;
+    const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
+
 protected:
 
     void            BuildStaticsOffsets     (AllocMemTracker *pamTracker);
@@ -1707,20 +1705,10 @@ public:
         return (m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
 
-    //-----------------------------------------------------------------------------------------
-    // True iff metadata version string is 1.* or 2.*.
-    // @TODO (post-Dev10): All places that need this information should call this function
-    // instead of parsing the version themselves.
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsPreV4Assembly();
-
 protected:
-
 
     // initialize Crst controlling the Dynamic IL hashtables
     void                    InitializeDynamicILCrst();
-
-public:
 
 private:
 

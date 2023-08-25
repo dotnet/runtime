@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                 }
 
                 if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (reader.TokenType != JsonTokenType.StartObject)
                     {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Converters
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
-                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.TypeToConvert, options, ref state, out object? objectResult);
+                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.Type!, options, ref state, out object? objectResult);
                     value = (T)objectResult!;
                     state.ExitPolymorphicConverter(success);
                     return success;
@@ -455,7 +455,14 @@ namespace System.Text.Json.Serialization.Converters
             // Skip the property if not found.
             if (!jsonPropertyInfo.CanDeserializeOrPopulate)
             {
-                reader.Skip();
+                // The Utf8JsonReader.Skip() method will fail fast if it detects that we're reading
+                // from a partially read buffer, regardless of whether the next value is available.
+                // This can result in erroneous failures in cases where a custom converter is calling
+                // into a built-in converter (cf. https://github.com/dotnet/runtime/issues/74108).
+                // For this reason we need to call the TrySkip() method instead -- the serializer
+                // should guarantee sufficient read-ahead has been performed for the current object.
+                bool success = reader.TrySkip();
+                Debug.Assert(success, "Serializer should guarantee sufficient read-ahead has been done.");
             }
             else
             {

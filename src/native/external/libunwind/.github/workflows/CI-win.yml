@@ -1,0 +1,37 @@
+name: CI - Windows
+
+on:
+  pull_request:
+    paths:
+      - '**'
+      - '!README'
+      - '!INSTALL'
+      - '!NEWS'
+      - '!doc/**'
+      - '!.**'
+      - '.github/workflows/CI-win.yml'
+  push:
+    branches:
+      - v[0-9].*
+      - master
+
+jobs:
+  build-windows:
+    runs-on: windows-${{ matrix.config.server }}
+    name: build ${{ matrix.config.TARGET }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {toolchain: Visual Studio 17 2022, arch: Win32, server: 2022, TARGET: arm-linux-gnueabihf}
+          - {toolchain: Visual Studio 17 2022, arch: x64, server: 2022, TARGET: aarch64-linux-gnu}
+          - {toolchain: Visual Studio 17 2022, arch: x64, server: 2022, TARGET: x86_64-linux-gnu}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        shell: cmd
+        env:
+          TARGET: ${{ matrix.config.TARGET }}
+        run: |
+          cmake -G "${{ matrix.config.toolchain }}" -A ${{ matrix.config.arch }} -S . -B bin/windows-${{ matrix.config.arch }}/${{ matrix.config.TARGET }}
+          cmake --build bin/windows-${{ matrix.config.arch }}/${{ matrix.config.TARGET }}

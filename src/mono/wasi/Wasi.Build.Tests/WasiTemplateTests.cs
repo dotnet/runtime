@@ -25,7 +25,7 @@ public class WasiTemplateTests : BuildTestBase
     [InlineData("Release")]
     public void ConsoleBuildThenPublish(string config)
     {
-        string id = $"{config}_{Path.GetRandomFileName()}";
+        string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simpleMainWithArgs);
@@ -74,21 +74,21 @@ public class WasiTemplateTests : BuildTestBase
                         UseCache: false));
     }
 
-    public static TheoryData<string, bool> TestDataForConsolePublishAndRun()
+    public static TheoryData<string, bool, bool> TestDataForConsolePublishAndRun()
     {
-        var data = new TheoryData<string, bool>();
-        data.Add("Debug", false);
-        data.Add("Debug", true);
-        data.Add("Release", false); // Release relinks by default
+        var data = new TheoryData<string, bool, bool>();
+        data.Add("Debug", false, false);
+        data.Add("Debug", true, true);
+        data.Add("Release", false, false); // Release relinks by default
         return data;
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/82515", TestPlatforms.Windows)]
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
-    public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking)
+    public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking, bool invariantTimezone)
     {
-        string id = $"{config}_{Path.GetRandomFileName()}";
+        string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simpleMainWithArgs);
@@ -96,6 +96,8 @@ public class WasiTemplateTests : BuildTestBase
         string extraProperties = "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
         if (relinking)
             extraProperties += "<WasmBuildNative>true</WasmBuildNative>";
+        if (invariantTimezone)
+            extraProperties += "<InvariantTimezone>true</InvariantTimezone>";
 
         AddItemsPropertiesToProject(projectFile, extraProperties);
 
@@ -125,6 +127,56 @@ public class WasiTemplateTests : BuildTestBase
         Assert.Contains("args[0] = x", res.Output);
         Assert.Contains("args[1] = y", res.Output);
         Assert.Contains("args[2] = z", res.Output);
+        if(invariantTimezone)
+        {
+            Assert.Contains("Could not find Asia/Tokyo", res.Output);
+        }
+        else
+        {
+            Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", res.Output);
+        }
+
+    }
+
+    [Theory]
+    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
+    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
+    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
+    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
+    public void ConsoleBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+    {
+        string extraPropertiesForDBP = "";
+        if (appendRID)
+            extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
+        if (useArtifacts)
+            extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
+
+        string id = $"{config}_{GetRandomId()}";
+        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectName = Path.GetFileNameWithoutExtension(projectFile);
+
+        if (!string.IsNullOrEmpty(extraPropertiesForDBP))
+            AddItemsPropertiesToProject(Path.Combine(Path.GetDirectoryName(projectFile)!, "Directory.Build.props"),
+                                        extraPropertiesForDBP);
+
+        var buildArgs = new BuildArgs(projectName, config, false, id, null);
+        buildArgs = ExpandBuildArgs(buildArgs);
+
+        BuildProject(buildArgs,
+                    id: id,
+                    new BuildProjectOptions(
+                        DotnetWasmFromRuntimePack: true,
+                        CreateProject: false,
+                        Publish: false,
+                        TargetFramework: BuildTestBase.DefaultTargetFramework,
+                        UseCache: false));
+
+        CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir!)
+                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                    .EnsureSuccessful();
+
+        Assert.Contains("Hello, Wasi Console!", res.Output);
     }
 
     private static readonly string s_simpleMainWithArgs = """
@@ -133,6 +185,17 @@ public class WasiTemplateTests : BuildTestBase
         Console.WriteLine("Hello, Wasi Console!");
         for (int i = 0; i < args.Length; i ++)
             Console.WriteLine($"args[{i}] = {args[i]}");
+
+        try
+        {
+            TimeZoneInfo tst = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+            Console.WriteLine($"{tst.DisplayName} BaseUtcOffset is {tst.BaseUtcOffset}");
+        }
+        catch (TimeZoneNotFoundException tznfe)
+        {
+            Console.WriteLine($"Could not find Asia/Tokyo: {tznfe.Message}");
+        }
+
         return 42;
         """;
 }

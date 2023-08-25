@@ -1768,11 +1768,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> LoadUnsafe<T>(ref T source)
+        public static Vector512<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref source);
-            return Unsafe.ReadUnaligned<Vector512<T>>(ref address);
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+            return Unsafe.ReadUnaligned<Vector512<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -1784,12 +1784,27 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
+        public static Vector512<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
-            source = ref Unsafe.Add(ref source, (nint)elementOffset);
-            return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.As<T, byte>(ref source));
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+            return Unsafe.ReadUnaligned<Vector512<T>>(in address);
         }
+
+        /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<ushort> LoadUnsafe(ref char source) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source));
+
+        /// <summary>Loads a vector from the given source and element offset and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
+        /// <param name="elementOffset">The element offset from <paramref name="source" /> from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" /> plus <paramref name="elementOffset" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

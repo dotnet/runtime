@@ -41,31 +41,25 @@ loongarch64_local_resume (unw_addr_space_t as, unw_cursor_t *cursor, void *arg)
     {
       /* Since there are no signals involved here we restore EH and non scratch
          registers only.  */
-      unsigned long sp = uc->uc_mcontext.__gregs[3];
-      unsigned long ra = uc->uc_mcontext.__gregs[1];
-
+      register void *gregs asm("$t0") = uc->uc_mcontext.__gregs;
       asm volatile (
-        "move $t0, %0\n"
-        "move $t1, %1\n"
-        "move $t2, %2\n"
-        "ld.d $fp, $t0, 22*8\n"
-        "ld.d $s0, $t0, 23*8\n"
-        "ld.d $s1, $t0, 24*8\n"
-        "ld.d $s2, $t0, 25*8\n"
-        "ld.d $s3, $t0, 26*8\n"
-        "ld.d $s4, $t0, 27*8\n"
-        "ld.d $s5, $t0, 28*8\n"
-        "ld.d $s6, $t0, 29*8\n"
-        "ld.d $s7, $t0, 30*8\n"
-        "ld.d $s8, $t0, 31*8\n"
-        "move $ra, $t2\n"
-        "move $sp, $t1\n"
-        "jirl $r0, $ra, 0\n"
+        "ld.d $ra, %0, 8\n"
+        "ld.d $sp, %0, 3*8\n"
+        "ld.d $fp, %0, 22*8\n"
+        "ld.d $s0, %0, 23*8\n"
+        "ld.d $s1, %0, 24*8\n"
+        "ld.d $s2, %0, 25*8\n"
+        "ld.d $s3, %0, 26*8\n"
+        "ld.d $s4, %0, 27*8\n"
+        "ld.d $s5, %0, 28*8\n"
+        "ld.d $s6, %0, 29*8\n"
+        "ld.d $s7, %0, 30*8\n"
+        "ld.d $s8, %0, 31*8\n"
+        "jr $ra\n"
         :
-        : "r" (uc->uc_mcontext.__gregs),
-          "r" (sp),
-          "r" (ra)
+        : "r" (gregs)
       );
+      unreachable();
     }
   else /* c->sigcontext_format == LOONGARCH64_SCF_LINUX_RT_SIGFRAME */
     {
@@ -81,7 +75,7 @@ loongarch64_local_resume (unw_addr_space_t as, unw_cursor_t *cursor, void *arg)
 
       asm volatile (
         "move $sp, %0\n"
-        "jirl $r0, %1, 0\n"
+        "jr %1\n"
         : : "r" (c->sigcontext_sp), "r" (c->sigcontext_pc)
       );
    }

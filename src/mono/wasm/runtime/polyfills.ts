@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
-import { mono_log_info } from "./logging";
 
 const dummyPerformance = {
     now: function () {
@@ -26,11 +24,6 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     replacements.scriptDirectory = loaderHelpers.scriptDirectory;
     if (Module.locateFile === Module.__locateFile) {
         Module.locateFile = loaderHelpers.locateFile;
-    }
-
-    if (BuildConfiguration === "Debug") {
-        mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
-        mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
 
     // prefer fetch_like over global fetch for assets

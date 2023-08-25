@@ -665,7 +665,6 @@ void BaseDomain::InitVSD()
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }
 
-#ifdef HOST_WINDOWS
 void BaseDomain::InitThreadStaticBlockTypeMap()
 {
     STANDARD_VM_CONTRACT;
@@ -673,7 +672,6 @@ void BaseDomain::InitThreadStaticBlockTypeMap()
     m_NonGCThreadStaticBlockTypeIDMap.Init();
     m_GCThreadStaticBlockTypeIDMap.Init();
 }
-#endif // HOST_WINDOWS
 
 void BaseDomain::ClearBinderContext()
 {
@@ -958,7 +956,6 @@ void SystemDomain::Attach()
 
     // Initialize stub managers
     PrecodeStubManager::Init();
-    DelegateInvokeStubManager::Init();
     JumpStubStubManager::Init();
     RangeSectionStubManager::Init();
     ILStubManager::Init();
@@ -1383,6 +1380,8 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pWeakReferenceClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
         g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
 
+        g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
@@ -1399,6 +1398,10 @@ void SystemDomain::LoadBaseSystemClasses()
     #ifdef FEATURE_ICASTABLE
         g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
     #endif // FEATURE_ICASTABLE
+
+#ifdef FEATURE_EH_FUNCLETS
+        g_pEHClass = CoreLibBinder::GetClass(CLASS__EH);
+#endif
 
         // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
         // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
@@ -1548,8 +1551,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
         CLASS__MULTICAST_DELEGATE,
-        CLASS__METHOD_INVOKER,
-        CLASS__CONSTRUCTOR_INVOKER,
+        CLASS__METHODBASEINVOKER,
     };
 
     static bool fInited = false;
@@ -1771,10 +1773,8 @@ void AppDomain::Create()
     // allocate a Virtual Call Stub Manager for the default domain
     pDomain->InitVSD();
 
-#ifdef HOST_WINDOWS
     // allocate a thread static block to index map
     pDomain->InitThreadStaticBlockTypeMap();
-#endif
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
@@ -4664,7 +4664,6 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     return pMT;
 }
 
-#ifdef HOST_WINDOWS
 //------------------------------------------------------------------------
 UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
 {
@@ -4715,7 +4714,6 @@ PTR_MethodTable BaseDomain::LookupGCThreadStaticBlockType(UINT32 id) {
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT;
 }
-#endif // HOST_WINDOWS
 
 #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------

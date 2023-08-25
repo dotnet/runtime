@@ -92,10 +92,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (!_field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                dependencies.Add(factory.MaximallyConstructableType(_field.FieldType.NormalizeInstantiation()), "Type of the field");
-            }
+            TypeDesc fieldType = _field.FieldType.NormalizeInstantiation();
+            ReflectionInvokeMapNode.AddSignatureDependency(ref dependencies, factory, fieldType, "Type of the field");
 
             return dependencies;
         }

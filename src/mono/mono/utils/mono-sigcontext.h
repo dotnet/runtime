@@ -37,7 +37,7 @@
 	#define UCONTEXT_REG_EDI(ctx) (((ucontext_t*)(ctx))->uc_mcontext.mc_edi)
 	#define UCONTEXT_REG_EIP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.mc_eip)
 #elif defined(__APPLE__)
-#  if defined (TARGET_IOS) || (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
+#  if defined (TARGET_IOS) || defined (TARGET_TVOS) || (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
 	#define UCONTEXT_REG_EAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__eax)
 	#define UCONTEXT_REG_EBX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__ebx)
 	#define UCONTEXT_REG_ECX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__ecx)
@@ -111,7 +111,14 @@
 
 #elif defined(TARGET_AMD64)
 
-#if defined(__APPLE__)
+#if defined(MONO_CROSS_COMPILE)
+	#define UCONTEXT_REG_RDX(ctx) NULL
+	#define UCONTEXT_REG_RSP(ctx) NULL
+	#define UCONTEXT_REG_RSI(ctx) NULL
+	#define UCONTEXT_REG_RDI(ctx) NULL
+	#define UCONTEXT_REG_RIP(ctx) NULL
+
+#elif defined(__APPLE__)
 	#define UCONTEXT_REG_RAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rax)
 	#define UCONTEXT_REG_RBX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rbx)
 	#define UCONTEXT_REG_RCX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rcx)

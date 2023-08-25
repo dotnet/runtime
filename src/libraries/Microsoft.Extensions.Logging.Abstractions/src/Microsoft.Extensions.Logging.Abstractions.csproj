@@ -4,6 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90357 -->
+    <NoWarn>$(NoWarn);AD0001</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
 
@@ -25,6 +27,8 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
              Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
     <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs"
              Link="Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Include="$(CommonPath)Extensions\Logging\DebuggerDisplayFormatting.cs"
+             Link="Common\src\Extensions\Logging\DebuggerDisplayFormatting.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"

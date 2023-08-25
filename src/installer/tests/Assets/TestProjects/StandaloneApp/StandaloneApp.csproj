@@ -5,6 +5,8 @@
     <OutputType>Exe</OutputType>
     <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+    <SelfContained>true</SelfContained>
+    <FileVersion>$(MNAVersion)</FileVersion>
   </PropertyGroup>
 
 </Project>

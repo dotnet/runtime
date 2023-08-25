@@ -23,7 +23,7 @@ Building _dotnet/runtime_ depends on several tools to be installed. You can down
 
 Install the following packages:
 
-* CMake 3.15.5 or newer
+* CMake 3.20 or newer
 * icu4c
 * openssl@1.1 or openssl@3
 * pkg-config

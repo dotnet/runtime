@@ -790,7 +790,13 @@ namespace ILCompiler.DependencyAnalysis
                 int pointerSize = _type.Context.Target.PointerSize;
                 int objectSize;
 
-                if (_type.IsDefType)
+                if (_type.IsInterface)
+                {
+                    // Interfaces don't live on the GC heap. Don't bother computing a number.
+                    // Zero compresses better than any useless number we would come up with.
+                    return 0;
+                }
+                else if (_type.IsDefType)
                 {
                     LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
 
@@ -1328,10 +1334,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory context)
         {
-            if (!context.IsCppCodegenTemporaryWorkaround)
-            {
-                Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> MethodTable");
-            }
+            Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> MethodTable");
         }
 
         protected static void AddDependenciesForUniversalGVMSupport(NodeFactory factory, TypeDesc type, ref DependencyList dependencies)

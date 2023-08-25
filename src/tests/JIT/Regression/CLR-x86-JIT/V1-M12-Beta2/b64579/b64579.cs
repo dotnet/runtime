@@ -26,11 +26,10 @@ public class Hijo : Padre
 public class Test_b64579
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Hijo h = new Hijo();
         h.Incrementa(1.0);
         h.print();
-        return 100;
     }
 }

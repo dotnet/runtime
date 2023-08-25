@@ -19,4 +19,11 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         }
 
     }
+    public class AddStaticField2
+    {
+        public static int Test()
+        {
+            return -1;
+        }
+    }
 }

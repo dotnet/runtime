@@ -79,13 +79,13 @@ const signed char       opcodeSizes[] =
 // clang-format on
 
 const BYTE varTypeClassification[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) tf,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) tf,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE varTypeRegister[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) regTyp,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) regTyp,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -111,7 +111,7 @@ extern const BYTE opcodeArgKinds[] = {
 const char* varTypeName(var_types vt)
 {
     static const char* const varTypeNames[] = {
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) nm,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) nm,
 #include "typelist.h"
 #undef DEF_TP
     };
@@ -2051,6 +2051,70 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
     return u64;
 }
 
+//------------------------------------------------------------------------
+// convertToDouble: Convert a single to a double with platform independent
+// preservation of payload bits.
+//
+// Arguments:
+//   f - the single
+//
+// Return Value:
+//   A double.
+//
+// Remarks:
+//   All our host platforms except for RISCV-64 will preserve payload bits of
+//   NaNs. This function implements the conversion in software for RISCV-64 to
+//   mimic other platforms.
+//
+double FloatingPointUtils::convertToDouble(float f)
+{
+#ifdef HOST_RISCV64
+    if (f == f)
+    {
+        return f;
+    }
+
+    uint32_t bits    = BitOperations::SingleToUInt32Bits(f);
+    uint32_t payload = bits & ((1u << 23) - 1);
+    uint64_t newBits = ((uint64_t)(bits >> 31) << 63) | 0x7FF8000000000000ul | ((uint64_t)payload << 29);
+    return BitOperations::UInt64BitsToDouble(newBits);
+#else
+    return f;
+#endif
+}
+
+//------------------------------------------------------------------------
+// convertToSingle: Convert a double to a single with platform independent
+// preservation of payload bits.
+//
+// Arguments:
+//   d - the double
+//
+// Return Value:
+//   A float.
+//
+// Remarks:
+//   All our host platforms except for RISCV-64 will preserve payload bits of
+//   NaNs. This function implements the conversion in software for RISCV-64 to
+//   mimic other platforms.
+//
+float FloatingPointUtils::convertToSingle(double d)
+{
+#ifdef HOST_RISCV64
+    if (d == d)
+    {
+        return (float)d;
+    }
+
+    uint64_t bits       = BitOperations::DoubleToUInt64Bits(d);
+    uint32_t newPayload = (uint32_t)((bits >> 29) & ((1u << 23) - 1));
+    uint32_t newBits    = ((uint32_t)(bits >> 63) << 31) | 0x7F800000u | newPayload;
+    return BitOperations::UInt32BitsToSingle(newBits);
+#else
+    return (float)d;
+#endif
+}
+
 // Rounds a double-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
 double FloatingPointUtils::round(double x)
@@ -2423,9 +2487,10 @@ bool FloatingPointUtils::isPositiveZero(double val)
 
 //------------------------------------------------------------------------
 // maximum: This matches the IEEE 754:2019 `maximum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the greater of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2434,7 +2499,6 @@ bool FloatingPointUtils::isPositiveZero(double val)
 // Return Value:
 //    Either val1 or val2
 //
-
 double FloatingPointUtils::maximum(double val1, double val2)
 {
     if (val1 != val2)
@@ -2443,16 +2507,112 @@ double FloatingPointUtils::maximum(double val1, double val2)
         {
             return val2 < val1 ? val1 : val2;
         }
+
         return val1;
     }
+
     return isNegative(val2) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a greater magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumMagnitude(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax > ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumMagnitudeNumber: // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumMagnitudeNumber(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax > ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumNumber(double x, double y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return y < x ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(y) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // maximum: This matches the IEEE 754:2019 `maximum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the greater of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2461,7 +2621,6 @@ double FloatingPointUtils::maximum(double val1, double val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 float FloatingPointUtils::maximum(float val1, float val2)
 {
     if (val1 != val2)
@@ -2470,16 +2629,112 @@ float FloatingPointUtils::maximum(float val1, float val2)
         {
             return val2 < val1 ? val1 : val2;
         }
+
         return val1;
     }
+
     return isNegative(val2) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a greater magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumMagnitude(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax > ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumMagnitudeNumber: This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumMagnitudeNumber(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax > ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumNumber(float x, float y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return y < x ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(y) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // minimum: This matches the IEEE 754:2019 `minimum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the lesser of the inputs. It
+// treats +0 as lesser than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2488,21 +2743,120 @@ float FloatingPointUtils::maximum(float val1, float val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 double FloatingPointUtils::minimum(double val1, double val2)
 {
-    if (val1 != val2 && !isNaN(val1))
+    if (val1 != val2)
     {
-        return val1 < val2 ? val1 : val2;
+        if (!isNaN(val1))
+        {
+            return val1 < val2 ? val1 : val2;
+        }
+
+        return val1;
     }
+
     return isNegative(val1) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a lesser magnitude.
+// It treats +0 as lesser than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumMagnitude(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax < ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumMagnitudeNumber(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax < ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumNumber(double x, double y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return x < y ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(x) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // minimum: This matches the IEEE 754:2019 `minimum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the lesser of the inputs. It
+// treats +0 as lesser than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2513,11 +2867,110 @@ double FloatingPointUtils::minimum(double val1, double val2)
 //
 float FloatingPointUtils::minimum(float val1, float val2)
 {
-    if (val1 != val2 && !isNaN(val1))
+    if (val1 != val2)
     {
-        return val1 < val2 ? val1 : val2;
+        if (!isNaN(val1))
+        {
+            return val1 < val2 ? val1 : val2;
+        }
+
+        return val1;
     }
+
     return isNegative(val1) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a lesser magnitude.
+// It treats +0 as lesser than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumMagnitude(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax < ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumMagnitudeNumber(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax < ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumNumber(float x, float y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return x < y ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(x) ? x : y;
 }
 
 //------------------------------------------------------------------------
@@ -2553,66 +3006,6 @@ double FloatingPointUtils::normalize(double value)
     return value;
 #else
     return value;
-#endif
-}
-
-//------------------------------------------------------------------------
-// BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
-// (MSB) for a set bit (1)
-//
-// Arguments:
-//    value - the value
-//
-// Return Value:
-//    0 if the mask is zero; nonzero otherwise.
-//
-uint32_t BitOperations::BitScanForward(uint32_t value)
-{
-    assert(value != 0);
-
-#if defined(_MSC_VER)
-    unsigned long result;
-    ::_BitScanForward(&result, value);
-    return static_cast<uint32_t>(result);
-#else
-    int32_t result = __builtin_ctz(value);
-    return static_cast<uint32_t>(result);
-#endif
-}
-
-//------------------------------------------------------------------------
-// BitOperations::BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
-// (MSB) for a set bit (1)
-//
-// Arguments:
-//    value - the value
-//
-// Return Value:
-//    0 if the mask is zero; nonzero otherwise.
-//
-uint32_t BitOperations::BitScanForward(uint64_t value)
-{
-    assert(value != 0);
-
-#if defined(_MSC_VER)
-#if defined(HOST_64BIT)
-    unsigned long result;
-    ::_BitScanForward64(&result, value);
-    return static_cast<uint32_t>(result);
-#else
-    uint32_t lower = static_cast<uint32_t>(value);
-
-    if (lower == 0)
-    {
-        uint32_t upper = static_cast<uint32_t>(value >> 32);
-        return 32 + BitScanForward(upper);
-    }
-
-    return BitScanForward(lower);
-#endif // HOST_64BIT
-#else
-    int32_t result = __builtin_ctzll(value);
-    return static_cast<uint32_t>(result);
 #endif
 }
 

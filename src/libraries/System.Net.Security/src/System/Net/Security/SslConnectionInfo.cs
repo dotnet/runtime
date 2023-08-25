@@ -21,5 +21,8 @@ namespace System.Net.Security
         public int KeyExchKeySize { get; private set; }
 
         public byte[]? ApplicationProtocol { get; internal set; }
+#if DEBUG
+        public bool TlsResumed { get; private set; }
+#endif
     }
 }

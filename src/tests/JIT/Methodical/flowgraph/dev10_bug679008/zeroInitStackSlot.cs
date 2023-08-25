@@ -35,10 +35,9 @@ internal delegate bool WarehouseRowVersionQueryDelegate(WarehouseResultDatabase 
 public class Repro
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new Repro().ProcessResults(Query);
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

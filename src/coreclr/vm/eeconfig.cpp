@@ -111,6 +111,7 @@ HRESULT EEConfig::Init()
     iJitOptimizeType = OPT_DEFAULT;
     fJitFramed = false;
     fJitMinOpts = false;
+    fJitEnableOptionalRelocs = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fNgenBindOptimizeNonGac = false;
@@ -543,6 +544,7 @@ HRESULT EEConfig::sync()
 
     fJitFramed = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitFramed) != 0);
     fJitMinOpts = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITMinOpts) == 1);
+    fJitEnableOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitEnableOptionalRelocs) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
@@ -719,7 +721,8 @@ HRESULT EEConfig::sync()
         fTieredCompilation_CallCounting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCounting) != 0;
 
         DWORD tieredCompilation_ConfiguredCallCountThreshold =
-            CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountThreshold);
+            Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountThreshold"), CLRConfig::EXTERNAL_TC_CallCountThreshold);
+
         if (tieredCompilation_ConfiguredCallCountThreshold == 0)
         {
             tieredCompilation_CallCountThreshold = 1;
@@ -733,8 +736,9 @@ HRESULT EEConfig::sync()
             tieredCompilation_CallCountThreshold = (UINT16)tieredCompilation_ConfiguredCallCountThreshold;
         }
 
-        tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
-
+        tieredCompilation_CallCountingDelayMs =
+            Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
+        
         bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
         {

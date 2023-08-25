@@ -280,7 +280,7 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     _ASSERTE(minfo);
     m_encVersion = minfo->GetCurrentEnCVersion();
     _ASSERTE(m_encVersion >= CorDB_DEFAULT_ENC_FUNCTION_VERSION);
-    LOG((LF_CORDB,LL_EVERYTHING, "DJI::DJI : created at 0x%p\n", this));
+    LOG((LF_CORDB,LL_EVERYTHING, "DJI::DJI: created at %p\n", this));
 
     // Debugger doesn't track LightWeight codegen methods.
     // We should never even be creating a DJI for one.
@@ -1423,7 +1423,7 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB,LL_EVERYTHING, "DMI::DMI : created at 0x%p\n", this));
+    LOG((LF_CORDB,LL_EVERYTHING, "DMI::DMI: created at %p\n", this));
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
@@ -1565,9 +1565,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
     _ASSERTE(fd != NULL);
-
     // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
     if (fd->IsDynamicMethod())
     {
@@ -1576,12 +1574,8 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
 
     if (startAddr == NULL)
     {
-        // This will grab the start address for the current code version.
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
-        if (startAddr == NULL)
-        {
-            return NULL;
-        }
+        _ASSERTE(startAddr != NULL);
     }
     else
     {

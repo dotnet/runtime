@@ -123,7 +123,12 @@ namespace System.Net.Http.Functional.Tests
 
                 using HttpResponseMessage response = await clientTask.WaitAsync(TestHelper.PassingTestTimeout);
                 using Stream clientStream = response.Content.ReadAsStream();
-                Assert.False(sawZeroByteRead.Task.IsCompleted);
+
+                if (!useSsl)
+                {
+                    // SslStream does zero byte reads under the covers
+                    Assert.False(sawZeroByteRead.Task.IsCompleted);
+                }
 
                 Task<int> zeroByteReadTask = Task.Run(() => StreamConformanceTests.ReadAsync(readMode, clientStream, Array.Empty<byte>(), 0, 0, CancellationToken.None));
                 Assert.False(zeroByteReadTask.IsCompleted);

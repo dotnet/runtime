@@ -531,7 +531,7 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
 
   if (p_dynamic)
     {
-      /* For dynamicly linked executables and shared libraries,
+      /* For dynamically linked executables and shared libraries,
          DT_PLTGOT is the gp value for that object.  */
       Elf64_Dyn *dyn = (Elf64_Dyn *)(p_dynamic->p_vaddr + load_base);
       for (; dyn->d_tag != DT_NULL; ++dyn)

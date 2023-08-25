@@ -42,16 +42,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Validate_Indexer_ThrowsTargetParameterCountException_Netfx()
-        {
-            CompareAttribute attribute = new CompareAttribute("Item");
-            Assert.Throws<TargetParameterCountException>(() => attribute.Validate("b", s_context));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void Validate_Indexer_ThrowsArgumentException_Netcoreapp()
+        public static void Validate_Indexer_ThrowsArgumentException()
         {
             CompareAttribute attribute = new CompareAttribute("Item");
             AssertExtensions.Throws<ArgumentException>(null, () => attribute.Validate("b", s_context));
@@ -74,22 +65,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Validate_IncludesMemberName_NetFx()
-        {
-            ValidationContext validationContext = new ValidationContext(new CompareObject("a"));
-            validationContext.MemberName = nameof(CompareObject.CompareProperty);
-            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyCased));
-
-            ValidationResult validationResult = attribute.GetValidationResult("b", validationContext);
-
-            Assert.NotNull(validationResult.ErrorMessage);
-            Assert.Empty(validationResult.MemberNames);
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void Validate_IncludesMemberName_Netcoreapp()
+        public static void Validate_IncludesMemberName()
         {
             ValidationContext validationContext = new ValidationContext(new CompareObject("a"));
             validationContext.MemberName = nameof(CompareObject.CompareProperty);

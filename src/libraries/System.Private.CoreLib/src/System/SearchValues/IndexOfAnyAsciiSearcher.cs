@@ -19,6 +19,11 @@ namespace System.Buffers
     {
         internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool BitmapContains(ref Vector256<byte> bitmap, char c) =>
+            c <= 127 &&
+            (bitmap.GetElementUnsafe(c & 0xF) & (1 << (c >> 4))) != 0;
+
         internal static unsafe void ComputeBitmap256(ReadOnlySpan<byte> values, out Vector256<byte> bitmap0, out Vector256<byte> bitmap1, out BitVector256 lookup)
         {
             // The exact format of these bitmaps differs from the other ComputeBitmap overloads as it's meant for the full [0, 255] range algorithm.
@@ -67,8 +72,7 @@ namespace System.Buffers
 
                 if (value > 127)
                 {
-                    // The values were modified concurrent with the call to SearchValues.Create
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+                    continue;
                 }
 
                 lookupLocal.Set(value);
@@ -879,10 +883,10 @@ namespace System.Buffers
 
             // On ARM, we have an instruction for an arithmetic right shift of 1-byte signed values.
             // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
-            // On X86 and WASM, use a 4-byte value shift with AND 15 to emulate a 1-byte value logical shift.
+            // On X86 and WASM, use a logical right shift instead.
             Vector128<byte> highNibbles = AdvSimd.IsSupported
                 ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
-                : (source.AsInt32() >>> 4).AsByte() & Vector128.Create((byte)0xF);
+                : source >>> 4;
 
             // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
             // Lookup the rows via the lower nibble and the column via the higher nibble.
@@ -913,7 +917,7 @@ namespace System.Buffers
         private static Vector256<byte> IndexOfAnyLookupCore(Vector256<byte> source, Vector256<byte> bitmapLookup)
         {
             // See comments in IndexOfAnyLookupCore(Vector128<byte>) above for more details.
-            Vector256<byte> highNibbles = Vector256.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector256.Create((byte)0xF);
+            Vector256<byte> highNibbles = source >>> 4;
             Vector256<byte> bitMask = Avx2.Shuffle(bitmapLookup, source);
             Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), highNibbles);
             Vector256<byte> result = bitMask & bitPositions;
@@ -1023,7 +1027,7 @@ namespace System.Buffers
         {
             if (typeof(T) == typeof(short))
             {
-                result = FixUpPackedVector256Result(result);
+                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
             uint mask = TNegator.ExtractMask(result);
@@ -1039,7 +1043,7 @@ namespace System.Buffers
         {
             if (typeof(T) == typeof(short))
             {
-                result = FixUpPackedVector256Result(result);
+                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
             uint mask = TNegator.ExtractMask(result);
@@ -1061,7 +1065,7 @@ namespace System.Buffers
         {
             if (typeof(T) == typeof(short))
             {
-                result = FixUpPackedVector256Result(result);
+                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
             uint mask = TNegator.ExtractMask(result);
@@ -1077,7 +1081,7 @@ namespace System.Buffers
         {
             if (typeof(T) == typeof(short))
             {
-                result = FixUpPackedVector256Result(result);
+                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
             uint mask = TNegator.ExtractMask(result);
@@ -1090,18 +1094,6 @@ namespace System.Buffers
 
             // We matched within the second vector
             return offsetInVector - Vector256<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
-        {
-            Debug.Assert(Avx2.IsSupported);
-            // Avx2.PackUnsignedSaturate(Vector256.Create((short)1), Vector256.Create((short)2)) will result in
-            // 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2
-            // We want to swap the X and Y bits
-            // 1, 1, 1, 1, 1, 1, 1, 1, X, X, X, X, X, X, X, X, Y, Y, Y, Y, Y, Y, Y, Y, 2, 2, 2, 2, 2, 2, 2, 2
-            return Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
         }
 
         internal interface INegator
@@ -1158,7 +1150,7 @@ namespace System.Buffers
 
                 return Sse2.IsSupported
                     ? Sse2.PackUnsignedSaturate(lowerMin, upperMin)
-                    : PackedSimd.ConvertNarrowingUnsignedSaturate(lowerMin, upperMin);
+                    : PackedSimd.ConvertNarrowingSaturateUnsigned(lowerMin, upperMin);
             }
 
             // Replace with Vector256.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
@@ -1183,7 +1175,7 @@ namespace System.Buffers
                 return
                     Sse2.IsSupported ? Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()) :
                     AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(lower), upper) :
-                    PackedSimd.ConvertNarrowingUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
+                    PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16());
             }
 
             [CompExactlyDependsOn(typeof(Avx2))]

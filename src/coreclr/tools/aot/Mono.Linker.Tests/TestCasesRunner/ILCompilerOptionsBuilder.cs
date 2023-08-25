@@ -41,9 +41,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			Options.FeatureSwitches.Add ("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", false);
 			Options.FeatureSwitches.Add ("System.Resources.ResourceManager.AllowCustomResourceTypes", false);
-			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanCompileToIL", false);
 			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanEmitObjectArrayDelegate", false);
-			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanCreateArbitraryDelegates", false);
+			Options.FeatureSwitches.Add ("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", false);
 			Options.FeatureSwitches.Add ("System.Diagnostics.Debugger.IsSupported", false);
 			Options.FeatureSwitches.Add ("System.Text.Encoding.EnableUnsafeUTF7Encoding", false);
 			Options.FeatureSwitches.Add ("System.Diagnostics.Tracing.EventSource.IsSupported", false);
@@ -85,7 +84,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkAssembly (string fileName)
 		{
-			Options.TrimAssemblies.Add (fileName);
+			Options.TrimAssemblies.Add (Path.GetFileNameWithoutExtension(fileName));
 		}
 
 		public virtual void LinkFromAssembly (string fileName)
@@ -118,10 +117,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		public virtual void AddLinkSymbols (string value)
-		{
-		}
-
-		public virtual void AddKeepDebugMembers (string value)
 		{
 		}
 
@@ -207,9 +202,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);
-
-			if (!string.IsNullOrEmpty (options.KeepDebugMembers))
-				AddKeepDebugMembers (options.KeepDebugMembers);
 
 			AddSkipUnresolved (options.SkipUnresolved);
 

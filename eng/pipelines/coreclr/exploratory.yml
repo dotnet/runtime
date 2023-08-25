@@ -2,8 +2,8 @@
 trigger: none
 
 schedules:
-- cron: "0 14 * * 0"
-  displayName: Sun at 6:00 AM (UTC-8:00)
+- cron: "0 14 * * 0,6"
+  displayName: Sat and Sun at 6:00 AM (UTC-8:00)
   branches:
     include:
     - main

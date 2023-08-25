@@ -5,6 +5,8 @@
 /// <reference path="./types/v8.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
+import gitHash from "consts:gitHash";
+
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
 
@@ -21,15 +23,26 @@ export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
-// this is when we link with workload tools. The consts:WasmEnableLegacyJsInterop is when we compile with rollup.
-export let disableLegacyJsInterop = false;
+// this is when we link with workload tools. The consts:wasmEnableLegacyJsInterop is when we compile with rollup.
+export let linkerDisableLegacyJsInterop = false;
+export let linkerWasmEnableSIMD = true;
+export let linkerWasmEnableEH = true;
+export let linkerEnableAotProfiler = false;
+export let linkerEnableBrowserProfiler = false;
+export let linkerRunAOTCompilation = false;
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
 export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
-    disableLegacyJsInterop = internals.disableLegacyJsInterop;
+    linkerDisableLegacyJsInterop = internals.linkerDisableLegacyJsInterop;
+    linkerWasmEnableSIMD = internals.linkerWasmEnableSIMD;
+    linkerWasmEnableEH = internals.linkerWasmEnableEH;
+    linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
+    linkerEnableBrowserProfiler = internals.linkerEnableBrowserProfiler;
+    linkerRunAOTCompilation = internals.linkerRunAOTCompilation;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
+    runtimeHelpers.moduleGitHash = internals.gitHash;
 }
 
 // NOTE: this is called AFTER the config is loaded
@@ -45,9 +58,9 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     exportedRuntimeAPI = globalObjects.api;
 
     Object.assign(runtimeHelpers, {
+        gitHash,
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
-        memorySnapshotSkippedOrDone: createPromiseController<void>(),
         afterInstantiateWasm: createPromiseController<void>(),
         beforePreInit: createPromiseController<void>(),
         afterPreInit: createPromiseController<void>(),
@@ -68,4 +81,16 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
 
 export function createPromiseController<T>(afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
     return loaderHelpers.createPromiseController<T>(afterResolve, afterReject);
+}
+
+// this will abort the program if the condition is false
+// see src\mono\wasm\runtime\rollup.config.js
+// we inline the condition, because the lambda could allocate closure on hot path otherwise
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+    if (condition) return;
+    const message = "Assert failed: " + (typeof messageFactory === "function"
+        ? messageFactory()
+        : messageFactory);
+    const error = new Error(message);
+    runtimeHelpers.abort(error);
 }

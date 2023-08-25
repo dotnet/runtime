@@ -919,10 +919,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
         DWORD dwClassGCHandles[2]  = { 0, 0 };
 
         // need to check if the type is generic and if so exclude it from iteration as we don't know the size
-        HENUMInternalHolder hGenericEnum(pImport);
-        hGenericEnum.EnumInit(mdtGenericParam, type);
-        ULONG cGenericParams = pImport->EnumGetCount(&hGenericEnum);
-        if (cGenericParams == 0)
+        if (!m_pTypeGenericInfoMap->IsGeneric(type, pImport))
         {
             HENUMInternalHolder hFieldEnum(pImport);
             hFieldEnum.EnumInit(mdtFieldDef, type);
@@ -1456,7 +1453,7 @@ BOOL Module::IsRuntimeWrapExceptions()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         if (IsRuntimeWrapExceptionsStatusComputed()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
     }
@@ -1540,37 +1537,6 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     return hr != S_OK;
 }
 
-BOOL Module::IsPreV4Assembly()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    if (!(m_dwPersistedFlags & COMPUTED_IS_PRE_V4_ASSEMBLY))
-    {
-        IMDInternalImport *pImport = GetAssembly()->GetMDImport();
-        _ASSERTE(pImport);
-
-        BOOL fIsPreV4Assembly = FALSE;
-        LPCSTR szVersion = NULL;
-        if (SUCCEEDED(pImport->GetVersionString(&szVersion)))
-        {
-            if (szVersion != NULL && strlen(szVersion) > 2)
-            {
-                fIsPreV4Assembly = (szVersion[0] == 'v' || szVersion[0] == 'V') &&
-                                   (szVersion[1] == '1' || szVersion[1] == '2');
-            }
-        }
-
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
-            (fIsPreV4Assembly ? IS_PRE_V4_ASSEMBLY : 0));
-    }
-
-    return !!(m_dwPersistedFlags & IS_PRE_V4_ASSEMBLY);
-}
 
 DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 {
@@ -2255,8 +2221,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     // AddRef which we take inside the lock at the bottom of this method.
     CrstHolder holder(&m_ISymUnmanagedReaderCrst);
 
-    UINT lastErrorMode = 0;
-
     // If we haven't created a reader yet, do so now
     if (m_pISymUnmanagedReader == NULL)
     {
@@ -2295,33 +2259,24 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                             "reachable or needs to be reimplemented for CoreCLR!");
         }
 
-        // We're going to be working with Windows PDB format symbols. Attempt to CoCreate the symbol binder.
-        // CoreCLR supports not having a symbol reader installed, so CoCreate searches the PATH env var
-        // and then tries coreclr dll location.
-        // On desktop, the framework installer is supposed to install diasymreader.dll as well
-        // and so this shouldn't happen.
-        hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, NATIVE_SYMBOL_READER_DLL, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+        PathString symbolReaderPath;
+        hr = GetClrModuleDirectory(symbolReaderPath);
         if (FAILED(hr))
         {
-            PathString symbolReaderPath;
-            hr = GetClrModuleDirectory(symbolReaderPath);
-            if (FAILED(hr))
-            {
-                RETURN (NULL);
-            }
-            symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
-            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
-            if (FAILED(hr))
-            {
-                RETURN (NULL);
-            }
+            RETURN (NULL);
+        }
+        symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
+        hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+        if (FAILED(hr))
+        {
+            RETURN (NULL);
         }
 
         LOG((LF_CORDB, LL_INFO10, "M::GISUR: Created binder\n"));
 
         // Note: we change the error mode here so we don't get any popups as the PDB symbol reader attempts to search the
         // hard disk for files.
-        lastErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+        ErrorModeHolder errorMode{};
 
         SafeComHolder<ISymUnmanagedReader> pReader;
 
@@ -2367,8 +2322,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             if (SUCCEEDED(hr))
                 hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
         }
-
-        SetErrorMode(lastErrorMode);
 
         if (SUCCEEDED(hr))
         {
@@ -2845,18 +2798,6 @@ OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
     string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
 
     return string;
-}
-
-//
-// Used by the verifier.  Returns whether this stringref is valid.
-//
-CHECK Module::CheckStringRef(DWORD token)
-{
-    LIMITED_METHOD_CONTRACT;
-    CHECK(TypeFromToken(token)==mdtString);
-    CHECK(!IsNilToken(token));
-    CHECK(GetMDImport()->IsValidToken(token));
-    CHECK_OK;
 }
 
 mdToken Module::GetEntryPointToken()

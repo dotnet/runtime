@@ -103,8 +103,9 @@ namespace Microsoft.Interop
 
         private MethodDeclarationSyntax CreateUnreachableExceptionStub()
         {
-            // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException("This method should not be reached");
+            // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException();
             return MethodInfo.Syntax
+                .WithReturnType(GenerationContext.SignatureContext.StubReturnType)
                 .WithModifiers(TokenList())
                 .WithAttributeLists(List<AttributeListSyntax>())
                 .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(
@@ -113,7 +114,7 @@ namespace Microsoft.Interop
                 .WithExpressionBody(ArrowExpressionClause(
                     ThrowExpression(
                         ObjectCreationExpression(
-                            ParseTypeName(TypeNames.UnreachableException))
+                            TypeSyntaxes.UnreachableException)
                             .WithArgumentList(ArgumentList()))));
         }
 
@@ -124,9 +125,7 @@ namespace Microsoft.Interop
         private MethodDeclarationSyntax GenerateShadow()
         {
             // DeclarationCopiedFromBaseDeclaration(<Arguments>)
-            // {
-            //    return ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
-            // }
+            //    => ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
             var forwarder = new Forwarder();
             return MethodDeclaration(GenerationContext.SignatureContext.StubReturnType, MethodInfo.MethodName)
                 .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))

@@ -19,6 +19,15 @@
 // degraded debugging experience.
 // Major version mismatches are not tolerated by the DAC and will be rejected upon load.
 
+// Whenever we add field here, we need to bear in mind that we have a scenario for a new clrgc
+// is used in an old runtime. In that case, the old runtime's DAC will have to interpret the
+// fields the way it was. So fields should only be added at the end of the struct, and their 
+// loading in PopulateDacVars need to be version checked against a bumped up minor version.
+
+#ifndef GC_DAC_VAL
+ #define GC_DAC_VAL(type, name)
+#endif // GC_DAC_VAL
+
 #ifndef GC_DAC_VAR
  #define GC_DAC_VAR(type, name)
 #endif // GC_DAC_VAR
@@ -33,6 +42,10 @@
 
 // This sequence of macros defines the specific variables that are exposed by the
 // GC to the DAC.
+GC_DAC_VAL        (uint8_t,               major_version_number)
+GC_DAC_VAL        (uint8_t,               minor_version_number)
+GC_DAC_VAL        (size_t,                generation_size)
+GC_DAC_VAL        (size_t,                total_generation_count)
 GC_DAC_VAR        (uint8_t,               build_variant)
 GC_DAC_VAR        (bool,                  built_with_svr)
 GC_DAC_ARRAY_VAR  (size_t,                gc_global_mechanisms)
@@ -42,8 +55,6 @@ GC_DAC_PTR_VAR    (uint32_t,              mark_array)
 GC_DAC_VAR        (c_gc_state,            current_c_gc_state)
 GC_DAC_PTR_VAR    (dac_heap_segment,      ephemeral_heap_segment)
 GC_DAC_PTR_VAR    (dac_heap_segment,      saved_sweep_ephemeral_seg)
-GC_DAC_PTR_VAR    (dac_heap_segment,      freeable_soh_segment)
-GC_DAC_PTR_VAR    (dac_heap_segment,      freeable_uoh_segment)
 GC_DAC_PTR_VAR    (uint8_t,               saved_sweep_ephemeral_start)
 GC_DAC_PTR_VAR    (uint8_t,               background_saved_lowest_address)
 GC_DAC_PTR_VAR    (uint8_t,               background_saved_highest_address)
@@ -68,6 +79,14 @@ GC_DAC_PTR_VAR    (uint8_t,               bookkeeping_start)
 GC_DAC_ARRAY_VAR  (dac_region_free_list,  global_regions_to_decommit)
 GC_DAC_PTR_VAR    (dac_region_free_list,  global_free_huge_regions)
 GC_DAC_ARRAY_VAR  (dac_region_free_list,  free_regions)
+
+// Here is where v5.2 fields starts
+
+GC_DAC_PTR_VAR    (dac_heap_segment,      freeable_soh_segment)
+GC_DAC_PTR_VAR    (dac_heap_segment,      freeable_uoh_segment)
+GC_DAC_VAL        (int,                   total_bookkeeping_elements)
+GC_DAC_VAL        (int,                   count_free_region_kinds)
+GC_DAC_VAL        (size_t,                card_table_info_size)
 
 #undef GC_DAC_VAR
 #undef GC_DAC_ARRAY_VAR

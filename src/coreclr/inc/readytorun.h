@@ -92,6 +92,9 @@ enum class ReadyToRunSectionType : uint32_t
     ManifestAssemblyMvids       = 118, // Added in V5.3
     CrossModuleInlineInfo       = 119, // Added in V6.2
     HotColdMap                  = 120, // Added in V8.0
+    MethodIsGenericMap          = 121, // Added in V9.0
+    EnclosingTypeMap            = 122, // Added in V9.0
+    TypeGenericInfoMap          = 123, // Added in V9.0
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -119,6 +122,28 @@ enum class ReadyToRunImportSectionFlags : uint16_t
     None     = 0x0000,
     Eager    = 0x0001, // Section at module load time.
     PCode    = 0x0004, // Section contains pointers to code
+};
+
+// All values in this enum should within a nibble (4 bits).
+enum class ReadyToRunTypeGenericInfo : uint8_t
+{
+    GenericCountMask = 0x3,
+    HasConstraints = 0x4,
+    HasVariance = 0x8,
+};
+
+// All values in this enum should fit within 2 bits.
+enum class ReadyToRunGenericInfoGenericCount : uint32_t
+{
+    Zero = 0,
+    One = 1,
+    Two = 2,
+    MoreThanTwo = 3
+};
+
+enum class ReadyToRunEnclosingTypeMap
+{
+    MaxTypeCount = 0xFFFE
 };
 
 //

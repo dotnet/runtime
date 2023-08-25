@@ -157,8 +157,8 @@
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
-  #define REG_PINVOKE_COOKIE_PARAM          REG_T0
-  #define RBM_PINVOKE_COOKIE_PARAM          RBM_T0
+  #define REG_PINVOKE_COOKIE_PARAM          REG_T3
+  #define RBM_PINVOKE_COOKIE_PARAM          RBM_T3
 
   // GenericPInvokeCalliHelper unmanaged target Parameter
   #define REG_PINVOKE_TARGET_PARAM          REG_T2

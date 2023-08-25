@@ -92,7 +92,7 @@ x86_64_handle_signal_frame (unw_cursor_t *cursor)
 {
   struct cursor *c = (struct cursor *) cursor;
   unw_word_t ucontext;
-  int ret;
+  int i, ret;
 
   if (c->sigcontext_format == X86_64_SCF_FREEBSD_SIGFRAME)
    {
@@ -107,6 +107,9 @@ x86_64_handle_signal_frame (unw_cursor_t *cursor)
        Debug (2, "returning %d\n", ret);
        return ret;
      }
+
+    for (i = 0; i < DWARF_NUM_PRESERVED_REGS; ++i)
+      c->dwarf.loc[i] = DWARF_NULL_LOC;
 
     c->dwarf.loc[RAX] = DWARF_LOC (ucontext + UC_MCONTEXT_GREGS_RAX, 0);
     c->dwarf.loc[RDX] = DWARF_LOC (ucontext + UC_MCONTEXT_GREGS_RDX, 0);
@@ -133,6 +136,7 @@ x86_64_handle_signal_frame (unw_cursor_t *cursor)
     c->dwarf.loc[RCX] = c->dwarf.loc[R10];
     /*  rsp_loc = DWARF_LOC(c->dwarf.cfa - 8, 0);       */
     /*  rbp_loc = c->dwarf.loc[RBP];                    */
+    c->dwarf.loc[RSP] = DWARF_VAL_LOC (c, c->dwarf.cfa + 8);
     c->dwarf.loc[RIP] = DWARF_LOC (c->dwarf.cfa, 0);
     ret = dwarf_get (&c->dwarf, c->dwarf.loc[RIP], &c->dwarf.ip);
     Debug (1, "Frame Chain [RIP=0x%Lx] = 0x%Lx\n",

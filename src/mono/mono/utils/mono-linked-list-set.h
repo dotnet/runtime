@@ -12,7 +12,7 @@
 #define __MONO_SPLIT_ORDERED_LIST_H__
 
 #include <mono/utils/hazard-pointer.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 
 typedef struct _MonoLinkedListSetNode MonoLinkedListSetNode;
 

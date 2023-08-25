@@ -29,6 +29,7 @@
     <Compile Include="ServerAsyncAuthenticateTest.cs" />
     <Compile Include="ServerNoEncryptionTest.cs" />
     <Compile Include="ServerRequireEncryptionTest.cs" />
+    <Compile Include="SslStreamCertificateContextTests.cs" />
     <Compile Include="SslStreamConformanceTests.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
     <Compile Include="SslStreamNetworkStreamTest.cs" />
@@ -105,6 +106,7 @@
     <Compile Include="SslAuthenticationOptionsTest.cs" />
     <Compile Include="SslStreamAlertsTest.cs" />
     <Compile Include="SslStreamAllowRenegotiationTests.cs" />
+    <Compile Include="SslStreamAllowTlsResumeTests.cs" />
     <Compile Include="SslStreamAlpnTests.cs" />
     <Compile Include="SslStreamCertificateTrustTests.cs" />
     <Compile Include="SslStreamDisposeTest.cs" />

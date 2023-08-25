@@ -27,7 +27,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				IgnoreDescriptors = GetOptionAttributeValue (nameof (IgnoreDescriptorsAttribute), true),
 				IgnoreSubstitutions = GetOptionAttributeValue (nameof (IgnoreSubstitutionsAttribute), true),
 				IgnoreLinkAttributes = GetOptionAttributeValue (nameof (IgnoreLinkAttributesAttribute), true),
-				KeepDebugMembers = GetOptionAttributeValue (nameof (SetupLinkerKeepDebugMembersAttribute), string.Empty),
 				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
 				TrimMode = GetOptionAttributeValue<string> (nameof (SetupLinkerTrimModeAttribute), null),
 				DefaultAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerDefaultActionAttribute), null),
@@ -151,6 +150,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return _testCaseTypeDefinition.CustomAttributes
 				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkAttributesFile))
 				.Select (GetSourceAndRelativeDestinationValue);
+		}
+
+		public IEnumerable<string> GetDeleteBefore ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (DeleteBeforeAttribute))
+				.Select (attr => (string)attr.ConstructorArguments[0].Value);
 		}
 
 		public virtual IEnumerable<NPath> GetExtraLinkerReferences ()

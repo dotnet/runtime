@@ -353,6 +353,7 @@ namespace System.Text.Tests
 
         [Fact]
         [OuterLoop] // this test takes ~10 seconds on modern hardware since it operates over GBs of data
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79883", TestRuntimes.Mono)]
         public static void GetBytes_Encoding_ReadOnlySequence_IBufferWriter_LargeMultiSegment()
         {
             ReadOnlySequence<char> sequence = GetLargeRepeatingReadOnlySequence<char>(AllScalarsAsUtf16, 1500); // ~ 3.2bn chars of UTF-16 input
