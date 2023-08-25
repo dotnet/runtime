@@ -28,6 +28,7 @@
     <Compile Include="..\Common\ConfigurationBinderTests.Helpers.cs" Link="Common\ConfigurationBinderTests.Helpers.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.cs" Link="Common\ConfigurationBinderTests.TestClasses.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.Collections.cs" Link="Common\ConfigurationBinderTests.TestClasses.Collections.cs" />
+    <Compile Include="ConfigurationBinderTests.Generator.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,9 +51,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 
-    <Compile Include="ConfigurationBindingGeneratorTests.cs" />
-    <Compile Include="ConfigurationBindingGeneratorTests.Baselines.cs" />
-    <Compile Include="ConfigurationBindingGeneratorTests.Baselines.Options.cs" />
+    <Compile Include="GeneratorTests.cs" />
+    <Compile Include="GeneratorTests.Baselines.cs" />
+    <Compile Include="GeneratorTests.Baselines.Options.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
