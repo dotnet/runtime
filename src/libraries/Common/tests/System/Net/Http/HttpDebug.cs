@@ -43,11 +43,5 @@ namespace System.Net.Test.Common
 
         public static void Log(string message, [CallerMemberName] string? memberName = null, [CallerLineNumber] int lineNumber = 0) =>
             Scope?.WriteLine($"[{memberName} #{lineNumber}] {message}");
-
-        public static void Enter([CallerMemberName] string? memberName = null, [CallerLineNumber] int lineNumber = 0) =>
-            Scope?.WriteLine($"[{memberName} #{lineNumber}] Enter");
-
-        public static void Exit([CallerMemberName] string? memberName = null, [CallerLineNumber] int lineNumber = 0) =>
-            Scope?.WriteLine($"[{memberName} #{lineNumber}] Exit");
     }
 }
