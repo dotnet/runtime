@@ -124,7 +124,7 @@
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
         <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">C# {0} 無法使用選項驗證來源產生器。請使用 {1} 或更新的語言版本。</target>
+        <target state="translated">選項驗證來源產生器在 C# {0} 中不可用。請使用語言版本 {1} 或更新版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
