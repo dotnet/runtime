@@ -112,6 +112,10 @@ static
 bool
 ipc_stream_factory_any_suspended_ports (void);
 
+static
+bool
+check_options_valid (EventPipeSessionOptions options);
+
 /*
  * Global volatile variables, only to be accessed through inlined volatile access functions.
  */
@@ -123,64 +127,6 @@ volatile uint32_t _ep_number_of_sessions = 0;
 volatile EventPipeSession *_ep_sessions [EP_MAX_NUMBER_OF_SESSIONS] = { 0 };
 
 volatile uint64_t _ep_allow_write = 0;
-
-/*
-* EventPipeSessionOptions.
-*/
-
-EventPipeSessionOptions *
-ep_session_options_alloc (
-	const ep_char8_t *output_path,
-	uint32_t circular_buffer_size_in_mb,
-	const EventPipeProviderConfiguration *providers,
-	uint32_t providers_len,
-	EventPipeSessionType session_type,
-	EventPipeSerializationFormat format,
-	bool rundown_requested,
-	bool disable_stacktrace,
-	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data)
-{
-	ep_return_zero_if_nok (format < EP_SERIALIZATION_FORMAT_COUNT);
-	ep_return_zero_if_nok (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
-	ep_return_zero_if_nok (providers_len > 0 && providers != NULL);
-	if ((session_type == EP_SESSION_TYPE_FILE || session_type == EP_SESSION_TYPE_FILESTREAM) && output_path == NULL)
-		return 0;
-	if (session_type == EP_SESSION_TYPE_IPCSTREAM && stream == NULL)
-		return 0;
-
-	EventPipeSessionOptions *options = NULL;
-	options = ep_rt_object_alloc(EventPipeSessionOptions);
-	ep_raise_error_if_nok(options != NULL);
-
-	options->output_path = output_path;
-	options->circular_buffer_size_in_mb = circular_buffer_size_in_mb;
-	options->providers = providers;
-	options->providers_len = providers_len;
-	options->session_type = session_type;
-	options->format = format;
-	options->rundown_requested = rundown_requested;
-	options->disable_stacktrace = disable_stacktrace;
-	options->stream = stream;
-	options->sync_callback = sync_callback;
-	options->callback_additional_data = callback_additional_data;
-
-ep_on_exit:
-	return options;
-
-ep_on_error:
-	ep_rt_object_free(options);
-	options = NULL;
-	ep_exit_error_handler ();
-}
-
-void
-ep_session_options_free(EventPipeSessionOptions* options)
-{
-	ep_return_void_if_nok (options != NULL);
-	ep_rt_object_free (options);
-}
 
 /*
  * EventFilterDescriptor.
@@ -504,17 +450,25 @@ is_session_id_in_collection (EventPipeSessionID session_id)
 	return false;
 }
 
+static bool check_options_valid (EventPipeSessionOptions options)
+{
+	ep_return_false_if_nok (options.format < EP_SERIALIZATION_FORMAT_COUNT);
+	ep_return_false_if_nok (options.session_type == EP_SESSION_TYPE_SYNCHRONOUS || options.circular_buffer_size_in_mb > 0);
+	ep_return_false_if_nok (options.providers_len > 0 && options.providers != NULL);
+	if ((options.session_type == EP_SESSION_TYPE_FILE || options.session_type == EP_SESSION_TYPE_FILESTREAM) && options.output_path == NULL)
+		return false;
+	if (options.session_type == EP_SESSION_TYPE_IPCSTREAM && options.stream == NULL)
+		return false;
+
+	return true;
+}
+
 static
 EventPipeSessionID
 enable (
-	EventPipeSessionOptions *options,
+	EventPipeSessionOptions options,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
-	EP_ASSERT (options != NULL);
-	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
-	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
-
 	ep_requires_lock_held ();
 
 	EventPipeSession *session = NULL;
@@ -528,17 +482,17 @@ enable (
 
 	session = ep_session_alloc (
 		session_index,
-		options->output_path,
-		options->stream,
-		options->session_type,
-		options->format,
-		options->rundown_requested,
-		options->disable_stacktrace,
-		options->circular_buffer_size_in_mb,
-		options->providers,
-		options->providers_len,
-		options->sync_callback,
-		options->callback_additional_data);
+		options.output_path,
+		options.stream,
+		options.session_type,
+		options.format,
+		options.rundown_requested,
+		options.disable_stacktrace,
+		options.circular_buffer_size_in_mb,
+		options.providers,
+		options.providers_len,
+		options.sync_callback,
+		options.callback_additional_data);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -1004,29 +958,22 @@ ep_enable (
 {
 	EventPipeSessionID sessionId = 0;
 
-	EventPipeSessionOptions *options = NULL;
-	options = ep_session_options_alloc (
-		output_path,
-		circular_buffer_size_in_mb,
-		providers,
-		providers_len,
-		session_type,
-		format,
-		rundown_requested,
-		false, // disable_stackwalk
-		stream,
-		sync_callback,
-		callback_additional_data);
-	ep_raise_error_if_nok(options != NULL);
+	EventPipeSessionOptions options = EventPipeSessionOptions();
+	options.output_path = output_path;
+	options.circular_buffer_size_in_mb = circular_buffer_size_in_mb;
+	options.providers = providers;
+	options.providers_len = providers_len;
+	options.session_type = session_type;
+	options.format = format;
+	options.rundown_requested = rundown_requested;
+	options.disable_stacktrace = false;
+	options.stream = stream;
+	options.sync_callback = sync_callback;
+	options.callback_additional_data = callback_additional_data;
 
 	sessionId = ep_enable_3(options);
 
-ep_on_exit:
-	ep_session_options_free(options);
 	return sessionId;
-
-ep_on_error:
-	ep_exit_error_handler ();
 }
 
 EventPipeSessionID
@@ -1138,8 +1085,10 @@ ep_on_error:
 }
 
 EventPipeSessionID
-ep_enable_3 (EventPipeSessionOptions* options)
+ep_enable_3 (EventPipeSessionOptions options)
 {
+	ep_return_zero_if_nok(check_options_valid(options));
+
 	ep_requires_lock_not_held ();
 
 	EventPipeSessionID session_id = 0;

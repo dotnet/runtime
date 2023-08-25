@@ -133,23 +133,6 @@ struct _EventPipeSessionOptions {
 };
 #endif
 
-EventPipeSessionOptions *
-ep_session_options_alloc (
-	const ep_char8_t *output_path,
-	uint32_t circular_buffer_size_in_mb,
-	const EventPipeProviderConfiguration *providers,
-	uint32_t providers_len,
-	EventPipeSessionType session_type,
-	EventPipeSerializationFormat format,
-	bool rundown_requested,
-	bool disable_stacktrace,
-	IpcStream *stream,
-	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
-
-void
-ep_session_options_free(EventPipeSessionOptions* options);
-
 /*
  * EventPipe.
  */
@@ -192,7 +175,7 @@ ep_enable_2 (
 
 EventPipeSessionID
 ep_enable_3 (
-	EventPipeSessionOptions* options
+	EventPipeSessionOptions options
 );
 
 void
