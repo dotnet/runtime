@@ -264,7 +264,7 @@ CMiniMd::vSearchTable(
     {   // Look at the one in the middle.
         mid = (lo + hi) / 2;
         IfFailRet(getRow(ixTbl, mid, &pRow));
-        val = getIX_NoLogging(pRow, sColumn);
+        val = getIX(pRow, sColumn);
         // If equal to the target, done.
         if (val == ulTarget)
         {
@@ -318,7 +318,7 @@ CMiniMd::vSearchTableNotGreater(
     {   // Look at the one in the middle.
         mid = (lo + hi) / 2;
         IfFailRet(getRow(ixTbl, mid, &pRow));
-        val = getIX_NoLogging(pRow, sColumn);
+        val = getIX(pRow, sColumn);
         // If equal to the target, done searching.
         if (val == ulTarget)
             break;

@@ -10,7 +10,7 @@ namespace DefaultNamespace
     public class AA
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool[] loc1 = new bool[7];
             loc1[2] = false;
@@ -28,7 +28,6 @@ namespace DefaultNamespace
                     }
                 }
             }
-            return 100;
         }
     }
 }

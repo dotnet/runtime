@@ -56,6 +56,7 @@ public:
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
+    bool WriteDiagInfo(size_t size);
     bool WriteProcessInfo();
     bool WriteAuxv();
     size_t GetNTFileInfoSize(size_t* alignmentBytes = nullptr);

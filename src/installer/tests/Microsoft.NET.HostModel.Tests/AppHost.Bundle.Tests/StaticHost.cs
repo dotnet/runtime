@@ -49,6 +49,12 @@ namespace AppHost.Bundle.Tests
                 .Pass()
                 .And
                 .HaveStdOutContaining("Hello World");
+
+            if (OperatingSystem.IsWindows())
+            {
+                // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
+                Assert.Equal(System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion, sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+            }
         }
 
         public class SharedTestState : SharedTestStateBase, IDisposable

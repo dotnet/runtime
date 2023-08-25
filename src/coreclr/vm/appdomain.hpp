@@ -2156,7 +2156,7 @@ public:
     void AddMemoryPressure();
     void RemoveMemoryPressure();
 
-    Assembly *GetRootAssembly()
+    PTR_Assembly GetRootAssembly()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pRootAssembly;
@@ -2394,7 +2394,7 @@ public:
     //****************************************************************************************
     //
     // Global Static to get the one and only system domain
-    static SystemDomain * System()
+    static PTR_SystemDomain System()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 

@@ -1,7 +1,7 @@
 is_global = true
 
 # AD0001: Analyzer threw an exception
-dotnet_diagnostic.AD0001.severity = suggestion
+dotnet_diagnostic.AD0001.severity = warning
 
 # BCL0001: Ensure minimum API surface is respected
 dotnet_diagnostic.BCL0001.severity = warning
@@ -475,13 +475,16 @@ dotnet_diagnostic.CA1860.severity = warning
 dotnet_diagnostic.CA1861.severity = warning
 
 # CA1862: Prefer using 'StringComparer'/'StringComparison' to perform case-insensitive string comparisons
-dotnet_diagnostic.CA1862.severity = warning
+dotnet_diagnostic.CA1862.severity = info
 
 # CA1863: Use 'CompositeFormat'
 dotnet_diagnostic.CA1863.severity = suggestion
 
 # CA1864: Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
 dotnet_diagnostic.CA1864.severity = warning
+
+# CA1868: Unnecessary call to 'Contains' for sets
+dotnet_diagnostic.CA1868.severity = warning
 
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none

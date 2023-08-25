@@ -92,8 +92,16 @@ namespace System.Collections.Immutable
             }
         }
 
+        /// <summary>
+        /// Creates a new read-only span over this immutable array.
+        /// </summary>
+        /// <returns>The read-only span representation of this immutable array.</returns>
         public ReadOnlySpan<T> AsSpan() => new ReadOnlySpan<T>(array);
 
+        /// <summary>
+        /// Creates a new read-only memory region over this immutable array.
+        /// </summary>
+        /// <returns>The read-only memory representation of this immutable array.</returns>
         public ReadOnlyMemory<T> AsMemory() => new ReadOnlyMemory<T>(array);
 
         /// <summary>

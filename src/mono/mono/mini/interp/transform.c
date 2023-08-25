@@ -1213,23 +1213,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
-	if (sig->param_count > 10)
-		return FALSE;
-	if (sig->pinvoke)
-		return FALSE;
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-		return FALSE;
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-		return FALSE;
-	if (!mono_llvm_only && method->is_inflated)
-		return FALSE;
-	if (method->string_ctor)
-		return FALSE;
-	if (method->wrapper_type != MONO_WRAPPER_NONE)
-		return FALSE;
-
-	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
-		/* Used to mark methods containing StackCrawlMark locals */
+	if (!interp_jit_call_can_be_supported (method, sig, mono_llvm_only))
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
@@ -1290,15 +1274,10 @@ interp_get_icall_sig (MonoMethodSignature *sig);
 static gpointer
 imethod_alloc0 (TransformData *td, size_t size)
 {
-	if (td->rtm->method->dynamic) {
-		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-		jit_mm_lock (jit_mm);
-		gpointer ret = mono_mempool_alloc0 (((MonoDynamicMethod*)td->rtm->method)->mp, (guint)size);
-		jit_mm_unlock (jit_mm);
-		return ret;
-	} else {
+	if (td->rtm->method->dynamic)
+		return mono_dyn_method_alloc0 (td->rtm->method, (guint)size);
+	else
 		return mono_mem_manager_alloc0 (td->mem_manager, (guint)size);
-	}
 }
 
 static void
@@ -2996,6 +2975,10 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	int nargs = csignature->param_count + !!csignature->hasthis;
 	InterpInst *prev_last_ins;
 
+	if (header->code_size == 0)
+		/* IL stripped */
+		return FALSE;
+
 	if (csignature->is_inflated)
 		generic_context = mono_method_get_context (target_method);
 	else {
@@ -3258,6 +3241,26 @@ emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
 		}
 		break;
 	}
+	case MONO_TYPE_R4: {
+		switch (stype) {
+		case STACK_TYPE_R8:
+			interp_add_conv (td, sp, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
+			break;
+		default:
+			break;
+		}
+		break;
+	}
+	case MONO_TYPE_R8: {
+		switch (stype) {
+		case STACK_TYPE_R4:
+			interp_add_conv (td, sp, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+			break;
+		default:
+			break;
+		}
+		break;
+	}
 #if SIZEOF_VOID_P == 8
 	case MONO_TYPE_U: {
 		switch (stype) {
@@ -3275,9 +3278,9 @@ emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
 }
 
 static void
-interp_emit_arg_conv (TransformData *td, MonoMethodSignature *csignature)
+interp_emit_arg_conv (TransformData *td, MonoMethodSignature *csignature, int arg_start_offset)
 {
-	StackInfo *arg_start = td->sp - csignature->param_count;
+	StackInfo *arg_start = td->sp - arg_start_offset - csignature->param_count;
 
 	for (int i = 0; i < csignature->param_count; i++)
 		emit_convert (td, &arg_start [i], csignature->params [i]);
@@ -3623,6 +3626,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_ins_set_dreg (td->last_ins, sp->local);
 	}
 
+	/* Offset the function pointer when emitting convert instructions */
+	int arg_start_offset = calli ? 1 : 0;
+	interp_emit_arg_conv (td, csignature, arg_start_offset);
+
 	g_assert (csignature->call_convention != MONO_CALL_FASTCALL);
 	if ((mono_interp_opt & INTERP_OPT_INLINE) && op == -1 && !is_virtual && target_method && interp_method_check_inlining (td, target_method, csignature)) {
 		MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
@@ -3678,8 +3685,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		--td->sp;
 		fp_sreg = td->sp [0].local;
 	}
-
-	interp_emit_arg_conv (td, csignature);
 
 	int param_end_offset = 0;
 	if (!td->optimized && op == -1)

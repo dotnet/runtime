@@ -14,11 +14,10 @@ namespace DefaultNamespace
     public class Ternary3b
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Ternary3b hmm = new Ternary3b();
             hmm.Problem();
-            return 100;
         }
 
         // If these field members are in the Problem() function, the problem does Not repro!!

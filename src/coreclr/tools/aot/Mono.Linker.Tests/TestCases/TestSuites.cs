@@ -75,6 +75,13 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.TopLevelStatements), MemberType = typeof (TestDatabase))]
+		public void TopLevelStatements (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.UnreachableBlock), MemberType = typeof (TestDatabase))]
 		public void UnreachableBlock (string t)
 		{

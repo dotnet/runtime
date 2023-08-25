@@ -765,6 +765,8 @@ inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
         return false;
     }
 
+    // Throwing in a filter is the same as returning "continue search", which
+    // causes enclosed finally/fault handlers to be executed.
     return hndDesc->InFilterRegionBBRange(this);
 }
 
@@ -2776,6 +2778,12 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
                 return TYP_LONG;
             default:
                 break;
+        }
+
+        if (varTypeIsSIMD(type))
+        {
+            // Vectors also get passed in int registers. Use TYP_INT.
+            return TYP_INT;
         }
     }
 #endif // defined(TARGET_ARMARCH)

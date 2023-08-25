@@ -2269,13 +2269,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             hfaType  = comp->GetHfaType(argSigClass);
             isHfaArg = varTypeIsValidHfaType(hfaType);
 
-#if defined(TARGET_ARM64)
-            if (TargetOS::IsWindows)
+            if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && callIsVararg)
             {
                 // Make sure for vararg methods isHfaArg is not true.
-                isHfaArg = callIsVararg ? false : isHfaArg;
+                isHfaArg = false;
             }
-#endif // defined(TARGET_ARM64)
 
             if (isHfaArg)
             {
@@ -2614,7 +2612,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 //
                 if (!isRegArg && (size > 1))
                 {
-                    // Arm64 windows native varargs allows splitting a 16 byte struct between stack
+                    // Arm64 windows native varargs allows splitting a 16 byte struct (or SIMD type) between stack
                     // and the last general purpose register.
                     if (TargetOS::IsWindows && callIsVararg)
                     {
@@ -4657,20 +4655,12 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     if (fgGlobalMorph && lclNode->OperIs(GT_LCL_VAR) && varDsc->lvNormalizeOnLoad() &&
         /* TODO-ASG: delete this zero-diff quirk */ lclNode->CanCSE())
     {
-        // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
-        // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
-        // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
-        // here with local assertions, and "expanded", i. e. CAST(small type <- LCL_VAR(int V00)).
-        // This is a pretty fundamental problem with how normalize-on-load locals appear to the optimizer.
-        // This quirk preserves the previous behavior.
-        // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
-        var_types lclVarType  = varDsc->TypeGet();
-        bool      isBoolQuirk = lclVarType == TYP_BOOL;
+        var_types lclVarType = varDsc->TypeGet();
 
         // Assertion prop can tell us to omit adding a cast here. This is useful when the local is a small-typed
         // parameter that is passed in a register: in that case, the ABI specifies that the upper bits might be
         // invalid, but the assertion guarantees us that we have normalized when we wrote it.
-        if (optLocalAssertionProp && !isBoolQuirk &&
+        if (optLocalAssertionProp &&
             optAssertionIsSubrange(lclNode, IntegralRange::ForType(lclVarType), apFull) != NO_ASSERTION_INDEX)
         {
             // The previous assertion can guarantee us that if this node gets
@@ -7668,6 +7658,16 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             return result;
         }
 #endif
+    }
+
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
+    {
+        if (lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd) ==
+            NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
+        {
+            // Expanded in fgVNBasedIntrinsicExpansion
+            setMethodHasSpecialIntrinsics();
+        }
     }
 
     if (((call->gtCallMoreFlags & (GTF_CALL_M_SPECIAL_INTRINSIC | GTF_CALL_M_LDVIRTFTN_INTERFACE)) == 0) &&
@@ -10668,7 +10668,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         return vecCon;
     }
 
-    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+    NamedIntrinsic intrinsicId  = node->GetHWIntrinsicId();
+    var_types      simdBaseType = node->GetSimdBaseType();
 
     switch (intrinsicId)
     {
@@ -10759,6 +10760,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            // Must be working with the same types of vectors.
+            if (hwop1->TypeGet() != node->TypeGet())
+            {
+                break;
+            }
+
             if (toScalar != nullptr)
             {
                 DEBUG_DESTROY_NODE(toScalar);
@@ -10780,6 +10787,163 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
+
+#if defined(TARGET_XARCH)
+        case NI_AVX512F_Add:
+        case NI_AVX512BW_Add:
+        case NI_AVX512F_And:
+        case NI_AVX512DQ_And:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+        case NI_AVX512F_Or:
+        case NI_AVX512DQ_Or:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector) ||
+                !op2->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+            {
+                // We need both operands to be ConvertMaskToVector in
+                // order to optimize this to a direct mask operation
+                break;
+            }
+
+            unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+            GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
+            GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
+
+            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize) ||
+                (genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
+            {
+                // We need both operands to be the same kind of mask; otherwise
+                // the bitwise operation can differ in how it performs
+                break;
+            }
+
+            var_types   simdType        = node->TypeGet();
+            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+            unsigned    simdSize        = node->GetSimdSize();
+
+            NamedIntrinsic maskIntrinsicId = NI_Illegal;
+
+            switch (intrinsicId)
+            {
+                case NI_AVX512F_Add:
+                case NI_AVX512BW_Add:
+                {
+                    maskIntrinsicId = NI_AVX512F_AddMask;
+                    break;
+                }
+
+                case NI_AVX512F_And:
+                case NI_AVX512DQ_And:
+                {
+                    maskIntrinsicId = NI_AVX512F_AndMask;
+                    break;
+                }
+
+                case NI_AVX512F_AndNot:
+                case NI_AVX512DQ_AndNot:
+                {
+                    maskIntrinsicId = NI_AVX512F_AndNotMask;
+                    break;
+                }
+
+                case NI_AVX512F_Or:
+                case NI_AVX512DQ_Or:
+                {
+                    maskIntrinsicId = NI_AVX512F_OrMask;
+                    break;
+                }
+
+                case NI_AVX512F_Xor:
+                case NI_AVX512DQ_Xor:
+                {
+                    maskIntrinsicId = NI_AVX512F_XorMask;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            assert(maskIntrinsicId != NI_Illegal);
+
+            node->ChangeHWIntrinsicId(maskIntrinsicId);
+            node->gtType = TYP_MASK;
+
+            node->Op(1) = cvtOp1->Op(1);
+            DEBUG_DESTROY_NODE(op1);
+
+            node->Op(2) = cvtOp2->Op(1);
+            DEBUG_DESTROY_NODE(op2);
+
+            node = gtNewSimdHWIntrinsicNode(simdType, node, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
+
+            INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            break;
+        }
+
+        case NI_AVX512F_ConvertMaskToVector:
+        {
+            GenTree* op1 = node->Op(1);
+
+            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertVectorToMask))
+            {
+                break;
+            }
+
+            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+            GenTreeHWIntrinsic* cvtOp1           = op1->AsHWIntrinsic();
+
+            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize))
+            {
+                // We need the operand to be the same kind of mask; otherwise
+                // the bitwise operation can differ in how it performs
+                break;
+            }
+
+            GenTree* vectorNode = op1->AsHWIntrinsic()->Op(1);
+
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return vectorNode;
+        }
+
+        case NI_AVX512F_ConvertVectorToMask:
+        {
+            GenTree* op1 = node->Op(1);
+
+            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+            {
+                break;
+            }
+
+            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+            GenTreeHWIntrinsic* cvtOp1           = op1->AsHWIntrinsic();
+
+            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize))
+            {
+                // We need the operand to be the same kind of mask; otherwise
+                // the bitwise operation can differ in how it performs
+                break;
+            }
+
+            GenTree* maskNode = op1->AsHWIntrinsic()->Op(1);
+
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return maskNode;
+        }
+#endif // TARGET_XARCH
 
         default:
         {

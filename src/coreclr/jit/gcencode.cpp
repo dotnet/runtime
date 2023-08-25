@@ -340,11 +340,11 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 
     if (offs < 0)
     {
-        printf("-%02XH", -offs);
+        printf("-0x%02X", -offs);
     }
     else if (offs > 0)
     {
-        printf("+%02XH", +offs);
+        printf("+0x%02X", +offs);
     }
 
     printf("] live from %04X to %04X\n", desc->vpdBegOfs, desc->vpdEndOfs);

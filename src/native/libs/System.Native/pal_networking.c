@@ -659,15 +659,17 @@ static bool IsInBounds(const void* void_baseAddr, size_t len, const void* void_v
     return valueAddr >= baseAddr && (valueAddr + valueSize) <= (baseAddr + len);
 }
 
-int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize)
+int32_t SystemNative_GetSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize, int32_t* udsSocketAddressSize, int32_t* maxSocketAddressSize)
 {
-    if (ipv4SocketAddressSize == NULL || ipv6SocketAddressSize == NULL)
+    if (ipv4SocketAddressSize == NULL || ipv6SocketAddressSize == NULL || udsSocketAddressSize == NULL || maxSocketAddressSize == NULL)
     {
         return Error_EFAULT;
     }
 
     *ipv4SocketAddressSize = sizeof(struct sockaddr_in);
     *ipv6SocketAddressSize = sizeof(struct sockaddr_in6);
+    *udsSocketAddressSize = sizeof(struct sockaddr_un);
+    *maxSocketAddressSize = sizeof(struct sockaddr_storage);
     return Error_SUCCESS;
 }
 

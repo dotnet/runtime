@@ -101,11 +101,11 @@ namespace System.Tests
                 where T : struct
             {
                 T? nullable = before;
-                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(in nullable);
 
                 Assert.Equal(before, nullable!.Value);
 
-                Unsafe.AsRef<T>(reference) = after;
+                Unsafe.AsRef<T>(in reference) = after;
 
                 Assert.Equal(after, nullable.Value);
             }
@@ -124,7 +124,7 @@ namespace System.Tests
                 where T : struct
             {
                 T? nullable = null;
-                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(in nullable);
 
                 Assert.Equal(nullable!.GetValueOrDefault(), reference);
             }
@@ -143,9 +143,9 @@ namespace System.Tests
                where T : struct
             {
                 T? nullable = null;
-                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(nullable);
+                ref readonly T reference = ref Nullable.GetValueRefOrDefaultRef(in nullable);
 
-                Unsafe.AsRef<T>(reference) = after;
+                Unsafe.AsRef<T>(in reference) = after;
 
                 Assert.Equal(after, nullable.GetValueOrDefault()); // GetValueOrDefault() unconditionally returns the field
                 Assert.False(nullable.HasValue);

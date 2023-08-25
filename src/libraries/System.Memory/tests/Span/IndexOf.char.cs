@@ -69,5 +69,15 @@ namespace System.SpanTests
                 Assert.Equal(-1, index);
             }
         }
+
+        [Fact]
+        public static void IndexOfWorksOnAvx512_Char()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/89512
+
+            var arr = new char[64];
+            arr[1] = (char)(1);
+            Assert.Equal(1, arr.AsSpan().IndexOf((char)(1)));
+        }
     }
 }

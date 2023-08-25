@@ -2,7 +2,7 @@
 
 initTargetDistroRid()
 {
-    source "$__RepoRootDir/eng/native/init-distro-rid.sh"
+    source "$__RepoRootDir/eng/common/native/init-distro-rid.sh"
 
     local passedRootfsDir=""
 
@@ -11,7 +11,7 @@ initTargetDistroRid()
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
-    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$__PortableBuild" "$passedRootfsDir"
+    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$passedRootfsDir"
 }
 
 setup_dirs()

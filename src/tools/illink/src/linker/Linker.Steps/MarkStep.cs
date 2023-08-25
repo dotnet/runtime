@@ -237,6 +237,7 @@ namespace Mono.Linker.Steps
 		public AnnotationStore Annotations => Context.Annotations;
 		public MarkingHelpers MarkingHelpers => Context.MarkingHelpers;
 		public Tracer Tracer => Context.Tracer;
+		public EmbeddedXmlInfo EmbeddedXmlInfo => Context.EmbeddedXmlInfo;
 
 		public virtual void Process (LinkContext context)
 		{
@@ -250,7 +251,7 @@ namespace Mono.Linker.Steps
 			Complete ();
 		}
 
-		void Initialize ()
+		protected virtual void Initialize ()
 		{
 			InitializeCorelibAttributeXml ();
 			Context.Pipeline.InitializeMarkHandlers (Context, MarkContext);
@@ -281,7 +282,7 @@ namespace Mono.Linker.Steps
 				Context.CustomAttributes.PrimaryAttributeInfo.CustomAttributesOrigins.Add (ca, origin);
 		}
 
-		void Complete ()
+		protected virtual void Complete ()
 		{
 			foreach ((var body, var _) in _unreachableBodies) {
 				Annotations.SetAction (body.Method, MethodAction.ConvertToThrow);
@@ -1394,7 +1395,7 @@ namespace Mono.Linker.Steps
 			return !Annotations.SetProcessed (provider);
 		}
 
-		protected void MarkAssembly (AssemblyDefinition assembly, DependencyInfo reason)
+		protected virtual void MarkAssembly (AssemblyDefinition assembly, DependencyInfo reason)
 		{
 			Annotations.Mark (assembly, reason, ScopeStack.CurrentScope.Origin);
 			if (CheckProcessed (assembly))
@@ -2438,28 +2439,28 @@ namespace Mono.Linker.Steps
 				if (ShouldMarkInterfaceImplementation (type, iface))
 					MarkInterfaceImplementation (iface, new MessageOrigin (type));
 			}
+		}
 
-			bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
-			{
-				if (Annotations.IsMarked (iface))
-					return false;
+		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
+		{
+			if (Annotations.IsMarked (iface))
+				return false;
 
-				if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
-					return true;
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
+				return true;
 
-				if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
-					return false;
+			if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
+				return false;
 
-				if (Annotations.IsMarked (resolvedInterfaceType))
-					return true;
+			if (Annotations.IsMarked (resolvedInterfaceType))
+				return true;
 
-				// It's hard to know if a com or windows runtime interface will be needed from managed code alone,
-				// so as a precaution we will mark these interfaces once the type is instantiated
-				if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
-					return true;
+			// It's hard to know if a com or windows runtime interface will be needed from managed code alone,
+			// so as a precaution we will mark these interfaces once the type is instantiated
+			if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
+				return true;
 
-				return IsFullyPreserved (type);
-			}
+			return IsFullyPreserved (type);
 		}
 
 		void MarkGenericParameterProvider (IGenericParameterProvider provider)

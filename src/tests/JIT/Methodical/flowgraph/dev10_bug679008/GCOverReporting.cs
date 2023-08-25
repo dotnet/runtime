@@ -100,13 +100,12 @@ public class Repro
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Method();
         TrashStack();
         ConsumeStack(0);
         DoTest();
-        return 100;
     }
 }
 }

@@ -395,7 +395,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
                 default:
                     LogError("Unknown target architecture");
-                break;
+                    break;
             }
 
             // If the target architecture doesn't match the expected target architecture
@@ -405,16 +405,16 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             {
                 jitResult = CORJIT_OK;
             }
-
         }
-        if (jitResult == CORJIT_OK)
+
+        if ((jitResult == CORJIT_OK) || (jitResult == CORJIT_BADCODE))
         {
             // capture the results of compilation
             pParam->pThis->mc->cr->recCompileMethod(&NEntryBlock, &NCodeSizeBlock, jitResult);
             pParam->pThis->mc->cr->recAllocMemCapture();
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
-            pParam->pThis->mc->cr->recMessageLog("Successful Compile");
+            pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
 
             pParam->metrics->NumCodeBytes += NCodeSizeBlock;
         }
@@ -434,6 +434,20 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             LogMissing("Method context %d failed to replay: %s", mcIndex, message);
             e.DeleteMessage();
             param.result = RESULT_MISSING;
+        }
+        else if (e.GetCode() == EXCEPTIONCODE_RECORDED_EXCEPTION)
+        {
+            // Exception thrown by EE during recording, for example a managed
+            // MissingFieldException thrown by resolveToken. Several JIT-EE
+            // APIs can throw exceptions and the recorder expects and rethrows
+            // their exceptions under this exception code. We do not consider
+            // these a replay failure.
+
+            // Call these methods to capture that no code/GC info was generated.
+            mc->cr->recAllocMemCapture();
+            mc->cr->recAllocGCInfoCapture();
+
+            mc->cr->recMessageLog("Successful Compile (EE API exception)");
         }
         else
         {

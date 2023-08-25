@@ -384,7 +384,7 @@ extern "C"
     void STDCALL JIT_MemCpy(void *dest, const void *src, SIZE_T count);
 
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !(TARGET_RISCV64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     void STDCALL JIT_StackProbe();
 #endif // TARGET_ARM64
 };
@@ -430,7 +430,7 @@ public:
     static unsigned getClassGClayoutStatic(TypeHandle th, BYTE* gcPtrs);
     static CorInfoHelpFunc getNewHelperStatic(MethodTable * pMT, bool * pHasSideEffects);
     static CorInfoHelpFunc getNewArrHelperStatic(TypeHandle clsHnd);
-    static CorInfoHelpFunc getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing, bool * pfClassMustBeRestored);
+    static CorInfoHelpFunc getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing);
 
     // Returns that compilation flags that are shared between JIT and NGen
     static CORJIT_FLAGS GetBaseCompileFlags(MethodDesc * ftn);
@@ -464,6 +464,8 @@ public:
         CORINFO_SIG_INFO* sig,
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
+
+    bool getStaticObjRefContent(OBJECTREF obj, uint8_t* buffer, bool ignoreMovableObjects);
 
     // This normalizes EE type information into the form expected by the JIT.
     //

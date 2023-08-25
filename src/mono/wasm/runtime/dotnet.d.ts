@@ -96,14 +96,6 @@ interface DotnetHostBuilder {
 }
 type MonoConfig = {
     /**
-     * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
-     */
-    assemblyRootFolder?: string;
-    /**
-     * A list of assets to load along with the runtime.
-     */
-    assets?: AssetEntry[];
-    /**
      * Additional search locations for assets.
      */
     remoteSources?: string[];
@@ -134,6 +126,22 @@ type MonoConfig = {
      */
     debugLevel?: number;
     /**
+     * Gets a value that determines whether to enable caching of the 'resources' inside a CacheStorage instance within the browser.
+     */
+    cacheBootResources?: boolean;
+    /**
+     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
+     */
+    cachedResourcesPurgeDelay?: number;
+    /**
+     * Configures use of the `integrity` directive for fetching assets
+     */
+    disableIntegrityCheck?: boolean;
+    /**
+     * Configures use of the `no-cache` directive for fetching assets
+     */
+    disableNoCacheFetch?: boolean;
+    /**
     * Enables diagnostic log messages during startup
     */
     diagnosticTracing?: boolean;
@@ -152,10 +160,6 @@ type MonoConfig = {
      */
     startupMemoryCache?: boolean;
     /**
-     * hash of assets
-     */
-    assetsHash?: string;
-    /**
      * application environment
      */
     applicationEnvironment?: string;
@@ -168,6 +172,10 @@ type MonoConfig = {
      */
     resources?: ResourceGroups;
     /**
+     * appsettings files to load to VFS
+     */
+    appsettings?: string[];
+    /**
      * config extensions declared in MSBuild items @(WasmBootConfigExtension)
      */
     extensions?: {
@@ -178,26 +186,31 @@ type ResourceExtensions = {
     [extensionName: string]: ResourceList;
 };
 interface ResourceGroups {
-    readonly hash?: string;
-    readonly assembly?: ResourceList;
-    readonly lazyAssembly?: ResourceList;
-    readonly pdb?: ResourceList;
-    readonly runtime?: ResourceList;
-    readonly satelliteResources?: {
+    hash?: string;
+    assembly?: ResourceList;
+    lazyAssembly?: ResourceList;
+    pdb?: ResourceList;
+    jsModuleWorker?: ResourceList;
+    jsModuleNative: ResourceList;
+    jsModuleRuntime: ResourceList;
+    wasmSymbols?: ResourceList;
+    wasmNative: ResourceList;
+    icu?: ResourceList;
+    satelliteResources?: {
         [cultureName: string]: ResourceList;
     };
-    readonly libraryInitializers?: ResourceList;
-    readonly libraryStartupModules?: {
-        readonly onRuntimeConfigLoaded?: ResourceList;
-        readonly onRuntimeReady?: ResourceList;
-    };
-    readonly extensions?: ResourceExtensions;
-    readonly vfs?: {
+    modulesAfterConfigLoaded?: ResourceList;
+    modulesAfterRuntimeReady?: ResourceList;
+    extensions?: ResourceExtensions;
+    vfs?: {
         [virtualPath: string]: ResourceList;
     };
 }
+/**
+ * A "key" is name of the file, a "value" is optional hash for integrity check.
+ */
 type ResourceList = {
-    [name: string]: string;
+    [name: string]: string | null | "";
 };
 /**
  * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
@@ -206,21 +219,33 @@ type ResourceList = {
  * @param name The name of the resource to be loaded.
  * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
  * @param integrity The integrity string representing the expected content in the response.
+ * @param behavior The detailed behavior/type of the resource to be loaded.
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
+ * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
-interface ResourceRequest {
-    name: string;
-    behavior: AssetBehaviours;
-    resolvedUrl?: string;
-    hash?: string;
-}
+type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
 interface LoadingResource {
     name: string;
     url: string;
     response: Promise<Response>;
 }
-interface AssetEntry extends ResourceRequest {
+interface AssetEntry {
+    /**
+     * the name of the asset, including extension.
+     */
+    name: string;
+    /**
+     * determines how the asset will be handled once loaded
+     */
+    behavior: AssetBehaviors;
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * the integrity hash of the asset (if any)
+     */
+    hash?: string | null | "";
     /**
      * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
      */
@@ -241,14 +266,44 @@ interface AssetEntry extends ResourceRequest {
      * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
-    buffer?: ArrayBuffer;
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>;
     /**
      * It's metadata + fetch-like Promise<Response>
      * If provided, the runtime doesn't have to initiate the download. It would just await the response.
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = 
+type SingleAssetBehaviors = 
+/**
+ * The binary of the dotnet runtime.
+ */
+"dotnetwasm"
+/**
+ * The javascript module for loader.
+ */
+ | "js-module-dotnet"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-threads"
+/**
+ * The javascript module for runtime.
+ */
+ | "js-module-runtime"
+/**
+ * The javascript module for emscripten.
+ */
+ | "js-module-native"
+/**
+ * Typically blazor.boot.json
+ */
+ | "manifest";
+type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
  */
@@ -273,26 +328,6 @@ type AssetBehaviours =
  * Load asset into the virtual filesystem (for fopen, File.Open, etc).
  */
  | "vfs"
-/**
- * The binary of the dotnet runtime.
- */
- | "dotnetwasm"
-/**
- * The javascript module for threads.
- */
- | "js-module-threads"
-/**
- * The javascript module for threads.
- */
- | "js-module-runtime"
-/**
- * The javascript module for threads.
- */
- | "js-module-dotnet"
-/**
- * The javascript module for threads.
- */
- | "js-module-native"
 /**
  * The javascript module that came from nuget package .
  */
@@ -330,10 +365,8 @@ type DotnetModuleConfig = {
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
     imports?: any;
     exports?: string[];
-    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
 } & Partial<EmscriptenModule>;
 type APIType = {
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;
@@ -436,4 +469,4 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

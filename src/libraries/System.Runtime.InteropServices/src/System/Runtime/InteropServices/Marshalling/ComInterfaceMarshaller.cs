@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// This marshaller will always pass the <see cref="CreateObjectFlags.Unwrap"/> flag
     /// to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/>.
     /// </remarks>
+    /// <typeparam name="T">The managed type that represents a COM interface type</typeparam>
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
@@ -75,11 +76,10 @@ namespace System.Runtime.InteropServices.Marshalling
                 // If the managed type isn't a GeneratedComInterface-attributed type, we'll marshal to an IUnknown*.
                 return (void*)unknown;
             }
-            Guid iid = TargetInterfaceIID.Value;
-            if (Marshal.QueryInterface(unknown, ref iid, out nint interfacePointer) != 0)
+            if (Marshal.QueryInterface(unknown, in Nullable.GetValueRefOrDefaultRef(in TargetInterfaceIID), out nint interfacePointer) != 0)
             {
                 Marshal.Release(unknown);
-                throw new InvalidCastException($"Unable to cast the provided managed object to a COM interface with ID '{iid:B}'");
+                throw new InvalidCastException($"Unable to cast the provided managed object to a COM interface with ID '{TargetInterfaceIID.GetValueOrDefault():B}'");
             }
             Marshal.Release(unknown);
             return (void*)interfacePointer;

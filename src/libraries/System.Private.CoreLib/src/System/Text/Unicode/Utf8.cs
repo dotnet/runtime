@@ -410,15 +410,28 @@ namespace System.Text.Unicode
             /// <summary>Writes the specified string to the handler.</summary>
             /// <param name="value">The string to write.</param>
             /// <returns>true if the value could be formatted to the span; otherwise, false.</returns>
-            public bool AppendLiteral(string value) => AppendFormatted(value.AsSpan());
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // we want 'value' exposed to the JIT as a constant
+            public bool AppendLiteral(string value)
+            {
+                if (value is not null)
+                {
+                    Span<byte> dest = _destination.Slice(_pos);
 
-            // TODO https://github.com/dotnet/csharplang/issues/7072:
-            // Add this if/when C# supports u8 literals with string interpolation.
-            // If that happens prior to this type being released, the above AppendLiteral(string)
-            // should also be removed.  If that doesn't happen, we should look into ways to optimize
-            // the above AppendLiteral, such as by making the underlying encoding operation a JIT
-            // intrinsic that can emit substitute a "abc"u8 equivalent for an "abc" string literal.
-            //public bool AppendLiteral(scoped ReadOnlySpan<byte> value) => AppendFormatted(value);
+                    // The 99.999% for AppendLiteral is to be called with a const string.
+                    // ReadUtf8 is a JIT intrinsic that can do the UTF8 encoding at JIT time.
+                    int bytesWritten = UTF8Encoding.UTF8EncodingSealed.ReadUtf8(
+                        ref value.GetRawStringData(), value.Length,
+                        ref MemoryMarshal.GetReference(dest), dest.Length);
+                    if (bytesWritten < 0)
+                    {
+                        return Fail();
+                    }
+
+                    _pos += bytesWritten;
+                }
+
+                return true;
+            }
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>

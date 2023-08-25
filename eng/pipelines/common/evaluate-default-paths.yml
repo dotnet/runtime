@@ -6,7 +6,8 @@ parameters:
   # do not set them when using the template
   _const_paths:
     _wasm_specific_only: [
-        eng/testing/ProvisioningVersions.props
+        eng/testing/bump-chrome-version.proj
+        eng/testing/ChromeVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
@@ -46,6 +47,10 @@ parameters:
         src/native/libs/System.IO.Compression.Native/*
         src/native/libs/System.Native/*
     ]
+    _wasm_chrome: [
+        eng/testing/bump-chrome-version.proj
+        eng/testing/ChromeVersions.props
+    ]
 
     # src/workloads is only used in runtime-official builds
     # where evaluate-paths is not used
@@ -56,6 +61,7 @@ parameters:
         PATENTS.TXT
         THIRD-PARTY-NOTICES.TXT
         src/workloads/*
+        src/mono/wasm/sln/*
     ]
 
 jobs:
@@ -125,12 +131,16 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
 
     - subset: runtimetests
+      combined: true
       include:
       - src/tests/*
+      exclude:
+      - ${{ parameters._const_paths._wasm_specific_only }}
 
     - subset: tools_illink
       include:
       - src/tools/illink/*
+      - global.json
 
     - subset: installer
       include:
@@ -200,6 +210,7 @@ jobs:
       - src/mono/wasm/runtime/*
       - src/mono/wasm/templates/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
       - ${{ parameters._const_paths._wasm_pipelines }}
@@ -209,7 +220,7 @@ jobs:
     - subset: wasmdebuggertests
       combined: true
       include:
-      - eng/testing/ProvisioningVersions.props
+      - ${{ parameters._const_paths._wasm_chrome }}
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*

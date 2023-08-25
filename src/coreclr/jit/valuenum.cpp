@@ -10435,7 +10435,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
         case TYP_FLOAT:
         {
-            tree->gtVNPair.SetBoth(vnStore->VNForFloatCon((float)tree->AsDblCon()->DconValue()));
+            float f32Cns = FloatingPointUtils::convertToSingle(tree->AsDblCon()->DconValue());
+            tree->gtVNPair.SetBoth(vnStore->VNForFloatCon(f32Cns));
             break;
         }
 
@@ -10755,7 +10756,6 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
 //    the given tree.
 //
 // Arguments:
-//    vnStore    - ValueNumStore object
 //    tree       - tree node to inspect
 //    byteOffset - [Out] resulting byte offset
 //    pObj       - [Out] constant object handle
@@ -10763,10 +10763,7 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
 // Return Value:
 //    true if the given tree is a ObjHandle + CNS
 //
-static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
-                                     GenTree*               tree,
-                                     ssize_t*               byteOffset,
-                                     CORINFO_OBJECT_HANDLE* pObj)
+bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORINFO_OBJECT_HANDLE* pObj)
 {
     if (!tree->gtVNPair.BothEqual())
     {
@@ -10853,7 +10850,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         }
     }
     else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
-             GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
+             GetObjectHandleAndOffset(tree->gtGetOp1(), &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
         assert(obj != nullptr);
@@ -11925,7 +11922,36 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
-    tree->gtVNPair = vnStore->VNPWithExc(normalPair, excSetPair);
+    // Some intrinsics should always be unique
+    bool makeUnique = false;
+
+#if defined(TARGET_XARCH)
+    switch (intrinsicId)
+    {
+        case NI_AVX512F_ConvertMaskToVector:
+        {
+            // We want to ensure that we get a TYP_MASK local to
+            // ensure the relevant optimizations can kick in
+
+            makeUnique = true;
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+#endif // TARGET_XARCH
+
+    if (makeUnique)
+    {
+        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), excSetPair);
+    }
+    else
+    {
+        tree->gtVNPair = vnStore->VNPWithExc(normalPair, excSetPair);
+    }
 
     // Currently, the only exceptions these intrinsics could throw are NREs.
     //
