@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
-    <NoWarn>$(NoWarn)</NoWarn>
 
     <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
     <PackageDescription>Provides the System.MathF for .NET Standard 2.0</PackageDescription>
@@ -11,10 +11,6 @@
          Once this package has shipped a stable version, the following line
          should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.1'">
