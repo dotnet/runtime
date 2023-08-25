@@ -45,10 +45,6 @@ class FrozenObjectSegment
 public:
     FrozenObjectSegment(size_t sizeHint);
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
-    bool IsRegistered() const
-    {
-        return VolatileLoad(&m_IsRegistered);
-    }
     void RegisterOrUpdate(uint8_t* current, size_t sizeCommited);
 
 private:
@@ -66,19 +62,19 @@ private:
     //
     // m_pCurrent <= m_SizeCommitted
     uint8_t* m_pCurrent;
+
+    // Last known value of m_pCurrent that GC is aware of.
+    //
+    // m_pCurrentRegistered <= m_pCurrent
     uint8_t* m_pCurrentRegistered;
 
     // Memory committed in the current segment
     //
     // m_SizeCommitted <= m_pStart + FOH_SIZE_RESERVED
     size_t m_SizeCommitted;
-    size_t m_SizeCommittedRegistered;
 
     // Total memory reserved for the current segment
     size_t m_Size;
-
-    // Whether GC knows about this segment already or it hasn't been registered yet
-    bool m_IsRegistered;
 
     segment_handle m_SegmentHandle;
 
