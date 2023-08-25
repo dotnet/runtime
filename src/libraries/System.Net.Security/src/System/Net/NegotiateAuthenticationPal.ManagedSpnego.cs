@@ -115,7 +115,7 @@ namespace System.Net
 
             private NegotiateAuthenticationPal CreateMechanismForPackage(string packageName)
             {
-                return NegotiateAuthenticationPal.Create(new NegotiateAuthenticationClientOptions
+                var updatedClientOptions = new NegotiateAuthenticationClientOptions
                 {
                     Package = packageName,
                     Credential = _clientOptions.Credential,
@@ -124,7 +124,16 @@ namespace System.Net
                     RequiredProtectionLevel = _clientOptions.RequiredProtectionLevel,
                     RequireMutualAuthentication = _clientOptions.RequireMutualAuthentication,
                     AllowedImpersonationLevel = _clientOptions.AllowedImpersonationLevel,
-                });
+                };
+
+                try
+                {
+                    return NegotiateAuthenticationPal.Create(updatedClientOptions);
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    return new UnsupportedNegotiateAuthenticationPal(updatedClientOptions);
+                }
             }
 
             private IEnumerable<KeyValuePair<string, string>> EnumerateMechanisms()
@@ -303,16 +312,7 @@ namespace System.Net
                     {
                         // Abandon the optimistic path and restart with a new mechanism
                         _optimisticMechanism?.Dispose();
-                        _mechanism = NegotiateAuthenticationPal.Create(new NegotiateAuthenticationClientOptions
-                        {
-                            Package = requestedPackage,
-                            Credential = _clientOptions.Credential,
-                            TargetName = _clientOptions.TargetName,
-                            Binding = _clientOptions.Binding,
-                            RequiredProtectionLevel = _clientOptions.RequiredProtectionLevel,
-                            RequireMutualAuthentication = _clientOptions.RequireMutualAuthentication,
-                            AllowedImpersonationLevel = _clientOptions.AllowedImpersonationLevel,
-                        });
+                        _mechanism = CreateMechanismForPackage(requestedPackage);
                     }
 
                     _optimisticMechanism = null;

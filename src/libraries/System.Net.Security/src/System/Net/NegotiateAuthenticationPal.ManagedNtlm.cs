@@ -222,13 +222,16 @@ namespace System.Net
             {
                 Debug.Assert(clientOptions.Package == NegotiationInfoClass.NTLM);
 
-                _credential = clientOptions.Credential;
-                if (string.IsNullOrWhiteSpace(_credential.UserName) || string.IsNullOrWhiteSpace(_credential.Password))
+                if (clientOptions.Credential == CredentialCache.DefaultNetworkCredentials ||
+                    string.IsNullOrWhiteSpace(clientOptions.Credential.UserName) ||
+                    string.IsNullOrWhiteSpace(clientOptions.Credential.Password))
                 {
                     // NTLM authentication is not possible with default credentials which are no-op
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, SR.net_ntlm_not_possible_default_cred);
                     throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
                 }
 
+                _credential = clientOptions.Credential;
                 _spn = clientOptions.TargetName;
                 _channelBinding = clientOptions.Binding;
                 _protectionLevel = clientOptions.RequiredProtectionLevel;

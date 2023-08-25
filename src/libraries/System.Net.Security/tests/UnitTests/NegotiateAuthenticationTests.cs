@@ -95,6 +95,14 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "The test is specific to GSSAPI / Managed implementations of NegotiateAuthentication")]
+        public void DefaultNetworkCredentials_NTLM_Throws()
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = CredentialCache.DefaultNetworkCredentials, TargetName = "HTTP/foo" };
+            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateAuthentication(clientOptions));
+        }
+
+        [Fact]
         public void NtlmProtocolExampleTest()
         {
             // Mirrors the NTLMv2 example in the NTLM specification:

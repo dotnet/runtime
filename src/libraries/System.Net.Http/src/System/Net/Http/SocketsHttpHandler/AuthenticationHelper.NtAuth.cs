@@ -217,6 +217,12 @@ namespace System.Net.Http
                             needDrain = true;
                         }
                     }
+                    catch (PlatformNotSupportedException)
+                    {
+                        // Ignore PNSE from NegotiateAuthentication with unsupported parameters
+                        // and treat it the same way as if we didn't support the authentication
+                        // in the first place.
+                    }
                     finally
                     {
                         if (isNewConnection)
