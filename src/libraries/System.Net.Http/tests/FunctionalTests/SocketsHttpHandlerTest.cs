@@ -2922,7 +2922,8 @@ namespace System.Net.Http.Functional.Tests
 
             var concurrentStreamsSetting = new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams };
 
-            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(timeout: null, ackTimeout: TimeSpan.FromSeconds(10), concurrentStreamsSetting).ConfigureAwait(false);
+            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(timeout: null, ackTimeout: TimeSpan.FromSeconds(10), concurrentStreamsSetting)
+                .WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
             (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
             HttpDebug.Log($"streamId={streamId}");
@@ -2950,7 +2951,7 @@ namespace System.Net.Http.Functional.Tests
 
             for (int i = 0; i < streamIds.Length; i++)
             {
-                (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+                (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
                 streamIds[i] = streamId;
             }
 
@@ -2961,7 +2962,7 @@ namespace System.Net.Http.Functional.Tests
         {
             foreach (int streamId in streamIds)
             {
-                await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
+                await connection.SendDefaultResponseAsync(streamId).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
             }
         }
     }
