@@ -102,7 +102,7 @@ if ($iOSNativeAOT) {
 }
 
 if ($HybridGlobalization -eq "True") {
-    $Configurations += " HybridGlobalization=$HybridGlobalization"
+    $Configurations += " HybridGlobalization=True"
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
