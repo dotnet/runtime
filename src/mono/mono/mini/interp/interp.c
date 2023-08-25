@@ -7015,6 +7015,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 5;
+			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDPTR)
 			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
