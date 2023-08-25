@@ -1,7 +1,7 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">
-    <WasiNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true' and '$(WasiNativeWorkload)' == 'net9.0'">true</WasiNativeWorkloadAvailable>
+    <WasiNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true' and '$(WasiNativeWorkload)' == 'net8.0'">true</WasiNativeWorkloadAvailable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'wasi-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

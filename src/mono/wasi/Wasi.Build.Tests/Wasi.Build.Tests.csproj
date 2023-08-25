@@ -89,8 +89,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER9" />
-      <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" />
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;%(_RuntimePackVersions.EnvVarName)=%(_RuntimePackVersions.Identity)&quot;" />

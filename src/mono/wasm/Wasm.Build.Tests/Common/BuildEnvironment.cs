@@ -75,7 +75,7 @@ namespace Wasm.Build.Tests
             sdkForWorkloadPath = Path.GetFullPath(sdkForWorkloadPath);
 
             // FIXME:
-            foreach (string verStr in new[] { "9", "8", "7", "6" })
+            foreach (string verStr in new[] { "8", "7", "6" })
             {
                 string versionValue = Environment.GetEnvironmentVariable($"RUNTIME_PACK_VER{verStr}") ?? string.Empty;
                 s_runtimePackVersions[$"net{verStr}.0"] = versionValue;

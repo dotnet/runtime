@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net9.0";
+        public const string DefaultTargetFramework = "net8.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -204,7 +204,7 @@ namespace Wasm.Build.Tests
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
                 File.Copy(Path.Combine(AppContext.BaseDirectory,
-                                        options.TargetFramework is null or "net7.0" ? "data/test-main-7.0.js" : "test-main.js"),
+                                        options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
                             Path.Combine(_projectDir, "test-main.js"));
             }
             else if (_projectDir is null)
