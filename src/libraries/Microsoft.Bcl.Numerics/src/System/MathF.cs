@@ -19,9 +19,7 @@
 //when using things like Min/Max, and they count as different values from each other. This is fixed in .NET Core, but since its
 //inherent in .NET Framework we decided to leave that behavior as is for this BCL.
 
-using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
-using System.Drawing;
 
 namespace System
 {
@@ -30,8 +28,14 @@ namespace System
     /// </summary>
     public static class MathF
     {
+        /// <summary>
+        /// Represents the ratio of the circumference of a circle to its diameter, specified by the constant, p.
+        /// </summary>
         public const float PI = 3.14159265f;
 
+        /// <summary>
+        /// Represents the natural logarithmic base, specified by the constant, e.
+        /// </summary>
         public const float E = 2.71828183f;
 
         private static float NegativeZero = Int32BitsToSingle(unchecked((int)0x80000000));
