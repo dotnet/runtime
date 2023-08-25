@@ -389,11 +389,24 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(testSourceCode, languageVersion);
             bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out string errorMessage);
 
-#if !SKIP_BASELINES
+#if UPDATE_BASELINES
+            if (!success)
+            {
+                string? repoRootDir = Environment.GetEnvironmentVariable("RepoRootDir");
+                Assert.True(repoRootDir is not null, "To update baselines, specifiy the root runtime repo dir");
+
+                IEnumerable<string> lines = r[0].SourceText.Lines.Select(l => l.ToString());
+                string source = string.Join(Environment.NewLine, lines).TrimEnd(Environment.NewLine.ToCharArray()) + Environment.NewLine;
+                path = Path.Combine($"{repoRootDir}\\src\\libraries\\Microsoft.Extensions.Configuration.Binder\\tests\\SourceGenerationTests\\", path);
+
+                await File.WriteAllTextAsync(path, source).ConfigureAwait(false);
+                success = true;
+            }
+#endif
+
             Assert.Single(r);
             (assessDiagnostics ?? ((d) => Assert.Empty(d))).Invoke(d);
             Assert.True(success, errorMessage);
-#endif
         }
 
         private static async Task<(ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGenerator(

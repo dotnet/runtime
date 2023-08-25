@@ -11,7 +11,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
     <DefineConstants Condition="'$(LaunchTestDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
-    <DefineConstants Condition="'$(SkipBaselines)' == 'true'">$(DefineConstants);SKIP_BASELINES</DefineConstants>
+    <DefineConstants Condition="'$(UpdateBaselines)' == 'true'">$(DefineConstants);UPDATE_BASELINES</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
