@@ -737,7 +737,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
 }
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
 //---------------------------------------------------------------------------------------
 //
 // FixContextAndResume - Modify the thread context for EnC remap and resume execution
@@ -873,7 +873,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));
     _ASSERTE(!"Should not return from ResumeAtJit()");
 }
-#endif // #ifdef FEATURE_ENC_SUPPORTED
+#endif // #ifdef FEATURE_REMAP_FUNCTION
 
 #endif // #ifndef DACCESS_COMPILE
 

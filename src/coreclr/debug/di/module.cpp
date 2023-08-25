@@ -2158,7 +2158,7 @@ HRESULT CordbModule::ApplyChanges(ULONG  cbMetaData,
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
     // We enable EnC back in code:CordbModule::SetJITCompilerFlags.
     // If EnC isn't enabled, then we'll fail in the LS when we try to ApplyChanges.
     // We'd expect a well-behaved debugger to never actually land here.
@@ -2274,7 +2274,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     if (m_vmDomainAssembly.IsNull())
         return E_UNEXPECTED;
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
     HRESULT hr;
 
     void * pRemoteBuf = NULL;
@@ -2394,9 +2394,9 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         TESTANDRETURNHR(hr2);
     }
     return hr;
-#else // FEATURE_ENC_SUPPORTED
+#else // FEATURE_REMAP_FUNCTION
     return E_NOTIMPL;
-#endif // FEATURE_ENC_SUPPORTED
+#endif // FEATURE_REMAP_FUNCTION
 
 }
 
