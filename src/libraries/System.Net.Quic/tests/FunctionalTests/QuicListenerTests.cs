@@ -473,7 +473,6 @@ namespace System.Net.Quic.Tests
             Assert.Equal(new SslApplicationProtocol("test"), clientConnection2.NegotiatedApplicationProtocol);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86701")]
         [Theory]
         [InlineData("foo")]
         [InlineData("not_existing")]
