@@ -87,14 +87,16 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 
                 // Try again
                 obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
-                if (initFunc != nullptr)
-                {
-                    initFunc(obj, pParam);
-                }
 
                 // This time it's not expected to be null
                 _ASSERT(obj != nullptr);
             }
+
+            if (initFunc != nullptr)
+            {
+                initFunc(obj, pParam);
+            }
+
             curSeg = m_CurrentSegment;
             curSegSizeCommitted = curSeg->m_SizeCommitted;
             curSegmentCurrent = curSeg->m_pCurrent;
@@ -123,9 +125,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_pCurrent(nullptr),
     m_pCurrentRegistered(nullptr),
     m_SizeCommitted(0),
-    m_SizeCommittedRegistered(0),
     m_Size(sizeHint),
-    m_IsRegistered(false),
     m_SegmentHandle(nullptr)
 {
     _ASSERT(m_Size > FOH_COMMIT_SIZE);
@@ -175,17 +175,13 @@ void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited
     }
     CONTRACTL_END
 
-    if (!IsRegistered())
+    if (VolatileLoad(&m_pCurrentRegistered) == nullptr)
     {
-        // Other threads won't touch these fields until we set m_IsRegistered to true
-        VolatileStore(&m_SizeCommittedRegistered, sizeCommited);
-        VolatileStore(&m_pCurrentRegistered, current);
-
         segment_info si;
         si.pvMem = m_pStart;
         si.ibFirstObject = sizeof(ObjHeader);
         si.ibAllocated = (size_t)m_pCurrentRegistered;
-        si.ibCommit = m_SizeCommittedRegistered;
+        si.ibCommit = sizeCommited;
         si.ibReserved = m_Size;
 
         // NOTE: RegisterFrozenSegment may take a GC lock inside.
@@ -194,17 +190,15 @@ void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited
         {
             ThrowOutOfMemory();
         }
-        VolatileStore(&m_IsRegistered, true);
+        VolatileStore(&m_pCurrentRegistered, current);
     }
     else
     {
         if (current > VolatileLoad(&m_pCurrentRegistered))
         {
-            VolatileStore(&m_SizeCommittedRegistered, sizeCommited);
-            VolatileStore(&m_pCurrentRegistered, current);
-
             GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(
                 m_SegmentHandle, current, m_pStart + sizeCommited);
+            VolatileStore(&m_pCurrentRegistered, current);
         }
         else
         {
