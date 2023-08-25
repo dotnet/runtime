@@ -14,13 +14,14 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests;
 using SourceGenerators.Tests;
 using Xunit;
 
-namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
+namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
