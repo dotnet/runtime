@@ -10760,6 +10760,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            // Must be working with the same types of vectors.
+            if (hwop1->TypeGet() != node->TypeGet())
+            {
+                break;
+            }
+
             if (toScalar != nullptr)
             {
                 DEBUG_DESTROY_NODE(toScalar);

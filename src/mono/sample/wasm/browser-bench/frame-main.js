@@ -31,6 +31,10 @@ try {
     }
 
     const runtime = await dotnet
+        .withConfig({
+            maxParallelDownloads: 10000,
+            // diagnosticTracing:true,
+        })
         .withModuleConfig({
             printErr: () => undefined,
             print: () => undefined,
@@ -38,7 +42,6 @@ try {
                 if (window.parent != window) {
                     window.parent.resolveAppStartEvent("onConfigLoaded");
                 }
-                // config.diagnosticTracing = true;
             }
         })
         .create();

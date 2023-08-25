@@ -16,6 +16,9 @@
     <UsagePattern IdentityGlob="Microsoft.NETCore.App.Runtime.linux-x64/*8.*" />
     <UsagePattern IdentityGlob="*Microsoft.DotNet.ILCompiler/*8.*" />
     
+    <!-- Allowed and pinned to SDK version -->
+    <UsagePattern IdentityGlob="Microsoft.NET.ILLink.Tasks/*8.*" />
+
     <!-- Will be removed once https://github.com/NuGet/Home/issues/11059 is resolved -->
     <UsagePattern IdentityGlob="Nuget.*/*" />
 
