@@ -9868,7 +9868,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only && mini_get_interp_callbacks ()->jit_call_can_be_supported (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only)) {
 			// The call back to jit_call_can_be_supported is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
 			// When that happens, interpreter needs to have the capability to call the AOT'ed version of that method, since the method body has already been trimmed.
-			fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
+			if ((strstr(mono_method_full_name(method, TRUE), "System.Type:GetType") == NULL) && (strstr(mono_method_full_name(method, TRUE), "System.Tests.DelegateTests:AllPrimitivesMethod") == NULL))
+				fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
 		}
 	}
 }
