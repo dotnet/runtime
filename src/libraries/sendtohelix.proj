@@ -241,7 +241,6 @@
     <Message Importance="High" Text="Creating directory $(TestArchiveRuntimeRoot)" />
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
 
-    <Message Importance="High" Text="Compressing $(NetCoreAppCurrentTestHostPath) to $(TestArchiveRuntimeFile)" />
     <ZipDirectory SourceDirectory="$(NetCoreAppCurrentTestHostPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
                   Overwrite="true" />
