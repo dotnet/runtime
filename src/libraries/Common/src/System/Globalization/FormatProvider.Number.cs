@@ -356,7 +356,54 @@ namespace System.Globalization
                 return ret;
             }
 
+            private interface IDigitValidator
+            {
+                static abstract bool IsValidChar(char c);
+                static abstract bool IsHexBinary();
+            }
+
+            private readonly struct IntegerDigitValidator : IDigitValidator
+            {
+                public static bool IsValidChar(char c) => char.IsAsciiDigit(c);
+
+                public static bool IsHexBinary() => false;
+            }
+
+            private readonly struct HexDigitValidator : IDigitValidator
+            {
+                public static bool IsValidChar(char c) => char.IsAsciiHexDigit(c);
+
+                public static bool IsHexBinary() => true;
+            }
+
+            private readonly struct BinaryDigitValidator : IDigitValidator
+            {
+                public static bool IsValidChar(char c)
+                {
+                    return c is '0' or '1';
+                }
+
+                public static bool IsHexBinary() => true;
+            }
+
+
             private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, scoped ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
+            {
+                if ((options & NumberStyles.AllowHexSpecifier) != 0)
+                {
+                    return ParseNumberStyle<HexDigitValidator>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+                }
+
+                if ((options & NumberStyles.AllowBinarySpecifier) != 0)
+                {
+                    return ParseNumberStyle<BinaryDigitValidator>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+                }
+
+                return ParseNumberStyle<IntegerDigitValidator>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+            }
+
+            private static unsafe bool ParseNumberStyle<TDigitValidator>(ref char* str, char* strEnd, NumberStyles options, scoped ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
+                where TDigitValidator : struct, IDigitValidator
             {
                 Debug.Assert(str != null);
                 Debug.Assert(strEnd != null);
@@ -440,11 +487,11 @@ namespace System.Globalization
                 int digEnd = 0;
                 while (true)
                 {
-                    if ((options & NumberStyles.AllowBinarySpecifier) == 0 ? char.IsAsciiDigit(ch) || ((options & NumberStyles.AllowHexSpecifier) != 0 && char.IsBetween((char)(ch | 0x20), 'a', 'f')) : ch == '0' || ch == '1')
+                    if (TDigitValidator.IsValidChar(ch))
                     {
                         state |= StateDigits;
 
-                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && (options & (NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0))
+                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && TDigitValidator.IsHexBinary()))
                         {
                             if (digCount < maxParseDigits)
                             {
