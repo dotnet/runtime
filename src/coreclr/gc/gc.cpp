@@ -51242,8 +51242,7 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
 
     // Since the target might be the original array (with the original data),
     // the order of copying must not overwrite any data until it has been
-    // copied. Both loops skip 'FreeListSeg' because there is no need to copy
-    // the unused data in the freelist.
+    // copied.
 
     // copy the finalization data from this and the other finalize queue
     for (int i = FreeList - 1; i >= 0; i--)
