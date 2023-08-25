@@ -83,10 +83,15 @@
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>9.0.100-alpha.1.23425.9</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
+    <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23411.1</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23411.1</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>8.0.0-beta.23411.1</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.23411.1</MicrosoftDotNetGenFacadesVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23422.1</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23422.1</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>8.0.0-beta.23422.1</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.23422.1</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitAssertVersion>8.0.0-beta.23422.1</MicrosoftDotNetXUnitAssertVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>8.0.0-beta.23422.1</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.23422.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksArchivesVersion>8.0.0-beta.23422.1</MicrosoftDotNetBuildTasksArchivesVersion>

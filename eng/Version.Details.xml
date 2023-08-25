@@ -129,6 +129,10 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4d9945d230fdd8324ce16a31c7dbd74e27a0fc9b</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.XUnitAssert" Version="8.0.0-beta.23422.1">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>9b2af35a6702526dc8a7c5fcadcc44efd0dca170</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="8.0.0-beta.23422.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4d9945d230fdd8324ce16a31c7dbd74e27a0fc9b</Sha>
