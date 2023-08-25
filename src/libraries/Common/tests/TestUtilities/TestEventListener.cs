@@ -88,18 +88,29 @@ public sealed class TestEventListener : EventListener
 
     protected override void OnEventWritten(EventWrittenEventArgs eventData)
     {
-        StringBuilder sb = new StringBuilder().
-#if NETCOREAPP2_2_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-            Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
-#else
-            Append($"[{eventData.EventName}] ");
-#endif
+        string sourceName = eventData.EventSource.Name
+            .Replace("Private.InternalDiagnostics.System.Net.", "")
+            .Replace("System.Net.", "");
+
+        StringBuilder sb = new StringBuilder()
+            .Append($"[{sourceName}/{eventData.EventName}] ");
+
         for (int i = 0; i < eventData.Payload?.Count; i++)
         {
             if (i > 0)
                 sb.Append(", ");
-            sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+
+            string? payloadName = eventData.PayloadNames?[i];
+            object payload = eventData.Payload[i];
+
+            if (payload is byte[] buffer)
+            {
+                payload = BitConverter.ToString(buffer).Replace("-", "");
+            }
+
+            sb.Append(payloadName).Append(": ").Append(payload);
         }
+
         try
         {
             _writeFunc(sb.ToString());
