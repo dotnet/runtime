@@ -477,7 +477,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.HResultTypeWillBeTreatedAsStructMessage"/>
         public static readonly DiagnosticDescriptor HResultTypeWillBeTreatedAsStruct =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.NotRecommendedGeneratedComInterfaceUsage,
                 GetResourceString(nameof(SR.HResultTypeWillBeTreatedAsStructTitle)),
                 GetResourceString(nameof(SR.HResultTypeWillBeTreatedAsStructMessage)),
