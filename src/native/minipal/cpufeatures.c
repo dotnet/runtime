@@ -28,6 +28,9 @@
 #ifndef HWCAP_LRCPC
 #define HWCAP_LRCPC     (1 << 15)
 #endif
+#ifndef HWCAP_ILRCPC
+#define HWCAP_ILRCPC    (1 << 26)
+#endif
 #ifndef HWCAP_ASIMDDP
 #define HWCAP_ASIMDDP   (1 << 20)
 #endif
@@ -338,7 +341,7 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_LRCPC)
         result |= ARM64IntrinsicConstants_Rcpc;
 
-    if (hwCap & HWCAP_LRCPC2)
+    if (hwCap & HWCAP_ILRCPC)
         result |= ARM64IntrinsicConstants_Rcpc2;
 
     if (hwCap & HWCAP_SHA1)
