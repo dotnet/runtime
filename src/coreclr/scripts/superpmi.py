@@ -1122,8 +1122,13 @@ class SuperPMICollect:
             if self.coreclr_args.nativeaot is True:
                 logging.debug("Starting collection using nativeaot")
 
-                async def run_nativeaot(print_prefix, rsp_filepath, self):
-                    rsp_filepath = assembly
+                async def run_nativeaot(print_prefix, original_rsp_filepath, self):
+                    if not original_rsp_filepath.endswith(".ilc.rsp"):
+                        raise RuntimeError(f"Expected a '.ilc.rsp' file for nativeaot, but got {original_rsp_filepath}")
+                        
+                    rsp_filepath = os.path.join(self.temp_location, make_safe_filename("nativeaot_" + original_rsp_filepath) + ".rsp")
+                    shutil.copyfile(original_rsp_filepath, rsp_filepath)
+
                     with open(rsp_filepath, "a") as rsp_write_handle:
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         for var, value in dotnet_env.items():
@@ -1138,11 +1143,8 @@ class SuperPMICollect:
 
                     begin_time = datetime.datetime.now()
 
-                    root_output_filename = assembly
+                    root_output_filename = rsp_filepath
 
-                    # Save the stdout and stderr to files, so we can see if nativeaot wrote any interesting messages.
-                    # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
-                    # is unique.
                     try:
                         stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
                         stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
