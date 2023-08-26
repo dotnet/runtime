@@ -861,9 +861,17 @@ class SuperPMICollect:
             # If we need them, collect all the assemblies we're going to use for the collection(s).
             # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
             if self.coreclr_args.pmi or self.coreclr_args.crossgen2 or self.coreclr_args.nativeaot:
+
+                def filter_assembly(file):
+                    if self.coreclr_args.nativeaot:
+                        extensions = [".ilc.rsp"]
+                    else:
+                        extensions = [".dll", ".exe"]
+                    return any(file.endswith(extension) for extension in extensions) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude))
+
                 assemblies = []
                 for item in self.assemblies:
-                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude)))
+                    assemblies += get_files_from_path(item, match_func=filter_assembly)
                 if len(assemblies) == 0:
                     logging.error("No assemblies found using `-assemblies` and `-exclude` arguments!")
                 else:
@@ -1114,51 +1122,9 @@ class SuperPMICollect:
             if self.coreclr_args.nativeaot is True:
                 logging.debug("Starting collection using nativeaot")
 
-                async def run_nativeaot(print_prefix, assembly, self):
-                    """ Run nativeaot over all dlls
-                    """
-
-                    root_nativeaot_output_filename = make_safe_filename("nativeaot_" + assembly) + ".out.dll"
-                    nativeaot_output_assembly_filename = os.path.join(self.temp_location, root_nativeaot_output_filename)
-                    try:
-                        if os.path.exists(nativeaot_output_assembly_filename):
-                            os.remove(nativeaot_output_assembly_filename)
-                    except OSError as ose:
-                        if "[WinError 32] The process cannot access the file because it is being used by another " \
-                           "process:" in format(ose):
-                            logging.warning("Skipping file %s. Got error: %s", nativeaot_output_assembly_filename, ose)
-                            return
-                        else:
-                            raise ose
-
-                    root_output_filename = make_safe_filename("nativeaot_" + assembly + "_")
-
-                    # Create a temporary response file to put all the arguments to nativeaot (otherwise the path length limit could be exceeded):
-                    #
-                    # <dll to compile>
-                    # -o:<output dll>
-                    # -r:<Core_Root>\System.*.dll
-                    # -r:<Core_Root>\Microsoft.*.dll
-                    # -r:<Core_Root>\System.Private.CoreLib.dll
-                    # -r:<Core_Root>\netstandard.dll
-                    # --jitpath:<self.collection_shim_name>
-                    # --codegenopt:<option>=<value>   /// for each member of dotnet_env
-                    #
-                    # invoke with:
-                    #
-                    # ilc.exe @<temp.rsp>
-                    #
-
-                    rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
-                    with open(rsp_file_handle, "w") as rsp_write_handle:
-                        rsp_write_handle.write(assembly + "\n")
-                        rsp_write_handle.write("-o:" + nativeaot_output_assembly_filename + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.coreclr_args.nativeaot_aotsdk_path, "System.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "System.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
-                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
-                        rsp_write_handle.write("--parallelism:1" + "\n")
+                async def run_nativeaot(print_prefix, rsp_filepath, self):
+                    rsp_filepath = assembly
+                    with open(rsp_filepath, "a") as rsp_write_handle:
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
@@ -1171,6 +1137,8 @@ class SuperPMICollect:
                     logging.debug("%s%s", print_prefix, command_string)
 
                     begin_time = datetime.datetime.now()
+
+                    root_output_filename = assembly
 
                     # Save the stdout and stderr to files, so we can see if nativeaot wrote any interesting messages.
                     # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
@@ -1222,11 +1190,7 @@ class SuperPMICollect:
                 old_env = os.environ.copy()
                 os.environ.update(nativeaot_command_env)
 
-                # Note: nativeaot compiles in parallel by default. However, it seems to lead to sharing violations
-                # in SuperPMI collection, accessing the MC file. So, disable nativeaot parallism by using
-                # the "--parallelism:1" switch, and allowing coarse-grained (per-assembly) parallelism here.
-                # It turns out this works better anyway, as there is a lot of non-parallel time between
-                # nativeaot parallel compilations.
+                assemblies = list(filter(lambda assembly: assembly.endswith(".ilc.rsp"), assemblies))
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_nativeaot, self)
 

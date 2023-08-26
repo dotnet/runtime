@@ -302,7 +302,7 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
             if not os.path.isfile(curr_file_path):
                 continue
-            if not name.endswith(".dll") and not name.endswith(".exe"):
+            if not name.endswith(".dll") and not name.endswith(".exe") and not name.endswith(".ilc.rsp"):
                 continue
 
             size = os.path.getsize(curr_file_path)
@@ -558,9 +558,9 @@ def main(main_args):
                 print('Ignoring PermissionError: {0}'.format(pe_error))
 
         # Build nativeaot tests
-        # if coreclr_args.collection_type == "nativeaot":
-        #     tests_build_file = "build.cmd" if is_windows else "build.sh"
-        #     run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", coreclr_args.build_type, "tree", "nativeaot"], source_directory)
+        if coreclr_args.collection_type == "nativeaot":
+            tests_build_file = "build.cmd" if is_windows else "build.sh"
+            run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", coreclr_args.build_type, "tree", "nativeaot"], source_directory)
 
         # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
         # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
@@ -590,11 +590,6 @@ def main(main_args):
             core_root_dir = coreclr_args.core_root_directory
             exclude_files += [item for item in os.listdir(core_root_dir)
                               if os.path.isfile(os.path.join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
-
-        if coreclr_args.collection_type == "nativeaot":
-            # do not include the test wrappers
-            exclude_files += ["Coreclr.TestWrapper.dll", "nativeaot.SmokeTests.XUnitWrapper.dll"]
-            exclude_directories += ['native']
 
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
                         exclude_files)
