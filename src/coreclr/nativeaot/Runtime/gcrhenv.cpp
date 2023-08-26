@@ -42,7 +42,6 @@
 
 #include "daccess.h"
 
-#include "GCMemoryHelpers.h"
 #include "interoplibinterface.h"
 
 #include "holder.h"
@@ -989,15 +988,19 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     // Managed code should not be running.
     ASSERT(GCHeapUtilities::GetGCHeap()->IsGCInProgressHelper());
 
-    // the lowermost 1 bit is reserved for storing additional info about the handle
-    const uintptr_t HandleTagBits = 1;
+    // the lowermost 2 bits are reserved for storing additional info about the handle
+    // we can use these bits because handle is at least 4 byte aligned
+    const uintptr_t HandleTagBits = 3;
 
     WeakReference* weakRefObj = (WeakReference*)obj;
     OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_taggedHandle & ~HandleTagBits);
-    _ASSERTE((weakRefObj->m_taggedHandle & 2) == 0);
-    HandleType handleType = (weakRefObj->m_taggedHandle & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    HandleType handleType = (weakRefObj->m_taggedHandle & 2) ?
+        HandleType::HNDTYPE_STRONG :
+        (weakRefObj->m_taggedHandle & 1) ?
+        HandleType::HNDTYPE_WEAK_LONG :
+        HandleType::HNDTYPE_WEAK_SHORT;
     // keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
-    weakRefObj->m_taggedHandle &= HandleTagBits;
+    weakRefObj->m_taggedHandle &= (uintptr_t)1;
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
     return true;
 }

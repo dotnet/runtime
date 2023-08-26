@@ -32,7 +32,8 @@
 
     <!-- Don't build meta-projects in the NetCoreAppCurrent vertical. -->
     <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;
-                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj" />
+                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj;
+                              Microsoft.Internal.Runtime.DotNetApiDocs.Transport\src\Microsoft.Internal.Runtime.DotNetApiDocs.Transport.proj" />
 
     <!-- Skip these projects during source-build as they rely on external prebuilts. -->
     <ProjectReference Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"

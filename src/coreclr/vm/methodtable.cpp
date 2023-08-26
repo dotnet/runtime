@@ -714,7 +714,6 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
     // with whatever type it returns.
     if (pServerMT->IsIDynamicInterfaceCastable()
-        && !pItfMD->HasMethodInstantiation()
         && !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
     {
         TypeHandle implTypeHandle;
@@ -4188,8 +4187,9 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        CONTRACTL_END;
     }
+    CONTRACTL_END
+
     _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
 
     // Static fields are not pinned in collectible types so we need to protect the address
@@ -4223,8 +4223,8 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        CONTRACTL_END;
     }
+    CONTRACTL_END
 
     _ASSERTE(pFieldMT->IsValueType());
 
@@ -8753,10 +8753,10 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
     }
     CONTRACTL_END;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (pDefMD->IsEnCAddedMethod())
         return GetParallelMethodDescForEnC(this, pDefMD);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     return GetMethodDescForSlot(pDefMD->GetSlot());
 }
@@ -9242,7 +9242,7 @@ MethodTable::TryResolveConstraintMethodApprox(
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
-        BOOL uniqueResolution;
+        BOOL uniqueResolution = TRUE;
 
         ResolveVirtualStaticMethodFlags flags = ResolveVirtualStaticMethodFlags::AllowVariantMatches
                                               | ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc;
@@ -9255,7 +9255,8 @@ MethodTable::TryResolveConstraintMethodApprox(
             thInterfaceType.GetMethodTable(),
             pInterfaceMD,
             flags,
-            &uniqueResolution);
+            (pfForceUseRuntimeLookup != NULL ? &uniqueResolution : NULL));
+
         if (result == NULL || !uniqueResolution)
         {
             _ASSERTE(pfForceUseRuntimeLookup != NULL);

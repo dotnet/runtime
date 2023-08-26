@@ -464,8 +464,14 @@ namespace Internal.JitInterface
                 for (int i = 0; i < _ehClauses.Length; i++)
                 {
                     var clause = _ehClauses[i];
-                    debugEHClauseInfos[i] = new DebugEHClauseInfo(clause.TryOffset, clause.TryLength,
-                                                        clause.HandlerOffset, clause.HandlerLength);
+
+                    // clause.TryLength returned by the JIT is actually end offset...
+                    // https://github.com/dotnet/runtime/issues/5282
+                    // We subtract offset from "length" to get the actual length.
+                    Debug.Assert(clause.TryLength >= clause.TryOffset);
+                    Debug.Assert(clause.HandlerLength >= clause.HandlerOffset);
+                    debugEHClauseInfos[i] = new DebugEHClauseInfo(clause.TryOffset, clause.TryLength - clause.TryOffset,
+                                                        clause.HandlerOffset, clause.HandlerLength - clause.HandlerOffset);
                 }
             }
 
@@ -1214,6 +1220,13 @@ namespace Internal.JitInterface
 
             MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
+        }
+
+        private bool haveSameMethodDefinition(CORINFO_METHOD_STRUCT_* methHnd1, CORINFO_METHOD_STRUCT_* methHnd2)
+        {
+            MethodDesc meth1 = HandleToObject(methHnd1);
+            MethodDesc meth2 = HandleToObject(methHnd2);
+            return meth1.GetTypicalMethodDefinition() == meth2.GetTypicalMethodDefinition();
         }
 
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)

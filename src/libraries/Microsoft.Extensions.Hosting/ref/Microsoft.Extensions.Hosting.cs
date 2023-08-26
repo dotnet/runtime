@@ -35,6 +35,7 @@ namespace Microsoft.Extensions.Hosting
         public Microsoft.Extensions.Configuration.ConfigurationManager Configuration { get { throw null; } }
         public Microsoft.Extensions.Hosting.IHostEnvironment Environment { get { throw null; } }
         public Microsoft.Extensions.Logging.ILoggingBuilder Logging { get { throw null; } }
+        public Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder Metrics { get { throw null; } }
         Microsoft.Extensions.Configuration.IConfigurationManager Microsoft.Extensions.Hosting.IHostApplicationBuilder.Configuration { get { throw null; } }
         System.Collections.Generic.IDictionary<object, object> Microsoft.Extensions.Hosting.IHostApplicationBuilder.Properties { get { throw null; } }
         public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get { throw null; } }
@@ -72,6 +73,8 @@ namespace Microsoft.Extensions.Hosting
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureHostOptions(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostOptions> configureOptions) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureLogging(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Logging.ILoggingBuilder> configureLogging) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureLogging(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Logging.ILoggingBuilder> configureLogging) { throw null; }
+        public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureMetrics(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder> configureMetrics) => throw null!;
+        public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureMetrics(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder> configureMetrics) => throw null!;
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureServices(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection> configureDelegate) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

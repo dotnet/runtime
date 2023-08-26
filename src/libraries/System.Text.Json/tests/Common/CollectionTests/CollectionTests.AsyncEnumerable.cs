@@ -128,7 +128,7 @@ namespace System.Text.Json.Serialization.Tests
             using var utf8Stream = new Utf8MemoryStream();
             using var cts = new CancellationTokenSource(delay: TimeSpan.FromMilliseconds(cancellationTokenSourceDelayMilliseconds));
             await Assert.ThrowsAsync<TaskCanceledException>(async () =>
-                await JsonSerializer.SerializeAsync(utf8Stream, longRunningEnumerable, cancellationToken: cts.Token));
+                await JsonSerializer.SerializeAsync(utf8Stream, longRunningEnumerable, Serializer.DefaultOptions, cancellationToken: cts.Token));
 
             Assert.Equal(1, longRunningEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, longRunningEnumerable.TotalDisposedEnumerators);

@@ -94,7 +94,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void FactoryActivatorThrowsOnNullProvider()
         {
             var f = ActivatorUtilities.CreateFactory(typeof(ClassWithA), new Type[0]);
-            Assert.Throws<ArgumentNullException>(() => f(serviceProvider: null, null));
+            Exception ex = Assert.Throws<ArgumentNullException>(() => f(serviceProvider: null, null));
+            Assert.Contains("serviceProvider", ex.ToString());
         }
 
         [Fact]
@@ -179,7 +180,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void CreateFactory_CreatesFactoryMethod()
+        public void CreateFactory_CreatesFactoryMethod_4Types_3Injected()
         {
             var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithABCS), new Type[] { typeof(B) });
             var factory2 = ActivatorUtilities.CreateFactory<ClassWithABCS>(new Type[] { typeof(B) });
@@ -194,9 +195,42 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Assert.IsType<ObjectFactory>(factory1);
             Assert.IsType<ClassWithABCS>(item1);
+            ClassWithABCS obj = (ClassWithABCS)item1;
+            Assert.NotNull(obj.A);
+            Assert.NotNull(obj.B);
+            Assert.NotNull(obj.C);
+            Assert.NotNull(obj.S);
 
             Assert.IsType<ObjectFactory<ClassWithABCS>>(factory2);
             Assert.IsType<ClassWithABCS>(item2);
+
+            Assert.NotNull(item2.A);
+            Assert.NotNull(item2.B);
+            Assert.NotNull(item2.C);
+            Assert.NotNull(item2.S);
+        }
+
+        [Fact]
+        public void CreateFactory_CreatesFactoryMethod_5Types_5Injected()
+        {
+            // Inject 5 types which is a threshold for whether fixed or Span<> invoker args are used by reflection.
+            var factory = ActivatorUtilities.CreateFactory<ClassWithABCSZ>(Type.EmptyTypes);
+
+            var services = new ServiceCollection();
+            services.AddSingleton(new A());
+            services.AddSingleton(new B());
+            services.AddSingleton(new C());
+            services.AddSingleton(new S());
+            services.AddSingleton(new Z());
+            using var provider = services.BuildServiceProvider();
+            ClassWithABCSZ item = factory(provider, null);
+
+            Assert.IsType<ObjectFactory<ClassWithABCSZ>>(factory);
+            Assert.NotNull(item.A);
+            Assert.NotNull(item.B);
+            Assert.NotNull(item.C);
+            Assert.NotNull(item.S);
+            Assert.NotNull(item.Z);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -365,12 +399,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     internal class B { }
     internal class C { }
     internal class S { }
+    internal class Z { }
 
     internal class ClassWithABCS : ClassWithABC
     {
         public S S { get; }
         public ClassWithABCS(A a, B b, C c, S s) : base(a, b, c) { S = s; }
         public ClassWithABCS(A a, C c, S s) : this(a, null, c, s) { }
+    }
+
+    internal class ClassWithABCSZ : ClassWithABCS
+    {
+        public Z Z { get; }
+        public ClassWithABCSZ(A a, B b, C c, S s, Z z) : base(a, b, c, s) { Z = z; }
     }
 
     internal class ClassWithABC_FirstConstructorWithAttribute : ClassWithABC

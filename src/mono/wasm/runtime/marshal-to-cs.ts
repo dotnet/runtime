@@ -347,7 +347,9 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
         }
         catch (ex) {
-            mono_log_warn("Exception marshalling error of JS promise to CS: ", ex);
+            if (!loaderHelpers.is_exited()) {
+                mono_log_warn("Exception marshalling error of JS promise to CS: ", ex);
+            }
         }
     });
 }

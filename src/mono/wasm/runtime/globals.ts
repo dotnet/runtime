@@ -5,6 +5,8 @@
 /// <reference path="./types/v8.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
+import gitHash from "consts:gitHash";
+
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
 
@@ -27,6 +29,7 @@ export let linkerWasmEnableSIMD = true;
 export let linkerWasmEnableEH = true;
 export let linkerEnableAotProfiler = false;
 export let linkerEnableBrowserProfiler = false;
+export let linkerRunAOTCompilation = false;
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
 export function passEmscriptenInternals(internals: EmscriptenInternals): void {
@@ -36,8 +39,10 @@ export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     linkerWasmEnableEH = internals.linkerWasmEnableEH;
     linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
     linkerEnableBrowserProfiler = internals.linkerEnableBrowserProfiler;
+    linkerRunAOTCompilation = internals.linkerRunAOTCompilation;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
+    runtimeHelpers.moduleGitHash = internals.gitHash;
 }
 
 // NOTE: this is called AFTER the config is loaded
@@ -53,9 +58,9 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     exportedRuntimeAPI = globalObjects.api;
 
     Object.assign(runtimeHelpers, {
+        gitHash,
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
-        memorySnapshotSkippedOrDone: createPromiseController<void>(),
         afterInstantiateWasm: createPromiseController<void>(),
         beforePreInit: createPromiseController<void>(),
         afterPreInit: createPromiseController<void>(),

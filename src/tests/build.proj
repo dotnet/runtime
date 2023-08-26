@@ -342,6 +342,7 @@
       <TestProjectName>$(AssemblyName)</TestProjectName>
       <IgnoreForCI Condition="@(TestDlls->Count()) == 0">true</IgnoreForCI>
       <UseRuntimeComponents>true</UseRuntimeComponents>
+      <IncludesTestRunner>false</IncludesTestRunner>
     </PropertyGroup>
 
     <UpdateRunScriptToHandleMultipleEntryPoints EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)" Condition="'$(BuildTestsOnHelix)' == 'true'">
@@ -414,7 +415,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <NativeDependencies>$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o</NativeDependencies>
       <DevTeamProvisioning>-</DevTeamProvisioning>
       <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
       <GenerateXcodeProject>true</GenerateXcodeProject>
@@ -424,10 +424,17 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <NativeDependencies Include="$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o" />
+    </ItemGroup>
+
+    <ItemGroup>
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
-      <GlobalizationNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat" />
+      <GlobalizationNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat;
+                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicudata.a;
+                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicuuc.a;
+                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicui18n.a" />
     </ItemGroup>
 
     <RemoveDir Directories="$(AppleBuildDir)" />
@@ -483,7 +490,7 @@
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
-      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != '' and '$(TargetsAppleMobile)' != 'true'" />
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
@@ -496,6 +503,7 @@
     </PropertyGroup>
     <ItemGroup>
       <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);@(OutOfProcessTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
+      <LegacyRunnableTestPaths Condition="'$(TargetsAppleMobile)' == 'true'" Include="@(MergedRunnableTestPaths)" />
     </ItemGroup>
   </Target>
 
@@ -569,6 +577,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetArchitecture=$(TargetArchitecture)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:TasksConfiguration=$(TasksConfiguration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetOS=$(TargetOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:ToolsOS=$(ToolsOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:PackageOS=$(PackageOS)"</GroupBuildCmd>
@@ -586,6 +595,7 @@
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(IlcUseServerGc)' == 'false'">$(GroupBuildCmd) "/p:IlcUseServerGc=false"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
     </PropertyGroup>
 

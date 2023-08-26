@@ -1078,7 +1078,7 @@ namespace Span
 
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             // Now simulate xunit-perf's benchmark discovery so we know what tests to invoke
             TypeInfo t = typeof(SpanBench).GetTypeInfo();
@@ -1109,7 +1109,6 @@ namespace Span
             }
 
             // The only failure modes are crash/exception.
-            return 100;
         }
     }
 }

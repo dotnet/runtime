@@ -57,6 +57,14 @@ do_abort_unless (bool condition, const char* fmt, ...)
 #endif
 #endif // PALEXPORT
 
+#ifndef PAL_CALLBACK_CALLTYPE
+#if defined(_WIN32) && defined(_M_IX86)
+#define PAL_CALLBACK_CALLTYPE __stdcall
+#else
+#define PAL_CALLBACK_CALLTYPE
+#endif
+#endif // PAL_CALLBACK_CALLTYPE
+
 #ifndef EXTERN_C
 #ifdef __cplusplus
 #define EXTERN_C extern "C"

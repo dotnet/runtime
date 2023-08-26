@@ -319,6 +319,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Calendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarWeekRule.cs" />
@@ -332,11 +334,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureNotFoundException.cs" />
@@ -391,7 +394,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
@@ -437,6 +440,27 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SearchValuesDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\EmptySearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticMap.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasick.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\AhoCorasickNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\CharacterFrequencyHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\EightPackedReferences.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\RabinKarp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\StringSearchValuesHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\TeddyBucketizer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\Helpers\TeddyHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyBucketizedN2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyBucketizedN3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyNonBucketizedN2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyNonBucketizedN3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\MultiStringIgnoreCaseSearchValuesFallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesThreeChars.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesFallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesAhoCorasick.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesRabinKarp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientMemoryException.cs" />
@@ -842,6 +866,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PreserveBaseOverridesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RefSafetyRulesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RequiresLocationAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeFeature.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeFeature.NonNativeAot.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
@@ -1281,23 +1306,32 @@
     <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Interop.CompareInfo.cs</Link>
     </Compile>
+     <Compile Include="$(CommonPath)Interop\Browser\Interop.Calendar.cs" Condition="'$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.Calendar.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Locale.cs" Condition="'$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Browser\Interop.Locale.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Browser\Interop.TextInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Interop.TextInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Calendar.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Interop.Calendar.iOS.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Casing.cs">
       <Link>Common\Interop\Interop.Casing.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.Casing.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
-      <Link>Common\Interop\Interop.Casing.OSX.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Interop.Casing.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Interop.Casing.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Collation.cs">
       <Link>Common\Interop\Interop.Collation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.Collation.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
-      <Link>Common\Interop\Interop.Collation.OSX.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Interop.Collation.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Interop.Collation.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.ICU.cs">
       <Link>Common\Interop\Interop.ICU.cs</Link>
@@ -1311,11 +1345,14 @@
     <Compile Include="$(CommonPath)Interop\Interop.Locale.cs">
       <Link>Common\Interop\Interop.Locale.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.Locale.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
-      <Link>Common\Interop\Interop.Locale.OSX.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Interop.Locale.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Interop.Locale.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Normalization.cs">
       <Link>Common\Interop\Interop.Normalization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Normalization.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Interop.Normalization.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.ResultCode.cs">
       <Link>Common\Interop\Interop.ResultCode.cs</Link>

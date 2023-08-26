@@ -7,6 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <BlazorWebAssemblyLazyLoad Include="System.Text.Json.wasm" />
+    <BlazorWebAssemblyLazyLoad Include="System.Text.Json$(WasmAssemblyExtension)" />
   </ItemGroup>
 </Project>

@@ -21,7 +21,7 @@
 
     <PackageReference Include="Mono.Cecil" Version="0.11.4" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="5.0.1" />
-    <ProjectReference Include="$(RepoRoot)/src/tools/illink/test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj" />
+    <ProjectReference Include="$(RepoRoot)/src/tools/illink/test/Mono.Linker.Tests.Cases/**/*.csproj" />
     <ProjectReference Include="$(RepoRoot)/src/tools/illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
     <ProjectReference Include="../ILCompiler.Compiler/ILCompiler.Compiler.csproj" />
     <ProjectReference Include="../ILCompiler.RyuJit/ILCompiler.RyuJit.csproj" />
