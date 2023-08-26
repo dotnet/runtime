@@ -2857,8 +2857,17 @@ namespace System.Net.Http.Functional.Tests
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             server.AllowMultipleConnections = true;
 
+            SemaphoreSlim connectCallbackSemaphore = new(2);
+
             using SocketsHttpHandler handler = CreateHandler();
             handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(20);
+
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                await connectCallbackSemaphore.WaitAsync(ct);
+
+                return await DefaultConnectCallback(context, ct);
+            };
 
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -2874,7 +2883,7 @@ namespace System.Net.Http.Functional.Tests
                 AcquireAllStreamSlots(server, client, sendTasks1, MaxConcurrentStreams);
                 await SendResponses(connection1, await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false));
 
-                // Complete all the requests.
+                // Complete all the requests on connection1.
                 await VerifySendTasks(sendTasks1).ConfigureAwait(false);
 
                 // Wait until the idle connection timeout expires.
@@ -2882,6 +2891,9 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);
+
+                // Allow the third connection through the ConnectCallback
+                connectCallbackSemaphore.Release();
 
                 Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks2, MaxConcurrentStreams);
