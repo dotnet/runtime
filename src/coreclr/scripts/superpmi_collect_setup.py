@@ -255,7 +255,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "input_directory",
-                        lambda input_directory: coreclr_args.collection_type not in [ "pmi", "crossgen2", "nativeaot" ] or os.path.isdir(input_directory),
+                        lambda input_directory: coreclr_args.collection_type not in [ "pmi", "crossgen2" ] or os.path.isdir(input_directory),
                         "input_directory doesn't exist",
                         modify_arg=lambda input_directory: None if input_directory is None else os.path.abspath(input_directory))
 
