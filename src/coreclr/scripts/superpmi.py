@@ -4291,7 +4291,7 @@ def setup_args(args):
             sys.exit(1)
 
         if ((args.pmi is True) or (args.crossgen2 is True) or (args.nativeaot is True)) and (len(args.assemblies) == 0):
-            print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
+            print("Specify `-assemblies` if `--pmi` or `--crossgen2` or '--nativeaot' is given")
             sys.exit(1)
 
         if not args.pmi:
