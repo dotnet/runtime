@@ -555,18 +555,18 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 #endif
 
     FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-    ArrayBase* orArray = static_cast<ArrayBase*>(foh->TryAllocateObject(pArrayMT, PtrAlign(totalSize), /*publish*/ false));
+    ArrayBase* orArray = static_cast<ArrayBase*>(
+        foh->TryAllocateObject(pArrayMT, PtrAlign(totalSize), [](Object* obj, void* elemCntPtr){
+            // Initialize newly allocated object before publish
+            static_cast<ArrayBase*>(obj)->m_NumComponents = *static_cast<DWORD*>(elemCntPtr);
+        }, &cElements));
+
     if (orArray == nullptr)
     {
         // We failed to allocate on a frozen segment, fallback to AllocateSzArray
         // E.g. if the array is too big to fit on a frozen segment
         return NULL;
     }
-    orArray->m_NumComponents = cElements;
-
-    // Publish needs to be postponed in this case because we need to specify array length 
-    PublishObjectAndNotify(orArray, GC_ALLOC_NO_FLAGS);
-
     return ObjectToOBJECTREF(orArray);
 }
 
@@ -968,12 +968,15 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap, bool* pIs
     if (preferFrozenHeap)
     {
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-        orString = static_cast<StringObject*>(foh->TryAllocateObject(g_pStringClass, totalSize, /* publish = */false));
+
+        orString = static_cast<StringObject*>(foh->TryAllocateObject(
+            g_pStringClass, totalSize, [](Object* obj, void* pStrLen) {
+                // Initialize newly allocated object before publish
+                static_cast<StringObject*>(obj)->SetStringLength(*static_cast<DWORD*>(pStrLen));
+            }, &cchStringLength));
+
         if (orString != nullptr)
         {
-            orString->SetStringLength(cchStringLength);
-            // Publish needs to be postponed in this case because we need to specify string length 
-            PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
             _ASSERTE(orString->GetBuffer()[cchStringLength] == W('\0'));
             orStringRef = ObjectToSTRINGREF(orString);
             *pIsFrozen = true;
@@ -1139,7 +1142,7 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
 #endif // FEATURE_64BIT_ALIGNMENT
 
     FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-    Object* orObject = foh->TryAllocateObject(pObjMT, PtrAlign(pObjMT->GetBaseSize()), /*publish*/ true);
+    Object* orObject = foh->TryAllocateObject(pObjMT, PtrAlign(pObjMT->GetBaseSize()));
 
     return ObjectToOBJECTREF(orObject);
 }

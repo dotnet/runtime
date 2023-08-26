@@ -113,8 +113,8 @@
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
-        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
-        <target state="translated">System.Text.Json kaynak oluşturucusu C# '{0}' içinde kullanılamıyor. Lütfen dil sürümü {1} veya üstü sürümü kullanın.</target>
+        <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">System.Text.Json kaynak oluşturucusu C# {0}'ta mevcut değildir. Lütfen {1} dil sürümünü veya daha üstünü kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionTitle">
