@@ -1,0 +1,95 @@
+parameters:
+  archType: ''
+  buildConfig: ''
+  container: ''
+  dependOnEvaluatePaths: false
+  dependsOn: []
+  isOfficialBuild: false
+  libsAndPacksConfig: ''
+  osGroup: ''
+  osSubgroup: ''
+  pool: ''
+  signBinaries: false
+  variables: {}
+
+jobs:
+  - template: /eng/common/templates/job/job.yml
+    parameters:
+
+      name: ${{ format('libraries_{0}_coreclr_{1}_{2}{3}_{4}_testreadytorun', parameters.libsAndPacksConfig, parameters.buildConfig, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+
+      displayName: ${{ format('Libraries {0} CoreCLR {1} {2}{3} {4} TestReadyToRun', parameters.libsAndPacksConfig, parameters.buildConfig, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+
+      container: ${{ parameters.container }}
+      condition: succeeded()
+      helixRepo: dotnet/runtime
+      pool: ${{ parameters.pool }}
+
+      dependsOn:
+        - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+          - evaluate_paths
+        - ${{ parameters.dependsOn }}
+
+      workspace:
+        clean: all
+
+      variables:
+        - _buildScript: ./build$(scriptExt)
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - _buildScript: .\build($scriptExt)
+
+        - _preTestSubsets: clr+libs+packs
+        - _libsTestsSubset: libs.tests
+
+        - _runtimeConfig: ''
+        - ${{ if ne(parameters.buildConfig, parameters.libsAndPacksConfig) }}:
+          - _runtimeConfig: -rc ${{ parameters.buildConfig }}
+
+        - _buildArguments: -configuration ${{ parameters.libsAndPacksConfig }}
+                          $(_runtimeConfig)
+                          -arch ${{ parameters.archType }}
+                          -os ${{ parameters.osGroup }}
+                          -ci
+        - _libsTestsArguments: -configuration ${{ parameters.libsAndPacksConfig }}
+                              /p:TestReadyToRun=true
+                              /p:RunSmokeTestsOnly=true
+        - ${{ parameters.variables }}
+
+      steps:
+        - checkout: self
+          clean: true
+          fetchDepth: $(checkoutFetchDepth)
+
+        # When working in Apple platforms, we need to install some native dependencies.
+        # Currently, libraries with TestReadyToRun enabled will only be built
+        # in macOS from these platforms. If we decide to support iOS and/or tvOS,
+        # we'll have to add them to this condition.
+
+        - ${{ if in(parameters.osGroup, 'osx') }}:
+          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+            displayName: Install Native Build Dependencies
+
+        - ${{ if eq(parameters.isOfficialBuild, true) }}:
+          - template: /eng/pipelines/common/restore-internal-tools.yml
+
+        # When working in Apple platforms, we need to keep track of the Disk Usage.
+        - ${{ if in(parameters.osGroup, 'osx') }}:
+          - script: |
+              du -sh $(Build.SourcesDirectory)/*
+              df -h
+            displayName: Disk Usage Before Build
+
+        # Build CoreCLR, the Libraries, and the Packs.
+        - script: $(_buildScript) -subset $(_preTestSubsets) $(_buildArguments)
+          displayName: Build CoreCLR, Libraries, and Packs
+
+        # When working in Apple platforms, we need to keep track of the Disk Usage.
+        - ${{ if in(parameters.osGroup, 'osx') }}:
+          - script: |
+              du -sh $(Build.SourcesDirectory)/*
+              df -h
+            displayName: Disk Usage After Build
+
+        # Build and run the libraries tests with TestReadyToRun.
+        - script: $(_buildScript) -subset $(_libsTestsSubset) $(_libsTestsArguments)
+          displayName: Build and Run Libraries Tests with TestReadyToRun Enabled
