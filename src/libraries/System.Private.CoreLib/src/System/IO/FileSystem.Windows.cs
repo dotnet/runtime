@@ -186,13 +186,13 @@ namespace System.IO
                     string volumePath = Interop.Kernel32.GetVolumePathName(sourceName);
 
                     // Read the source volume's cluster size.
-                    uint sectorsPerCluster, bytesPerCluster;
-                    if (!Interop.Kernel32.GetDiskFreeSpace(volumePath!, &sectorsPerCluster, &bytesPerCluster, null, null))
+                    uint sectorsPerCluster, bytesPerSector;
+                    if (!Interop.Kernel32.GetDiskFreeSpace(volumePath!, &sectorsPerCluster, &bytesPerSector, null, null))
                     {
                         throw new Exception("K");
                         //return false;
                     }
-                    long clusterSize = sectorsPerCluster * (long)bytesPerCluster;
+                    long clusterSize = sectorsPerCluster * (long)bytesPerSector;
 
                     // Set file length to 0.
                     if (!madeNew)
