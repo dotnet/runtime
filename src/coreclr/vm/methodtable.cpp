@@ -8753,10 +8753,10 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
     }
     CONTRACTL_END;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (pDefMD->IsEnCAddedMethod())
         return GetParallelMethodDescForEnC(this, pDefMD);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     return GetMethodDescForSlot(pDefMD->GetSlot());
 }
