@@ -28,13 +28,13 @@
         <note />
       </trans-unit>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
-        <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="translated">Projenin dil sürümü en az 'C# 11' olmalıdır.</target>
+        <source>The project's language version has to be at least 'C# 12'.</source>
+        <target state="needs-review-translation">Projenin dil sürümü en az 'C# 11' olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
-        <source>Language version is required to be at least C# 11</source>
-        <target state="translated">Dil sürümünün en az C# 11 olması gerekir</target>
+        <source>Language version is required to be at least C# 12</source>
+        <target state="needs-review-translation">Dil sürümünün en az C# 11 olması gerekir</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingPublicInstanceConstructor">
