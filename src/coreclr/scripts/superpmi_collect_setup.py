@@ -439,6 +439,8 @@ def main(main_args):
 
     superpmi_src_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
 
+    tests_directory = os.path.join(source_directory, 'src', 'tests')
+
     # Correlation payload directories (sent to every Helix machine).
     # Currently, all the Core_Root files, superpmi script files, and pmi.dll go in the same place.
     superpmi_dst_directory = os.path.join(correlation_payload_directory, "superpmi")
@@ -555,6 +557,11 @@ def main(main_args):
                 # Details: https://bugs.python.org/issue26660
                 print('Ignoring PermissionError: {0}'.format(pe_error))
 
+        # Build nativeaot tests
+        if coreclr_args.collection_type == "nativeaot":
+            tests_build_file = "build.cmd" if is_windows else "build.sh"
+            run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", coreclr_args.build_type, "tree", "nativeaot"], source_directory)
+
         # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
         # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
         # The following will copy .dotnet to the correlation payload in case we change our mind, and need or want to use it for some scenarios.
@@ -583,6 +590,10 @@ def main(main_args):
             core_root_dir = coreclr_args.core_root_directory
             exclude_files += [item for item in os.listdir(core_root_dir)
                               if os.path.isfile(os.path.join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
+
+        if coreclr_args.collection_type == "nativeaot":
+            # do not include the test wrappers
+            exclude_files += ["Coreclr.TestWrapper.dll", "nativeaot.SmokeTests.XUnitWrapper.dll"]
 
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
                         exclude_files)
