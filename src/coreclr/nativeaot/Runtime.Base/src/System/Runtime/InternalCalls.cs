@@ -257,30 +257,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetNumThunkBlocksPerMapping();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunksPerBlock")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetNumThunksPerBlock();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkSize")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetThunkSize();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkDataBlockAddress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkStubsBlockAddress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkBlockSize")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetThunkBlockSize();
-
         [RuntimeImport(Redhawk.BaseName, "RhpGetThreadAbortException")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Exception RhpGetThreadAbortException();
@@ -313,10 +289,6 @@ namespace System.Runtime
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static extern ulong RhpGetTickCount64();
-
-        [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern IntPtr RhAllocateThunksMapping();
 
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
         // memory available to satisfy the caller's request.
