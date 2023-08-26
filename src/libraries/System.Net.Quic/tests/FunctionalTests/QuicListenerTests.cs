@@ -509,8 +509,7 @@ namespace System.Net.Quic.Tests
             {
                 new SslApplicationProtocol(alpn),
             };
-            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
-            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(timeoutToken));
+            await Assert.ThrowsAsync<AuthenticationException>(() => CreateQuicConnection(clientOptions).AsTask().WaitAsync(timeoutToken));
         }
     }
 }
