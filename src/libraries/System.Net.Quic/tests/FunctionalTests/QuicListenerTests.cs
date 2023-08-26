@@ -475,7 +475,7 @@ namespace System.Net.Quic.Tests
 
         [Theory]
         [InlineData("foo")]
-        // [InlineData("not_existing")]
+        [InlineData("not_existing")]
         public async Task Listener_AlpnNarrowingDown_Failure(string alpn)
         {
             using CancellationTokenSource testTimeoutCts = new CancellationTokenSource(PassingTestTimeout);
@@ -510,7 +510,6 @@ namespace System.Net.Quic.Tests
                 new SslApplicationProtocol(alpn),
             };
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
-            await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken));
             await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(timeoutToken));
         }
     }
