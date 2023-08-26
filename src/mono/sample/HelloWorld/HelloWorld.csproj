@@ -18,7 +18,6 @@
 
     <ItemGroup>
       <AotInputAssemblies Include="$(PublishDir)\*.dll" />
-      <ReferenceAssembliesForPGO Include="$(PublishDir)\*.dll" />
     </ItemGroup>
 
     <MonoAOTCompiler
@@ -27,15 +26,13 @@
       LibraryFormat="$(_AotLibraryFormat)"
       Assemblies="@(AotInputAssemblies)"
       OutputDir="$(PublishDir)"
-      CollectCompiledMethods="$(StripILCode)"
-      CompiledMethodsOutputDirectory="$(CompiledMethodsOutputDirectory)"
+      CollectTrimmingEligibleMethods="$(StripILCode)"
+      TrimmingEligibleMethodsOutputDirectory="$(TrimmingEligibleMethodsOutputDirectory)"
       IntermediateOutputPath="$(IntermediateOutputPath)"
       UseAotDataFile="$(UseAotDataFile)"
-      CacheFilePath="$(IntermediateOutputPath)aot_compiler_cache.json"
-      NetTracePath="$(NetTracePath)"
-      PgoBinaryPath="$(PgoBinaryPath)"
-      ReferenceAssembliesForPGO="@(ReferenceAssembliesForPGO)"
-      MibcProfilePath="$(MibcProfilePath)">
+      MibcProfilePath="$(MibcProfilePath)"
+      UseLLVM="$(MonoEnableLLVM)"
+      LLVMPath="$(MonoAotCrossDir)">
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
   </Target>

@@ -36,6 +36,15 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                     //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
                     new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)}, 
                     1024, _DoesTraceContainExceptionEvents, enableRundownProvider:false);
+
+                if(ret == 100)
+                {
+                ret = IpcTraceTest.RunAndValidateEventCounts(
+                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1}}, 
+                    _eventGeneratingActionForFinalizers, 
+                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)}, 
+                    1024, _DoesTraceContainFinalizerEvents, enableRundownProvider:false);
+                }
             }
 
             if (ret < 0)
@@ -71,6 +80,19 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                     //Do nothing
                 }
             }
+        };
+
+        private static Action _eventGeneratingActionForFinalizers = () =>
+        {
+            for (int i = 0; i < 50; i++)
+            {
+                if (i % 10 == 0)
+                    Logger.logger.Log($"Called GC.WaitForPendingFinalizers() {i} times...");
+                GC.WaitForPendingFinalizers();
+            }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         };
 
         private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainGCEvents = (source) =>
@@ -127,6 +149,20 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 bool ExStartResult = ExStartEvents >= 10;
 
                 return ExStartResult ? 100 : -1;
+            };
+        };
+
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainFinalizerEvents = (source) =>
+        {
+            int GCFinalizersEndEvents = 0;
+            source.Clr.GCFinalizersStop += (eventData) => GCFinalizersEndEvents += 1;
+            int GCFinalizersStartEvents = 0;
+            source.Clr.GCFinalizersStart += (eventData) => GCFinalizersStartEvents += 1;
+            return () => {
+                Logger.logger.Log("Event counts validation");
+                Logger.logger.Log("GCFinalizersEndEvents: " + GCFinalizersEndEvents);
+                Logger.logger.Log("GCFinalizersStartEvents: " + GCFinalizersStartEvents);
+                return GCFinalizersEndEvents >= 50 && GCFinalizersStartEvents >= 50 ? 100 : -1;
             };
         };
     }

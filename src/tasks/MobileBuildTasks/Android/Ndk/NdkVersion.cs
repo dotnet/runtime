@@ -20,7 +20,7 @@ namespace Microsoft.Android.Build.Ndk
                 throw new ArgumentException ("must be a non-empty string", nameof (version));
             }
 
-            int tagIdx = ver.IndexOf('-');
+            int tagIdx = ver!.IndexOf('-');
             if (tagIdx >= 0)
             {
                 Tag = ver.Substring(tagIdx + 1);

@@ -7109,10 +7109,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
     //
     unsigned const loopNum = block->bbNatLoopNum;
 
-    if (loopNum == BasicBlock::NOT_IN_LOOP)
-    {
-        return;
-    }
+    assert(loopNum != BasicBlock::NOT_IN_LOOP);
 
     // Find the loop associated with this memory VN.
     //

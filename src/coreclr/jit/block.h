@@ -722,6 +722,11 @@ struct BasicBlock : private LIR::Range
         return KindIs(kind) || KindIs(rest...);
     }
 
+    bool HasTerminator()
+    {
+        return KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_COND, BBJ_SWITCH, BBJ_RETURN);
+    }
+
     // NumSucc() gives the number of successors, and GetSucc() returns a given numbered successor.
     //
     // There are two versions of these functions: ones that take a Compiler* and ones that don't. You must
@@ -1222,7 +1227,12 @@ struct BasicBlock : private LIR::Range
     };
 
     template <typename TFunc>
+    BasicBlockVisit VisitEHSecondPassSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
     BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+
+    bool HasPotentialEHSuccs(Compiler* comp);
 
     // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
     // normally used via BasicBlock::Succs(), e.g.:

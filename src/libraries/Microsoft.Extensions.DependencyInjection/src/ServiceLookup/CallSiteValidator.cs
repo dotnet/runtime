@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class CallSiteValidator: CallSiteVisitor<CallSiteValidator.CallSiteValidatorState, Type?>
+    internal sealed class CallSiteValidator : CallSiteVisitor<CallSiteValidator.CallSiteValidatorState, Type?>
     {
         // Keys are services being resolved via GetService, values - first scoped service in their call site tree
         private readonly ConcurrentDictionary<ServiceCacheKey, Type> _scopedServices = new ConcurrentDictionary<ServiceCacheKey, Type>();
@@ -30,13 +30,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 if (serviceType == scopedService)
                 {
                     throw new InvalidOperationException(
-                        SR.Format(SR.DirectScopedResolvedFromRootException, serviceType,
+                        SR.Format(SR.DirectScopedResolvedFromRootException, callSite.ServiceType,
                             nameof(ServiceLifetime.Scoped).ToLowerInvariant()));
                 }
 
                 throw new InvalidOperationException(
                     SR.Format(SR.ScopedResolvedFromRootException,
-                        serviceType,
+                        callSite.ServiceType,
                         scopedService,
                         nameof(ServiceLifetime.Scoped).ToLowerInvariant()));
             }

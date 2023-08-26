@@ -678,7 +678,7 @@ namespace Internal.Runtime.Augments
             return true;
         }
 
-        public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
+        public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle? binderBundle)
         {
             return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
         }

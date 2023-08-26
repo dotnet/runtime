@@ -45,12 +45,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.JavaScript.WebWorker</Target>
-    <Left>ref/net8.0/System.Runtime.InteropServices.JavaScript.dll</Left>
-    <Right>runtimes/browser/lib/net8.0/System.Runtime.InteropServices.JavaScript.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.InteropServices.JavaScript.CancelablePromise</Target>
     <Left>ref/net8.0/System.Runtime.InteropServices.JavaScript.dll</Left>
     <Right>runtimes/browser/lib/net8.0/System.Runtime.InteropServices.JavaScript.dll</Right>

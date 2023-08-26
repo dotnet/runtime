@@ -510,9 +510,12 @@ bool GCHeap::IsInFrozenSegment(Object *object)
 void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
 {
 #ifdef FEATURE_BASICFREEZE
-    heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
-    heap_segment_committed(heap_seg) = committed;
-    heap_segment_allocated(heap_seg) = allocated;
+#ifdef MULTIPLE_HEAPS
+    gc_heap* heap = gc_heap::g_heaps[0];
+#else
+    gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+    heap->update_ro_segment (reinterpret_cast<heap_segment*>(seg), allocated, committed);
 #endif // FEATURE_BASICFREEZE
 }
 
@@ -541,6 +544,23 @@ void GCHeap::ControlEvents(GCEventKeyword keyword, GCEventLevel level)
 void GCHeap::ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level)
 {
     GCEventStatus::Set(GCEventProvider_Private, keyword, level);
+}
+
+uint64_t GCHeap::GetGenerationBudget(int generation)
+{
+    uint64_t budget = 0;
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [i];
+#else
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif
+        dynamic_data* dd = hp->dynamic_data_of (generation);
+        budget += dd_desired_allocation (dd);
+    }
+    return budget;
 }
 
 #endif // !DACCESS_COMPILE

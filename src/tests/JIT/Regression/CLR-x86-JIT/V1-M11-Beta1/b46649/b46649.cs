@@ -10,7 +10,7 @@ namespace Test
     public class AA
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int L = -111;
             object O = null;
@@ -25,7 +25,6 @@ namespace Test
                     }
                 }
             }
-            return 100;
         }
     }
 }

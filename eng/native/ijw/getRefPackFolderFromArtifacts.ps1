@@ -14,7 +14,7 @@ $refPackPath = "$repoRoot/artifacts/bin/ref/net$majorVersion.$minorVersion"
 
 if (-not (Test-Path $refPackPath))
 {
-    Write-Error "Reference assemblies not found in the artifacts folder at '$refPackPath'. Did you invoke 'build.cmd libs.sfx+libs.oob /p:RefOnly=true' to make sure that refs are built? Did the repo layout change?"
+    Write-Error "Reference assemblies not found in the artifacts folder at '$refPackPath'. Did you invoke 'build.cmd libs' to make sure that refs are built? Did the repo layout change?"
     exit 1
 }
 

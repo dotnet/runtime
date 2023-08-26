@@ -51,7 +51,13 @@ namespace System.IO.Enumeration
                 }
             }
 
-            return modified ? sb.ToString() : expression;
+            if (!modified)
+            {
+                sb.Dispose();
+                return expression;
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>Verifies whether the given Win32 expression matches the given name. Supports the following wildcards: '*', '?', '&lt;', '&gt;', '"'. The backslash character '\' escapes.</summary>

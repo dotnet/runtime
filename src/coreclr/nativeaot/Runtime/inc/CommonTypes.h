@@ -38,4 +38,22 @@ typedef uint32_t            UInt32_BOOL;    // windows 4-byte BOOL, 0 -> false, 
 #define UInt32_FALSE        0
 #define UInt32_TRUE         1
 
+#if defined(FEATURE_EVENT_TRACE) && !defined(_INC_WINDOWS)
+typedef int BOOL;
+typedef void* LPVOID;
+typedef uint32_t UINT;
+typedef void* PVOID;
+typedef uint64_t ULONGLONG;
+typedef uint32_t ULONG;
+typedef int64_t LONGLONG;
+typedef uint8_t BYTE;
+typedef uint16_t UINT16;
+typedef struct _GUID {
+    uint32_t Data1;
+    uint16_t Data2;
+    uint16_t Data3;
+    uint8_t Data4[8];
+} GUID;
+#endif // FEATURE_EVENT_TRACE && !_INC_WINDOWS
+
 #endif // __COMMON_TYPES_H__

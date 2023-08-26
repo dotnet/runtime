@@ -60,14 +60,14 @@ namespace System.Runtime
 
         // Force a garbage collection.
         [RuntimeExport("RhCollect")]
-        internal static void RhCollect(int generation, InternalGCCollectionMode mode)
+        internal static void RhCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false)
         {
-            RhpCollect(generation, mode);
+            RhpCollect(generation, mode, lowMemoryP);
         }
 
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        private static extern void RhpCollect(int generation, InternalGCCollectionMode mode);
+        private static extern void RhpCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP);
 
         [RuntimeExport("RhGetGcTotalMemory")]
         internal static long RhGetGcTotalMemory()
@@ -304,7 +304,7 @@ namespace System.Runtime
         // Indicate that the current round of finalizations is complete.
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern void RhpSignalFinalizationComplete();
+        internal static extern void RhpSignalFinalizationComplete(uint fCount);
 
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]

@@ -952,6 +952,7 @@ namespace System.Xml
         protected XmlResolver() { }
         public virtual System.Net.ICredentials Credentials { set { } }
         public static System.Xml.XmlResolver ThrowingResolver { get { throw null; } }
+        public static System.Xml.XmlResolver FileSystemResolver { get { throw null; } }
         public abstract object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn);
         public virtual System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public virtual System.Uri ResolveUri(System.Uri? baseUri, string? relativeUri) { throw null; }

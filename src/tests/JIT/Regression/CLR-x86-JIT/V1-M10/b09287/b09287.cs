@@ -14,14 +14,13 @@ namespace Default
     public class X
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
 
             Console.WriteLine("Entering Hello world");
 
 
             Console.WriteLine("Done");
-            return 100;
 
         } // main
 

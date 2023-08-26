@@ -342,10 +342,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [return: MaybeNull]
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }

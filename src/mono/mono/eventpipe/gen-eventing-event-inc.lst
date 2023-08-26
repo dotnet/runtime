@@ -24,6 +24,13 @@ ExceptionFinallyStart
 ExceptionFinallyStop
 ExceptionThrown_V1
 ExceptionThrownStop
+GCBulkEdge
+GCBulkNode
+GCBulkRootConditionalWeakTableElementEdge
+GCBulkRootEdge
+GCBulkRootStaticVar
+GCEnd_V1
+GCStart_V2
 MethodDCEndILToNativeMap
 MethodDCEnd_V1
 MethodDCEndVerbose_V1

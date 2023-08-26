@@ -36,8 +36,7 @@ public class AppBuilderTask : Task
     /// Path to store build artifacts
     /// </summary>
     [Required]
-    [NotNull]
-    public string? OutputDirectory { get; set; }
+    public string OutputDirectory { get; set; } = ""!;
 
     /// <summary>
     /// OS + architecture runtime identifier
@@ -59,7 +58,7 @@ public class AppBuilderTask : Task
     /// <summary>
     /// Diagnostic ports configuration string
     /// </summary>
-    public string? DiagnosticPorts { get; set; } = ""!;
+    public string DiagnosticPorts { get; set; } = ""!;
 
     protected List<CompiledAssembly> CompiledAssemblies { get; set; }
 

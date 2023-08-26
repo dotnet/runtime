@@ -48,6 +48,14 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void CollectionBuilderAttributeTests()
+        {
+            var attr = new CollectionBuilderAttribute(typeof(AttributesTests), "Create");
+            Assert.Same(typeof(AttributesTests), attr.BuilderType);
+            Assert.Equal("Create", attr.MethodName);
+        }
+
+        [Fact]
         public static void CompilationRelaxationsAttributeTests()
         {
             var attr1 = new CompilationRelaxationsAttribute(42);
@@ -384,6 +392,12 @@ namespace System.Runtime.CompilerServices.Tests
             var attr2 = new CompilerFeatureRequiredAttribute("feature2") { IsOptional = true };
             Assert.Equal("feature2", attr2.FeatureName);
             Assert.True(attr2.IsOptional);
+        }
+
+        [Fact]
+        public static void RequiresLocationAttributeTests()
+        {
+            new RequiresLocationAttribute();
         }
     }
 }

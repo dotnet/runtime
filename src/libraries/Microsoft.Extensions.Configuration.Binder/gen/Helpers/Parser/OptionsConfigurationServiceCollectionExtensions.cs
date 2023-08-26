@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                TypeSpec typeSpec = GetBindingConfigType(
+                TypeSpec typeSpec = GetTargetTypeForRootInvocation(
                     type: targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None),
                     invocation.Location);
 
@@ -79,12 +79,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 RegisterTypeForMethodGen(overload, typeSpec);
+                RegisterAsInterceptor(overload, operation);
             }
 
             private void RegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection overload, TypeSpec typeSpec)
             {
                 _sourceGenSpec.MethodsToGen_ServiceCollectionExt |= overload;
-                RegisterTypeForBindCoreUntypedGen(typeSpec);
+                _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                RegisterTypeForBindCoreMainGen(typeSpec);
             }
         }
     }

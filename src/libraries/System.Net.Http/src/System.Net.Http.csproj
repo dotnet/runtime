@@ -58,10 +58,12 @@
     <Compile Include="System\Net\Http\HttpParseResult.cs" />
     <Compile Include="System\Net\Http\HttpProtocolException.cs" />
     <Compile Include="System\Net\Http\HttpRequestException.cs" />
+    <Compile Include="System\Net\Http\HttpRequestError.cs" />
     <Compile Include="System\Net\Http\HttpRequestMessage.cs" />
     <Compile Include="System\Net\Http\HttpRequestOptions.cs" />
     <Compile Include="System\Net\Http\HttpRequestOptionsKey.cs" />
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
+    <Compile Include="System\Net\Http\HttpIOException.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.cs" />
     <Compile Include="System\Net\Http\HttpVersionPolicy.cs" />
@@ -122,6 +124,8 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
+    <Compile Include="System\Net\Http\Metrics\HttpMetricsEnrichmentContext.cs" />
+    <Compile Include="System\Net\Http\Metrics\MetricsHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
@@ -209,6 +213,8 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocksHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocksException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Metrics\ConnectionMetrics.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Metrics\SocketsHttpHandlerMetrics.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
              Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
@@ -227,7 +233,7 @@
              Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
-  <!-- Header support -->
+    <!-- Header support -->
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs">
       <Link>Common\System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs</Link>
     </Compile>

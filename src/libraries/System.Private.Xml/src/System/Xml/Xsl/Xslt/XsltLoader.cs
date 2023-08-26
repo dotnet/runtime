@@ -71,7 +71,7 @@ namespace System.Xml.Xsl.Xslt
                     // for reads beyond the initial stylesheet read) will use a throwing resolver as its
                     // default, as shown at the very top of this method.
 
-                    origResolver ??= new XmlUrlResolver();
+                    origResolver ??= XmlReaderSettings.GetDefaultPermissiveResolver();
                     Uri resolvedUri = origResolver.ResolveUri(null, uri);
                     if (resolvedUri == null)
                     {

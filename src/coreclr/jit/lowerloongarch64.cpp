@@ -343,15 +343,22 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
-        bool     doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && blkNode->GetLayout()->HasGCPtr();
-        unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-        if (doCpObj && dstAddr->OperIs(GT_LCL_ADDR) && (size <= copyBlockUnrollLimit))
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
+
+        if (doCpObj && (size <= copyBlockUnrollLimit))
         {
-            // If the size is small enough to unroll then we need to mark the block as non-interruptible
-            // to actually allow unrolling. The generated code does not report GC references loaded in the
-            // temporary register(s) used for copying.
-            doCpObj                  = false;
-            blkNode->gtBlkOpGcUnsafe = true;
+            // No write barriers are needed on the stack.
+            // If the layout contains a byref, then we know it must live on the stack.
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
+            {
+                // If the size is small enough to unroll then we need to mark the block as non-interruptible
+                // to actually allow unrolling. The generated code does not report GC references loaded in the
+                // temporary register(s) used for copying.
+                doCpObj                  = false;
+                blkNode->gtBlkOpGcUnsafe = true;
+            }
         }
 
         // CopyObj or CopyBlk

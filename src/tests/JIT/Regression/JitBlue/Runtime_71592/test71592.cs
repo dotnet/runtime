@@ -25,11 +25,11 @@ public class Test
     }
 
     [Fact]
-    public static int TestEntryPoint() {
+    public static void TestEntryPoint() {
         var t1 = new Test () { foo = 1 };
         var t2 = new Test () { foo = 2 };
         if (t1 == t2)
-            return 100;
-        return 100;
+            return;
+        return;
     }
 }

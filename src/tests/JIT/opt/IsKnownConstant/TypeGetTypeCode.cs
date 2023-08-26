@@ -8,7 +8,7 @@ using Xunit;
 public class Program
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         AreSame(Type.GetTypeCode(null),             TypeCode.Empty);
         AreSame(Type.GetTypeCode(typeof(void*)),    TypeCode.Object);
@@ -61,8 +61,6 @@ public class Program
 
         AreSame(Type.GetTypeCode(__reftype(__makeref(_varInt))),    TypeCode.Int32);
         AreSame(Type.GetTypeCode(__reftype(__makeref(_varObject))), TypeCode.Object);
-
-        return 100;
     }
 
     private static int _varInt = 42;

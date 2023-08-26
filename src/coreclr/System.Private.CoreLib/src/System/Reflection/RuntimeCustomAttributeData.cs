@@ -1259,7 +1259,7 @@ namespace System.Reflection
                                 continue;
                             }
 
-                            setMethod.InvokeOneParameter(attribute, BindingFlags.Default, null, value, null);
+                            setMethod.InvokePropertySetter(attribute, BindingFlags.Default, null, value, null);
                         }
                         else
                         {

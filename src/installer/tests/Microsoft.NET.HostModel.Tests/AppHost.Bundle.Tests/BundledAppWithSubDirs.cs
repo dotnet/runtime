@@ -7,6 +7,7 @@ using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
@@ -92,7 +93,7 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
             UseFrameworkDependentHost(fixture);
             var singleFile = BundleHelper.BundleApp(fixture, options);
-            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(singleFile);
+            PEUtils.SetWindowsGraphicalUserInterfaceBit(singleFile);
 
             string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "bundleErrors"));
             using (new TestArtifact(dotnetWithMockHostFxr))

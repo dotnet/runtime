@@ -1989,6 +1989,32 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
+        if ((prevTreeData->gtFlags & GTF_GLOB_REF) != 0)
+        {
+            bool hasExtraUses = false;
+
+            // We can only allow duplicating a GTF_GLOB_REF tree if we can
+            // prove that the local dies as a result -- otherwise we would
+            // introduce data races here. We have already checked live-out
+            // above, so the remaining check is to verify that all uses of the
+            // local are in the terminating statement that we will be
+            // replacing.
+            for (Statement* cur = prevStmt->GetNextStmt(); cur != stmt; cur = cur->GetNextStmt())
+            {
+                if (gtHasRef(cur->GetRootNode(), prevTreeLclNum))
+                {
+                    JITDUMP("-- prev tree has GTF_GLOB_REF and " FMT_STMT " has an interfering use\n", cur->GetID());
+                    hasExtraUses = true;
+                    break;
+                }
+            }
+
+            if (hasExtraUses)
+            {
+                continue;
+            }
+        }
+
         JITDUMP(" -- prev tree is viable candidate for relop fwd sub!\n");
         candidateTree       = prevTreeData;
         candidateStmt       = prevStmt;

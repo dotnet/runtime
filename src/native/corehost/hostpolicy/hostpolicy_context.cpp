@@ -184,7 +184,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     if (breadcrumbs_enabled)
     {
         pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-        pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+        pal::string_t policy_version = _STRINGIFY(HOST_VERSION);
 
         // Always insert the hostpolicy that the code is running on.
         breadcrumbs.insert(policy_name);
@@ -280,7 +280,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     coreclr_properties.add(common_property::AppContextDepsFiles, app_context_deps_str.c_str());
     coreclr_properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
     coreclr_properties.add(common_property::ProbingDirectories, resolver.get_lookup_probe_directories().c_str());
-    coreclr_properties.add(common_property::RuntimeIdentifier, get_current_runtime_id(true /*use_fallback*/).c_str());
+    coreclr_properties.add(common_property::RuntimeIdentifier, get_runtime_id().c_str());
 
     bool set_app_paths = false;
 

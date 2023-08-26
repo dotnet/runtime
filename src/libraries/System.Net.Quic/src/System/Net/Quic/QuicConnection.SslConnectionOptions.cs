@@ -68,6 +68,7 @@ public partial class QuicConnection
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             IntPtr certificateBuffer = 0;
             int certificateLength = 0;
+            bool wrapException = false;
 
             X509Chain? chain = null;
             X509Certificate2? result = null;
@@ -130,8 +131,10 @@ public partial class QuicConnection
                 int status = QUIC_STATUS_SUCCESS;
                 if (_validationCallback is not null)
                 {
+                    wrapException = true;
                     if (!_validationCallback(_connection, result, chain, sslPolicyErrors))
                     {
+                        wrapException = false;
                         if (_isClient)
                         {
                             throw new AuthenticationException(SR.net_quic_cert_custom_validation);
@@ -153,9 +156,14 @@ public partial class QuicConnection
                 certificate = result;
                 return status;
             }
-            catch
+            catch (Exception ex)
             {
                 result?.Dispose();
+                if (wrapException)
+                {
+                    throw new QuicException(QuicError.CallbackError, null, SR.net_quic_callback_error, ex);
+                }
+
                 throw;
             }
             finally

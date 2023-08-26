@@ -10,10 +10,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         None = 0x0,
         BindCore = 0x1,
-        BindCoreUntyped = 0x2,
-        GetCore = 0x4,
-        GetValueCore = 0x8,
+        GetCore = 0x2,
+        GetValueCore = 0x4,
+        BindCoreMain = 0x8,
         Initialize = 0x10,
+        HasValueOrChildren = 0x20,
+        AsConfigWithChildren = 0x40,
     }
 
     /// <summary>
@@ -110,7 +112,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         // Method group. BindConfiguration_T is its own method group.
         Bind = Bind_T | Bind_T_BinderOptions,
 
-        Any = Bind | BindConfiguration_T_path_BinderOptions,
+        BindConfiguration = BindConfiguration_T_path_BinderOptions,
+
+        Any = Bind | BindConfiguration,
     }
 
     /// <summary>

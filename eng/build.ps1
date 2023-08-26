@@ -22,6 +22,7 @@ Param(
   [switch]$msbuild,
   [string]$cmakeargs,
   [switch]$pgoinstrument,
+  [string[]]$fsanitize,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -84,10 +85,13 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Native build settings:"
-  Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
-  Write-Host "  -ninja                  Use Ninja to drive the native build. (default)"
-  Write-Host "  -msbuild                Use MSBuild to drive the native build. This is a no-op for Mono."
-  Write-Host "  -pgoinstrument          Build the CLR with PGO instrumentation."
+  Write-Host "  -cmakeargs                User-settable additional arguments passed to CMake."
+  Write-Host "  -ninja                    Use Ninja to drive the native build. (default)"
+  Write-Host "  -msbuild                  Use MSBuild to drive the native build. This is a no-op for Mono."
+  Write-Host "  -pgoinstrument            Build the CLR with PGO instrumentation."
+  Write-Host "  -fsanitize (address)      Build the native components with the specified sanitizers."
+  Write-Host "                            Sanitizers can be specified with a comma-separated list."
+  Write-Host ""
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
@@ -220,7 +224,7 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
-  
+
   # Disable .NET runtime signature validation errors which errors for local builds
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
@@ -269,6 +273,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}
+    "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }

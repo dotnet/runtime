@@ -2156,7 +2156,7 @@ public:
     void AddMemoryPressure();
     void RemoveMemoryPressure();
 
-    Assembly *GetRootAssembly()
+    PTR_Assembly GetRootAssembly()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pRootAssembly;
@@ -2394,7 +2394,7 @@ public:
     //****************************************************************************************
     //
     // Global Static to get the one and only system domain
-    static SystemDomain * System()
+    static PTR_SystemDomain System()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -2451,12 +2451,24 @@ public:
     }
     static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
     {
-        WRAPPER_NO_CONTRACT;
-        if (m_FrozenObjectHeapManager == NULL)
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        if (VolatileLoad(&m_FrozenObjectHeapManager) == nullptr)
         {
             LazyInitFrozenObjectsHeap();
         }
-        return m_FrozenObjectHeapManager;
+        return VolatileLoad(&m_FrozenObjectHeapManager);
+    }
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManagerNoThrow()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return VolatileLoad(&m_FrozenObjectHeapManager);
     }
 #endif // DACCESS_COMPILE
 

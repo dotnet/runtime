@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { diagnostics_c_functions as cwraps } from "../../cwraps";
-import { INTERNAL } from "../../globals";
+import { INTERNAL, mono_assert } from "../../globals";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
 import { withStackAlloc, getI32 } from "../../memory";
 import { Thread, waitForThread } from "../../pthreads/browser";

@@ -49,6 +49,11 @@ namespace System.Runtime.InteropServices.JavaScript
             TaskCompletionSource tcs = new TaskCompletionSource(holder);
             JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
+                if (arguments_buffer == null)
+                {
+                    tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                    return;
+                }
                 ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
                 // arg_3 set by caller when this is SetResult call, un-used here
                 if (arg_2.slot.Type != MarshalerType.None)
@@ -88,6 +93,12 @@ namespace System.Runtime.InteropServices.JavaScript
             TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
             JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
+                if (arguments_buffer == null)
+                {
+                    tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                    return;
+                }
+
                 ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
                 ref JSMarshalerArgument arg_3 = ref arguments_buffer[4]; // set by caller when this is SetResult call
                 if (arg_2.slot.Type != MarshalerType.None)

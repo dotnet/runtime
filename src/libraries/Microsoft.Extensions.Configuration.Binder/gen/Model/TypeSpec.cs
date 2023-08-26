@@ -17,16 +17,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             IsValueType = type.IsValueType;
             Namespace = type.ContainingNamespace?.ToDisplayString();
-            FullyQualifiedDisplayString = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            MinimalDisplayString = type.ToDisplayString(s_minimalDisplayFormat);
-            Name = Namespace + "." + MinimalDisplayString.Replace(".", "+");
+            DisplayString = type.ToDisplayString(s_minimalDisplayFormat);
+            Name = Namespace + "." + DisplayString.Replace(".", "+");
+            IsInterface = type.TypeKind is TypeKind.Interface;
         }
 
         public string Name { get; }
 
-        public string FullyQualifiedDisplayString { get; }
-
-        public string MinimalDisplayString { get; }
+        public string DisplayString { get; }
 
         public string? Namespace { get; }
 
@@ -40,12 +38,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public virtual bool CanInitialize => true;
 
-        /// <summary>
-        /// Location in the input compilation we picked up a call to Bind, Get, or Configure.
-        /// </summary>
-        public required Location? Location { get; init; }
+        public virtual bool NeedsMemberBinding { get; }
 
-        protected bool CanInitCompexType => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
+        public virtual TypeSpec EffectiveType => this;
+
+        public bool IsInterface { get; }
+
+        protected bool CanInitComplexObject() => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
     }
 
     internal enum TypeSpecKind

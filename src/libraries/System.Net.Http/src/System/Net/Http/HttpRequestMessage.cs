@@ -30,7 +30,7 @@ namespace System.Net.Http
         private Version _version;
         private HttpVersionPolicy _versionPolicy;
         private HttpContent? _content;
-        private HttpRequestOptions? _options;
+        internal HttpRequestOptions? _options;
 
         public Version Version
         {

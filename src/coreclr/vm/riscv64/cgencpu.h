@@ -329,15 +329,7 @@ const IntReg RegRa  = IntReg(1);
 
 class StubLinkerCPU : public StubLinker
 {
-
 public:
-
-    // BitFlags for EmitLoadStoreReg(Pair)Imm methods
-    enum {
-        eSTORE      =   0x0,
-        eLOAD       =   0x1,
-    };
-
     static void Init();
     static bool isValidSimm12(int value) {
         return -( ((int)1) << 11 ) <= value && value < ( ((int)1) << 11 );
@@ -352,31 +344,22 @@ public:
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
 
-#ifdef _DEBUG
-    void EmitNop() { _ASSERTE(!"RISCV64:NYI "); }
-#endif
-    void EmitBreakPoint() { _ASSERTE(!"RISCV64:NYI"); }
+private:
     void EmitMovConstant(IntReg target, UINT64 constant);
-    void EmitCmpImm(IntReg reg, int imm);
-    void EmitCmpReg(IntReg Xn, IntReg Xm);
-    void EmitCondFlagJump(CodeLabel * target, UINT cond);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
+    void EmitMovReg(FloatReg dest, FloatReg source);
 
     void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitLuImm(IntReg Xd, unsigned int value);
 
-    void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, FloatReg Ft1, FloatReg Ft2, IntReg Xn, int offset=0);
+    void EmitLoad(IntReg dest, IntReg srcAddr, int offset = 0);
+    void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
+    void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
+    void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
 
-    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset=0);
-
-    void EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset);
-
-    void EmitCallRegister(IntReg reg);
     void EmitRet(IntReg reg);
 };
 

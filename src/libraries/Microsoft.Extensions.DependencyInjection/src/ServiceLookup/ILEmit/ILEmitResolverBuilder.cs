@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -271,10 +272,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
         {
-            Debug.Assert(key.Type != null);
+            var id = key.ServiceIdentifier;
 
-            // new ServiceCacheKey(typeof(key.Type), key.Slot)
-            argument.Generator.Emit(OpCodes.Ldtoken, key.Type);
+            // new ServiceCacheKey(key.ServiceKey, key.type, key.slot)
+            AddConstant(argument, id.ServiceKey);
+            argument.Generator.Emit(OpCodes.Ldtoken, id.ServiceType);
             argument.Generator.Emit(OpCodes.Call, GetTypeFromHandleMethod);
             argument.Generator.Emit(OpCodes.Ldc_I4, key.Slot);
             argument.Generator.Emit(OpCodes.Newobj, CacheKeyCtor);

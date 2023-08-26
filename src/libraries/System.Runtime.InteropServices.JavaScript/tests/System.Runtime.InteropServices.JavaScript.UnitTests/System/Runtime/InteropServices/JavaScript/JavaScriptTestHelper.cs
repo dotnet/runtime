@@ -991,6 +991,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("setup", "JavaScriptTestHelper")]
         internal static partial Task Setup();
 
+        [JSImport("INTERNAL.forceDisposeProxies")]
+        internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
+
         static JSObject _module;
         public static async Task InitializeAsync()
         {
@@ -1001,6 +1004,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Setup();
                 // Log("JavaScriptTestHelper.mjs imported");
             }
+        }
+
+        public static Task DisposeAsync()
+        {
+            _module.Dispose();
+            _module = null;
+            // you can set verbose: true to see which proxies are left to the GC to collect
+            ForceDisposeProxies(false, verbose: false);
+            return Task.CompletedTask;
         }
     }
 }

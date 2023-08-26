@@ -36,6 +36,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -85,7 +86,7 @@ namespace Mono.Linker.Steps
 		readonly HashSet<TypeDefinition> _entireTypesMarked;
 		DynamicallyAccessedMembersTypeHierarchy? _dynamicallyAccessedMembersTypeHierarchy;
 		MarkScopeStack? _scopeStack;
-		MarkScopeStack ScopeStack {
+		protected MarkScopeStack ScopeStack {
 			get {
 				Debug.Assert (_scopeStack != null);
 				return _scopeStack;
@@ -127,6 +128,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.ReferencedBySpecialAttribute,
 			DependencyKind.TypePreserve,
 			DependencyKind.XmlDescriptor,
+			DependencyKind.UnsafeAccessorTarget,
 		};
 
 		static readonly DependencyKind[] _typeReasons = new DependencyKind[] {
@@ -211,6 +213,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.FieldMarshalSpec,
 			DependencyKind.ReturnTypeMarshalSpec,
 			DependencyKind.XmlDescriptor,
+			DependencyKind.UnsafeAccessorTarget,
 		};
 #endif
 
@@ -234,6 +237,7 @@ namespace Mono.Linker.Steps
 		public AnnotationStore Annotations => Context.Annotations;
 		public MarkingHelpers MarkingHelpers => Context.MarkingHelpers;
 		public Tracer Tracer => Context.Tracer;
+		public EmbeddedXmlInfo EmbeddedXmlInfo => Context.EmbeddedXmlInfo;
 
 		public virtual void Process (LinkContext context)
 		{
@@ -247,7 +251,7 @@ namespace Mono.Linker.Steps
 			Complete ();
 		}
 
-		void Initialize ()
+		protected virtual void Initialize ()
 		{
 			InitializeCorelibAttributeXml ();
 			Context.Pipeline.InitializeMarkHandlers (Context, MarkContext);
@@ -278,7 +282,7 @@ namespace Mono.Linker.Steps
 				Context.CustomAttributes.PrimaryAttributeInfo.CustomAttributesOrigins.Add (ca, origin);
 		}
 
-		void Complete ()
+		protected virtual void Complete ()
 		{
 			foreach ((var body, var _) in _unreachableBodies) {
 				Annotations.SetAction (body.Method, MethodAction.ConvertToThrow);
@@ -1391,7 +1395,7 @@ namespace Mono.Linker.Steps
 			return !Annotations.SetProcessed (provider);
 		}
 
-		protected void MarkAssembly (AssemblyDefinition assembly, DependencyInfo reason)
+		protected virtual void MarkAssembly (AssemblyDefinition assembly, DependencyInfo reason)
 		{
 			Annotations.Mark (assembly, reason, ScopeStack.CurrentScope.Origin);
 			if (CheckProcessed (assembly))
@@ -1870,6 +1874,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.DynamicallyAccessedMember:
 			case DependencyKind.InteropMethodDependency:
 			case DependencyKind.Ldtoken:
+			case DependencyKind.UnsafeAccessorTarget:
 				if (isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
 					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
 
@@ -2434,28 +2439,28 @@ namespace Mono.Linker.Steps
 				if (ShouldMarkInterfaceImplementation (type, iface))
 					MarkInterfaceImplementation (iface, new MessageOrigin (type));
 			}
+		}
 
-			bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
-			{
-				if (Annotations.IsMarked (iface))
-					return false;
+		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
+		{
+			if (Annotations.IsMarked (iface))
+				return false;
 
-				if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
-					return true;
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
+				return true;
 
-				if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
-					return false;
+			if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
+				return false;
 
-				if (Annotations.IsMarked (resolvedInterfaceType))
-					return true;
+			if (Annotations.IsMarked (resolvedInterfaceType))
+				return true;
 
-				// It's hard to know if a com or windows runtime interface will be needed from managed code alone,
-				// so as a precaution we will mark these interfaces once the type is instantiated
-				if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
-					return true;
+			// It's hard to know if a com or windows runtime interface will be needed from managed code alone,
+			// so as a precaution we will mark these interfaces once the type is instantiated
+			if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
+				return true;
 
-				return IsFullyPreserved (type);
-			}
+			return IsFullyPreserved (type);
 		}
 
 		void MarkGenericParameterProvider (IGenericParameterProvider provider)
@@ -3264,6 +3269,10 @@ namespace Mono.Linker.Steps
 				ProcessInteropMethod (method);
 			}
 
+			if (!method.HasBody || method.Body.CodeSize == 0) {
+				ProcessUnsafeAccessorMethod (method);
+			}
+
 			if (ShouldParseMethodBody (method))
 				MarkMethodBody (method.Body);
 
@@ -3492,6 +3501,11 @@ namespace Mono.Linker.Steps
 				}
 			}
 #pragma warning restore RS0030
+		}
+
+		void ProcessUnsafeAccessorMethod (MethodDefinition method)
+		{
+			(new UnsafeAccessorMarker (Context, this)).ProcessUnsafeAccessorMethod (method);
 		}
 
 		protected virtual bool ShouldParseMethodBody (MethodDefinition method)

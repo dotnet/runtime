@@ -413,6 +413,8 @@ namespace System.Reflection.Emit
             set => _initLocals = value;
         }
 
+        internal RuntimeType[] ArgumentTypes => _parameterTypes;
+
         private RuntimeParameterInfo[] LoadParameters()
         {
             if (_parameters == null)

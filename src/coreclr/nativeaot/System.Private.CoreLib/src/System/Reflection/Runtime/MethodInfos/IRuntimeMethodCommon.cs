@@ -45,7 +45,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         string Name { get; }
 
-        MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant, out Exception exception);
+        MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant, out Exception exception);
 
         bool IsGenericMethodDefinition { get; }
         int GenericParameterCount { get; }

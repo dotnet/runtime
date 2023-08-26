@@ -13,11 +13,16 @@ import { mono_wasm_get_loaded_files } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
+import { loadLazyAssembly } from "./lazyLoading";
+import { loadSatelliteAssemblies } from "./satelliteAssemblies";
+import { forceDisposeProxies } from "./gc-handles";
+import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 
 export function export_internal(): any {
     return {
         // tests
         mono_wasm_exit: (exit_code: number) => { Module.err("early exit " + exit_code); },
+        forceDisposeProxies,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
         logging: undefined,
@@ -38,6 +43,7 @@ export function export_internal(): any {
         mono_wasm_change_debugger_log_level,
         mono_wasm_debugger_attached,
         mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
+        mono_wasm_get_func_id_to_name_mappings,
 
         // interop
         get_property,
@@ -78,6 +84,9 @@ export function export_internal(): any {
         // Blazor GC Lock support
         mono_wasm_gc_lock,
         mono_wasm_gc_unlock,
+
+        loadLazyAssembly,
+        loadSatelliteAssemblies
     };
 }
 

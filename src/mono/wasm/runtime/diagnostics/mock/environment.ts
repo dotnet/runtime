@@ -7,7 +7,7 @@ import Serializer from "../server_pthread/ipc-protocol/base-serializer";
 import { CommandSetId, EventPipeCommandId, ProcessCommandId } from "../server_pthread/ipc-protocol/types";
 import { assertNever } from "../../types/internal";
 import { pthread_self } from "../../pthreads/worker";
-import { createPromiseController } from "../../globals";
+import { createPromiseController, mono_assert } from "../../globals";
 
 
 function expectAdvertise(data: ArrayBuffer): boolean {

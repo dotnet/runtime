@@ -35,10 +35,10 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
+#include <minipal/cpuid.h>
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {

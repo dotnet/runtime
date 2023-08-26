@@ -54,8 +54,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "nqo-GN"    , DigitShapes.NativeNational };
             yield return new object[] { "pa-Arab"   , DigitShapes.NativeNational };
             yield return new object[] { "pa-Arab-PK", DigitShapes.NativeNational };
-            yield return new object[] { "prs"       , DigitShapes.NativeNational };
-            yield return new object[] { "prs-AF"    , DigitShapes.NativeNational };
             yield return new object[] { "ps"        , DigitShapes.NativeNational };
             yield return new object[] { "ps-AF"     , DigitShapes.NativeNational };
             yield return new object[] { "sd"        , DigitShapes.NativeNational };
@@ -102,13 +100,30 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(DigitSubstitution_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79867", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public void DigitSubstitutionListTest(string cultureName, DigitShapes shape)
         {
             try
             {
                 CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
                 Assert.Equal(ci.NumberFormat.DigitSubstitution, shape);
+            }
+            catch (CultureNotFoundException)
+            {
+                // ignore the cultures that we cannot create as it is not supported on the platforms
+            }
+        }
+
+        [Theory]
+        [InlineData("prs")]
+        [InlineData("prs-AF")]
+        public void PrsNativeDigitsTest(string cultureName)
+        {
+            try
+            {
+                CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
+
+                // Some OS's set the DigitSubstitution to Context for the culture "prs" and "prs-AF". Majority of Os's set it to NativeNational.
+                Assert.True(ci.NumberFormat.DigitSubstitution == DigitShapes.Context || ci.NumberFormat.DigitSubstitution == DigitShapes.NativeNational);
             }
             catch (CultureNotFoundException)
             {

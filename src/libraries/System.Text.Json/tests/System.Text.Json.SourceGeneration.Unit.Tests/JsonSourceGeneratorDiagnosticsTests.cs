@@ -177,12 +177,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateRepeatedLocationsCompilation();
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
-            INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").FirstOrDefault();
-            Location location = symbol.GetAttributes()[1].GetLocation();
+            Location location = compilation.GetSymbolsWithName("JsonContext").FirstOrDefault().GetAttributes()[1].GetLocation();
 
             var expectedDiagnostics = new DiagnosticData[]
             {
-                new(DiagnosticSeverity.Warning, location, "There are multiple types named Location. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.")
+                new(DiagnosticSeverity.Warning, location, "There are multiple types named 'Location'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.")
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
@@ -346,6 +345,26 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void DerivedJsonConverterAttributeTypeWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithDerivedJsonConverterAttributeAnnotations();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location typeAttrLocation = compilation.GetSymbolsWithName("ClassWithConverterDeclaration").First().GetAttributes()[0].GetLocation();
+            Location jsonSerializableAttrLocation = compilation.GetSymbolsWithName("JsonContext").First().GetAttributes()[0].GetLocation();
+            Location propAttrLocation = compilation.GetSymbolsWithName("Value").First().GetAttributes()[0].GetLocation();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, typeAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
+                new(DiagnosticSeverity.Warning, jsonSerializableAttrLocation, "Did not generate serialization metadata for type 'HelloWorld.ClassWithConverterDeclaration'."),
+                new(DiagnosticSeverity.Warning, propAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
         public void UnboundGenericTypeDeclarationWarns()
         {
             Compilation compilation = CompilationHelper.CreateContextWithUnboundGenericTypeDeclarations();
@@ -397,7 +416,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                { 
+                {
                     public class MyClass
                     {
                         public MyClass(int value)
@@ -409,6 +428,57 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     }
 
                     [JsonSerializable(typeof(MyClass))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
+
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+        [Theory]
+        [InlineData(LanguageVersion.Default)]
+        [InlineData(LanguageVersion.Preview)]
+        [InlineData(LanguageVersion.Latest)]
+        [InlineData(LanguageVersion.LatestMajor)]
+        [InlineData(LanguageVersion.CSharp9)]
+#if ROSLYN4_4_OR_GREATER
+        [InlineData(LanguageVersion.CSharp10)]
+        [InlineData(LanguageVersion.CSharp11)]
+#endif
+        public void SupportedLanguageVersions_Memory_SucceedCompilation(LanguageVersion langVersion)
+        {
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public class MyClass<T>
+                    {
+                        public MyClass(
+                            Memory<T> memoryOfT,
+                            Memory<byte> memoryByte,
+                            ReadOnlyMemory<T> readOnlyMemoryOfT,
+                            ReadOnlyMemory<byte> readOnlyMemoryByte)
+                        {
+                            MemoryOfT = memoryOfT;
+                            MemoryByte = memoryByte;
+                            ReadOnlyMemoryOfT = readOnlyMemoryOfT;
+                            ReadOnlyMemoryByte = readOnlyMemoryByte;
+                        }
+
+                        public Memory<T> MemoryOfT { get; set; }
+                        public Memory<byte> MemoryByte { get; set; }
+                        public ReadOnlyMemory<T> ReadOnlyMemoryOfT { get; set; }
+                        public ReadOnlyMemory<byte> ReadOnlyMemoryByte { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass<int>))]
                     public partial class MyJsonContext : JsonSerializerContext
                     {
                     }
@@ -434,7 +504,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                { 
+                {
                     public class MyClass
                     {
                         public MyClass(int value)
@@ -461,7 +531,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             var expectedDiagnostics = new DiagnosticData[]
             {
-                new(DiagnosticSeverity.Error, contextLocation, $"The System.Text.Json source generator is not available in C# '{langVersion.ToDisplayString()}'. Please use language version 9.0 or greater.")
+                new(DiagnosticSeverity.Error, contextLocation, $"The System.Text.Json source generator is not available in C# {langVersion.ToDisplayString()}. Please use language version 9.0 or greater.")
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
@@ -481,6 +551,80 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             {
                 new(DiagnosticSeverity.Warning, protectedCtorLocation, "The constructor on type 'HelloWorld.ClassWithProtectedCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
                 new(DiagnosticSeverity.Warning, privateCtorLocation, "The constructor on type 'HelloWorld.ClassWithPrivateCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void DiagnosticOnMemberFromReferencedAssembly_LocationDefaultsToContextClass()
+        {
+            Compilation referencedCompilation = CompilationHelper.CreateCompilation("""
+                using System.Text.Json.Serialization;
+
+                namespace Library
+                {
+                    public class MyPoco
+                    {
+                        [JsonConverter(typeof(int))]
+                        public int Value { get; set; }
+                    }
+                }
+                """);
+
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            Compilation compilation = CompilationHelper.CreateCompilation("""
+                using Library;
+                using System.Text.Json.Serialization;
+
+                namespace Application
+                {
+                    [JsonSerializable(typeof(MyPoco))]
+                    public partial class MyContext : JsonSerializerContext
+                    { }
+                }
+                """, additionalReferences);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location contextLocation = compilation.GetSymbolsWithName("MyContext").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, contextLocation, "The 'JsonConverterAttribute' type 'int' specified on member 'Library.MyPoco.Value' is not a converter type or does not contain an accessible parameterless constructor."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void JsonSerializableAttributeOnNonContextClass()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilation("""
+                using System.Text.Json.Serialization;
+
+                namespace Application
+                {
+                    [JsonSerializable(typeof(MyPoco))]
+                    public partial class MyContext : IDisposable
+                    {
+                        public void Dispose() { }
+                    }
+
+                    public class MyPoco { }
+                }
+                """);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location contextLocation = compilation.GetSymbolsWithName("MyContext").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, contextLocation, "The type 'Application.MyContext' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated."),
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
