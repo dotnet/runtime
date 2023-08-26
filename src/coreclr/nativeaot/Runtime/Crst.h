@@ -18,7 +18,6 @@ enum CrstType
     CrstInterfaceDispatchGlobalLists,
     CrstStressLog,
     CrstRestrictedCallouts,
-    CrstObjectiveCMarshalCallouts,
     CrstGcStressControl,
     CrstThreadStore,
     CrstYieldProcessorNormalized,
