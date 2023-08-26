@@ -124,7 +124,7 @@
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
         <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">Seçenek doğrulaması kaynak oluşturucusu C# {0} sürümünde kullanılamıyor. Lütfen dil sürümü {1} veya üstü bir sürümü kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
