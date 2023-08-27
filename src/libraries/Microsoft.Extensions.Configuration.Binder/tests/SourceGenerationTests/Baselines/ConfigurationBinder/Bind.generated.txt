@@ -35,6 +35,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static void Bind_ProgramMyClass(this IConfiguration configuration, object? obj)
         {
             ArgumentNullException.ThrowIfNull(configuration);
+
             ArgumentNullException.ThrowIfNull(obj);
 
             var typedObj = (Program.MyClass)obj;
@@ -45,15 +46,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         [InterceptsLocationAttribute(@"src-0.cs", 14, 24)]
         public static void Bind_ProgramMyClass(this IConfiguration configuration, object? obj, Action<BinderOptions>? configureOptions)
         {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             var typedObj = (Program.MyClass)obj;
             BindCore(configuration, ref typedObj, GetBinderOptions(configureOptions));
@@ -64,6 +59,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static void Bind_ProgramMyClass(this IConfiguration configuration, string key, object? obj)
         {
             ArgumentNullException.ThrowIfNull(configuration);
+
             ArgumentNullException.ThrowIfNull(obj);
 
             var typedObj = (Program.MyClass)obj;

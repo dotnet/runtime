@@ -41,15 +41,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
         public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, IConfiguration configuration, Action<BinderOptions>? configureOptions) where TOptions : class
         {
-            if (services is null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
+            ArgumentNullException.ThrowIfNull(services);
 
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             OptionsServiceCollectionExtensions.AddOptions(services);
             services.AddSingleton<IOptionsChangeTokenSource<TOptions>>(new ConfigurationChangeTokenSource<TOptions>(name, configuration));
@@ -65,10 +59,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (!HasValueOrChildren(configuration))
             {

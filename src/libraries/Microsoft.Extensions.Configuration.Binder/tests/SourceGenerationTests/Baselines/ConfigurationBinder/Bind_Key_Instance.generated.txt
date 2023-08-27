@@ -35,6 +35,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static void Bind_ProgramMyClass(this IConfiguration configuration, string key, object? obj)
         {
             ArgumentNullException.ThrowIfNull(configuration);
+
             ArgumentNullException.ThrowIfNull(obj);
 
             var typedObj = (Program.MyClass)obj;

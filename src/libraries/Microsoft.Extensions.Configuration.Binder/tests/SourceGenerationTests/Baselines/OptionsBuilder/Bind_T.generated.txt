@@ -54,6 +54,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, IConfiguration configuration, Action<BinderOptions>? configureOptions) where TOptions : class
         {
             ArgumentNullException.ThrowIfNull(services);
+
             ArgumentNullException.ThrowIfNull(configuration);
 
             OptionsServiceCollectionExtensions.AddOptions(services);
@@ -69,10 +70,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (!HasValueOrChildren(configuration))
             {

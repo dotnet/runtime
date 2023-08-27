@@ -36,27 +36,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         [InterceptsLocationAttribute(@"src-0.cs", 12, 24)]
         public static OptionsBuilder<TOptions> BindConfiguration<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, string configSectionPath, Action<BinderOptions>? configureOptions = null) where TOptions : class
         {
-            if (optionsBuilder is null)
-            {
-                throw new ArgumentNullException(nameof(optionsBuilder));
-            }
+            ArgumentNullException.ThrowIfNull(optionsBuilder);
 
-            if (configSectionPath is null)
-            {
-                throw new ArgumentNullException(nameof(configSectionPath));
-            }
+            ArgumentNullException.ThrowIfNull(configSectionPath);
 
             optionsBuilder.Configure<IConfiguration>((obj, configuration) =>
             {
-                if (obj is null)
-                {
-                    throw new ArgumentNullException(nameof(obj));
-                }
+                ArgumentNullException.ThrowIfNull(obj);
 
-                if (configuration is null)
-                {
-                    throw new ArgumentNullException(nameof(configuration));
-                }
+                ArgumentNullException.ThrowIfNull(configuration);
 
                 IConfiguration section = string.Equals(string.Empty, configSectionPath, StringComparison.OrdinalIgnoreCase) ? configuration : configuration.GetSection(configSectionPath);
                 BindCoreMain(section, obj, typeof(TOptions), configureOptions);
@@ -74,10 +62,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (!HasValueOrChildren(configuration))
             {
