@@ -33,7 +33,6 @@ extern void trace_verbose_printf(const char* format, ...);
 #endif
 
 #include <windows.h>
-#include <winver.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
