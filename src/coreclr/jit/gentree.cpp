@@ -25620,13 +25620,6 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[1] =
                     (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
             }
-#ifdef TARGET_RISCV64
-            else if ((floatFieldFlags | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8) == floatFieldFlags)
-            {
-                m_regType[0] = comp->getJitGCType(gcPtrs[0]);
-                m_regType[1] = comp->getJitGCType(gcPtrs[1]);
-            }
-#endif // TARGET_RISCV64
             else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
             {
                 comp->compFloatingPointUsed = true;

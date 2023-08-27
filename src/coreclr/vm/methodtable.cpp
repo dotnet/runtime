@@ -4059,6 +4059,12 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                     }
+
+                    // Pass with two integer registers in `struct {int a, int b, float/double c}` cases
+                    if ((size | STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_SECOND) == size)
+                    {
+                        size = STRUCT_NO_FLOAT_FIELD;
+                    }
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
