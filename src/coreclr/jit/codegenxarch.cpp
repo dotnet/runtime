@@ -10915,12 +10915,13 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             int i = 0;
             if (maxSimdSize > XMM_REGSIZE_BYTES)
             {
-                for (; i < blkSize - maxSimdSize; i += maxSimdSize)
+                for (; i <= blkSize - maxSimdSize; i += maxSimdSize)
                 {
                     // We previously aligned data to 16 bytes which might not be aligned to maxSimdSize
                     emit->emitIns_AR_R(simdUnalignedMovIns(), EA_ATTR(maxSimdSize), zeroSIMDReg, frameReg,
                                        alignedLclLo + i);
                 }
+                // Remainder will be handled by the xmm loop below
             }
 
             for (; i < blkSize; i += XMM_REGSIZE_BYTES)
