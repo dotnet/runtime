@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">Zdrojový generátor protokolování není k dispozici v jazyce C# {0}. Použijte prosím jazykovou verzi {1} nebo vyšší.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">Zdrojový generátor nepodporuje jazykovou verzi jazyka C#.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">

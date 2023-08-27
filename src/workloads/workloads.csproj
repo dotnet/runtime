@@ -37,7 +37,7 @@
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
-  <Target Name="Build" DependsOnTargets="GetAssemblyVersion;_GetVersionProps;_GenerateMsiVersionString">
+  <Target Name="Build" DependsOnTargets="GetAssemblyVersion;_GenerateMsiVersionString">
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
@@ -230,15 +230,6 @@
     <MSBuild Projects="@(SwixProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VisualStudioSetupInsertionPath)" />
   </Target>
 
-  <Target Name="_GetVersionProps">
-    <PropertyGroup>
-      <_MajorVersion>$([System.Version]::Parse('$(AssemblyVersion)').Major)</_MajorVersion>
-      <_MinorVersion>$([System.Version]::Parse('$(AssemblyVersion)').Minor)</_MinorVersion>
-      <_PatchVersion>$([System.Version]::Parse('$(AssemblyVersion)').Build)</_PatchVersion>
-      <_BuildNumber>$([System.Version]::Parse('$(AssemblyVersion)').Revision)</_BuildNumber>
-    </PropertyGroup>
-  </Target>
-
   <Target Name="_GenerateMsiVersionString">
     <PropertyGroup>
       <VersionPadding Condition="'$(VersionPadding)'==''">5</VersionPadding>
@@ -256,9 +247,9 @@
     </GenerateCurrentVersion>
 
     <GenerateMsiVersion
-      Major="$(_MajorVersion)"
-      Minor="$(_MinorVersion)"
-      Patch="$(_PatchVersion)"
+      Major="$(MajorVersion)"
+      Minor="$(MinorVersion)"
+      Patch="$(PatchVersion)"
       BuildNumberMajor="$(BuildNumberMajor)"
       BuildNumberMinor="$(BuildNumberMinor)">
       <Output TaskParameter="MsiVersion" PropertyName="MsiVersion" />

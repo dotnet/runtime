@@ -11616,7 +11616,8 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 
     SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
-    if (pPEAssembly->GetPath().IsEmpty())
+    SString assemblyPath{ pPEAssembly->GetPath() };
+    if (assemblyPath.IsEmpty())
     {
         detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
                                    sType.GetUTF8(),
@@ -11629,7 +11630,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
                                    sType.GetUTF8(),
                                    sAssemblyDisplayName.GetUTF8(),
                                    sAlcName.GetUTF8(),
-                                   pPEAssembly->GetPath().GetUTF8());
+                                   assemblyPath.GetUTF8());
     }
 
     sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());

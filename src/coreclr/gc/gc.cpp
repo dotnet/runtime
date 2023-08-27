@@ -9955,6 +9955,20 @@ BOOL gc_heap::insert_ro_segment (heap_segment* seg)
     return TRUE;
 }
 
+void gc_heap::update_ro_segment (heap_segment* seg, uint8_t* allocated, uint8_t* committed)
+{
+    enter_spin_lock (&gc_heap::gc_lock);
+
+    assert (use_frozen_segments_p);
+    assert (heap_segment_read_only_p (seg));
+    assert (allocated <= committed);
+    assert (committed <= heap_segment_reserved (seg));
+    heap_segment_allocated (seg) = allocated;
+    heap_segment_committed (seg) = committed;
+
+    leave_spin_lock (&gc_heap::gc_lock);
+}
+
 // No one is calling this function right now. If this is getting called we need
 // to take care of decommitting the mark array for it - we will need to remember
 // which portion of the mark array was committed and only decommit that.
