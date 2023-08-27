@@ -637,15 +637,10 @@ namespace System.Numerics
 
                 if (_sign != 1)
                     return false;
+
                 int iu = _bits.Length - 1;
-                if (!BitOperations.IsPow2(_bits[iu]))
-                    return false;
-                while (--iu >= 0)
-                {
-                    if (_bits[iu] != 0)
-                        return false;
-                }
-                return true;
+
+                return BitOperations.IsPow2(_bits[iu]) && _bits.AsSpan().IndexOfAnyExcept(0u) == iu;
             }
         }
 
