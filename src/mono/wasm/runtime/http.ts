@@ -16,6 +16,22 @@ function verifyEnvironment() {
     }
 }
 
+export function http_wasm_supports_streaming_request(): boolean {
+    if (typeof Request !== "undefined" && "body" in Request.prototype && typeof ReadableStream === "function") {
+        let duplexAccessed = false;
+        const hasContentType = new Request("", {
+            body: new ReadableStream(),
+            method: "POST",
+            get duplex() {
+                duplexAccessed = true;
+                return "half";
+            },
+        }).headers.has("Content-Type");
+        return duplexAccessed && !hasContentType;
+    }
+    return false;
+}
+
 export function http_wasm_supports_streaming_response(): boolean {
     return typeof Response !== "undefined" && "body" in Response.prototype && typeof ReadableStream === "function";
 }
@@ -41,6 +57,41 @@ export function http_wasm_abort_response(res: ResponseExtension): void {
     }
 }
 
+export function http_wasm_pull_readable_stream(controller: ReadableByteStreamControllerExtension, bufferPtr: VoidPtr, bufferLength: number, error: string) {
+    controller.__callback(bufferPtr, bufferLength, error);
+}
+
+export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamController) => void): Promise<ResponseExtension> {
+    const body = new ReadableStream({
+        type: "bytes",
+        pull(controller) {
+            // TODO: try to use controller.byobRequest when available
+            console.log("PULL 1");
+            return new Promise((resolve)=> {
+                const c = controller as ReadableByteStreamControllerExtension;
+                c.__callback = (bufferPtr, bufferLength, error) =>  {
+                    console.log("PULL 3", bufferLength, error);
+                    if (error) {
+                        controller.error(error);
+                    } else if (bufferLength == 0) {
+                        controller.close();
+                    } else {
+                        // the bufferPtr is pinned by the caller
+                        const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
+                        const copy = view.slice() as Uint8Array;
+                        controller.enqueue(copy);
+                    }
+                    resolve();
+                };
+                console.log("PULL 2");
+                pull(c);
+            });
+        },
+    });
+
+    return http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, body);
+}
+
 export function http_wasm_fetch_bytes(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, bodyPtr: VoidPtr, bodyLength: number): Promise<ResponseExtension> {
     // the bufferPtr is pinned by the caller
     const view = new Span(bodyPtr, bodyLength, MemoryViewType.Byte);
@@ -48,7 +99,7 @@ export function http_wasm_fetch_bytes(url: string, header_names: string[], heade
     return http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, copy);
 }
 
-export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: string | Uint8Array | null): Promise<ResponseExtension> {
+export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: string | Uint8Array | ReadableStream | null): Promise<ResponseExtension> {
     verifyEnvironment();
     mono_assert(url && typeof url === "string", "expected url string");
     mono_assert(header_names && header_values && Array.isArray(header_names) && Array.isArray(header_values) && header_names.length === header_values.length, "expected headerNames and headerValues arrays");
@@ -62,6 +113,9 @@ export function http_wasm_fetch(url: string, header_names: string[], header_valu
         headers,
         signal: abort_controller.signal
     };
+    if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) {
+        options.duplex = "half";
+    }
     for (let i = 0; i < option_names.length; i++) {
         options[option_names[i]] = option_values[i];
     }
@@ -147,6 +201,10 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
 
         return bytes_copied;
     });
+}
+
+interface ReadableByteStreamControllerExtension extends ReadableByteStreamController {
+    __callback: (bufferPtr: VoidPtr, bufferLength: number, error: string) => void
 }
 
 interface ResponseExtension extends Response {

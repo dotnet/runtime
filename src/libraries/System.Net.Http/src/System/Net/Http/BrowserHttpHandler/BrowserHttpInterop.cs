@@ -11,6 +11,9 @@ namespace System.Net.Http
 {
     internal static partial class BrowserHttpInterop
     {
+        [JSImport("INTERNAL.http_wasm_supports_streaming_request")]
+        public static partial bool SupportsStreamingRequest();
+
         [JSImport("INTERNAL.http_wasm_supports_streaming_response")]
         public static partial bool SupportsStreamingResponse();
 
@@ -24,6 +27,9 @@ namespace System.Net.Http
         [JSImport("INTERNAL.http_wasm_abort_response")]
         public static partial void AbortResponse(
             JSObject fetchResponse);
+
+        [JSImport("INTERNAL.http_wasm_pull_readable_stream")]
+        public static partial bool PullReadableStream(JSObject controller, IntPtr bodyPtr, int length, string? error);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
         private static partial string[] _GetResponseHeaderNames(
@@ -58,6 +64,16 @@ namespace System.Net.Http
             JSObject abortControler,
             string? body = null);
 
+        [JSImport("INTERNAL.http_wasm_fetch_stream")]
+        public static partial Task<JSObject> Fetch(
+            string uri,
+            string[] headerNames,
+            string[] headerValues,
+            string[] optionNames,
+            [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
+            JSObject abortControler,
+            [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> pull);
+
         [JSImport("INTERNAL.http_wasm_fetch_bytes")]
         private static partial Task<JSObject> FetchBytes(
             string uri,
@@ -67,8 +83,7 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
             JSObject abortControler,
             IntPtr bodyPtr,
-            int bodyLength
-            );
+            int bodyLength);
 
         public static unsafe Task<JSObject> Fetch(string uri, string[] headerNames, string[] headerValues, string[] optionNames, object?[] optionValues, JSObject abortControler, byte[] body)
         {

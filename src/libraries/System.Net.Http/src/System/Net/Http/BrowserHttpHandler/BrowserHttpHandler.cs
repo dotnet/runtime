@@ -15,6 +15,7 @@ namespace System.Net.Http
     // the JavaScript objects have thread affinity, it is necessary that the continuations run the same thread as the start of the async method.
     internal sealed class BrowserHttpHandler : HttpMessageHandler
     {
+        private static readonly HttpRequestOptionsKey<bool> EnableStreamingRequest = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
         private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
@@ -220,10 +221,50 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
-                        cancellationToken.ThrowIfCancellationRequested();
+                        bool streamingEnabled = false;
+                        if (BrowserHttpInterop.SupportsStreamingRequest())
+                        {
+                            request.Options.TryGetValue(EnableStreamingRequest, out streamingEnabled);
+                        }
 
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
+                        if (streamingEnabled)
+                        {
+                            Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            async void pull(JSObject controller)
+                            {
+                                Memory<byte> buffer = new byte[500];
+
+                                int length = 0;
+                                try
+                                {
+                                     length = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    PullReadableStreamUnsafe(controller, default, length, ex.Message);
+                                    return;
+                                }
+
+                                using (Buffers.MemoryHandle handle = buffer.Pin())
+                                {
+                                    PullReadableStreamUnsafe(controller, handle, length, null);
+                                }
+                            };
+
+                            unsafe static void PullReadableStreamUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length, string? error) =>
+                                BrowserHttpInterop.PullReadableStream(controller, (IntPtr)handle.Pointer, length, error);
+
+                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, pull);
+                        }
+                        else
+                        {
+                            byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
+                        }
                     }
                 }
                 else
