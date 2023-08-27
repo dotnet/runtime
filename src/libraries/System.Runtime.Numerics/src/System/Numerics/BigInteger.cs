@@ -352,42 +352,31 @@ namespace System.Numerics
             }
             else
             {
-                int unalignedBytes = byteCount % 4;
-                int dwordCount = byteCount / 4 + (unalignedBytes == 0 ? 0 : 1);
-                uint[] val = new uint[dwordCount];
-                int byteCountMinus1 = byteCount - 1;
+                int wholeDwordCount = Math.DivRem(byteCount, 4, out int unalignedBytes);
+                uint[] val = new uint[wholeDwordCount + (unalignedBytes == 0 ? 0 : 1)];
 
                 // Copy all dwords, except don't do the last one if it's not a full four bytes
-                int curDword, curByte;
-
                 if (isBigEndian)
                 {
-                    curByte = byteCount - sizeof(int);
-                    for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
+                    int curByte = byteCount - sizeof(int);
+                    for (int curDword = 0; curDword < wholeDwordCount; curDword++)
                     {
-                        for (int byteInDword = 0; byteInDword < 4; byteInDword++)
-                        {
-                            byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
-                            curByte++;
-                        }
+                        val[curDword] = BinaryPrimitives.ReadUInt32BigEndian(value.Slice(curByte));
 
-                        curByte -= 8;
+                        curByte -= 4;
                     }
                 }
                 else
                 {
-                    curByte = sizeof(int) - 1;
-                    for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
-                    {
-                        for (int byteInDword = 0; byteInDword < 4; byteInDword++)
-                        {
-                            byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
-                            curByte--;
-                        }
+                    ReadOnlySpan<uint> dwords = MemoryMarshal.Cast<byte, uint>(value.Slice(0, wholeDwordCount * 4));
 
-                        curByte += 8;
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        BinaryPrimitives.ReverseEndianness(dwords, val);
+                    }
+                    else
+                    {
+                        dwords.CopyTo(val);
                     }
                 }
 
@@ -396,23 +385,23 @@ namespace System.Numerics
                 {
                     if (isNegative)
                     {
-                        val[dwordCount - 1] = 0xffffffff;
+                        val[wholeDwordCount] = 0xffffffff;
                     }
 
                     if (isBigEndian)
                     {
-                        for (curByte = 0; curByte < unalignedBytes; curByte++)
+                        for (int curByte = 0; curByte < unalignedBytes; curByte++)
                         {
                             byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
+                            val[wholeDwordCount] = (val[wholeDwordCount] << 8) | curByteValue;
                         }
                     }
                     else
                     {
-                        for (curByte = byteCountMinus1; curByte >= byteCount - unalignedBytes; curByte--)
+                        for (int curByte = byteCount - 1; curByte >= byteCount - unalignedBytes; curByte--)
                         {
                             byte curByteValue = value[curByte];
-                            val[curDword] = (val[curDword] << 8) | curByteValue;
+                            val[wholeDwordCount] = (val[wholeDwordCount] << 8) | curByteValue;
                         }
                     }
                 }
