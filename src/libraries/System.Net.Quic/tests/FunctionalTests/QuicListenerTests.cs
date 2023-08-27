@@ -502,14 +502,19 @@ namespace System.Net.Quic.Tests
                     return ValueTask.FromResult(options);
                 }
             };
+            bool isAlpnPresentOnInitialAlpnList = listenerOptions.ApplicationProtocols.Exists(x => x.Protocol.Equals(new SslApplicationProtocol(alpn))); // If the ALPN is not present on initial list, AcceptConnectionAsync will not throw AuthenticationException.
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
-
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.ApplicationProtocols = new()
             {
                 new SslApplicationProtocol(alpn),
             };
-            await Assert.ThrowsAsync<AuthenticationException>(() => CreateQuicConnection(clientOptions).AsTask().WaitAsync(timeoutToken));
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+            if (isAlpnPresentOnInitialAlpnList)
+            {
+                await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken));
+            }
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(timeoutToken));
         }
     }
 }
