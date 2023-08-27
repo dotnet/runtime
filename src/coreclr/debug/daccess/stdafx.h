@@ -26,7 +26,9 @@
 
 #include <winwrap.h>
 
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && !defined(TARGET_UNIX)
 #include <dbghelp.h>
+#endif
 
 #include <wchar.h>
 #include <stdio.h>
