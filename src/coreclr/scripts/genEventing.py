@@ -460,11 +460,19 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
         #generate FireEtw functions
         fnptype     = []
         fnbody      = []
+        # native AOT vars that ifdef's on Etw for the clretwallmainHeader
+        fnptypeAotNotWindowsName     = ""
+        fnptypeAotNotWindowsSignature     = ""
+
         if not target_cpp:
             clrallEvents.append("static ")
+        if runtimeFlavor.nativeaot and aotFileType == aotFileType.clretwallmainHeader and providerName=="Microsoft-Windows-DotNETRuntimePrivate":
+            fnptype.append("#ifdef FEATURE_ETW\n")
         if not runtimeFlavor.nativeaot:
             fnptype.append("inline ")
         fnptype.append("%s FireEtw" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
+        fnptypeAotNotWindowsName = fnptypeAotNotWindowsName + "#define FireEtw" + eventName + "("
+
         fnptype.append(eventName)
         fnptype.append("(\n")
 
@@ -492,6 +500,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
                 fnptypeline.append(" ")
                 fnptypeline.append(fnparam.name)
                 fnptypeline.append(",\n")
+                fnptypeAotNotWindowsSignature = fnptypeAotNotWindowsSignature + fnparam.name + ","
 
             #fnsignature
             for params in fnSig.paramlist:
@@ -507,6 +516,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
             #remove trailing commas
             if len(line) > 0:
                 del line[-1]
+            fnptypeAotNotWindowsSignature = fnptypeAotNotWindowsSignature[:-1]
 
         #add activity IDs
         fnptypeline.append(lindent)
@@ -523,7 +533,17 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
         fnptype.append("\n)")
         if runtimeFlavor.nativeaot and (aotFileType == aotFileType.clretwallmainHeader or aotFileType == aotFileType.disabledclretwallmainSource):
             if aotFileType == aotFileType.clretwallmainHeader:
-                fnptype.append(";\n\n")
+                fnptype.append(";\n")
+                if providerName=="Microsoft-Windows-DotNETRuntimePrivate":
+                    fnptype.append("#else\n")
+                    fnptype.append(fnptypeAotNotWindowsName)
+                    fnptype.append(fnptypeAotNotWindowsSignature)
+                    fnptype.append(")")
+                    fnptype.append("\n")
+                    fnptype.append("#endif // FEATURE_ETW\n")
+                else:
+                    fnptype.append("\n")
+
             elif aotFileType == aotFileType.disabledclretwallmainSource:
                 fnptype.append("\n{ return ERROR_SUCCESS; }\n\n")
         else:
@@ -790,7 +810,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             else:
                 Clrallevents.write("\n")
 
-        if not is_windows and not write_xplatheader:
+        if not is_windows and not write_xplatheader and not runtimeFlavor.nativeaot:
             Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
             Clrallevents.write("\n")
 
@@ -802,17 +822,17 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             allTemplates  = parseTemplateNodes(templateNodes)
             eventNodes = providerNode.getElementsByTagName('event')
 
-            if runtimeFlavor.nativeaot and providerName == "Microsoft-Windows-DotNETRuntimePrivate" and not nativeaotEtwflag:
+            if runtimeFlavor.nativeaot and providerName == "Microsoft-Windows-DotNETRuntimePrivate" and not nativeaotEtwflag and aotFileType==aotFileType.clretwallmainSource:
                 nativeaotEtwflag = True
                 Clrallevents.write("\n#ifdef FEATURE_ETW\n\n")
                 Clrallevents.write("// ==================================================================\n")
                 Clrallevents.write("// Events currently only fired via ETW (private runtime provider)\n")
                 Clrallevents.write("// ==================================================================\n\n")
+                nativeaotEtwflag = False
 
             #vm header:
             Clrallevents.write(generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusion_list, aotFileType))
 
-            nativeaotEtwflag = False
 
             providerName = providerNode.getAttribute('name')
             providerSymbol = providerNode.getAttribute('symbol')
@@ -821,12 +841,11 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             if is_windows and not (write_xplatheader or runtimeFlavor.nativeaot):
                 Clrallevents.write(('constexpr ' if target_cpp else 'static const ') + 'EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
-            if not is_windows and not write_xplatheader:
+            if not is_windows and not write_xplatheader and not runtimeFlavor.nativeaot:
                 Clrallevents.write('__attribute__((weak)) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
-            if runtimeFlavor.nativeaot:
-                if providerName == "Microsoft-Windows-DotNETRuntimePrivate":
-                    Clrallevents.write("#endif // FEATURE_ETW\n")
+            if runtimeFlavor.nativeaot and providerName == "Microsoft-Windows-DotNETRuntimePrivate" and aotFileType==aotFileType.clretwallmainSource:
+                Clrallevents.write("#endif // FEATURE_ETW\n")
 
         if runtimeFlavor.nativeaot:
             if aotFileType == aotFileType.clretwallmainHeader:
@@ -917,7 +936,7 @@ typedef struct _EVENT_DESCRIPTOR
     ULONGLONG const Keyword;
 } EVENT_DESCRIPTOR;
 """)
-            if not is_windows:
+            if not is_windows and not runtimeFlavor.nativeaot:
                 Clrproviders.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
                 Clrproviders.write(lttng_trace_context_typedef)  # define LTTNG_TRACE_CONTEXT
                 Clrproviders.write(dotnet_trace_context_typedef_unix + "\n")
@@ -931,7 +950,7 @@ typedef struct _EVENT_DESCRIPTOR
                 providerSymbol = str(providerNode.getAttribute('symbol'))
                 nbProviders += 1
                 nbKeywords = 0
-                if not is_windows:
+                if not is_windows and not runtimeFlavor.nativeaot:
                     eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
                     Clrproviders.write('__attribute__((weak)) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
                     lttngProviderCtxName = providerSymbol + "_LTTNG_Context"
@@ -958,7 +977,7 @@ typedef struct _EVENT_DESCRIPTOR
                 allProviders.append("&" + providerSymbol + "_LTTNG_Context")
 
             # define and initialize runtime providers' DOTNET_TRACE_CONTEXT depending on the platform
-            if not is_windows:
+            if not is_windows and not runtimeFlavor.nativeaot:
                 Clrproviders.write('#define NB_PROVIDERS ' + str(nbProviders) + '\n')
                 Clrproviders.write(('constexpr ' if target_cpp else 'static const ') + 'LTTNG_TRACE_CONTEXT * ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
                 Clrproviders.write(', '.join(allProviders))
