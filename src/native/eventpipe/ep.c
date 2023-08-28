@@ -487,7 +487,7 @@ enable (
 		options->session_type,
 		options->format,
 		options->rundown_requested,
-		options->disable_stacktrace,
+		options->enable_stackwalk,
 		options->circular_buffer_size_in_mb,
 		options->providers,
 		options->providers_len,
@@ -966,7 +966,7 @@ ep_enable (
 	options.session_type = session_type;
 	options.format = format;
 	options.rundown_requested = rundown_requested;
-	options.disable_stacktrace = false;
+	options.enable_stackwalk = true;
 	options.stream = stream;
 	options.sync_callback = sync_callback;
 	options.callback_additional_data = callback_additional_data;
