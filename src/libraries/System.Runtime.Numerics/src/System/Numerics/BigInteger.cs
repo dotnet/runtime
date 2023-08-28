@@ -368,15 +368,9 @@ namespace System.Numerics
                 }
                 else
                 {
-                    ReadOnlySpan<uint> dwords = MemoryMarshal.Cast<byte, uint>(value.Slice(0, wholeDwordCount * 4));
-
-                    if (!BitConverter.IsLittleEndian)
+                    for (int curDword = 0; curDword < wholeDwordCount; curDword++)
                     {
-                        BinaryPrimitives.ReverseEndianness(dwords, val);
-                    }
-                    else
-                    {
-                        dwords.CopyTo(val);
+                        val[curDword] = BinaryPrimitives.ReadUInt32LittleEndian(value.Slice(curDword * 4));
                     }
                 }
 
