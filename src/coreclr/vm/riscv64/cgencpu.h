@@ -146,7 +146,8 @@ struct PROFILE_PLATFORM_SPECIFIC_DATA
     void*                  hiddenArg;
     UINT32                 flags;
     UINT32                 unused;
-    BYTE                   buffer[16];  // Scratch space to store HFA return values (max 16 bytes)
+    // Scratch space to reconstruct struct passed in registers
+    BYTE                   buffer[sizeof(ArgumentRegisters) + sizeof(FloatArgumentRegisters)];
 };
 #endif  // PROFILING_SUPPORTED
 

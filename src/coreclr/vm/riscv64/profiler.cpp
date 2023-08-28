@@ -27,13 +27,12 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void* pPlatformSpecificHandle,
 }
 
 ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHandle)
-    : m_argIterator(pSig)
+    : m_argIterator(pSig), m_bufferPos(0)
 {
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(pSig != nullptr);
     _ASSERTE(pPlatformSpecificHandle != nullptr);
-
     m_handle = pPlatformSpecificHandle;
 
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(pPlatformSpecificHandle);
@@ -96,6 +95,71 @@ ProfileArgIterator::~ProfileArgIterator()
     m_handle = nullptr;
 }
 
+LPVOID ProfileArgIterator::CopyStructFromRegisters()
+{
+    struct Func
+    {
+        static inline const BYTE* postIncrement(const BYTE *&p, int offset)
+        {
+            const BYTE* orig = p;
+            p += offset;
+            return orig;
+        }
+    };
+
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(m_handle);
+    PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(m_handle);
+    const ArgLocDesc* sir = m_argIterator.GetArgLocDescForStructInRegs();
+    _ASSERTE(sir);
+
+    struct { bool isFloat, is8; } fields[] = {
+        { sir->m_structFields & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO),
+          sir->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8 },
+        { sir->m_structFields & (STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO),
+          sir->m_structFields & STRUCT_SECOND_FIELD_SIZE_IS8 },
+    };
+    UINT64 bufferPosBegin = m_bufferPos;
+    const double *fRegBegin = &pData->floatArgumentRegisters.f[sir->m_idxFloatReg], *fReg = fRegBegin;
+    const double *fRegEnd = fReg + sizeof(pData->floatArgumentRegisters.f)/sizeof(pData->floatArgumentRegisters.f[0]);
+    const INT64 *aRegBegin = &pData->argumentRegisters.a[sir->m_idxGenReg], *aReg = aRegBegin;
+    const INT64 *aRegEnd = aReg + sizeof(pData->argumentRegisters.a)/sizeof(pData->argumentRegisters.a[0]);
+    const BYTE *stackBegin = (BYTE*)pData->profiledSp + sir->m_byteStackIndex, *stack = stackBegin;
+
+    for (int i = 0; i < sizeof(fields)/sizeof(*fields); ++i)
+    {
+        bool inFloatReg = fields[i].isFloat && fReg < fRegEnd;
+        bool inGenReg = aReg < aRegEnd;
+
+        if (fields[i].is8)
+        {
+            UINT64 alignedTo8 = (m_bufferPos + (8-1)) & ~(8-1);
+            _ASSERTE(alignedTo8 + 8 < sizeof(pData->buffer));
+            m_bufferPos = alignedTo8;
+            const INT64* src =
+                inFloatReg ? (const INT64*)fReg++ :
+                inGenReg   ? aReg++ : (const INT64*)Func::postIncrement(stack, 8);
+            *((INT64*)&pData->buffer[m_bufferPos]) = *src;
+            m_bufferPos += 8;
+        }
+        else
+        {
+            _ASSERTE(m_bufferPos + 4 < sizeof(pData->buffer));
+            const INT32* src =
+                inFloatReg ? (const INT32*)fReg++ :
+                inGenReg   ? (const INT32*)aReg++ : (const INT32*)Func::postIncrement(stack, 4);
+            *((INT32*)&pData->buffer[m_bufferPos]) = *src;
+            m_bufferPos += 4;
+        }
+    }
+    // Sanity checks, make sure we've run through (and not overrun) all locations from ArgLocDesc
+    _ASSERTE(fReg - fRegBegin == sir->m_cFloatReg);
+    _ASSERTE(aReg - aRegBegin == sir->m_cGenReg);
+    _ASSERTE(stack - stackBegin == sir->m_byteStackSize);
+
+    return &pData->buffer[bufferPosBegin];
+}
+
 LPVOID ProfileArgIterator::GetNextArgAddr()
 {
     WRAPPER_NO_CONTRACT;
@@ -115,6 +179,18 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     if (argOffset == TransitionBlock::InvalidOffset)
     {
         return nullptr;
+    }
+
+    const ArgLocDesc* sir = m_argIterator.GetArgLocDescForStructInRegs();
+    if (sir)
+    {
+        // If both fields are in registers of same kind (either float or general) and both are 8 bytes, no need to copy.
+        // We can get away with returning a ptr to argumentRegisters since the struct would have the same layout.
+        if ((sir->m_cFloatReg ^ sir->m_cGenReg) != 2 ||
+            (sir->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != STRUCT_HAS_8BYTES_FIELDS_MASK)
+        {
+            return CopyStructFromRegisters();
+        }
     }
 
     if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
