@@ -1125,11 +1125,64 @@ class SuperPMICollect:
                 async def run_nativeaot(print_prefix, original_rsp_filepath, self):
                     if not original_rsp_filepath.endswith(".ilc.rsp"):
                         raise RuntimeError(f"Expected a '.ilc.rsp' file for nativeaot, but got {original_rsp_filepath}")
-                        
+
                     rsp_filepath = os.path.join(self.temp_location, make_safe_filename("nativeaot_" + original_rsp_filepath) + ".rsp")
                     shutil.copyfile(original_rsp_filepath, rsp_filepath)
 
+                    rsp_file = open(rsp_filepath, "r")
+                    rsp_contents = rsp_file.readlines()
+                    rsp_file.close()
+
+                    original_input_filepath = ""
+
+                    for line in rsp_contents:
+                        if not line.startswith("-"):
+                            original_input_filepath = line
+
+                    if original_input_filepath == "":
+                        raise RuntimeError(f"Unable to find input file in {original_rsp_filepath}")
+
+                    input_filename = os.path.basename(original_input_filepath)
+
+                    # The ilc.rsp files are stored in the 'native' folders, ex: 'ComWrappers/native/ComWrappers.ilc.rsp'
+                    # The corresponding input assemblies are in the folder above 'native', ex: 'ComWrappers/'
+                    input_filepath = os.path.abspath(os.path.join(original_rsp_filepath, "..", "..", input_filename))
+
+                    # Blow away all references as we are going to use new ones.
+                    rsp_file = open(rsp_filepath, "w")
+                    def fix_reference(line):
+                        if line.startswith("-r:") or line.startswith("-o:") or not line.startswith("-"):
+                            return ""
+                        else:
+                            return line
+                    rsp_contents = list(map(fix_reference, rsp_contents))
+                    rsp_file.writelines(rsp_contents)
+                    rsp_file.close()
+
+                    assembly = os.path.splitext(os.path.basename(original_rsp_filepath))[0]
+                    root_nativeaot_output_filename = make_safe_filename("nativeaot_" + assembly) + ".out.dll"
+                    nativeaot_output_assembly_filename = os.path.join(self.temp_location, root_nativeaot_output_filename)
+                    try:
+                        if os.path.exists(nativeaot_output_assembly_filename):
+                            os.remove(nativeaot_output_assembly_filename)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s", nativeaot_output_assembly_filename, ose)
+                            return
+                        else:
+                            raise ose
+
+                    root_output_filename = make_safe_filename("nativeaot_" + assembly + "_")
+
                     with open(rsp_filepath, "a") as rsp_write_handle:
+                        rsp_write_handle.write(input_filepath + "\n")
+                        rsp_write_handle.write("-o:" + nativeaot_output_assembly_filename + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.coreclr_args.nativeaot_aotsdk_path, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
@@ -1142,8 +1195,6 @@ class SuperPMICollect:
                     logging.debug("%s%s", print_prefix, command_string)
 
                     begin_time = datetime.datetime.now()
-
-                    root_output_filename = rsp_filepath
 
                     try:
                         stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
