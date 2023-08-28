@@ -232,20 +232,28 @@ namespace System.Net.Http
                             Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
                             cancellationToken.ThrowIfCancellationRequested();
 
-                            async void pull(JSObject controller)
+                            var pull = async void (JSObject controller) =>
                             {
+                                Memory<byte> buffer = new byte[500];
+                                int length;
                                 try
                                 {
-                                    ArraySegment<byte> buffer = BrowserHttpInterop.GetReadableStreamBuffer(controller);
-                                    Memory<byte> memory = buffer.AsMemory();
-                                    int bytesWritten = await stream.ReadAsync(memory, cancellationToken).ConfigureAwait(true);
-                                    BrowserHttpInterop.ReadableStreamBufferWritten(controller, bytesWritten, null);
+                                    length = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(true);
                                 }
                                 catch (Exception ex)
                                 {
-                                    BrowserHttpInterop.ReadableStreamBufferWritten(controller, 0, ex.Message);
+                                    BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, IntPtr.Zero, 0, ex.Message);
+                                    return;
+                                }
+
+                                using (Buffers.MemoryHandle handle = buffer.Pin())
+                                {
+                                    ReadableStreamControllerEnqueueUnsafe(controller, handle, length, null);
                                 }
                             };
+
+                            unsafe static void ReadableStreamControllerEnqueueUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length, string? error) =>
+                                BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, (IntPtr)handle.Pointer, length, error);
 
                             promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, pull);
                         }

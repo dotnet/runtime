@@ -57,49 +57,34 @@ export function http_wasm_abort_response(res: ResponseExtension): void {
     }
 }
 
-interface ReadableByteStreamControllerExtension extends ReadableByteStreamController {
-    __buffer: ArrayBufferLike
-    __byobRequest: ReadableStreamBYOBRequest | null
-    __resolve: () => void
-}
-
-export function http_wasm_readable_stream_controller_buffer(controller: ReadableByteStreamControllerExtension): ArrayBufferLike {
-    return controller.__buffer;
-}
-
-export function http_wasm_readable_stream_controller_written(controller: ReadableByteStreamControllerExtension, bytesWritten: number, error: string | null): void {
+export function http_wasm_readable_stream_controller_enqueue(controller: ReadableByteStreamControllerExtension, bufferPtr: VoidPtr, bufferLength: number, error: string | null): void {
     if (error) {
         controller.error(error);
-    } else if (bytesWritten === 0) {
+    } else if (bufferLength === 0) {
         controller.close();
-    }
-    if (controller.__byobRequest) {
-        controller.__byobRequest.respond(bytesWritten);
-    } else if (bytesWritten > 0) {
-        controller.enqueue(new Uint8Array(controller.__buffer, 0, bytesWritten));
+    } else {
+        // the bufferPtr is pinned by the caller
+        const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
+        const copy = view.slice() as Uint8Array;
+        controller.enqueue(copy);
     }
     controller.__resolve();
 }
 
-export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamController) => void): Promise<ResponseExtension> {
+export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamControllerExtension) => void): Promise<ResponseExtension> {
     const body = new ReadableStream({
         type: "bytes",
-        autoAllocateChunkSize: 500,
+        //autoAllocateChunkSize: 500, enable to support byobRequest
         pull(controller: ReadableByteStreamController) {
-            const c = controller as ReadableByteStreamControllerExtension;
-
-            const byobRequest = controller.byobRequest;
-            if (byobRequest && byobRequest.view) {
-                c.__byobRequest = byobRequest;
-                c.__buffer = byobRequest.view.buffer.slice(byobRequest.view.byteOffset);
-            } else {
-                c.__buffer = new ArrayBuffer(500);
-            }
-
             return new Promise(resolve => {
+                const c = controller as ReadableByteStreamControllerExtension;
                 c.__resolve = resolve;
                 pull(c);
             });
+        },
+        cancel(reason) {
+            // eslint-disable-next-line no-console
+            console.log("http_wasm_fetch_stream cancel: " + reason);
         },
     });
 
@@ -215,6 +200,10 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
 
         return bytes_copied;
     });
+}
+
+interface ReadableByteStreamControllerExtension extends ReadableByteStreamController {
+    __resolve: () => void
 }
 
 interface ResponseExtension extends Response {

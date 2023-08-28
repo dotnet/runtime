@@ -229,9 +229,34 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if NETCOREAPP
+
         [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public async Task BrowserHttpHandler_Streaming()
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteHttp2Server.BaseUri + "echo.ashx");
+            req.Content = new StreamContent(new MemoryStream(System.Text.Encoding.UTF8.GetBytes("Hello World 123")));
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
+            // we need to switch off Response buffering of default ResponseContentRead option
+            using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+            {
+                string result = await response.Content.ReadAsStringAsync();
+
+                throw new Exception(result);
+                //Assert.Equal("expected", result);
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingResponse()
         {
             var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
 
