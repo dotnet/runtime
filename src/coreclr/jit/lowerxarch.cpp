@@ -3868,6 +3868,10 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         {
             use.ReplaceWith(newIndir);
         }
+        else
+        {
+            newIndir->SetUnusedValue();
+        }
 
         BlockRange().Remove(op1);
         BlockRange().Remove(node);
@@ -3915,6 +3919,10 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
                 if (BlockRange().TryGetUse(node, &use))
                 {
                     use.ReplaceWith(lclFld);
+                }
+                else
+                {
+                    lclFld->SetUnusedValue();
                 }
 
                 BlockRange().Remove(op1);
@@ -4157,6 +4165,11 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         if (foundUse)
         {
             use.ReplaceWith(cast);
+        }
+        else
+        {
+            node->ClearUnusedValue();
+            cast->SetUnusedValue();
         }
         next = LowerNode(cast);
     }
@@ -4737,6 +4750,10 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 {
                     use.ReplaceWith(tmp1);
                 }
+                else
+                {
+                    tmp1->SetUnusedValue();
+                }
 
                 BlockRange().Remove(node);
                 return LowerNode(tmp1);
@@ -5266,6 +5283,10 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     if (BlockRange().TryGetUse(node, &use))
     {
         use.ReplaceWith(tmp1);
+    }
+    else
+    {
+        tmp1->SetUnusedValue();
     }
 
     BlockRange().Remove(node);
@@ -8345,8 +8366,15 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         BlockRange().InsertBefore(broadcastNode, createScalar);
         BlockRange().InsertBefore(createScalar, constScalar);
         LIR::Use use;
-        BlockRange().TryGetUse(childNode, &use);
-        use.ReplaceWith(broadcastNode);
+        if (BlockRange().TryGetUse(childNode, &use))
+        {
+            use.ReplaceWith(broadcastNode);
+        }
+        else
+        {
+            broadcastNode->SetUnusedValue();
+        }
+
         BlockRange().Remove(childNode);
         LowerNode(createScalar);
         LowerNode(broadcastNode);

@@ -1900,6 +1900,10 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     {
         use.ReplaceWith(tmp2);
     }
+    else
+    {
+        tmp2->SetUnusedValue();
+    }
 
     BlockRange().Remove(node);
     return tmp2->gtNext;
