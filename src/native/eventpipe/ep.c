@@ -47,7 +47,7 @@ is_session_id_in_collection (EventPipeSessionID id);
 static
 EventPipeSessionID
 enable (
-	EventPipeSessionOptions *options,
+	const EventPipeSessionOptions *options,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 
 static
@@ -114,7 +114,7 @@ ipc_stream_factory_any_suspended_ports (void);
 
 static
 bool
-check_options_valid (EventPipeSessionOptions options);
+check_options_valid (const EventPipeSessionOptions *options);
 
 /*
  * Global volatile variables, only to be accessed through inlined volatile access functions.
@@ -450,14 +450,14 @@ is_session_id_in_collection (EventPipeSessionID session_id)
 	return false;
 }
 
-static bool check_options_valid (EventPipeSessionOptions options)
+static bool check_options_valid (const EventPipeSessionOptions *options)
 {
-	ep_return_false_if_nok (options.format < EP_SERIALIZATION_FORMAT_COUNT);
-	ep_return_false_if_nok (options.session_type == EP_SESSION_TYPE_SYNCHRONOUS || options.circular_buffer_size_in_mb > 0);
-	ep_return_false_if_nok (options.providers_len > 0 && options.providers != NULL);
-	if ((options.session_type == EP_SESSION_TYPE_FILE || options.session_type == EP_SESSION_TYPE_FILESTREAM) && options.output_path == NULL)
+	ep_return_false_if_nok (options->format < EP_SERIALIZATION_FORMAT_COUNT);
+	ep_return_false_if_nok (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
+	ep_return_false_if_nok (options->providers_len > 0 && options->providers != NULL);
+	if ((options->session_type == EP_SESSION_TYPE_FILE || options->session_type == EP_SESSION_TYPE_FILESTREAM) && options->output_path == NULL)
 		return false;
-	if (options.session_type == EP_SESSION_TYPE_IPCSTREAM && options.stream == NULL)
+	if (options->session_type == EP_SESSION_TYPE_IPCSTREAM && options->stream == NULL)
 		return false;
 
 	return true;
@@ -466,7 +466,7 @@ static bool check_options_valid (EventPipeSessionOptions options)
 static
 EventPipeSessionID
 enable (
-	EventPipeSessionOptions options,
+	const EventPipeSessionOptions *options,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	ep_requires_lock_held ();
@@ -482,17 +482,17 @@ enable (
 
 	session = ep_session_alloc (
 		session_index,
-		options.output_path,
-		options.stream,
-		options.session_type,
-		options.format,
-		options.rundown_requested,
-		options.disable_stacktrace,
-		options.circular_buffer_size_in_mb,
-		options.providers,
-		options.providers_len,
-		options.sync_callback,
-		options.callback_additional_data);
+		options->output_path,
+		options->stream,
+		options->session_type,
+		options->format,
+		options->rundown_requested,
+		options->disable_stacktrace,
+		options->circular_buffer_size_in_mb,
+		options->providers,
+		options->providers_len,
+		options->sync_callback,
+		options->callback_additional_data);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -971,7 +971,7 @@ ep_enable (
 	options.sync_callback = sync_callback;
 	options.callback_additional_data = callback_additional_data;
 
-	sessionId = ep_enable_3(options);
+	sessionId = ep_enable_3(&options);
 
 	return sessionId;
 }
@@ -1085,7 +1085,7 @@ ep_on_error:
 }
 
 EventPipeSessionID
-ep_enable_3 (EventPipeSessionOptions options)
+ep_enable_3 (const EventPipeSessionOptions *options)
 {
 	ep_return_zero_if_nok(check_options_valid(options));
 

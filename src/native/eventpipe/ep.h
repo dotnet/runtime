@@ -175,7 +175,7 @@ ep_enable_2 (
 
 EventPipeSessionID
 ep_enable_3 (
-	EventPipeSessionOptions options
+	const EventPipeSessionOptions *options
 );
 
 void
