@@ -558,9 +558,9 @@ def main(main_args):
                 print('Ignoring PermissionError: {0}'.format(pe_error))
 
         # Build nativeaot tests
-        # if coreclr_args.collection_type == "nativeaot":
-        #     tests_build_file = "build.cmd" if is_windows else "build.sh"
-        #     run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", arch, coreclr_args.build_type, "tree", "nativeaot"], source_directory)
+        if coreclr_args.collection_type == "nativeaot":
+            tests_build_file = "build.cmd" if is_windows else "build.sh"
+            run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", arch, coreclr_args.build_type, "tree", "nativeaot"], source_directory)
 
         # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
         # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
