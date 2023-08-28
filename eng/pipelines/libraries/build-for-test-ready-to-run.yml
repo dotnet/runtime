@@ -21,7 +21,7 @@ jobs:
       timeoutInMinutes: 120
 
       variables:
-        - $ if ne(parameters.osGroup, 'windows'):
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
           - name: archiveExtension
             value: '.tar.gz'
           - name: archiveType
@@ -41,7 +41,7 @@ jobs:
           - name: logRootNameArg
             value: '-log:'
 
-        - $ if eq(parameters.osGroup, 'windows'):
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
           - name: archiveExtension
             value: '.zip'
           - name: archiveType
