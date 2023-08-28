@@ -1,10 +1,21 @@
 ## About
 
+<!-- A description of the package and where one can find more documentation -->
+
 Provides the functionality to bind an object to data in configuration providers for [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/). This package enables you to represent the configuration data as strongly-typed classes defined in the application code. To bind a configuration, use the [Microsoft.Extensions.Configuration.ConfigurationBinder.Get](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.configurationbinder.get) extension method on the `IConfiguration` object. To use this package, you also need to install a package for the [configuration provider](https://learn.microsoft.com/dotnet/core/extensions/configuration#configuration-providers), for example, [Microsoft.Extensions.Configuration.Json](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Json/) for the JSON provider.
 
-For more information, see the documentation: [Configuration in .NET](https://learn.microsoft.com/dotnet/core/extensions/configuration).
+## Key Features
 
-## Example
+<!-- The key features of this package -->
+
+*
+*
+*
+
+## How to Use
+
+<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+
 The following example shows how to bind a JSON configuration section to .NET objects.
 
 ```cs
@@ -81,3 +92,30 @@ You can include a configuration file using a code like this in your `.csproj` fi
   </Content>
 </ItemGroup>
 ```
+
+## Main Types
+
+<!-- The main types provided in this library -->
+
+The main types provided by this library are:
+
+* ``
+* ``
+* ``
+
+## Additional Documentation
+
+<!-- Links to further documentation -->
+
+* [Configuration in .NET](https://learn.microsoft.com/dotnet/core/extensions/configuration)
+* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.configuration)
+
+## Related Packages
+
+<!-- The related packages associated with this package -->
+
+## Feedback & Contributing
+
+<!-- How to provide feedback on this package and contribute to it -->
+
+Microsoft.Extensions.Configuration.Binder is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).

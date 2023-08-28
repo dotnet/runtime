@@ -1,15 +1,20 @@
 ## About
 
+<!-- A description of the package and where one can find more documentation -->
+
 Provides types that support using XML configuration files (`app.config`). This package exists only to support migrating existing .NET Framework code that already uses System.Configuration. When writing new code, use another configuration system instead, such as [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/).
 
-For more information, see the documentation:
+## Key Features
 
-- [Configure apps by using configuration files](https://docs.microsoft.com/dotnet/framework/configure-apps/)
-- [System.Configuration namespace](https://docs.microsoft.com/dotnet/api/system.configuration)
-- [System.Configuration.Configuration](https://docs.microsoft.com/dotnet/api/system.configuration.configuration)
-- [System.Configuration.ConfigurationManager](https://docs.microsoft.com/dotnet/api/system.configuration.configurationmanager)
+<!-- The key features of this package -->
 
-## Example
+*
+*
+*
+
+## How to Use
+
+<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
 
 The following example shows how to read and modify the application configuration settings.
 
@@ -63,3 +68,32 @@ To run this example, include an `app.config` file with the following content in 
   </appSettings>
 </configuration>
 ```
+
+## Main Types
+
+<!-- The main types provided in this library -->
+
+The main types provided by this library are:
+
+* ``
+* ``
+* ``
+
+## Additional Documentation
+
+<!-- Links to further documentation -->
+
+* [Configure apps by using configuration files](https://docs.microsoft.com/dotnet/framework/configure-apps/)
+* [System.Configuration namespace](https://docs.microsoft.com/dotnet/api/system.configuration)
+* [System.Configuration.Configuration](https://docs.microsoft.com/dotnet/api/system.configuration.configuration)
+* [System.Configuration.ConfigurationManager](https://docs.microsoft.com/dotnet/api/system.configuration.configurationmanager)
+
+## Related Packages
+
+<!-- The related packages associated with this package -->
+
+## Feedback & Contributing
+
+<!-- How to provide feedback on this package and contribute to it -->
+
+System.Configuration.ConfigurationManager is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
