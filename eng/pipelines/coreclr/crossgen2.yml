@@ -54,5 +54,6 @@ extends:
           jobParameters:
             testGroup: innerloop
             readyToRun: true
+            hotColdSplitting: true
             displayNameArgs: R2R_CG2
             liveLibrariesBuildConfig: Release

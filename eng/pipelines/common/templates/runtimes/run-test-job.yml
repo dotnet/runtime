@@ -7,6 +7,7 @@ parameters:
   testGroup: ''
   crossBuild: false
   readyToRun: false
+  hotColdSplitting: false
   liveLibrariesBuildConfig: ''
   compositeBuildMode: false
   useCodeFlowEnforcement: ''
@@ -119,6 +120,13 @@ jobs:
           value: 'composite'
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_Composite
+
+    - name: hotColdSplittingArg
+      value: ''
+
+    - ${{ if eq(parameters.hotColdSplitting, true) }}:
+      - name: hotColdSplittingArg
+        value: 'HotColdSplitting'
 
     - name: testTreeFilterArg
       value: ''
@@ -267,7 +275,7 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts. This step also generates the final test execution scripts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(hotColdSplittingArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
       displayName: Copy native test components to test output folder
 
 

@@ -100,6 +100,7 @@ build_Tests()
     export __CopyNativeTestBinaries
     export __Priority
     export __CreatePerfmap
+    export __HotColdSplitting
     export __CompositeBuildMode
     export __BuildTestWrappersOnly
     export __GenerateLayoutOnly
@@ -156,6 +157,7 @@ usage_list+=("-composite - Use Crossgen2 composite mode (all framework gets comp
 usage_list+=("-nativeaot - Builds the tests for Native AOT compilation.")
 usage_list+=("-priority1 - Include priority=1 tests in the build.")
 usage_list+=("-perfmap - Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
+usage_list+=("-hotcoldsplitting - Enable hot/cold code splitting (supported only by Crossgen2).")
 usage_list+=("-allTargets - Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
 usage_list+=("")
 usage_list+=("-runtests - Run tests after building them.")
@@ -218,6 +220,10 @@ handle_arguments_local() {
 
         perfmap|-perfmap)
             __CreatePerfmap=1
+            ;;
+
+        hotcoldsplitting|-hotcoldsplitting)
+            __HotColdSplitting=1
             ;;
 
         generatelayoutonly|-generatelayoutonly)
@@ -335,6 +341,7 @@ __CopyNativeTestBinaries=0
 __CrossBuild=0
 __CompositeBuildMode=
 __CreatePerfmap=
+__HotColdSplitting=
 __TestBuildMode=
 __BuildTestProject="%3B"
 __BuildTestDir="%3B"
