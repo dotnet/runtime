@@ -157,7 +157,7 @@ uint32_t
 ds_rt_config_value_get_default_port_suspend (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    
+
     uint64_t value;
     if (RhConfig::Environment::TryGetIntegerValue("DefaultDiagnosticPortSuspend", &value))
     {
@@ -192,7 +192,7 @@ ds_rt_generate_core_dump (
     }
     const ep_char16_t *dumpName = ds_generate_core_dump_command_payload_get_dump_name (payload);
     int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
-    ep_char8_t *dumpNameUtf8 = ep_rt_utf16le_to_utf8_string (dumpName, ep_rt_utf16_string_len (dumpName));
+    ep_char8_t *dumpNameUtf8 = ep_rt_utf16le_to_utf8_string (dumpName);
     extern bool PalGenerateCoreDump(const char* dumpName, int dumpType, uint32_t flags, char* errorMessageBuffer, int cbErrorMessageBuffer);
     if (PalGenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
     {
