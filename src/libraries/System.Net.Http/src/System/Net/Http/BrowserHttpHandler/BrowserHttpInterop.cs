@@ -28,8 +28,12 @@ namespace System.Net.Http
         public static partial void AbortResponse(
             JSObject fetchResponse);
 
-        [JSImport("INTERNAL.http_wasm_pull_readable_stream")]
-        public static partial bool PullReadableStream(JSObject controller, IntPtr bodyPtr, int length, string? error);
+        [JSImport("INTERNAL.http_wasm_readable_stream_controller_buffer")]
+        [return: JSMarshalAs<JSType.MemoryView>]
+        public static partial ArraySegment<byte> GetReadableStreamBuffer(JSObject controller);
+
+        [JSImport("INTERNAL.http_wasm_readable_stream_controller_written")]
+        public static partial void ReadableStreamBufferWritten(JSObject controller, int bytesWritten, string? error);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
         private static partial string[] _GetResponseHeaderNames(

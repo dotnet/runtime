@@ -26,7 +26,7 @@ export function http_wasm_supports_streaming_request(): boolean {
                 duplexAccessed = true;
                 return "half";
             },
-        }).headers.has("Content-Type");
+        } as RequestInit /* https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1483 */).headers.has("Content-Type");
         return duplexAccessed && !hasContentType;
     }
     return false;
@@ -57,33 +57,47 @@ export function http_wasm_abort_response(res: ResponseExtension): void {
     }
 }
 
-export function http_wasm_pull_readable_stream(controller: ReadableByteStreamControllerExtension, bufferPtr: VoidPtr, bufferLength: number, error: string) {
-    controller.__callback(bufferPtr, bufferLength, error);
+interface ReadableByteStreamControllerExtension extends ReadableByteStreamController {
+    __buffer: ArrayBufferLike
+    __byobRequest: ReadableStreamBYOBRequest | null
+    __resolve: () => void
+}
+
+export function http_wasm_readable_stream_controller_buffer(controller: ReadableByteStreamControllerExtension): ArrayBufferLike {
+    return controller.__buffer;
+}
+
+export function http_wasm_readable_stream_controller_written(controller: ReadableByteStreamControllerExtension, bytesWritten: number, error: string | null): void {
+    if (error) {
+        controller.error(error);
+    } else if (bytesWritten === 0) {
+        controller.close();
+    }
+    if (controller.__byobRequest) {
+        controller.__byobRequest.respond(bytesWritten);
+    } else if (bytesWritten > 0) {
+        controller.enqueue(new Uint8Array(controller.__buffer, 0, bytesWritten));
+    }
+    controller.__resolve();
 }
 
 export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamController) => void): Promise<ResponseExtension> {
     const body = new ReadableStream({
         type: "bytes",
-        pull(controller) {
-            // TODO: try to use controller.byobRequest when available
-            console.log("PULL 1");
-            return new Promise((resolve)=> {
-                const c = controller as ReadableByteStreamControllerExtension;
-                c.__callback = (bufferPtr, bufferLength, error) =>  {
-                    console.log("PULL 3", bufferLength, error);
-                    if (error) {
-                        controller.error(error);
-                    } else if (bufferLength == 0) {
-                        controller.close();
-                    } else {
-                        // the bufferPtr is pinned by the caller
-                        const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
-                        const copy = view.slice() as Uint8Array;
-                        controller.enqueue(copy);
-                    }
-                    resolve();
-                };
-                console.log("PULL 2");
+        autoAllocateChunkSize: 500,
+        pull(controller: ReadableByteStreamController) {
+            const c = controller as ReadableByteStreamControllerExtension;
+
+            const byobRequest = controller.byobRequest;
+            if (byobRequest && byobRequest.view) {
+                c.__byobRequest = byobRequest;
+                c.__buffer = byobRequest.view.buffer.slice(byobRequest.view.byteOffset);
+            } else {
+                c.__buffer = new ArrayBuffer(500);
+            }
+
+            return new Promise(resolve => {
+                c.__resolve = resolve;
                 pull(c);
             });
         },
@@ -201,10 +215,6 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
 
         return bytes_copied;
     });
-}
-
-interface ReadableByteStreamControllerExtension extends ReadableByteStreamController {
-    __callback: (bufferPtr: VoidPtr, bufferLength: number, error: string) => void
 }
 
 interface ResponseExtension extends Response {

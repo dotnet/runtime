@@ -234,27 +234,18 @@ namespace System.Net.Http
 
                             async void pull(JSObject controller)
                             {
-                                Memory<byte> buffer = new byte[500];
-
-                                int length = 0;
                                 try
                                 {
-                                     length = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(true);
+                                    ArraySegment<byte> buffer = BrowserHttpInterop.GetReadableStreamBuffer(controller);
+                                    Memory<byte> memory = buffer.AsMemory();
+                                    int bytesWritten = await stream.ReadAsync(memory, cancellationToken).ConfigureAwait(true);
+                                    BrowserHttpInterop.ReadableStreamBufferWritten(controller, bytesWritten, null);
                                 }
                                 catch (Exception ex)
                                 {
-                                    PullReadableStreamUnsafe(controller, default, length, ex.Message);
-                                    return;
-                                }
-
-                                using (Buffers.MemoryHandle handle = buffer.Pin())
-                                {
-                                    PullReadableStreamUnsafe(controller, handle, length, null);
+                                    BrowserHttpInterop.ReadableStreamBufferWritten(controller, 0, ex.Message);
                                 }
                             };
-
-                            unsafe static void PullReadableStreamUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length, string? error) =>
-                                BrowserHttpInterop.PullReadableStream(controller, (IntPtr)handle.Pointer, length, error);
 
                             promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, pull);
                         }
