@@ -25324,7 +25324,7 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
     }
 #else // !TARGET_XARCH
     return false;
-#endif  
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -26346,8 +26346,8 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
 {
     // we assume we have a structure like:
     /*
-               /- A 
-               +- B 
+               /- A
+               +- B
         t1 = binary logical op1
 
                /- C
@@ -26368,10 +26368,10 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
     const uint8_t B = 204; // 0xCC
     const uint8_t C = 170; // 0xAA
 
-    NamedIntrinsic firstLogic = GetHWIntrinsicId();
+    NamedIntrinsic firstLogic  = GetHWIntrinsicId();
     NamedIntrinsic secondLogic = second->GetHWIntrinsicId();
 
-    uint8_t AB = 0;
+    uint8_t AB  = 0;
     uint8_t ABC = 0;
 
     switch (firstLogic)
@@ -26447,7 +26447,7 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
     }
 
     return ABC;
- }
+}
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
 unsigned GenTreeLclFld::GetSize() const

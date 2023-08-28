@@ -6256,7 +6256,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
     uint8_t GetTernaryControlByte(GenTreeHWIntrinsic* second) const;
-    
+
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;

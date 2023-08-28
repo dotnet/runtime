@@ -1681,7 +1681,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512F_Xor:
         case NI_AVX512DQ_Xor:
         {
-            if(!comp->IsBaselineVector512IsaSupportedOpportunistically())
+            if (!comp->IsBaselineVector512IsaSupportedOpportunistically())
             {
                 break;
             }
@@ -1689,12 +1689,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op2 = node->Op(2);
 
             LIR::Use use;
-            if(BlockRange().TryGetUse(node, &use))
+            if (BlockRange().TryGetUse(node, &use))
             {
                 // search for structure like:
                 /*
-                        /- A 
-                        +- B 
+                        /- A
+                        +- B
                     t1 = binary logical op1
 
                         /- C
@@ -1702,21 +1702,21 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     t2 = binary logical op2
                 */
                 GenTree* second = use.User();
-                if(!second->OperIs(GT_HWINTRINSIC) || !second->AsHWIntrinsic()->OperIsBitwiseHWIntrinsic())
+                if (!second->OperIs(GT_HWINTRINSIC) || !second->AsHWIntrinsic()->OperIsBitwiseHWIntrinsic())
                 {
                     break;
                 }
-                GenTree* op3 = second->AsHWIntrinsic()->Op(1) == node ? 
-                               second->AsHWIntrinsic()->Op(2) : 
-                               second->AsHWIntrinsic()->Op(1) ;
-                GenTree* control = comp->gtNewIconNode(node->GetTernaryControlByte(second->AsHWIntrinsic()));
+                GenTree* op3 = second->AsHWIntrinsic()->Op(1) == node ? second->AsHWIntrinsic()->Op(2)
+                                                                      : second->AsHWIntrinsic()->Op(1);
+                GenTree*    control         = comp->gtNewIconNode(node->GetTernaryControlByte(second->AsHWIntrinsic()));
                 CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-                unsigned simdSize = node->GetSimdSize();
-                var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
-                GenTree* ternaryNode = comp->gtNewSimdTernaryLogicNode(simdType, op1, op2, op3, control, simdBaseJitType, simdSize);
+                unsigned    simdSize        = node->GetSimdSize();
+                var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
+                GenTree*    ternaryNode =
+                    comp->gtNewSimdTernaryLogicNode(simdType, op1, op2, op3, control, simdBaseJitType, simdSize);
                 BlockRange().InsertBefore(second, control, ternaryNode);
                 LIR::Use finalRes;
-                if(BlockRange().TryGetUse(second, &finalRes))
+                if (BlockRange().TryGetUse(second, &finalRes))
                 {
                     finalRes.ReplaceWith(ternaryNode);
                 }
@@ -1730,7 +1730,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 return next;
             }
             break;
-        }   
+        }
 
         default:
             break;
