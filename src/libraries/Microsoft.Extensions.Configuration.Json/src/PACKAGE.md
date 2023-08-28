@@ -1,10 +1,21 @@
 ## About
 
+<!-- A description of the package and where one can find more documentation -->
+
 JSON configuration provider implementation for [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/). This package enables you to read your application's settings from a JSON file. You can use [JsonConfigurationExtensions.AddJsonFile](https://docs.microsoft.com/dotnet/api/microsoft.extensions.configuration.jsonconfigurationextensions.addjsonfile) extension method on `IConfigurationBuilder` to add the JSON configuration provider to the configuration builder.
 
-For more information, see the documentation: [JSON configuration provider](https://learn.microsoft.com/dotnet/core/extensions/configuration-providers#json-configuration-provider).
+## Key Features
 
-## Example
+<!-- The key features of this package -->
+
+*
+*
+*
+
+## How to Use
+
+<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+
 The following example shows how to read application settings from the JSON configuration file.
 
 ```cs
@@ -60,3 +71,30 @@ You can include a configuration file using a code like this in your `.csproj` fi
   </Content>
 </ItemGroup>
 ```
+
+## Main Types
+
+<!-- The main types provided in this library -->
+
+The main types provided by this library are:
+
+* ``
+* ``
+* ``
+
+## Additional Documentation
+
+<!-- Links to further documentation -->
+
+* [JSON configuration provider](https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration-providers#json-configuration-provider)
+* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.configuration.json)
+
+## Related Packages
+
+<!-- The related packages associated with this package -->
+
+## Feedback & Contributing
+
+<!-- How to provide feedback on this package and contribute to it -->
+
+Microsoft.Extensions.Configuration.Json is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
