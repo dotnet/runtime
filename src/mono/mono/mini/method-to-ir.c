@@ -6452,8 +6452,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		generic_context = &generic_container->context;
 	cfg->generic_context = generic_context;
 
-	if (!cfg->gshared)
-		g_assert (!sig->has_type_parameters);
+	if (!cfg->gshared) {
+		if (method->wrapper_type != MONO_WRAPPER_OTHER)
+			g_assert (!sig->has_type_parameters);
+	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
 		g_assert (method->is_inflated);
