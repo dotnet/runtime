@@ -618,6 +618,10 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode, W("TieredP
 
 // By default, we only use optimizations in instrumented tiers for hot R2R code only.
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_InstrumentedTierAlwaysOptimized, W("TieredPGO_InstrumentedTierAlwaysOptimized"), 0, "Always use optimizations inside instrumented tiers")
+
+// If scalable counters are used, set the threshold for approximate counting.
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_ScalableCountThreshold, W("TieredPGO_ScalableCountThreshold"), 13, "Log2 threshold where counting becomes approximate")
+
 #endif
 
 ///

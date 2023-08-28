@@ -253,9 +253,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Single(r);
 
             string generatedSource = string.Join('\n', r[0].SourceText.Lines.Select(x => x.ToString()));
-            Assert.Contains("public static void Bind_ProgramMyClass0(this IConfiguration configuration, object? obj)", generatedSource);
-            Assert.Contains("public static void Bind_ProgramMyClass1(this IConfiguration configuration, object? obj, Action<BinderOptions>? configureOptions)", generatedSource);
-            Assert.Contains("public static void Bind_ProgramMyClass2(this IConfiguration configuration, string key, object? obj)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass0(this IConfiguration configuration, object? instance)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass1(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass2(this IConfiguration configuration, string key, object? instance)", generatedSource);
 
             Assert.Empty(d);
         }

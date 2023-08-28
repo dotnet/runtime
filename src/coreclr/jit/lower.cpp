@@ -1967,7 +1967,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                         if (GenTree::OperIsCmpCompare(oper))
                         {
                             assert(type == TYP_INT);
-                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_BOOL, op1, op2, CORINFO_TYPE_NATIVEUINT,
+                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_UBYTE, op1, op2, CORINFO_TYPE_NATIVEUINT,
                                                                genTypeSize(op1));
                         }
                         return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,
@@ -3441,7 +3441,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         var_types    castToType = cast->CastToType();
         GenTree*     castOp     = cast->gtGetOp1();
 
-        if (((castToType == TYP_BOOL) || (castToType == TYP_UBYTE)) && FitsIn<UINT8>(op2Value))
+        if ((castToType == TYP_UBYTE) && FitsIn<UINT8>(op2Value))
         {
             //
             // Since we're going to remove the cast we need to be able to narrow the cast operand

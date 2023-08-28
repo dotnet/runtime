@@ -55,61 +55,61 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (type == typeof(Program.MyClassWithCustomCollections))
             {
-                var obj = new Program.MyClassWithCustomCollections();
-                BindCore(configuration, ref obj, binderOptions);
-                return obj;
+                var instance = new Program.MyClassWithCustomCollections();
+                BindCore(configuration, ref instance, binderOptions);
+                return instance;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.CustomDictionary<string, int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.CustomDictionary<string, int> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj[section.Key] = ParseInt(value, () => section.Path);
+                    instance[section.Key] = ParseInt(value, () => section.Path);
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.CustomList obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.CustomList instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj.Add(value);
+                    instance.Add(value);
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref List<int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref List<int> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj.Add(ParseInt(value, () => section.Path));
+                    instance.Add(ParseInt(value, () => section.Path));
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref ICollection<int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref ICollection<int> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj.Add(ParseInt(value, () => section.Path));
+                    instance.Add(ParseInt(value, () => section.Path));
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref IReadOnlyList<int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref IReadOnlyList<int> instance, BinderOptions? binderOptions)
         {
-            if (obj is not ICollection<int> temp)
+            if (instance is not ICollection<int> temp)
             {
                 return;
             }
@@ -123,31 +123,31 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Dictionary<string, int> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj[section.Key] = ParseInt(value, () => section.Path);
+                    instance[section.Key] = ParseInt(value, () => section.Path);
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref IDictionary<string, int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref IDictionary<string, int> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj[section.Key] = ParseInt(value, () => section.Path);
+                    instance[section.Key] = ParseInt(value, () => section.Path);
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref IReadOnlyDictionary<string, int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref IReadOnlyDictionary<string, int> instance, BinderOptions? binderOptions)
         {
-            if (obj is not IDictionary<string, int> temp)
+            if (instance is not IDictionary<string, int> temp)
             {
                 return;
             }
@@ -161,40 +161,40 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClassWithCustomCollections obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClassWithCustomCollections instance, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClassWithCustomCollections), s_configKeys_ProgramMyClassWithCustomCollections, configuration, binderOptions);
 
             if (AsConfigWithChildren(configuration.GetSection("CustomDictionary")) is IConfigurationSection section1)
             {
-                Program.CustomDictionary<string, int>? temp3 = obj.CustomDictionary;
+                Program.CustomDictionary<string, int>? temp3 = instance.CustomDictionary;
                 temp3 ??= new Program.CustomDictionary<string, int>();
                 BindCore(section1, ref temp3, binderOptions);
-                obj.CustomDictionary = temp3;
+                instance.CustomDictionary = temp3;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("CustomList")) is IConfigurationSection section4)
             {
-                Program.CustomList? temp6 = obj.CustomList;
+                Program.CustomList? temp6 = instance.CustomList;
                 temp6 ??= new Program.CustomList();
                 BindCore(section4, ref temp6, binderOptions);
-                obj.CustomList = temp6;
+                instance.CustomList = temp6;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section7)
             {
-                IReadOnlyList<int>? temp9 = obj.IReadOnlyList;
+                IReadOnlyList<int>? temp9 = instance.IReadOnlyList;
                 temp9 = temp9 is null ? new List<int>() : new List<int>(temp9);
                 BindCore(section7, ref temp9, binderOptions);
-                obj.IReadOnlyList = temp9;
+                instance.IReadOnlyList = temp9;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section10)
             {
-                IReadOnlyDictionary<string, int>? temp12 = obj.IReadOnlyDictionary;
+                IReadOnlyDictionary<string, int>? temp12 = instance.IReadOnlyDictionary;
                 temp12 = temp12 is null ? new Dictionary<string, int>() : temp12.ToDictionary(pair => pair.Key, pair => pair.Value);
                 BindCore(section10, ref temp12, binderOptions);
-                obj.IReadOnlyDictionary = temp12;
+                instance.IReadOnlyDictionary = temp12;
             }
         }
 

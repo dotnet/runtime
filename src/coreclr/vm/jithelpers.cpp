@@ -6077,8 +6077,8 @@ HCIMPLEND
 
 // Helpers for scalable approximate counters
 //
-// Here 13 means we count accurately up to 2^13 = 8192 and
-// then start counting probabialistically.
+// Here threshold = 13 means we count accurately up to 2^13 = 8192 and
+// then start counting probabilistically.
 //
 // See docs/design/features/ScalableApproximateCounting.md
 //
@@ -6089,22 +6089,22 @@ HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 
     LONG count = *pCounter;
     LONG delta = 1;
+    DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
     if (count > 0)
     {
         DWORD logCount = 0;
         BitScanReverse(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
-            delta = 1 << (logCount - 12);
+            delta = 1 << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
             const bool update = (rand & (delta - 1)) == 0;
             if (!update)
             {
                 return;
             }
-
         }
     }
 
@@ -6119,15 +6119,16 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 
     LONG64 count = *pCounter;
     LONG64 delta = 1;
+    DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
     if (count > 0)
     {
         DWORD logCount = 0;
         BitScanReverse64(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
-            delta = 1LL << (logCount - 12);
+            delta = 1LL << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
             const bool update = (rand & (delta - 1)) == 0;
             if (!update)
