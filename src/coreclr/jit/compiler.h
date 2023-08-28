@@ -558,7 +558,6 @@ public:
     unsigned char lvIsSplit : 1;   // Set if the argument is splited.
 #endif                             // defined(TARGET_RISCV64)
 
-    unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
 
