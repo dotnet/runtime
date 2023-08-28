@@ -459,13 +459,13 @@ eventpipe_protocol_helper_collect_tracing (
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;
+	EventPipeSessionOptions options = EventPipeSessionOptions();
 
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
 		ep_raise_error ();
 	}
 
-	EventPipeSessionOptions options = EventPipeSessionOptions();
 	options.output_path = NULL;
 	options.circular_buffer_size_in_mb = payload->circular_buffer_size_in_mb;
 	options.providers = dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration);
