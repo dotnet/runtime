@@ -200,6 +200,7 @@ namespace System.Tests
             yield return new object[] { new Uri("https://user@domain.com"), new Uri("https://domain.com"), true };
             yield return new object[] { new Uri("https://user@domain.com"), new Uri("http://domain.com"), false };
             yield return new object[] { new Uri("https://user1@domain.com"), new Uri("https://user2@domain.com"), true };
+            yield return new object[] { new Uri("https://domain.com"), new Uri("https://user@domain.com"), true };
         }
 
         [Theory]
