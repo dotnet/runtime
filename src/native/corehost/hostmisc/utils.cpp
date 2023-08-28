@@ -417,8 +417,8 @@ pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::stri
 pal::string_t get_runtime_config_dev_path(const pal::string_t& path, const pal::string_t& name)
 {
     auto dev_json_path = path;
-    auto dev_json_name = name + _X(".runtimeconfig.dev.json");
-    append_path(&dev_json_path, dev_json_name.c_str());
+    append_path(&dev_json_path, name.c_str());
+    dev_json_path.append(_X(".runtimeconfig.dev.json"));
     return dev_json_path;
 }
 
