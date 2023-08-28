@@ -409,8 +409,8 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal:
 pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name)
 {
     auto json_path = path;
-    auto json_name = name + _X(".runtimeconfig.json");
-    append_path(&json_path, json_name.c_str());
+    append_path(&json_path, name.c_str());
+    json_path.append(_X(".runtimeconfig.json"));
     return json_path;
 }
 

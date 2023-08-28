@@ -29,8 +29,7 @@ info_t::info_t(const pal::char_t* bundle_path,
     // There is no known use-case for it yet, and the facility is TBD.
 
     m_deps_json = config_t(get_deps_from_app_binary(m_base_path, app_path));
-    const pal::string_t name = get_filename_without_ext(app_path);
-    m_runtimeconfig_json = config_t(get_runtime_config_path(m_base_path, name));
+    m_runtimeconfig_json = config_t(get_runtime_config_path(m_base_path, get_filename_without_ext(app_path)));
 }
 
 StatusCode info_t::process_bundle(const pal::char_t* bundle_path, const pal::char_t* app_path, int64_t header_offset)
