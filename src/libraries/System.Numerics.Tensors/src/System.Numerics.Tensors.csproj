@@ -1,30 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;$(NetFrameworkMinimum);$(NetCoreAppCurrent);</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Public API not fully documented. -->
-    <NoWarn>$(NoWarn);1591</NoWarn>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
-
-Commonly Used Types:
-System.Numerics.Tensors.Tensor&lt;T&gt;
-System.Numerics.Tensors.CompressedSparseTensor&lt;T&gt;
-System.Numerics.Tensors.DenseTensor&lt;T&gt;
-System.Numerics.Tensors.SparseTensor&lt;T&gt;</PackageDescription>
+    <PackageDescription>Provides support for operating over tensors.</PackageDescription>
+    <!-- Disabling baseline validation since this is a brand new package.
+         Once this package has shipped a stable version, the following line
+         should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
-    <Compile Include="System\Numerics\Tensors\ArrayTensorExtensions.cs" />
-    <Compile Include="System\Numerics\Tensors\ArrayUtilities.cs" />
-    <Compile Include="System\Numerics\Tensors\CompressedSparseTensor.cs" />
-    <Compile Include="System\Numerics\Tensors\DenseTensor.cs" />
-    <Compile Include="System\Numerics\Tensors\SparseTensor.cs" />
-    <Compile Include="System\Numerics\Tensors\Tensor.cs" />
+    <Compile Include="System\Numerics\Tensors\TensorPrimitives.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Numerics\ref\Microsoft.Bcl.Numerics.csproj" />
+  </ItemGroup>
+
 </Project>
