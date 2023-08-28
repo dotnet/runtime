@@ -14,7 +14,6 @@ from __future__ import print_function
 import os
 import xml.dom.minidom as DOM
 from utilities import open_for_update, parseInclusionList
-from enum import Enum
 
 class RuntimeFlavor:
     def __init__(self, runtime):
