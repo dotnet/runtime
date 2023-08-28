@@ -41,10 +41,10 @@ namespace System.Runtime
     internal static class Constants
     {
         public static readonly int ThunkDataSize = 2 * IntPtr.Size;
-        public static readonly int ThunkCodeSize = InternalCalls.RhpGetThunkSize();
-        public static readonly int NumThunksPerBlock = InternalCalls.RhpGetNumThunksPerBlock();
-        public static readonly int NumThunkBlocksPerMapping = InternalCalls.RhpGetNumThunkBlocksPerMapping();
-        public static readonly uint ThunkBlockSize = (uint)InternalCalls.RhpGetThunkBlockSize();
+        public static readonly int ThunkCodeSize = RuntimeImports.RhpGetThunkSize();
+        public static readonly int NumThunksPerBlock = RuntimeImports.RhpGetNumThunksPerBlock();
+        public static readonly int NumThunkBlocksPerMapping = RuntimeImports.RhpGetNumThunkBlocksPerMapping();
+        public static readonly uint ThunkBlockSize = (uint)RuntimeImports.RhpGetThunkBlockSize();
         public static readonly nuint ThunkBlockSizeMask = ThunkBlockSize - 1;
     }
 
@@ -86,15 +86,15 @@ namespace System.Runtime
 
             _allocatedBlocks = new AllocatedBlock();
 
-            InternalCalls.RhpAcquireThunkPoolLock();
-
-            IntPtr thunkStubsBlock = ThunkBlocks.GetNewThunksBlock();
-
-            InternalCalls.RhpReleaseThunkPoolLock();
+            IntPtr thunkStubsBlock;
+            lock (this)
+            {
+                thunkStubsBlock = ThunkBlocks.GetNewThunksBlock();
+            }
 
             if (thunkStubsBlock != IntPtr.Zero)
             {
-                IntPtr thunkDataBlock = InternalCalls.RhpGetThunkDataBlockAddress(thunkStubsBlock);
+                IntPtr thunkDataBlock = RuntimeImports.RhpGetThunkDataBlockAddress(thunkStubsBlock);
 
                 // Address of the first thunk data cell should be at the beginning of the thunks data block (page-aligned)
                 Debug.Assert(((nuint)(nint)thunkDataBlock % Constants.ThunkBlockSize) == 0);
@@ -150,7 +150,7 @@ namespace System.Runtime
 
             if (thunkStubsBlock != IntPtr.Zero)
             {
-                IntPtr thunkDataBlock = InternalCalls.RhpGetThunkDataBlockAddress(thunkStubsBlock);
+                IntPtr thunkDataBlock = RuntimeImports.RhpGetThunkDataBlockAddress(thunkStubsBlock);
 
                 // Address of the first thunk data cell should be at the beginning of the thunks data block (page-aligned)
                 Debug.Assert(((nuint)(nint)thunkDataBlock % Constants.ThunkBlockSize) == 0);
@@ -183,28 +183,26 @@ namespace System.Runtime
 
             Debug.Assert(_nextAvailableThunkPtr != IntPtr.Zero);
 
-            InternalCalls.RhpAcquireThunkPoolLock();
-
-            IntPtr nextAvailableThunkPtr = _nextAvailableThunkPtr;
-            IntPtr nextNextAvailableThunkPtr = *((IntPtr*)(nextAvailableThunkPtr));
-
-            if (nextNextAvailableThunkPtr == IntPtr.Zero)
+            IntPtr nextAvailableThunkPtr;
+            lock (this)
             {
-                if (!ExpandHeap())
+                nextAvailableThunkPtr = _nextAvailableThunkPtr;
+                IntPtr nextNextAvailableThunkPtr = *((IntPtr*)(nextAvailableThunkPtr));
+
+                if (nextNextAvailableThunkPtr == IntPtr.Zero)
                 {
-                    InternalCalls.RhpReleaseThunkPoolLock();
-                    return IntPtr.Zero;
+                    if (!ExpandHeap())
+                    {
+                        return IntPtr.Zero;
+                    }
+
+                    nextAvailableThunkPtr = _nextAvailableThunkPtr;
+                    nextNextAvailableThunkPtr = *((IntPtr*)(nextAvailableThunkPtr));
+                    Debug.Assert(nextNextAvailableThunkPtr != IntPtr.Zero);
                 }
 
-                nextAvailableThunkPtr = _nextAvailableThunkPtr;
-                nextNextAvailableThunkPtr = *((IntPtr*)(nextAvailableThunkPtr));
-                Debug.Assert(nextNextAvailableThunkPtr != IntPtr.Zero);
+                _nextAvailableThunkPtr = nextNextAvailableThunkPtr;
             }
-
-            _nextAvailableThunkPtr = nextNextAvailableThunkPtr;
-
-            InternalCalls.RhpReleaseThunkPoolLock();
-
             Debug.Assert(nextAvailableThunkPtr != IntPtr.Zero);
 
 #if DEBUG
@@ -216,7 +214,7 @@ namespace System.Runtime
             Debug.Assert((thunkIndex % Constants.ThunkDataSize) == 0);
             thunkIndex /= Constants.ThunkDataSize;
 
-            IntPtr thunkAddress = InternalCalls.RhpGetThunkStubsBlockAddress(nextAvailableThunkPtr) + thunkIndex * Constants.ThunkCodeSize;
+            IntPtr thunkAddress = RuntimeImports.RhpGetThunkStubsBlockAddress(nextAvailableThunkPtr) + thunkIndex * Constants.ThunkCodeSize;
 
             return SetThumbBit(thunkAddress);
         }
@@ -238,12 +236,11 @@ namespace System.Runtime
             *((IntPtr*)(dataAddress + IntPtr.Size)) = new IntPtr(-1);
 #endif
 
-            InternalCalls.RhpAcquireThunkPoolLock();
-
-            *((IntPtr*)(dataAddress)) = _nextAvailableThunkPtr;
-            _nextAvailableThunkPtr = dataAddress;
-
-            InternalCalls.RhpReleaseThunkPoolLock();
+            lock (this)
+            {
+                *((IntPtr*)(dataAddress)) = _nextAvailableThunkPtr;
+                _nextAvailableThunkPtr = dataAddress;
+            }
         }
 
         private bool IsThunkInHeap(IntPtr thunkAddress)
@@ -281,7 +278,7 @@ namespace System.Runtime
             int thunkIndex = (int)((thunkAddressValue - currentThunksBlockAddress) / (nuint)Constants.ThunkCodeSize);
 
             // Compute the address of the data block that corresponds to the current thunk
-            IntPtr thunkDataBlockAddress = InternalCalls.RhpGetThunkDataBlockAddress((IntPtr)((nint)thunkAddressValue));
+            IntPtr thunkDataBlockAddress = RuntimeImports.RhpGetThunkDataBlockAddress((IntPtr)((nint)thunkAddressValue));
 
             return thunkDataBlockAddress + thunkIndex * Constants.ThunkDataSize;
         }
@@ -356,7 +353,7 @@ namespace System.Runtime
             }
             else
             {
-                nextThunksBlock = InternalCalls.RhAllocateThunksMapping();
+                nextThunksBlock = RuntimeImports.RhAllocateThunksMapping();
 
                 if (nextThunksBlock == IntPtr.Zero)
                 {
@@ -373,7 +370,7 @@ namespace System.Runtime
                 // Each mapping consists of multiple blocks of thunk stubs/data pairs. Keep track of those
                 // so that we do not create a new mapping until all blocks in the sections we just mapped are consumed
                 IntPtr currentThunksBlock = nextThunksBlock;
-                int thunkBlockSize = InternalCalls.RhpGetThunkBlockSize();
+                int thunkBlockSize = RuntimeImports.RhpGetThunkBlockSize();
                 for (int i = 0; i < Constants.NumThunkBlocksPerMapping; i++)
                 {
                     s_currentlyMappedThunkBlocks[i] = currentThunksBlock;
@@ -386,7 +383,7 @@ namespace System.Runtime
 
             // Setup the thunks in the new block as a linked list of thunks.
             // Use the first data field of the thunk to build the linked list.
-            IntPtr dataAddress = InternalCalls.RhpGetThunkDataBlockAddress(nextThunksBlock);
+            IntPtr dataAddress = RuntimeImports.RhpGetThunkDataBlockAddress(nextThunksBlock);
 
             for (int i = 0; i < Constants.NumThunksPerBlock; i++)
             {

@@ -30,25 +30,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 const string documentation = @"/// <summary>Registers a configuration instance which <typeparamref name=""TOptions""/> will bind against.</summary>";
-                const string paramList = $"{Identifier.IConfiguration} {Identifier.configuration}";
+                const string paramList = $"{Identifier.IConfiguration} {Identifier.config}";
 
                 if (ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Bind_T))
                 {
                     EmitMethodStartBlock(MethodsToGen_Extensions_OptionsBuilder.Bind_T, "Bind", paramList, documentation);
-                    _writer.WriteLine($"return Bind({Identifier.optionsBuilder}, {Identifier.configuration}, {Identifier.configureOptions}: null);");
+                    _writer.WriteLine($"return Bind({Identifier.optionsBuilder}, {Identifier.config}, {Identifier.configureBinder}: null);");
                     EmitEndBlock();
                 }
 
                 EmitMethodStartBlock(
                     MethodsToGen_Extensions_OptionsBuilder.Bind_T_BinderOptions,
                     "Bind",
-                    paramList + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}",
+                    paramList + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureBinder}",
                     documentation);
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
 
                 _writer.WriteLine($$"""
-                    {{Identifier.Configure}}<{{Identifier.TOptions}}>({{Identifier.optionsBuilder}}.{{Identifier.Services}}, {{Identifier.optionsBuilder}}.Name, {{Identifier.configuration}}, {{Identifier.configureOptions}});
+                    {{Identifier.Configure}}<{{Identifier.TOptions}}>({{Identifier.optionsBuilder}}.{{Identifier.Services}}, {{Identifier.optionsBuilder}}.Name, {{Identifier.config}}, {{Identifier.configureBinder}});
                     return {{Identifier.optionsBuilder}};
                     """);
 
@@ -63,19 +63,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 const string documentation = $@"/// <summary>Registers the dependency injection container to bind <typeparamref name=""TOptions""/> against the <see cref=""{Identifier.IConfiguration}""/> obtained from the DI service provider.</summary>";
-                string paramList = $"string {Identifier.configSectionPath}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions} = null";
+                string paramList = $"string {Identifier.configSectionPath}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureBinder} = null";
 
                 EmitMethodStartBlock(MethodsToGen_Extensions_OptionsBuilder.BindConfiguration, "BindConfiguration", paramList, documentation);
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configSectionPath);
 
-                EmitStartBlock($"{Identifier.optionsBuilder}.{Identifier.Configure}<{Identifier.IConfiguration}>(({Identifier.obj}, {Identifier.configuration}) =>");
-                EmitCheckForNullArgument_WithBlankLine(Identifier.obj);
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+                EmitStartBlock($"{Identifier.optionsBuilder}.{Identifier.Configure}<{Identifier.IConfiguration}>(({Identifier.instance}, {Identifier.config}) =>");
+                EmitCheckForNullArgument_WithBlankLine(Identifier.config);
                 _writer.WriteLine($$"""
-                    {{Identifier.IConfiguration}} {{Identifier.section}} = string.Equals(string.Empty, {{Identifier.configSectionPath}}, StringComparison.OrdinalIgnoreCase) ? {{Identifier.configuration}} : {{Identifier.configuration}}.{{Identifier.GetSection}}({{Identifier.configSectionPath}});
-                    {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.section}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}), {{Identifier.configureOptions}});
+                    {{Identifier.IConfiguration}} {{Identifier.section}} = string.Equals(string.Empty, {{Identifier.configSectionPath}}, StringComparison.OrdinalIgnoreCase) ? {{Identifier.config}} : {{Identifier.config}}.{{Identifier.GetSection}}({{Identifier.configSectionPath}});
+                    {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.section}}, {{Identifier.instance}}, typeof({{Identifier.TOptions}}), {{Identifier.configureBinder}});
                     """);
 
                 EmitEndBlock(endBraceTrailingSource: ");");

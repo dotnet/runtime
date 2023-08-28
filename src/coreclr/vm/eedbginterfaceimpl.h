@@ -220,7 +220,7 @@ public:
 
     void MarkDebuggerUnattached(void);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 
     // Apply an EnC edit to the specified module
     // This function should never return.
@@ -236,7 +236,7 @@ public:
                                  void *debuggerFuncHandle,
                                  SIZE_T resumeIP,
                                  T_CONTEXT *pContext);
-  #endif // EnC_SUPPORTED
+  #endif // FEATURE_METADATA_UPDATER
 
     bool CrawlFrameIsGcSafe(CrawlFrame *pCF);
 
