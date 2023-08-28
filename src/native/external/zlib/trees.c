@@ -721,7 +721,7 @@ local void scan_tree(s, tree, max_code)
         if (++count < max_count && curlen == nextlen) {
             continue;
         } else if (count < min_count) {
-            s->bl_tree[curlen].Freq += count;
+            s->bl_tree[curlen].Freq += (ush)count;
         } else if (curlen != 0) {
             if (curlen != prevlen) s->bl_tree[curlen].Freq++;
             s->bl_tree[REP_3_6].Freq++;
