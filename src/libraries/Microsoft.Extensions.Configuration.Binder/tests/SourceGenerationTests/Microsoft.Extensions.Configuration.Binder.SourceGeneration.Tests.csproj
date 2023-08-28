@@ -32,55 +32,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Baselines\net462\Bind.generated.txt" />
-    <Content Include="Baselines\net462\BindConfiguration.generated.txt" />
-    <Content Include="Baselines\net462\Bind_Instance.generated.txt" />
-    <Content Include="Baselines\net462\Bind_Instance_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\Bind_Key_Instance.generated.txt" />
-    <Content Include="Baselines\net462\Bind_T.generated.txt" />
-    <Content Include="Baselines\net462\Bind_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\Collections.generated.txt" />
-    <Content Include="Baselines\net462\Configure_T.generated.txt" />
-    <Content Include="Baselines\net462\Configure_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\Configure_T_name.generated.txt" />
-    <Content Include="Baselines\net462\Configure_T_name_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\Get.generated.txt" />
-    <Content Include="Baselines\net462\GetValue.generated.txt" />
-    <Content Include="Baselines\net462\GetValue_TypeOf_Key.generated.txt" />
-    <Content Include="Baselines\net462\GetValue_TypeOf_Key_DefaultValue.generated.txt" />
-    <Content Include="Baselines\net462\GetValue_T_Key.generated.txt" />
-    <Content Include="Baselines\net462\GetValue_T_Key_DefaultValue.generated.txt" />
-    <Content Include="Baselines\net462\Get_T.generated.txt" />
-    <Content Include="Baselines\net462\Get_TypeOf.generated.txt" />
-    <Content Include="Baselines\net462\Get_TypeOf_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\Get_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\Primitives.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Bind.generated.txt" />
-    <Content Include="Baselines\netcoreapp\BindConfiguration.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Bind_Instance.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Bind_Instance_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Bind_Key_Instance.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Bind_T.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Bind_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Collections.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Configure_T.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Configure_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Configure_T_name.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Configure_T_name_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Get.generated.txt" />
-    <Content Include="Baselines\netcoreapp\GetValue.generated.txt" />
-    <Content Include="Baselines\netcoreapp\GetValue_TypeOf_Key.generated.txt" />
-    <Content Include="Baselines\netcoreapp\GetValue_TypeOf_Key_DefaultValue.generated.txt" />
-    <Content Include="Baselines\netcoreapp\GetValue_T_Key.generated.txt" />
-    <Content Include="Baselines\netcoreapp\GetValue_T_Key_DefaultValue.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Get_T.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Get_TypeOf.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Get_TypeOf_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Get_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\Primitives.generated.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Json\src\Microsoft.Extensions.Configuration.Json.csproj" SkipUseReferenceAssembly="true" />
