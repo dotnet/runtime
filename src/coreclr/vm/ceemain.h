@@ -46,6 +46,7 @@ void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownCom
 void ThreadDetaching();
 
 void EnsureTlsDestructionMonitor();
+void DeactivateTlsDestructionMonitor();
 
 void SetLatchedExitCode (INT32 code);
 INT32 GetLatchedExitCode (void);

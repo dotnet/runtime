@@ -78,6 +78,13 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
         // disabled because if we fault in this code path we will trigger our Watson code
         CONTRACT_VIOLATION(ThrowsViolation);
 
+        // The TlsDestructionMonitor for this thread would likely be destructed at some point after ExitProcess is called. On
+        // Windows, this happens after all other threads in the process are torn down, and may occur while a GC is in progress.
+        // The thread cleanup code in TlsDestructionMonitor may try to enter cooperative GC mode to fix the frame pointer and
+        // wait for the pending GC to complete, leading to a hang. Since the process is being exited, deactivate the
+        // TlsDestructionMonitor for this thread before calling ExitProcess.
+        DeactivateTlsDestructionMonitor();
+
         ExitProcess(exitCode);
     }
 }

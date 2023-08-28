@@ -1727,6 +1727,11 @@ struct TlsDestructionMonitor
         m_activated = true;
     }
 
+    void Deactivate()
+    {
+        m_activated = false;
+    }
+
     ~TlsDestructionMonitor()
     {
         if (m_activated)
@@ -1766,6 +1771,11 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
+}
+
+void DeactivateTlsDestructionMonitor()
+{
+    tls_destructionMonitor.Deactivate();
 }
 
 #ifdef DEBUGGING_SUPPORTED
