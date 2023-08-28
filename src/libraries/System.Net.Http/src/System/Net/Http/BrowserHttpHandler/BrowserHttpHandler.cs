@@ -232,23 +232,21 @@ namespace System.Net.Http
                             Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
                             cancellationToken.ThrowIfCancellationRequested();
 
+                            Memory<byte> buffer = new byte[500];
+
                             var pull = async void (JSObject controller) =>
                             {
-                                Memory<byte> buffer = new byte[500];
-                                int length;
                                 try
                                 {
-                                    length = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(true);
+                                    int length = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(true);
+                                    using (Buffers.MemoryHandle handle = buffer.Pin())
+                                    {
+                                        ReadableStreamControllerEnqueueUnsafe(controller, handle, length, null);
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
                                     BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, IntPtr.Zero, 0, ex.Message);
-                                    return;
-                                }
-
-                                using (Buffers.MemoryHandle handle = buffer.Pin())
-                                {
-                                    ReadableStreamControllerEnqueueUnsafe(controller, handle, length, null);
                                 }
                             };
 

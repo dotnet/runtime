@@ -231,26 +231,36 @@ namespace System.Net.Http.Functional.Tests
 #if NETCOREAPP
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
-        public async Task BrowserHttpHandler_Streaming()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task BrowserHttpHandler_StreamingRequest(bool useStringContent)
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
-            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
 
-            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteHttp2Server.BaseUri + "echo.ashx");
-            req.Content = new StreamContent(new MemoryStream(System.Text.Encoding.UTF8.GetBytes("Hello World 123")));
+            var bodyContent = new String('A', 1024 * 100);
+
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer);
 
             req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
-            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            if (useStringContent)
+            {
+                req.Content = new StringContent(bodyContent);
+            }
+            else
+            {
+                req.Content = new ByteArrayContent(Encoding.UTF8.GetBytes(bodyContent));
+            }
 
             using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
-            // we need to switch off Response buffering of default ResponseContentRead option
-            using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpResponseMessage response = await client.SendAsync(req))
             {
-                string result = await response.Content.ReadAsStringAsync();
+                string responseBody = await response.Content.ReadAsStringAsync();
 
-                throw new Exception(result);
-                //Assert.Equal("expected", result);
+                _output.WriteLine(responseBody);
+                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseBody, "BodyContent", bodyContent));
+                Assert.Equal(useStringContent, TestHelper.JsonMessageContainsKeyValue(responseBody, "Content-Length", bodyContent.Length.ToString()));
             }
         }
 
