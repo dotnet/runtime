@@ -7,8 +7,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Common.cs" />
+    <Compile Include="..\ConstructorCommonTests.cs" />
     <Compile Include="..\ConstructorInfoTests.cs" />
+    <Compile Include="..\ConstructorInvokerTests.cs" />
+    <Compile Include="..\MethodCommonTests.cs" />
     <Compile Include="..\MethodInfoTests.cs" />
+    <Compile Include="..\MethodInvokerTests.cs" />
     <Compile Include="..\PropertyInfoTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Reflection\InvokeEmitTests.cs" />
   </ItemGroup>

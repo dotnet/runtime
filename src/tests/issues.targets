@@ -69,8 +69,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/Runtime_76219/Runtime_76219/*">
             <Issue>https://github.com/dotnet/runtime/issues/78899</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_82535/Runtime_82535/*">
-          <Issue>https://github.com/dotnet/runtime/issues/89585</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
+          <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -1174,6 +1174,10 @@
 
         <!-- Requires Debug build -->
         <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\*" />
+
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
+            <Issue>Dynamic code generation is not supported on this platform</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -2471,10 +2475,6 @@
             <Issue>This test includes an intentionally-invalid UnmanagedCallersOnly method. Invalid UnmanagedCallersOnly methods cause failures at AOT-time.</Issue>
         </ExcludeList>
 
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase/Yield_*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
-        </ExcludeList>
-
         <ExcludeList Include="$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3389,24 +3389,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/**">
             <Issue>https://github.com/dotnet/runtime/issues/54905</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/switch/switch5/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_void_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/recurse_ep_void_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/recurse_ep_void_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/switch/switch6/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_void_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/reverse-complement-6/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
@@ -3481,9 +3463,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/**">
             <Issue>https://github.com/dotnet/runtime/issues/67359</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/InlineArray/**">
-            <Issue>https://github.com/dotnet/runtime/issues/90398</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -3583,20 +3562,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/LargeMemory/API/gc/gettotalmemory/**">
             <Issue>System.ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')</Issue>
         </ExcludeList>
-
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
-            <Issue>System.DllNotFoundException: ThisCallNative</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Span/SpanBench/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
         </ExcludeList>
@@ -3730,6 +3695,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
             <Issue>https://github.com/dotnet/runtime/issues/90012</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
+            <Issue>Dynamic code generation is not supported on this platform</Issue>
         </ExcludeList>
     </ItemGroup>
 

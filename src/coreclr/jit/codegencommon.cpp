@@ -2979,12 +2979,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // Change regType to the HFA type when we have a HFA argument
         if (varDsc->lvIsHfaRegArg())
         {
-#if defined(TARGET_ARM64)
-            if (TargetOS::IsWindows && compiler->info.compIsVarArgs)
+            if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && compiler->info.compIsVarArgs)
             {
                 assert(!"Illegal incoming HFA arg encountered in Vararg method.");
             }
-#endif // defined(TARGET_ARM64)
             regType = varDsc->GetHfaType();
         }
 
@@ -3046,7 +3044,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             for (unsigned slotCounter = 0; slotCounter < structDesc.eightByteCount; slotCounter++)
             {
                 regNumber regNum = varDsc->lvRegNumForSlot(slotCounter);
-                var_types regType;
+                var_types slotRegType;
 
 #ifdef FEATURE_SIMD
                 // Assumption 1:
@@ -3075,15 +3073,15 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 if (varDsc->lvType == TYP_SIMD12)
                 {
-                    regType = TYP_DOUBLE;
+                    slotRegType = TYP_DOUBLE;
                 }
                 else
 #endif
                 {
-                    regType = compiler->GetEightByteType(structDesc, slotCounter);
+                    slotRegType = compiler->GetEightByteType(structDesc, slotCounter);
                 }
 
-                regArgNum = genMapRegNumToRegArgNum(regNum, regType);
+                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType);
 
                 if ((!doingFloat && (structDesc.IsIntegralSlot(slotCounter))) ||
                     (doingFloat && (structDesc.IsSseSlot(slotCounter))))
@@ -3101,7 +3099,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                                                                   // register)
                     regArgTab[regArgNum].varNum = varNum;
                     regArgTab[regArgNum].slot   = (char)(slotCounter + 1);
-                    regArgTab[regArgNum].type   = regType;
+                    regArgTab[regArgNum].type   = slotRegType;
                     slots++;
                 }
             }
@@ -3120,7 +3118,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType);
             slots     = 1;
 
-            if (TargetArchitecture::IsArm32)
+            if (TargetArchitecture::IsArm32 ||
+                (TargetOS::IsWindows && TargetArchitecture::IsArm64 && compiler->info.compIsVarArgs))
             {
                 int lclSize = compiler->lvaLclSize(varNum);
                 if (lclSize > REGSIZE_BYTES)

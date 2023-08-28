@@ -1982,7 +1982,7 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
     {
         GCX_COOP();
 
-        struct gc {
+        struct {
             BASEARRAYREF values;
             PTRARRAYREF names;
         } gc;

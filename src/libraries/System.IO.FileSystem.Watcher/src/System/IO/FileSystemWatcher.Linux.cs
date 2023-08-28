@@ -596,6 +596,7 @@ namespace System.IO
                                 // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
                                 // should have the value, there's little we can do about it at this point,
                                 // and there's no more processing of this event we can do without it.
+                                watcher = null;
                                 continue;
                             }
                         }
@@ -667,6 +668,7 @@ namespace System.IO
                             (isDir && ((_notifyFilters & NotifyFilters.DirectoryName) == 0) ||
                             (!isDir && ((_notifyFilters & NotifyFilters.FileName) == 0))))
                         {
+                            watcher = null;
                             continue;
                         }
 

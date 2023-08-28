@@ -87,6 +87,7 @@ export function setLoaderGlobals(
         allDownloadsQueued: createPromiseController<void>(),
         wasmDownloadPromise: createPromiseController<AssetEntryInternal>(),
         runtimeModuleLoaded: createPromiseController<void>(),
+        memorySnapshotSkippedOrDone: createPromiseController<void>(),
 
         is_exited,
         is_runtime_running,

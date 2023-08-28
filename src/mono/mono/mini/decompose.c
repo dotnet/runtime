@@ -1226,7 +1226,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					dest_var = get_vreg_to_inst (cfg, ins->dreg);
 
 					if (!src_var)
-						src_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->dreg);
+						src_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->sreg1);
 
 					if (!dest_var)
 						dest_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->dreg);

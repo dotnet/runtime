@@ -143,6 +143,13 @@ namespace Microsoft.Extensions.Options.Generators
             results.AddRange(_synthesizedValidators.Values);
             _synthesizedValidators.Clear();
 
+            if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
+            {
+                // we only support C# 8.0 and above
+                Diag(DiagDescriptors.OptionsUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
+                return new List<ValidatorType>();
+            }
+
             return results;
         }
 

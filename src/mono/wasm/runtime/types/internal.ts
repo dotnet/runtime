@@ -128,6 +128,7 @@ export type LoaderHelpers = {
     allDownloadsQueued: PromiseAndController<void>,
     wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
     runtimeModuleLoaded: PromiseAndController<void>,
+    memorySnapshotSkippedOrDone: PromiseAndController<void>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -176,7 +177,7 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
-    loadedMemorySnapshot: boolean,
+    loadedMemorySnapshotSize?: number,
     enablePerfMeasure: boolean;
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
@@ -194,7 +195,6 @@ export type RuntimeHelpers = {
 
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
-    memorySnapshotSkippedOrDone: PromiseAndController<void>,
     afterInstantiateWasm: PromiseAndController<void>,
     beforePreInit: PromiseAndController<void>,
     afterPreInit: PromiseAndController<void>,
@@ -280,6 +280,7 @@ export type EmscriptenInternals = {
     linkerWasmEnableEH: boolean,
     linkerEnableAotProfiler: boolean,
     linkerEnableBrowserProfiler: boolean,
+    linkerRunAOTCompilation: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
     gitHash: string,
@@ -452,8 +453,8 @@ export declare interface EmscriptenModuleInternal {
     ENVIRONMENT_IS_PTHREAD?: boolean;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
-    asm: { memory?: WebAssembly.Memory };
-    wasmMemory?: WebAssembly.Memory;
+    asm: any;
+    getMemory(): WebAssembly.Memory;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
@@ -490,6 +491,7 @@ export type setGlobalObjectsType = (globalObjects: GlobalObjects) => void;
 export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI;
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
+export type configureRuntimeStartupType = () => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
 
@@ -497,6 +499,7 @@ export type RuntimeModuleExportsInternal = {
     setRuntimeGlobals: setGlobalObjectsType,
     initializeExports: initializeExportsType,
     initializeReplacements: initializeReplacementsType,
+    configureRuntimeStartup: configureRuntimeStartupType,
     configureEmscriptenStartup: configureEmscriptenStartupType,
     configureWorkerStartup: configureWorkerStartupType,
     passEmscriptenInternals: passEmscriptenInternalsType,

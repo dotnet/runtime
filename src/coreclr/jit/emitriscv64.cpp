@@ -4287,8 +4287,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 }
                 else
                 {
-                    tempReg1 = REG_RA; // src1->GetSingleTempReg();
-                    tempReg2 = REG_T5; // TODO-RISCV64-Bug?: Assign proper temp register
+                    tempReg1 = REG_RA;
+                    tempReg2 = dst->GetSingleTempReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);
                     assert(tempReg2 != saveOperReg2);
