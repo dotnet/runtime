@@ -21,7 +21,7 @@ namespace Microsoft.Interop
 
             var isModuleSkipLocalsInit = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
-                    TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata,
+                    TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute,
                     (node, ct) => node is ICompilationUnitSyntax,
                     // If SkipLocalsInit is applied at the top level, it is either applied to the module
                     // or is invalid syntax. As a result, we just need to know if there's any top-level

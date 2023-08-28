@@ -583,16 +583,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static bool TryGetServiceKey(ParameterInfo parameterInfo, out object? key)
         {
-            if (parameterInfo.CustomAttributes != null)
+            foreach (var attribute in parameterInfo.GetCustomAttributes<FromKeyedServicesAttribute>(false))
             {
-                foreach (var attribute in parameterInfo.GetCustomAttributes(true))
-                {
-                    if (attribute is FromKeyedServicesAttribute keyed)
-                    {
-                        key = keyed.Key;
-                        return true;
-                    }
-                }
+                key = attribute.Key;
+                return true;
             }
             key = null;
             return false;

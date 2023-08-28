@@ -162,11 +162,6 @@ jobs:
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: wget https://bootstrap.pypa.io/pip/3.6/get-pip.py && $(Python) get-pip.py --user
-      displayName: Ensure pip is installed (non-Windows)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(Python) -m pip install --user dataclasses
-      displayName: Install dataclasses library used in ci_setup.py
     - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) ${{ parameters.additionalSetupParameters }}
       displayName: Run ci setup script
       # Run perf testing in helix

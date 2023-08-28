@@ -7847,55 +7847,28 @@ CEEInfo::getMethodInfo(
     return result;
 }
 
-#ifdef _DEBUG
-
-/************************************************************************
-    Return true when ftn contains a local of type CLASS__STACKCRAWMARK
-*/
-
-bool containsStackCrawlMarkLocal(MethodDesc* ftn)
+bool CEEInfo::haveSameMethodDefinition(
+    CORINFO_METHOD_HANDLE meth1Hnd,
+    CORINFO_METHOD_HANDLE meth2Hnd)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
-    COR_ILMETHOD* ilHeader = ftn->GetILHeader();
-    _ASSERTE(ilHeader);
+    bool result = false;
 
-    COR_ILMETHOD_DECODER header(ilHeader, ftn->GetMDImport(), NULL);
+    JIT_TO_EE_TRANSITION_LEAF();
 
-    if (header.LocalVarSig == NULL)
-        return NULL;
+    MethodDesc* meth1 = GetMethod(meth1Hnd);
+    MethodDesc* meth2 = GetMethod(meth2Hnd);
+    result = meth1->HasSameMethodDefAs(meth2);
 
-    SigPointer ptr(header.LocalVarSig, header.cbLocalVarSig);
+    EE_TO_JIT_TRANSITION_LEAF();
 
-    IfFailThrow(ptr.GetData(NULL)); // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG
-
-    uint32_t numLocals;
-    IfFailThrow(ptr.GetData(&numLocals));
-
-    for(uint32_t i = 0; i < numLocals; i++)
-    {
-        CorElementType eType;
-        IfFailThrow(ptr.PeekElemType(&eType));
-        if (eType != ELEMENT_TYPE_VALUETYPE)
-        {
-            IfFailThrow(ptr.SkipExactlyOne());
-            continue;
-        }
-
-        IfFailThrow(ptr.GetElemType(NULL));
-
-        mdToken token;
-        IfFailThrow(ptr.GetToken(&token));
-
-        // We are inside CoreLib - simple token match is sufficient
-        if (token == CoreLibBinder::GetClass(CLASS__STACKCRAWMARK)->GetCl())
-            return TRUE;
-    }
-
-    return FALSE;
+    return result;
 }
-
-#endif
 
 /*************************************************************
  * Check if the caller and calle are in the same assembly
@@ -10614,6 +10587,14 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         }
 #endif
 
+        // Check if we already have a cached address of the final target
+        static LPVOID hlpFinalTierAddrTable[DYNAMIC_CORINFO_HELP_COUNT] = {};
+        LPVOID finalTierAddr = hlpFinalTierAddrTable[dynamicFtnNum];
+        if (finalTierAddr != NULL)
+        {
+            return finalTierAddr;
+        }
+
         if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFINTERFACE ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFANY ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFARRAY ||
@@ -10623,10 +10604,43 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTINTERFACE ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS_SPECIAL ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_UNBOX)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_UNBOX ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ARRADDR_ST ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LDELEMA_REF)
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+
+            // Check if the target MethodDesc is already jitted to its final Tier
+            // so we no longer need to use indirections and can emit a direct call instead.
+            //
+            // Avoid taking the lock for foreground jit compilations
+            if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive())
+            {
+                MethodDesc* helperMD = pPrecode->GetMethodDesc();
+                _ASSERT(helperMD != nullptr);
+
+                CodeVersionManager* manager = helperMD->GetCodeVersionManager();
+                NativeCodeVersion activeCodeVersion;
+
+                {
+                    // Get active code version under a lock
+                    CodeVersionManager::LockHolder codeVersioningLockHolder;
+                    activeCodeVersion = manager->GetActiveILCodeVersion(helperMD).GetActiveNativeCodeVersion(helperMD);
+                }
+
+                if (activeCodeVersion.IsFinalTier())
+                {
+                    finalTierAddr = (LPVOID)activeCodeVersion.GetNativeCode();
+                    if (finalTierAddr != NULL)
+                    {
+                        // Cache it for future uses to avoid taking the lock again.
+                        hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
+                        return finalTierAddr;
+                    }
+                }
+            }
+
             *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
             return NULL;
         }

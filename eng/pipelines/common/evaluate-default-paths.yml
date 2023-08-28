@@ -135,6 +135,7 @@ jobs:
     - subset: tools_illink
       include:
       - src/tools/illink/*
+      - global.json
 
     - subset: installer
       include:

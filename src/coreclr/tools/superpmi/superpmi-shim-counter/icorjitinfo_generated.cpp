@@ -52,6 +52,14 @@ bool interceptor_ICJI::getMethodInfo(
     return original_ICorJitInfo->getMethodInfo(ftn, info, context);
 }
 
+bool interceptor_ICJI::haveSameMethodDefinition(
+          CORINFO_METHOD_HANDLE meth1Hnd,
+          CORINFO_METHOD_HANDLE meth2Hnd)
+{
+    mcs->AddCall("haveSameMethodDefinition");
+    return original_ICorJitInfo->haveSameMethodDefinition(meth1Hnd, meth2Hnd);
+}
+
 CorInfoInline interceptor_ICJI::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)

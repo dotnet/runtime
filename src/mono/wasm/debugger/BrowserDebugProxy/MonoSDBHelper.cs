@@ -587,7 +587,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             switch (type)
             {
-                case ElementType.U1:
+                case ElementType.I1:
                 case ElementType.I2:
                 case ElementType.I4:
                     Write((ElementType)type, (int)value);
@@ -604,7 +604,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         intBoolVal = (bool)value ? 1 : 0;
                     Write((ElementType)type, intBoolVal);
                     return true;
-                case ElementType.I1:
+                case ElementType.U1:
                 case ElementType.U2:
                 case ElementType.U4:
                     Write((ElementType)type, (uint)value);
@@ -715,14 +715,41 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, CancellationToken token)
+        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, ElementType? expectedType, CancellationToken token)
         {
             switch (objValue["type"].Value<string>())
             {
                 case "number":
                 {
-                    // FixMe: what if the number is not int but single/double?
-                    Write(ElementType.I4, objValue["value"].Value<int>());
+                    var expected = expectedType is not null ? expectedType.Value : ElementType.I4;
+                    switch (expected)
+                    {
+                        case ElementType.I1:
+                        case ElementType.I2:
+                        case ElementType.I4:
+                            Write(expected, objValue["value"].Value<int>());
+                            break;
+                        case ElementType.U1:
+                        case ElementType.U2:
+                        case ElementType.U4:
+                            Write(expected, objValue["value"].Value<uint>());
+                            break;
+                        case ElementType.I8:
+                            Write(expected, objValue["value"].Value<long>());
+                            break;
+                        case ElementType.U8:
+                            Write(expected, objValue["value"].Value<ulong>());
+                            break;
+                        case ElementType.R4:
+                            Write(expected, objValue["value"].Value<float>());
+                            break;
+                        case ElementType.R8:
+                            Write(expected, objValue["value"].Value<double>());
+                            break;
+                        default:
+                            objValue["value"].Value<int>();
+                            break;
+                    };
                     return true;
                 }
                 case "symbol":
@@ -1933,14 +1960,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 : throw new ArgumentException($"Cannot invoke method with id {methodId} on {dotnetObjectId}", nameof(dotnetObjectId));
         }
 
-        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, CancellationToken token)
+        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, bool invokeToStringInObject, CancellationToken token)
         {
             try
             {
                 foreach (var typeId in typeIds)
                 {
                     var typeInfo = await GetTypeInfo(typeId, token);
-                    if (typeInfo == null || typeInfo.Name == "object")
+                    if (typeInfo == null || (typeInfo.Name == "object" && !invokeToStringInObject))
                         continue;
                     Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
                     if (isEnum != true && methodInfo == null)
