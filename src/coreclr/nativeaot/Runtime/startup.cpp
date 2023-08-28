@@ -49,8 +49,6 @@ static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
 
-CrstStatic g_ThunkPoolLock;
-
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
 // This field is inspected from the generated code to determine what intrinsics are available.
 EXTERN_C int g_cpuFeatures;
@@ -100,10 +98,10 @@ static bool InitDLL(HANDLE hPalInstance)
 
 #ifdef FEATURE_PERFTRACING
     // Initialize EventPipe
-    EventPipeAdapter_Initialize();
+    EventPipe_Initialize();
     // Initialize DS
-    DiagnosticServerAdapter_Initialize();
-    DiagnosticServerAdapter_PauseForDiagnosticsMonitor();
+    DiagnosticServer_Initialize();
+    DiagnosticServer_PauseForDiagnosticsMonitor();
 #endif
 #ifdef FEATURE_EVENT_TRACE
     EventTracing_Initialize();
@@ -157,7 +155,7 @@ static bool InitDLL(HANDLE hPalInstance)
     // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
     // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
     // EventPipe initialization, so this is done after the GC has been fully initialized.
-    EventPipeAdapter_FinishInitialize();
+    EventPipe_FinishInitialize();
 #endif
 
 #ifndef USE_PORTABLE_HELPERS
@@ -169,9 +167,6 @@ static bool InitDLL(HANDLE hPalInstance)
     if (!InitGSCookie())
         return false;
 #endif
-
-    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstThunkPool))
-        return false;
 
     return true;
 }
@@ -309,8 +304,8 @@ static void __cdecl OnProcessExit()
 #endif
 
 #ifdef FEATURE_PERFTRACING
-    EventPipeAdapter_Shutdown();
-    DiagnosticServerAdapter_Shutdown();
+    EventPipe_Shutdown();
+    DiagnosticServer_Shutdown();
 #endif
 }
 
@@ -342,7 +337,7 @@ void RuntimeThreadShutdown(void* thread)
 #endif
 
     ThreadStore::DetachCurrentThread();
-    
+
 #ifdef FEATURE_PERFTRACING
     EventPipe_ThreadShutdown();
 #endif

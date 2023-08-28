@@ -274,7 +274,7 @@ namespace Microsoft.Workload.Build.Tasks
         private string GetNuGetConfig()
         {
             string contents = File.ReadAllText(TemplateNuGetConfigPath);
-            if (contents.IndexOf(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase) < 0)
+            if (!contents.Contains(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase))
                 throw new LogAsErrorException($"Could not find {s_nugetInsertionTag} in {TemplateNuGetConfigPath}");
 
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{LocalNuGetsPath}"" />");
@@ -423,7 +423,7 @@ namespace Microsoft.Workload.Build.Tasks
             public string Version => Workload.GetMetadata("Version");
             public string TargetPath => Target.GetMetadata("InstallPath");
             public string StampPath => Target.GetMetadata("StampPath");
-            public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").ToLowerInvariant() == "true";
+            public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").Equals("true", StringComparison.InvariantCultureIgnoreCase);
             public string WorkloadId => Workload.ItemSpec;
 
             public bool Validate(TaskLoggingHelper log)

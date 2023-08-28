@@ -3221,5 +3221,21 @@ namespace System.Runtime.Intrinsics
             }
             return AdvSimd.SubtractSaturate(left, right);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse2))]
+        internal static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.AddSaturate(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.AddSaturate(left, right);
+        }
     }
 }

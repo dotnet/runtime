@@ -7284,11 +7284,11 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             //
             // Without unwind_and_continue_handler below, the exception will fly up the stack to
             // this point, where it will be rethrown and thus leak out.
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
             EX_RETHROW;
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
     EX_END_CATCH(SwallowAllExceptions);
@@ -8233,13 +8233,13 @@ void Thread::InitializeSpecialUserModeApc()
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
 #if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
 void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 {
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     DWORD64 ssp = GetSSP(ContextRecord);
     __asan_handle_no_return();
     ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);

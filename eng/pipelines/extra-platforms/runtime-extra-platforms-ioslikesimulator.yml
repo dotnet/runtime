@@ -60,7 +60,9 @@ jobs:
     platforms:
       - iossimulator_x64
       - tvossimulator_x64
-      - iossimulator_arm64
+      # don't run tests on arm64 PRs until we can get significantly more devices
+      - ${{ if eq(variables['isRollingBuild'], true) }}:
+        - iossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -105,7 +107,9 @@ jobs:
     platforms:
       - iossimulator_x64
       - tvossimulator_x64
-      - iossimulator_arm64
+      # don't run tests on arm64 PRs until we can get significantly more devices
+      - ${{ if eq(variables['isRollingBuild'], true) }}:
+        - iossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -130,5 +134,5 @@ jobs:
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       extraStepsParameters:
         creator: dotnet-bot
-        testBuildArgs: tree nativeaot/SmokeTests/UnitTests /p:BuildNativeAOTRuntimePack=true
+        testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
         testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)

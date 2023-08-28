@@ -24,7 +24,7 @@ namespace Sandbox3
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             string s = "hello";
 
@@ -49,7 +49,6 @@ namespace Sandbox3
                 throw new Exception();
 
             Console.WriteLine("Test SUCCESS");
-            return 100;
         }
     }
 }

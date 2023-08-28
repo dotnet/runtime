@@ -5687,6 +5687,7 @@ namespace System
         public System.TimeSpan[] GetAmbiguousTimeOffsets(System.DateTimeOffset dateTimeOffset) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<System.TimeZoneInfo> GetSystemTimeZones() { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<System.TimeZoneInfo> GetSystemTimeZones(bool skipSorting) { throw null; }
         public System.TimeSpan GetUtcOffset(System.DateTime dateTime) { throw null; }
         public System.TimeSpan GetUtcOffset(System.DateTimeOffset dateTimeOffset) { throw null; }
         public bool HasSameRules(System.TimeZoneInfo other) { throw null; }
@@ -7391,6 +7392,7 @@ namespace System.Buffers
     {
         public static System.Buffers.SearchValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
         public static System.Buffers.SearchValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+        public static System.Buffers.SearchValues<string> Create(System.ReadOnlySpan<string> values, System.StringComparison comparisonType) { throw null; }
     }
     public partial interface IPinnable
     {
@@ -10110,6 +10112,7 @@ namespace System.IO
     }
     public static partial class RandomAccess
     {
+        public static void FlushToDisk(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
         public static long GetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
         public static void SetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle, long length) { throw null; }
         public static long Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset) { throw null; }
@@ -11576,8 +11579,10 @@ namespace System.Reflection
         public System.Reflection.MethodInfo[] TargetMethods;
         public System.Type TargetType;
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class IntrospectionExtensions
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Reflection.TypeInfo GetTypeInfo(this System.Type type) { throw null; }
     }
     public partial class InvalidFilterCriteriaException : System.ApplicationException
@@ -13041,6 +13046,12 @@ namespace System.Runtime.CompilerServices
     public sealed class RequiredMemberAttribute : System.Attribute
     {
         public RequiredMemberAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class RequiresLocationAttribute : System.Attribute
+    {
+        public RequiresLocationAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute

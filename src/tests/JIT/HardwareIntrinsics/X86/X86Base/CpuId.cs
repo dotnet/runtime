@@ -3,6 +3,7 @@
 //
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -370,7 +371,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
             return;
         }
 
-        static bool IsBitIncorrect(int register, int bitNumber, Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
+        static bool IsBitIncorrect(int register, int bitNumber, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
         {
             bool isSupportedByHardware = (register & (1 << bitNumber)) != 0;
             isHierarchyDisabled |= (!isSupported || !GetDotnetEnable(name));
@@ -412,7 +413,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
             return false;
         }
 
-        static bool IsIncorrect(Type isa, bool isHardwareAccelerated, bool isHierarchyDisabled)
+        static bool IsIncorrect([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type isa, bool isHardwareAccelerated, bool isHierarchyDisabled)
         {
             if (isHardwareAccelerated)
             {

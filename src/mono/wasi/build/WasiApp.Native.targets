@@ -237,8 +237,10 @@
 
     <PropertyGroup>
       <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
-      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidDir)lib\net8.0\mscorlib.dll</_MscorlibPath>
+      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$([System.IO.Path]::Combine($(MicrosoftNetCoreAppRuntimePackRidLibTfmDir), 'mscorlib.dll'))</_MscorlibPath>
     </PropertyGroup>
+
+    <Error Condition="'$(_HasMscorlib)' != 'true' and !Exists($(_MscorlibPath))" Text="Could not find 'mscorlib.dll' in the runtime pack at $(_MscorlibPath)" />
 
     <!--<Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"-->
            <!--Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />-->
@@ -271,6 +273,10 @@
       <!--<_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>-->
       <!--<_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>-->
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
+      <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-simd.a</_WasmSIMDLib>
+      <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-nosimd.a</_WasmSIMDLib>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-nosimd.a</_WasmSIMDLibToExclude>
     </PropertyGroup>
 
     <ItemGroup>
@@ -284,7 +290,9 @@
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
           Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')" />
       <_WasmNativeFileForLinking Condition="'$(_WasmEHLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
+      <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
+      <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
 
       <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
       <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
@@ -525,7 +533,7 @@
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
 
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
-      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net8.0" />
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)" />
     </ItemGroup>
 
     <ItemGroup>

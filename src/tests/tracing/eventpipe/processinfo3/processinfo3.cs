@@ -158,7 +158,9 @@ namespace Tracing.Tests.ProcessInfoValidation
                 // /path/to/corerun /path/to/processinfo.dll
                 // or
                 // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
-                string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
+                string currentProcessCommandLine = TestLibrary.Utilities.IsSingleFile
+                    ? currentProcess.MainModule.FileName
+                    : $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
                 string receivedCommandLine = NormalizeCommandLine(commandLine);
                 Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
             }

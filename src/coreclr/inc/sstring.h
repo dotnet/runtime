@@ -683,7 +683,9 @@ public:
     BOOL IsASCIIScanned() const;
     void SetASCIIScanned() const;
     void SetNormalized() const;
+public:
     BOOL IsNormalized() const;
+private:
     void ClearNormalized() const;
 
     void EnsureWritable() const;

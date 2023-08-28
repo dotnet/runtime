@@ -2,13 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class MethodInvokerTests
+    /// <summary>
+    /// These tests use the shared tests from the base class with MethodInvoker.Invoke.
+    /// </summary>
+    public class MethodInvokerTests : MethodCommonTests
     {
+        public override object? Invoke(MethodInfo methodInfo, object? obj, object?[]? parameters)
+        {
+            return MethodInvoker.Create(methodInfo).Invoke(obj, new Span<object>(parameters));
+        }
+
+        protected override bool SupportsMissing => false;
+
         [Fact]
         public void NullTypeValidation()
         {
@@ -60,6 +69,72 @@ namespace System.Reflection.Tests
         {
             MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_5)));
             Assert.Equal("12345", invoker.Invoke(obj: null, new Span<object?>(new object[] { "1", "2", "3", "4", "5" })));
+        }
+
+        [Fact]
+        public void Args_0_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_0)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, 42));
+        }
+
+        [Fact]
+        public void Args_1_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", 42));
+        }
+
+        [Fact]
+        public void Args_2_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_2)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", "2", 42));
+        }
+
+        [Fact]
+        public void Args_3_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_3)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", "2", "3", 42));
+        }
+
+        [Fact]
+        public void Args_Span_Extra_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, new Span<object?>(new object[] { "1", "2" })));
+        }
+
+        [Fact]
+        public void Args_1_NotEnoughArgs_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null));
+        }
+
+        [Fact]
+        public void Args_2_NotEnoughArgs_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_2)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke("1"));
+        }
+
+        [Fact]
+        public void Args_3_NotEnoughArgs_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_3)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1"));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, "1", "2"));
+        }
+
+        [Fact]
+        public void Args_Span_NotEnoughArgs_Throws()
+        {
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_1)));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(obj: null, new Span<object?>()));
         }
 
         [Fact]
@@ -218,11 +293,6 @@ namespace System.Reflection.Tests
         {
             MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.VerifyThisObj)));
             Assert.Throws<TargetException>(() => invoker.Invoke(obj: null));
-        }
-
-        private static MethodInfo GetMethod(Type type, string name)
-        {
-            return type.GetTypeInfo().GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance).First(method => method.Name.Equals(name));
         }
 
         public static IEnumerable<object[]> Invoke_TestData() => MethodInfoTests.Invoke_TestData();

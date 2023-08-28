@@ -7,12 +7,14 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
+using Mono.Linker.Tests.TestCasesRunner.ILVerification;
 using NUnit.Framework;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
@@ -24,11 +26,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly BaseAssemblyResolver _linkedResolver;
 		readonly ReaderParameters _originalReaderParameters;
 		readonly ReaderParameters _linkedReaderParameters;
-		readonly PeVerifier _peVerifier;
 
 		public ResultChecker ()
 			: this (new TestCaseAssemblyResolver (), new TestCaseAssemblyResolver (),
-				new PeVerifier (),
 				new ReaderParameters {
 					SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
 				},
@@ -39,24 +39,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver,
-			PeVerifier peVerifier,
 			ReaderParameters originalReaderParameters, ReaderParameters linkedReaderParameters)
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
-			_peVerifier = peVerifier;
 			_originalReaderParameters = originalReaderParameters;
 			_linkedReaderParameters = linkedReaderParameters;
 		}
 
-		static void VerifyIL (NPath pathToAssembly, AssemblyDefinition linked)
-		{
-			using var verifier = new ILVerifier (pathToAssembly);
-			foreach (var result in verifier.Results)
-				Assert.Fail (ILVerifier.GetErrorMessage (result));
-		}
-
-		static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
+		protected static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
 		{
 			foreach (var typeRef in linked.MainModule.GetTypeReferences ()) {
 				switch (typeRef.Scope) {
@@ -88,36 +79,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		static bool ShouldValidateIL (AssemblyDefinition inputAssembly)
-		{
-			if (HasAttribute (inputAssembly, nameof (SkipPeVerifyAttribute)))
-				return false;
-
-			var caaIsUnsafeFlag = (CustomAttributeArgument caa) =>
-				caa.Type.IsTypeOf (WellKnownType.System_String)
-				&& (string) caa.Value == "/unsafe";
-			var customAttributeHasUnsafeFlag = (CustomAttribute ca) => ca.ConstructorArguments.Any (caaIsUnsafeFlag);
-			if (GetCustomAttributes (inputAssembly, nameof (SetupCompileArgumentAttribute))
-				.Any (customAttributeHasUnsafeFlag))
-				return false;
-
-			return true;
-		}
-
 		public virtual void Check (LinkedTestCaseResult linkResult)
 		{
 			InitializeResolvers (linkResult);
 
 			try {
 				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
+
+				VerifyExitCode (linkResult, original);
+
 				if (!HasAttribute (original, nameof (NoLinkedOutputAttribute))) {
 					Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
-					var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
-					if (ShouldValidateIL (original)) {
-						VerifyIL (linkResult.OutputAssemblyPath, linked);
-						ValidateTypeRefsHaveValidAssemblyRefs (linked);
-					}
+					var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
 					InitialChecking (linkResult, original, linked);
 
@@ -158,6 +132,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				ValidateTypeRefsHaveValidAssemblyRefs (linked);
 			}
 		}
+
+		protected virtual ILChecker CreateILChecker () => new ();
 
 		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
 		{
@@ -239,6 +215,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
+		void VerifyExitCode (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		{
+			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
+				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
+				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
+			} else {
+				if (linkResult.ExitCode != 0) {
+					Assert.Fail($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
+				}
+			}
+
+			string FormatLinkerOutput ()
+			{
+				var sb = new StringBuilder ();
+				foreach (var message in linkResult.Logger.GetLoggedMessages ())
+					sb.AppendLine (message.ToString ());
+				return sb.ToString ();
+			}
+		}
+
 		void VerifyKeptSymbols (CustomAttribute symbolsAttribute)
 		{
 			var assemblyName = (string) symbolsAttribute.ConstructorArguments[0].Value;
@@ -283,7 +279,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
-			_peVerifier.Check (linkResult, original);
+			CreateILChecker ().Check(linkResult, original);
+			ValidateTypeRefsHaveValidAssemblyRefs (linked);
 		}
 
 		void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)

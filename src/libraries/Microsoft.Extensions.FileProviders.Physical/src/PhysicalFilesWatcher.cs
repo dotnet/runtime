@@ -160,7 +160,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken;
+#if NET5_0_OR_GREATER
+            bool isWildCard = pattern.Contains('*');
+#else
             bool isWildCard = pattern.IndexOf('*') != -1;
+#endif
             if (isWildCard || IsDirectoryPath(pattern))
             {
                 changeToken = GetOrAddWildcardChangeToken(pattern);

@@ -297,7 +297,7 @@ gboolean
 mono_ppc_is_direct_call_sequence (guint32 *code)
 {
 #ifdef TARGET_POWERPC64
-	g_assert(*code == 0x4e800021 || *code == 0x4e800020 || *code == 0x4e800420);
+	g_assert(*code == 0x4e800021 || *code == 0x4e800020 || *code == 0x4e800421 || *code == 0x4e800420);
 
 	/* the thunk-less direct call sequence: lis/ori/sldi/oris/ori/mtlr/blrl */
 	if (ppc_opcode (code [-1]) == 31) { /* mtlr */
@@ -2939,7 +2939,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 		return;
 	}
 
-	if (prim == 15 || ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
+	if (prim == 15 || ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800421 || ins == 0x4e800420) {
 #ifdef TARGET_POWERPC64
 #if !defined(PPC_USES_FUNCTION_DESCRIPTOR)
 		handle_thunk (cfg, code, target);
@@ -2948,7 +2948,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 		guint32 *branch_ins;
 
 		/* the trampoline code will try to patch the blrl, blr, bcctr */
-		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
+		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800421 || ins == 0x4e800420) {
 			branch_ins = seq;
 			if (ppc_is_load_op (seq [-3]) || ppc_opcode (seq [-3]) == 31) /* ld || lwz || mr */
 				code -= 32;
@@ -2996,7 +2996,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 #else
 		guint32 *seq;
 		/* the trampoline code will try to patch the blrl, blr, bcctr */
-		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
+		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800421 || ins == 0x4e800420) {
 			code -= 12;
 		}
 		/* this is the lis/ori/mtlr/blrl sequence */
@@ -3004,7 +3004,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 		g_assert ((seq [0] >> 26) == 15);
 		g_assert ((seq [1] >> 26) == 24);
 		g_assert ((seq [2] >> 26) == 31);
-		g_assert (seq [3] == 0x4e800021 || seq [3] == 0x4e800020 || seq [3] == 0x4e800420);
+		g_assert (seq [3] == 0x4e800021 || seq [3] == 0x4e800020 || seq [3] == 0x4e800421 || seq [3] == 0x4e800420);
 		/* FIXME: make this thread safe */
 		ppc_lis (code, PPC_CALL_REG, (guint32)(target) >> 16);
 		ppc_ori (code, PPC_CALL_REG, PPC_CALL_REG, (guint32)(target) & 0xffff);
@@ -3426,8 +3426,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -3913,8 +3913,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -3945,9 +3945,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				 }
 			}
 #endif
-			ppc_mtlr (code, ins->sreg1);
+			ppc_mtctr (code, ins->sreg1);
 #endif
-			ppc_blrl (code);
+			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			/* FIXME: this should be handled somewhere else in the new jit */
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -3965,8 +3965,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				ppc_ldptr (code, ppc_r12, ins->inst_offset, ins->sreg1);
 			}
-			ppc_mtlr (code, ppc_r12);
-			ppc_blrl (code);
+			ppc_mtctr (code, ppc_r12);
+			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			/* FIXME: this should be handled somewhere else in the new jit */
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -4022,8 +4022,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -4040,8 +4040,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -4725,8 +4725,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -5348,8 +5348,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 			cfg->thunk_area += THUNK_SIZE;
 #endif
-			ppc_mtlr (code, PPC_CALL_REG);
-			ppc_blrl (code);
+			ppc_mtctr (code, PPC_CALL_REG);
+			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 		} else {
 			ppc_bl (code, 0);
 		}

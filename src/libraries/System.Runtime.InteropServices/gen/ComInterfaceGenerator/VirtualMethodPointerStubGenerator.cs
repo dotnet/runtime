@@ -85,7 +85,7 @@ namespace Microsoft.Interop
             (ParameterListSyntax unmanagedParameterList, TypeSyntax returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();
 
             AttributeSyntax unmanagedCallersOnlyAttribute = Attribute(
-                ParseName(TypeNames.UnmanagedCallersOnlyAttribute));
+                NameSyntaxes.UnmanagedCallersOnlyAttribute);
 
             if (methodStub.CallingConvention.Array.Length != 0)
             {
@@ -94,7 +94,7 @@ namespace Microsoft.Interop
                         ImplicitArrayCreationExpression(
                             InitializerExpression(SyntaxKind.CollectionInitializerExpression,
                                 SeparatedList<ExpressionSyntax>(
-                                    methodStub.CallingConvention.Array.Select(callConv => TypeOfExpression(ParseName($"System.Runtime.CompilerServices.CallConv{callConv.Name.ValueText}")))))))
+                                    methodStub.CallingConvention.Array.Select(callConv => TypeOfExpression(TypeSyntaxes.CallConv(callConv.Name.ValueText)))))))
                     .WithNameEquals(NameEquals(IdentifierName("CallConvs"))));
             }
 
@@ -132,7 +132,7 @@ namespace Microsoft.Interop
             {
                 elements.Add(
                     new TypePositionInfo(
-                        new ReferenceTypeInfo($"global::{TypeNames.System_Exception}", TypeNames.System_Exception),
+                        new ReferenceTypeInfo(TypeNames.GlobalAlias + TypeNames.System_Exception, TypeNames.System_Exception),
                         methodStub.ExceptionMarshallingInfo)
                     {
                         InstanceIdentifier = "__exception",

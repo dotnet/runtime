@@ -24,6 +24,10 @@
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
 

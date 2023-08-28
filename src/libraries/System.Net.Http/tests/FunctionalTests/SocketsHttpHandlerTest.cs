@@ -2720,6 +2720,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91075", TestPlatforms.AnyUnix)]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
@@ -2774,6 +2775,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(nameof(SupportsAlpn))]
         [OuterLoop("Incurs long delay")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91075", TestPlatforms.AnyUnix)]
         public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
         {
             const int MaxConcurrentStreams = 2;
@@ -4302,7 +4304,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public async Task Https_MultipleRequests_TlsResumed(bool useSocketHandler)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -4365,7 +4367,8 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [Fact]
+        // On Windows7 DNS may return SocketError.NoData (WSANO_DATA), which we currently don't map to NameResolutionError.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public async Task NameResolutionError()
         {
             using HttpClient client = CreateHttpClient();
@@ -4376,10 +4379,8 @@ namespace System.Net.Http.Functional.Tests
             };
 
             HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
-
-            // TODO: Some platforms fail to detect NameResolutionError reliably, we should investigate this.
-            // Also, System.Net.Quic does not report DNS resolution errors yet.
-            Assert.True(ex.HttpRequestError is HttpRequestError.NameResolutionError or HttpRequestError.ConnectionError);
+            Assert.Equal(HttpRequestError.NameResolutionError, ex.HttpRequestError);
+            Assert.IsType<SocketException>(ex.InnerException);
         }
 
         [Fact]

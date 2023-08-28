@@ -210,7 +210,7 @@ jobs:
           artifactName: LinuxMonoAOT${{ parameters.archType }}
           displayName: AOT Mono Artifacts
 
-      - script: "mkdir -p $(librariesDownloadDir)/bin/aot/sgen;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/obj/mono/linux.${{ parameters.archType }}.Release/mono/* $(librariesDownloadDir)/bin/aot/sgen;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
+      - script: "mkdir -p $(librariesDownloadDir)/bin/aot;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/mono/linux.${{ parameters.archType }}.Release/cross/linux-${{ parameters.archType }}/* $(librariesDownloadDir)/bin/aot;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
         displayName: "Create aot directory (Linux)"
 
     # Download artifacts for Android Testing

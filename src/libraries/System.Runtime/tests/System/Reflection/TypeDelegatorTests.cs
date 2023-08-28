@@ -58,7 +58,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public void FunctionPointers()
         {
             Assert.True(new TypeDelegator(typeof(delegate*<void>)).IsFunctionPointer);

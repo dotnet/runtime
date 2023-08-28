@@ -244,7 +244,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (JustMyCode)
                         {
-                            if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                            if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) || !context.IsRuntimeReady)
                                 return false;
                             //avoid pausing when justMyCode is enabled and it's a wasm function
                             if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
@@ -1126,6 +1126,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         function_name.StartsWith("_mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal) ||
                         function_name.StartsWith("mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal)))
                 {
+                    await SymbolicateFunctionName(sessionId, context, frame, token);
                     callFrames.Add(frame);
                 }
             }
@@ -1147,6 +1148,33 @@ namespace Microsoft.WebAssembly.Diagnostics
             await SendEvent(sessionId, "Debugger.paused", o, token);
 
             return true;
+        }
+
+        private async Task SymbolicateFunctionName(SessionId sessionId, ExecutionContext context, JObject frame, CancellationToken token)
+        {
+            string funcPrefix = "$func";
+            string functionName = frame["functionName"]?.Value<string>();
+            if (!functionName.StartsWith(funcPrefix, StringComparison.Ordinal) || !int.TryParse(functionName[funcPrefix.Length..], out var funcId))
+            {
+                return;
+            }
+
+            if (context.WasmFunctionIds is null)
+            {
+                Result getIds = await SendMonoCommand(sessionId, MonoCommands.GetWasmFunctionIds(RuntimeId), token);
+                if (getIds.IsOk)
+                {
+                    string[] symbols = getIds.Value?["result"]?["value"]?.ToObject<string[]>();
+                    context.WasmFunctionIds = symbols;
+                }
+                else
+                {
+                    context.WasmFunctionIds = Array.Empty<string>();
+                }
+            }
+
+            if (context.WasmFunctionIds.Length > funcId)
+                frame["functionName"] = context.WasmFunctionIds[funcId];
         }
 
         internal virtual void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Task<Result> debuggerAgentBufferTask)

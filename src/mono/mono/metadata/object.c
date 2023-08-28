@@ -5097,10 +5097,10 @@ again:
 			else
 				t = m_class_get_byval_arg (t->data.generic_class->container_class);
 			goto again;
-		case MONO_TYPE_PTR: {
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 			result = *(gpointer*)params_byref [i];
 			break;
-		}
 		default:
 			g_error ("type 0x%x not handled in ves_icall_InternalInvoke", t->type);
 	}

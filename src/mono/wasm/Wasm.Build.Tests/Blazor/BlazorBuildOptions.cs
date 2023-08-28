@@ -13,7 +13,12 @@ public record BlazorBuildOptions
     string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
     bool IsPublish = false,
     bool WarnAsError = true,
+    bool ExpectSuccess = true,
     bool ExpectRelinkDirWhenPublishing = false,
     bool ExpectFingerprintOnDotnetJs = false,
-    RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded
+    RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded,
+    GlobalizationMode GlobalizationMode = GlobalizationMode.Sharded,
+    string PredefinedIcudt = "",
+    bool AssertAppBundle = true,
+    string? BinFrameworkDir = null
 );

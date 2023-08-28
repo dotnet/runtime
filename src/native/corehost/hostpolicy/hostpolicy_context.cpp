@@ -184,7 +184,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     if (breadcrumbs_enabled)
     {
         pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-        pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+        pal::string_t policy_version = _STRINGIFY(HOST_VERSION);
 
         // Always insert the hostpolicy that the code is running on.
         breadcrumbs.insert(policy_name);

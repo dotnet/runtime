@@ -5162,6 +5162,9 @@ void emitter::emitIns_R_R_I(
             assert(isVectorRegister(reg2));
             isRightShift = emitInsIsVectorRightShift(ins);
 
+            assert(!isRightShift ||
+                   (imm != 0 && "instructions for vector right-shift do not allow zero as an immediate value"));
+
             if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
@@ -16611,6 +16614,15 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     insFormat lastInsFmt = emitLastIns->idInsFmt();
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t   prevImm    = emitGetInsSC(emitLastIns);
+
+    // If we have this format, the 'imm' and/or 'prevImm' are not scaled(encoded),
+    // therefore we cannot proceed.
+    // TODO: In this context, 'imm' and 'prevImm' are assumed to be scaled(encoded).
+    //       They should never be scaled(encoded) until its about to be written to the buffer.
+    if (fmt == IF_LS_2C || lastInsFmt == IF_LS_2C)
+    {
+        return eRO_none;
+    }
 
     // Signed, *raw* immediate value fits in 7 bits, so for LDP/ STP the raw value is from -64 to +63.
     // For LDR/ STR, there are 9 bits, so we need to limit the range explicitly in software.

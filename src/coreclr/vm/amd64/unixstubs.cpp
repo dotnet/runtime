@@ -5,11 +5,6 @@
 
 extern "C"
 {
-    void RedirectForThrowControl()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
     }
