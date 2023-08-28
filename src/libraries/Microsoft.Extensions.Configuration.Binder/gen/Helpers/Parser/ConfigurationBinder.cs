@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                int objectIndex = overload switch
+                int instanceIndex = overload switch
                 {
                     MethodsToGen_ConfigurationBinder.Bind_instance => 1,
                     MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions => 1,
@@ -80,13 +80,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _ => throw new InvalidOperationException()
                 };
 
-                IArgumentOperation objectArg = operation.Arguments[objectIndex];
-                if (objectArg.Parameter.Type.SpecialType != SpecialType.System_Object)
+                IArgumentOperation instanceArg = operation.Arguments[instanceIndex];
+                if (instanceArg.Parameter.Type.SpecialType != SpecialType.System_Object)
                 {
                     return;
                 }
 
-                ITypeSymbol? type = ResolveType(objectArg.Value)?.WithNullableAnnotation(NullableAnnotation.None);
+                ITypeSymbol? type = ResolveType(instanceArg.Value)?.WithNullableAnnotation(NullableAnnotation.None);
 
                 if (!IsValidRootConfigType(type))
                 {

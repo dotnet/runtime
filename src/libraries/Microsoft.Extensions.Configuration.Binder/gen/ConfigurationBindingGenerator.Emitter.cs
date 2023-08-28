@@ -96,19 +96,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitBindCoreCall(memberAccessExpr, initKind);
                 }
 
-                void EmitBindCoreCall(string objExpression, InitializationKind initKind)
+                void EmitBindCoreCall(string instanceExpr, InitializationKind initKind)
                 {
-                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {objExpression}, {Identifier.binderOptions});";
-                    EmitObjectInit(objExpression, initKind);
+                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceExpr}, {Identifier.binderOptions});";
+                    EmitObjectInit(instanceExpr, initKind);
                     _writer.WriteLine(bindCoreCall);
-                    writeOnSuccess?.Invoke(objExpression);
+                    writeOnSuccess?.Invoke(instanceExpr);
                 }
 
-                void EmitObjectInit(string objExpression, InitializationKind initKind)
+                void EmitObjectInit(string instanceExpr, InitializationKind initKind)
                 {
                     if (initKind is not InitializationKind.None)
                     {
-                        this.EmitObjectInit(type, objExpression, initKind, configArgExpr);
+                        this.EmitObjectInit(type, instanceExpr, initKind, configArgExpr);
                     }
                 }
             }
