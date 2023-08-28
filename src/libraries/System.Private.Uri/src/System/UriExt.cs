@@ -866,7 +866,7 @@ namespace System
 
         internal bool IsBaseOfHelper(Uri uriLink)
         {
-            const UriComponents componentsForCompare =
+            const UriComponents ComponentsToCompare =
                 UriComponents.AbsoluteUri
                 & ~UriComponents.Fragment
                 & ~UriComponents.UserInfo;
@@ -897,8 +897,8 @@ namespace System
                 return false;
 
             // Canonicalize and test for substring match up to the last path slash
-            string self = GetParts(componentsForCompare, UriFormat.SafeUnescaped);
-            string other = uriLink.GetParts(componentsForCompare, UriFormat.SafeUnescaped);
+            string self = GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
+            string other = uriLink.GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
 
             unsafe
             {
