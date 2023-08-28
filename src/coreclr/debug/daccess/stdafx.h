@@ -26,7 +26,7 @@
 
 #include <winwrap.h>
 
-#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && !defined(TARGET_UNIX)
+#ifdef HOST_WINDOWS
 #include <dbghelp.h>
 #endif
 
