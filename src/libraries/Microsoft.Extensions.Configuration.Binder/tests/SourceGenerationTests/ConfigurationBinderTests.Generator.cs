@@ -8,8 +8,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     public partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
+        /// <summary>
+        /// This is a regression test for https://github.com/dotnet/runtime/issues/90851.
+        /// It asserts that the configuration binding source generator properly formats
+        /// binding invocation source locations that the generated interceptors replace.
+        /// Do not modify these tests if the change reduces coverage for this scenario.
+        /// </summary>
         [Fact]
-        public void GeneratorHandlesInvocationsOnNewline()
+        public void TestBindingInvocationsOnNewLines()
         {
             IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Longitude"":1,""Latitude"":2}");
 
