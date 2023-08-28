@@ -336,6 +336,23 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isFullMatrix'], true))
 
+      #
+      # Libraries TestReadyToRun
+      # NOTE: This is here right now only for easier testing during the development
+      #       process. Will be moved to crossgen2.yml once it's confirmed to work
+      #       work as expected, and is ready for review.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/build-for-test-ready-to-run.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Checked
+          platforms:
+            - linux_x64
+          jobParameters:
+            coreclrConfig: Checked
+            libsAndPacksConfig: Release
+
       # Build and test clr tools
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
