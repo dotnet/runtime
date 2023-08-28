@@ -19,3 +19,44 @@ jobs:
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup }}
       timeoutInMinutes: 120
+
+      variables:
+        - $ if ne(parameters.osGroup, 'windows'):
+          - name: archiveExtension
+            value: '.tar.gz'
+          - name: archiveType
+            value: tar
+          - name: tarCompression
+            value: gz
+          - name: scriptExt
+            value: '.sh'
+          - name: dir
+            value: '/'
+          - name: _msbuildCommand
+            value: ./eng/common/msbuild.sh --ci
+          - name: _warnAsErrorParamHelixOverride
+            value: --warnaserror false
+          - name: setScriptToEchoAndFailOnNonZero
+            value: 'set -xe'
+          - name: logRootNameArg
+            value: '-log:'
+
+        - $ if eq(parameters.osGroup, 'windows'):
+          - name: archiveExtension
+            value: '.zip'
+          - name: archiveType
+            value: zip
+          - name: tarCompression
+            value: ''
+          - name: scriptExt
+            value: '.cmd'
+          - name: dir
+            value: '\\'
+          - name: _msbuildCommand
+            value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -ci
+          - name: _warnAsErrorParamHelixOverride
+            value: -warnaserror 0
+          - name: setScriptToEchoAndFailOnNonZero
+            value: ''
+          - name: logRootNameArg
+            value: 'log '
