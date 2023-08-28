@@ -3545,7 +3545,8 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	if (gclass)
 		return gclass;
 
-	mono_mem_manager_lock (mm);
+	// Hashtable key equal func can take loader lock
+	mono_loader_lock ();
 
 	gclass = mono_mem_manager_alloc0 (mm, sizeof (MonoGenericClass));
 	if (is_dynamic)
@@ -3565,7 +3566,7 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 
 	// g_hash_table_insert (set->gclass_cache, gclass, gclass);
 
-	mono_mem_manager_unlock (mm);
+	mono_loader_unlock ();
 
 	return gclass2;
 }
