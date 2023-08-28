@@ -30,9 +30,6 @@ try {
 
     await Blazor.start();
 
-    if (window.parent != window) {
-        window.parent.resolveAppStartEvent("onDotnetReady");
-    }
     await frameApp.init(Blazor.runtime);
 }
 catch (err) {
