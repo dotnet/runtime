@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                _sourceGenSpec.EmitThrowIfNullMethod = !_typeSymbols.ArgumentNullException.GetMembers("ThrowIfNull").IsEmpty;
+                _sourceGenSpec.EmitThrowIfNullMethod = _typeSymbols.ArgumentNullException is not null && _typeSymbols.ArgumentNullException.GetMembers("ThrowIfNull").IsEmpty is false;
 
                 return _sourceGenSpec;
             }

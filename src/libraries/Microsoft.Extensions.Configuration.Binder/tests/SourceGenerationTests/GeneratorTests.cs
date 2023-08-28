@@ -376,12 +376,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string filename,
             string testSourceCode,
             LanguageVersion languageVersion = LanguageVersion.Preview,
-            Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null,
-            ExtensionClassType extType = ExtensionClassType.None)
+            Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null)
         {
-            string path = extType is ExtensionClassType.None
-                ? Path.Combine("Baselines", filename)
-                : Path.Combine("Baselines", extType.ToString(), filename);
+            string path = Path.Combine("Baselines", filename);
             string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(path).ConfigureAwait(false));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(Environment.NewLine);

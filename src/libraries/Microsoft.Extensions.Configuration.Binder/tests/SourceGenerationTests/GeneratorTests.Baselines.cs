@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -44,13 +45,13 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [InlineData(LanguageVersion.Preview)]
         public async Task Bind(LanguageVersion langVersion) =>
-            await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, langVersion, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Bind.generated.txt"), BindCallSampleCode, langVersion);
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
         [InlineData(LanguageVersion.Preview)]
         [InlineData(LanguageVersion.CSharp11)]
         public async Task Bind_NetFwk(LanguageVersion langVersion) =>
-            await VerifyAgainstBaselineUsingFile("Bind.net462.generated.txt", BindCallSampleCode, langVersion, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Bind.generated.txt"), BindCallSampleCode, langVersion);
 
         private string Bind_Instance_Sources()
         {
@@ -88,7 +89,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Bind_Instance_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Bind_Instance.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Bind_Instance.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -96,7 +97,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Bind_Instance_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Bind_Instance.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Bind_Instance.generated.txt"), source);
         }
 
         private string Bind_Instance_BinderOptions_Sources()
@@ -135,7 +136,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Bind_Instance_BinderOptions_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Bind_Instance_BinderOptions.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Bind_Instance_BinderOptions.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -143,7 +144,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Bind_Instance_BinderOptions_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Bind_Instance_BinderOptions.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Bind_Instance_BinderOptions.generated.txt"), source);
         }
 
         private string Bind_Key_Sources()
@@ -182,7 +183,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Bind_Key_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Bind_Key_Instance.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Bind_Key_Instance.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -190,7 +191,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Bind_Key_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Bind_Key_Instance.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Bind_Key_Instance.generated.txt"), source);
         }
 
         private string GetSources()
@@ -243,7 +244,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetSources();
 
-            await VerifyAgainstBaselineUsingFile("Get.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Get.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -251,7 +252,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetSources();
 
-            await VerifyAgainstBaselineUsingFile("Get.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Get.generated.txt"), source);
         }
 
         private string Get_T_Sources()
@@ -302,7 +303,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Get_T_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Get_T.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Get_T.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -310,7 +311,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Get_T_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Get_T.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Get_T.generated.txt"), source);
         }
 
         private string Get_T_BinderOptions_Sources()
@@ -361,7 +362,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Get_T_BinderOptions_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Get_T_BinderOptions.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Get_T_BinderOptions.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -369,7 +370,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Get_T_BinderOptions_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Get_T_BinderOptions.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Get_T_BinderOptions.generated.txt"), source);
         }
 
         private string Get_TypeOf_Sources()
@@ -420,7 +421,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Get_TypeOf_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Get_TypeOf.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Get_TypeOf.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -428,7 +429,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Get_TypeOf_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Get_TypeOf.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Get_TypeOf.generated.txt"), source);
         }
 
         private string Get_TypeOf_BinderOptions_Sources()
@@ -479,7 +480,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Get_TypeOf_BinderOptions_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Get_TypeOf_BinderOptions.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Get_TypeOf_BinderOptions.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -487,7 +488,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = Get_TypeOf_BinderOptions_Sources();
 
-            await VerifyAgainstBaselineUsingFile("Get_TypeOf_BinderOptions.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Get_TypeOf_BinderOptions.generated.txt"), source);
         }
 
         private string GetValue_Sources()
@@ -527,7 +528,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "GetValue.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -535,7 +536,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "GetValue.generated.txt"), source);
         }
 
         private string GetValue_T_Key_Sources()
@@ -561,7 +562,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_T_Key_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue_T_Key.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "GetValue_T_Key.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -569,7 +570,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_T_Key_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue_T_Key.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "GetValue_T_Key.generated.txt"), source);
         }
 
         private string GetValue_T_Key_DefaultValue_Sources()
@@ -597,7 +598,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_T_Key_DefaultValue_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue_T_Key_DefaultValue.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "GetValue_T_Key_DefaultValue.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -605,7 +606,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_T_Key_DefaultValue_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue_T_Key_DefaultValue.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "GetValue_T_Key_DefaultValue.generated.txt"), source);
         }
 
         private string GetValue_TypeOf_Key_Sources()
@@ -631,7 +632,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_TypeOf_Key_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue_TypeOf_Key.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "GetValue_TypeOf_Key.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -639,7 +640,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_TypeOf_Key_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue_TypeOf_Key.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "GetValue_TypeOf_Key.generated.txt"), source);
         }
 
         private string GetValue_TypeOf_Key_DefaultValue_Sources()
@@ -666,7 +667,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_TypeOf_Key_DefaultValue_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue_TypeOf_Key_DefaultValue.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "GetValue_TypeOf_Key_DefaultValue.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -674,7 +675,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetValue_TypeOf_Key_DefaultValue_Sources();
 
-            await VerifyAgainstBaselineUsingFile("GetValue_TypeOf_Key_DefaultValue.net462.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "GetValue_TypeOf_Key_DefaultValue.generated.txt"), source);
         }
 
         [Fact]
@@ -776,7 +777,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         public async Task Primitives()
         {
             string source = GetPrimitivesSource();
-            await VerifyAgainstBaselineUsingFile("Primitives.generated.txt", source);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Primitives.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
@@ -784,7 +785,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetPrimitivesSource();
 
-            await VerifyAgainstBaselineUsingFile($"Primitives.net462.generated.txt", source);
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Primitives.generated.txt"), source);
         }
 
         private string GetCollectionsSource()
@@ -839,7 +840,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetCollectionsSource();
 
-            await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, assessDiagnostics: (d) =>
+            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Collections.generated.txt"), source, assessDiagnostics: (d) =>
             {
                 Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
                 Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
@@ -851,7 +852,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             string source = GetCollectionsSource();
 
-            await VerifyAgainstBaselineUsingFile("Collections.net462.generated.txt", source, assessDiagnostics: (d) =>
+            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Collections.generated.txt"), source, assessDiagnostics: (d) =>
             {
                 Console.WriteLine((d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count(), d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count()));
                 Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
