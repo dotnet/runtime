@@ -287,7 +287,7 @@ MonoAotMethodFlags mono_aot_get_method_flags (guint8 *code);
 typedef guint32 (*MonoAotResolvePltInfoOffset)(gpointer amodule, guint32 plt_entry_index);
 #endif
 
-#ifdef HOST_WASM
+#ifdef TARGET_WASM
 
 #include "mini/interp/interp.h"
 
