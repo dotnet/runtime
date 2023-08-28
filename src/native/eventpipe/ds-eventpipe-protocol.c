@@ -48,10 +48,10 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 
 static
 bool
-eventpipe_collect_tracing_command_try_parse_enable_stackwalk (
+eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	bool *enable_stackwalk);
+	bool *stackwalk_requested);
 
 static
 bool
@@ -153,16 +153,16 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 static
 inline
 bool
-eventpipe_collect_tracing_command_try_parse_enable_stackwalk (
+eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	bool *enable_stackwalk)
+	bool *stackwalk_requested)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
-	EP_ASSERT (enable_stackwalk != NULL);
+	EP_ASSERT (stackwalk_requested != NULL);
 
-	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)enable_stackwalk, 1);
+	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)stackwalk_requested, 1);
 }
 
 static
@@ -298,7 +298,7 @@ eventpipe_collect_tracing_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
 		ep_raise_error ();
 	instance->rundown_requested = true;
-	instance->enable_stackwalk = true;
+	instance->stackwalk_requested = true;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -330,7 +330,7 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
 		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
 		ep_raise_error ();
-	instance->enable_stackwalk = true;
+	instance->stackwalk_requested = true;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -360,7 +360,7 @@ eventpipe_collect_tracing3_command_try_parse_payload (
 	if (!eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb ) ||
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
 		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
-		!eventpipe_collect_tracing_command_try_parse_enable_stackwalk (&buffer_cursor, &buffer_cursor_len, &instance->enable_stackwalk) ||
+		!eventpipe_collect_tracing_command_try_parse_stackwalk_requested (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested) ||
 		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
 		ep_raise_error ();
 
@@ -473,7 +473,7 @@ eventpipe_protocol_helper_collect_tracing (
 	options.session_type = EP_SESSION_TYPE_IPCSTREAM;
 	options.format = payload->serialization_format;
 	options.rundown_requested = payload->rundown_requested;
-	options.enable_stackwalk = payload->enable_stackwalk;
+	options.stackwalk_requested = payload->stackwalk_requested;
 	options.stream = ds_ipc_stream_get_stream_ref (stream);
 	options.sync_callback = NULL;
 	options.callback_additional_data = NULL;

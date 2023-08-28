@@ -121,7 +121,7 @@ struct _EventPipeSessionOptions_Internal {
 	EventPipeSessionType session_type;
 	EventPipeSerializationFormat format;
 	bool rundown_requested;
-	bool enable_stackwalk;
+	bool stackwalk_requested;
 	IpcStream *stream;
 	EventPipeSessionSynchronousCallback sync_callback;
 	void *callback_additional_data;

@@ -39,7 +39,7 @@ struct _EventPipeCollectTracingCommandPayload_Internal {
 	uint32_t circular_buffer_size_in_mb;
 	EventPipeSerializationFormat serialization_format;
 	bool rundown_requested;
-	bool enable_stackwalk;
+	bool stackwalk_requested;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)

@@ -93,7 +93,7 @@ ep_session_alloc (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
-	bool enable_stackwalk,
+	bool stackwalk_requested,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
