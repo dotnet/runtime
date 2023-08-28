@@ -3,8 +3,6 @@
 
 "use strict";
 
-import { dotnet, exit } from './_framework/dotnet.js'
-
 class FrameApp {
     async init({ getAssemblyExports }) {
         const exports = await getAssemblyExports("blazor.dll");
