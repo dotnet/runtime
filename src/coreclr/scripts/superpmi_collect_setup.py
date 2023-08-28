@@ -477,9 +477,9 @@ def main(main_args):
     # Copy Core_Root
 
     if platform_name == "windows":
-        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
+        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json", ".txt"])
     else:
-        acceptable_extensions = [".py", ".dll", ".json"]
+        acceptable_extensions = [".py", ".dll", ".json", ".txt"]
         acceptable_extensions.append(".so" if platform_name == "linux" else ".dylib")
         # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
@@ -558,9 +558,9 @@ def main(main_args):
                 print('Ignoring PermissionError: {0}'.format(pe_error))
 
         # Build nativeaot tests
-        if coreclr_args.collection_type == "nativeaot":
-            tests_build_file = "build.cmd" if is_windows else "build.sh"
-            run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", arch, coreclr_args.build_type, "tree", "nativeaot"], source_directory)
+        # if coreclr_args.collection_type == "nativeaot":
+        #     tests_build_file = "build.cmd" if is_windows else "build.sh"
+        #     run_command([os.path.join(tests_directory, tests_build_file), "nativeaot", arch, coreclr_args.build_type, "tree", "nativeaot"], source_directory)
 
         # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
         # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
