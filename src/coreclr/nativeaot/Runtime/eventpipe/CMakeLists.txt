@@ -12,24 +12,38 @@ set(NONEXTERN_ARG "--nonextern")
 set(NOXPLATHEADER_ARG "--noxplatheader")
 
 # Platform agnostic source generation, clretwallmain.h/cpp, disabledclretwallmain.cpp, clreventpipewriteevents.h, etmdummy.h
-
 set (GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES "")
 list(APPEND GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES
   ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
 )
 
+set (GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES "")
+list(APPEND GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES
+  ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp
+)
+
 set(GENERATE_PLAT_AGNOSTIC_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
 
-# we set the output to 1 file, disabledclretwallmain.cpp, although build downstream depends on clretwallmain.cpp as well.
-# add_custom_command(
-#   OUTPUT ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
-#   COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
-#   DEPENDS ${GENERATE_PLAT_AGNOSTIC_SCRIPT} ${EVENT_MANIFEST} ${GENERATED_INCLUDE_DIR}
-# )
-
-execute_process(
-  COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+set (EventingHeaders
+  ${GENERATED_INCLUDE_DIR}/etmdummy.h
+  ${GENERATED_INCLUDE_DIR}/clretwallmain.h
+  ${GENERATED_INCLUDE_DIR}/clreventpipewriteevents.h
+  ${GENERATED_INCLUDE_DIR}/clrproviders.h
+  ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp
+  ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
 )
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
+  COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+  COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
+  DEPENDS ${EVENT_MANIFEST} ${GENEVENTING_SCRIPT}
+  VERBATIM
+)
+
+set_source_files_properties(${EventingHeaders} PROPERTIES GENERATED TRUE)
+
+add_custom_target(aot_eventing_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp)
 
 # EventPipe provider source, currently dotnetruntime provider and helper file
 set(GENERATE_EVENTPIPE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)
@@ -205,15 +219,20 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${RUNTIME_DIR}/disabledeventpipeinternal.cpp
   ${RUNTIME_DIR}/disabledeventtrace.cpp
   ${RUNTIME_DIR}/disabledruntimeeventinternal.cpp
-  ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp
+  ${GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES}
 )
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
+add_dependencies(eventpipe-enabled aot_eventing_headers)
+
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
+add_dependencies(eventpipe-disabled aot_eventing_headers)
 
 if (CLR_CMAKE_TARGET_WIN32)
   add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
+  add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
   add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
+  add_dependencies(eventpipe-disabled.GuardCF aot_eventing_headers)
   target_compile_options(eventpipe-enabled.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
   target_compile_options(eventpipe-disabled.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
 endif (CLR_CMAKE_TARGET_WIN32)

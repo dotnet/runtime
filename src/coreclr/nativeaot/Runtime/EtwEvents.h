@@ -697,7 +697,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(REGHANDLE R
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID, const void* FreeListAllocated, const void* FreeListRejected, const void* EndOfSegAllocated, const void* CondemnedAllocated, const void* PinnedAllocated, const void* PinnedAllocatedAdvance, uint32_t RunningFreeListEfficiency, uint32_t CondemnReasons0, uint32_t CondemnReasons1, uint32_t CompactMechanisms, uint32_t ExpandMechanisms, uint32_t HeapIndex, void* ExtraGen0Commit, uint32_t Count, ULONG Values_Len_, const void* Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID, const void* FreeListAllocated, const void* FreeListRejected, const void* EndOfSegAllocated, const void* CondemnedAllocated, const void* PinnedAllocated, const void* PinnedAllocatedAdvance, uint32_t RunningFreeListEfficiency, uint32_t CondemnReasons0, uint32_t CondemnReasons1, uint32_t CompactMechanisms, uint32_t ExpandMechanisms, uint32_t HeapIndex, const void* ExtraGen0Commit, uint32_t Count, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[26];
     EventDataDescCreate(&EventData[0], &ClrInstanceID, sizeof(uint16_t));
@@ -715,7 +715,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(REGH
     EventDataDescCreate(&EventData[12], &HeapIndex, sizeof(uint32_t));
     EventDataDescCreate(&EventData[13], &ExtraGen0Commit, sizeof(void*));
     EventDataDescCreate(&EventData[14], &Count, sizeof(uint32_t));
-    // EventDataDescCreate(&EventData[15], Values, Count * Values_Len_);
+    EventDataDescCreate(&EventData[15], Values, Count * Values_Len_);
     return PalEventWrite(RegHandle, Descriptor, 16, EventData);
 }
 

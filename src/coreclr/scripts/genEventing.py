@@ -556,16 +556,15 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
                 fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
             
             if runtimeFlavor.nativeaot:
-                if not eventName == "GCPerHeapHistory_V3":
-                    if providerName == "Microsoft-Windows-DotNETRuntime":
-                        fnbody.append("#ifndef TARGET_UNIX\n")
-                        fnbody.append(lindent)
-                        fnbody.append("status &= ")
-                    else:
-                        fnbody.append("return ")
-                    fnbody.append("FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
-                    if providerName == "Microsoft-Windows-DotNETRuntime":
-                        fnbody.append("#endif\n")
+                if providerName == "Microsoft-Windows-DotNETRuntime":
+                    fnbody.append("#ifndef TARGET_UNIX\n")
+                    fnbody.append(lindent)
+                    fnbody.append("status &= ")
+                else:
+                    fnbody.append("return ")
+                fnbody.append("FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
+                if providerName == "Microsoft-Windows-DotNETRuntime":
+                    fnbody.append("#endif\n")
 
             if not (runtimeFlavor.nativeaot and not providerName == "Microsoft-Windows-DotNETRuntime"):
                 fnbody.append(lindent)

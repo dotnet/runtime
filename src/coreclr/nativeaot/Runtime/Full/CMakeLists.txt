@@ -27,8 +27,10 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_dependencies(Runtime.ServerGC aot_eventing_headers)
 
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
   add_library(Runtime.VxsortEnabled STATIC ${VXSORT_SOURCES})
@@ -101,4 +103,5 @@ if (CLR_CMAKE_TARGET_WIN32)
     install_static_library(Runtime.VxsortEnabled.GuardCF aotsdk nativeaot)
   endif (CLR_CMAKE_TARGET_ARCH_AMD64)
   install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
+  add_dependencies(Runtime.ServerGC.GuardCF aot_eventing_headers)
 endif (CLR_CMAKE_TARGET_WIN32)
