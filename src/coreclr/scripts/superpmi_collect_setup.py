@@ -591,6 +591,10 @@ def main(main_args):
             exclude_files += [item for item in os.listdir(core_root_dir)
                               if os.path.isfile(os.path.join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
 
+        if coreclr_args.collection_name == "smoke_tests":
+            if coreclr_args.collection_type != "nativeaot":
+                raise RuntimeError("Collection 'smoke_tests' is only available for 'nativeaot' collections.")
+
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,
                         exclude_files)
 

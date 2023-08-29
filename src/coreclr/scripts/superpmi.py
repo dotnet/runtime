@@ -286,8 +286,9 @@ collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pas
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
-collect_parser.add_argument("--nativeaot", action="store_true", help="Run nativeaot on a set of directories or assemblies.")
+collect_parser.add_argument("--nativeaot", action="store_true", help="Run nativeaot on a set of directories or 'ilc.rsps' files.")
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
+collect_parser.add_argument("-ilc_rsps", dest="ilc_rsps", nargs="+", default=[], help="For --nativeaot only. A list of 'ilc.rsp' files.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help="Specify a \"load path\" where assemblies can be found during pmi.dll run. Optional; the argument values are translated to PMIPATH environment variable.")
@@ -674,19 +675,17 @@ class SuperPMICollect:
                 self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
             logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
 
-        if coreclr_args.nativeaot:
-            self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
-            if coreclr_args.dotnet_tool_path is None:
-                self.nativeaot_driver_tool = self.corerun
-            else:
-                self.nativeaot_driver_tool = coreclr_args.dotnet_tool_path
-            logging.debug("Using nativeaot driver tool %s", self.nativeaot_driver_tool)
-
-        if coreclr_args.pmi or coreclr_args.crossgen2 or coreclr_args.nativeaot:
+        if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
             self.exclude = coreclr_args.exclude
             if coreclr_args.tiered_compilation or coreclr_args.tiered_pgo:
-               raise RuntimeError("Tiering options have no effect for pmi or crossgen2 or nativeaot collections.")
+               raise RuntimeError("Tiering options have no effect for pmi or crossgen2 collections.")
+
+        if coreclr_args.nativeaot:
+            self.ilc_rsps = coreclr_args.ilc_rsps
+            self.exclude = coreclr_args.exclude
+            if coreclr_args.tiered_compilation or coreclr_args.tiered_pgo:
+                raise RuntimeError("Tiering options have no effect for nativeaot collections.")
 
         if coreclr_args.tiered_compilation and coreclr_args.tiered_pgo:
             raise RuntimeError("Pass only one tiering option.")
@@ -862,23 +861,35 @@ class SuperPMICollect:
             # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
             if self.coreclr_args.pmi or self.coreclr_args.crossgen2 or self.coreclr_args.nativeaot:
 
-                def filter_assembly(file):
+                def filter_file(file):
                     if self.coreclr_args.nativeaot:
                         extensions = [".ilc.rsp"]
                     else:
                         extensions = [".dll", ".exe"]
                     return any(file.endswith(extension) for extension in extensions) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude))
 
-                assemblies = []
-                for item in self.assemblies:
-                    assemblies += get_files_from_path(item, match_func=filter_assembly)
-                if len(assemblies) == 0:
-                    logging.error("No assemblies found using `-assemblies` and `-exclude` arguments!")
+                if self.coreclr_args.nativeaot:
+                    ilc_rsps = []
+                    for item in self.ilc_rsps:
+                        ilc_rsps += get_files_from_path(item, match_func=filter_file)
+                    if len(ilc_rsps) == 0:
+                        logging.error("No 'ilc.rsp' files found using `-ilc_rsps` and `-exclude` arguments!")
+                    else:
+                        logging.debug("Using ilc_rsps:")
+                        for item in ilc_rsps:
+                            logging.debug("  %s", item)
+                        logging.debug("") # add trailing empty line
                 else:
-                    logging.debug("Using assemblies:")
-                    for item in assemblies:
-                        logging.debug("  %s", item)
-                    logging.debug("") # add trailing empty line
+                    assemblies = []
+                    for item in self.assemblies:
+                        assemblies += get_files_from_path(item, match_func=filter_file)
+                    if len(assemblies) == 0:
+                        logging.error("No assemblies found using `-assemblies` and `-exclude` arguments!")
+                    else:
+                        logging.debug("Using assemblies:")
+                        for item in assemblies:
+                            logging.debug("  %s", item)
+                        logging.debug("") # add trailing empty line
 
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
@@ -1159,8 +1170,8 @@ class SuperPMICollect:
                     rsp_file.writelines(rsp_contents)
                     rsp_file.close()
 
-                    assembly = os.path.splitext(input_filename)[0]
-                    root_nativeaot_output_filename = make_safe_filename("nativeaot_" + assembly) + ".out.dll"
+                    nativeaot_output_filename = os.path.splitext(input_filename)[0]
+                    root_nativeaot_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename) + ".out.obj" # TODO: For non-windows, '.obj' is wrong.
                     nativeaot_output_assembly_filename = os.path.join(self.temp_location, root_nativeaot_output_filename)
                     try:
                         if os.path.exists(nativeaot_output_assembly_filename):
@@ -1173,7 +1184,7 @@ class SuperPMICollect:
                         else:
                             raise ose
 
-                    root_output_filename = make_safe_filename("nativeaot_" + assembly + "_")
+                    root_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename + "_")
 
                     with open(rsp_filepath, "a") as rsp_write_handle:
                         rsp_write_handle.write(input_filepath + "\n")
@@ -1245,8 +1256,8 @@ class SuperPMICollect:
                 old_env = os.environ.copy()
                 os.environ.update(nativeaot_command_env)
 
-                assemblies = list(filter(lambda assembly: assembly.endswith(".ilc.rsp"), assemblies))
-                helper = AsyncSubprocessHelper(assemblies, verbose=True)
+                ilc_rsps = list(filter(lambda ilc_rsp: ilc_rsp.endswith(".ilc.rsp"), ilc_rsps))
+                helper = AsyncSubprocessHelper(ilc_rsps, verbose=True)
                 helper.run_to_completion(run_nativeaot, self)
 
                 os.environ.clear()
@@ -4217,6 +4228,12 @@ def setup_args(args):
                             modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
 
         coreclr_args.verify(args,
+                            "ilc_rsps",
+                            lambda unused: True,
+                            "Unable to set ilc_rsps",
+                            modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
+
+        coreclr_args.verify(args,
                             "exclude",
                             lambda unused: True,
                             "Unable to set exclude")
@@ -4305,12 +4322,20 @@ def setup_args(args):
             print("Don't specify `-assemblies` if a collection command is given")
             sys.exit(1)
 
+        if (args.collection_command is not None) and (len(args.ilc_rsps) > 0):
+            print("Don't specify `-ilc_rsps` if a collection command is given")
+            sys.exit(1)
+
         if (args.collection_command is not None) and (len(args.exclude) > 0):
             print("Don't specify `-exclude` if a collection command is given")
             sys.exit(1)
 
-        if ((args.pmi is True) or (args.crossgen2 is True) or (args.nativeaot is True)) and (len(args.assemblies) == 0):
-            print("Specify `-assemblies` if `--pmi` or `--crossgen2` or '--nativeaot' is given")
+        if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
+            print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
+            sys.exit(1)
+
+        if ((args.pmi is True) or (args.nativeaot is True)) and (len(args.ilc_rsps) == 0):
+            print("Specify `-ilc_rsps` if `--nativeaot` is given")
             sys.exit(1)
 
         if not args.pmi:
@@ -4321,8 +4346,11 @@ def setup_args(args):
 
         if args.collection_command is None and args.merge_mch_files is not True and not coreclr_args.skip_collection_step:
             assert args.collection_args is None
-            assert (args.pmi is True) or (args.crossgen2 is True) or (args.nativeaot is True)
-            assert len(args.assemblies) > 0
+            if args.nativeaot:
+                assert len(args.ilc_rsps) > 0
+            else:
+                assert (args.pmi is True) or (args.crossgen2 is True)
+                assert len(args.assemblies) > 0
 
         if coreclr_args.merge_mch_files:
             assert len(coreclr_args.mch_files) > 0
