@@ -958,18 +958,19 @@ ep_enable (
 {
 	EventPipeSessionID sessionId = 0;
 
-	EventPipeSessionOptions options = {};
-	options.output_path = output_path;
-	options.circular_buffer_size_in_mb = circular_buffer_size_in_mb;
-	options.providers = providers;
-	options.providers_len = providers_len;
-	options.session_type = session_type;
-	options.format = format;
-	options.rundown_requested = rundown_requested;
-	options.stackwalk_requested = true;
-	options.stream = stream;
-	options.sync_callback = sync_callback;
-	options.callback_additional_data = callback_additional_data;
+	EventPipeSessionOptions options = {
+		output_path,
+		circular_buffer_size_in_mb,
+		providers,
+		providers_len,
+		session_type,
+		format,
+		rundown_requested,
+		true, // stackwalk_requested
+		stream,
+		sync_callback,
+		callback_additional_data,
+	};
 
 	sessionId = ep_enable_3(&options);
 

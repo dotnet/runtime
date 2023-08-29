@@ -459,24 +459,26 @@ eventpipe_protocol_helper_collect_tracing (
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;
-	EventPipeSessionOptions options = {};
+	EventPipeSessionOptions options;
 
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
 		ep_raise_error ();
 	}
 
-	options.output_path = NULL;
-	options.circular_buffer_size_in_mb = payload->circular_buffer_size_in_mb;
-	options.providers = dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration);
-	options.providers_len = dn_vector_size (payload->provider_configs);
-	options.session_type = EP_SESSION_TYPE_IPCSTREAM;
-	options.format = payload->serialization_format;
-	options.rundown_requested = payload->rundown_requested;
-	options.stackwalk_requested = payload->stackwalk_requested;
-	options.stream = ds_ipc_stream_get_stream_ref (stream);
-	options.sync_callback = NULL;
-	options.callback_additional_data = NULL;
+	options = {
+		NULL,
+		payload->circular_buffer_size_in_mb,
+		dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
+		dn_vector_size (payload->provider_configs),
+		EP_SESSION_TYPE_IPCSTREAM,
+		payload->serialization_format,
+		payload->rundown_requested,
+		payload->stackwalk_requested,
+		ds_ipc_stream_get_stream_ref (stream),
+		NULL,
+		NULL,
+	};
 
 	session_id = ep_enable_3(&options);
 
