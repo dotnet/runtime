@@ -401,6 +401,61 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
 }
 
 //------------------------------------------------------------------------
+// gtIsBitwiseIntrinsic: Check if the given hwintrinsic is a specific type of bitwise intrinsic.
+//
+// Arguments:
+//    intrinsicId       -- id of the intrinsic function.
+//    oper              -- the bitwise intrinisic type
+//
+// Return Value:
+//    True if the input intrinsic matches with the given bitwise intrisic type.
+//
+bool Compiler::gtIsBitwiseIntrinsic(NamedIntrinsic intrinsicId, genTreeOps oper)
+{
+#if defined(TARGET_XARCH)
+    switch (intrinsicId)
+    {
+        case NI_SSE_And:
+        case NI_SSE2_And:
+        case NI_AVX_And:
+        case NI_AVX2_And:
+        case NI_AVX512F_And:
+        case NI_AVX512DQ_And:
+            return oper == GT_AND;
+
+        case NI_SSE_Or:
+        case NI_SSE2_Or:
+        case NI_AVX_Or:
+        case NI_AVX2_Or:
+        case NI_AVX512F_Or:
+        case NI_AVX512DQ_Or:
+            return oper == GT_OR;
+
+        case NI_SSE_Xor:
+        case NI_SSE2_Xor:
+        case NI_AVX_Xor:
+        case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
+            return oper == GT_XOR;
+
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+            return oper == GT_AND_NOT;
+
+        default:
+            return false;
+    }
+#else
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------
 // vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
 //
 // Arguments:

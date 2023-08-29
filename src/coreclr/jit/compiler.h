@@ -2812,6 +2812,7 @@ public:
                                               CORINFO_SIG_INFO*    sig,
                                               CorInfoType          simdBaseJitType);
 
+    static bool gtIsBitwiseIntrinsic(NamedIntrinsic intrinsicId, genTreeOps oper);
 #ifdef TARGET_ARM64
     GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
 #endif

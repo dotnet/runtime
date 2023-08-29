@@ -25296,32 +25296,9 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 {
 #if defined(TARGET_XARCH)
     NamedIntrinsic intrinsicId = GetHWIntrinsicId();
-    switch (intrinsicId)
-    {
-        case NI_SSE_And:
-        case NI_SSE2_And:
-        case NI_AVX_And:
-        case NI_AVX2_And:
-        case NI_AVX512F_And:
-        case NI_AVX512DQ_And:
-
-        case NI_SSE_Or:
-        case NI_SSE2_Or:
-        case NI_AVX_Or:
-        case NI_AVX2_Or:
-        case NI_AVX512F_Or:
-        case NI_AVX512DQ_Or:
-
-        case NI_SSE_Xor:
-        case NI_SSE2_Xor:
-        case NI_AVX_Xor:
-        case NI_AVX2_Xor:
-        case NI_AVX512F_Xor:
-        case NI_AVX512DQ_Xor:
-            return true;
-        default:
-            return false;
-    }
+    return Compiler::gtIsBitwiseIntrinsic(intrinsicId, GT_AND) || Compiler::gtIsBitwiseIntrinsic(intrinsicId, GT_OR) ||
+           Compiler::gtIsBitwiseIntrinsic(intrinsicId, GT_XOR) ||
+           Compiler::gtIsBitwiseIntrinsic(intrinsicId, GT_AND_NOT);
 #else // !TARGET_XARCH
     return false;
 #endif
@@ -26374,76 +26351,38 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
     uint8_t AB  = 0;
     uint8_t ABC = 0;
 
-    switch (firstLogic)
+    if (Compiler::gtIsBitwiseIntrinsic(firstLogic, GT_AND))
     {
-        case NI_SSE_And:
-        case NI_SSE2_And:
-        case NI_AVX_And:
-        case NI_AVX2_And:
-        case NI_AVX512F_And:
-        case NI_AVX512DQ_And:
-        {
-            AB = A & B;
-            break;
-        }
-        case NI_SSE_Or:
-        case NI_SSE2_Or:
-        case NI_AVX_Or:
-        case NI_AVX2_Or:
-        case NI_AVX512F_Or:
-        case NI_AVX512DQ_Or:
-        {
-            AB = A | B;
-            break;
-        }
-        case NI_SSE_Xor:
-        case NI_SSE2_Xor:
-        case NI_AVX_Xor:
-        case NI_AVX2_Xor:
-        case NI_AVX512F_Xor:
-        case NI_AVX512DQ_Xor:
-        {
-            AB = A ^ B;
-            break;
-        }
-        default:
-            unreached();
+        AB = A & B;
+    }
+    else if (Compiler::gtIsBitwiseIntrinsic(firstLogic, GT_OR))
+    {
+        AB = A | B;
+    }
+    else if (Compiler::gtIsBitwiseIntrinsic(firstLogic, GT_XOR))
+    {
+        AB = A ^ B;
+    }
+    else
+    {
+        unreached();
     }
 
-    switch (secondLogic)
+    if (Compiler::gtIsBitwiseIntrinsic(secondLogic, GT_AND))
     {
-        case NI_SSE_And:
-        case NI_SSE2_And:
-        case NI_AVX_And:
-        case NI_AVX2_And:
-        case NI_AVX512F_And:
-        case NI_AVX512DQ_And:
-        {
-            ABC = AB & C;
-            break;
-        }
-        case NI_SSE_Or:
-        case NI_SSE2_Or:
-        case NI_AVX_Or:
-        case NI_AVX2_Or:
-        case NI_AVX512F_Or:
-        case NI_AVX512DQ_Or:
-        {
-            ABC = AB | C;
-            break;
-        }
-        case NI_SSE_Xor:
-        case NI_SSE2_Xor:
-        case NI_AVX_Xor:
-        case NI_AVX2_Xor:
-        case NI_AVX512F_Xor:
-        case NI_AVX512DQ_Xor:
-        {
-            ABC = AB ^ C;
-            break;
-        }
-        default:
-            unreached();
+        ABC = AB & C;
+    }
+    else if (Compiler::gtIsBitwiseIntrinsic(secondLogic, GT_OR))
+    {
+        ABC = AB | C;
+    }
+    else if (Compiler::gtIsBitwiseIntrinsic(secondLogic, GT_XOR))
+    {
+        ABC = AB ^ C;
+    }
+    else
+    {
+        unreached();
     }
 
     return ABC;
