@@ -312,7 +312,11 @@ mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 LLVMValueRef
 mono_llvm_create_constant_data_array (const uint8_t *data, int len)
 {
+#if LLVM_API_VERSION >= 1600
+	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), ArrayRef(data, len)));
+#else
 	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), makeArrayRef(data, len)));
+#endif
 }
 
 void
