@@ -1,6 +1,9 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#nullable enable
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Mono.Linker.Tests.Extensions;
@@ -13,6 +16,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			Assert.Ignore (reason);
 		}
+
+		private partial IEnumerable<string>? GetAdditionalDefines() => null;
 
 		private static T GetResultOfTaskThatMakesAssertions<T> (Task<T> task)
 		{
@@ -31,7 +36,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected partial TrimmingCustomizations CustomizeLinker (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
+		protected partial TrimmingCustomizations? CustomizeLinker (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
 		{
 			TrimmingCustomizations customizations = new TrimmingCustomizations ();
 

@@ -3,6 +3,7 @@
 
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Mono.Cecil;
@@ -76,8 +77,30 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var expectationsCommonReferences = metadataProvider.GetCommonReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 			var expectationsMainAssemblyReferences = metadataProvider.GetReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 
-			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments));
-			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] { "INCLUDE_EXPECTATIONS" }, resources, additionalArguments));
+			var additionalDefines = GetAdditionalDefines ();
+			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (
+				sandbox.InputDirectory,
+				assemblyName,
+				sourceFiles,
+				commonReferences,
+				mainAssemblyReferences,
+				additionalDefines?.ToArray (),
+				resources,
+				additionalArguments));
+
+			var expectationsDefines = new string[] { "INCLUDE_EXPECTATIONS" };
+			if (additionalDefines != null)
+				expectationsDefines = expectationsDefines.Concat (additionalDefines).ToArray ();
+
+			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (
+				sandbox.ExpectationsDirectory,
+				assemblyName,
+				sourceFiles,
+				expectationsCommonReferences,
+				expectationsMainAssemblyReferences,
+				expectationsDefines,
+				resources,
+				additionalArguments));
 
 			NPath? inputAssemblyPath = null;
 			NPath? expectationsAssemblyPath = null;
@@ -100,6 +123,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
+
+		private partial IEnumerable<string>? GetAdditionalDefines();
 
 		protected virtual void PrepForLink (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult)
 		{
