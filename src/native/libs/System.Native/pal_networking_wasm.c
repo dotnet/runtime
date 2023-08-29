@@ -10,6 +10,47 @@
 
 #include <stdlib.h>
 #include <limits.h>
+
+#if !defined(_NETINET_IN_H)
+/* from emscripten\system\lib\libc\musl\include\netinet\in.h */
+typedef uint32_t in_addr_t;
+typedef uint16_t in_port_t;
+typedef unsigned short sa_family_t;
+struct in_addr { in_addr_t s_addr; };
+
+struct sockaddr_in {
+    sa_family_t sin_family;
+    in_port_t sin_port;
+    struct in_addr sin_addr;
+    uint8_t sin_zero[8];
+};
+
+struct in6_addr {
+    union {
+        uint8_t _s6_addr[16];
+        uint16_t _s6_addr16[8];
+        uint32_t _s6_addr32[4];
+    } _in6_union;
+};
+
+struct sockaddr_in6 {
+    sa_family_t     sin6_family;
+    in_port_t       sin6_port;
+    uint32_t        sin6_flowinfo;
+    struct in6_addr sin6_addr;
+    uint32_t        sin6_scope_id;
+};
+
+struct sockaddr_storage {
+    sa_family_t ss_family;
+    char _ss_padding[128-sizeof(long)-sizeof(sa_family_t)];
+    unsigned long _ss_align;
+};
+
+#endif
+
+/* end netinet\in.h */
+
 int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry)
 {
     return -1;
@@ -63,7 +104,14 @@ int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength)
 
 int32_t SystemNative_GetSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize, int32_t*udsSocketAddressSize, int* maxSocketAddressSize)
 {
-    return Error_EFAULT;
+    if (ipv4SocketAddressSize == NULL || ipv6SocketAddressSize == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    *ipv4SocketAddressSize = sizeof(struct sockaddr_in);
+    *ipv6SocketAddressSize = sizeof(struct sockaddr_in6);
+    return Error_SUCCESS;
 }
 
 int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t socketAddressLen, int32_t* addressFamily)

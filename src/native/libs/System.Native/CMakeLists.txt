@@ -26,11 +26,8 @@ addprefix(MINIPAL_SOURCES ${SHARED_MINIPAL_SOURCE_PATH} "${MINIPAL_SOURCES}")
 
 set(NATIVE_SOURCES
     pal_errno.c
-    pal_interfaceaddresses.c
     pal_io.c
-    pal_maphardwaretype.c
     pal_memory.c
-    pal_networkstatistics.c
     pal_random.c
     pal_runtimeinformation.c
     pal_string.c
@@ -44,11 +41,14 @@ list(APPEND NATIVE_SOURCES
   ${MINIPAL_SOURCES}
 )
 
-if (NOT CLR_CMAKE_TARGET_WASI)
+if (NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_BROWSER)
     list (APPEND NATIVE_SOURCES
         pal_dynamicload.c
+        pal_interfaceaddresses.c
+        pal_maphardwaretype.c
         pal_mount.c
         pal_networking.c
+        pal_networkstatistics.c
         pal_process.c
         pal_signal.c
         pal_threading.c
@@ -56,13 +56,14 @@ if (NOT CLR_CMAKE_TARGET_WASI)
     )
 else()
     list (APPEND NATIVE_SOURCES
-        pal_dynamicload_wasi.c
-        pal_mount_wasi.c
-        pal_networking_wasi.c
-        pal_process_wasi.c
-        pal_signal_wasi.c
-        pal_threading_wasi.c
-        pal_uid_wasi.c
+        pal_dynamicload_wasm.c
+        pal_maphardwaretype_wasm.c
+        pal_mount_wasm.c
+        pal_networking_wasm.c
+        pal_process_wasm.c
+        pal_signal_wasm.c
+        pal_threading_wasm.c
+        pal_uid_wasm.c
     )
 endif()
 

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#if !defined(TARGET_WASI) && !defined(TARGET_WASM)
 #include <pal_utilities.h>
 #include <sys/socket.h>
 
@@ -44,3 +45,5 @@ inline static int32_t Common_Shutdown(intptr_t socket, int32_t socketShutdown)
     int err = shutdown(fd, how);
     return err == 0 ? Error_SUCCESS : ConvertErrorPlatformToPal(errno);
 }
+
+#endif /* !defined(TARGET_WASI) && !defined(TARGET_WASM) */

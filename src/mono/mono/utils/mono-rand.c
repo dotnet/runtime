@@ -31,7 +31,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 #include <sys/types.h>
 #include <sys/un.h>
 
@@ -223,6 +225,14 @@ mono_rand_open (void)
 
 	return TRUE;
 }
+#else
+
+gboolean
+mono_rand_open (void)
+{
+	return FALSE;
+}
+
 #endif /* !DISABLE_EGD_SOCKET */
 
 gpointer

@@ -120,14 +120,14 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
             list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_HEADERS
                 ds-ipc-pal-namedpipe.h
             )
-        else(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
+        elseif(NOT HOST_WASM AND NOT HOST_WASI)
             list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_SOURCES
                 ds-ipc-pal-socket.c
             )
             list(APPEND SHARED_DIAGNOSTIC_SERVER_PAL_HEADERS
                 ds-ipc-pal-socket.h
             )
-        endif(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
+        endif()
     endif (FEATURE_PERFTRACING_PAL_TCP)
 
 endif(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)

@@ -1389,3 +1389,16 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_is_zero_page_reserved () {
 	// https://github.com/emscripten-core/emscripten/issues/19389
 	return (emscripten_stack_get_base() > 512) && (emscripten_stack_get_end() > 512);
 }
+
+int socket(int domain, int type, int protocol){
+	return -1;
+}
+
+typedef unsigned socklen_t;
+int connect(int fd, const void* addr, socklen_t len){
+	return -1;
+}
+
+ssize_t send(int fd, const void *buf, size_t len, int flags){
+	return -1;
+}

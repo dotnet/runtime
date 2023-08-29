@@ -19,7 +19,7 @@
 #ifndef HOST_WIN32
 #include <netinet/in.h>
 #endif
-#ifndef HOST_WIN32
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
 #ifdef HOST_WIN32

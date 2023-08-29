@@ -21,7 +21,6 @@
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
-#elif defined(TARGET_WASI)
 #else
 #error System must have AF_PACKET or AF_LINK.
 #endif
@@ -113,7 +112,5 @@ uint16_t MapHardwareType(uint16_t nativeType)
         default:
             return NetworkInterfaceType_Unknown;
     }
-#elif defined(TARGET_WASI)
-    return NetworkInterfaceType_Unknown;
 #endif
 }

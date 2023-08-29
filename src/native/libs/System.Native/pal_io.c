@@ -21,7 +21,9 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
+#if !defined(TARGET_WASI) && !defined(TARGET_WASM)
 #include <sys/socket.h>
+#endif /* !defined(TARGET_WASI) && !defined(TARGET_WASM) */
 #if !HAVE_MAKEDEV_FILEH && HAVE_MAKEDEV_SYSMACROSH
 #include <sys/sysmacros.h>
 #endif

@@ -105,6 +105,17 @@ function injectDependencies() {
 
     autoAddDeps(DotnetSupportLib, "$DOTNET");
     mergeInto(LibraryManager.library, DotnetSupportLib);
+
+    delete LibraryManager.library.$SOCKFS
+    delete LibraryManager.library.$SOCKFS__deps
+    delete LibraryManager.library.$SOCKFS__postset;
+    delete LibraryManager.library.$getSocketFromFD
+    delete LibraryManager.library.$getSocketFromFD__deps
+    delete LibraryManager.library.$getSocketAddress
+    delete LibraryManager.library.$getSocketAddress__deps
+    delete LibraryManager.library.$getSocketAddress__docs
+    delete LibraryManager.library.__syscall_socket__deps
+    delete LibraryManager.library.__syscall_socket
 }
 
 

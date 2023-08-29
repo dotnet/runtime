@@ -28,10 +28,12 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#ifndef HOST_WIN32
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-#else
+#elif defined(HOST_WIN32)
 #define sleep(t)                 Sleep((t) * 1000)
+#else
+#define sleep(t)                 (())
 #endif
 #include <glib.h>
 
@@ -219,6 +221,7 @@ parse_args (const char *desc)
 
 static void prof_save (MonoProfiler *prof, FILE* file);
 
+#ifdef HAVE_SYS_SOCKET_H
 static void *
 helper_thread (void *arg)
 {
@@ -339,12 +342,15 @@ start_helper_thread (void)
 		exit (1);
 	}
 }
+#endif /* HAVE_SYS_SOCKET_H */
 
 static void
 runtime_initialized (MonoProfiler *profiler)
 {
+#ifdef HAVE_SYS_SOCKET_H
 	if (profiler->duration >= 0 || aot_profiler.command_port >= 0)
 		start_helper_thread ();
+#endif /* HAVE_SYS_SOCKET_H */
 }
 
 MONO_API void

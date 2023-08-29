@@ -75,7 +75,7 @@ int32_t SystemNative_GetSid(int32_t pid)
 DEBUGNOTRETURN
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on WASI or Browser", 0);
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)

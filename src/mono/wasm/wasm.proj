@@ -279,7 +279,6 @@
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
-      <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Condition="'$(_EmccExportedLibraryFunction)' != ''" Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
       <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
@@ -287,6 +286,15 @@
       <_EmccLinkFlags Include="-s WASM_BIGINT=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
       <_EmccLinkFlags Include="-s MODULARIZE=1"/>
+
+      <_EmccLinkFlags Include="-s AUTO_JS_LIBRARIES=0" />
+      <_EmccLinkFlags Include="-nodefaultlibs"/>
+      <_EmccLinkFlags Include="-lc"/>
+      <_EmccLinkFlags Include="-lc++"/>
+      <_EmccLinkFlags Include="-lmalloc"/>
+      <_EmccLinkFlags Include="-lc++abi"/>
+      <_EmccLinkFlags Include="-lcompiler_rt"/>
+      <_EmccLinkFlags Include="-lstubs"/>
 
       <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
       <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed

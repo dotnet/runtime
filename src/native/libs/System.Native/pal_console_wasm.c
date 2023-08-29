@@ -47,25 +47,25 @@ DEBUGNOTRETURN
 void SystemNative_SetKeypadXmit(const char* terminfoString)
 {
     assert(terminfoString != NULL);
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on WASI or Browser", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on WASI or Browser", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_UninitializeConsoleAfterRead(void)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on WASI or Browser", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on WASI or Browser", 0);
 }
 
 DEBUGNOTRETURN
@@ -78,7 +78,7 @@ void SystemNative_GetControlCharacters(
     assert(controlCharacterLength >= 0);
     assert(posixDisableValue != NULL);
 
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on WASI or Browser", 0);
 }
 
 int32_t SystemNative_StdinReady(void)
@@ -112,7 +112,7 @@ int32_t SystemNative_GetSignalForBreak(void)
 int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 {
     assert(signalForBreak == 0 || signalForBreak == 1);
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on WASI or Browser", 0);
     return -1;
 }
 
