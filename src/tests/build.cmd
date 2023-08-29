@@ -51,7 +51,6 @@ set __CompositeBuildMode=
 set __TestBuildMode=
 set __CreatePdb=
 set __CreatePerfmap=
-set __HotColdSplitting=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
@@ -112,7 +111,6 @@ if /i "%arg%" == "composite"             (set __CompositeBuildMode=1&set __TestB
 if /i "%arg%" == "pdb"                   (set __CreatePdb=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "NativeAOT"             (set __TestBuildMode=nativeaot&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "Perfmap"               (set __CreatePerfmap=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "HotColdSplitting"      (set __HotColdSplitting=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "AllTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=allTargets"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "ExcludeMonoFailures"   (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "Mono"                  (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -394,7 +392,6 @@ echo -Composite: Use Crossgen2 composite mode (all framework gets compiled into 
 echo -PDB: Create PDB files when precompiling the framework managed assemblies.
 echo -NativeAOT: Builds the tests for Native AOT compilation.
 echo -Perfmap: Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.
-echo -HotColdSplitting: Enable hot/cold code splitting (supported only by Crossgen2).
 echo -AllTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).
 echo -ExcludeMonoFailures, Mono: Build the tests for the Mono runtime honoring mono-specific issues.
 echo.
