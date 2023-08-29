@@ -95,7 +95,7 @@ ProfileArgIterator::~ProfileArgIterator()
     m_handle = nullptr;
 }
 
-LPVOID ProfileArgIterator::CopyStructFromRegisters()
+LPVOID ProfileArgIterator::CopyStructFromRegisters(const ArgLocDesc* sir)
 {
     struct Func
     {
@@ -110,15 +110,14 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
     WRAPPER_NO_CONTRACT;
     _ASSERTE(m_handle);
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(m_handle);
-    const ArgLocDesc* sir = m_argIterator.GetArgLocDescForStructInRegs();
-    _ASSERTE(sir);
 
     struct { bool isFloat, is8; } fields[] = {
-        { sir->m_structFields & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO),
+        { sir->m_structFields & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE),
           sir->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8 },
         { sir->m_structFields & (STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO),
           sir->m_structFields & STRUCT_SECOND_FIELD_SIZE_IS8 },
     };
+    int fieldCount = (sir->m_structFields & STRUCT_FLOAT_FIELD_ONLY_ONE) ? 1 : 2;
     UINT64 bufferPosBegin = m_bufferPos;
     const double *fRegBegin = &pData->floatArgumentRegisters.f[sir->m_idxFloatReg], *fReg = fRegBegin;
     const double *fRegEnd = fReg + sizeof(pData->floatArgumentRegisters.f)/sizeof(pData->floatArgumentRegisters.f[0]);
@@ -126,14 +125,14 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
     const INT64 *aRegEnd = aReg + sizeof(pData->argumentRegisters.a)/sizeof(pData->argumentRegisters.a[0]);
     const BYTE *stackBegin = (BYTE*)pData->profiledSp + sir->m_byteStackIndex, *stack = stackBegin;
 
-    for (int i = 0; i < sizeof(fields)/sizeof(*fields); ++i)
+    for (int i = 0; i < fieldCount; ++i)
     {
         bool inFloatReg = fields[i].isFloat && fReg < fRegEnd;
         bool inGenReg = aReg < aRegEnd;
 
         if (fields[i].is8)
         {
-            UINT64 alignedTo8 = (m_bufferPos + (8-1)) & ~(8-1);
+            UINT64 alignedTo8 = ALIGN_UP(m_bufferPos, 8);
             _ASSERTE(alignedTo8 + 8 < sizeof(pData->buffer));
             m_bufferPos = alignedTo8;
             const INT64* src =
@@ -153,9 +152,9 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
         }
     }
     // Sanity checks, make sure we've run through (and not overrun) all locations from ArgLocDesc
-    _ASSERTE(fReg - fRegBegin == sir->m_cFloatReg);
-    _ASSERTE(aReg - aRegBegin == sir->m_cGenReg);
-    _ASSERTE(stack - stackBegin == sir->m_byteStackSize);
+    _ASSERTE(sir->m_cFloatReg < 0 || fReg - fRegBegin == sir->m_cFloatReg);
+    _ASSERTE(sir->m_cGenReg < 0   || aReg - aRegBegin == sir->m_cGenReg);
+    _ASSERTE(sir->m_byteStackSize < 0 || stack - stackBegin == sir->m_byteStackSize);
 
     return &pData->buffer[bufferPosBegin];
 }
@@ -189,7 +188,7 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
         if ((sir->m_cFloatReg ^ sir->m_cGenReg) != 2 ||
             (sir->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != STRUCT_HAS_8BYTES_FIELDS_MASK)
         {
-            return CopyStructFromRegisters();
+            return CopyStructFromRegisters(sir);
         }
     }
 
@@ -263,8 +262,6 @@ LPVOID ProfileArgIterator::GetThis(void)
 
 LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
 {
-    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
-    _ASSERTE(!"RISCV64:NYI");
     CONTRACTL
     {
         NOTHROW;
@@ -282,66 +279,23 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
 
     if (m_argIterator.HasRetBuffArg())
     {
-        if ((pData->flags & PROFILE_ENTER) != 0)
-        {
-            return (LPVOID)pData->t0;
-        }
-        else
-        {
-            // On ARM64 there is no requirement for the method to preserve the value stored in t0. (TODO: verify on RISC-V)
-            // In order to workaround this JIT will explicitly return the return buffer address in x0.
-            _ASSERTE((pData->flags & PROFILE_LEAVE) != 0);
-            return (LPVOID)pData->argumentRegisters.a[0];
-        }
+        // On RISC-V the method is not required to preserve the return buffer address passed in a0.
+        // However, JIT does that anyway if leave hook needs to be generated.
+        return (LPVOID)pData->argumentRegisters.a[0];
     }
 
-    UINT fpReturnSize = m_argIterator.GetFPReturnSize();
-    if (fpReturnSize != 0)
+    UINT returnFlags = m_argIterator.GetFPReturnSize();
+    if (returnFlags)
     {
-        TypeHandle thReturnValueType;
-        m_argIterator.GetSig()->GetReturnTypeNormalized(&thReturnValueType);
-        if (!thReturnValueType.IsNull() && thReturnValueType.IsHFA())
-        {
-            UINT hfaFieldSize = fpReturnSize / 4;
-            UINT totalSize = m_argIterator.GetSig()->GetReturnTypeSize();
-            _ASSERTE(totalSize % hfaFieldSize == 0);
-            _ASSERTE(totalSize <= 16);
-
-            BYTE *dest = pData->buffer;
-            for (UINT floatRegIdx = 0; floatRegIdx < totalSize / hfaFieldSize; ++floatRegIdx)
-            {
-                if (hfaFieldSize == 4)
-                {
-                    *(UINT32*)dest = *(UINT32*)&pData->floatArgumentRegisters.f[floatRegIdx];
-                    dest += 4;
-                }
-                else if (hfaFieldSize == 8)
-                {
-                    *(UINT64*)dest = *(UINT64*)&pData->floatArgumentRegisters.f[floatRegIdx];
-                    dest += 8;
-                }
-                else
-                {
-                    _ASSERTE(!"unimplemented on RISCV64 yet!");
-#if 0
-                    _ASSERTE(hfaFieldSize == 16);
-                    *(NEON128*)dest = pData->floatArgumentRegisters.f[floatRegIdx];
-                    dest += 16;
-#endif
-                }
-
-                if (floatRegIdx > 8)
-                {
-                    // There's only space for 8 arguments in buffer
-                    _ASSERTE(FALSE);
-                    break;
-                }
-            }
-
-            return pData->buffer;
-        }
-
-        return &pData->floatArgumentRegisters.f[0];
+        ArgLocDesc sir;
+        sir.m_idxFloatReg = 0;
+        sir.m_cFloatReg = -1;
+        sir.m_idxGenReg = 0;
+        sir.m_cGenReg = -1;
+        sir.m_byteStackIndex = 0;
+        sir.m_byteStackSize = -1;
+        sir.m_structFields = returnFlags;
+        return CopyStructFromRegisters(&sir);
     }
 
     if (!m_argIterator.GetSig()->IsReturnTypeVoid())
@@ -351,9 +305,5 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
 
     return nullptr;
 }
-
-#undef PROFILE_ENTER
-#undef PROFILE_LEAVE
-#undef PROFILE_TAILCALL
 
 #endif // PROFILING_SUPPORTED

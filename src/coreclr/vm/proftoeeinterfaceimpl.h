@@ -63,7 +63,11 @@ private:
     // On certain architectures we can pass args in non-sequential registers,
     // this function will copy the struct so it is laid out as it would be in memory
     // so it can be passed to the profiler
-    LPVOID CopyStructFromRegisters();
+    LPVOID CopyStructFromRegisters(
+#ifdef TARGET_RISCV64
+        const ArgLocDesc* argLocDesc
+#endif
+    );
 #endif
 
 #if defined(TARGET_ARM64)
