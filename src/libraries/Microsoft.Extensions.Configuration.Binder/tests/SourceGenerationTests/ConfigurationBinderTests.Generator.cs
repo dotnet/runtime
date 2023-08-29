@@ -12,21 +12,33 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         /// This is a regression test for https://github.com/dotnet/runtime/issues/90851.
         /// It asserts that the configuration binding source generator properly formats
         /// binding invocation source locations that the generated interceptors replace.
-        /// Do not modify these tests if the change reduces coverage for this scenario.
+        /// A location issue that's surfaced is emitting the right location of invocations
+        /// that are on a different line than the containing binder type or the static
+        /// extension binder class (e.g. ConfigurationBinder.Bind).
         /// </summary>
         [Fact]
-        public void TestBindingInvocationsOnNewLines()
+        public void TestBindingInvocationsWithIrregularCSharpSyntax()
         {
             IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Longitude"":1,""Latitude"":2}");
 
-            GeolocationRecord record = configuration.Get<
-                GeolocationRecord
-                >();
+            // Tests a binding invocation variant that's on a separate line from source configuration.
+
+            GeolocationRecord record = (GeolocationRecord)configuration
+                .Get(typeof(GeolocationRecord), _ => { });
+
             Verify();
 
-            record = (GeolocationRecord)configuration
-                .Get(typeof(GeolocationRecord), _ => { });
+            // Tests generic binding invocation variants with irregular C# syntax, interspersed with white space.
+
+            record = configuration.Get<
+                GeolocationRecord
+                >();
+
+            record = configuration.Get
+                <GeolocationRecord>();
             Verify();
+
+            // Tests binding invocation variants that are on a separate line from source configuration.
 
             TestHelpers
                 .GetConfigurationFromJsonString(@"{""Longitude"":3,""Latitude"":4}")
@@ -36,10 +48,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             int lat = configuration
                 .GetValue<int>("Latitude");
             Assert.Equal(2, lat);
-
-            record = configuration.Get
-                <GeolocationRecord>();
-            Verify();
 
             record = (GeolocationRecord)configuration
                 .Get(
@@ -80,6 +88,21 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             record = (GeolocationRecord)
                             configuration
                             .Get(typeof(GeolocationRecord), _ => { });
+            Verify();
+
+            // Tests binding invocation variants with static method call syntax, interspaced with whitespace.
+            ConfigurationBinder
+                .Bind(configuration, record);
+            Verify();
+
+            ConfigurationBinder.Bind(
+                configuration, record);
+            Verify();
+
+            ConfigurationBinder.
+                Bind(configuration
+                , record)
+                ;
             Verify();
 
             void Verify(int longitude = 1, int latitude = 2)
