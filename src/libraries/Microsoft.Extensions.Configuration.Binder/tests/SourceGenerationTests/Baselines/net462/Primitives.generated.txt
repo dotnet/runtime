@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop7", "Prop11", "Prop12", "Prop18", "Prop22" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop22" });
 
         public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, BinderOptions? binderOptions)
         {
@@ -165,29 +165,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop27 = ParseEnum<DayOfWeek>(value22, () => configuration.GetSection("Prop27").Path);
             }
 
-            if (configuration["Prop7"] is string value23)
+            if (configuration["Prop22"] is string value23)
             {
-                instance.Prop7 = ParseInt128(value23, () => configuration.GetSection("Prop7").Path);
-            }
-
-            if (configuration["Prop11"] is string value24)
-            {
-                instance.Prop11 = ParseHalf(value24, () => configuration.GetSection("Prop11").Path);
-            }
-
-            if (configuration["Prop12"] is string value25)
-            {
-                instance.Prop12 = ParseUInt128(value25, () => configuration.GetSection("Prop12").Path);
-            }
-
-            if (configuration["Prop18"] is string value26)
-            {
-                instance.Prop18 = ParseDateOnly(value26, () => configuration.GetSection("Prop18").Path);
-            }
-
-            if (configuration["Prop22"] is string value27)
-            {
-                instance.Prop22 = ParseByteArray(value27, () => configuration.GetSection("Prop22").Path);
+                instance.Prop22 = ParseByteArray(value23, () => configuration.GetSection("Prop22").Path);
             }
         }
 
@@ -463,66 +443,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             catch (Exception exception)
             {
                 throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Version)}'.", exception);
-            }
-        }
-
-        public static Int128 ParseInt128(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return Int128.Parse(value, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Int128)}'.", exception);
-            }
-        }
-
-        public static Half ParseHalf(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return Half.Parse(value, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Half)}'.", exception);
-            }
-        }
-
-        public static UInt128 ParseUInt128(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return UInt128.Parse(value, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(UInt128)}'.", exception);
-            }
-        }
-
-        public static DateOnly ParseDateOnly(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return DateOnly.Parse(value, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(DateOnly)}'.", exception);
-            }
-        }
-
-        public static TimeOnly ParseTimeOnly(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return TimeOnly.Parse(value, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(TimeOnly)}'.", exception);
             }
         }
 

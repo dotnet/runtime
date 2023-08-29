@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task ValueTypesAreInvalidAsBindInputs()
         {
             string source = """
@@ -252,7 +252,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(source);
             Assert.Single(r);
 
-            string generatedSource = string.Join('\n', r[0].SourceText.Lines.Select(x => x.ToString()));
+            string generatedSource = string.Join("\n", r[0].SourceText.Lines.Select(x => x.ToString()));
             Assert.Contains("public static void Bind_ProgramMyClass0(this IConfiguration configuration, object? instance)", generatedSource);
             Assert.Contains("public static void Bind_ProgramMyClass1(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)", generatedSource);
             Assert.Contains("public static void Bind_ProgramMyClass2(this IConfiguration configuration, string key, object? instance)", generatedSource);
@@ -379,9 +379,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null)
         {
             string path = Path.Combine("Baselines", filename);
-            string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(path).ConfigureAwait(false));
+            string baseline = LineEndingsHelper.Normalize(File.ReadAllText(path));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
-                                             .Split(Environment.NewLine);
+                                             .Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
             var (d, r) = await RunGenerator(testSourceCode, languageVersion);
             bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out string errorMessage);

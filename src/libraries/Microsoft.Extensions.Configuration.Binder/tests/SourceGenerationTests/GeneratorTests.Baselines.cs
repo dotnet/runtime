@@ -49,7 +49,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
         [InlineData(LanguageVersion.Preview)]
-        [InlineData(LanguageVersion.CSharp11)]
         public async Task Bind_NetFwk(LanguageVersion langVersion) =>
             await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Bind.generated.txt"), BindCallSampleCode, langVersion);
 
@@ -717,9 +716,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Empty(d);
         }
 
-        private string GetPrimitivesSource()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Primitives()
         {
-            return """
+            string source = """
                         using System;
                         using System.Globalization;
                         using Microsoft.Extensions.Configuration;
@@ -771,19 +771,59 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             }
                         }
                         """;
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public async Task Primitives()
-        {
-            string source = GetPrimitivesSource();
             await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Primitives.generated.txt"), source);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
         public async Task PrimitivesNetFwk()
         {
-            string source = GetPrimitivesSource();
+            string source = """
+                        using System;
+                        using System.Globalization;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+
+                                MyClass obj = new();
+                                config.Bind(obj);
+                            }
+
+                            public class MyClass
+                            {
+                                public bool Prop0 { get; set; }
+                                public byte Prop1 { get; set; }
+                                public sbyte Prop2 { get; set; }
+                                public char Prop3 { get; set; }
+                                public double Prop4 { get; set; }
+                                public string Prop5 { get; set; }
+                                public int Prop6 { get; set; }
+                                public short Prop8 { get; set; }
+                                public long Prop9 { get; set; }
+                                public float Prop10 { get; set; }
+                                public ushort Prop13 { get; set; }
+                                public uint Prop14 { get; set; }
+                                public ulong Prop15 { get; set; }
+                                public object Prop16 { get; set; }
+                                public CultureInfo Prop17 { get; set; }
+                                public DateTime Prop19 { get; set; }
+                                public DateTimeOffset Prop20 { get; set; }
+                                public decimal Prop21 { get; set; }
+                                public TimeSpan Prop23 { get; set; }
+                                public Guid Prop24 { get; set; }
+                                public Uri Prop25 { get; set; }
+                                public Version Prop26 { get; set; }
+                                public DayOfWeek Prop27 { get; set; }
+                                public byte[] Prop22 { get; set; }
+                                public int Prop23 { get; set; }
+                                public DateTime Prop24 { get; set; }
+                            }
+                        }
+                        """;
 
             await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Primitives.generated.txt"), source);
         }
