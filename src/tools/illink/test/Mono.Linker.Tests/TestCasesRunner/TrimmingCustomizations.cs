@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	/// Stores various customizations which can be added to ILLink at runtime,
 	/// for example test implementations of certain interfaces.
 	/// </summary>
-	public class LinkerCustomizations
+	public class TrimmingCustomizations
 	{
 		public TestDependencyRecorder DependencyRecorder { get; set; }
 

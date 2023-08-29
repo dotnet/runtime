@@ -5,13 +5,13 @@ using System.Collections.Generic;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class LinkerDriver
+	public class TrimmingDriver
 	{
 		protected class TestDriver : Driver
 		{
-			readonly LinkerCustomizations _customization;
+			readonly TrimmingCustomizations _customization;
 
-			public TestDriver (Queue<string> args, LinkerCustomizations customizations) : base (args)
+			public TestDriver (Queue<string> args, TrimmingCustomizations customizations) : base (args)
 			{
 				_customization = customizations;
 			}
@@ -24,11 +24,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		public virtual int Link (string[] args, LinkerCustomizations customizations, ILogger logger)
+		public virtual TrimmingResults Trim (string[] args, TrimmingCustomizations customizations, ILogger logger)
 		{
 			Driver.ProcessResponseFile (args, out var queue);
 			using (var driver = new TestDriver (queue, customizations)) {
-				return driver.Run (logger);
+				return new TrimmingResults (driver.Run (logger));
 			}
 		}
 	}

@@ -16,11 +16,11 @@ using Internal.TypeSystem.Ecma;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class ILCompilerDriver
+	public class TrimmingDriver
 	{
 		internal const string DefaultSystemModule = "System.Private.CoreLib";
 
-		public ILScanResults Trim (ILCompilerOptions options, ILogWriter logWriter)
+		public ILScanResults Trim (ILCompilerOptions options, TrimmingCustomizations? customizations, ILogWriter logWriter)
 		{
 			ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
