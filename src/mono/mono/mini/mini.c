@@ -3491,6 +3491,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	 */
 	mono_compile_create_vars (cfg);
 
+	if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD)
+		cfg->exception_type = MONO_EXCEPTION_NONE;
+
 	mono_cfg_dump_create_context (cfg);
 	mono_cfg_dump_begin_group (cfg);
 
@@ -3705,6 +3708,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		}
 	}
 #endif
+
+	if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD)
+		cfg->exception_type = MONO_EXCEPTION_NONE;
 
 	/* after SSA translation */
 	if (parts == 2) {

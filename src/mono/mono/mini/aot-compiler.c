@@ -9580,7 +9580,13 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		mono_atomic_inc_i32 (&acfg->stats.genericcount);
 		return;
 	}
-	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
+	if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD) {
+		// Clear the exception, method-to-ir has already replaced the INITOBJ of the invalid
+		// type with a THROW.
+		cfg->exception_type = MONO_EXCEPTION_NONE;
+		// TODO: log this?
+	}
+	else if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 		/* Some instances cannot be JITted due to constraints etc. */
 		if (!method->is_inflated)
 			report_loader_error (acfg, cfg->error, FALSE, "Unable to compile method '%s' due to: '%s'.\n", mono_method_get_full_name (method), mono_error_get_message (cfg->error));

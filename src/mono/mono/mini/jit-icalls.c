@@ -1689,6 +1689,14 @@ mono_throw_invalid_program (const char *msg)
 }
 
 void
+mono_throw_type_load (void)
+{
+	ERROR_DECL (error);
+	mono_error_set_generic_error (error, "System", "TypeLoadException", "");
+	mono_error_set_pending_exception (error);
+}
+
+void
 mono_dummy_jit_icall (void)
 {
 }

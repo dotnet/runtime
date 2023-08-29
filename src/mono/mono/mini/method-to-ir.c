@@ -166,8 +166,12 @@ mono_tailcall_print (const char *format, ...)
 	} while (0)
 
 #define TYPE_LOAD_ERROR(klass) do { \
-		cfg->exception_ptr = klass; \
-		LOAD_ERROR;					\
+		if (cfg->compile_aot) { \
+			mono_emit_jit_icall (cfg, mono_throw_type_load, NULL); \
+		} else { \
+			cfg->exception_ptr = klass; \
+			LOAD_ERROR; \
+		} \
 	} while (0)
 
 #define CHECK_CFG_ERROR do {\
@@ -9898,8 +9902,16 @@ calli_end:
 			else {
 				klass = NULL;
 				field = mono_field_from_token_checked (image, token, &klass, generic_context, cfg->error);
-				if (!field)
-					CHECK_TYPELOAD (klass);
+				if (!field) {
+					if (cfg->compile_aot && (!klass || mono_class_has_failure (klass))) {
+						clear_cfg_error (cfg);
+						cfg->exception_type = MONO_EXCEPTION_NONE;
+						mono_emit_jit_icall (cfg, mono_throw_type_load, NULL);
+						break;
+					} else {
+						CHECK_TYPELOAD (klass);
+					}
+				}
 				CHECK_CFG_ERROR;
 			}
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
@@ -11855,11 +11867,23 @@ mono_ldptr:
 		case MONO_CEE_INITOBJ:
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
-			CHECK_TYPELOAD (klass);
+
+			if (cfg->compile_aot) {
+				// In AOT we replace initobj of invalid types with a throw.
+				if (!klass || mono_class_has_failure (klass)) {
+					mono_emit_jit_icall (cfg, mono_throw_type_load, NULL);
+					inline_costs += 10;
+					break;
+				}
+			} else {
+				CHECK_TYPELOAD (klass);
+			}
+
 			if (mini_class_is_reference (klass))
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, sp [0]->dreg, 0, 0);
 			else
 				mini_emit_initobj (cfg, *sp, NULL, klass);
+			
 			inline_costs += 1;
 			break;
 		case MONO_CEE_CONSTRAINED_:
