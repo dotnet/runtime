@@ -459,7 +459,7 @@ eventpipe_protocol_helper_collect_tracing (
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;
-	EventPipeSessionOptions options = EventPipeSessionOptions();
+	EventPipeSessionOptions options = {};
 
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);

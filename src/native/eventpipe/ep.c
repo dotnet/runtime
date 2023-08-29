@@ -958,7 +958,7 @@ ep_enable (
 {
 	EventPipeSessionID sessionId = 0;
 
-	EventPipeSessionOptions options = EventPipeSessionOptions();
+	EventPipeSessionOptions options = {};
 	options.output_path = output_path;
 	options.circular_buffer_size_in_mb = circular_buffer_size_in_mb;
 	options.providers = providers;
