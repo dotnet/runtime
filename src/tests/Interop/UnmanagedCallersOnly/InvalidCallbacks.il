@@ -258,8 +258,6 @@
     .method public hidebysig specialname rtspecialname
         instance void .ctor () cil managed
     {
-        // Method begins at RVA 0x20a0
-        // Code size 7 (0x7)
         .maxstack 8
         IL_0000: ldarg.0
         IL_0001: call instance void [System.Runtime]System.Object::.ctor()
@@ -287,9 +285,6 @@
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
         )
-        // Method begins at RVA 0x24c4
-        // Header size: 1
-        // Code size: 2 (0x2)
         .maxstack 8
 
         IL_0000: ldc.i4.0
@@ -304,9 +299,6 @@
         .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = (
             01 00 00 00
         )
-        // Method begins at RVA 0x24c4
-        // Header size: 1
-        // Code size: 2 (0x2)
         .maxstack 8
 
         IL_0000: ldc.i4.0
