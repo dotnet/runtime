@@ -520,6 +520,44 @@ namespace System
         }
 
         /// <summary>
+        /// Returns a 128-bit signed integer converted from eight bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A 128-bit signed integer formed by eight bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 7,
+        /// and is less than or equal to the length of <paramref name="value"/> minus 1.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
+        public static long ToInt128(byte[] value, int startIndex)
+        {
+            if (value == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            if (unchecked((UInt128)startIndex) >= unchecked((UInt128)value.Length))
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
+            if (startIndex > value.Length - sizeof(Int128))
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ByteArrayTooSmallForValue, ExceptionArgument.value);
+
+            return Unsafe.ReadUnaligned<long>(ref value[startIndex]);
+        }
+
+        /// <summary>
+        /// Converts a read-only byte span into a 128-bit signed integer.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A 128-bit signed integer representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long ToInt128(ReadOnlySpan<byte> value)
+        {
+            if (value.Length < sizeof(Int128))
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
+            return Unsafe.ReadUnaligned<long>(ref MemoryMarshal.GetReference(value));
+        }
+
+        /// <summary>
         /// Returns a 16-bit unsigned integer converted from two bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
