@@ -24,7 +24,7 @@ internal sealed partial class __ThirdModelNoNamespaceValidator__
         context.DisplayName = baseName + "P5";
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
         {
             builder.AddResults(validationResults);
         }
@@ -53,7 +53,7 @@ partial class FirstValidatorNoNamespace
         context.DisplayName = baseName + "P1";
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
         {
             builder.AddResults(validationResults);
         }
@@ -92,7 +92,7 @@ partial class SecondValidatorNoNamespace
         context.DisplayName = baseName + "P4";
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+        if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
         {
             builder.AddResults(validationResults);
         }
@@ -122,7 +122,7 @@ namespace CustomAttr
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -132,7 +132,7 @@ namespace CustomAttr
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A4);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -165,7 +165,7 @@ namespace Enumeration
             context.DisplayName = baseName + "P6";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -197,7 +197,7 @@ namespace Enumeration
             context.MemberName = "Value";
             context.DisplayName = baseName + "Value";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A5);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Value!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Value, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -382,7 +382,7 @@ namespace Enumeration
             context.DisplayName = baseName + "P6";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -414,7 +414,7 @@ namespace FileScopedNamespace
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -445,7 +445,7 @@ namespace FunnyStrings
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A6);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -478,7 +478,7 @@ namespace Generics
             context.DisplayName = baseName + "P4";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -510,7 +510,7 @@ namespace Generics
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -547,7 +547,7 @@ namespace MultiModelValidator
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -578,7 +578,7 @@ namespace MultiModelValidator
             context.DisplayName = baseName + "P3";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -611,7 +611,7 @@ namespace Nested
             context.DisplayName = baseName + "P6";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -645,7 +645,7 @@ namespace Nested
                 context.DisplayName = baseName + "P5";
                 validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                 validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-                if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+                if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
                 {
                     builder.AddResults(validationResults);
                 }
@@ -682,7 +682,7 @@ namespace Nested
                     context.DisplayName = baseName + "P1";
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
                     {
                         builder.AddResults(validationResults);
                     }
@@ -730,7 +730,7 @@ namespace Nested
                 context.DisplayName = baseName + "P5";
                 validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                 validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-                if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+                if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
                 {
                     builder.AddResults(validationResults);
                 }
@@ -767,7 +767,7 @@ namespace Nested
                     context.DisplayName = baseName + "P5";
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
                     {
                         builder.AddResults(validationResults);
                     }
@@ -805,7 +805,7 @@ namespace Nested
                     context.DisplayName = baseName + "P5";
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+                    if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
                     {
                         builder.AddResults(validationResults);
                     }
@@ -839,7 +839,7 @@ namespace RandomMembers
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -872,7 +872,7 @@ namespace RecordTypes
             context.DisplayName = baseName + "P6";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -904,7 +904,7 @@ namespace RecordTypes
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -948,7 +948,7 @@ namespace RecordTypes
             context.DisplayName = baseName + "P5";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -980,7 +980,7 @@ namespace RecordTypes
             context.DisplayName = baseName + "P5";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1012,7 +1012,7 @@ namespace RepeatedTypes
             context.MemberName = "P4";
             context.DisplayName = baseName + "P4";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1050,7 +1050,7 @@ namespace RepeatedTypes
             context.DisplayName = baseName + "P5";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1081,7 +1081,7 @@ namespace RepeatedTypes
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1096,7 +1096,7 @@ namespace RepeatedTypes
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1111,7 +1111,7 @@ namespace RepeatedTypes
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1147,7 +1147,7 @@ namespace SelfValidation
             context.MemberName = "P1";
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1181,7 +1181,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A7);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1213,7 +1213,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1245,7 +1245,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val1";
             context.DisplayName = baseName + "Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1255,7 +1255,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A8);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1291,7 +1291,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val1";
             context.DisplayName = baseName + "Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A9);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1301,7 +1301,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A10);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1363,7 +1363,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A11);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1394,7 +1394,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A12);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1425,7 +1425,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A13);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1456,7 +1456,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "DerivedVal";
             context.DisplayName = baseName + "DerivedVal";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.DerivedVal!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.DerivedVal, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1466,7 +1466,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.VirtualValWithAttr!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.VirtualValWithAttr, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1476,7 +1476,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1507,7 +1507,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A14);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1538,7 +1538,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "VirtualValWithoutAttr";
             context.DisplayName = baseName + "VirtualValWithoutAttr";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.VirtualValWithoutAttr!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.VirtualValWithoutAttr, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1548,7 +1548,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.DerivedVal!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.DerivedVal, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1558,7 +1558,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1590,7 +1590,7 @@ namespace TestClasses.OptionsValidation
             context.DisplayName = baseName + "Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A15);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1600,7 +1600,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A16);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1610,7 +1610,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A17);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val3!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val3, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1620,7 +1620,7 @@ namespace TestClasses.OptionsValidation
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A18);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val4!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val4, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1651,7 +1651,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1682,7 +1682,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A7);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1713,7 +1713,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A16);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1744,7 +1744,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A20);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1775,7 +1775,7 @@ namespace TestClasses.OptionsValidation
             context.MemberName = "Val";
             context.DisplayName = baseName + "Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1808,7 +1808,7 @@ namespace ValueTypes
             context.DisplayName = baseName + "P4";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
@@ -1840,7 +1840,7 @@ namespace ValueTypes
             context.DisplayName = baseName + "P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
                 builder.AddResults(validationResults);
             }
