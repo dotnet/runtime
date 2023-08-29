@@ -163,7 +163,7 @@ namespace System
         /// Returns the specified 128-bit signed integer value as an array of bytes.
         /// </summary>
         /// <param name="value">The number to convert.</param>
-        /// <returns>An array of bytes with length 8.</returns>
+        /// <returns>An array of bytes with length 16.</returns>
         public static byte[] GetBytes(Int128 value)
         {
             byte[] bytes = new byte[sizeof(Int128)];
@@ -277,7 +277,7 @@ namespace System
         /// Returns the specified 128-bit unsigned integer value as an array of bytes.
         /// </summary>
         /// <param name="value">The number to convert.</param>
-        /// <returns>An array of bytes with length 8.</returns>
+        /// <returns>An array of bytes with length 16.</returns>
         [CLSCompliant(false)]
         public static byte[] GetBytes(UInt128 value)
         {
