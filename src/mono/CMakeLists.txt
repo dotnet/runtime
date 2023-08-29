@@ -784,6 +784,14 @@ if (TARGET_BROWSER)
   # sys/errno.h exists, but just emits a warning and includes errno.h
   unset(HAVE_SYS_ERRNO_H)
 endif()
+
+if(TARGET_DARWIN)
+  check_c_compiler_flag(-fno-objc-msgsend-selector-stubs COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+  if(COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+    set(CLR_CMAKE_COMMON_OBJC_FLAGS "${CLR_CMAKE_COMMON_OBJC_FLAGS} -fno-objc-msgsend-selector-stubs")
+  endif()
+endif()
+
 ### End of OS specific checks
 
 add_subdirectory(mono)
