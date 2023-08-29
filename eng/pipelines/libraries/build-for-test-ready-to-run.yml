@@ -2,6 +2,7 @@ parameters:
   archType: ''
   container: ''
   coreclrConfig: ''
+  crossBuild: false
   dependOnEvaluatePaths: false
   helixQueues: ''
   libsAndPacksConfig: ''
@@ -9,7 +10,9 @@ parameters:
   osSubgroup: ''
   platform: ''
   pool: ''
+  runtimeFlavor: 'coreclr'
   shouldContinueOnError: false
+  targetRid: ''
   variables: []
 
 jobs:
@@ -22,6 +25,7 @@ jobs:
 
       archType: ${{ parameters.archType }}
       container: ${{ parameters.container }}
+      crossBuild: ${{ parameters.crossBuild }}
       dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
       helixQueues: ${{ parameters.helixQueues }}
       nameSuffix: TestReadyToRun_Libraries
@@ -30,4 +34,6 @@ jobs:
       platform: ${{ parameters.platform }}
       pool: ${{ parameters.pool }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      targetRid: ${{ parameters.targetRid }}
       timeoutInMinutes: 120
+      variables: ${{ parameters.variables }}
