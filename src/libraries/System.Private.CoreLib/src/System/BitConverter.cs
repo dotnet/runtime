@@ -634,7 +634,7 @@ namespace System
         /// </summary>
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A 64-bit unsigned integer representing the converted bytes.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 16.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong ToUInt64(ReadOnlySpan<byte> value)
