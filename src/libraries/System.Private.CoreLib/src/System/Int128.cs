@@ -1290,12 +1290,33 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static Int128 CopySign(Int128 value, Int128 sign)
         {
+#if TARGET_32BIT
+            Int128 t = value;
+            if (Int128.IsPositive(sign))
+            {
+                if (Int128.IsNegative(t))
+                {
+                    t = -t;
+                    if (Int128.IsNegative(t))
+                    {
+                        Math.ThrowNegateTwosCompOverflow();
+                    }
+                }
+                return t;
+            }
+            if (Int128.IsPositive(t))
+            {
+                t = -t;
+            }
+            return t;
+#else
             // Int128.MinValue == value && 0 <= sign
             if ((long)value._upper == long.MinValue && value._lower == 0 && (long)sign._upper >= 0)
             {
                 Math.ThrowNegateTwosCompOverflow();
             }
             return value * Math.SignZeroToOne((long)value._upper ^ (long)sign._upper);
+#endif
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
