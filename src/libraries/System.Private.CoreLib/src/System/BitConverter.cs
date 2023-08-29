@@ -526,7 +526,7 @@ namespace System
         /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
         /// <returns>A 128-bit signed integer formed by eight bytes beginning at <paramref name="startIndex"/>.</returns>
         /// <exception cref="ArgumentException">
-        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 7,
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 15,
         /// and is less than or equal to the length of <paramref name="value"/> minus 1.
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
@@ -548,7 +548,7 @@ namespace System
         /// </summary>
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A 128-bit signed integer representing the converted bytes.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 16.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ToInt128(ReadOnlySpan<byte> value)
         {
@@ -634,7 +634,7 @@ namespace System
         /// </summary>
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A 64-bit unsigned integer representing the converted bytes.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 16.</exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong ToUInt64(ReadOnlySpan<byte> value)
@@ -642,6 +642,36 @@ namespace System
             if (value.Length < sizeof(ulong))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
             return Unsafe.ReadUnaligned<ulong>(ref MemoryMarshal.GetReference(value));
+        }
+
+        /// <summary>
+        /// Returns a 128-bit unsigned integer converted from four bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A 128-bit unsigned integer formed by eight bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> is greater than or equal to the length of <paramref name="value"/> minus 15,
+        /// and is less than or equal to the length of <paramref name="value"/> minus 1.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
+        [CLSCompliant(false)]
+        public static ulong ToUInt128(byte[] value, int startIndex) => unchecked((UInt128)ToInt128(value, startIndex));
+
+        /// <summary>
+        /// Converts a read-only byte span into a 128-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A 128-bit unsigned integer representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 16.</exception>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong ToUInt128(ReadOnlySpan<byte> value)
+        {
+            if (value.Length < sizeof(UInt128))
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
+            return Unsafe.ReadUnaligned<UInt128>(ref MemoryMarshal.GetReference(value));
         }
 
         /// <summary>
