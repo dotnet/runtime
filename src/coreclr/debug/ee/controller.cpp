@@ -2773,7 +2773,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
     return used;
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 // This function will check for an EnC patch at the given address and return
 // it if one is there, otherwise it will return NULL.
  DebuggerControllerPatch *DebuggerController::GetEnCPatch(const BYTE *address)
@@ -2822,7 +2822,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 
     return NULL;
 }
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
 
 // DebuggerController::DispatchPatchOrSingleStep - Ask any patches that are active at a given
 // address if they want to do anything about the exception that's occurred there.  How: For the given
@@ -2871,7 +2871,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
     TADDR originalAddress = 0;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     DebuggerControllerPatch *dcpEnCOriginal = NULL;
 
     // If this sequence point has an EnC patch, we want to process it ahead of any others. If the
@@ -2912,7 +2912,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         LOG((LF_CORDB|LF_ENC,LL_INFO10000, "DC::DPOSS done EnC short-circuit, ignoring\n"));
         // if we got here, then the EnC remap opportunity was not taken, so just continue on.
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     TP_RESULT tpr;
 
@@ -3000,7 +3000,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         }
     }
 
-#if defined EnC_SUPPORTED
+#if defined FEATURE_METADATA_UPDATER
 Exit:
 #endif
 
@@ -3009,7 +3009,7 @@ Exit:
     // @todo  - do we need to get the context again here?
     CONTEXT *pCtx = GetManagedLiveCtx(thread);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     DebuggerControllerPatch *dcpEnCCurrent = GetEnCPatch(dac_cast<PTR_CBYTE>((GetIP(context))));
 
     // we have a new patch if the original was null and the current is non-null. Otherwise we have an old
@@ -3094,7 +3094,7 @@ void DebuggerController::EnableSingleStep()
     m_singleStep = true;
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 // Note that this doesn't tell us if Single Stepping is currently enabled
 // at the hardware level (ie, for x86, if (context->EFlags & 0x100), but
 // rather, if we WANT single stepping enabled (pThread->m_State &Thread::TS_DebuggerIsStepping)
@@ -3119,7 +3119,7 @@ BOOL DebuggerController::IsSingleStepEnabled(Thread *pThread)
     else
         return FALSE;
 }
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
 
 void DebuggerController::EnableSingleStep(Thread *pThread)
 {
@@ -8627,7 +8627,7 @@ bool DebuggerFuncEvalComplete::SendEvent(Thread *thread, bool fIpChanged)
     return true;
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 
 // * ------------------------------------------------------------------------ *
 // * DebuggerEnCBreakpoint routines
@@ -8895,7 +8895,7 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
 
     return TPR_IGNORE_AND_STOP;
 }
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
 
 // continuable-exceptions
 // * ------------------------------------------------------------------------ *

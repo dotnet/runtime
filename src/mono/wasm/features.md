@@ -193,12 +193,13 @@ See also [fetch integrity on MDN](https://developer.mozilla.org/en-US/docs/Web/A
 
 ### Pre-fetching
 In order to start downloading application resources as soon as possible you can add HTML elements to `<head>` of your page similar to:
+Adding too many files into prefetch could be counterproductive.
+Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
 <link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
-<link rel="prefetch" href="./_framework/dotnet.native.wasm" as="fetch" crossorigin="anonymous">
 ```
 
 See also [link rel prefetch on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/prefetch)

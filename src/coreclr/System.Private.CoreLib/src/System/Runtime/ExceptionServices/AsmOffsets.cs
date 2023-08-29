@@ -41,9 +41,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0x628;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x630;
 #elif TARGET_LOONGARCH64
-    public const int SIZEOF__REGDISPLAY = 0x6C0;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x628;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x630;
+    public const int SIZEOF__REGDISPLAY = 0xc70;
+    public const int OFFSETOF__REGDISPLAY__SP = 0xbb8;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbc0;
 #endif
 
 #if TARGET_64BIT
@@ -87,9 +87,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0x620;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x628;
 #elif TARGET_LOONGARCH64
-    public const int SIZEOF__REGDISPLAY = 0x6B0;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x620;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x628;
+    public const int SIZEOF__REGDISPLAY = 0xc60;
+    public const int OFFSETOF__REGDISPLAY__SP = 0xbb0;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbb8;
 #endif
 
 #if TARGET_64BIT
@@ -121,7 +121,7 @@ class AsmOffsets
 #elif TARGET_RISCV64
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x220;
 #elif TARGET_LOONGARCH64
-    public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x220;
+    public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x520;
 #endif
 
 #if TARGET_AMD64
@@ -141,7 +141,7 @@ class AsmOffsets
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x48;
 #elif TARGET_LOONGARCH64
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x108;
-    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x48;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0xb8;
 #endif
 
     // Offsets / sizes that are different in 64 / 32 bit mode
@@ -185,6 +185,9 @@ class AsmOffsets
     static_assert_no_msg(offsetof(CONTEXT, Eip) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
     static_assert_no_msg(offsetof(CONTEXT, Ebp) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
 #elif TARGET_RISCV64
+    static_assert_no_msg(offsetof(CONTEXT, Pc) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
+    static_assert_no_msg(offsetof(CONTEXT, Fp) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
+#elif TARGET_LOONGARCH64
     static_assert_no_msg(offsetof(CONTEXT, Pc) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
     static_assert_no_msg(offsetof(CONTEXT, Fp) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
 #endif

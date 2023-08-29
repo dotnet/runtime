@@ -1393,7 +1393,7 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
     _ASSERTE(ilDelta != nullptr);
     _ASSERTE(ilDeltaLength > 0);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     GCX_COOP();
     {
         if (CORDebuggerAttached())
@@ -1428,7 +1428,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
 
     BEGIN_QCALL;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     result = CORDebuggerAttached() || g_pConfig->ForceEnc() || g_pConfig->DebugAssembliesModifiable();
 #endif
 

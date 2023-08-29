@@ -792,7 +792,7 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
     }
 }
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
 /*****************************************************************************
  *  Last chance for the runtime support to do fixups in the context
  *  before execution continues inside an EnC updated function.
@@ -1471,7 +1471,7 @@ ErrExit:
 
     return hr;
 }
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_METADATA_UPDATER
 
 #endif // #ifndef DACCESS_COMPILE
 

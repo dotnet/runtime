@@ -1692,7 +1692,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
-    assert(node->gtType == TYP_BOOL);
+    assert(node->gtType == TYP_UBYTE);
     assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
 
     // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
@@ -3868,6 +3868,10 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         {
             use.ReplaceWith(newIndir);
         }
+        else
+        {
+            newIndir->SetUnusedValue();
+        }
 
         BlockRange().Remove(op1);
         BlockRange().Remove(node);
@@ -3915,6 +3919,10 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
                 if (BlockRange().TryGetUse(node, &use))
                 {
                     use.ReplaceWith(lclFld);
+                }
+                else
+                {
+                    lclFld->SetUnusedValue();
                 }
 
                 BlockRange().Remove(op1);
@@ -4157,6 +4165,11 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         if (foundUse)
         {
             use.ReplaceWith(cast);
+        }
+        else
+        {
+            node->ClearUnusedValue();
+            cast->SetUnusedValue();
         }
         next = LowerNode(cast);
     }
@@ -4737,6 +4750,10 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 {
                     use.ReplaceWith(tmp1);
                 }
+                else
+                {
+                    tmp1->SetUnusedValue();
+                }
 
                 BlockRange().Remove(node);
                 return LowerNode(tmp1);
@@ -5267,6 +5284,10 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     {
         use.ReplaceWith(tmp1);
     }
+    else
+    {
+        tmp1->SetUnusedValue();
+    }
 
     BlockRange().Remove(node);
     return tmp1->gtNext;
@@ -5314,6 +5335,10 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
             {
                 use.ReplaceWith(newIndir);
             }
+            else
+            {
+                newIndir->SetUnusedValue();
+            }
 
             BlockRange().Remove(op1);
             BlockRange().Remove(node);
@@ -5341,6 +5366,10 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
                 if (BlockRange().TryGetUse(node, &use))
                 {
                     use.ReplaceWith(lclFld);
+                }
+                else
+                {
+                    lclFld->SetUnusedValue();
                 }
 
                 BlockRange().Remove(op1);
@@ -5425,6 +5454,11 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         if (foundUse)
         {
             use.ReplaceWith(cast);
+        }
+        else
+        {
+            node->ClearUnusedValue();
+            cast->SetUnusedValue();
         }
         next = LowerNode(cast);
     }
@@ -8332,8 +8366,15 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         BlockRange().InsertBefore(broadcastNode, createScalar);
         BlockRange().InsertBefore(createScalar, constScalar);
         LIR::Use use;
-        BlockRange().TryGetUse(childNode, &use);
-        use.ReplaceWith(broadcastNode);
+        if (BlockRange().TryGetUse(childNode, &use))
+        {
+            use.ReplaceWith(broadcastNode);
+        }
+        else
+        {
+            broadcastNode->SetUnusedValue();
+        }
+
         BlockRange().Remove(childNode);
         LowerNode(createScalar);
         LowerNode(broadcastNode);

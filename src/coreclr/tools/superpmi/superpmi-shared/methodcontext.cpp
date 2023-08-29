@@ -2747,24 +2747,31 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
 void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
 {
     if (GetExactClasses == nullptr)
-        GetExactClasses = new LightWeightMap<DLD, DLD>();
+        GetExactClasses = new LightWeightMap<DLD, Agnostic_GetExactClassesResult>();
 
     DLD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(baseType);
     key.B = maxExactClasses;
 
-    DLD value;
-    ZeroMemory(&value, sizeof(value));
-    value.A = CastHandle(*exactClsRet);
-    value.B = result;
+    Assert(result >= 0);
+
+    DWORDLONG* exactClassesAgnostic = new DWORDLONG[result];
+    for (int i = 0; i < result; i++)
+        exactClassesAgnostic[i] = CastHandle(exactClsRet[i]);
+
+    Agnostic_GetExactClassesResult value;
+    value.numClasses = result;
+    value.classes = GetExactClasses->AddBuffer((unsigned char*)exactClassesAgnostic, (unsigned int)(result * sizeof(DWORDLONG)));
+
+    delete[] exactClassesAgnostic;
 
     GetExactClasses->Add(key, value);
 }
-void MethodContext::dmpGetExactClasses(DLD key, DLD value)
+void MethodContext::dmpGetExactClasses(DLD key, const Agnostic_GetExactClassesResult& value)
 {
-    printf("GetExactClasses key baseType-%016" PRIX64 ", key maxExactCls %u, value exactCls %016" PRIX64 ", value exactClsCount %u",
-        key.A, key.B, value.A, value.B);
+    printf("GetExactClasses key baseType-%016" PRIX64 ", maxExactCls-%u, value numClasses-%d",
+        key.A, key.B, value.numClasses);
 }
 int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
 {
@@ -2773,10 +2780,19 @@ int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExac
     key.A = CastHandle(baseType);
     key.B = maxExactClasses;
 
-    DLD value = LookupByKeyOrMiss(GetExactClasses, key, ": key %016" PRIX64 " %08X", key.A, key.B);
+    Agnostic_GetExactClassesResult value = LookupByKeyOrMiss(GetExactClasses, key, ": key %016" PRIX64 " %08X", key.A, key.B);
 
-    *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
-    return value.B;
+    Assert(maxExactClasses >= value.numClasses);
+
+    unsigned char* buffer = GetExactClasses->GetBuffer(value.classes);
+    for (int i = 0; i < value.numClasses; i++)
+    {
+        DWORDLONG handle;
+        memcpy(&handle, &buffer[i * sizeof(DWORDLONG)], sizeof(handle));
+        exactClsRet[i] = (CORINFO_CLASS_HANDLE)handle;
+    }
+
+    return value.numClasses;
 }
 
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)

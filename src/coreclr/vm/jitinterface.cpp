@@ -12564,12 +12564,12 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
 #endif // _DEBUG
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (pModule->IsEditAndContinueEnabled())
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_EnC);
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     // Debug info is always tracked
     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
@@ -14719,7 +14719,7 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
 ULONG EECodeInfo::GetFrameOffsetFromUnwindInfo()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     SUPPORTS_DAC;
 
     // moduleBase is a target address.

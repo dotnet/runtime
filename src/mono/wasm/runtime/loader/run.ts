@@ -454,10 +454,11 @@ function importModules() {
 }
 
 async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
-    const { initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
+    const { initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
+    await configureRuntimeStartup();
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 
     emscriptenFactory((originalModule: EmscriptenModuleInternal) => {
@@ -494,9 +495,8 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
         mono_exit(1, err);
     });
 
-    init_globalization();
-
     setTimeout(() => {
+        init_globalization();
         mono_download_assets(); // intentionally not awaited
     }, 0);
 
