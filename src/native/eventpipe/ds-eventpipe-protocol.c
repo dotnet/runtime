@@ -459,28 +459,29 @@ eventpipe_protocol_helper_collect_tracing (
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;
-	EventPipeSessionOptions options;
 
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
 		ep_raise_error ();
 	}
 
-	options = {
-		NULL,
-		payload->circular_buffer_size_in_mb,
-		dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
-		dn_vector_size (payload->provider_configs),
-		EP_SESSION_TYPE_IPCSTREAM,
-		payload->serialization_format,
-		payload->rundown_requested,
-		payload->stackwalk_requested,
-		ds_ipc_stream_get_stream_ref (stream),
-		NULL,
-		NULL,
-	};
+	{
+		EventPipeSessionOptions options = {
+			NULL,
+			payload->circular_buffer_size_in_mb,
+			dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
+			dn_vector_size (payload->provider_configs),
+			EP_SESSION_TYPE_IPCSTREAM,
+			payload->serialization_format,
+			payload->rundown_requested,
+			payload->stackwalk_requested,
+			ds_ipc_stream_get_stream_ref (stream),
+			NULL,
+			NULL,
+		};
 
-	session_id = ep_enable_3(&options);
+		session_id = ep_enable_3(&options);
+	}
 
 	if (session_id == 0) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
