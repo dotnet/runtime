@@ -1,11 +1,11 @@
-<Project>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" />
+<Project Sdk=="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <!-- By default, build the NetCoreAppCurrent vertical only. -->
     <BuildTargetFramework Condition="'$(BuildAllConfigurations)' != 'true'">$(NetCoreAppCurrent)</BuildTargetFramework>
+     <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">true</ExplicitlyImportCustomILLinkTargets>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
@@ -77,13 +77,5 @@
           AfterTargets="Build;Pack">
     <Message Condition="Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" />
-
-  <!-- Must be imported AFTER liveBuilds.targets (imported by Directory.Build.targets) which defines the ToolsILLinkDir. -->
-  <ImportGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
-    <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
-    <Import Project="$(RepositoryEngineeringDir)illink.targets" />
-  </ImportGroup>
 
 </Project>

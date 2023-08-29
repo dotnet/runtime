@@ -1,6 +1,4 @@
-<Project>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" />
+<Project Sdk="Microsoft.Build.NoTargets">
 
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
@@ -9,6 +7,8 @@
     <BuildInParallel>false</BuildInParallel>
     <IsPackable>false</IsPackable>
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
+    <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -117,11 +117,5 @@
     <Touch Files="$(SharedFrameworkAssembliesTrimMarkerFile)"
            AlwaysCreate="true" />
   </Target>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" />
-
-  <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
-  <!-- Must be imported AFTER liveBuilds.targets (imported by Directory.Build.targets) which defines the ToolsILLinkDir. -->
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
 
 </Project>
