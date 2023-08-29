@@ -272,6 +272,35 @@ namespace System
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
             return true;
         }
+        
+        /// <summary>
+        /// Returns the specified 128-bit signed integer value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 8.</returns>
+        [CLSCompliant(false)]
+        public static byte[] GetBytes(UInt128 value)
+        {
+            byte[] bytes = new byte[sizeof(UInt128)];
+            Unsafe.As<byte, UInt128>(ref bytes[0]) = value;
+            return bytes;
+        }
+
+        /// <summary>
+        /// Converts a 128-bit unsigned integer into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted 128-bit unsigned integer.</param>
+        /// <param name="value">The 128-bit unsigned integer to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
+        [CLSCompliant(false)]
+        public static bool TryWriteBytes(Span<byte> destination, UInt128 value)
+        {
+            if (destination.Length < sizeof(UInt128))
+                return false;
+
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+            return true;
+        }
 
         /// <summary>
         /// Returns the specified half-precision floating point value as an array of bytes.
