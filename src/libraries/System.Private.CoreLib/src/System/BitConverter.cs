@@ -245,7 +245,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns the specified 64-bit signed integer value as an array of bytes.
+        /// Returns the specified 64-bit unsigned integer value as an array of bytes.
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 8.</returns>
@@ -274,7 +274,7 @@ namespace System
         }
         
         /// <summary>
-        /// Returns the specified 128-bit signed integer value as an array of bytes.
+        /// Returns the specified 128-bit unsigned integer value as an array of bytes.
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 8.</returns>
