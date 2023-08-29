@@ -232,14 +232,31 @@ namespace System.Net.Http
                             Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
                             cancellationToken.ThrowIfCancellationRequested();
 
-                            Memory<byte> buffer = new byte[500];
+                            byte[]? buffer = null;
 
-                            var pull = async void (JSObject controller) =>
+                            var pull = async void (JSObject controller, int desiredSize) =>
                             {
+                                Memory<byte> view;
+                                if (desiredSize > 0)
+                                {
+                                    if (buffer is null || buffer.Length < desiredSize)
+                                    {
+                                        view = buffer = new byte[desiredSize];
+                                    }
+                                    else
+                                    {
+                                        view = buffer.AsMemory(0, desiredSize);
+                                    }
+                                }
+                                else
+                                {
+                                    view = buffer ??= new byte[500];
+                                }
+
                                 try
                                 {
-                                    int length = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(true);
-                                    using (Buffers.MemoryHandle handle = buffer.Pin())
+                                    int length = await stream.ReadAsync(view, cancellationToken).ConfigureAwait(true);
+                                    using (Buffers.MemoryHandle handle = view.Pin())
                                     {
                                         ReadableStreamControllerEnqueueUnsafe(controller, handle, length, null);
                                     }

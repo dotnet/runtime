@@ -76,7 +76,7 @@ namespace System.Net.Http
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
             JSObject abortControler,
-            [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> pull);
+            [JSMarshalAs<JSType.Function<JSType.Object, JSType.Number>>] Action<JSObject, int> pull);
 
         [JSImport("INTERNAL.http_wasm_fetch_bytes")]
         private static partial Task<JSObject> FetchBytes(

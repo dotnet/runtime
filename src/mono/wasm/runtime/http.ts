@@ -66,25 +66,31 @@ export function http_wasm_readable_stream_controller_enqueue(controller: Readabl
         // the bufferPtr is pinned by the caller
         const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
         const copy = view.slice() as Uint8Array;
-        controller.enqueue(copy);
+        if (controller.byobRequest) {
+            const v = controller.byobRequest.view as Uint8Array;
+            v.set(copy);
+            controller.byobRequest.respond(bufferLength);
+        } else {
+            controller.enqueue(copy);
+        }
     }
     controller.__resolve();
 }
 
-export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamControllerExtension) => void): Promise<ResponseExtension> {
+export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamControllerExtension, desired_size: number) => void): Promise<ResponseExtension> {
     const body = new ReadableStream({
         type: "bytes",
-        //autoAllocateChunkSize: 500, enable to support byobRequest
+        autoAllocateChunkSize: 500,
         pull(controller: ReadableByteStreamController) {
             return new Promise(resolve => {
                 const c = controller as ReadableByteStreamControllerExtension;
+                let desired_size = c.desiredSize;
+                if (c.byobRequest && c.byobRequest.view) { // waiting on https://github.com/WebAssembly/design/issues/1162 so we can pass the view to .net
+                    desired_size = c.byobRequest.view.byteLength;
+                }
                 c.__resolve = resolve;
-                pull(c);
+                pull(c, desired_size || 0);
             });
-        },
-        cancel(reason) {
-            // eslint-disable-next-line no-console
-            console.log("http_wasm_fetch_stream cancel: " + reason);
         },
     });
 
@@ -92,7 +98,7 @@ export function http_wasm_fetch_stream(url: string, header_names: string[], head
 }
 
 export function http_wasm_fetch_bytes(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, bodyPtr: VoidPtr, bodyLength: number): Promise<ResponseExtension> {
-    // the bufferPtr is pinned by the caller
+    // the bodyPtr is pinned by the caller
     const view = new Span(bodyPtr, bodyLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
     return http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, copy);
