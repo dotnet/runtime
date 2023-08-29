@@ -120,6 +120,9 @@ jobs:
           value: 'composite'
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_Composite
+      - ${{ if eq(parameters.hotColdSplitting, true) }}:
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_HotColdSplitting
 
     - name: hotColdSplittingArg
       value: ''
