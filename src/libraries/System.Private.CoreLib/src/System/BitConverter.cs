@@ -158,6 +158,33 @@ namespace System
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
             return true;
         }
+        
+        /// <summary>
+        /// Returns the specified 128-bit signed integer value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 8.</returns>
+        public static byte[] GetBytes(Int128 value)
+        {
+            byte[] bytes = new byte[sizeof(Int128)];
+            Unsafe.As<byte, Int128>(ref bytes[0]) = value;
+            return bytes;
+        }
+
+        /// <summary>
+        /// Converts a 128-bit signed integer into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted 128-bit signed integer.</param>
+        /// <param name="value">The 128-bit signed integer to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
+        public static bool TryWriteBytes(Span<byte> destination, Int128 value)
+        {
+            if (destination.Length < sizeof(Int128))
+                return false;
+
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+            return true;
+        }
 
         /// <summary>
         /// Returns the specified 16-bit unsigned integer value as an array of bytes.
