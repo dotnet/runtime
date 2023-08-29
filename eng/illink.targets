@@ -6,8 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- SkipGetTargetFrameworkProperties builds ILLink.Tasks without any TargetFramework settings
+         based on the referencing project, preventing errors when illink.targets is imported by a
+         project with TargetFrameworks that are incompatible with those of ILLink.Tasks. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
-                      ReferenceOutputAssembly="false" />
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      SkipGetTargetFrameworkProperties="true"
+                      SetConfiguration="Configuration=$(ToolsConfiguration)" />
   </ItemGroup>
 
   <Import Project="$(_ILLinkTasksSourceDir)build/Microsoft.NET.ILLink.Tasks.props" />
