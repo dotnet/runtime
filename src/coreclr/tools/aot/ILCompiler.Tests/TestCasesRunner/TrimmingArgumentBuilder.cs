@@ -12,7 +12,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	{
 		private readonly TestCaseMetadataProvider _metadataProvider;
 
-		private readonly ILCompilerOptions _options;
+		private ILCompilerOptions? _options;
+		private ILCompilerOptions Options => _options ?? throw new InvalidOperationException ("Invalid state: Build() was already called");
 
 		public TrimmingArgumentBuilder (TestCaseMetadataProvider metadataProvider)
 		{
@@ -20,7 +21,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_metadataProvider = metadataProvider;
 
 			string runtimeBinDir = (string) AppContext.GetData ("Mono.Linker.Tests.RuntimeBinDirectory")!;
-			AppendExpandedPaths (_options.ReferenceFilePaths, Path.Combine (runtimeBinDir, "aotsdk", "*.dll"));
+			AppendExpandedPaths (Options.ReferenceFilePaths, Path.Combine (runtimeBinDir, "aotsdk", "*.dll"));
 
 			string runtimePackDir = (string) AppContext.GetData ("Mono.Linker.Tests.MicrosoftNetCoreAppRuntimePackDirectory")!;
 			if (!Directory.Exists (runtimePackDir) && runtimePackDir.Contains ("Debug")) {
@@ -31,24 +32,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (Directory.Exists (candidate))
 					runtimePackDir = candidate;
 			}
-			AppendExpandedPaths (_options.ReferenceFilePaths, Path.Combine (runtimePackDir, "*.dll"));
+			AppendExpandedPaths (Options.ReferenceFilePaths, Path.Combine (runtimePackDir, "*.dll"));
 
-			_options.InitAssemblies.Add ("System.Private.CoreLib");
-			_options.InitAssemblies.Add ("System.Private.StackTraceMetadata");
-			_options.InitAssemblies.Add ("System.Private.TypeLoader");
-			_options.InitAssemblies.Add ("System.Private.Reflection.Execution");
+			Options.InitAssemblies.Add ("System.Private.CoreLib");
+			Options.InitAssemblies.Add ("System.Private.StackTraceMetadata");
+			Options.InitAssemblies.Add ("System.Private.TypeLoader");
+			Options.InitAssemblies.Add ("System.Private.Reflection.Execution");
 
-			_options.FeatureSwitches.Add ("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", false);
-			_options.FeatureSwitches.Add ("System.Resources.ResourceManager.AllowCustomResourceTypes", false);
-			_options.FeatureSwitches.Add ("System.Linq.Expressions.CanEmitObjectArrayDelegate", false);
-			_options.FeatureSwitches.Add ("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", false);
-			_options.FeatureSwitches.Add ("System.Diagnostics.Debugger.IsSupported", false);
-			_options.FeatureSwitches.Add ("System.Text.Encoding.EnableUnsafeUTF7Encoding", false);
-			_options.FeatureSwitches.Add ("System.Diagnostics.Tracing.EventSource.IsSupported", false);
-			_options.FeatureSwitches.Add ("System.Globalization.Invariant", true);
-			_options.FeatureSwitches.Add ("System.Resources.UseSystemResourceKeys", true);
+			Options.FeatureSwitches.Add ("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", false);
+			Options.FeatureSwitches.Add ("System.Resources.ResourceManager.AllowCustomResourceTypes", false);
+			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanEmitObjectArrayDelegate", false);
+			Options.FeatureSwitches.Add ("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", false);
+			Options.FeatureSwitches.Add ("System.Diagnostics.Debugger.IsSupported", false);
+			Options.FeatureSwitches.Add ("System.Text.Encoding.EnableUnsafeUTF7Encoding", false);
+			Options.FeatureSwitches.Add ("System.Diagnostics.Tracing.EventSource.IsSupported", false);
+			Options.FeatureSwitches.Add ("System.Globalization.Invariant", true);
+			Options.FeatureSwitches.Add ("System.Resources.UseSystemResourceKeys", true);
 
-			_options.FrameworkCompilation = false;
+			Options.FrameworkCompilation = false;
 		}
 
 		public virtual void AddSearchDirectory (NPath directory)
@@ -57,7 +58,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddReference (NPath path)
 		{
-			AppendExpandedPaths (_options.ReferenceFilePaths, path.ToString ());
+			AppendExpandedPaths (Options.ReferenceFilePaths, path.ToString ());
 		}
 
 		public virtual void AddOutputDirectory (NPath directory)
@@ -66,7 +67,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkXmlFile (string file)
 		{
-			_options.Descriptors.Add (file);
+			Options.Descriptors.Add (file);
 		}
 
 		public virtual void AddResponseFile (NPath path)
@@ -83,12 +84,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkAssembly (string fileName)
 		{
-			_options.TrimAssemblies.Add (Path.GetFileNameWithoutExtension(fileName));
+			Options.TrimAssemblies.Add (Path.GetFileNameWithoutExtension(fileName));
 		}
 
 		public virtual void LinkFromAssembly (string fileName)
 		{
-			AppendExpandedPaths (_options.InputFilePaths, fileName);
+			AppendExpandedPaths (Options.InputFilePaths, fileName);
 		}
 
 		public virtual void LinkFromPublicAndFamily (string fileName)
@@ -123,7 +124,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			switch (action) {
 			case "copy":
-				_options.AdditionalRootAssemblies.Add (assembly);
+				Options.AdditionalRootAssemblies.Add (assembly);
 				break;
 			}
 		}
@@ -155,10 +156,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual void AddAdditionalArgument (string flag, string[] values)
 		{
 			if (flag == "--feature") {
-				_options.FeatureSwitches.Add (values[0], bool.Parse (values[1]));
+				Options.FeatureSwitches.Add (values[0], bool.Parse (values[1]));
 			}
 			else if (flag == "--singlewarn") {
-				_options.SingleWarn = true;
+				Options.SingleWarn = true;
 			}
 		}
 
@@ -228,7 +229,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AddAdditionalArgument (additionalArgument.Key, additionalArgument.Value);
 
 			if (options.IlcFrameworkCompilation)
-				_options.FrameworkCompilation = true;
+				Options.FrameworkCompilation = true;
 		}
 
 		private static void AppendExpandedPaths (Dictionary<string, string> dictionary, string pattern)
@@ -262,7 +263,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public ILCompilerOptions Build ()
 		{
-			return _options;
+			var options = Options;
+			_options = null;
+			return options;
 		}
 	}
 }
