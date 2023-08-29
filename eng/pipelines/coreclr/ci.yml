@@ -44,14 +44,14 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: debug
           platforms:
-          - linux_arm
-          - linux_arm64
+          # - linux_arm
+          # - linux_arm64
           - linux_musl_arm64
-          - linux_musl_x64
+          # - linux_musl_x64
           - linux_x64
           - osx_arm64
           - osx_x64
-          - windows_arm64
+          # - windows_arm64
           jobParameters:
             testGroup: outerloop
 
@@ -78,12 +78,12 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: release
           platforms:
-          - linux_arm
+          # - linux_arm
           - linux_musl_arm64
-          - linux_x64
-          - osx_arm64
-          - osx_x64
-          - windows_x86
+          # - linux_x64
+          # - osx_arm64
+          # - osx_x64
+          # - windows_x86
           jobParameters:
             testGroup: outerloop
 
@@ -139,15 +139,18 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
+          # WIP-ONLY CHANGE: The failure I'm interested in only reliably reproduces
+          # on Linux Musl ARM64, so let's only run that one while I investigate,
+          # for the sake of time and efficiency.
           platforms:
-          - linux_arm64
-          - linux_musl_x64
+          # - linux_arm64
+          # - linux_musl_x64
           - linux_musl_arm64
-          - linux_x64
-          - osx_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
+          # - linux_x64
+          # - osx_x64
+          # - windows_x64
+          # - windows_x86
+          # - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -164,4 +167,4 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
           platforms:
           - linux_x64
-          - windows_x64
+          # - windows_x64

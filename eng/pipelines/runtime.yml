@@ -61,28 +61,9 @@ extends:
       - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
         - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-      # WIP-ONLY CHANGE: This is the exact pipeline that has the failure I'm
-      # interested in, so let's just run this one for the sake of efficiency.
-
-      #
-      # Checked R2R test runs
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          # WIP-ONLY CHANGE: The failure I'm interested in only reliably reproduces
-          # on Linux Musl ARM64, so let's only run that one while I investigate,
-          # for the sake of time and efficiency.
-          platforms:
-          - linux_musl_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            readyToRun: true
-            displayNameArgs: R2R_CG2
-            liveLibrariesBuildConfig: Release
+      # WIP-ONLY CHANGE: The failure I'm interested in only happens in a specific
+      # pipeline from outerloop. Disabling the main one meanwhile, in order to
+      # save resources and for the sake of efficiency.
 
       # #
       # # Build CoreCLR checked
