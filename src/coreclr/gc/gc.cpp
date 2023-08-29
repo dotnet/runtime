@@ -51083,7 +51083,6 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
     Object*** end_si = &SegQueueLimit (dest);
     do
     {
-        assert (s_i >= &SegQueueLimit(0));
         //is the segment empty?
         if (!(*s_i == *(s_i-1)))
         {
