@@ -630,10 +630,6 @@ typedef unsigned int ALG_ID;
 // 1 null termination
 #define LOCALE_NAME_MAX_LENGTH   85
 
-#define CSTR_LESS_THAN            1
-#define CSTR_EQUAL                2
-#define CSTR_GREATER_THAN         3
-
 
 #ifdef __cplusplus
 /*
