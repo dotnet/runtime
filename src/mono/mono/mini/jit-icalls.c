@@ -1358,7 +1358,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 
 	error_init (error);
 
-	if (mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) {
+	if ((mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) && !m_method_is_static (cmethod)) {
 		MonoObject *this_obj;
 
 		is_iface = mono_class_is_interface (klass);
@@ -1390,7 +1390,12 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		}
 	}
 
-	if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
+	if (m_method_is_static (cmethod)) {
+		/*
+		 * Static calls don't have this arg
+		 */
+		*this_arg = NULL;
+	} else if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
