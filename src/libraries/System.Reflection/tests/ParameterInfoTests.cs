@@ -83,7 +83,7 @@ namespace System.Reflection.Tests
         public void HasDefaultValue_ReturnParam()
         {
             ParameterInfo parameterInfo = GetMethod(typeof(ParameterInfoMetadata), "Method1").ReturnParameter;
-            Assert.True(parameterInfo.HasDefaultValue);
+            Assert.False(parameterInfo.HasDefaultValue);
         }
 
         [Theory]

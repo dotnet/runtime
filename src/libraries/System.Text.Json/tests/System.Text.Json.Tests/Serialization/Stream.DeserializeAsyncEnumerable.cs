@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -78,9 +77,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
-        [InlineData(DeserializeAsyncEnumerableOverload.UntypedJsonSerializerOptions)]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
-        [InlineData(DeserializeAsyncEnumerableOverload.UntypedJsonTypeInfo)]
         public static async Task DeserializeAsyncEnumerable_ShouldStreamPartialData(DeserializeAsyncEnumerableOverload overload)
         {
             string json = JsonSerializer.Serialize(Enumerable.Range(0, 100));
@@ -104,9 +101,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
-        [InlineData(DeserializeAsyncEnumerableOverload.UntypedJsonSerializerOptions)]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
-        [InlineData(DeserializeAsyncEnumerableOverload.UntypedJsonTypeInfo)]
         public static async Task DeserializeAsyncEnumerable_ShouldTolerateCustomQueueConverters(DeserializeAsyncEnumerableOverload overload)
         {
             const int expectedCount = 20;
@@ -160,11 +155,8 @@ namespace System.Text.Json.Serialization.Tests
         public static void DeserializeAsyncEnumerable_NullArgument_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: null));
-            AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable(utf8Json: null, returnType: typeof(int)));
             AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: null, jsonTypeInfo: ResolveJsonTypeInfo<int>()));
-            AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable(utf8Json: null, jsonTypeInfo: ResolveJsonTypeInfo(typeof(int))));
             AssertExtensions.Throws<ArgumentNullException>("jsonTypeInfo", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: new MemoryStream(), jsonTypeInfo: null));
-            AssertExtensions.Throws<ArgumentNullException>("jsonTypeInfo", () => JsonSerializer.DeserializeAsyncEnumerable(utf8Json: new MemoryStream(), jsonTypeInfo: null));
         }
 
         [Theory]
@@ -190,9 +182,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
-        [InlineData(DeserializeAsyncEnumerableOverload.UntypedJsonSerializerOptions)]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
-        [InlineData(DeserializeAsyncEnumerableOverload.UntypedJsonTypeInfo)]
         public static async Task DeserializeAsyncEnumerable_CancellationToken_ThrowsOnCancellation(DeserializeAsyncEnumerableOverload overload)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
@@ -216,9 +206,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
-        [InlineData(DeserializeAsyncEnumerableOverload.UntypedJsonSerializerOptions)]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
-        [InlineData(DeserializeAsyncEnumerableOverload.UntypedJsonTypeInfo)]
         public static async Task DeserializeAsyncEnumerable_EnumeratorWithCancellationToken_ThrowsOnCancellation(DeserializeAsyncEnumerableOverload overload)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
@@ -243,41 +231,27 @@ namespace System.Text.Json.Serialization.Tests
         public static IEnumerable<object[]> GetAsyncEnumerableSources()
         {
             yield return WrapArgs(Enumerable.Empty<int>(), 1, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
-            yield return WrapArgs(Enumerable.Empty<int>(), 1, DeserializeAsyncEnumerableOverload.UntypedJsonSerializerOptions);
             yield return WrapArgs(Enumerable.Empty<int>(), 1, DeserializeAsyncEnumerableOverload.JsonTypeInfo);
-            yield return WrapArgs(Enumerable.Empty<int>(), 1, DeserializeAsyncEnumerableOverload.UntypedJsonTypeInfo);
             yield return WrapArgs(Enumerable.Range(0, 20), 1, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
             yield return WrapArgs(Enumerable.Range(0, 100), 20, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
             yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 500, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
             yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 500, DeserializeAsyncEnumerableOverload.JsonTypeInfo);
             yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
-            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100, DeserializeAsyncEnumerableOverload.UntypedJsonSerializerOptions);
             yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100, DeserializeAsyncEnumerableOverload.JsonTypeInfo);
-            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100, DeserializeAsyncEnumerableOverload.UntypedJsonTypeInfo);
             yield return WrapArgs(Enumerable.Range(0, 100).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 500, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
 
             static object[] WrapArgs<TSource>(IEnumerable<TSource> source, int bufferSize, DeserializeAsyncEnumerableOverload overload) => new object[] { source, bufferSize, overload };
         }
 
-        public enum DeserializeAsyncEnumerableOverload { JsonSerializerOptions, UntypedJsonSerializerOptions, JsonTypeInfo, UntypedJsonTypeInfo };
+        public enum DeserializeAsyncEnumerableOverload { JsonSerializerOptions, JsonTypeInfo };
 
         private static IAsyncEnumerable<T> DeserializeAsyncEnumerableWrapper<T>(Stream stream, JsonSerializerOptions options = null, CancellationToken cancellationToken = default, DeserializeAsyncEnumerableOverload overload = DeserializeAsyncEnumerableOverload.JsonSerializerOptions)
         {
             return overload switch
             {
                 DeserializeAsyncEnumerableOverload.JsonTypeInfo => JsonSerializer.DeserializeAsyncEnumerable<T>(stream, ResolveJsonTypeInfo<T>(options), cancellationToken),
-                DeserializeAsyncEnumerableOverload.UntypedJsonTypeInfo => Cast(JsonSerializer.DeserializeAsyncEnumerable(stream, ResolveJsonTypeInfo(typeof(T), options), cancellationToken)),
-                DeserializeAsyncEnumerableOverload.UntypedJsonSerializerOptions => Cast(JsonSerializer.DeserializeAsyncEnumerable(stream, typeof(T), options, cancellationToken)),
                 DeserializeAsyncEnumerableOverload.JsonSerializerOptions or _ => JsonSerializer.DeserializeAsyncEnumerable<T>(stream, options, cancellationToken),
             };
-
-            static async IAsyncEnumerable<T> Cast(IAsyncEnumerable<object> source, [EnumeratorCancellation] CancellationToken token = default)
-            {
-                await foreach (object item in source.WithCancellation(token))
-                {
-                    yield return (T)item;
-                }
-            }
         }
 
         private static JsonTypeInfo<T> ResolveJsonTypeInfo<T>(JsonSerializerOptions? options = null)

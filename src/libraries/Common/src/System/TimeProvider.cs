@@ -16,7 +16,7 @@ namespace System
         /// and a timer based on <see cref="Timer"/>.
         /// </summary>
         /// <remarks>
-        /// If the <see cref="TimeZoneInfo.Local"/> changes after the object is returned, the change will be reflected in any subsequent operations that retrieve <see cref="TimeProvider.GetLocalNow"/>.
+        /// If the <see cref="TimeZoneInfo.Local"/> changes after the object is returned, the change will be reflected in any subsequent operations that retrieve <see cref="GetLocalNow"/>.
         /// </remarks>
         public static TimeProvider System { get; } = new SystemTimeProvider();
 
@@ -57,6 +57,10 @@ namespace System
 #endif // SYSTEM_PRIVATE_CORELIB
             }
             TimeSpan offset = zoneInfo.GetUtcOffset(utcDateTime);
+            if (offset.Ticks is 0)
+            {
+                return utcDateTime;
+            }
 
             long localTicks = utcDateTime.Ticks + offset.Ticks;
             if ((ulong)localTicks > (ulong)s_maxDateTicks)
@@ -73,7 +77,7 @@ namespace System
         /// <remarks>
         /// The default implementation returns <see cref="TimeZoneInfo.Local"/>.
         /// </remarks>
-        public virtual TimeZoneInfo LocalTimeZone { get => TimeZoneInfo.Local; }
+        public virtual TimeZoneInfo LocalTimeZone => TimeZoneInfo.Local;
 
         /// <summary>
         /// Gets the frequency of <see cref="GetTimestamp"/> of high-frequency value per second.
@@ -81,7 +85,7 @@ namespace System
         /// <remarks>
         /// The default implementation returns <see cref="Stopwatch.Frequency"/>. For a given TimeProvider instance, the value must be idempotent and remain unchanged.
         /// </remarks>
-        public virtual long TimestampFrequency { get => Stopwatch.Frequency; }
+        public virtual long TimestampFrequency => Stopwatch.Frequency;
 
         /// <summary>
         /// Gets the current high-frequency value designed to measure small time intervals with high accuracy in the timer mechanism.
@@ -112,6 +116,13 @@ namespace System
 
             return new TimeSpan((long)((endingTimestamp - startingTimestamp) * ((double)TimeSpan.TicksPerSecond / timestampFrequency)));
         }
+
+        /// <summary>
+        /// Gets the elapsed time since the <paramref name="startingTimestamp"/> value retrieved using <see cref="GetTimestamp"/>.
+        /// </summary>
+        /// <param name="startingTimestamp">The timestamp marking the beginning of the time period.</param>
+        /// <returns>A <see cref="TimeSpan"/> for the elapsed time between the starting timestamp and the time of this call./></returns>
+        public TimeSpan GetElapsedTime(long startingTimestamp) => GetElapsedTime(startingTimestamp, GetTimestamp());
 
         /// <summary>Creates a new <see cref="ITimer"/> instance, using <see cref="TimeSpan"/> values to measure time intervals.</summary>
         /// <param name="callback">
@@ -176,24 +187,35 @@ namespace System
 #endif // SYSTEM_PRIVATE_CORELIB
             public SystemTimeProviderTimer(TimeSpan dueTime, TimeSpan period, TimerCallback callback, object? state)
             {
-                (uint duration, uint periodTime) = CheckAndGetValues(dueTime, period);
 #if SYSTEM_PRIVATE_CORELIB
-                _timer = new TimerQueueTimer(callback, state, duration, periodTime, flowExecutionContext: true);
+                _timer = new TimerQueueTimer(callback, state, dueTime, period, flowExecutionContext: true);
 #else
-                // We want to ensure the timer we create will be tracked as long as it is scheduled.
-                // To do that, we call the constructor which track only the callback which will make the time to be tracked by the scheduler
-                // then we call Change on the timer to set the desired duration and period.
-                _timer = new Timer(_ => callback(state));
-                _timer.Change(duration, periodTime);
+                // We need to ensure the timer roots itself. Timer created with a duration and period argument
+                // only roots the state object, so to root the timer we need the state object to reference the
+                // timer recursively.
+                var timerState = new TimerState(callback, state);
+                timerState.Timer = _timer = new Timer(static s =>
+                {
+                    TimerState ts = (TimerState)s!;
+                    ts.Callback(ts.State);
+                }, timerState, dueTime, period);
 #endif // SYSTEM_PRIVATE_CORELIB
             }
 
+#if !SYSTEM_PRIVATE_CORELIB
+            private sealed class TimerState(TimerCallback callback, object? state)
+            {
+                public TimerCallback Callback { get; } = callback;
+                public object? State { get; } = state;
+                public Timer? Timer { get; set; }
+            }
+#endif
+
             public bool Change(TimeSpan dueTime, TimeSpan period)
             {
-                (uint duration, uint periodTime) = CheckAndGetValues(dueTime, period);
                 try
                 {
-                    return _timer.Change(duration, periodTime);
+                    return _timer.Change(dueTime, period);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -213,48 +235,10 @@ namespace System
                 return default;
             }
 #endif // SYSTEM_PRIVATE_CORELIB
-
-            private static (uint duration, uint periodTime) CheckAndGetValues(TimeSpan dueTime, TimeSpan periodTime)
-            {
-                long dueTm = (long)dueTime.TotalMilliseconds;
-                long periodTm = (long)periodTime.TotalMilliseconds;
-
-#if SYSTEM_PRIVATE_CORELIB
-                ArgumentOutOfRangeException.ThrowIfLessThan(dueTm, -1, nameof(dueTime));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTm, Timer.MaxSupportedTimeout, nameof(dueTime));
-
-                ArgumentOutOfRangeException.ThrowIfLessThan(periodTm, -1, nameof(periodTime));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(periodTm, Timer.MaxSupportedTimeout, nameof(periodTime));
-#else
-                const uint MaxSupportedTimeout = 0xfffffffe;
-
-                if (dueTm < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dueTime), dueTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(dueTime), -1));
-                }
-
-                if (dueTm > MaxSupportedTimeout)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dueTime), dueTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(dueTime), MaxSupportedTimeout));
-                }
-
-                if (periodTm < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(periodTm), -1));
-                }
-
-                if (periodTm > MaxSupportedTimeout)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(periodTm), MaxSupportedTimeout));
-                }
-#endif // SYSTEM_PRIVATE_CORELIB
-
-                return ((uint)dueTm, (uint)periodTm);
-            }
         }
 
         /// <summary>
-        /// Used to create a <see cref="TimeProvider"/> instance returned from <see cref="TimeProvider.System"/> and uses the default implementation
+        /// Used to create a <see cref="TimeProvider"/> instance returned from <see cref="System"/> and uses the default implementation
         /// provided by <see cref="TimeProvider"/> which uses <see cref="DateTimeOffset.UtcNow"/>, <see cref="TimeZoneInfo.Local"/>, <see cref="Stopwatch"/>, and <see cref="Timer"/>.
         /// </summary>
         private sealed class SystemTimeProvider : TimeProvider

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="mixedpromotion.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNames" Value="STRESS_PHYSICAL_PROMOTION STRESS_PHYSICAL_PROMOTION_COST" />
+  </ItemGroup>
+</Project>

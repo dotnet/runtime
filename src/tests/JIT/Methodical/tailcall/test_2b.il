@@ -7,7 +7,7 @@
 .assembly extern mscorlib { auto }
 .assembly extern System.Console { auto }
 
-.assembly test_2b { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_test_2b
 {

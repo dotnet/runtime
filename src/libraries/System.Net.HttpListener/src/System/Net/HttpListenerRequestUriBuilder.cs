@@ -179,15 +179,21 @@ namespace System.Net
                 current = _rawPath[index];
                 if (current == '%')
                 {
-                    // Assert is enough, since http.sys accepted the request string already. This should never happen.
-                    Debug.Assert(index + 2 < _rawPath.Length, "Expected >=2 characters after '%' (e.g. %2F)");
+                    if (index + 2 >= _rawPath.Length)
+                    {
+                        // Not enough data for a percent encoded byte.
+                        return ParsingResult.InvalidString;
+                    }
 
                     index++;
                     current = _rawPath[index];
                     if (current == 'u' || current == 'U')
                     {
-                        // We found "%u" which means, we have a Unicode code point of the form "%uXXXX".
-                        Debug.Assert(index + 4 < _rawPath.Length, "Expected >=4 characters after '%u' (e.g. %u0062)");
+                        if (index + 4 >= _rawPath.Length)
+                        {
+                            // Not enough data for "%uXXXX".
+                            return ParsingResult.InvalidString;
+                        }
 
                         // Decode the content of rawOctets into percent encoded UTF-8 characters and append them
                         // to requestUriString.

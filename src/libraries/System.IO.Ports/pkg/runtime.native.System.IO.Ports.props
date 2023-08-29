@@ -15,14 +15,14 @@
 
   <ItemGroup>
     <None Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)"
-          PackagePath="runtimes/$(OutputRid)/native"
+          PackagePath="runtimes/$(OutputRID)/native"
           Pack="true" />
   </ItemGroup>
 
   <Target Name="AddRuntimeSpecificNativeSymbolToPackage">
     <ItemGroup>
       <TfmSpecificDebugSymbolsFile Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)"
-                                   TargetPath="/runtimes/$(OutputRid)/native"
+                                   TargetPath="/runtimes/$(OutputRID)/native"
                                    TargetFramework="$(TargetFramework)" />
     </ItemGroup>
   </Target>

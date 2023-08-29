@@ -252,7 +252,10 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1 &&
                 hashAlgorithm != HashAlgorithmName.SHA256 &&
                 hashAlgorithm != HashAlgorithmName.SHA384 &&
-                hashAlgorithm != HashAlgorithmName.SHA512)
+                hashAlgorithm != HashAlgorithmName.SHA512 &&
+                hashAlgorithm != HashAlgorithmName.SHA3_256 &&
+                hashAlgorithm != HashAlgorithmName.SHA3_384 &&
+                hashAlgorithm != HashAlgorithmName.SHA3_512)
             {
                 throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }

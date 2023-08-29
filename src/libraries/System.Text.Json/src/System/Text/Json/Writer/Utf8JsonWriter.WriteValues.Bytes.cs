@@ -23,8 +23,6 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteBase64StringValue(ReadOnlySpan<byte> bytes)
         {
-            JsonWriterHelper.ValidateBytes(bytes);
-
             WriteBase64ByOptions(bytes);
 
             SetFlagToAddListSeparatorBeforeNextItem();
@@ -51,13 +49,22 @@ namespace System.Text.Json
         // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteBase64Minimized(ReadOnlySpan<byte> bytes)
         {
-            int encodingLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
+            // Base64.GetMaxEncodedToUtf8Length checks to make sure the length is <= int.MaxValue / 4 * 3,
+            // as a length longer than that would overflow int.MaxValue when Base64 encoded. To ensure we
+            // throw an appropriate exception, we check the same condition here first.
+            const int MaxLengthAllowed = int.MaxValue / 4 * 3;
+            if (bytes.Length > MaxLengthAllowed)
+            {
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(bytes.Length);
+            }
 
-            Debug.Assert(encodingLength < int.MaxValue - 3);
+            int encodingLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
+            Debug.Assert(encodingLength <= int.MaxValue - 3);
 
             // 2 quotes to surround the base-64 encoded string value.
             // Optionally, 1 list separator
             int maxRequired = encodingLength + 3;
+            Debug.Assert((uint)maxRequired <= int.MaxValue);
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -83,13 +90,21 @@ namespace System.Text.Json
             int indent = Indentation;
             Debug.Assert(indent <= 2 * _options.MaxDepth);
 
+            // Base64.GetMaxEncodedToUtf8Length checks to make sure the length is <= int.MaxValue / 4 * 3,
+            // as a length longer than that would overflow int.MaxValue when Base64 encoded. However, we
+            // also need the indentation + 2 quotes, and optionally a list separate and 1-2 bytes for a new line.
+            // Validate the encoded bytes length won't overflow with all of the length.
+            int extraSpaceRequired = indent + 3 + s_newLineLength;
+            int maxLengthAllowed = int.MaxValue / 4 * 3 - extraSpaceRequired;
+            if (bytes.Length > maxLengthAllowed)
+            {
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(bytes.Length);
+            }
+
             int encodingLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(encodingLength < int.MaxValue - indent - 3 - s_newLineLength);
-
-            // indentation + 2 quotes to surround the base-64 encoded string value.
-            // Optionally, 1 list separator, and 1-2 bytes for new line
-            int maxRequired = indent + encodingLength + 3 + s_newLineLength;
+            int maxRequired = encodingLength + extraSpaceRequired;
+            Debug.Assert((uint)maxRequired <= int.MaxValue - 3);
 
             if (_memory.Length - BytesPending < maxRequired)
             {

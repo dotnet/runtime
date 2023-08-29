@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Test_constructor 
+public class Test_constructor 
 {
     static string s;
 
@@ -19,7 +20,8 @@ class Test_constructor
         s = ToString();   // cannot be devirtualized
     }
     
-    static int Main() 
+    [Fact]
+    public static int TestEntryPoint() 
     {
         new Child();
         return (s == "Child" ? 100 : 0);

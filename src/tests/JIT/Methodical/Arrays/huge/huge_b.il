@@ -19,7 +19,7 @@
            
   
 }
-.assembly 'huge_b'
+.assembly ASSEMBLY_NAME
 {
 
 

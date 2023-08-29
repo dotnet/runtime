@@ -58,7 +58,7 @@ namespace System
             {
                 return RuntimeImports.RhBox(eeType, ref value.Value);
             }
-            else if (eeType.IsPointer)
+            else if (eeType.IsPointer || eeType.IsFunctionPointer)
             {
                 return RuntimeImports.RhBox(EETypePtr.EETypePtrOf<UIntPtr>(), ref value.Value);
             }

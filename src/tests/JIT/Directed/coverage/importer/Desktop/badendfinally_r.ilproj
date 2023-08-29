@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="badendfinally_r.il" />
+    <Compile Include="badendfinally.il" />
+  </ItemGroup>
+</Project>

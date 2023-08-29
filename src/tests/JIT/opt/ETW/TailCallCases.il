@@ -88,7 +88,7 @@
 
 } // end of class ETW.threeByteStruct
 
-.class private auto ansi beforefieldinit ETW.TailCallETW
+.class public auto ansi beforefieldinit ETW.TailCallETW
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
@@ -222,7 +222,7 @@
     IL_0011:  ret
   } // end of method TailCallETW::failedHelper
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

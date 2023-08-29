@@ -29,7 +29,6 @@ All builds are
 - Windows 10 x64 Client VS2019
   - x64 Release
   - x86 Release
-  - arm32 Release
   - arm64 Release
 - Ubuntu 18.04 x64
   - Linux x64 Release

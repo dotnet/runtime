@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.EventLog;
@@ -217,7 +218,13 @@ namespace Microsoft.Extensions.Hosting
             // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I think it makes sense to
             // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
             string cwd = Environment.CurrentDirectory;
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !string.Equals(cwd, Environment.SystemDirectory, StringComparison.OrdinalIgnoreCase))
+            if (
+#if NETFRAMEWORK
+                Environment.OSVersion.Platform != PlatformID.Win32NT ||
+#else
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+#endif
+                !string.Equals(cwd, Environment.SystemDirectory, StringComparison.OrdinalIgnoreCase))
             {
                 hostConfigBuilder.AddInMemoryCollection(new[]
                 {
@@ -270,6 +277,8 @@ namespace Microsoft.Extensions.Hosting
                 bool isWindows =
 #if NETCOREAPP
                     OperatingSystem.IsWindows();
+#elif NETFRAMEWORK
+                    Environment.OSVersion.Platform == PlatformID.Win32NT;
 #else
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif
@@ -305,6 +314,11 @@ namespace Microsoft.Extensions.Hosting
                         ActivityTrackingOptions.TraceId |
                         ActivityTrackingOptions.ParentId;
                 });
+            });
+
+            services.AddMetrics(metrics =>
+            {
+                metrics.AddConfiguration(hostingContext.Configuration.GetSection("Metrics"));
             });
         }
 
@@ -382,6 +396,28 @@ namespace Microsoft.Extensions.Hosting
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This may be called multiple times.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureMetrics">The delegate that configures the <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<IMetricsBuilder> configureMetrics)
+        {
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(builder => configureMetrics(builder)));
+        }
+
+        /// <summary>
+        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This may be called multiple times.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureMetrics">The delegate that configures the <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<HostBuilderContext, IMetricsBuilder> configureMetrics)
+        {
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(builder => configureMetrics(context, builder)));
         }
     }
 }

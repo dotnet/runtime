@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="gcval_sideeffect_r.il" />
+    <Compile Include="gcval_sideeffect.il" />
+  </ItemGroup>
+</Project>

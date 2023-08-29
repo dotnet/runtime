@@ -31,8 +31,8 @@ extern PCODE GetPreStubEntryPoint();
 
 #define STACK_ALIGN_SIZE                        16
 
-#define JUMP_ALLOCATE_SIZE                      16  // # bytes to allocate for a jump instruction
-#define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         16  // # bytes to allocate for a back to back jump instruction
+#define JUMP_ALLOCATE_SIZE                      40  // # bytes to allocate for a jump instruction
+#define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         40  // # bytes to allocate for a back to back jump instruction
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
@@ -54,7 +54,7 @@ extern PCODE GetPreStubEntryPoint();
 #define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
 
-#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
+#define FLOAT_REGISTER_SIZE 8 // each register in FloatArgumentRegisters is 8 bytes.
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
@@ -246,7 +246,7 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     pCode[0] = 0x00000097; // auipc ra, 0
     pCode[1] = 0x0100b083; // ld    ra, 16(ra)
     pCode[2] = 0x00008067; // jalr  x0, ra, 0
-    pCode[3] = 0x00000013; // padding nop. Also used for isJump.
+    pCode[3] = 0x00000013; // padding nop.
 
     // Ensure that the updated instructions get updated in the I-Cache
     ClrFlushInstructionCache(pBufferRX, 16);
@@ -263,25 +263,7 @@ inline PCODE decodeJump(PCODE pCode)
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
-    return *dac_cast<PTR_PCODE>(pInstr + 2*sizeof(DWORD));
-}
-
-//------------------------------------------------------------------------
-inline BOOL isJump(PCODE pCode)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    TADDR pInstr = PCODEToPINSTR(pCode);
-
-    return *dac_cast<PTR_DWORD>(pInstr) == 0x58000050;
-}
-
-//------------------------------------------------------------------------
-inline BOOL isBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJump(pBuffer);
+    return *dac_cast<PTR_PCODE>(pInstr + 4 * sizeof(UINT32));
 }
 
 //------------------------------------------------------------------------
@@ -347,15 +329,7 @@ const IntReg RegRa  = IntReg(1);
 
 class StubLinkerCPU : public StubLinker
 {
-
 public:
-
-    // BitFlags for EmitLoadStoreReg(Pair)Imm methods
-    enum {
-        eSTORE      =   0x0,
-        eLOAD       =   0x1,
-    };
-
     static void Init();
     static bool isValidSimm12(int value) {
         return -( ((int)1) << 11 ) <= value && value < ( ((int)1) << 11 );
@@ -370,29 +344,22 @@ public:
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
 
-#ifdef _DEBUG
-    void EmitNop() { _ASSERTE(!"RISCV64:NYI "); }
-#endif
-    void EmitBreakPoint() { _ASSERTE(!"RISCV64:NYI"); }
+private:
     void EmitMovConstant(IntReg target, UINT64 constant);
-    void EmitCmpImm(IntReg reg, int imm);
-    void EmitCmpReg(IntReg Xn, IntReg Xm);
-    void EmitCondFlagJump(CodeLabel * target, UINT cond);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
+    void EmitMovReg(FloatReg dest, FloatReg source);
 
     void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
+    void EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value);
+    void EmitLuImm(IntReg Xd, unsigned int value);
 
-    void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, FloatReg Ft1, FloatReg Ft2, IntReg Xn, int offset=0);
+    void EmitLoad(IntReg dest, IntReg srcAddr, int offset = 0);
+    void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
+    void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
+    void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
 
-    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset=0);
-
-    void EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset);
-
-    void EmitCallRegister(IntReg reg);
     void EmitRet(IntReg reg);
 };
 

@@ -22,6 +22,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task DuplicateRootAssembly ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task InvalidArguments ()
 		{
 			return RunTest (allowMissingWarnings: true);

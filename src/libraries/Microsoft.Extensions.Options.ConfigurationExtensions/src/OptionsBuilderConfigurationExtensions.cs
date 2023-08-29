@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
-using static System.Collections.Specialized.BitVector32;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

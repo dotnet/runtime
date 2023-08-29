@@ -11,34 +11,41 @@ let testAbort = true;
 let testError = true;
 
 try {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (url, fetchArgs) => {
+        console.log("fetching " + url);
+        // we are testing that we can retry loading of the assembly
+        if (testAbort && url.indexOf('System.Private.CoreLib') != -1) {
+            testAbort = false;
+            return originalFetch(url + "?testAbort=true", fetchArgs);
+        }
+        if (testError && url.indexOf('System.Console') != -1) {
+            testError = false;
+            return originalFetch(url + "?testError=true", fetchArgs);
+        }
+        return originalFetch(url, fetchArgs);
+    };
     const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
-        // It is prefered to use specific 'with***' methods instead in all other cases.
+        // It is preferred to use specific 'with***' methods instead in all other cases.
+        .withConfig({
+            startupMemoryCache: true,
+            resources: {
+                modulesAfterConfigLoaded: {
+                    "advanced-sample.lib.module.js": ""
+                }
+            }
+        })
         .withModuleConfig({
-            configSrc: "./mono-config.json",
+            configSrc: "./blazor.boot.json",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
                 config.browserProfilerOptions = {};
-            },
-            imports: {
-                fetch: (url, fetchArgs) => {
-                    console.log("fetching " + url);
-                    // we are testing that we can retry loading of the assembly
-                    if (testAbort && url.indexOf('System.Private.Uri.dll') != -1) {
-                        testAbort = false;
-                        return fetch(url + "?testAbort=true", fetchArgs);
-                    }
-                    if (testError && url.indexOf('System.Console.dll') != -1) {
-                        testError = false;
-                        return fetch(url + "?testError=true", fetchArgs);
-                    }
-                    return fetch(url, fetchArgs);
-                }
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
@@ -52,6 +59,10 @@ try {
                 console.log('user code Module.onDotnetReady');
             },
             postRun: () => { console.log('user code Module.postRun'); },
+        })
+        .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
+            return name;
         })
         .create();
 

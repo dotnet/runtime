@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-** Purpose: Searches for resources on disk, used for file-
-** based resource lookup.
-**
-**
-===========================================================*/
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -17,6 +8,9 @@ using System.IO;
 
 namespace System.Resources
 {
+    /// <summary>
+    /// Searches for resources on disk, used for file-based resource lookup.
+    /// </summary>
     internal sealed class FileBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;

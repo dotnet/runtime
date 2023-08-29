@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Immutable;
-
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
@@ -79,6 +77,18 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 
             return type;
         }
+
+        /// <summary>
+        /// A thin wrapper over <see cref="GetBestTypeByMetadataName(Compilation, string)"/>,
+        /// but taking the type itself rather than the fully-qualified metadata type name.
+        /// </summary>
+        /// <param name="compilation">The <see cref="Compilation"/> to consider for analysis.</param>
+        /// <param name="type">The type to find.</param>
+        /// <returns></returns>
+        public static INamedTypeSymbol? GetBestTypeByMetadataName(this Compilation compilation, Type type) =>
+            type.IsArray || type.FullName is null
+                ? throw new ArgumentException("The input type must correspond to a named type symbol.")
+                : GetBestTypeByMetadataName(compilation, type.FullName);
 
         // copied from https://github.com/dotnet/roslyn/blob/main/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/Extensions/ISymbolExtensions.cs
         private static SymbolVisibility GetResultantVisibility(this ISymbol symbol)

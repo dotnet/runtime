@@ -21,11 +21,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        public sealed override object NewObject(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.NewObject(typeHandle);
-        }
-
         public sealed override Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             return RuntimeAugments.NewArray(typeHandleForArrayType, count);
@@ -115,11 +110,6 @@ namespace Internal.Reflection.Execution
             targetMethods = tMethods;
         }
 
-        public sealed override string GetLastResortString(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.GetLastResortString(typeHandle);
-        }
-
         //==============================================================================================
         // Miscellaneous
         //==============================================================================================
@@ -138,20 +128,7 @@ namespace Internal.Reflection.Execution
                 typeDefHandle = RuntimeAugments.GetGenericDefinition(typeHandle);
             }
 
-            // If the type is reflection blocked, we pretend there are no enum values defined
-            if (ReflectionExecution.ExecutionEnvironment.IsReflectionBlocked(typeDefHandle))
-            {
-                names = Array.Empty<string>();
-                values = Array.Empty<object>();
-                isFlags = false;
-                return;
-            }
-
-            QTypeDefinition qTypeDefinition;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeDefHandle, out qTypeDefinition))
-            {
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(Type.GetTypeFromHandle(typeDefHandle));
-            }
+            QTypeDefinition qTypeDefinition = ReflectionExecution.ExecutionEnvironment.GetMetadataForNamedType(typeDefHandle);
 
             if (qTypeDefinition.IsNativeFormatMetadataBased)
             {
@@ -175,7 +152,7 @@ namespace Internal.Reflection.Execution
             return;
         }
 
-        public override IntPtr GetDynamicInvokeThunk(MethodInvoker invoker)
+        public override IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker)
         {
             return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk
                 ;

@@ -2,6 +2,7 @@ import { defineConfig } from "rollup";
 import typescript from "@rollup/plugin-typescript";
 import terser from "@rollup/plugin-terser";
 import virtual from "@rollup/plugin-virtual";
+import { nodeResolve } from "@rollup/plugin-node-resolve";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import * as fs from "fs";
 import * as path from "path";
@@ -10,50 +11,81 @@ import dts from "rollup-plugin-dts";
 import { createFilter } from "@rollup/pluginutils";
 import fast_glob from "fast-glob";
 import gitCommitInfo from "git-commit-info";
+import MagicString from "magic-string";
 
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
+const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
+const wasmObjDir = process.env.WasmObjDir ? process.env.WasmObjDir.replace(/"/g, "") : "obj";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
-const WasmEnableLegacyJsInterop = process.env.WasmEnableLegacyJsInterop !== "false" ? true : false;
+const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
+const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
+const wasmEnableLegacyJsInterop = process.env.DISABLE_LEGACY_JS_INTEROP !== "1" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
+// because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
+// and unit test at src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\timers.mjs
+const keep_fnames = /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_schedule_timer_tick)/;
+const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/;
 const terserConfig = {
     compress: {
         defaults: true,
         passes: 2,
-        drop_debugger: false,// we invoke debugger
-        drop_console: false,// we log to console
+        drop_debugger: false, // we invoke debugger
+        drop_console: false, // we log to console
+        keep_fnames,
+        keep_classnames,
     },
     mangle: {
-        // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
-        // and unit test at src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\timers.mjs
-        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_set_timeout_exec)/,
-        keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
+        keep_fnames,
+        keep_classnames,
     },
-    format: {
-        wrap_iife: true
-    }
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
 const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/runtime/rollup.config.js\n\n//! This is not considered public API with backward compatibility guarantees. \n";
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
-const format = "iife";
-const name = "__dotnet_runtime";
 const inlineAssert = [
     {
-        pattern: /mono_assert\(([^,]*), *"([^"]*)"\);/gm,
         // eslint-disable-next-line quotes
-        replacement: 'if (!($1)) throw new Error("Assert failed: $2"); // inlined mono_assert'
+        pattern: 'mono_check\\(([^,]*), *"([^"]*)"\\);',
+        // eslint-disable-next-line quotes
+        replacement: (match) => `if (!(${match[1]})) throw new Error("Assert failed: ${match[2]}"); // inlined mono_check`
     },
     {
-        pattern: /mono_assert\(([^,]*), \(\) => *`([^`]*)`\);/gm,
-        replacement: "if (!($1)) throw new Error(`Assert failed: $2`); // inlined mono_assert"
-    }, {
-        pattern: /^\s*mono_assert/gm,
-        failure: "previous regexp didn't inline all mono_assert statements"
-    }];
+        // eslint-disable-next-line quotes
+        pattern: 'mono_check\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined mono_check`
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_assert\\(([^,]*), *"([^"]*)"\\);',
+        // eslint-disable-next-line quotes
+        replacement: (match) => `if (!(${match[1]})) mono_assert(false, "${match[2]}"); // inlined mono_assert condition`
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_assert\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (!(${match[1]})) mono_assert(false, \`${match[2]}\`); // inlined mono_assert condition`
+    }
+];
+const checkAssert =
+{
+    pattern: /^\s*mono_check/gm,
+    failure: "previous regexp didn't inline all mono_check statements"
+};
+const checkNoLoader =
+{
+    pattern: /_loaderModuleLoaded/gm,
+    failure: "module should not contain loaderModuleLoaded member. This is probably duplicated code in the output caused by a dependency outside on the loader module."
+};
+const checkNoRuntime =
+{
+    pattern: /_runtimeModuleLoaded/gm,
+    failure: "module should not contain runtimeModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
+};
+
 
 let gitHash;
 try {
@@ -62,11 +94,41 @@ try {
 } catch (e) {
     gitHash = "unknown";
 }
+const envConstants = {
+    productVersion,
+    configuration,
+    monoWasmThreads,
+    wasmEnableSIMD,
+    wasmEnableExceptionHandling,
+    monoDiagnosticsMock,
+    gitHash,
+    wasmEnableLegacyJsInterop,
+    isContinuousIntegrationBuild,
+};
+
+const locationCache = {};
+function sourcemapPathTransform(relativeSourcePath, sourcemapPath) {
+    let res = locationCache[relativeSourcePath];
+    if (res === undefined) {
+        if (!isContinuousIntegrationBuild) {
+            const sourcePath = path.resolve(
+                path.dirname(sourcemapPath),
+                relativeSourcePath
+            );
+            res = `file:///${sourcePath.replace(/\\/g, "/")}`;
+        } else {
+            relativeSourcePath = relativeSourcePath.substring(12);
+            res = `https://raw.githubusercontent.com/dotnet/runtime/${gitHash}/${relativeSourcePath}`;
+        }
+        locationCache[relativeSourcePath] = res;
+    }
+    return res;
+}
 
 function consts(dict) {
-    /// implement rollup-plugin-const in terms of @rollup/plugin-virtual
-    /// It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
-    /// and the virtual module always exports a single default binding (the const value).
+    // implement rollup-plugin-const in terms of @rollup/plugin-virtual
+    // It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
+    // and the virtual module always exports a single default binding (the const value).
 
     let newDict = {};
     for (const k in dict) {
@@ -85,29 +147,61 @@ const typescriptConfigOptions = {
     include: ["**/*.ts", "../../../../artifacts/bin/native/generated/**/*.ts"]
 };
 
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash, WasmEnableLegacyJsInterop }), typescript(typescriptConfigOptions)];
+const outputCodePlugins = [consts(envConstants), typescript(typescriptConfigOptions)];
+const externalDependencies = ["module", "process"];
 
-const externalDependencies = [
-];
-
-const iffeConfig = {
+const loaderConfig = {
+    treeshake: !isDebug,
+    input: "./loader/index.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.js",
+            banner,
+            plugins,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    external: externalDependencies,
+    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
+    onwarn: onwarn
+};
+const runtimeConfig = {
     treeshake: !isDebug,
     input: "exports.ts",
     output: [
         {
-            file: nativeBinDir + "/src/es6/runtime.es6.iffe.js",
-            name,
+            format: "es",
+            file: nativeBinDir + "/dotnet.runtime.js",
             banner,
-            format,
             plugins,
+            sourcemap: true,
+            sourcemapPathTransform,
         }
     ],
     external: externalDependencies,
-    plugins: outputCodePlugins,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
+    onwarn: onwarn
+};
+const wasmImportsConfig = {
+    treeshake: true,
+    input: "exports-linker.ts",
+    output: [
+        {
+            format: "iife",
+            name: "exportsLinker",
+            file: wasmObjDir + "/exports-linker.js",
+            plugins: [evalCodePlugin()],
+            sourcemap: false
+        }
+    ],
+    external: externalDependencies,
+    plugins: [...outputCodePlugins],
     onwarn: onwarn
 };
 const typesConfig = {
-    input: "./export-types.ts",
+    input: "./types/export-types.ts",
     output: [
         {
             format: "es",
@@ -119,7 +213,7 @@ const typesConfig = {
     external: externalDependencies,
     plugins: [dts()],
 };
-const legacyConfig = {
+const legacyTypesConfig = {
     input: "./net6-legacy/export-types.ts",
     output: [
         {
@@ -145,7 +239,7 @@ if (isDebug) {
         banner: banner_dts,
         plugins: [alwaysLF(), writeOnChangePlugin()],
     });
-    legacyConfig.output.push({
+    legacyTypesConfig.output.push({
         format: "es",
         file: "./dotnet-legacy.d.ts",
         banner: banner_dts,
@@ -189,12 +283,36 @@ function makeWorkerConfig(workerName, workerInputSourcePath) {
 const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => makeWorkerConfig(workerInput.workerName, workerInput.path));
 
 const allConfigs = [
-    iffeConfig,
+    loaderConfig,
+    runtimeConfig,
+    wasmImportsConfig,
     typesConfig,
-    legacyConfig,
+    legacyTypesConfig,
 ].concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
+
+function evalCodePlugin() {
+    return {
+        name: "evalCode",
+        generateBundle: evalCode
+    };
+}
+
+async function evalCode(options, bundle) {
+    try {
+        const name = Object.keys(bundle)[0];
+        const asset = bundle[name];
+        const code = asset.code;
+        eval(code);
+        const extractedCode = globalThis.export_linker_indexes_as_code();
+        asset.code = extractedCode;
+    } catch (ex) {
+        this.warn(ex.toString());
+        throw ex;
+    }
+}
+
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
 function writeOnChangePlugin() {
@@ -254,11 +372,45 @@ function checkFileExists(file) {
         .catch(() => false);
 }
 
+function regexCheck(checks = []) {
+    const filter = createFilter("**/*.ts");
+
+    return {
+        name: "regexCheck",
+
+        renderChunk(code, chunk) {
+            const id = chunk.fileName;
+            if (!filter(id)) return null;
+            return executeCheck(this, code, id);
+        },
+
+        transform(code, id) {
+            if (!filter(id)) return null;
+            return executeCheck(this, code, id);
+        }
+    };
+
+    function executeCheck(self, code, id) {
+        // self.warn("executeCheck" + id);
+        for (const rep of checks) {
+            const { pattern, failure } = rep;
+            const match = pattern.test(code);
+            if (match) {
+                self.error(failure + " " + id);
+                return null;
+            }
+        }
+
+        return null;
+    }
+}
+
+
 function regexReplace(replacements = []) {
     const filter = createFilter("**/*.ts");
 
     return {
-        name: "replace",
+        name: "regexReplace",
 
         renderChunk(code, chunk) {
             const id = chunk.fileName;
@@ -272,28 +424,34 @@ function regexReplace(replacements = []) {
         }
     };
 
-    function executeReplacement(self, code, id) {
-        // TODO use MagicString for sourcemap support
-        let fixed = code;
-        for (const rep of replacements) {
-            const { pattern, replacement, failure } = rep;
-            if (failure) {
-                const match = pattern.test(fixed);
-                if (match) {
-                    self.error(failure + " " + id, pattern.lastIndex);
-                    return null;
-                }
-            }
-            else {
-                fixed = fixed.replace(pattern, replacement);
-            }
-        }
-
-        if (fixed == code) {
+    function executeReplacement(_, code, id) {
+        const magicString = new MagicString(code);
+        if (!codeHasReplacements(code, id, magicString)) {
             return null;
         }
 
-        return { code: fixed };
+        const result = { code: magicString.toString() };
+        result.map = magicString.generateMap({ hires: true });
+        return result;
+    }
+
+    function codeHasReplacements(code, id, magicString) {
+        let result = false;
+        let match;
+        for (const rep of replacements) {
+            const { pattern, replacement } = rep;
+            const rx = new RegExp(pattern, "gm");
+            while ((match = rx.exec(code))) {
+                result = true;
+                const updated = replacement(match);
+                const start = match.index;
+                const end = start + match[0].length;
+                magicString.overwrite(start, end, updated);
+            }
+        }
+
+        // eslint-disable-next-line no-cond-assign
+        return result;
     }
 }
 
@@ -328,5 +486,10 @@ function onwarn(warning) {
         return;
     }
 
-    console.warn(`(!) ${warning.toString()}`);
+    if (warning.code === "PLUGIN_WARNING" && warning.message.indexOf("sourcemap") !== -1) {
+        return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.warn(`(!) ${warning.toString()} ${warning.code}`);
 }

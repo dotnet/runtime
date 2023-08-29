@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -40,6 +41,17 @@ namespace Microsoft.Extensions.Logging.Test
             var options = serviceCollection.BuildServiceProvider().GetRequiredService<IOptions<LoggerFilterOptions>>();
 
             Assert.True(options.Value.CaptureScopes);
+        }
+
+        /// <summary>
+        /// Verifies that the TypeForwardedTo attribute is defined correctly by ensuring we can
+        /// reference the ILoggingBuilder type through the Microsoft.Extensions.Logging.dll.
+        /// </summary>
+        [Fact]
+        public void TypeForwardIsCorrect()
+        {
+            Type builderType = Type.GetType("Microsoft.Extensions.Logging.ILoggingBuilder, Microsoft.Extensions.Logging");
+            Assert.Equal(typeof(ILoggingBuilder), builderType);
         }
     }
 }

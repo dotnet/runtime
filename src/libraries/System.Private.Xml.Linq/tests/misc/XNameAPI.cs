@@ -46,13 +46,13 @@ namespace CoreXml.Test.XLinq
                     switch (type)
                     {
                         case GetNameType.FromString:
-                            return (ns == null || ns.Length == 0) ? name : "{" + ns + "}" + name;
+                            return string.IsNullOrEmpty(ns) ? name : "{" + ns + "}" + name;
                         case GetNameType.TwoParamGet:
                             return XName.Get(name, ns);
                         case GetNameType.ExpandedName:
-                            return (ns == null || ns.Length == 0) ? XName.Get(name) : XName.Get("{" + ns + "}" + name);
+                            return string.IsNullOrEmpty(ns) ? XName.Get(name) : XName.Get("{" + ns + "}" + name);
                         case GetNameType.XNamespacePlusOperator:
-                            return (ns == null || ns.Length == 0) ? XName.Get(name) : XNamespace.Get(ns) + name;
+                            return string.IsNullOrEmpty(ns) ? XName.Get(name) : XNamespace.Get(ns) + name;
                         default:
                             TestLog.Compare(false, "Test failed: Invalid XName creation method specified");
                             break;

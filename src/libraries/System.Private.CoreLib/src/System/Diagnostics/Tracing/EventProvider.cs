@@ -414,7 +414,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                if (data is System.Enum)
+                if (data is Enum)
                 {
                     try
                     {
@@ -926,7 +926,7 @@ namespace System.Diagnostics.Tracing
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
 
@@ -1360,8 +1360,8 @@ namespace System.Diagnostics.Tracing
                     int valueEnd = FindNull(data, valueIdx);
                     if (valueEnd < data.Length)
                     {
-                        string key = System.Text.Encoding.UTF8.GetString(data, dataStart, keyEnd - dataStart);
-                        string value = System.Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
+                        string key = Text.Encoding.UTF8.GetString(data, dataStart, keyEnd - dataStart);
+                        string value = Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
                         args[key] = value;
                     }
                     dataStart = valueEnd + 1;

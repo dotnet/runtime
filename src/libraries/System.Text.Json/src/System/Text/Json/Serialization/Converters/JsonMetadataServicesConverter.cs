@@ -25,6 +25,8 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool SupportsCreateObjectDelegate => Converter.SupportsCreateObjectDelegate;
         internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
 
+        internal override bool CanPopulate => Converter.CanPopulate;
+
         public JsonMetadataServicesConverter(JsonConverter<T> converter)
         {
             ConverterStrategy = converter.ConverterStrategy;
@@ -41,6 +43,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.SupportContinuation &&
                 jsonTypeInfo.CanUseSerializeHandler &&
+                !JsonHelpers.RequiresSpecialNumberHandlingOnWrite(state.Current.NumberHandling) &&
                 !state.CurrentContainsMetadata) // Do not use the fast path if state needs to write metadata.
             {
                 ((JsonTypeInfo<T>)jsonTypeInfo).SerializeHandler!(writer, value);

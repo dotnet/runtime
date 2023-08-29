@@ -366,7 +366,5 @@ Success
     LEAF_END RhpSuppressGcStress
 #endif ;; FEATURE_GC_STRESS
 
-    INLINE_GETTHREAD_CONSTANT_POOL
-
     end
 

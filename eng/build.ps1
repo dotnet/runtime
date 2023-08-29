@@ -17,10 +17,12 @@ Param(
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [ValidateSet("Debug","Release","Checked")][string][Alias('hc')]$hostConfiguration,
+  [switch]$usemonoruntime = $false,
   [switch]$ninja,
   [switch]$msbuild,
   [string]$cmakeargs,
   [switch]$pgoinstrument,
+  [string[]]$fsanitize,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -51,6 +53,7 @@ function Get-Help() {
   Write-Host "  -subset (-s)                   Build a subset, print available subsets with -subset help."
   Write-Host "                                 '-subset' can be omitted if the subset is given as the first argument."
   Write-Host "                                 [Default: Builds the entire repo.]"
+  Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   Write-Host "  -verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  -vs                            Open the solution with Visual Studio using the locally acquired SDK."
@@ -82,10 +85,13 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Native build settings:"
-  Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
-  Write-Host "  -ninja                  Use Ninja to drive the native build. (default)"
-  Write-Host "  -msbuild                Use MSBuild to drive the native build. This is a no-op for Mono."
-  Write-Host "  -pgoinstrument          Build the CLR with PGO instrumentation."
+  Write-Host "  -cmakeargs                User-settable additional arguments passed to CMake."
+  Write-Host "  -ninja                    Use Ninja to drive the native build. (default)"
+  Write-Host "  -msbuild                  Use MSBuild to drive the native build. This is a no-op for Mono."
+  Write-Host "  -pgoinstrument            Build the CLR with PGO instrumentation."
+  Write-Host "  -fsanitize (address)      Build the native components with the specified sanitizers."
+  Write-Host "                            Sanitizers can be specified with a comma-separated list."
+  Write-Host ""
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
@@ -218,7 +224,7 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
-  
+
   # Disable .NET runtime signature validation errors which errors for local builds
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
@@ -251,6 +257,7 @@ foreach ($argument in $PSBoundParameters.Keys)
   {
     "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "runtimeFlavor"          { $arguments += " /p:RuntimeFlavor=$($PSBoundParameters[$argument].ToLowerInvariant())" }
+    "usemonoruntime"         { $arguments += " /p:PrimaryRuntimeFlavor=Mono" }
     "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "hostConfiguration"      { $arguments += " /p:HostConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
@@ -266,6 +273,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}
+    "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
@@ -304,13 +312,6 @@ foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    if ($os -eq "browser") {
-      $env:__DistroRid="browser-$singleArch"
-    } elseif ($os -eq "wasi") {
-      $env:__DistroRid="wasi-$singleArch"
-    } else {
-      $env:__DistroRid="win-$singleArch"
-    }
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
     if ($lastExitCode -ne 0) {
         $failedBuilds += "Configuration: $config, Architecture: $singleArch"

@@ -232,7 +232,7 @@ sgen_has_critical_method (void)
 gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
-#if defined(HOST_WASM) || defined(HOST_WASI)
+#if defined (DISABLE_THREADS) && (defined(HOST_WASM) || defined(HOST_WASI))
 	//methods can't be critical under wasm due to the single thread'ness of it
 	return FALSE;
 #else
@@ -2897,7 +2897,7 @@ sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, 
 void
 sgen_client_schedule_background_job (void (*cb)(void))
 {
-	mono_threads_schedule_background_job (cb);
+	mono_main_thread_schedule_background_job (cb);
 }
 
 #endif

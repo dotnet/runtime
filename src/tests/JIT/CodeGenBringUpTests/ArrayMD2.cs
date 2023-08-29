@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class BringUpTest_ArrayMD2
 {
@@ -18,7 +19,8 @@ public class BringUpTest_ArrayMD2
         return a[x, y];
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (ArrayMD2(1, 1) != 42) return Fail;
         return Pass;

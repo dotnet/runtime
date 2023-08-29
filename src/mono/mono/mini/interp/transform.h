@@ -42,7 +42,7 @@ typedef struct
 	int local;
 	/* The offset from the execution stack start where this is stored. Used by the fast offset allocator */
 	int offset;
-	/* Saves how much stack this is using. It is a multiple of MINT_VT_ALIGNMENT */
+	/* Saves how much stack this is using. It is a multiple of MINT_STACK_SLOT_SIZE*/
 	int size;
 } StackInfo;
 
@@ -50,6 +50,8 @@ typedef struct
 #define LOCAL_VALUE_LOCAL 1
 #define LOCAL_VALUE_I4 2
 #define LOCAL_VALUE_I8 3
+#define LOCAL_VALUE_R4 4
+#define LOCAL_VALUE_NON_NULL 5
 
 // LocalValue contains data to construct an InterpInst that is equivalent with the contents
 // of the stack slot / local / argument.
@@ -61,6 +63,7 @@ typedef struct {
 		int local;
 		gint32 i;
 		gint64 l;
+		float f;
 	};
 	// The instruction that writes this local.
 	InterpInst *ins;
@@ -130,18 +133,18 @@ struct _InterpBasicBlock {
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
 
-	int reachable : 1;
+	guint reachable : 1;
 	// This block has special semantics and it shouldn't be optimized away
-	int eh_block : 1;
-	int dead: 1;
+	guint eh_block : 1;
+	guint dead: 1;
 	// If patchpoint is set we will store mapping information between native offset and bblock index within
 	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the
 	// optimized method we will map the bb_index to the corresponding native offset.
-	int patchpoint_data: 1;
-	int emit_patchpoint: 1;
+	guint patchpoint_data: 1;
+	guint emit_patchpoint: 1;
 	// used by jiterpreter
-	int backwards_branch_target: 1;
-	int contains_call_instruction: 1;
+	guint backwards_branch_target: 1;
+	guint contains_call_instruction: 1;
 };
 
 struct _InterpCallInfo {
@@ -223,6 +226,7 @@ typedef struct
 	gint32 total_locals_size;
 	gint32 max_stack_size;
 	InterpLocal *locals;
+	int dummy_var;
 	int *local_ref_count;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
@@ -256,16 +260,16 @@ typedef struct
 	int inline_depth;
 	int patchpoint_data_n;
 	int *patchpoint_data;
-	int has_localloc : 1;
+	guint has_localloc : 1;
 	// If method compilation fails due to certain limits being exceeded, we disable inlining
 	// and retry compilation.
-	int disable_inlining : 1;
+	guint disable_inlining : 1;
 	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
-	int aggressive_inlining : 1;
-	int optimized : 1;
-	int has_invalid_code : 1;
-	int has_inlined_one_call : 1;
+	guint aggressive_inlining : 1;
+	guint optimized : 1;
+	guint has_invalid_code : 1;
+	guint has_inlined_one_call : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0
@@ -283,6 +287,11 @@ typedef struct
 #define STACK_TYPE_I STACK_TYPE_I4
 #endif
 
+#define interp_ins_set_dummy_dreg(ins,td) do { \
+	if (td->dummy_var < 0) \
+		create_interp_dummy_var (td); \
+	ins->dreg = td->dummy_var; \
+} while (0)
 
 #define interp_ins_set_dreg(ins,dr) do { \
         ins->dreg = dr; \
@@ -374,6 +383,6 @@ mono_interp_print_td_code (TransformData *td);
 
 /* Forward definitions for simd methods */
 static gboolean
-interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature);
+interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj);
 
 #endif /* __MONO_MINI_INTERP_TRANSFORM_H__ */

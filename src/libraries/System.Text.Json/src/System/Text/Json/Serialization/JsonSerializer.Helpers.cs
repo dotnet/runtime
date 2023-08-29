@@ -29,23 +29,19 @@ namespace System.Text.Json
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type inputType, bool fallBackToNearestAncestorType = false)
+        private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type inputType)
         {
             Debug.Assert(inputType != null);
 
             options ??= JsonSerializerOptions.Default;
-
-            if (!options.IsConfiguredForJsonSerializer)
-            {
-                options.ConfigureForJsonSerializer();
-            }
+            options.MakeReadOnly(populateMissingResolver: true);
 
             // In order to improve performance of polymorphic root-level object serialization,
             // we bypass GetTypeInfoForRootType and cache JsonTypeInfo<object> in a dedicated property.
             // This lets any derived types take advantage of the cache in GetTypeInfoForRootType themselves.
             return inputType == JsonTypeInfo.ObjectType
                 ? options.ObjectTypeInfo
-                : options.GetTypeInfoForRootType(inputType, fallBackToNearestAncestorType);
+                : options.GetTypeInfoForRootType(inputType);
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
@@ -92,6 +88,9 @@ namespace System.Text.Json
                 JsonNumberHandling.AllowReadingFromString |
                 JsonNumberHandling.WriteAsString |
                 JsonNumberHandling.AllowNamedFloatingPointLiterals));
+
+        internal static bool IsValidCreationHandlingValue(JsonObjectCreationHandling handling) =>
+            handling is JsonObjectCreationHandling.Replace or JsonObjectCreationHandling.Populate;
 
         internal static bool IsValidUnmappedMemberHandlingValue(JsonUnmappedMemberHandling handling) =>
             handling is JsonUnmappedMemberHandling.Skip or JsonUnmappedMemberHandling.Disallow;

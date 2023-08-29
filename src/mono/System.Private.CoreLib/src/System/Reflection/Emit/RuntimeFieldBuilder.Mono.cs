@@ -37,6 +37,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Buffers.Binary;
 
 namespace System.Reflection.Emit
 {
@@ -174,18 +175,14 @@ namespace System.Reflection.Emit
             def_value = defaultValue;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             RejectIfCreated();
-
-            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
+            string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
             {
-                byte[] data = customBuilder.Data;
-                offset = (int)data[2];
-                offset |= ((int)data[3]) << 8;
-                offset |= ((int)data[4]) << 16;
-                offset |= ((int)data[5]) << 24;
+                offset = BinaryPrimitives.ReadInt32LittleEndian(binaryAttribute.Slice(2));
                 return;
             }
 #pragma warning disable SYSLIB0050 // FieldAttributes.NotSerialized is obsolete
@@ -219,12 +216,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            RejectIfCreated();
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         protected override void SetOffsetCore(int iOffset)

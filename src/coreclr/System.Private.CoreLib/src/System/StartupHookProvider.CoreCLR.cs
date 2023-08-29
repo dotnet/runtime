@@ -12,7 +12,7 @@ namespace System
 {
     internal static partial class StartupHookProvider
     {
-        private static void ManagedStartup()
+        private static unsafe void ManagedStartup(char* pDiagnosticStartupHooks)
         {
 #if FEATURE_PERFTRACING
             if (EventSource.IsSupported)
@@ -20,7 +20,7 @@ namespace System
 #endif
 
             if (IsSupported)
-                ProcessStartupHooks();
+                ProcessStartupHooks(new string(pDiagnosticStartupHooks));
         }
     }
 }

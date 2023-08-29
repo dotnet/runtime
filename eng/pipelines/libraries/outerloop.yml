@@ -68,7 +68,7 @@ extends:
                 - osx_x64
               jobParameters:
                 testScope: outerloop
-                nameSuffix: CoreCLR_Release
+                nameSuffix: CoreCLR_Debug
                 buildArgs: -s clr+host.native+libs+libs.tests -lc $(_BuildConfig) -hc $(_BuildConfig) -rc Release -testscope outerloop /p:ArchiveTests=true
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}

@@ -254,7 +254,7 @@ namespace System.Xml.Serialization
 
         private static void EscapeKeywords(string identifier, StringBuilder sb)
         {
-            if (identifier == null || identifier.Length == 0)
+            if (string.IsNullOrEmpty(identifier))
                 return;
             int arrayCount = 0;
             while (identifier.EndsWith("[]", StringComparison.Ordinal))
@@ -279,7 +279,7 @@ namespace System.Xml.Serialization
         [return: NotNullIfNotNull(nameof(identifier))]
         private static string? EscapeKeywords(string? identifier)
         {
-            if (identifier == null || identifier.Length == 0) return identifier;
+            if (string.IsNullOrEmpty(identifier)) return identifier;
             string originalIdentifier = identifier;
             string[] names = identifier.Split(s_identifierSeparators);
             StringBuilder sb = new StringBuilder();

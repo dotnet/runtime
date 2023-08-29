@@ -60,6 +60,15 @@
     <type fullname="System.Runtime.Intrinsics.X86.Avx512F/X64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Avx512Vbmi">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Avx512Vbmi/VL">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Avx512Vbmi/X64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.X86.AvxVnni">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>

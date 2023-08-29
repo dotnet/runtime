@@ -18,8 +18,8 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 using MethodTable = Internal.Runtime.MethodTable;
+using MethodTableList = Internal.Runtime.MethodTableList;
 using EETypeElementType = Internal.Runtime.EETypeElementType;
-using EETypeRef = Internal.Runtime.EETypeRef;
 using CorElementType = System.Reflection.CorElementType;
 
 namespace System
@@ -60,12 +60,7 @@ namespace System
 
         public static bool operator ==(EETypePtr value1, EETypePtr value2)
         {
-            if (value1.IsNull)
-                return value2.IsNull;
-            else if (value2.IsNull)
-                return false;
-            else
-                return RuntimeImports.AreTypesEquivalent(value1, value2);
+            return value1._value == value2._value;
         }
 
         public static bool operator !=(EETypePtr value1, EETypePtr value2)
@@ -117,6 +112,14 @@ namespace System
             get
             {
                 return _value->IsPointerType;
+            }
+        }
+
+        internal bool IsFunctionPointer
+        {
+            get
+            {
+                return _value->IsFunctionPointerType;
             }
         }
 
@@ -211,7 +214,7 @@ namespace System
         {
             get
             {
-                return !_value->IsParameterizedType;
+                return !_value->IsParameterizedType && !_value->IsFunctionPointerType;
             }
         }
 
@@ -302,7 +305,7 @@ namespace System
                 if (IsArray)
                     return EETypePtr.EETypePtrOf<Array>();
 
-                if (IsPointer || IsByRef)
+                if (IsPointer || IsByRef || IsFunctionPointer)
                     return new EETypePtr(default(IntPtr));
 
                 EETypePtr baseEEType = new EETypePtr(_value->NonArrayBaseType);
@@ -369,15 +372,15 @@ namespace System
                     (byte)CorElementType.ELEMENT_TYPE_SZARRAY,   // EETypeElementType.SzArray
                     (byte)CorElementType.ELEMENT_TYPE_BYREF,     // EETypeElementType.ByRef
                     (byte)CorElementType.ELEMENT_TYPE_PTR,       // EETypeElementType.Pointer
+                    (byte)CorElementType.ELEMENT_TYPE_FNPTR,     // EETypeElementType.FunctionPointer
                     default, // Pad the map to 32 elements to enable range check elimination
-                    default,
                     default,
                     default,
                     default
                 };
 
                 // Verify last element of the map
-                Debug.Assert((byte)CorElementType.ELEMENT_TYPE_PTR == map[(int)EETypeElementType.Pointer]);
+                Debug.Assert((byte)CorElementType.ELEMENT_TYPE_FNPTR == map[(int)EETypeElementType.FunctionPointer]);
 
                 return (CorElementType)map[(int)ElementType];
             }
@@ -436,17 +439,17 @@ namespace System
                 {
                     Debug.Assert((uint)index < _value->NumInterfaces);
 
-                    return new EETypePtr(_value->InterfaceMap[index].InterfaceType);
+                    return new EETypePtr(_value->InterfaceMap[index]);
                 }
             }
         }
 
         public struct GenericArgumentCollection
         {
-            private EETypeRef* _arguments;
+            private MethodTableList _arguments;
             private uint _argumentCount;
 
-            internal GenericArgumentCollection(uint argumentCount, EETypeRef* arguments)
+            internal GenericArgumentCollection(uint argumentCount, MethodTableList arguments)
             {
                 _argumentCount = argumentCount;
                 _arguments = arguments;
@@ -465,7 +468,7 @@ namespace System
                 get
                 {
                     Debug.Assert((uint)index < _argumentCount);
-                    return new EETypePtr(_arguments[index].Value);
+                    return new EETypePtr(_arguments[index]);
                 }
             }
         }

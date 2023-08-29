@@ -783,8 +783,8 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_SLOT(x) ((x)<<3)
 #define NORMALIZE_CODE_LENGTH(x) ((x)>>2)   // All Instructions are 4 bytes long
 #define DENORMALIZE_CODE_LENGTH(x) ((x)<<2)
-#define NORMALIZE_STACK_BASE_REGISTER(x) ((x)^22) // Encode Frame pointer fp=$22 as zero
-#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x)^22)
+#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 22 ? 0 : 1) // Encode Frame pointer fp=$22 as zero
+#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 22 : 3)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
 #define CODE_OFFSETS_NEED_NORMALIZATION 0
@@ -804,8 +804,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define CODE_LENGTH_ENCBASE 8
 #define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
 #define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
-////TODO for LOONGARCH64.
-// FP/SP encoded as 0 or 2 ??
+// FP/SP encoded as 0 or 1.
 #define STACK_BASE_REGISTER_ENCBASE 2
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4

@@ -80,7 +80,7 @@ Managed varargs are not supported in .NET Core.
 
 ## Generics
 
-*Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the `this` pointer can serve dual-purpose as the instantiation parameter. When the `this` pointer is not the generic parameter, the generic parameter is passed as an additional argument. On ARM and AMD64, it is passed after the optional return buffer and the optional `this` pointer, but before any user arguments. On ARM64, the generic parameter is passed after the optional `this` pointer, but before any user arguments. On x86, if all arguments of the function including `this` pointer fit into argument registers (ECX and EDX) and we still have argument registers available, we store the hidden argument in the next available argument register. Otherwise it is passed as the last stack argument. For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no `this` pointer) the generic parameter is a MethodTable pointer/TypeHandle.
+*Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the `this` pointer can serve dual-purpose as the instantiation parameter. When the `this` pointer is not the generic parameter, the generic parameter is passed as an additional argument. On ARM and AMD64, it is passed after the optional return buffer and the optional `this` pointer, but before any user arguments. On ARM64 and RISC-V, the generic parameter is passed after the optional `this` pointer, but before any user arguments. On x86, if all arguments of the function including `this` pointer fit into argument registers (ECX and EDX) and we still have argument registers available, we store the hidden argument in the next available argument register. Otherwise it is passed as the last stack argument. For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no `this` pointer) the generic parameter is a MethodTable pointer/TypeHandle.
 
 Sometimes the VM asks the JIT to report and keep alive the generics parameter. In this case, it must be saved on the stack someplace and kept alive via normal GC reporting (if it was the `this` pointer, as compared to a MethodDesc or MethodTable) for the entire method except the prolog and epilog. Also note that the code to home it, must be in the range of code reported as the prolog in the GC info (which probably isn't the same as the range of code reported as the prolog in the unwind info).
 
@@ -585,6 +585,11 @@ The native EH clauses would be listed as follows:
 
 If the handlers were in a different order, then clause 6 might appear before clauses 4 and 5, but never in between.
 
+## Clauses covering the same try region
+
+Several consecutive clauses may cover the same `try` block. A clause covering the same region as the previous one is marked by the `COR_ILEXCEPTION_CLAUSE_SAMETRY` flag. When exception ex1 is thrown while running handler for another exception ex2 and the exception ex2 escapes the ex1's handler frame, this enables the runtime to skip clauses that cover the same `try` block as the clause that handled the ex1.
+This flag is used by the NativeAOT and also a new exception handling mechanism in CoreCLR. The NativeAOT doesn't store that flag in the encoded clause data, but rather injects a dummy clause between the clauses with same `try` block. CoreCLR keeps that flag as part of the runtime representation of the clause data. The current CoreCLR exception handling doesn't use it, but [a new exception handling mechanism](https://github.com/dotnet/runtime/issues/77568) that's being developed is taking advantage of it.
+
 ## GC Interruptibility and EH
 
 The VM assumes that anytime a thread is stopped, it must be at a GC safe point, or the current frame is non-resumable (i.e. a throw that will never be caught in the same frame). Thus effectively all methods with EH must be fully interruptible (or at a minimum all try bodies). Currently the GC info appears to support mixing of partially interruptible and fully-interruptible regions within the same method, but no JIT uses this, so use at your own risk.
@@ -696,7 +701,7 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 ## Generics
 
-EnC is not supported for generic methods and methods on generic types.
+EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
 # System V x86_64 support
 

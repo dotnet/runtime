@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'huge_filter' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_huge_filter_boxunbox
 {

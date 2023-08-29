@@ -3,12 +3,14 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector4;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Point a = new Point(10, 50,0,-100);
             Point b = new Point(10);

@@ -45,7 +45,7 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.IdentityReference_DomainNameTooLong, nameof(domainName));
             }
 
-            if (domainName == null || domainName.Length == 0)
+            if (string.IsNullOrEmpty(domainName))
             {
                 _name = accountName;
             }

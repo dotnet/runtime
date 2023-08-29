@@ -82,7 +82,7 @@ namespace System.Globalization
                 return MinCalendarYear;
             }
 
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }
@@ -112,7 +112,7 @@ namespace System.Globalization
                 return MaxCalendarYear;
             }
 
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }
@@ -152,7 +152,7 @@ namespace System.Globalization
 
         internal void CheckEraRange(int era)
         {
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }

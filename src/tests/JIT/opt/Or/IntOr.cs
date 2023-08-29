@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
-    class IntOr
+    public class IntOr
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void SideEffect()
@@ -45,7 +46,8 @@ namespace CodeGenTests
             return false;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             uint leftMostBit  = 0b10000000000000000000000000000000;
             uint rightMostBit = 0b00000000000000000000000000000001;

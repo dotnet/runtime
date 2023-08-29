@@ -148,6 +148,14 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out SignatureCallingConvention value)
+        {
+            uint ivalue;
+            offset = reader.DecodeUnsigned(offset, out ivalue);
+            value = (SignatureCallingConvention)ivalue;
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out EventAttributes value)
         {
             uint ivalue;

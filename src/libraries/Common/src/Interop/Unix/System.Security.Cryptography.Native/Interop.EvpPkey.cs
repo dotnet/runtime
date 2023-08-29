@@ -22,8 +22,6 @@ internal static partial class Interop
             SafeEvpPKeyHandle currentKey,
             EvpAlgorithmId algorithmId)
         {
-            Debug.Assert(!currentKey.IsInvalid);
-
             SafeEvpPKeyHandle pkey = CryptoNative_EvpPKeyDuplicate(
                 currentKey,
                 algorithmId);
@@ -214,6 +212,52 @@ internal static partial class Interop
                     pkey.DangerousRelease();
                 }
             }
+        }
+
+        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial SafeEvpPKeyHandle CryptoNative_LoadPrivateKeyFromEngine(
+            string engineName,
+            string keyName);
+
+        internal static SafeEvpPKeyHandle LoadPrivateKeyFromEngine(
+            string engineName,
+            string keyName)
+        {
+            Debug.Assert(engineName is not null);
+            Debug.Assert(keyName is not null);
+
+            SafeEvpPKeyHandle pkey = CryptoNative_LoadPrivateKeyFromEngine(engineName, keyName);
+
+            if (pkey.IsInvalid)
+            {
+                pkey.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return pkey;
+        }
+
+        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial SafeEvpPKeyHandle CryptoNative_LoadPublicKeyFromEngine(
+            string engineName,
+            string keyName);
+
+        internal static SafeEvpPKeyHandle LoadPublicKeyFromEngine(
+            string engineName,
+            string keyName)
+        {
+            Debug.Assert(engineName is not null);
+            Debug.Assert(keyName is not null);
+
+            SafeEvpPKeyHandle pkey = CryptoNative_LoadPublicKeyFromEngine(engineName, keyName);
+
+            if (pkey.IsInvalid)
+            {
+                pkey.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return pkey;
         }
 
         internal enum EvpAlgorithmId

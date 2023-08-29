@@ -2,6 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Public API not fully documented. -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
 

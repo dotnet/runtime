@@ -154,12 +154,7 @@ namespace System.Resources
     // into smaller chunks, each of size sqrt(n), would be substantially better for
     // resource files containing thousands of resources.
     //
-#if NATIVEAOT
-    public  // On NativeAOT, this must be public to prevent it from getting reflection blocked.
-#else
-    internal
-#endif
-    sealed class RuntimeResourceSet : ResourceSet, IEnumerable
+    internal sealed class RuntimeResourceSet : ResourceSet, IEnumerable
     {
         // Cache for resources.  Key is the resource name, which can be cached
         // for arbitrarily long times, since the object is usually a string

@@ -24,8 +24,6 @@ namespace System.Threading
     [EventSource(
         Name = "System.Threading.SynchronizationEventSource",
         Guid = "EC631D38-466B-4290-9306-834971BA0217"
-        //TODO:(TFS455853):Add support for reading localized string in the EventSource il2il transform
-        //,LocalizationResources = "mscorlib"
         )]
     internal sealed class CdsSyncEtwBCLProvider : EventSource
     {

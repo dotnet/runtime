@@ -42,32 +42,8 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates calling via reflection works, using Load
-                    test.RunReflectionScenario_Load();
-
-                    // Validates calling via reflection works, using LoadAligned
-                    test.RunReflectionScenario_LoadAligned();
-                }
-
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing a local works, using Load
-                    test.RunLclVarScenario_Load();
-
-                    // Validates passing a local works, using LoadAligned
-                    test.RunLclVarScenario_LoadAligned();
-                }
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
@@ -127,19 +103,9 @@ namespace JIT.HardwareIntrinsics.X86
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
         private static {Op2BaseType}[] _data2 = new {Op2BaseType}[Op2ElementCount];
 
-        private static {Op2VectorType}<{Op2BaseType}> _clsVar2;
-
         private {Op2VectorType}<{Op2BaseType}> _fld2;
 
         private SimpleBinaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}, {Op2BaseType}> _dataTable;
-
-        static SimpleBinaryOpTest__{Method}{RetBaseType}()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _clsVar2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
-        }
 
         public SimpleBinaryOpTest__{Method}{RetBaseType}()
         {
@@ -211,47 +177,6 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
         }
 
-        public void RunReflectionScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
-
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({RetBaseType}*), typeof({Op2VectorType}<{Op2BaseType}>) })
-                                     .Invoke(null, new object[] {
-                                        Pointer.Box(_dataTable.inArray1Ptr, typeof({RetBaseType}*)),
-                                        {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr))
-                                     });
-
-            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
-        }
-
-        public void RunReflectionScenario_LoadAligned()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
-
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({RetBaseType}*), typeof({Op2VectorType}<{Op2BaseType}>) })
-                                     .Invoke(null, new object[] {
-                                        Pointer.Box(_dataTable.inArray1Ptr, typeof({RetBaseType}*)),
-                                        {LoadIsa}.LoadAligned{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr))
-                                     });
-
-            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                ({RetBaseType}*)_dataTable.inArray1Ptr,
-                _clsVar2
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _clsVar2, _dataTable.outArrayPtr);
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -262,41 +187,6 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(left, right, _dataTable.outArrayPtr);
-        }
-
-        public void RunLclVarScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
-
-            var left = ({RetBaseType}*)_dataTable.inArray1Ptr;
-            var right = {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr));
-            var result = {Isa}.{Method}(left, right);
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(left, right, _dataTable.outArrayPtr);
-        }
-
-        public void RunLclVarScenario_LoadAligned()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
-
-            var left = ({RetBaseType}*)_dataTable.inArray1Ptr;
-            var right = {LoadIsa}.LoadAligned{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr));
-            var result = {Isa}.{Method}(left, right);
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(left, right, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new SimpleBinaryOpTest__{Method}{RetBaseType}();
-            var result = {Isa}.{Method}(({RetBaseType}*)_dataTable.inArray1Ptr, test._fld2);
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, test._fld2, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()

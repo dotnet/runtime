@@ -207,7 +207,6 @@ namespace System.Configuration
         protected virtual void SetReadOnly() { }
         protected virtual void Unmerge(System.Configuration.ConfigurationElement sourceElement, System.Configuration.ConfigurationElement parentElement, System.Configuration.ConfigurationSaveMode saveMode) { }
     }
-    [System.Diagnostics.DebuggerDisplayAttribute("Count = {Count}")]
     public abstract partial class ConfigurationElementCollection : System.Configuration.ConfigurationElement, System.Collections.ICollection, System.Collections.IEnumerable
     {
         protected ConfigurationElementCollection() { }

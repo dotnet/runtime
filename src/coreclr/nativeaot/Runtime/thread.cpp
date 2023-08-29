@@ -284,7 +284,8 @@ void Thread::Construct()
 
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
-    ASSERT(m_pThreadLocalModuleStatics == NULL);
+    ASSERT(m_pThreadLocalStatics == NULL);
+    ASSERT(m_pInlinedThreadLocalStatics == NULL);
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
@@ -1125,33 +1126,32 @@ EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL
 
 FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame)
 {
-    // Do we need to attach the thread?
-    if (!IsStateSet(TSF_Attached))
-        return false; // thread is not attached
+    // remember the current transition frame, so it will be restored when we return from reverse pinvoke
+    pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
     // If the thread is already in cooperative mode, this is a bad transition that will be a fail fast unless we are in
     // a do not trigger mode.  The exception to the rule allows us to have [UnmanagedCallersOnly] methods that are called via
     // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable
     // methods on interfaces passed to native.
-    if (IsCurrentThreadInCooperativeMode())
+    // We will allow threads in DoNotTriggerGc mode to do reverse PInvoke regardless of their coop state.
+    if (IsDoNotTriggerGcSet())
     {
-        if (IsDoNotTriggerGcSet())
-        {
-            // RhpTrapThreads will always be set in this case, so we must skip that check.  We must be sure to
-            // zero-out our 'previous transition frame' state first, however.
-            pFrame->m_savedPInvokeTransitionFrame = NULL;
-            return true;
-        }
-
-        return false; // bad transition
+        // We expect this scenario only when EE is stopped.
+        ASSERT(ThreadStore::IsTrapThreadsRequested());
+        // no need to do anything
+        return true;
     }
+
+    // Do we need to attach the thread?
+    if (!IsStateSet(TSF_Attached))
+        return false; // thread is not attached
+
+    if (IsCurrentThreadInCooperativeMode())
+        return false; // bad transition
 
     // this is an ordinary transition to managed code
     // GC threads should not do that
     ASSERT(!IsGCSpecial());
-
-    // save the previous transition frame
-    pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
     // must be in cooperative mode when checking the trap flag
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
@@ -1233,6 +1233,7 @@ FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame
 
 FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
 {
+    ASSERT(!IsDoNotTriggerGcSet() || ThreadStore::IsTrapThreadsRequested());
     pFrame->m_pThread = this;
     // set our mode to preemptive
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
@@ -1266,13 +1267,33 @@ COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
 
 Object** Thread::GetThreadStaticStorage()
 {
-    return &m_pThreadLocalModuleStatics;
+    return &m_pThreadLocalStatics;
 }
 
 COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
 {
-    Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
+}
+
+InlinedThreadStaticRoot* Thread::GetInlinedThreadStaticList()
+{
+    return m_pInlinedThreadLocalStatics;
+}
+
+void Thread::RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot, TypeManager* typeManager)
+{
+    ASSERT(newRoot->m_next == NULL);
+    newRoot->m_next = m_pInlinedThreadLocalStatics;
+    m_pInlinedThreadLocalStatics = newRoot;
+    // we do not need typeManager for runtime needs, but it may be useful for debugging purposes.
+    newRoot->m_typeManager = typeManager;
+}
+
+COOP_PINVOKE_HELPER(void, RhRegisterInlinedThreadStaticRoot, (Object** root, TypeManager* typeManager))
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root, typeManager);
 }
 
 // This is function is used to quickly query a value that can uniquely identify a thread
@@ -1288,7 +1309,7 @@ COOP_PINVOKE_HELPER(uint8_t*, RhCurrentNativeThreadId, ())
 // This function is used to get the OS thread identifier for the current thread.
 COOP_PINVOKE_HELPER(uint64_t, RhCurrentOSThreadId, ())
 {
-    return PalGetCurrentThreadIdForLogging();
+    return PalGetCurrentOSThreadId();
 }
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread

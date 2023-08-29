@@ -200,7 +200,7 @@ namespace System.Xml.Serialization
             return model;
         }
 
-        private void CheckSupportedMember(TypeDesc? typeDesc, MemberInfo member, Type type)
+        private static void CheckSupportedMember(TypeDesc? typeDesc, MemberInfo member, Type type)
         {
             if (typeDesc == null)
                 return;

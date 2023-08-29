@@ -5,6 +5,7 @@
 
 // Runtime headers
 #include "common.h"
+#include "simplerwlock.hpp"
 #include "rcwrefcache.h"
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
@@ -257,32 +258,36 @@ namespace
         using Element = SHash<Traits>::element_t;
         using Iterator = SHash<Traits>::Iterator;
 
-        class LockHolder : public CrstHolder
+        class ReaderLock final
         {
+            SimpleReadLockHolder _lock;
         public:
-            LockHolder(_In_ ExtObjCxtCache *cache)
-                : CrstHolder(&cache->_lock)
-            {
-                // This cache must be locked in Cooperative mode
-                // since releases of wrappers can occur during a GC.
-                CONTRACTL
-                {
-                    NOTHROW;
-                    GC_NOTRIGGER;
-                    MODE_COOPERATIVE;
-                }
-                CONTRACTL_END;
-            }
+            ReaderLock(_In_ ExtObjCxtCache* cache)
+                : _lock{ &cache->_lock }
+            { }
+
+            ~ReaderLock() = default;
+        };
+
+        class WriterLock final
+        {
+            SimpleWriteLockHolder _lock;
+        public:
+            WriterLock(_In_ ExtObjCxtCache* cache)
+                : _lock{ &cache->_lock }
+            { }
+
+            ~WriterLock() = default;
         };
 
     private:
         friend struct InteropLibImports::RuntimeCallContext;
         SHash<Traits> _hashMap;
-        Crst _lock;
+        SimpleRWLock _lock;
         ExtObjCxtRefCache* _refCache;
 
         ExtObjCxtCache()
-            : _lock(CrstExternalObjectContextCache, CRST_UNSAFE_COOPGC)
+            : _lock(COOPERATIVE, LOCK_TYPE_DEFAULT)
             , _refCache(GetAppDomain()->GetRCWRefCache())
         { }
         ~ExtObjCxtCache() = default;
@@ -292,7 +297,7 @@ namespace
         bool IsLockHeld()
         {
             WRAPPER_NO_CONTRACT;
-            return (_lock.OwnedByCurrentThread() != FALSE);
+            return (_lock.LockTaken() != FALSE);
         }
 #endif // _DEBUG
 
@@ -343,7 +348,7 @@ namespace
             // Determine the count of objects to return.
             SIZE_T objCountMax = 0;
             {
-                LockHolder lock(this);
+                ReaderLock lock(this);
                 Iterator end = _hashMap.End();
                 for (Iterator curr = _hashMap.Begin(); curr != end; ++curr)
                 {
@@ -365,7 +370,7 @@ namespace
             SIZE_T objCount = 0;
             if (0 < objCountMax)
             {
-                LockHolder lock(this);
+                ReaderLock lock(this);
                 Iterator end = _hashMap.End();
                 for (Iterator curr = _hashMap.Begin(); curr != end; ++curr)
                 {
@@ -823,11 +828,22 @@ namespace
         if (!uniqueInstance)
         {
             bool objectFound = false;
+            bool tryRemove = false;
             {
-                // Query the external object cache
-                ExtObjCxtCache::LockHolder lock(cache);
+                // Perform a quick look up to determine if we know of the object and if
+                // we need to perform a more expensive cleanup operation below.
+                ExtObjCxtCache::ReaderLock lock(cache);
                 extObjCxt = cache->Find(cacheKey);
+                objectFound = extObjCxt != NULL;
+                tryRemove = objectFound && extObjCxt->IsSet(ExternalObjectContext::Flags_Detached);
+            }
 
+            if (tryRemove)
+            {
+                // Perform the slower cleanup operation that may be appropriate
+                // if the object still exists and has been detached.
+                ExtObjCxtCache::WriterLock lock(cache);
+                extObjCxt = cache->Find(cacheKey);
                 objectFound = extObjCxt != NULL;
                 if (objectFound && extObjCxt->IsSet(ExternalObjectContext::Flags_Detached))
                 {
@@ -866,12 +882,42 @@ namespace
         }
         else if (handle != NULL)
         {
-            // We have an object handle from the COM instance which is a CCW. Use that object.
-            // This allows for the round-trip from object -> COM instance -> object.
+            // We have an object handle from the COM instance which is a CCW.
             ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
-            gc.objRefMaybe = ObjectFromHandle(objectHandle);
+
+            // Now we need to check if this object is a CCW from the same ComWrappers instance
+            // as the one creating the EOC. If it is not, we need to create a new EOC for it.
+            // Otherwise, use it. This allows for the round-trip from object -> COM instance -> object.
+            OBJECTREF objRef = NULL;
+            GCPROTECT_BEGIN(objRef);
+            objRef = ObjectFromHandle(objectHandle);
+
+            SyncBlock* syncBlock = objRef->GetSyncBlock();
+            InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+
+            // If we found a managed object wrapper in this ComWrappers instance
+            // and it's the same identity pointer as the one we're creating an EOC for,
+            // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+            //
+            // A managed object can have multiple managed object wrappers, with a max of one per context.
+            // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+            // managed object wrappers for A created with C1 and C2 respectively.
+            // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+            // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+            void* wrapperRawMaybe = NULL;
+            if (interopInfo->TryGetManagedObjectComWrapper(wrapperId, &wrapperRawMaybe)
+                && wrapperRawMaybe == identity)
+            {
+                gc.objRefMaybe = objRef;
+            }
+            else
+            {
+                STRESS_LOG2(LF_INTEROP, LL_INFO1000, "Not unwrapping handle (0x%p) because the object's MOW in this ComWrappers instance (if any) (0x%p) is not the provided identity\n", handle, wrapperRawMaybe);
+            }
+            GCPROTECT_END();
         }
-        else
+
+        if (gc.objRefMaybe == NULL)
         {
             // Create context instance for the possibly new external object.
             ExternalWrapperResultHolder resultHolder;
@@ -928,7 +974,7 @@ namespace
                 else
                 {
                     // Attempt to insert the new context into the cache.
-                    ExtObjCxtCache::LockHolder lock(cache);
+                    ExtObjCxtCache::WriterLock lock(cache);
                     extObjCxt = cache->FindOrAdd(cacheKey, resultHolder.GetContext());
                 }
 
@@ -950,7 +996,7 @@ namespace
                     {
                         // Failed to set the context; one must already exist.
                         // Remove from the cache above as well.
-                        ExtObjCxtCache::LockHolder lock(cache);
+                        ExtObjCxtCache::WriterLock lock(cache);
                         cache->Remove(resultHolder.GetContext());
 
                         COMPlusThrow(kNotSupportedException);

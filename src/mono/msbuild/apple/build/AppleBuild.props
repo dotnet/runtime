@@ -2,7 +2,6 @@
   <!-- iOS/tvOS device + arm64 simulators need to AOT -->
   <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or (('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64')">
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <iOSLikeDedup Condition="'$(iOSLikeDedup)' == ''">true</iOSLikeDedup>
   </PropertyGroup>
 
   <!-- iOS/tvOS arm64 simulators do not support JIT, so force interpreter fallback, devices should FullAOT -->
@@ -11,20 +10,29 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <iOSLikeDedup Condition="'$(iOSLikeDedup)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</iOSLikeDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
     <UseMonoRuntime>true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
-    <!--<ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>-->
+    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''" >false</StripDebugSymbols>
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/87740 -->
+    <!-- <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip> -->
 
-    <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
+    <_IsLibraryMode Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
+
+    <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile</_AotCompileTargetName>
+    <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_AppleAotCompile</_AotCompileTargetName>
+    <IlcCompileDependsOn>ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
 
     <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
     <AppleBuildDependsOn>
         _InitializeCommonProperties;
         _BeforeAppleBuild;
         _AppleResolveReferences;
-        _AppleAotCompile;
+        _ScanAssembliesDecideLightweightMarshaler;
+        $(_ProcessRuntimeComponentsForLibraryMode);
+        $(_AotCompileTargetName);
         _BuildNativeLibrary;
         _AppleGenerateAppBundle;
         _AfterAppleBuild

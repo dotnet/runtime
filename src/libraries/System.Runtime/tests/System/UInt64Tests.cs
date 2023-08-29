@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -210,12 +211,26 @@ namespace System.Tests
                 }
             }
 
+            // All lengths binary
+            {
+                string s = "";
+                ulong result = 0;
+                for (int i = 1; i <= 64; i++)
+                {
+                    result = (result * 2) + (ulong)(i % 2);
+                    s += (i % 2).ToString("B");
+                    yield return new object[] { s, NumberStyles.BinaryNumber, null, result };
+                }
+            }
+
             // And test boundary conditions for UInt64
             yield return new object[] { "18446744073709551615", NumberStyles.Integer, null, ulong.MaxValue };
             yield return new object[] { "+18446744073709551615", NumberStyles.Integer, null, ulong.MaxValue };
             yield return new object[] { "    +18446744073709551615  ", NumberStyles.Integer, null, ulong.MaxValue };
             yield return new object[] { "FFFFFFFFFFFFFFFF", NumberStyles.HexNumber, null, ulong.MaxValue };
             yield return new object[] { "   FFFFFFFFFFFFFFFF   ", NumberStyles.HexNumber, null, ulong.MaxValue };
+            yield return new object[] { "1111111111111111111111111111111111111111111111111111111111111111", NumberStyles.BinaryNumber, null, ulong.MaxValue };
+            yield return new object[] { "   1111111111111111111111111111111111111111111111111111111111111111   ", NumberStyles.BinaryNumber, null, ulong.MaxValue };
         }
 
         [Theory]
@@ -261,7 +276,9 @@ namespace System.Tests
             foreach (object[] objs in Int64Tests.Parse_Invalid_TestData())
             {
                 if ((Type)objs[3] == typeof(OverflowException) &&
-                    (!BigInteger.TryParse((string)objs[0], out BigInteger bi) || bi <= ulong.MaxValue))
+                    (((NumberStyles)objs[1] & NumberStyles.AllowBinarySpecifier) != 0 || // TODO https://github.com/dotnet/runtime/issues/83619: Remove once BigInteger supports binary parsing
+                     !BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
+                     bi <= ulong.MaxValue))
                 {
                     continue;
                 }
@@ -279,6 +296,7 @@ namespace System.Tests
             // > max value
             yield return new object[] { "18446744073709551616", NumberStyles.Integer, null, typeof(OverflowException) };
             yield return new object[] { "10000000000000000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { "10000000000000000000000000000000000000000000000000000000000000000", NumberStyles.BinaryNumber, null, typeof(OverflowException) };
         }
 
         [Theory]
@@ -319,16 +337,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.BinaryNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.BinaryNumber)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
         {
             ulong result = 0;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ulong.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => ulong.TryParse("1", style, null, out result));
             Assert.Equal(default(ulong), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ulong.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ulong.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>("style", () => ulong.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>("style", () => ulong.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -343,6 +363,8 @@ namespace System.Tests
             yield return new object[] { "  123  ", 1, 2, NumberStyles.Integer, null, (ulong)1 };
             yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (ulong)0x1 };
             yield return new object[] { "ABC", 1, 1, NumberStyles.HexNumber, null, (ulong)0xb };
+            yield return new object[] { "01", 0, 1, NumberStyles.BinaryNumber, null, (ulong)0b0 };
+            yield return new object[] { "01", 1, 1, NumberStyles.BinaryNumber, null, (ulong)0b1 };
             yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (ulong)10 };
         }
 
@@ -383,6 +405,49 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => ulong.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(ulong.TryParse(value.AsSpan(), style, provider, out result));
+                Assert.Equal(0u, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, ulong expected)
+        {
+            ulong result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(ulong.TryParse(valueUtf8, out result));
+                Assert.Equal(expected, result);
+            }
+
+            Assert.Equal(expected, ulong.Parse(valueUtf8, style, provider));
+
+            Assert.True(ulong.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ulong result;
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(ulong.TryParse(valueUtf8, out result));
+                    Assert.Equal(0u, result);
+                }
+
+                Assert.Throws(exceptionType, () => ulong.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(ulong.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0u, result);
             }
         }

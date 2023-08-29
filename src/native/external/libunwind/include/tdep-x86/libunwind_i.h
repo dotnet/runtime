@@ -84,15 +84,26 @@ dwarf_get_uc(const struct dwarf_cursor *cursor)
 }
 
 #define DWARF_GET_LOC(l)        ((l).val)
+# define DWARF_LOC_TYPE_MEM     (0 << 0)
+# define DWARF_LOC_TYPE_FP      (1 << 0)
+# define DWARF_LOC_TYPE_REG     (1 << 1)
+# define DWARF_LOC_TYPE_VAL     (1 << 2)
+
+# define DWARF_IS_REG_LOC(l)    (((l).type & DWARF_LOC_TYPE_REG) != 0)
+# define DWARF_IS_FP_LOC(l)     (((l).type & DWARF_LOC_TYPE_FP) != 0)
+# define DWARF_IS_MEM_LOC(l)    ((l).type == DWARF_LOC_TYPE_MEM)
+# define DWARF_IS_VAL_LOC(l)    (((l).type & DWARF_LOC_TYPE_VAL) != 0)
+
+# define DWARF_LOC(r, t)        ((dwarf_loc_t) { .val = (r), .type = (t) })
+# define DWARF_NULL_LOC         DWARF_LOC (0, 0)
+# define DWARF_IS_NULL_LOC(l)                                           \
+                ({ dwarf_loc_t _l = (l); _l.val == 0 && _l.type == 0; })
+# define DWARF_VAL_LOC(c,v)     DWARF_LOC ((v), DWARF_LOC_TYPE_VAL)
+# define DWARF_MEM_LOC(c,m)     DWARF_LOC ((m), DWARF_LOC_TYPE_MEM)
 
 #ifdef UNW_LOCAL_ONLY
-# define DWARF_NULL_LOC         DWARF_LOC (0, 0)
-# define DWARF_IS_NULL_LOC(l)   (DWARF_GET_LOC (l) == 0)
-# define DWARF_LOC(r, t)        ((dwarf_loc_t) { .val = (r) })
-# define DWARF_IS_REG_LOC(l)    0
 # define DWARF_REG_LOC(c,r)     (DWARF_LOC((unw_word_t)                      \
                                  tdep_uc_addr(dwarf_get_uc(c), (r)), 0))
-# define DWARF_MEM_LOC(c,m)     DWARF_LOC ((m), 0)
 # define DWARF_FPREG_LOC(c,r)   (DWARF_LOC((unw_word_t)                      \
                                  tdep_uc_addr(dwarf_get_uc(c), (r)), 0))
 
@@ -114,35 +125,8 @@ dwarf_putfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t val)
   return 0;
 }
 
-static inline int
-dwarf_get (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t *val)
-{
-  if (!DWARF_GET_LOC (loc))
-    return -1;
-  return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), val,
-                                   0, c->as_arg);
-}
-
-static inline int
-dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
-{
-  if (!DWARF_GET_LOC (loc))
-    return -1;
-  return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), &val,
-                                   1, c->as_arg);
-}
-
 #else /* !UNW_LOCAL_ONLY */
-# define DWARF_LOC_TYPE_FP      (1 << 0)
-# define DWARF_LOC_TYPE_REG     (1 << 1)
-# define DWARF_NULL_LOC         DWARF_LOC (0, 0)
-# define DWARF_IS_NULL_LOC(l)                                           \
-                ({ dwarf_loc_t _l = (l); _l.val == 0 && _l.type == 0; })
-# define DWARF_LOC(r, t)        ((dwarf_loc_t) { .val = (r), .type = (t) })
-# define DWARF_IS_REG_LOC(l)    (((l).type & DWARF_LOC_TYPE_REG) != 0)
-# define DWARF_IS_FP_LOC(l)     (((l).type & DWARF_LOC_TYPE_FP) != 0)
 # define DWARF_REG_LOC(c,r)     DWARF_LOC((r), DWARF_LOC_TYPE_REG)
-# define DWARF_MEM_LOC(c,m)     DWARF_LOC ((m), 0)
 # define DWARF_FPREG_LOC(c,r)   DWARF_LOC((r), (DWARF_LOC_TYPE_REG      \
                                                 | DWARF_LOC_TYPE_FP))
 
@@ -192,37 +176,32 @@ dwarf_putfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t val)
                                    1, c->as_arg);
 }
 
+#endif /* !UNW_LOCAL_ONLY */
+
 static inline int
 dwarf_get (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t *val)
 {
   if (DWARF_IS_NULL_LOC (loc))
     return -UNW_EBADREG;
 
-  /* If a code-generator were to save a value of type unw_word_t in a
-     floating-point register, we would have to support this case.  I
-     suppose it could happen with MMX registers, but does it really
-     happen?  */
-  assert (!DWARF_IS_FP_LOC (loc));
-
   if (DWARF_IS_REG_LOC (loc))
     return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), val,
                                      0, c->as_arg);
-  else
+  if (DWARF_IS_MEM_LOC (loc))
     return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), val,
                                      0, c->as_arg);
+  assert(DWARF_IS_VAL_LOC (loc));
+  *val = DWARF_GET_LOC (loc);
+  return 0;
 }
 
 static inline int
 dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 {
+  assert(!DWARF_IS_VAL_LOC (loc));
+
   if (DWARF_IS_NULL_LOC (loc))
     return -UNW_EBADREG;
-
-  /* If a code-generator were to save a value of type unw_word_t in a
-     floating-point register, we would have to support this case.  I
-     suppose it could happen with MMX registers, but does it really
-     happen?  */
-  assert (!DWARF_IS_FP_LOC (loc));
 
   if (DWARF_IS_REG_LOC (loc))
     return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), &val,
@@ -232,7 +211,9 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
                                      1, c->as_arg);
 }
 
-#endif /* !UNW_LOCAL_ONLY */
+// For historical reasons, the DWARF numbering does not match the libunwind
+// numbering, necessitating this override
+#define TDEP_DWARF_SP 4
 
 #define tdep_getcontext_trace           unw_getcontext
 #define tdep_init_done                  UNW_OBJ(init_done)

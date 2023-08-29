@@ -398,15 +398,13 @@ namespace System.Xml.XPath
             Debug.Assert(pageElem[idxElem].NodeType == XPathNodeType.Element);
 
             // Check whether this element has any local namespaces
-            if (_mapNmsp == null || !_mapNmsp.ContainsKey(nodeRef))
+            if (_mapNmsp == null || !_mapNmsp.TryGetValue(nodeRef, out nodeRef))
             {
                 pageNmsp = null;
                 return 0;
             }
 
             // Yes, so return the page and index of the first local namespace node
-            nodeRef = _mapNmsp[nodeRef];
-
             pageNmsp = nodeRef.Page;
             return nodeRef.Index;
         }

@@ -1298,7 +1298,7 @@ namespace Internal.TypeSystem.Ecma
         //
         // Gather the local details in a scope and then recurse to child scopes
         //
-        private void ProbeScopeForLocals(List<ILLocalVariable> variables, ISymUnmanagedScope scope)
+        private static void ProbeScopeForLocals(List<ILLocalVariable> variables, ISymUnmanagedScope scope)
         {
             int localCount;
             ThrowExceptionForHR(scope.GetLocalCount(out localCount));
@@ -1343,12 +1343,11 @@ namespace Internal.TypeSystem.Ecma
         // and names for all of them.  This assumes a CSC-like compiler that doesn't re-use
         // local slots in the same method across scopes.
         //
-        public override IEnumerable<ILLocalVariable>? GetLocalVariableNamesForMethod(int methodToken)
+        public override IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(int methodToken)
         {
             ISymUnmanagedMethod? symbolMethod;
             if (_symUnmanagedReader.GetMethod(methodToken, out symbolMethod) < 0 || symbolMethod is null)
-                return null;
-            Debug.Assert(symbolMethod is not null);
+                return Array.Empty<ILLocalVariable>();
 
             ISymUnmanagedScope rootScope;
             ThrowExceptionForHR(symbolMethod.GetRootScope(out rootScope));

@@ -95,6 +95,7 @@ typedef struct {
 	MonoMethod *start_method;
 	MonoMethod *last_method;
 	int last_line;
+	int last_column;
 	/* Whenever single stepping is performed using start/stop_single_stepping () */
 	gboolean global;
 	/* The list of breakpoints used to implement step-over */

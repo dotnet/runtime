@@ -10,7 +10,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'instance'// as "instance"
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

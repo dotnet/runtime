@@ -618,7 +618,7 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // Treat PDB stream differently since we are not using StgPools
-    if (wcscmp(PDB_STREAM, szHeap) == 0)
+    if (u16_strcmp(PDB_STREAM, szHeap) == 0)
     {
         if (m_pPdbHeap && !m_pPdbHeap->IsEmpty())
         {
@@ -855,7 +855,7 @@ HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // Treat PDB stream differently since we are not using StgPools
-    if (wcscmp(PDB_STREAM, szName) == 0)
+    if (u16_strcmp(PDB_STREAM, szName) == 0)
     {
         if (m_pPdbHeap && !m_pPdbHeap->IsEmpty())
         {
@@ -1167,7 +1167,7 @@ CLiteWeightStgdbRW::SetFileName(
 
     // Size of the file name incl. null terminator
     size_t cchFileName;
-    cchFileName = wcslen(wszFileName) + 1;
+    cchFileName = u16_strlen(wszFileName) + 1;
 
     // Allocate and copy the file name
     m_wszFileName = new (nothrow) WCHAR[cchFileName];

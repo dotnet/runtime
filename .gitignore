@@ -326,6 +326,7 @@ Vagrantfile
 CMakeFiles/
 cmake_install.cmake
 CMakeCache.txt
+CMakeUserPresets.json
 
 # Cross compilation
 cross/rootfs/*

@@ -146,8 +146,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
                                            comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             }
 
-            GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr);
-            indir->gtFlags |= GTF_IND_INVARIANT;
+            GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
         case MethodAddr:
@@ -160,9 +159,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         {
             GenTreeIntCon* slot = comp->gtNewIconHandleNode((size_t)methAddr, GTF_ICON_FTN_ADDR);
             INDEBUG(slot->gtTargetHandle = (size_t)targetMethHnd);
-            GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, slot);
-            indir->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-            indir->gtFlags &= ~GTF_EXCEPT;
+            GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, slot, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
             return indir;
         }
         default:
@@ -2447,16 +2444,10 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
     else if (tree->OperGet() == GT_COMMA)
     {
         GenTree* before = tree->gtGetOp1();
-        // "before" should evaluate an array base for the "after" indexing.
-        if (before->OperGet() != GT_ASG)
-        {
-            return false;
-        }
-        GenTree* lhs = before->gtGetOp1();
-        GenTree* rhs = before->gtGetOp2();
 
-        // "rhs" should contain an index expression.
-        if (!lhs->IsLocal() || !optReconstructArrIndexHelp(rhs, result, lhsNum, topLevelIsFinal))
+        // "before" should evaluate an array base for the "after" indexing.
+        if (!before->OperIs(GT_STORE_LCL_VAR) ||
+            !optReconstructArrIndexHelp(before->AsLclVar()->Data(), result, lhsNum, topLevelIsFinal))
         {
             return false;
         }
@@ -2468,10 +2459,10 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
             return false;
         }
 
-        unsigned lhsNum = lhs->AsLclVarCommon()->GetLclNum();
+        unsigned lclNum = before->AsLclVar()->GetLclNum();
         GenTree* after  = tree->gtGetOp2();
-        // Pass the "lhsNum", so we can verify if indeed it is used as the array base.
-        return optExtractArrIndex(after, result, lhsNum, topLevelIsFinal);
+        // Pass the "lclNum", so we can verify if indeed it is used as the array base.
+        return optExtractArrIndex(after, result, lclNum, topLevelIsFinal);
     }
     return false;
 }
@@ -2510,8 +2501,7 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
 //      and post-morph tree:
 //
 // \--*  COMMA     int
-//    +--*  ASG       ref
-//    |  +--*  LCL_VAR   ref    V04 tmp1
+//    +--*  STORE_LCL_VAR   ref    V04 tmp1
 //    |  \--*  COMMA     ref
 //    |     +--*  BOUNDS_CHECK_Rng void
 //    |     |  +--*  LCL_VAR   int    V01 arg1
@@ -2557,8 +2547,7 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
 //      Morph "hoists" the bounds check above the struct field access:
 //
 // \--*  COMMA     int
-//    +--*  ASG       ref
-//    |  +--*  LCL_VAR   ref    V04 tmp1
+//    +--*  STORE_LCL_VAR   ref    V04 tmp1
 //    |  \--*  COMMA     ref
 //    |     +--*  BOUNDS_CHECK_Rng void
 //    |     |  +--*  LCL_VAR   int    V01 arg1

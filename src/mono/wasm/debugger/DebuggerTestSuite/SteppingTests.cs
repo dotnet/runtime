@@ -139,7 +139,7 @@ namespace DebuggerTests
             await CheckString(props, "B", "xx");
             await CheckString(props, "c", "20_xx");
 
-            pause_location = await StepAndCheck(StepKind.Over, dep_cs_loc, 25, 8, "Simple.Complex.DoStuff", times: 2);
+            pause_location = await StepAndCheck(StepKind.Over, dep_cs_loc, 25, 8, "Simple.Complex.DoStuff", times: 4);
             // Check UseComplex frame again
             locals_m1 = await GetLocalsForFrame(pause_location["callFrames"][1], debugger_test_loc, 23, 8, "Math.UseComplex");
             Assert.Equal(7, locals_m1.Count());
@@ -207,7 +207,7 @@ namespace DebuggerTests
             await CheckObject(locals_m1, "nim", "Math.NestedInMath");
 
             // step back into OuterMethod
-            await StepAndCheck(StepKind.Over, debugger_test_loc, 91, 8, "Math.OuterMethod", times: 6,
+            await StepAndCheck(StepKind.Over, debugger_test_loc, 91, 8, "Math.OuterMethod", times: 7,
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
@@ -247,7 +247,7 @@ namespace DebuggerTests
                 }
             );
 
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 92, 8, "Math.OuterMethod", times: 1,
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 92, 8, "Math.OuterMethod", times: 2,
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
@@ -310,7 +310,7 @@ namespace DebuggerTests
             );
 
             // Step back to OuterMethod
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 90, 8, "Math.OuterMethod", times: 6,
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 90, 8, "Math.OuterMethod", times: 7,
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
@@ -483,7 +483,7 @@ namespace DebuggerTests
             // ----------- Step back to the caller ---------
 
             pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 30, 12, "DebuggerTests.ValueTypesTest.TestStructsAsMethodArgs",
-                times: 1, locals_fn: async (l) => { /* non-null to make sure that locals get fetched */ await Task.CompletedTask;  });
+                times: 2, locals_fn: async (l) => { /* non-null to make sure that locals get fetched */ await Task.CompletedTask;  });
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckProps(locals, new
             {
@@ -702,8 +702,8 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-step.cs", 15, 12, "MoveNext");
         }
 
-        // [ConditionalFact(nameof(RunningOnChrome))]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/42421")]
+        [ConditionalFact(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42421")]
         public async Task StepOutOfAsyncMethod()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -850,7 +850,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs", 552, 8,
                 "HiddenSequencePointTest.MethodWithHiddenLinesAtTheEnd");
 
-            await StepAndCheck(StepKind.Over, source_loc, 544, 4, "HiddenSequencePointTest.StepOverHiddenSP");
+            await StepAndCheck(StepKind.Over, source_loc, 544, 4, "HiddenSequencePointTest.StepOverHiddenSP", times:2);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
@@ -865,8 +865,8 @@ namespace DebuggerTests
                 method_name);
         }
 
-        // [ConditionalTheory(nameof(RunningOnChrome))]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/73867")]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73867")]
         [InlineData(184, 20, 161, 8, "HiddenLinesContainingStartOfAnAsyncBlock")]
         [InlineData(206, 20, 201, 8, "HiddenLinesAtTheEndOfANestedAsyncBlockWithWithLineDefaultOutsideTheMethod")]
         [InlineData(224, 20, 220, 8, "HiddenLinesAtTheEndOfANestedAsyncBlockWithWithLineDefaultOutsideTheMethod2")]
@@ -885,6 +885,7 @@ namespace DebuggerTests
         [InlineData(153, 20, 155, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod.AnonymousMethod__1")]
         [InlineData(154, 20, 155, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod.AnonymousMethod__1")]
         [InlineData(170, 20, 172, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithBreakableLineAtEndOfTheMethod.AnonymousMethod__1")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLineAsync(int line_bp, int column_bp, int line_pause, int column_pause, string method_name)
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-async-test.cs", line_bp, column_bp);
@@ -1044,6 +1045,8 @@ namespace DebuggerTests
         [InlineData(false)]
         public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServer(bool justMyCode)
         {
+            //The test behavior is expecting to start with JustMyCode disabled
+            await SetJustMyCode(false);
             string cachePath = _env.CreateTempDirectory("symbols-cache");
             _testOutput.WriteLine($"** Using cache path: {cachePath}");
             var searchPaths = new JArray
@@ -1219,6 +1222,7 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task SkipWasmFunctionsAccordinglyJustMyCode(bool justMyCode)
         {
             await SetJustMyCode(justMyCode);
@@ -1233,7 +1237,7 @@ namespace DebuggerTests
                 Assert.False(pause_location["callFrames"].Value<JArray>().Any(f => f?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true));
             else
                 Assert.True(pause_location["callFrames"].Value<JArray>().Any(f => f?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true));
-            if (justMyCode)
+            if (justMyCode && ReleaseRuntime)
                 await StepAndCheck(StepKind.Out, "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "Math.IntAdd", times: 4);
         }
     }

@@ -625,11 +625,11 @@ String Profiler::GetFunctionIDName(FunctionID funcId)
         return WCHAR("FuncNameLookupFailed");
     }
 
-    WCHAR funcName[STRING_LENGTH];
+    WCHAR funcName[STR_LENGTH];
     hr = pIMDImport->GetMethodProps(token,
                                     NULL,
                                     funcName,
-                                    STRING_LENGTH,
+                                    STR_LENGTH,
                                     0,
                                     0,
                                     NULL,
@@ -753,7 +753,7 @@ String Profiler::GetClassIDName(ClassID classId)
 
 String Profiler::GetModuleIDName(ModuleID modId)
 {
-    WCHAR moduleName[STRING_LENGTH];
+    WCHAR moduleName[STR_LENGTH];
     ULONG nameLength = 0;
     AssemblyID assemID;
 
@@ -765,7 +765,7 @@ String Profiler::GetModuleIDName(ModuleID modId)
 
     HRESULT hr = pCorProfilerInfo->GetModuleInfo(modId,
                                                  NULL,
-                                                 STRING_LENGTH,
+                                                 STR_LENGTH,
                                                  &nameLength,
                                                  moduleName,
                                                  &assemID);
@@ -785,7 +785,7 @@ void Profiler::SetCallback(ProfilerCallback cb)
     s_callbackSet.Signal();
 }
 
-void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo)
+void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo14  *pCorProfilerInfo)
 {
     s_callbackSet.Wait();
 
@@ -795,7 +795,7 @@ void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo
         // some crst order asserts if we call back in to managed code. Spin up
         // a new thread to avoid that.
         pCorProfilerInfo->InitializeCurrentThread();
-        s_callback();
+        s_callback(); 
     });
 
     callbackThread.join();

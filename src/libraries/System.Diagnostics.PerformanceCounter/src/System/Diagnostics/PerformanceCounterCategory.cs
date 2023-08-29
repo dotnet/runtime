@@ -306,7 +306,7 @@ namespace System.Diagnostics
             Hashtable h = new Hashtable();
             for (int i = 0; i < counterData.Count; i++)
             {
-                if (counterData[i].CounterName == null || counterData[i].CounterName.Length == 0)
+                if (string.IsNullOrEmpty(counterData[i].CounterName))
                 {
                     throw new ArgumentException(SR.InvalidCounterName);
                 }
@@ -362,7 +362,7 @@ namespace System.Diagnostics
                     h.Add(counterData[i].CounterName, string.Empty);
 
                     // Ensure that all counter help strings aren't null or empty
-                    if (counterData[i].CounterHelp == null || counterData[i].CounterHelp.Length == 0)
+                    if (string.IsNullOrEmpty(counterData[i].CounterHelp))
                     {
                         counterData[i].CounterHelp = counterData[i].CounterName;
                     }

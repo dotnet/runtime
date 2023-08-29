@@ -70,7 +70,7 @@ namespace System.Text.Json
             }
 
             ValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType, fallBackToNearestAncestorType: true);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
             jsonTypeInfo.SerializeAsObject(writer, value);
         }
 

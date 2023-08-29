@@ -18,7 +18,7 @@ namespace Microsoft.Interop.Analyzers
     public class GeneratedComInterfaceAttributeAnalyzer : DiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; }
-            = ImmutableArray.Create(AnalyzerDiagnostics.InterfaceTypeNotSupported);
+            = ImmutableArray.Create(GeneratorDiagnostics.InterfaceTypeNotSupported);
 
         public static readonly ImmutableArray<ComInterfaceType> SupportedComInterfaceTypes = ImmutableArray.Create(ComInterfaceType.InterfaceIsIUnknown);
 
@@ -41,7 +41,7 @@ namespace Microsoft.Interop.Analyzers
                     && GetAttribute(typeSymbol, TypeNames.InterfaceTypeAttribute, out AttributeData? comInterfaceAttribute)
                     && !InterfaceTypeAttributeIsSupported(comInterfaceAttribute, out string unsupportedValue))
                 {
-                    context.ReportDiagnostic(comInterfaceAttribute.CreateDiagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported, unsupportedValue));
+                    context.ReportDiagnostic(comInterfaceAttribute.CreateDiagnosticInfo(GeneratorDiagnostics.InterfaceTypeNotSupported, unsupportedValue).ToDiagnostic());
                 }
             }, SymbolKind.NamedType);
         }
@@ -59,7 +59,7 @@ namespace Microsoft.Interop.Analyzers
             argument = ctorArg0.ToCSharpString();
             switch (ctorArg0.Type.ToDisplayString())
             {
-                case TypeNames.ComInterfaceTypeAttribute:
+                case TypeNames.ComInterfaceType:
                     interfaceType = (ComInterfaceType)ctorArg0.Value;
                     break;
                 case TypeNames.System_Int16:

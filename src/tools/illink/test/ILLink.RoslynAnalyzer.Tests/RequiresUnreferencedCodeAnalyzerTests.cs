@@ -23,7 +23,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 			VerifyRequiresUnreferencedCodeAnalyzer (source, null, expected);
 
 		static async Task VerifyRequiresUnreferencedCodeAnalyzer (string source, IEnumerable<MetadataReference>? additionalReferences, params DiagnosticResult[] expected) =>
-			await VerifyCS.VerifyAnalyzerAsync (source,
+			await VerifyCS.VerifyAnalyzerAsync (
+				source,
+				consoleApplication: false,
 				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer),
 				additionalReferences ?? Array.Empty<MetadataReference> (),
 				expected);

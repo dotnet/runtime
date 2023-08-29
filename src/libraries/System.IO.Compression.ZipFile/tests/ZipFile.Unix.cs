@@ -184,9 +184,9 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)] // browser doesn't have libc mkfifo. tvOS/iOS return an error for mkfifo.
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal file permissions")]
-        public async Task CanZipNamedPipe()
+        public void ZipNamedPipeIsNotSupported()
         {
             string destPath = Path.Combine(TestDirectory, "dest.zip");
 
@@ -195,29 +195,7 @@ namespace System.IO.Compression.Tests
             Directory.CreateDirectory(subFolderPath); // mandatory before calling mkfifo
             Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */));
 
-            byte[] contentBytes = { 1, 2, 3, 4, 5 };
-
-            await Task.WhenAll(
-                Task.Run(() =>
-                {
-                    using FileStream fs = new (fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read, bufferSize: 0);
-                    foreach (byte content in contentBytes)
-                    {
-                        fs.WriteByte(content);
-                    }
-                }),
-                Task.Run(() =>
-                {
-                    ZipFile.CreateFromDirectory(subFolderPath, destPath);
-
-                    using ZipArchive zippedFolder = ZipFile.OpenRead(destPath);
-                    using Stream unzippedPipe = zippedFolder.Entries.Single().Open();
-
-                    byte[] readBytes = new byte[contentBytes.Length];
-                    Assert.Equal(contentBytes.Length, unzippedPipe.Read(readBytes));
-                    Assert.Equal<byte>(contentBytes, readBytes);
-                    Assert.Equal(0, unzippedPipe.Read(readBytes)); // EOF
-                }));
+            Assert.Throws<IOException>(() => ZipFile.CreateFromDirectory(subFolderPath, destPath));
         }
 
         private static string GetExpectedPermissions(string expectedPermissions)

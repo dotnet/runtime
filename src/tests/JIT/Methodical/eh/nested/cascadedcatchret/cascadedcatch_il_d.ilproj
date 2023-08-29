@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="cascadedcatch_d.il" />
     <Compile Include="cascadedcatch.il" />
   </ItemGroup>
   <ItemGroup>

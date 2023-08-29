@@ -135,6 +135,7 @@ namespace Microsoft.NET.HostModel.Tests
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid)
                     .PublishProject(runtime: TestFixture.CurrentRid,
+                                    selfContained: true,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFixture));
             }
 

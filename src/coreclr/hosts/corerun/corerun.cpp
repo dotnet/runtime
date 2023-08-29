@@ -247,7 +247,9 @@ static int run(const configuration& config)
     // Check if debugger attach scenario was requested.
     if (config.wait_to_debug)
         wait_for_debugger();
-
+    
+    config.dotenv_configuration.load_into_current_process();
+    
     string_t exe_path = pal::get_exe_path();
 
     // Determine the managed application's path.
@@ -302,8 +304,6 @@ static int run(const configuration& config)
             return -1;
         }
     }
-
-    config.dotenv_configuration.load_into_current_process();
 
     actions.before_coreclr_load();
 

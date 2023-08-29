@@ -1020,6 +1020,50 @@ void GCFrame::Pop()
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
 }
+
+void GCFrame::Remove()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pCurThread != NULL);
+    }
+    CONTRACTL_END;
+
+    GCFrame *pPrevFrame = NULL;
+    GCFrame *pFrame = m_pCurThread->GetGCFrame();
+    while (pFrame != NULL)
+    {
+        if (pFrame == this)
+        {
+            if (pPrevFrame)
+            {
+                pPrevFrame->m_Next = m_Next;
+            }
+            else
+            {
+                m_pCurThread->SetGCFrame(m_Next);
+            }
+
+            m_Next = NULL;
+
+#ifdef _DEBUG
+            m_pCurThread->EnableStressHeap();
+            for(UINT i = 0; i < m_numObjRefs; i++)
+                Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
+#endif
+            break;
+        }
+
+        pPrevFrame = pFrame;
+        pFrame = pFrame->m_Next;
+    }
+
+    _ASSERTE_MSG(pFrame != NULL, "GCFrame not found in the current thread's stack");
+}
+
 #endif // !DACCESS_COMPILE
 
 //
@@ -1925,7 +1969,7 @@ BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
                            ((ArrayBase *)pbDelInvocationList)->GetComponentSize()*delegateCount);
 
         _ASSERTE(pbDel);
-        return DelegateInvokeStubManager::TraceDelegateObject(pbDel, trace);
+        return StubLinkStubManager::TraceDelegateObject(pbDel, trace);
     }
 #endif // !DACCESS_COMPILE
 }
@@ -2200,7 +2244,7 @@ void ComputeCallRefMap(MethodDesc* pMD,
     // an instantiation argument. But if we're in a situation where we haven't resolved the method yet
     // we need to pretent that unresolved default interface methods are like any other interface
     // methods and don't have an instantiation argument.
-    // See code:CEEInfo::getMethodSigInternal
+    // See code:getMethodSigInternal
     //
     assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
     if (pMD->RequiresInstArg() && !isDispatchCell)

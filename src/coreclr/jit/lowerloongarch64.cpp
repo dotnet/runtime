@@ -84,7 +84,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XOR:
                 return emitter::isValidUimm12(immVal);
             case GT_JCMP:
-                assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
+                assert(immVal == 0);
                 return true;
 
             case GT_STORE_LCL_FLD:
@@ -152,13 +152,20 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
         // LA64's float compare and condition-branch instructions, have
         // condition flags indicating the comparing results.
+        // For LoongArch64, the floating compare result is saved to the specific register,
+        // where there are 8 bits for saveing at most eight different results, that is the FCC0 ~ FCC7.
+        // This is very different with the AArch64 and AMD64.
+        // For AArch64 and AMD64:                       |  // For LoongArch64
+        // cmp  $f1, $f2     <--just compare.           |  fcmp.cond cc,$f1,$f2  <--the condition is here.
+        // branch.condition  <--the condition is here.  |  branch true or false by the cc flag.
         if (varTypeIsFloating(cmpOp1))
         {
             op->gtType = TYP_VOID;
             op->gtFlags |= GTF_SET_FLAGS;
             assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+
             jtrue->SetOper(GT_JCC);
-            jtrue->AsCC()->gtCondition = cond;
+            jtrue->AsCC()->gtCondition = GenCondition::NE; // For LA64 is only NE or EQ.
             return nullptr;
         }
 
@@ -179,12 +186,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     // for LA64's integer compare and condition-branch instructions,
     // it's very similar to the IL instructions.
-    jtrue->SetOper(GT_JCMP);
-    jtrue->gtOp1 = cmpOp1;
-    jtrue->gtOp2 = cmpOp2;
-
-    jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
-    jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+    jtrue->ChangeOper(GT_JCMP);
+    jtrue->gtOp1                 = cmpOp1;
+    jtrue->gtOp2                 = cmpOp2;
+    jtrue->AsOpCC()->gtCondition = cond;
 
     if (cmpOp2->IsCnsIntOrI())
     {
@@ -290,10 +295,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src->SetContained();
             src = src->AsUnOp()->gtGetOp1();
         }
-        if (blkNode->OperIs(GT_STORE_OBJ))
-        {
-            blkNode->SetOper(GT_STORE_BLK);
-        }
 
         if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
             src->OperIs(GT_CNS_INT))
@@ -335,43 +336,36 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
-        if (src->OperIs(GT_IND))
-        {
-            // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
-            // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
-            // address, not knowing that GT_IND is part of a block op that has containment restrictions.
-            src->AsIndir()->Addr()->ClearContained();
-        }
-        else if (src->OperIs(GT_LCL_VAR))
+        if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
-        unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
+
+        if (doCpObj && (size <= copyBlockUnrollLimit))
         {
-            if (!blkNode->AsBlk()->GetLayout()->HasGCPtr())
-            {
-                blkNode->SetOper(GT_STORE_BLK);
-            }
-            else if (dstAddr->OperIs(GT_LCL_ADDR) && (size <= copyBlockUnrollLimit))
+            // No write barriers are needed on the stack.
+            // If the layout contains a byref, then we know it must live on the stack.
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
                 // temporary register(s) used for copying.
-                blkNode->SetOper(GT_STORE_BLK);
+                doCpObj                  = false;
                 blkNode->gtBlkOpGcUnsafe = true;
             }
         }
 
         // CopyObj or CopyBlk
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        if (doCpObj)
         {
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {

@@ -17,7 +17,7 @@ namespace Microsoft.Interop
             GetMarshallingInfoCallback getMarshallingInfoCallback,
             int indirectionDepth,
             CountInfo parsedCountInfo,
-            IGeneratorDiagnostics diagnostics,
+            GeneratorDiagnosticsBag diagnostics,
             Compilation compilation)
         {
             if (!ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(entryPointType))
@@ -134,7 +134,7 @@ namespace Microsoft.Interop
             INamedTypeSymbol entryPointType,
             AttributeData attrData,
             Compilation compilation,
-            IGeneratorDiagnostics diagnostics)
+            GeneratorDiagnosticsBag diagnostics)
         {
             if (!ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(entryPointType))
             {

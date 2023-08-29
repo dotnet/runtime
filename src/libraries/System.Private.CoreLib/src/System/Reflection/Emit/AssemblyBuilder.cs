@@ -9,6 +9,9 @@ namespace System.Reflection.Emit
 {
     public abstract partial class AssemblyBuilder : Assembly
     {
+        [ThreadStatic]
+        private static bool t_allowDynamicCode;
+
         protected AssemblyBuilder()
         {
         }
@@ -39,18 +42,16 @@ namespace System.Reflection.Emit
             SetCustomAttributeCore(con, binaryAttribute);
         }
 
-        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            SetCustomAttributeCore(customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
         }
 
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
-
-        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         public override string Location => string.Empty;
@@ -83,9 +84,37 @@ namespace System.Reflection.Emit
 
         internal static void EnsureDynamicCodeSupported()
         {
-            if (!RuntimeFeature.IsDynamicCodeSupported)
+            if (!RuntimeFeature.IsDynamicCodeSupported && !t_allowDynamicCode)
             {
                 ThrowDynamicCodeNotSupported();
+            }
+        }
+
+        /// <summary>
+        /// Allows dynamic code even though RuntimeFeature.IsDynamicCodeSupported is false.
+        /// </summary>
+        /// <returns>An object that, when disposed, will revert allowing dynamic code back to its initial state.</returns>
+        /// <remarks>
+        /// This is useful for cases where RuntimeFeature.IsDynamicCodeSupported returns false, but
+        /// the runtime is still capable of emitting dynamic code. For example, when generating delegates
+        /// in System.Linq.Expressions while PublishAot=true is set in the project. At debug time, the app
+        /// uses the non-AOT runtime with the IsDynamicCodeSupported feature switch set to false.
+        /// </remarks>
+        internal static IDisposable ForceAllowDynamicCode() => new ForceAllowDynamicCodeScope();
+
+        private sealed class ForceAllowDynamicCodeScope : IDisposable
+        {
+            private readonly bool _previous;
+
+            public ForceAllowDynamicCodeScope()
+            {
+                _previous = t_allowDynamicCode;
+                t_allowDynamicCode = true;
+            }
+
+            public void Dispose()
+            {
+                t_allowDynamicCode = _previous;
             }
         }
 

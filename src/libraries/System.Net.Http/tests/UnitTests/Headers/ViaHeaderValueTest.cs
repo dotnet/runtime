@@ -22,12 +22,12 @@ namespace System.Net.Http.Tests
             Assert.Equal("x11", via.ProtocolVersion);
             Assert.Equal("[::1]:1818", via.ReceivedBy);
 
-            AssertExtensions.Throws<ArgumentException>("protocolVersion", () => { new ViaHeaderValue(null, "host"); });
+            AssertExtensions.Throws<ArgumentNullException>("protocolVersion", () => { new ViaHeaderValue(null, "host"); });
             AssertExtensions.Throws<ArgumentException>("protocolVersion", () => { new ViaHeaderValue("", "host"); });
             Assert.Throws<FormatException>(() => { new ViaHeaderValue("x y", "h"); });
             Assert.Throws<FormatException>(() => { new ViaHeaderValue("x ", "h"); });
             Assert.Throws<FormatException>(() => { new ViaHeaderValue(" x", "h"); });
-            AssertExtensions.Throws<ArgumentException>("receivedBy", () => { new ViaHeaderValue("1.1", null); });
+            AssertExtensions.Throws<ArgumentNullException>("receivedBy", () => { new ViaHeaderValue("1.1", null); });
             AssertExtensions.Throws<ArgumentException>("receivedBy", () => { new ViaHeaderValue("1.1", ""); });
             Assert.Throws<FormatException>(() => { new ViaHeaderValue("v", "x y"); });
             Assert.Throws<FormatException>(() => { new ViaHeaderValue("v", "x "); });

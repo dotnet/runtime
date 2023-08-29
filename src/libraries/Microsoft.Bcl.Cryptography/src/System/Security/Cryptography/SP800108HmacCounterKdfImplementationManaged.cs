@@ -139,7 +139,7 @@ namespace System.Security.Cryptography
                 // The KDF is defined as K(i) := PRF (KI, [i]2 || Label || 0x00 || Context || [L]2)
                 // We know L is already less than 0x1FFFFFFF. h = ceil(L / h) where H is the hash length in bits.
                 // So we don't expect i to overflow.
-                using (IncrementalHash hash = IncrementalHash.CreateHMAC(hashAlgorithm, key))
+                using (HMAC hash = CreateHMAC(hashAlgorithm, key))
                 {
                     // We use this rented buffer for three things. The first two uints for i and L, and last byte
                     // for the zero separator. So this is
@@ -165,19 +165,30 @@ namespace System.Security.Cryptography
                         for (uint i = 1; !destination.IsEmpty; i++)
                         {
                             WriteUInt32BigEndian(i, rentedBuffer.AsSpan(IOffset, ILength));
-                            hash.AppendData(rentedBuffer, IOffset, ILength);
-                            hash.AppendData(label, 0, labelLength);
-                            hash.AppendData(rentedBuffer, ZeroOffset, ZeroLength);
-                            hash.AppendData(context, 0, contextLength);
-                            hash.AppendData(rentedBuffer, LOffset, LLength);
+                            int written;
+                            written = hash.TransformBlock(rentedBuffer, IOffset, ILength, null, 0);
+                            Debug.Assert(written == ILength);
+                            written = hash.TransformBlock(label, 0, labelLength, null, 0);
+                            Debug.Assert(written == labelLength);
+                            written = hash.TransformBlock(rentedBuffer, ZeroOffset, ZeroLength, null, 0);
+                            Debug.Assert(written == ZeroLength);
+                            written = hash.TransformBlock(context, 0, contextLength, null, 0);
+                            Debug.Assert(written == contextLength);
+                            written = hash.TransformBlock(rentedBuffer, LOffset, LLength, null, 0);
+                            Debug.Assert(written == LLength);
 
-                            byte[] hmac = hash.GetHashAndReset();
+                            // Use an empty input for the final transform so that the returned value isn't something
+                            // we need to clear since the return value is the same as the input.
+                            hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+
+                            byte[] hmac = hash.Hash;
                             int needed = Math.Min(destination.Length, hmac.Length);
                             hmac.AsSpan(0, needed).CopyTo(destination);
                             destination = destination.Slice(needed);
 
                             // Best effort to zero out the key material.
                             CryptographicOperations.ZeroMemory(hmac);
+                            hash.Initialize();
                         }
                     }
                     finally
@@ -198,6 +209,25 @@ namespace System.Security.Cryptography
             destination[1] = (byte)(value >> 16);
             destination[2] = (byte)(value >> 8);
             destination[3] = (byte)(value);
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "Weak algorithms are used as instructed by the caller")]
+        private static HMAC CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key)
+        {
+            switch (hashAlgorithm.Name)
+            {
+                case HashAlgorithmNames.SHA1:
+                    return new HMACSHA1(key);
+                case HashAlgorithmNames.SHA256:
+                    return new HMACSHA256(key);
+                case HashAlgorithmNames.SHA384:
+                    return new HMACSHA384(key);
+                case HashAlgorithmNames.SHA512:
+                    return new HMACSHA512(key);
+                default:
+                    Debug.Fail($"Unexpected HMAC algorithm '{hashAlgorithm.Name}'.");
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            }
         }
     }
 }

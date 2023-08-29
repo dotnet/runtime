@@ -18,10 +18,14 @@
 
 #include "library-builder.h"
 
+%EXTERN_BUNDLED_RESOURCES_SYMBOLS%
+
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
-    free ((void *)args->runtimeconfig.name.path);
+    if (args->kind == 0)
+        free ((void *)args->runtimeconfig.name.path);
+
     free (args);
     free (user_data);
 }
@@ -29,6 +33,18 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 static void
 initialize_runtimeconfig (const char *bundle_path)
 {
+    MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+    if (!arg)
+        LOG_ERROR ("Out of memory.\n");
+
+#if defined(BUNDLED_RESOURCES)
+    arg->kind = 1;
+    arg->runtimeconfig.data.data = %RUNTIME_CONFIG_DATA%;
+    arg->runtimeconfig.data.data_len = %RUNTIME_CONFIG_DATA_LEN%;
+
+    if (!arg->runtimeconfig.data.data)
+        return;
+#else
     char *file_name = "runtimeconfig.bin";
     size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
     char *file_path = (char *)malloc (str_len);
@@ -40,18 +56,16 @@ initialize_runtimeconfig (const char *bundle_path)
         LOG_ERROR ("Encoding error while formatting '%s' and '%s' into \"%%s/%%s\".\n", bundle_path, file_name);
 
     struct stat buffer;
-
-    if (stat (file_path, &buffer) == 0) {
-        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
-        if (!arg)
-            LOG_ERROR ("Out of memory.\n");
-
-        arg->kind = 0;
-        arg->runtimeconfig.name.path = file_path;
-        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
-    } else {
+    if (stat (file_path, &buffer) != 0) {
         free (file_path);
+        return;
     }
+
+    arg->kind = 0;
+    arg->runtimeconfig.name.path = file_path;
+#endif // BUNDLED_RESOURCES
+
+    monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
 }
 
 static void
@@ -105,11 +119,17 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
 {
     munmap (handle, size);
 }
-#endif
+#endif // USES_AOT_DATA
 
 static void
 runtime_init_callback ()
 {
+    register_aot_modules ();
+
+#if defined(BUNDLED_RESOURCES)
+    mono_register_resources_bundle ();
+#endif
+
     const char *assemblies_location = getenv ("%ASSEMBLIES_LOCATION%");
     if (!assemblies_location || assemblies_location[0] == '\0')
         assemblies_location = "./";
@@ -122,8 +142,6 @@ runtime_init_callback ()
     initialize_runtimeconfig (bundle_path);
 
     initialize_appctx_env_variables (bundle_path);
-
-    register_aot_modules ();
 
     mono_set_assemblies_path (bundle_path);
 

@@ -60,22 +60,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
 
-        /// <summary>Sets a single-precision floating point number to a specified value and returns the original value, as an atomic operation.</summary>
-        /// <param name="location1">The variable to set to the specified value.</param>
-        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
-        /// <returns>The original value of <paramref name="location1"/>.</returns>
-        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float Exchange(ref float location1, float value);
-
-        /// <summary>Sets a double-precision floating point number to a specified value and returns the original value, as an atomic operation.</summary>
-        /// <param name="location1">The variable to set to the specified value.</param>
-        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
-        /// <returns>The original value of <paramref name="location1"/>.</returns>
-        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double Exchange(ref double location1, double value);
-
         /// <summary>Sets an object to the specified value and returns a reference to the original object, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
@@ -121,24 +105,6 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long CompareExchange(ref long location1, long value, long comparand);
-
-        /// <summary>Compares two single-precision floating point numbers for equality and, if they are equal, replaces the first value.</summary>
-        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
-        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
-        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
-        /// <returns>The original value in <paramref name="location1"/>.</returns>
-        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float CompareExchange(ref float location1, float value, float comparand);
-
-        /// <summary>Compares two double-precision floating point numbers for equality and, if they are equal, replaces the first value.</summary>
-        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
-        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
-        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
-        /// <returns>The original value in <paramref name="location1"/>.</returns>
-        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         /// <summary>Compares two objects for reference equality and, if they are equal, replaces the first object.</summary>
         /// <param name="location1">The destination object that is compared by reference with <paramref name="comparand"/> and possibly replaced.</param>
@@ -204,29 +170,11 @@ namespace System.Threading
         /// <summary>Returns a 64-bit signed value, loaded as an atomic operation.</summary>
         /// <param name="location">The 64-bit value to be loaded.</param>
         /// <returns>The loaded value.</returns>
-        public static long Read(ref long location) =>
-            CompareExchange(ref location, 0, 0);
+        public static long Read(ref readonly long location) =>
+            CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
         #endregion
 
-        #region MemoryBarrier
-        /// <summary>
-        /// Synchronizes memory access as follows:
-        /// The processor that executes the current thread cannot reorder instructions in such a way that memory accesses before
-        /// the call to <see cref="MemoryBarrier"/> execute after memory accesses that follow the call to <see cref="MemoryBarrier"/>.
-        /// </summary>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void MemoryBarrier();
-
-        /// <summary>
-        /// Synchronizes memory access as follows:
-        /// The processor that executes the current thread cannot reorder instructions in such a way that memory reads before
-        /// the call to <see cref="ReadMemoryBarrier"/> execute after memory accesses that follow the call to <see cref="ReadMemoryBarrier"/>.
-        /// </summary>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ReadMemoryBarrier();
-
+        #region MemoryBarrierProcessWide
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
         private static partial void _MemoryBarrierProcessWide();
 

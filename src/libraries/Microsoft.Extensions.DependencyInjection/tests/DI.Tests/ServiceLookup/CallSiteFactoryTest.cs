@@ -786,17 +786,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var callSite = factory(typeof(IEnumerable<FakeService>));
 
             var expectedLocation = (CallSiteResultCacheLocation)expectedCacheLocation;
-            Assert.Equal(expectedLocation, callSite.Cache.Location);
 
-            if (expectedLocation != CallSiteResultCacheLocation.None)
-            {
-                Assert.Equal(0, callSite.Cache.Key.Slot);
-                Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.Type);
-            }
-            else
-            {
-                Assert.Equal(ResultCache.None, callSite.Cache);
-            }
+            Assert.Equal(expectedLocation, callSite.Cache.Location);
+            Assert.Equal(0, callSite.Cache.Key.Slot);
+            Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.ServiceIdentifier.ServiceType);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -939,6 +932,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled", "false");
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
             {
@@ -966,7 +960,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Assert.Equal(2, ((Struct1)callSite.Value).Value);
             }, options);
 
-            // Verify the above scenarios work when IsDynamicCodeSupported is not set
+            // Verify the above scenarios work when IsDynamicCodeSupported + IsDynamicCodeCompiled are not set
             Func<Type, ServiceCallSite> callSiteFactory = CreateAotCompatibilityCallSiteFactory();
 
             // Open Generics
@@ -1007,7 +1001,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             var callSiteFactory = new CallSiteFactory(collection.ToArray());
 
-            return type => callSiteFactory.GetCallSite(type, new CallSiteChain());
+            return type => callSiteFactory.GetCallSite(ServiceIdentifier.FromServiceType(type), new CallSiteChain());
         }
 
         private static IEnumerable<Type> GetParameters(ConstructorCallSite constructorCallSite) =>

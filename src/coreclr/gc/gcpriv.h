@@ -18,46 +18,46 @@
 #include "gcrecord.h"
 
 // The per heap and global fields are separated into the following categories -
-// 
+//
 // Used in GC and needs to be maintained, ie, next GC can be using this field so it needs to have the right value.
 // Note that for some fields this doesn't mean the value of the field itself will change (it could remain the same
 // throughout the process lifetime (for example, finalize_queue) but you'll need to pay attention to its content
-// and make sure it's updated correctly through each GC. 
-// 
+// and make sure it's updated correctly through each GC.
+//
 // Some fields are marked as "loosely maintained" in their comments - this means they are really only modified during
 // a single GC *except* they can be resized during a GC so the reinit-ed value will carry over to later GCs.
 // PER_HEAP_FIELD_MAINTAINED
-// 
+//
 // Like PER_HEAP_FIELD_MAINTAINED and also used in the allocator code paths
 // PER_HEAP_FIELD_MAINTAINED_ALLOC
-// 
+//
 // Used only during a single GC so we could fill it with an arbitrary value and shouldn't break anything.
 // Note that for BGC fields, this means it's initialized at the beginning of that BGC. Ephemeral GCs can happen during
 // this single BGC but they do not actually modify these fields.
 // PER_HEAP_FIELD_SINGLE_GC
-// 
+//
 // Like PER_HEAP_FIELD_SINGLE_GC and also used in the allocator code paths
 // PER_HEAP_FIELD_SINGLE_GC_ALLOC
-// 
+//
 // Only used by the allocator code paths
 // PER_HEAP_FIELD_ALLOC
-// 
+//
 // Initialized during the GC init and never changes
 // PER_HEAP_FIELD_INIT_ONLY
-// 
+//
 // Used for diagnostics purpose only
 // PER_HEAP_FIELD_DIAG_ONLY
-// 
+//
 // Corresponding annotation for global fields
 // PER_HEAP_ISOLATED_FIELD_MAINTAINED
 // PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC
 // PER_HEAP_ISOLATED_FIELD_SINGLE_GC
 // PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC
 // PER_HEAP_ISOLATED_FIELD_INIT_ONLY
-// 
-// If a field does not fit any of the above category, such as fgn_maxgen_percent which is only updated by an API, 
+//
+// If a field does not fit any of the above category, such as fgn_maxgen_percent which is only updated by an API,
 // it will be marked as PER_HEAP_FIELD/PER_HEAP_ISOLATED_FIELD.
-// 
+//
 // A few notes -
 //
 // + within the section of a particular category of fields I use the following policy to list them -
@@ -70,7 +70,7 @@
 //
 // + some of the fields are used by both regions and segments share. When that's the case, the annotation
 // is based on regions. So for segments they may or may not apply (segments code is in maintainence mode only).
-// 
+//
 // + some fields are used by the GC and WB but not by the allocator, in which case I will indicate them as such.
 #ifdef MULTIPLE_HEAPS
 #define PER_HEAP_FIELD
@@ -108,8 +108,17 @@
 #pragma warning(disable:4477)
 #endif //_MSC_VER
 
+//#define TRACE_GC
+//#define SIMPLE_DPRINTF
+
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
+void flush_gc_log (bool);
+#endif //TRACE_GC && SIMPLE_DPRINTF
 inline void FATAL_GC_ERROR()
 {
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
+    flush_gc_log (true);
+#endif //TRACE_GC && SIMPLE_DPRINTF
     GCToOSInterface::DebugBreak();
     _ASSERTE(!"Fatal Error in GC.");
     GCToEEInterface::HandleFatalError((unsigned int)COR_E_EXECUTIONENGINE);
@@ -142,12 +151,22 @@ inline void FATAL_GC_ERROR()
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
+//#define SPINLOCK_HISTORY
+//#define RECORD_LOH_STATE
+
+#if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
+// can only change heap count with regions
+#define DYNAMIC_HEAP_COUNT
+//#define STRESS_DYNAMIC_HEAP_COUNT
+#endif //USE_REGIONS && MULTIPLE_HEAPS
+
 #ifdef USE_REGIONS
 // Currently this -
 // + creates some pins on our own
 // + creates some ro segs
 // We can add more mechanisms here.
 //#define STRESS_REGIONS
+//#define COMMITTED_BYTES_SHADOW
 #define MARK_PHASE_PREFETCH
 #endif //USE_REGIONS
 
@@ -224,9 +243,6 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-//#define TRACE_GC
-//#define SIMPLE_DPRINTF
-
 //#define JOIN_STATS         //amount of time spent in the join
 
 //#define SYNCHRONIZATION_STATS
@@ -278,7 +294,7 @@ void GCLogConfig (const char *fmt, ... );
 #define MAX_NUM_BUCKETS (MAX_INDEX_POWER2 - MIN_INDEX_POWER2 + 1)
 
 #ifdef USE_REGIONS
-#define MAX_REGION_SIZE 0x80000000 
+#define MAX_REGION_SIZE 0x80000000
 #endif // USE_REGIONS
 
 #define MAX_NUM_FREE_SPACES 200
@@ -350,6 +366,7 @@ void GCLog (const char *fmt, ... );
 #else //SIMPLE_DPRINTF
 #ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
+//#define dprintf(l,x) {if ((l <= 2) || (l == 6666)) {STRESS_LOG_VA(l,x);}}
 #else
 #error Logging dprintf to stress log on 32 bits platforms is not supported.
 #endif
@@ -382,6 +399,12 @@ struct GCDebugSpinLock {
     // number of times we went to calling DisablePreemptiveGC in WaitLonger.
     unsigned int num_disable_preemptive_w;
 #endif
+#if defined(DYNAMIC_HEAP_COUNT)
+    // time in microseconds we wait for the more space lock
+    uint64_t msl_wait_time;
+    // number of times we wait for the more space lock
+    uint64_t msl_wait_count;
+#endif //DYNAMIC_HEAP_COUNT
 
     GCDebugSpinLock()
         : lock(-1)
@@ -391,6 +414,9 @@ struct GCDebugSpinLock {
 #if defined (SYNCHRONIZATION_STATS)
         , num_switch_thread(0), num_wait_longer(0), num_switch_thread_w(0), num_disable_preemptive_w(0)
 #endif
+#if defined(DYNAMIC_HEAP_COUNT)
+        , msl_wait_time(0), msl_wait_count(0)
+#endif //DYNAMIC_HEAP_COUNT
     {
     }
 
@@ -534,15 +560,17 @@ enum memory_type
 static const char * const str_bgc_state[] =
 {
     "not_in_process",
+    "bgc_initialized",
+    "reset_ww",
     "mark_handles",
     "mark_stack",
     "revisit_soh",
-    "revisit_loh",
+    "revisit_uoh",
     "overflow_soh",
-    "overflow_loh",
+    "overflow_uoh",
     "final_marking",
     "sweep_soh",
-    "sweep_loh",
+    "sweep_uoh",
     "plan_phase"
 };
 #endif // defined(TRACE_GC) && defined(BACKGROUND_GC)
@@ -573,6 +601,12 @@ enum allocation_state
     a_state_max
 };
 
+enum enter_msl_status
+{
+    msl_entered,
+    msl_retry_different_heap
+};
+
 enum gc_type
 {
     gc_type_compacting = 0,
@@ -582,6 +616,14 @@ enum gc_type
 #endif //BACKGROUND_GC
     gc_type_max = 3
 };
+
+#ifdef DYNAMIC_HEAP_COUNT
+enum gc_dynamic_adaptation_mode
+{
+    dynamic_adaptation_default = 0,
+    dynamic_adaptation_to_application_sizes = 1,
+};
+#endif //DYNAMIC_HEAP_COUNT
 
 //encapsulates the mechanism for the current gc
 class gc_mechanisms
@@ -758,6 +800,17 @@ struct etw_bucket_info
 };
 #endif //FEATURE_EVENT_TRACE
 
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+struct min_fl_list_info
+{
+    uint8_t* head;
+    uint8_t* tail;
+
+    void thread_item (uint8_t* item);
+    void thread_item_no_prev (uint8_t* item);
+};
+#endif //MULTIPLE_HEAPS && USE_REGIONS
+
 class allocator
 {
     int first_bucket_bits;
@@ -872,6 +925,16 @@ public:
     void unlink_item_no_undo (uint8_t* item, size_t size);
     void unlink_item_no_undo (unsigned int bn, uint8_t* item, size_t size);
     void unlink_item_no_undo_added (unsigned int bn, uint8_t* item, uint8_t* previous_item);
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+    void count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* fl_items_for_oh_count);
+    void rethread_items (size_t* num_total_fl_items,
+                         size_t* num_total_fl_items_rethread,
+                         gc_heap* current_heap,
+                         min_fl_list_info* min_fl_list,
+                         size_t* free_list_space_per_heap,
+                         int num_heap);
+    void merge_items (gc_heap* current_heap, int to_num_heaps, int from_num_heaps);
+#endif //MULTIPLE_HEAPS && USE_REGIONS
 #endif //DOUBLY_LINKED_FL
 
     void copy_to_alloc_list (alloc_list* toalist);
@@ -888,6 +951,10 @@ public:
                                   size_t max_item_count,
                                   size_t* recorded_fl_info_size);
 #endif //FEATURE_EVENT_TRACE
+    bool is_doubly_linked_p()
+    {
+        return (gen_number == max_generation);
+    }
 };
 
 #define NUM_GEN_POWER2 (20)
@@ -969,7 +1036,7 @@ public:
     // When a generation is condemned, these are re-calculated. For older generations these are maintained across GCs as
     // younger generation GCs allocate into this generation's FL.
     //
-    // If we rearrange regions between heaps, we need to adjust these values accordingly. free_list_space can be adjusted 
+    // If we rearrange regions between heaps, we need to adjust these values accordingly. free_list_space can be adjusted
     // when we adjust the FL. However, since we don't actually maintain free_obj_space per region and walking an entire
     // region just to get free_obj_space is not really worth it, we might just have to live with inaccurate value till
     // the next GC that condemns this generation which is okay since this is usually a small value anyway.
@@ -1028,7 +1095,7 @@ struct static_data
 };
 
 // dynamic data is maintained per generation, so we have total_generation_count number of them.
-// 
+//
 // The dynamic data fields are grouped into 3 categories:
 //
 // calculated logical data (like desired_allocation)
@@ -1046,7 +1113,7 @@ public:
 
     //
     // The next group of fields are updated during a GC if that GC condemns this generation.
-    // 
+    //
     // Same as new_allocation but only updated during a GC if the generation is condemned.
     // We should really just get rid of this.
     ptrdiff_t gc_new_allocation;
@@ -1238,6 +1305,7 @@ struct spinlock_info
 {
     msl_enter_state enter_state;
     msl_take_state take_state;
+    allocation_state current_uoh_alloc_state;
     EEThreadId thread_id;
     bool loh_p;
 };
@@ -1312,6 +1380,9 @@ struct no_gc_region_info
     size_t saved_gen0_min_size;
     size_t saved_gen3_min_size;
     BOOL minimal_gc_p;
+    size_t soh_withheld_budget;
+    size_t loh_withheld_budget;
+    NoGCRegionCallbackFinalizerWorkItem* callback;
 };
 
 // if you change these, make sure you update them for sos (strike.cpp) as well.
@@ -1442,6 +1513,7 @@ class gc_heap
     friend class seg_free_spaces;
     friend class mark;
     friend class CObjectHeader;
+    friend class allocator;
 
 #ifdef BACKGROUND_GC
     friend class exclusive_sync;
@@ -1551,6 +1623,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void fire_pevents();
 
+    PER_HEAP_ISOLATED_METHOD void fire_committed_usage_event();
+
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
 #endif
@@ -1586,12 +1660,12 @@ private:
     PER_HEAP_ISOLATED_METHOD void set_region_gen_num (heap_segment* region, int gen_num);
     PER_HEAP_ISOLATED_METHOD int get_region_plan_gen_num (uint8_t* obj);
     PER_HEAP_ISOLATED_METHOD bool is_region_demoted (uint8_t* obj);
-    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num);
+    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num, bool replace_p = false);
     PER_HEAP_METHOD void set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num);
     PER_HEAP_METHOD void set_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_demoted (heap_segment* region);
-    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region);
+    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_surv_region_count);
     PER_HEAP_METHOD void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
     PER_HEAP_METHOD void process_last_np_surv_region (generation* consing_gen,
                                       int current_plan_gen_num,
@@ -1612,7 +1686,7 @@ private:
     PER_HEAP_METHOD bool decide_on_compaction_space();
     PER_HEAP_METHOD bool try_get_new_free_region();
     PER_HEAP_METHOD bool init_table_for_region (int gen_number, heap_segment* region);
-    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p);
+    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p, int* num_returned_regions);
     PER_HEAP_METHOD void thread_final_regions (bool compact_p);
     PER_HEAP_METHOD void thread_start_region (generation* gen, heap_segment* region);
     PER_HEAP_METHOD heap_segment* get_new_region (int gen_number, size_t size = 0);
@@ -1636,6 +1710,12 @@ private:
                                     uint8_t* parent_loc);
     // This relocates the SIP regions and return the next non SIP region.
     PER_HEAP_METHOD heap_segment* relocate_advance_to_non_sip (heap_segment* region);
+
+    // Compute the size committed for the mark array for this region.
+    PER_HEAP_METHOD size_t get_mark_array_size(heap_segment* seg);
+
+    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
+    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
 
     PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
@@ -1995,6 +2075,13 @@ private:
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD bool on_used_changed (uint8_t* left);
 
+    // new_sizes are the logical sizes of the card table elements while
+    // commit_sizes are the physical sizes of the card table elements due to alignment constraints.
+    PER_HEAP_ISOLATED_METHOD bool get_card_table_commit_layout (uint8_t* from, uint8_t* to,
+                                        uint8_t* commit_begins[total_bookkeeping_elements],
+                                        size_t commit_sizes[total_bookkeeping_elements],
+                                        size_t new_sizes[total_bookkeeping_elements]);
+
     PER_HEAP_ISOLATED_METHOD bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
 #else //USE_REGIONS
     PER_HEAP_ISOLATED_METHOD int grow_brick_card_tables (uint8_t* start,
@@ -2067,6 +2154,12 @@ private:
     // synchronized
     PER_HEAP_METHOD void gc1();
 
+#ifdef DYNAMIC_HEAP_COUNT
+    PER_HEAP_METHOD bool prepare_rethread_fl_items();
+    PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
+    PER_HEAP_ISOLATED_METHOD void merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n_heaps);
+#endif //DYNAMIC_HEAP_COUNT
+
     PER_HEAP_ISOLATED_METHOD void save_data_for_no_gc();
 
     PER_HEAP_ISOLATED_METHOD void restore_data_for_no_gc();
@@ -2098,6 +2191,9 @@ private:
 
     PER_HEAP_METHOD void allocate_for_no_gc_after_gc();
 
+    PER_HEAP_ISOLATED_METHOD
+    enable_no_gc_region_callback_status enable_no_gc_callback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold);
+
 #ifdef USE_REGIONS
     PER_HEAP_METHOD bool extend_soh_for_no_gc();
 #endif //USE_REGIONS
@@ -2116,6 +2212,10 @@ private:
 
     PER_HEAP_ISOLATED_METHOD end_no_gc_region_status end_no_gc_region();
 
+    PER_HEAP_ISOLATED_METHOD void schedule_finalizer_work(FinalizerWorkItem* callback);
+
+    PER_HEAP_ISOLATED_METHOD void schedule_no_gc_callback(bool abandoned);
+
     PER_HEAP_ISOLATED_METHOD void handle_failure_for_no_gc();
 
     PER_HEAP_METHOD void fire_mark_event (int root_type,
@@ -2129,6 +2229,12 @@ private:
     PER_HEAP_ISOLATED_METHOD BOOL allocate_more_space (alloc_context* acontext, size_t jsize, uint32_t flags,
                               int alloc_generation_number);
 
+    PER_HEAP_METHOD bool should_move_heap (GCSpinLock* msl);
+
+    PER_HEAP_METHOD enter_msl_status enter_spin_lock_msl_helper (GCSpinLock* msl);
+
+    PER_HEAP_METHOD enter_msl_status enter_spin_lock_msl (GCSpinLock* msl);
+
     PER_HEAP_METHOD size_t get_full_compact_gc_count();
 
     PER_HEAP_METHOD BOOL short_on_end_of_seg (heap_segment* seg);
@@ -2140,9 +2246,9 @@ private:
                             int align_const);
 
 #ifdef BACKGROUND_GC
-    PER_HEAP_METHOD void wait_for_background (alloc_wait_reason awr, bool loh_p);
+    PER_HEAP_METHOD enter_msl_status wait_for_background (alloc_wait_reason awr, bool loh_p);
 
-    PER_HEAP_METHOD bool wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p);
+    PER_HEAP_METHOD bool wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p, enter_msl_status* msl_status);
 
     PER_HEAP_METHOD void bgc_uoh_alloc_clr (uint8_t* alloc_start,
                             size_t size,
@@ -2168,9 +2274,10 @@ private:
     PER_HEAP_METHOD void add_saved_spinlock_info (
             bool loh_p,
             msl_enter_state enter_state,
-            msl_take_state take_state);
+            msl_take_state take_state,
+            enter_msl_status msl_status);
 
-    PER_HEAP_METHOD void trigger_gc_for_alloc (int gen_number, gc_reason reason,
+    PER_HEAP_METHOD enter_msl_status trigger_gc_for_alloc (int gen_number, gc_reason reason,
                                GCSpinLock* spin_lock, bool loh_p,
                                msl_take_state take_state);
 
@@ -2197,7 +2304,8 @@ private:
     PER_HEAP_METHOD BOOL uoh_get_new_seg (int gen_number,
                           size_t size,
                           BOOL* commit_failed_p,
-                          oom_reason* oom_r);
+                          oom_reason* oom_r,
+                          enter_msl_status* msl_status);
 
     PER_HEAP_ISOLATED_METHOD size_t get_uoh_seg_size (size_t size);
 
@@ -2205,13 +2313,15 @@ private:
 
     PER_HEAP_METHOD BOOL check_and_wait_for_bgc (alloc_wait_reason awr,
                                  BOOL* did_full_compact_gc,
-                                 bool loh_p);
+                                 bool loh_p,
+                                 enter_msl_status* msl_status);
 
     PER_HEAP_METHOD BOOL trigger_full_compact_gc (gc_reason gr,
                                   oom_reason* oom_r,
-                                  bool loh_p);
+                                  bool loh_p,
+                                  enter_msl_status* msl_status);
 
-    PER_HEAP_METHOD BOOL trigger_ephemeral_gc (gc_reason gr);
+    PER_HEAP_METHOD BOOL trigger_ephemeral_gc (gc_reason gr, enter_msl_status* msl_status);
 
     PER_HEAP_METHOD BOOL soh_try_fit (int gen_number,
                       size_t size,
@@ -2249,6 +2359,10 @@ private:
     PER_HEAP_ISOLATED_METHOD void destroy_semi_shared();
     PER_HEAP_METHOD void repair_allocation_contexts (BOOL repair_p);
     PER_HEAP_METHOD void fix_allocation_contexts (BOOL for_gc_p);
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED_METHOD void fix_allocation_contexts_heaps ();
+    PER_HEAP_ISOLATED_METHOD void fix_allocation_context_heaps (gc_alloc_context* acontext, void*);
+#endif //MULTIPLE_HEAPS
     PER_HEAP_METHOD void fix_youngest_allocation_area();
     PER_HEAP_METHOD void fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
                                  BOOL record_ac_p);
@@ -2266,6 +2380,7 @@ private:
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD BOOL insert_ro_segment (heap_segment* seg);
     PER_HEAP_METHOD void remove_ro_segment (heap_segment* seg);
+    PER_HEAP_METHOD void update_ro_segment (heap_segment* seg, uint8_t* allocated, uint8_t* committed);
 #endif //FEATURE_BASICFREEZE
     PER_HEAP_METHOD BOOL set_ro_segment_in_range (heap_segment* seg);
 #ifndef USE_REGIONS
@@ -2275,7 +2390,7 @@ private:
 #endif //!USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
     PER_HEAP_ISOLATED_METHOD void seg_mapping_table_remove_segment (heap_segment* seg);
-    PER_HEAP_METHOD heap_segment* get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc);
+    PER_HEAP_METHOD heap_segment* get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc, enter_msl_status* msl_status);
     PER_HEAP_METHOD void thread_uoh_segment (int gen_number, heap_segment* new_seg);
     PER_HEAP_ISOLATED_METHOD heap_segment* get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
@@ -2462,13 +2577,32 @@ private:
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void sync_promoted_bytes();
 
-    PER_HEAP_METHOD void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
+    PER_HEAP_ISOLATED_METHOD void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
 
     PER_HEAP_METHOD heap_segment* unlink_first_rw_region (int gen_idx);
 
     PER_HEAP_METHOD void thread_rw_region_front (int gen_idx, heap_segment* region);
 
-    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes();
+    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes (int condemned_gen_number);
+
+#ifdef DYNAMIC_HEAP_COUNT
+    // check that the fields of a decommissioned heap have their expected values,
+    // i.e. were not inadvertently modified
+    PER_HEAP_METHOD void check_decommissioned_heap();
+
+    // take a heap out of service, setting its fields to non-sensical value
+    // to detect inadvertent usage
+    PER_HEAP_METHOD void decommission_heap();
+
+    // re-initialize a heap in preparation to putting it back into service
+    PER_HEAP_METHOD void recommission_heap();
+
+    // check if we should change the heap count
+    PER_HEAP_METHOD void check_heap_count();
+
+    PER_HEAP_METHOD bool prepare_to_change_heap_count (int new_n_heaps);
+    PER_HEAP_METHOD bool change_heap_count (int new_n_heaps);
+#endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
@@ -2964,6 +3098,13 @@ private:
     PER_HEAP_ISOLATED_METHOD size_t get_total_committed_size();
     PER_HEAP_ISOLATED_METHOD size_t get_total_fragmentation();
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_fragmentation (int gen_number);
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED_METHOD int get_total_new_gen0_regions_in_plns ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_regions_in_prr ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_regions_in_threading ();
+#endif //USE_REGIONS
+
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_estimated_reclaim (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_size (int gen_number);
     PER_HEAP_ISOLATED_METHOD void get_memory_info (uint32_t* memory_load,
@@ -3038,7 +3179,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void grow_mark_list();
 
 #ifdef USE_REGIONS
-    PER_HEAP_METHOD uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
+    PER_HEAP_METHOD uint8_t** get_region_mark_list (BOOL& use_mark_list, uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -3243,6 +3384,17 @@ private:
 
     PER_HEAP_ISOLATED_METHOD BOOL dt_high_memory_load_p();
 
+    PER_HEAP_ISOLATED_METHOD bool compute_hard_limit();
+
+    PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
+        size_t new_current_total_committed);
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
+                                  size_t* new_committed_by_oh);
+#endif
+
     PER_HEAP_METHOD void update_collection_counts ();
 
     /*****************************************************************************************************************/
@@ -3302,9 +3454,13 @@ private:
     PER_HEAP_FIELD_SINGLE_GC heap_segment* saved_loh_segment_no_gc;
 
 #ifdef MULTIPLE_HEAPS
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_FIELD_SINGLE_GC min_fl_list_info* min_fl_list;
+    PER_HEAP_FIELD_SINGLE_GC size_t num_fl_items_rethreaded_stage2;
+    PER_HEAP_FIELD_SINGLE_GC size_t* free_list_space_per_heap;
+#else //USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
 #else //MULTIPLE_HEAPS
     PER_HEAP_FIELD_SINGLE_GC uint8_t* shigh; //keeps track of the highest marked object
     PER_HEAP_FIELD_SINGLE_GC uint8_t* slow; //keeps track of the lowest marked object
@@ -3386,12 +3542,22 @@ private:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
-// This is the number of regions we would free up if we sweep.
-// It's used in the decision for compaction so we calculate it in plan.
+    // This is the number of regions we would free up if we sweep.
+    // It's used in the decision for compaction so we calculate it in plan.
     PER_HEAP_FIELD_SINGLE_GC int num_regions_freed_in_sweep;
 
     PER_HEAP_FIELD_SINGLE_GC int sip_maxgen_regions_per_gen[max_generation + 1];
     PER_HEAP_FIELD_SINGLE_GC heap_segment* reserved_free_regions_sip[max_generation];
+
+    // Used to keep track of the total regions in each condemned generation. For SIP regions we need
+    // to know if we've made all regions in a condemned gen into a max_generation region; if so we
+    // would want to revert our decision so we leave at least one region in that generation. Otherwise
+    // this is used in dprintf's.
+    PER_HEAP_FIELD_SINGLE_GC int regions_per_gen[max_generation + 1];
+
+    // Used to keep track of how many regions we have planned to see if any generation
+    // doens't have a region yet and act accordingly.
+    PER_HEAP_FIELD_SINGLE_GC int planned_regions_per_gen[max_generation + 1];
 
     // After plan we calculate this as the planned end gen0 space;
     // but if we end up sweeping, we recalculate it at the end of
@@ -3543,7 +3709,7 @@ private:
     PER_HEAP_FIELD_MAINTAINED generation generation_table[total_generation_count];
 
     // These are loosely maintained, ie, could be reinitialized at any GC if needed. All that's
-    // maintained is just the # of elements in mark_stack_array.    
+    // maintained is just the # of elements in mark_stack_array.
     // The content of mark_stack_array is only maintained during a single GC.
     PER_HEAP_FIELD_MAINTAINED size_t mark_stack_array_length;
     PER_HEAP_FIELD_MAINTAINED mark* mark_stack_array;
@@ -3634,7 +3800,7 @@ private:
     PER_HEAP_FIELD_MAINTAINED_ALLOC alloc_list poh_alloc_list[NUM_POH_ALIST - 1];
 
     // Keeps track of the highest address allocated by Alloc
-    // Used in allocator code path. Blocking GCs do use it at the beginning (to update heap_segment_allocated) and 
+    // Used in allocator code path. Blocking GCs do use it at the beginning (to update heap_segment_allocated) and
     // at the end they get initialized for the allocator.
     PER_HEAP_FIELD_MAINTAINED_ALLOC uint8_t* alloc_allocated;
 
@@ -3700,13 +3866,13 @@ private:
 #define vm_heap ((GCHeap*) g_theGCHeap)
 #define heap_number (0)
 #endif //MULTIPLE_HEAPS
-    
+
 #ifdef BACKGROUND_GC
     // We only use this when we need to timeout BGC threads.
     PER_HEAP_FIELD_INIT_ONLY CLRCriticalSection bgc_threads_timeout_cs;
 
     // For regions these are the same as g_gc_lowest_address/g_gc_highest_address
-    // and never change. 
+    // and never change.
     PER_HEAP_FIELD_INIT_ONLY uint8_t* background_saved_lowest_address;
     PER_HEAP_FIELD_INIT_ONLY uint8_t* background_saved_highest_address;
 
@@ -3736,6 +3902,7 @@ private:
 #ifdef MULTIPLE_HEAPS
 #ifdef _DEBUG
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap[total_oh_count];
+    PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap_refresh[total_oh_count];
 #endif //_DEBUG
 #else //MULTIPLE_HEAPS
 #endif //MULTIPLE_HEAPS
@@ -3775,8 +3942,12 @@ private:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
-    // Used in a single GC.
-    PER_HEAP_FIELD_DIAG_ONLY int regions_per_gen[max_generation + 1];
+    // Used to keep track of the new regions we get in process_last_np_surv_region (plns)
+    PER_HEAP_FIELD_DIAG_ONLY int new_gen0_regions_in_plns;
+    // Used to keep track of the new regions we get in process_remaining_regions (prr)
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_prr;
+    // Used to keep track of the new regions we get in thread_final_regions
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_threading;
 
 #ifdef STRESS_REGIONS
     // TODO: could consider dynamically grow this.
@@ -3811,16 +3982,22 @@ private:
 #endif //FEATURE_EVENT_TRACE
 
 #ifdef SPINLOCK_HISTORY
+    // NOTE!!!
+    // Currently only recording UOH msl usage!
+    // Since we split the msl between SOH and UOH we need 2 arrays. For now only recording UOH usage.
 #define max_saved_spinlock_info 48
     PER_HEAP_FIELD_DIAG_ONLY int spinlock_info_index;
-    PER_HEAP_FIELD_DIAG_ONLY spinlock_info last_spinlock_info[max_saved_spinlock_info + 8];
+    PER_HEAP_FIELD_DIAG_ONLY spinlock_info last_spinlock_info[max_saved_spinlock_info];
+    // record this so we can record this in the msl info.
+    PER_HEAP_FIELD_DIAG_ONLY allocation_state current_uoh_alloc_state;
 #endif //SPINLOCK_HISTORY
 
 #ifdef RECORD_LOH_STATE
-#define max_saved_loh_states 12
+#define max_saved_loh_states 48
     struct loh_state_info
     {
         allocation_state alloc_state;
+        size_t gc_index;
         EEThreadId thread_id;
     };
     PER_HEAP_FIELD_DIAG_ONLY int loh_state_index;
@@ -3907,6 +4084,7 @@ private:
     // These 2 fields' values do not change but are set/unset per GC
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent gc_start_event;
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent ee_suspend_event;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent gc_idle_thread_event;
 
     // Also updated on the heap#0 GC thread because that's where we are actually doing the decommit.
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC BOOL gradual_decommit_in_progress_p;
@@ -3972,7 +4150,7 @@ private:
 
     // Highest and lowest address for ephemeral generations.
     // For regions these are only used during a GC (init-ed at beginning of mark and
-    // used later in that GC). 
+    // used later in that GC).
     // They could be used for WB but we currently don't use them for that purpose, even
     // thought we do pass them to the WB code.
     //
@@ -3995,6 +4173,7 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC GCEvent full_gc_end_event;
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC no_gc_region_info current_no_gc_region_info;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC FinalizerWorkItem* finalizer_work;
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t entry_available_physical_mem;
 
@@ -4011,6 +4190,7 @@ private:
 
     // Loosely maintained,can be reinit-ed in grow_mark_list.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t mark_list_size;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t g_mark_list_total_size;
 
     // Loosely maintained,can be reinit-ed in grow_mark_list.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint8_t** g_mark_list;
@@ -4040,8 +4220,8 @@ private:
     // in the very next GC done with garbage_collect_pm_full_gc.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED bool pm_trigger_full_gc;
 
-    // This is smoothed "desired_per_heap", ie, smoothed budget. Only used in a join.
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_per_heap[total_generation_count];
+    // This is the smoothed *total* budget, i.e. across *all* heaps. Only used in a join.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t smoothed_desired_total[total_generation_count];
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t gc_last_ephemeral_decommit_time;
 
@@ -4067,6 +4247,7 @@ private:
     // of GC's book keeping datastructures.
     // Loosely maintained, can be reinit-ed in grow_mark_list_piece
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t g_mark_list_piece_size;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t g_mark_list_piece_total_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint8_t*** g_mark_list_piece;
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED region_free_list global_regions_to_decommit[count_free_region_kinds];
@@ -4078,6 +4259,40 @@ private:
     // Set in one GC and updated in the next GC.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED BOOL should_expand_in_full_gc;
 #endif //USE_REGIONS
+
+#ifdef DYNAMIC_HEAP_COUNT
+    struct dynamic_heap_count_data_t
+    {
+        static const int sample_size = 3;
+
+        struct sample
+        {
+            uint64_t    elapsed_between_gcs;    // time between gcs in microseconds
+            uint64_t    gc_elapsed_time;        // time the gc took
+            uint64_t    soh_msl_wait_time;      // time the allocator spent waiting for the soh msl lock
+            uint64_t    uoh_msl_wait_time;      // time the allocator spent waiting for the uoh msl lock
+            size_t      allocating_thread_count;// number of allocating threads
+            size_t      heap_size;
+        };
+
+        unsigned        sample_index;
+        sample          samples[sample_size];
+
+        float median_percent_overhead;          // estimated overhead of allocator + gc
+        float smoothed_median_percent_overhead; // exponentially smoothed version
+        float percent_heap_space_cost_per_heap; // percent space cost of adding a heap
+        float overhead_reduction_per_step_up;   // percentage effect on overhead of increasing heap count
+        float overhead_increase_per_step_down;  // percentage effect on overhead of decreasing heap count
+        float space_cost_increase_per_step_up;  // percentage effect on space of increasing heap count
+        float space_cost_decrease_per_step_down;// percentage effect on space of decreasing heap count
+
+        int             new_n_heaps;
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+        int             lowest_heap_with_msl_uoh;
+#endif //STRESS_DYNAMIC_HEAP_COUNT
+    };
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
+#endif //DYNAMIC_HEAP_COUNT
 
     /****************************************************/
     //  PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC fields //
@@ -4164,11 +4379,13 @@ private:
     // TODO: some of the logic here applies to the general case as well
     // such as LOH automatic compaction. However it will require more
     //testing to change the general case.
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool hard_limit_config_p;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t heap_hard_limit;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t heap_hard_limit_oh[total_oh_count];
 
     // Used both in a GC and on the allocator code paths when heap_hard_limit is non zero
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection check_commit_cs;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection decommit_lock;
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
@@ -4219,6 +4436,10 @@ private:
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t youngest_gen_desired_th;
 #endif //HOST_64BIT
 
+#ifdef DYNAMIC_HEAP_COUNT
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int dynamic_adaptation_mode;
+#endif //DYNAMIC_HEAP_COUNT
+
     /********************************************/
     // PER_HEAP_ISOLATED_FIELD_DIAG_ONLY fields //
     /********************************************/
@@ -4244,7 +4465,7 @@ private:
 
     // For implementation of GCHeap::GetMemoryInfo which is called by
     // the GC.GetGCMemoryInfo API
-    // 
+    //
     // We record the time GC work is done while EE is suspended.
     // suspended_start_ts is what we get right before we call
     // SuspendEE. We omit the time between GC end and RestartEE
@@ -4353,7 +4574,6 @@ private:
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t gen0_max_budget_from_config;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY int high_mem_percent_from_config;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY bool use_frozen_segments_p;
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY bool hard_limit_config_p;
 #endif //FEATURE_EVENT_TRACE
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
@@ -4369,6 +4589,10 @@ private:
 #ifdef HEAP_ANALYZE
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY BOOL heap_analyze_enabled;
 #endif //HEAP_ANALYZE
+
+#if defined(MULTIPLE_HEAPS) && defined(STRESS_DYNAMIC_HEAP_COUNT)
+    PER_HEAP_FIELD bool uoh_msl_before_gc_p;
+#endif //MULTIPLE_HEAPS && STRESS_DYNAMIC_HEAP_COUNT
 
     /***************************************************/
     // Fields that don't fit into the above categories //
@@ -4407,6 +4631,8 @@ public:
 
     PER_HEAP_ISOLATED_METHOD uint32_t wait_for_gc_done(int32_t timeOut = INFINITE);
 
+    PER_HEAP_ISOLATED_METHOD int refresh_memory_limit();
+
     /***************************************************************************************************/
     // public fields                                                                                   //
     /***************************************************************************************************/
@@ -4422,12 +4648,12 @@ public:
 #ifdef MULTIPLE_HEAPS
     // Init-ed in GCHeap::Initialize
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int n_heaps;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int n_max_heaps;
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_FIELD_MAINTAINED sorted_table* seg_table;
 #endif //FEATURE_BASICFREEZE
-
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
@@ -4489,6 +4715,10 @@ public:
     void GcScanRoots (promote_func* fn, int hn, ScanContext *pSC);
     void UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p);
     size_t GetPromotedCount();
+
+    // Methods used to move finalization data between heaps
+    bool MergeFinalizationData (CFinalize* other_fq);
+    bool SplitFinalizationData (CFinalize* other_fq);
 
     //Methods used by the shutdown code to call every finalizer
     size_t GetNumberFinalizableObjects();
@@ -4938,6 +5168,8 @@ struct generation_region_info
 
 class heap_segment
 {
+    friend class allocator;
+
 public:
     // For regions allocated is used to indicate whether this is a valid segment
     // or not, ie, if it's 0 it means it's freed; else it's either a valid value

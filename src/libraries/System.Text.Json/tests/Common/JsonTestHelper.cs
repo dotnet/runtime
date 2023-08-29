@@ -4,8 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json.Serialization.Tests;
-using System.Text.Json.Serialization.Tests.Schemas.OrderPayload;
+using System.Reflection;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,6 +15,44 @@ namespace System.Text.Json
 {
     internal static partial class JsonTestHelper
     {
+#if NETCOREAPP
+        public const string DoubleFormatString = null;
+        public const string SingleFormatString = null;
+#else
+        public const string DoubleFormatString = "G17";
+        public const string SingleFormatString = "G9";
+#endif
+
+#if NETCOREAPP
+        public static Half NextHalf(Random random)
+        {
+            double mantissa = (random.NextDouble() * 2.0) - 1.0;
+            double exponent = Math.Pow(2.0, random.Next(-15, 16));
+            Half value = (Half)(mantissa * exponent);
+            return value;
+        }
+#endif
+
+        public static float NextFloat(Random random)
+        {
+            double mantissa = (random.NextDouble() * 2.0) - 1.0;
+            double exponent = Math.Pow(2.0, random.Next(-126, 128));
+            float value = (float)(mantissa * exponent);
+            return value;
+        }
+
+        public static double NextDouble(Random random, double minValue, double maxValue)
+        {
+            double value = random.NextDouble() * (maxValue - minValue) + minValue;
+            return value;
+        }
+
+        public static decimal NextDecimal(Random random, double minValue, double maxValue)
+        {
+            double value = random.NextDouble() * (maxValue - minValue) + minValue;
+            return (decimal)value;
+        }
+
         public static void AssertJsonEqual(string expected, string actual)
         {
             using JsonDocument expectedDom = JsonDocument.Parse(expected);
@@ -118,6 +157,39 @@ namespace System.Text.Json
             }
         }
 
+        public static void AssertOptionsEqual(JsonSerializerOptions expected, JsonSerializerOptions actual)
+        {
+            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                Type propertyType = property.PropertyType;
+
+                if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
+                {
+                    continue; // readonly-ness is not a structural property of JsonSerializerOptions.
+                }
+                else if (propertyType == typeof(IList<JsonConverter>))
+                {
+                    var expectedConverters = (IList<JsonConverter>)property.GetValue(expected);
+                    var actualConverters = (IList<JsonConverter>)property.GetValue(actual);
+                    Assert.Equal(expectedConverters.Count, actualConverters.Count);
+                    for (int i = 0; i < actualConverters.Count; i++)
+                    {
+                        Assert.IsType(expectedConverters[i].GetType(), actualConverters[i]);
+                    }
+                }
+                else if (propertyType == typeof(IList<IJsonTypeInfoResolver>))
+                {
+                    var list1 = (IList<IJsonTypeInfoResolver>)property.GetValue(expected);
+                    var list2 = (IList<IJsonTypeInfoResolver>)property.GetValue(actual);
+                    Assert.Equal(list1, list2);
+                }
+                else
+                {
+                    Assert.Equal(property.GetValue(expected), property.GetValue(actual));
+                }
+            }
+        }
+
         /// <summary>
         /// Linq Cartesian product
         /// </summary>
@@ -189,187 +261,29 @@ namespace System.Text.Json
 
         public static string StripWhitespace(this string value)
             => s_stripWhitespace.Replace(value, string.Empty);
+    }
 
-        internal static List<Order> PopulateLargeObject(int size)
-        {
-            List<Order> orders = new List<Order>(size);
-            for (int i = 0; i < size; i++)
-            {
-                Order order = new Order
-                {
-                    OrderNumber = i,
-                    Customer = new User
-                    {
-                        UserId = "222ffbbb888kkk",
-                        Name = "John Doe",
-                        Username = "johndoe",
-                        CreatedAt = new DateTime(),
-                        ImageId = string.Empty,
-                        UserType = UserType.Customer,
-                        UpdatedAt = new DateTime(),
-                        TwitterId = string.Empty,
-                        FacebookId = "9988998877662222111",
-                        SubscriptionType = 2,
-                        IsNew = true,
-                        IsEmployee = false
-                    },
-                    ShippingInfo = new List<ShippingInfo>
-                    {
-                        new ShippingInfo()
-                        {
-                            OrderNumber = i,
-                            Employee = new User
-                            {
-                                UserId = "222ffbbb888" + i,
-                                Name = "Shipping Coordinator",
-                                Username = "coordinator" + i,
-                                CreatedAt = new DateTime(),
-                                ImageId = string.Empty,
-                                UserType = UserType.Employee,
-                                UpdatedAt = new DateTime(),
-                                TwitterId = string.Empty,
-                                SubscriptionType = 0,
-                                IsEmployee = true
-                            },
-                            CarrierId = "TTT123999MMM",
-                            ShippingType = "Ground",
-                            EstimatedDelivery = new DateTime(),
-                            Tracking = new Uri("http://TestShipCompany.test/track/123" + i),
-                            CarrierName = "TestShipCompany",
-                            HandlingInstruction = "Do cats eat bats? Do cats eat bats. Do cats eat bats? Do cats eat bats. Do cats eat bats? Do cats eat bats. Do cats eat bats? Do cats eat bats",
-                            CurrentStatus = "Out for delivery",
-                            IsDangerous = false
-                        }
-                    },
-                    OneTime = true,
-                    Cancelled = false,
-                    IsGift = i % 2 == 0,
-                    IsGPickUp = i % 5 == 0,
-                    ShippingAddress = new Address()
-                    {
-                        City = "Redmond"
-                    },
-                    PickupAddress = new Address
-                    {
-                        City = "Bellevue"
-                    },
-                    Coupon = SampleEnumInt64.Max,
-                    UserInteractions = new List<Comment>
-                    {
-                        new Comment
-                        {
-                            Id = 200 + i,
-                            OrderNumber = i,
-                            Customer = new User
-                            {
-                                UserId = "222ffbbb888kkk",
-                                Name = "John Doe",
-                                Username = "johndoe",
-                                CreatedAt = new DateTime(),
-                                ImageId = string.Empty,
-                                UserType = UserType.Customer,
-                                UpdatedAt = new DateTime(),
-                                TwitterId = "twitterId" + i,
-                                FacebookId = "9988998877662222111",
-                                SubscriptionType = 2,
-                                IsNew = true,
-                                IsEmployee = false
-                            },
-                            Title = "Green Field",
-                            Message = "Down, down, down. Would the fall never come to an end! 'I wonder how many miles I've fallen by this time. I think-' (for, you see, Alice had learnt several things of this sort in her lessons in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to listen to her, still it was good practice to say it over) '-yes, that's about the right distance-but then I wonder what Latitude or Longitude I've got to",
-                            Responses = new List<Comment>()
-                        }
-                    },
-                    Created = new DateTime(2019, 11, 10),
-                    Confirmed = new DateTime(2019, 11, 11),
-                    ShippingDate = new DateTime(2019, 11, 12),
-                    EstimatedDelivery = new DateTime(2019, 11, 15),
-                    ReviewedBy = new User()
-                    {
-                        UserId = "222ffbbb888" + i,
-                        Name = "Shipping Coordinator",
-                        Username = "coordinator" + i,
-                        CreatedAt = new DateTime(),
-                        ImageId = string.Empty,
-                        UserType = UserType.Employee,
-                        UpdatedAt = new DateTime(),
-                        TwitterId = string.Empty,
-                        SubscriptionType = 0,
-                        IsEmployee = true
-                    }
-                };
-                List<Product> products = new List<Product>();
-                for (int j = 0; j < i % 4; j++)
-                {
-                    Product product = new Product()
-                    {
-                        ProductId = Guid.NewGuid(),
-                        Name = "Surface Pro",
-                        SKU = "LL123" + j,
-                        Brand = new TestClassWithInitializedProperties(),
-                        ProductCategory = new SimpleTestClassWithNonGenericCollectionWrappers(),
-                        Description = "Down, down, down. Would the fall never come to an end! 'I wonder how many miles I've fallen by this time. I think-' (for, you see, Alice had learnt several things of this sort in her lessons in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to listen to her, still it was good practice to say it over) '-yes, that's about the right distance-but then I wonder what Latitude or Longitude I've got to",
-                        Created = new DateTime(2000, 10, 12),
-                        Title = "Surface Pro 6 for Business - 512GB",
-                        Price = new Price(),
-                        BestChoice = true,
-                        AverageStars = 4.8f,
-                        Featured = true,
-                        ProductRestrictions = new TestClassWithInitializedProperties(),
-                        SalesInfo = new SimpleTestClassWithGenericCollectionWrappers(),
-                        Origin = SampleEnum.One,
-                        Manufacturer = new BasicCompany(),
-                        Fragile = true,
-                        DetailsUrl = new Uri("http://dotnet.test/link/entries/entry/1"),
-                        NetWeight = 2.7m,
-                        GrossWeight = 3.3m,
-                        Length = i,
-                        Height = i + 1,
-                        Width = i + 2,
-                        FeaturedImage = new FeaturedImage(),
-                        PreviewImage = new PreviewImage(),
-                        KeyWords = new List<string> { "surface", "pro", "laptop" },
-                        RelatedImages = new List<Image>(),
-                        RelatedVideo = new Uri("http://dotnet.test/link/entries/entry/2"),
-                        GuaranteeStartsAt = new DateTime(),
-                        GuaranteeEndsAt = new DateTime(),
-                        IsActive = true,
-                        RelatedProducts = new List<Product>()
-                    };
-                    product.SalesInfo.Initialize();
-                    List<Review> reviews = new List<Review>();
-                    for (int k = 0; k < i % 3; k++)
-                    {
+    /// <summary>
+    /// Generic visitor pattern used for safely invoking generic methods in AOT.
+    /// </summary>
+    public abstract class TypeWitness
+    {
+        public abstract TResult Accept<TState, TResult>(ITypeVisitor<TState, TResult> visitor, TState state);
+    }
 
-                        Review review = new Review
-                        {
-                            Customer = new User
-                            {
-                                UserId = "333344445555",
-                                Name = "Customer" + i + k,
-                                Username = "cust" + i + k,
-                                CreatedAt = new DateTime(),
-                                ImageId = string.Empty,
-                                UserType = UserType.Customer,
-                                SubscriptionType = k
-                            },
-                            ProductSku = product.SKU,
-                            CustomerName = "Customer" + i + k,
-                            Stars = j + k,
-                            Title = $"Title {i}{j}{k}",
-                            Comment = "",
-                            Images = new List<Uri> { new Uri($"http://dotnet.test/link/images/image/{k}"), new Uri($"http://dotnet.test/link/images/image/{j}") },
-                            ReviewId = i + j + k
-                        };
-                        reviews.Add(review);
-                    }
-                    product.Reviews = reviews;
-                    products.Add(product);
-                }
-                order.Products = products;
-                orders.Add(order);
-            }
-            return orders;
-        }
+    /// <summary>
+    /// Generic visitor pattern used for safely invoking generic methods in AOT.
+    /// </summary>
+    public sealed class TypeWitness<T> : TypeWitness
+    {
+        public override TResult Accept<TState, TResult>(ITypeVisitor<TState, TResult> visitor, TState state) => visitor.Visit<T>(state);
+    }
+
+    /// <summary>
+    /// Generic visitor pattern used for safely invoking generic methods in AOT.
+    /// </summary>
+    public interface ITypeVisitor<TState, TResult>
+    {
+        public TResult Visit<T>(TState state);
     }
 }

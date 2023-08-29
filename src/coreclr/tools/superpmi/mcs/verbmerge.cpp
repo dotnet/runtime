@@ -20,13 +20,13 @@ RemoveDup verbMerge::m_removeDups;
 // static
 LPWSTR verbMerge::MergePathStrings(LPCWSTR dir, LPCWSTR file)
 {
-    size_t dirlen  = wcslen(dir);
-    size_t filelen = wcslen(file);
+    size_t dirlen  = u16_strlen(dir);
+    size_t filelen = u16_strlen(file);
     size_t newlen  = dirlen + 1 /* slash */ + filelen + 1 /* null */;
     LPWSTR newpath = new WCHAR[newlen];
-    wcscpy(newpath, dir);
-    wcscat(newpath, DIRECTORY_SEPARATOR_STR_W);
-    wcscat(newpath, file);
+    u16_strcpy_s(newpath, newlen, dir);
+    u16_strcat_s(newpath, newlen, DIRECTORY_SEPARATOR_STR_W);
+    u16_strcat_s(newpath, newlen, file);
     return newpath;
 }
 
@@ -163,9 +163,9 @@ bool verbMerge::DirectoryFilterDirectories(WIN32_FIND_DATAW* findData)
         if ((findData->dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != 0)
             return false;
 
-        if (wcscmp(findData->cFileName, W(".")) == 0)
+        if (u16_strcmp(findData->cFileName, W(".")) == 0)
             return false;
-        if (wcscmp(findData->cFileName, W("..")) == 0)
+        if (u16_strcmp(findData->cFileName, W("..")) == 0)
             return false;
 
         return true;
@@ -193,7 +193,7 @@ int __cdecl verbMerge::WIN32_FIND_DATAW_qsort_helper(const void* p1, const void*
 {
     const WIN32_FIND_DATAW* file1 = (WIN32_FIND_DATAW*)p1;
     const WIN32_FIND_DATAW* file2 = (WIN32_FIND_DATAW*)p2;
-    return wcscmp(file1->cFileName, file2->cFileName);
+    return u16_strcmp(file1->cFileName, file2->cFileName);
 }
 
 // Enumerate a directory for the files specified by "searchPattern". For each element in the directory,
@@ -352,28 +352,29 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
         const _WIN32_FIND_DATAW& findData     = fileArray[i];
         LPWSTR                   fileFullPath = MergePathStrings(dir, findData.cFileName);
 #ifdef TARGET_WINDOWS
-        if (wcslen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
+        if (u16_strlen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
         {
-            if (wcscmp(dir, W(".")) == 0)
+            if (u16_strcmp(dir, W(".")) == 0)
             {
                 LogError("can't access the relative path with UNC");
                 goto CLEAN_UP;
             }
-            LPWSTR newBuffer = new WCHAR[wcslen(fileFullPath) + 30];
-            wcscpy(newBuffer, W("\\\\?\\"));
+            size_t newBufferLen = u16_strlen(fileFullPath) + 30;
+            LPWSTR newBuffer = new WCHAR[newBufferLen];
+            u16_strcpy_s(newBuffer, newBufferLen, W("\\\\?\\"));
             if (*fileFullPath == '\\') // It is UNC path, use \\?\UNC\serverName to access it.
             {
                 LPWSTR serverName = fileFullPath;
-                wcscat(newBuffer, W("UNC\\"));
+                u16_strcat_s(newBuffer, newBufferLen, W("UNC\\"));
                 while (*serverName == '\\')
                 {
                     serverName++;
                 }
-                wcscat(newBuffer, serverName);
+                u16_strcat_s(newBuffer, newBufferLen, serverName);
             }
             else
             {
-                wcscat(newBuffer, fileFullPath);
+                u16_strcat_s(newBuffer, newBufferLen, fileFullPath);
             }
             delete[] fileFullPath;
 
@@ -501,13 +502,13 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
     LPCWSTR        dir    = nullptr;
     LPCWSTR        file   = nullptr;
 
-    LPWSTR lastSlash = wcsrchr(patternAsWchar, DIRECTORY_SEPARATOR_CHAR_A);
+    LPWSTR lastSlash = (WCHAR*)u16_strrchr(patternAsWchar, DIRECTORY_SEPARATOR_CHAR_A);
     if (lastSlash == NULL)
     {
         // The user may have passed a relative path without a slash, or the current directory.
         // If there is a wildcard, we use it as the file pattern. If there isn't, we assume it's a relative directory
         // name and use it as a directory, with "*" as the file pattern.
-        LPCWSTR wildcard = wcschr(patternAsWchar, '*');
+        LPCWSTR wildcard = u16_strchr(patternAsWchar, '*');
         if (wildcard == NULL)
         {
             file = W("*");
@@ -522,7 +523,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
     else
     {
         dir              = patternAsWchar;
-        LPCWSTR wildcard = wcschr(lastSlash, '*');
+        LPCWSTR wildcard = u16_strchr(lastSlash, '*');
         if (wildcard == NULL)
         {
             file = W("*");

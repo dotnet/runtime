@@ -94,7 +94,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void FactoryActivatorThrowsOnNullProvider()
         {
             var f = ActivatorUtilities.CreateFactory(typeof(ClassWithA), new Type[0]);
-            Assert.Throws<ArgumentNullException>(() => f(serviceProvider: null, null));
+            Exception ex = Assert.Throws<ArgumentNullException>(() => f(serviceProvider: null, null));
+            Assert.Contains("serviceProvider", ex.ToString());
         }
 
         [Fact]
@@ -179,7 +180,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void CreateFactory_CreatesFactoryMethod()
+        public void CreateFactory_CreatesFactoryMethod_4Types_3Injected()
         {
             var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithABCS), new Type[] { typeof(B) });
             var factory2 = ActivatorUtilities.CreateFactory<ClassWithABCS>(new Type[] { typeof(B) });
@@ -194,9 +195,42 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Assert.IsType<ObjectFactory>(factory1);
             Assert.IsType<ClassWithABCS>(item1);
+            ClassWithABCS obj = (ClassWithABCS)item1;
+            Assert.NotNull(obj.A);
+            Assert.NotNull(obj.B);
+            Assert.NotNull(obj.C);
+            Assert.NotNull(obj.S);
 
             Assert.IsType<ObjectFactory<ClassWithABCS>>(factory2);
             Assert.IsType<ClassWithABCS>(item2);
+
+            Assert.NotNull(item2.A);
+            Assert.NotNull(item2.B);
+            Assert.NotNull(item2.C);
+            Assert.NotNull(item2.S);
+        }
+
+        [Fact]
+        public void CreateFactory_CreatesFactoryMethod_5Types_5Injected()
+        {
+            // Inject 5 types which is a threshold for whether fixed or Span<> invoker args are used by reflection.
+            var factory = ActivatorUtilities.CreateFactory<ClassWithABCSZ>(Type.EmptyTypes);
+
+            var services = new ServiceCollection();
+            services.AddSingleton(new A());
+            services.AddSingleton(new B());
+            services.AddSingleton(new C());
+            services.AddSingleton(new S());
+            services.AddSingleton(new Z());
+            using var provider = services.BuildServiceProvider();
+            ClassWithABCSZ item = factory(provider, null);
+
+            Assert.IsType<ObjectFactory<ClassWithABCSZ>>(factory);
+            Assert.NotNull(item.A);
+            Assert.NotNull(item.B);
+            Assert.NotNull(item.C);
+            Assert.NotNull(item.S);
+            Assert.NotNull(item.Z);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -204,12 +238,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -238,12 +272,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -261,12 +295,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -285,12 +319,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -309,12 +343,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -333,12 +367,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NoParameters_Success(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NoParameters_Success(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
-            if (!isDynamicCodeSupported)
+            if (!useDynamicCode)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+                DisableDynamicCode(options);
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -351,18 +385,33 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Assert.NotNull(item);
             }, options);
         }
+
+        private static void DisableDynamicCode(RemoteInvokeOptions options)
+        {
+            // We probably only need to set 'IsDynamicCodeCompiled' since only that is checked,
+            // but also set 'IsDynamicCodeSupported for correctness.
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled", "false");
+        }
     }
 
     internal class A { }
     internal class B { }
     internal class C { }
     internal class S { }
+    internal class Z { }
 
     internal class ClassWithABCS : ClassWithABC
     {
         public S S { get; }
-        public ClassWithABCS(A a, B b, C c, S s) : base (a, b, c) { S = s; }
-        public ClassWithABCS(A a, C c, S s) : this (a, null, c, s) { }
+        public ClassWithABCS(A a, B b, C c, S s) : base(a, b, c) { S = s; }
+        public ClassWithABCS(A a, C c, S s) : this(a, null, c, s) { }
+    }
+
+    internal class ClassWithABCSZ : ClassWithABCS
+    {
+        public Z Z { get; }
+        public ClassWithABCSZ(A a, B b, C c, S s, Z z) : base(a, b, c, s) { Z = z; }
     }
 
     internal class ClassWithABC_FirstConstructorWithAttribute : ClassWithABC
@@ -374,9 +423,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
     internal class ClassWithABC_LastConstructorWithAttribute : ClassWithABC
     {
-        public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) {  }
+        public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) { }
         [ActivatorUtilitiesConstructor]
-        public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b , c) { }
+        public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b, c) { }
     }
 
     internal class FakeServiceProvider : IServiceProvider
@@ -512,14 +561,14 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         public ClassWithABC_DefaultConstructorFirst() : base() { }
         public ClassWithABC_DefaultConstructorFirst(A a) : base(a) { }
-        public ClassWithABC_DefaultConstructorFirst(A a, B b) : base (a, b) { }
-        public ClassWithABC_DefaultConstructorFirst(A a, B b, C c) : base (a, b, c) { }
+        public ClassWithABC_DefaultConstructorFirst(A a, B b) : base(a, b) { }
+        public ClassWithABC_DefaultConstructorFirst(A a, B b, C c) : base(a, b, c) { }
     }
 
     internal class ClassWithABC_DefaultConstructorLast : ClassWithABC
     {
-        public ClassWithABC_DefaultConstructorLast(A a, B b, C c) : base (a, b, c) { }
-        public ClassWithABC_DefaultConstructorLast(A a, B b) : base (a, b) { }
+        public ClassWithABC_DefaultConstructorLast(A a, B b, C c) : base(a, b, c) { }
+        public ClassWithABC_DefaultConstructorLast(A a, B b) : base(a, b) { }
         public ClassWithABC_DefaultConstructorLast(A a) : base(a) { }
         public ClassWithABC_DefaultConstructorLast() : base() { }
     }
@@ -533,3 +582,4 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
     }
 }
+

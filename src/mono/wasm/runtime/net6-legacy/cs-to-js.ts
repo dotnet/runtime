@@ -1,26 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
+import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish, WasmRoot } from "../types/internal";
 import { _are_promises_supported } from "../cancelable-promise";
 import { legacy_c_functions as cwraps } from "../cwraps";
 import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../gc-handles";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
-import { createPromiseController } from "../promise-controller";
 import { mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
-import { conv_string_root } from "../strings";
-import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish, WasmRoot } from "../types";
-import { Int32Ptr, VoidPtr } from "../types/emscripten";
+import { monoStringToString } from "../strings";
 import { legacyManagedExports } from "./corebindings";
-import { legacyHelpers } from "./imports";
+import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root } from "./js-to-cs";
-import { mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
+import { assert_legacy_interop, mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
+import { createPromiseController } from "../globals";
+import { monoStringToStringUnsafe } from "./strings";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 
 // this is only used from Blazor
 export function unbox_mono_obj(mono_obj: MonoObject): any {
+    assert_legacy_interop();
+
     if (mono_obj === MonoObjectNull)
         return undefined;
 
@@ -51,7 +54,7 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
             throw new Error("int64 not available");
         case MarshalType.STRING:
         case MarshalType.STRING_INTERNED:
-            return conv_string_root(root);
+            return monoStringToString(root);
         case MarshalType.VT:
             throw new Error("no idea on how to unbox value types");
         case MarshalType.DELEGATE:
@@ -99,7 +102,6 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
     return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function unbox_mono_obj_root(root: WasmRoot<any>): any {
     if (root.value === 0)
         return undefined;
@@ -129,8 +131,8 @@ export function unbox_mono_obj_root(root: WasmRoot<any>): any {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_array_to_js_array(mono_array: MonoArray): any[] | null {
+    assert_legacy_interop();
     if (mono_array === MonoArrayNull)
         return null;
 
@@ -146,7 +148,6 @@ function is_nested_array_ref(ele: WasmRoot<MonoObject>) {
     return legacyManagedExports._is_simple_array_ref(ele.address);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null {
     if (arrayRoot.value === MonoArrayNull)
         return null;
@@ -227,7 +228,7 @@ export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, a
         nameRoot = mono_wasm_new_external_root<MonoString>(core_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
-        const js_name = conv_string_root(nameRoot);
+        const js_name = monoStringToString(nameRoot);
         if (!js_name) {
             wrap_error_root(is_exception, "Invalid name @" + nameRoot.value, resultRoot);
             return;
@@ -343,4 +344,12 @@ export function get_js_owned_object_by_gc_handle_ref(gc_handle: GCHandle, result
     }
     // this is always strong gc_handle
     legacyManagedExports._get_js_owned_object_by_gc_handle_ref(gc_handle, result);
+}
+
+/**
+ * @deprecated Not GC or thread safe
+ */
+export function conv_string(mono_obj: MonoString): string | null {
+    assert_legacy_interop();
+    return monoStringToStringUnsafe(mono_obj);
 }

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="emptyfinally_d.il" />
+    <Compile Include="emptyfinally.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\common\eh_common.csproj" />
+  </ItemGroup>
+</Project>

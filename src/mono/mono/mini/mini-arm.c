@@ -827,7 +827,7 @@ mono_arch_init (void)
 #else
 	arm_fpu = MONO_ARM_FPU_VFP;
 
-#if defined(ARM_FPU_NONE) && !defined(TARGET_IOS)
+#if defined(ARM_FPU_NONE) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 	/*
 	 * If we're compiling with a soft float fallback and it
 	 * turns out that no VFP unit is available, we need to
@@ -870,7 +870,7 @@ mono_arch_init (void)
 	v7_supported = TRUE;
 #endif
 
-#if defined(TARGET_IOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 	/* iOS is special-cased here because we don't yet
 	   have a way to properly detect CPU features on it. */
 	thumb_supported = TRUE;
@@ -1253,6 +1253,14 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 	return TRUE;
 }
 
+static int
+call_info_size (MonoMethodSignature *sig)
+{
+	int n = sig->hasthis + sig->param_count;
+
+	return sizeof (CallInfo) + (sizeof (ArgInfo) * n);
+}
+
 static CallInfo*
 get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 {
@@ -1268,9 +1276,9 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	gboolean vtype_retaddr = FALSE;
 
 	if (mp)
-		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+		cinfo = mono_mempool_alloc0 (mp, call_info_size (sig));
 	else
-		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+		cinfo = g_malloc0 (call_info_size (sig));
 
 	cinfo->nargs = n;
 	gr = ARMREG_R0;
@@ -1666,12 +1674,34 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 	memcpy (ccontext->stack + ainfo->offset, (host_mgreg_t*)src + ainfo->size, ainfo->struct_size - reg_size);
 }
 
+gpointer
+mono_arch_get_interp_native_call_info (MonoMemoryManager *mem_manager, MonoMethodSignature *sig)
+{
+	CallInfo *cinfo = get_call_info (NULL, sig);
+	if (mem_manager) {
+		int size = call_info_size (sig);
+		gpointer res = mono_mem_manager_alloc0 (mem_manager, size);
+		memcpy (res, cinfo, size);
+		g_free (cinfo);
+		return res;
+	} else {
+		return cinfo;
+	}
+}
+
+void
+mono_arch_free_interp_native_call_info (gpointer call_info)
+{
+	/* Allocated by get_call_info () */
+	g_free (call_info);
+}
+
 /* Set arguments in the ccontext (for i2n entry) */
 void
-mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	const MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
-	CallInfo *cinfo = get_call_info (NULL, sig);
+	CallInfo *cinfo = (CallInfo*)call_info;
 	gpointer storage;
 	ArgInfo *ainfo;
 
@@ -1704,16 +1734,14 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
 	}
-
-	g_free (cinfo);
 }
 
 /* Set return value in the ccontext (for n2i return) */
 void
-mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp)
+mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info, gpointer retp)
 {
 	const MonoEECallbacks *interp_cb;
-	CallInfo *cinfo;
+	CallInfo *cinfo = (CallInfo*)call_info;
 	gpointer storage;
 	ArgInfo *ainfo;
 
@@ -1721,7 +1749,6 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		return;
 
 	interp_cb = mini_get_interp_callbacks ();
-	cinfo = get_call_info (NULL, sig);
 	ainfo = &cinfo->ret;
 
 	if (retp) {
@@ -1734,16 +1761,14 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		memset (ccontext, 0, sizeof (CallContext)); // FIXME
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
-
-	g_free (cinfo);
 }
 
 /* Gets the arguments from ccontext (for n2i entry) */
 gpointer
-mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	const MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
-	CallInfo *cinfo = get_call_info (NULL, sig);
+	CallInfo *cinfo = (CallInfo*)call_info;
 	gpointer storage;
 	ArgInfo *ainfo;
 
@@ -1767,16 +1792,15 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 			storage = (gpointer)(gsize)ccontext->gregs [cinfo->ret.reg];
 	}
 
-	g_free (cinfo);
 	return storage;
 }
 
 /* Gets the return value from ccontext (for i2n exit) */
 void
-mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	const MonoEECallbacks *interp_cb;
-	CallInfo *cinfo;
+	CallInfo *cinfo = (CallInfo*)call_info;
 	ArgInfo *ainfo;
 	gpointer storage;
 
@@ -1792,8 +1816,6 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		storage = arg_get_storage (ccontext, ainfo);
 		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
-
-	g_free (cinfo);
 }
 
 #ifndef DISABLE_JIT
@@ -1902,7 +1924,6 @@ void
 mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
-	MonoMethodHeader *header;
 	MonoType *sig_ret;
 	int offset, size, align, curinst;
 	CallInfo *cinfo;
@@ -1928,8 +1949,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
 		cfg->param_area = MAX (cfg->param_area, sizeof (target_mgreg_t)*8);
-
-	header = cfg->header;
 
 	/* See mono_arch_get_global_int_regs () */
 	if (cfg->flags & MONO_CFG_HAS_CALLS)
@@ -2842,21 +2861,14 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 
 	for (i = 0; i < cinfo->nargs; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
-		int last_slot;
 
 		switch (ainfo->storage) {
 		case RegTypeGeneral:
 		case RegTypeIRegPair:
 		case RegTypeBaseGen:
 		case RegTypeFP:
-			break;
 		case RegTypeBase:
-			break;
 		case RegTypeStructByVal:
-			if (ainfo->size == 0)
-				last_slot = PARAM_REGS + (ainfo->offset / 4) + ainfo->vtsize;
-			else
-				last_slot = ainfo->reg + ainfo->size + ainfo->vtsize;
 			break;
 		default:
 			return FALSE;
@@ -4208,16 +4220,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins;
 	MonoCallInst *call;
 	guint8 *code = cfg->native_code + cfg->code_len;
-	MonoInst *last_ins = NULL;
-	int max_len, cpos;
+	int max_len;
 	int imm8, rot_amount;
 
 	/* we don't align basic blocks of loops on arm */
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
-
-	cpos = bb->max_offset;
 
     if (mono_break_at_bb_method && mono_method_desc_full_match (mono_break_at_bb_method, cfg->method) && bb->block_num == mono_break_at_bb_bb_num) {
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
@@ -5956,10 +5965,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}
-
-		cpos += max_len;
-
-		last_ins = ins;
 	}
 
 	set_code_cursor (cfg, code);
@@ -6429,10 +6434,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 			case RegTypeStructByVal: {
 				int doffset = inst->inst_offset;
-				int soffset = 0;
+				//int soffset = 0;
 				int cur_reg;
-				int size = 0;
-				size = mini_type_stack_size_full (inst->inst_vtype, NULL, sig->pinvoke && !sig->marshalling_disabled);
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
 					if (arm_is_imm12 (doffset)) {
 						ARM_STR_IMM (code, ainfo->reg + cur_reg, inst->inst_basereg, doffset);
@@ -6440,7 +6443,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						code = mono_arm_emit_load_imm (code, ARMREG_IP, doffset);
 						ARM_STR_REG_REG (code, ainfo->reg + cur_reg, inst->inst_basereg, ARMREG_IP);
 					}
-					soffset += sizeof (target_mgreg_t);
+					//soffset += sizeof (target_mgreg_t);
 					doffset += sizeof (target_mgreg_t);
 				}
 				if (ainfo->vtsize) {

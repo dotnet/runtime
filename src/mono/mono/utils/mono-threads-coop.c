@@ -219,6 +219,7 @@ typedef struct {
 __declspec(naked) void __cdecl
 copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *stackdata_begin, MonoBuiltinUnwindInfo *unwind_info_data, CopyStackDataFunc func)
 {
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	__asm {
 		mov edx, dword ptr [esp + 0Ch]
 		mov dword ptr [edx + 00h], ebx
@@ -230,6 +231,7 @@ copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *sta
 		mov edx, dword ptr [esp + 10h]
 		jmp edx
 	};
+#endif
 }
 #endif
 
@@ -337,10 +339,10 @@ mono_threads_exit_gc_safe_region_internal (gpointer cookie, MonoStackData *stack
 		return;
 
 #ifdef ENABLE_CHECKED_BUILD_GC
-	W32_DEFINE_LAST_ERROR_RESTORE_POINT;
+	MONO_DEFINE_LAST_ERROR_RESTORE_POINT;
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
 		coop_tls_pop (cookie);
-	W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
+	MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 #endif
 
 	mono_threads_exit_gc_safe_region_unbalanced_internal (cookie, stackdata);
@@ -365,7 +367,7 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 	/* Common to use enter/exit gc safe around OS API's affecting last error. */
 	/* This method can call OS API's that will reset last error on some platforms. */
 	/* To reduce errors, we need to restore last error before exit gc safe. */
-	W32_DEFINE_LAST_ERROR_RESTORE_POINT;
+	MONO_DEFINE_LAST_ERROR_RESTORE_POINT;
 
 	info = (MonoThreadInfo *)cookie;
 
@@ -398,7 +400,7 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 		info->user_data = NULL;
 	}
 
-	W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
+	MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 }
 
 void
@@ -652,14 +654,14 @@ mono_threads_suspend_policy_init (void)
 		// otherwise if one of the old environment variables is set, use that.
 		// otherwise use full preemptive suspend.
 
-		W32_DEFINE_LAST_ERROR_RESTORE_POINT;
+		MONO_DEFINE_LAST_ERROR_RESTORE_POINT;
 
 		   (policy = threads_suspend_policy_getenv ())
 		|| (policy = threads_suspend_policy_default ())
 		|| (policy = threads_suspend_policy_getenv_compat ())
 		|| (policy = MONO_THREADS_SUSPEND_FULL_PREEMPTIVE);
 
-		W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
+		MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 
 		g_assert (policy);
 		mono_threads_suspend_policy_hidden_dont_modify = (char)policy;

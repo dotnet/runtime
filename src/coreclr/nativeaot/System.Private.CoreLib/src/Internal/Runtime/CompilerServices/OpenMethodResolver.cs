@@ -19,7 +19,6 @@ namespace Internal.Runtime.CompilerServices
     //    so that repeated allocation of the same resolver will not leak.
     // 3) Use the ResolveMethod function to do the virtual lookup. This function takes advantage of
     //    a lockless cache so the resolution is very fast for repeated lookups.
-    [ReflectionBlocked]
     public struct OpenMethodResolver : IEquatable<OpenMethodResolver>
     {
         // Lazy initialized to point to the type loader method when the first `GVMResolve` resolver is created

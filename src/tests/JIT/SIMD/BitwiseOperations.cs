@@ -3,10 +3,11 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector2;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -108,7 +109,8 @@ namespace VectorMathTests
             return 100;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (TestDouble() != 100)
             {

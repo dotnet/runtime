@@ -8,7 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly subovfun1 {}
+.assembly ASSEMBLY_NAME {}
 .method public static uint32 f(uint32 arg)
 {
 ldarg.0

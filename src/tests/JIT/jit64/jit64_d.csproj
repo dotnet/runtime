@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <MergedWrapperProjectReference Include="*/**/*_d.??proj" />
-    <MergedWrapperProjectReference Include="*/**/*_dynamic.??proj" />
-    <MergedWrapperProjectReference Include="localloc/**/*.??proj" />
-  </ItemGroup>
-
-  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
-</Project>

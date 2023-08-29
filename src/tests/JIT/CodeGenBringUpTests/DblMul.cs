@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblMul
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_DblMul
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblMul(double x, double y) { return x*y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double y = DblMul(17d, 9d);
         Console.WriteLine(y);

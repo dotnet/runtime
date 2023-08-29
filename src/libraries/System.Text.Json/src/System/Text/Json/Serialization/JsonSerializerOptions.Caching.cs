@@ -18,6 +18,7 @@ namespace System.Text.Json
         /// Encapsulates all cached metadata referenced by the current <see cref="JsonSerializerOptions" /> instance.
         /// Context can be shared across multiple equivalent options instances.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal CachingContext CacheContext
         {
             get
@@ -161,7 +162,14 @@ namespace System.Text.Json
             Type runtimeType = rootValue.GetType();
             if (runtimeType != JsonTypeInfo.ObjectType)
             {
+                // To determine the contract for an object value:
+                // 1. Find the JsonTypeInfo for the runtime type with fallback to the nearest ancestor, if not available.
+                // 2. If the resolved type is deriving from a polymorphic type, use the contract of the polymorphic type instead.
                 polymorphicTypeInfo = GetTypeInfoForRootType(runtimeType, fallBackToNearestAncestorType: true);
+                if (polymorphicTypeInfo.AncestorPolymorphicType is { } ancestorPolymorphicType)
+                {
+                    polymorphicTypeInfo = ancestorPolymorphicType;
+                }
                 return true;
             }
 
@@ -170,6 +178,7 @@ namespace System.Text.Json
         }
 
         // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo ObjectTypeInfo
         {
             get
@@ -483,6 +492,7 @@ namespace System.Text.Json
                     left._encoder == right._encoder &&
                     left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
                     left._numberHandling == right._numberHandling &&
+                    left._preferredObjectCreationHandling == right._preferredObjectCreationHandling &&
                     left._unknownTypeHandling == right._unknownTypeHandling &&
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
@@ -536,6 +546,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._encoder);
                 AddHashCode(ref hc, options._defaultIgnoreCondition);
                 AddHashCode(ref hc, options._numberHandling);
+                AddHashCode(ref hc, options._preferredObjectCreationHandling);
                 AddHashCode(ref hc, options._unknownTypeHandling);
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);

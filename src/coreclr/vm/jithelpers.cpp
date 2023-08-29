@@ -56,6 +56,8 @@
 #include "excep.h"
 #endif
 
+#include "exinfo.h"
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -746,9 +748,9 @@ HCIMPLEND
 //========================================================================
 
 /*********************************************************************/
-// Returns the address of the field in the object (This is an interior
-// pointer and the caller has to use it appropriately). obj can be
-// either a reference or a byref
+// Returns the address of the instance field in the object (This is an interior
+// pointer and the caller has to use it appropriately) or a static field.
+// obj can be either a reference or a byref
 HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
 {
     CONTRACTL {
@@ -761,9 +763,8 @@ HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
 
-    if (objRef == NULL)
+    if (!pFD->IsStatic() && objRef == NULL)
         COMPlusThrow(kNullReferenceException);
-
 
     fldAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
 
@@ -788,6 +789,25 @@ HCIMPL2(void*, JIT_GetFieldAddr, Object *obj, FieldDesc* pFD)
     }
 
     return pFD->GetAddressGuaranteedInHeap(obj);
+}
+HCIMPLEND
+#include <optdefault.h>
+
+#include <optsmallperfcritical.h>
+HCIMPL1(void*, JIT_GetStaticFieldAddr, FieldDesc* pFD)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pFD));
+    } CONTRACTL_END;
+
+    // [TODO] Only handling EnC for now
+    _ASSERTE(pFD->IsEnCNew());
+
+    {
+        ENDFORBIDGC();
+        return HCCALL2(JIT_GetFieldAddr_Framed, NULL, pFD);
+    }
 }
 HCIMPLEND
 #include <optdefault.h>
@@ -1759,15 +1779,23 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 }
 HCIMPLEND
 
+struct ThreadStaticBlockInfo
+{
+    uint32_t NonGCMaxThreadStaticBlocks;
+    void** NonGCThreadStaticBlocks;
+
+    uint32_t GCMaxThreadStaticBlocks;
+    void** GCThreadStaticBlocks;
+};
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) uint32_t t_threadStaticBlocksSize;
-__declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
+__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
 #else
-EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
-EXTERN_C __thread uint32_t t_threadStaticBlocksSize;
-EXTERN_C __thread void** t_threadStaticBlocks;
+EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
+EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
+EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
 #endif
 
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
@@ -1812,12 +1840,11 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
 {
     void* staticBlock = nullptr;
 
-#ifdef HOST_WINDOWS
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
-    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
+    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupNonGCThreadStaticBlockType(staticBlockIndex);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
     // Get the TLM
@@ -1831,35 +1858,32 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
     staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
     CONSISTENCY_CHECK(staticBlock != NULL);
 
-    if (t_threadStaticBlocksSize <= staticBlockIndex)
+    if (t_NonGCThreadStaticBlocksSize <= staticBlockIndex)
     {
-        UINT32 newThreadStaticBlocksSize = max(2 * t_threadStaticBlocksSize, staticBlockIndex + 1);
+        UINT32 newThreadStaticBlocksSize = max(2 * t_NonGCThreadStaticBlocksSize, staticBlockIndex + 1);
         void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
-        memset(newThreadStaticBlocks + t_threadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_threadStaticBlocksSize) * sizeof(PTR_BYTE));
+        memset(newThreadStaticBlocks + t_NonGCThreadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_NonGCThreadStaticBlocksSize) * sizeof(PTR_BYTE));
 
-        if (t_threadStaticBlocksSize > 0)
+        if (t_NonGCThreadStaticBlocksSize > 0)
         {
-            memcpy(newThreadStaticBlocks, t_threadStaticBlocks, t_threadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete t_threadStaticBlocks;
+            memcpy(newThreadStaticBlocks, t_ThreadStatics.NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
         }
 
-        t_threadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_threadStaticBlocks = newThreadStaticBlocks;
+        t_NonGCThreadStaticBlocksSize = newThreadStaticBlocksSize;
+        t_ThreadStatics.NonGCThreadStaticBlocks = newThreadStaticBlocks;
     }
 
-    void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
+    void* currentEntry = t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex];
     // We could be coming here 2nd time after running the ctor when we try to get the static block.
     // In such case, just avoid adding the same entry.
     if (currentEntry != staticBlock)
     {
         _ASSERTE(currentEntry == nullptr);
-        t_threadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+        t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_ThreadStatics.NonGCMaxThreadStaticBlocks = max(t_ThreadStatics.NonGCMaxThreadStaticBlocks, staticBlockIndex);
     }
     HELPER_METHOD_FRAME_END();
-#else
-    _ASSERTE(!"JIT_GetSharedNonGCThreadStaticBaseOptimized not supported on non-windows.");
-#endif // HOST_WINDOWS
 
     return staticBlock;
 }
@@ -1901,6 +1925,67 @@ HCIMPL2(void*, JIT_GetSharedGCThreadStaticBase, DomainLocalModule *pDomainLocalM
 }
 HCIMPLEND
 #include <optdefault.h>
+
+// *** This helper corresponds CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED.
+//      Even though we always check if the class constructor has been run, we have a separate
+//      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
+//      otherwise wouldn't be possible.
+HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
+{
+    void* staticBlock = nullptr;
+
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
+    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupGCThreadStaticBlockType(staticBlockIndex);
+    _ASSERTE(!pMT->HasGenericsStaticsInfo());
+
+    // Get the TLM
+    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
+    _ASSERTE(pThreadLocalModule != NULL);
+
+    // Check if the class constructor needs to be run
+    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+
+    // Lookup the GC statics base handle and cache it
+    staticBlock = (void*) pMT->GetGCThreadStaticsBaseHandle();
+    CONSISTENCY_CHECK(staticBlock != NULL);
+
+    if (t_GCThreadStaticBlocksSize <= staticBlockIndex)
+    {
+        UINT32 newThreadStaticBlocksSize = max(2 * t_GCThreadStaticBlocksSize, staticBlockIndex + 1);
+        void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
+        memset(newThreadStaticBlocks + t_GCThreadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_GCThreadStaticBlocksSize) * sizeof(PTR_BYTE));
+
+        if (t_GCThreadStaticBlocksSize > 0)
+        {
+            memcpy(newThreadStaticBlocks, t_ThreadStatics.GCThreadStaticBlocks, t_GCThreadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete[] t_ThreadStatics.GCThreadStaticBlocks;
+        }
+
+        t_GCThreadStaticBlocksSize = newThreadStaticBlocksSize;
+        t_ThreadStatics.GCThreadStaticBlocks = newThreadStaticBlocks;
+    }
+
+    void* currentEntry = t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex];
+    // We could be coming here 2nd time after running the ctor when we try to get the static block.
+    // In such case, just avoid adding the same entry.
+    if (currentEntry != staticBlock)
+    {
+        _ASSERTE(currentEntry == nullptr);
+        t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_ThreadStatics.GCMaxThreadStaticBlocks = max(t_ThreadStatics.GCMaxThreadStaticBlocks, staticBlockIndex);
+    }
+
+    // Get the data pointer of static block
+    staticBlock = (void*) pMT->GetGCThreadStaticsBasePointer();
+
+    HELPER_METHOD_FRAME_END();
+
+    return staticBlock;
+}
+HCIMPLEND
 
 // *** This helper corresponds to CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS
 
@@ -2371,7 +2456,7 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored_NoLogging());
+    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2386,6 +2471,37 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 }
 HCIMPLEND
 
+/*************************************************************/
+HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF newobj = NULL;
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
+    TypeHandle typeHnd(typeHnd_);
+
+    _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
+    MethodTable* pMT = typeHnd.AsMethodTable();
+    _ASSERTE(pMT->IsRestored());
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    newobj = TryAllocateFrozenObject(pMT);
+    if (newobj == NULL)
+    {
+        // Fallback to normal heap allocation.
+        newobj = AllocateObject(pMT);
+    }
+
+    HELPER_METHOD_FRAME_END();
+    return(OBJECTREFToObject(newobj));
+}
+HCIMPLEND
 
 
 //========================================================================
@@ -2695,6 +2811,53 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 #endif // _DEBUG
 
     newArray = AllocateSzArray(pArrayMT, (INT32)size);
+    HELPER_METHOD_FRAME_END();
+
+    return(OBJECTREFToObject(newArray));
+}
+HCIMPLEND
+
+
+/*************************************************************/
+HCIMPL2(Object*, JIT_NewArr1MaybeFrozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF newArray = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
+    MethodTable* pArrayMT = (MethodTable*)arrayMT;
+
+    _ASSERTE(pArrayMT->IsFullyLoaded());
+    _ASSERTE(pArrayMT->IsArray());
+    _ASSERTE(!pArrayMT->IsMultiDimArray());
+
+    if (size < 0)
+        COMPlusThrow(kOverflowException);
+
+#ifdef HOST_64BIT
+    // Even though ECMA allows using a native int as the argument to newarr instruction
+    // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
+    // platforms we can't create an array whose size exceeds 32 bits.
+    if (size > INT_MAX)
+        EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+#endif
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    newArray = TryAllocateFrozenSzArray(pArrayMT, (INT32)size);
+    if (newArray == NULL)
+    {
+        // Fallback to default heap allocation
+        newArray = AllocateSzArray(pArrayMT, (INT32)size);
+    }
+    _ASSERTE(newArray != NULL);
+
     HELPER_METHOD_FRAME_END();
 
     return(OBJECTREFToObject(newArray));
@@ -4053,6 +4216,39 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef FEATURE_EH_FUNCLETS
+void ThrowNew(OBJECTREF oref)
+{
+    if (oref == 0)
+        DispatchManagedException(kNullReferenceException);
+    else
+    if (!IsException(oref->GetMethodTable()))
+    {
+        GCPROTECT_BEGIN(oref);
+
+        WrapNonCompliantException(&oref);
+
+        GCPROTECT_END();
+    }
+    else
+    {   // We know that the object derives from System.Exception
+
+        // If the flag indicating ForeignExceptionRaise has been set,
+        // then do not clear the "_stackTrace" field of the exception object.
+        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
+        {
+            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+        }
+        else
+        {
+            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+        }
+    }
+
+    DispatchManagedException(oref);
+}
+#endif // FEATURE_EH_FUNCLETS
+
 HCIMPL1(void, IL_Throw,  Object* obj)
 {
     FCALL_CONTRACT;
@@ -4071,6 +4267,13 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        ThrowNew(oref);
+        UNREACHABLE();
+    }
+#endif
 
     if (oref == 0)
         COMPlusThrow(kNullReferenceException);
@@ -4106,6 +4309,31 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef FEATURE_EH_FUNCLETS
+void RethrowNew()
+{
+    CONTEXT ctx = {};
+    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    REGDISPLAY rd;
+    Thread *pThread = GetThread();
+
+    ExInfo *pActiveExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+
+    ExInfo exInfo(pThread, &ctx, &rd, ExKind::None);
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+    GCPROTECT_END();
+}
+#endif // FEATURE_EH_FUNCLETS
+
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
@@ -4113,6 +4341,14 @@ HCIMPL0(void, IL_Rethrow)
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        RethrowNew();
+        UNREACHABLE();
+    }
+#endif
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
@@ -4264,6 +4500,38 @@ HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
         strMethodName,
         strInterfaceName,
         strTargetClassName);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL3(void, JIT_ThrowEntryPointNotFoundException,
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
+
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
+    SString assemblyName;
+
+    targetType->GetAssembly()->GetDisplayName(assemblyName);
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
+
+    COMPlusThrow(
+        kEntryPointNotFoundException,
+        IDS_CLASSLOAD_METHOD_NOT_IMPLEMENTED,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName,
+        assemblyName);
+
+    HELPER_METHOD_FRAME_END();    // Set up a frame
 }
 HCIMPLEND
 
@@ -4741,8 +5009,6 @@ HCIMPL0(void, JIT_PInvokeEndRarePath)
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
     thread->HandleThreadAbort();
     HELPER_METHOD_FRAME_END();
-
-    InlinedCallFrame* frame = (InlinedCallFrame*)thread->m_pFrame;
 
     thread->m_pFrame->Pop(thread);
 
@@ -5465,6 +5731,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     ::SetLastError(dwLastError);
 
     // Transition!
+    __asan_handle_no_return();
     RtlRestoreContext(&frameContext, NULL);
 }
 HCIMPLEND
@@ -5810,8 +6077,8 @@ HCIMPLEND
 
 // Helpers for scalable approximate counters
 //
-// Here 13 means we count accurately up to 2^13 = 8192 and
-// then start counting probabialistically.
+// Here threshold = 13 means we count accurately up to 2^13 = 8192 and
+// then start counting probabilistically.
 //
 // See docs/design/features/ScalableApproximateCounting.md
 //
@@ -5822,22 +6089,22 @@ HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 
     LONG count = *pCounter;
     LONG delta = 1;
+    DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
     if (count > 0)
     {
         DWORD logCount = 0;
         BitScanReverse(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
-            delta = 1 << (logCount - 12);
+            delta = 1 << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
             const bool update = (rand & (delta - 1)) == 0;
             if (!update)
             {
                 return;
             }
-
         }
     }
 
@@ -5852,15 +6119,16 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 
     LONG64 count = *pCounter;
     LONG64 delta = 1;
+    DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
     if (count > 0)
     {
         DWORD logCount = 0;
         BitScanReverse64(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
-            delta = 1LL << (logCount - 12);
+            delta = 1LL << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
             const bool update = (rand & (delta - 1)) == 0;
             if (!update)

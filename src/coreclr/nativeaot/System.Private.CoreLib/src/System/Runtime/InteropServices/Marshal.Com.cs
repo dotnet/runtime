@@ -7,8 +7,6 @@ using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Versioning;
 
-using Internal.Reflection.Augments;
-
 namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
@@ -50,6 +48,7 @@ namespace System.Runtime.InteropServices
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [return: NotNullIfNotNull(nameof(o))]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -343,10 +342,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [return: MaybeNull]
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -377,10 +375,12 @@ namespace System.Runtime.InteropServices
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
+#pragma warning disable IDE0060
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
-            return ReflectionAugments.ReflectionCoreCallbacks.GetTypeFromCLSID(clsid, server, throwOnError);
+            throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
+#pragma warning restore
 
         [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)

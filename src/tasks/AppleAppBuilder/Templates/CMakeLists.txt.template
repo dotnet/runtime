@@ -76,12 +76,11 @@ target_link_libraries(
     "-lc++"
     "-liconv"
     %NativeLibrariesToLink%
-%APP_LINKER_ARGS%
+    %APP_LINK_LIBRARIES%
 )
 
-if(%UseNativeAOTRuntime%)
-target_link_libraries(
-    %ProjectName%
-    "-Wl,-u,_NativeAOT_StaticInitialization"
+set_target_properties(
+    %ProjectName% 
+    PROPERTIES LINK_FLAGS
+    %EXTRA_LINKER_ARGS%
 )
-endif()

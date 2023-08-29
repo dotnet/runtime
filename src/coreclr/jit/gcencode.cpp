@@ -340,11 +340,11 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 
     if (offs < 0)
     {
-        printf("-%02XH", -offs);
+        printf("-0x%02X", -offs);
     }
     else if (offs > 0)
     {
-        printf("+%02XH", +offs);
+        printf("+0x%02X", +offs);
     }
 
     printf("] live from %04X to %04X\n", desc->vpdBegOfs, desc->vpdEndOfs);
@@ -3887,7 +3887,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             //
             const int osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->GenericContextArgOffset();
@@ -3930,7 +3930,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset();

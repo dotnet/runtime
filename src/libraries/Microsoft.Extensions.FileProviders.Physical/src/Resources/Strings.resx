@@ -117,6 +117,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
   <data name="Error_FileSystemWatcherRequiredWithoutPolling" xml:space="preserve">
     <value>The fileSystemWatcher parameter must be non-null when pollForChanges is false.</value>
   </data>
@@ -125,6 +131,9 @@
   </data>
   <data name="CannotModifyWhenFileWatcherInitialized" xml:space="preserve">
     <value>Cannot modify {0} once file watcher has been initialized.</value>
+  </data>
+  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
+    <value>The hash algorithm name cannot be null or empty.</value>
   </data>
   <data name="UnexpectedFileSystemInfo" xml:space="preserve">
     <value>Unexpected type of FileSystemInfo</value>

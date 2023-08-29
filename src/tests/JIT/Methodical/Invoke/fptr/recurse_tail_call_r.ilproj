@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="recurse_tail_call_r.il" />
+    <Compile Include="recurse_tail_call.il" />
+  </ItemGroup>
+</Project>

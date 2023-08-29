@@ -9,6 +9,7 @@ using System.Text;
 using System.Numerics;
 
 using Point = System.Numerics.Vector2;
+using Xunit;
 
 
 namespace ClassLibrary
@@ -51,7 +52,7 @@ namespace ClassLibrary
             return a > b ? a : b;
         }
 
-        static public void swap(ref float a, ref float b)
+        static internal void swap(ref float a, ref float b)
         {
             float c = a;
             a = b;
@@ -242,7 +243,8 @@ namespace ClassLibrary
             return (float)(mantissa * exponent);
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             List<Point> points = new List<Point>();
             Random random = new Random(13);

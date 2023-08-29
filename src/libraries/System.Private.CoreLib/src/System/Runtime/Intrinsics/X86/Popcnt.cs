@@ -25,7 +25,7 @@ namespace System.Runtime.Intrinsics.X86
 
             /// <summary>
             /// __int64 _mm_popcnt_u64 (unsigned __int64 a)
-            ///   POPCNT reg64, reg/m64
+            ///   POPCNT r64, r/m64
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong PopCount(ulong value) => PopCount(value);
@@ -33,7 +33,7 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// int _mm_popcnt_u32 (unsigned int a)
-        ///   POPCNT reg, reg/m32
+        ///   POPCNT r32, r/m32
         /// </summary>
         public static uint PopCount(uint value) => PopCount(value);
     }

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { dotnet, exit } from "./dotnet.js";
+import { dotnet, exit } from "./_framework/dotnet.js";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -65,6 +65,11 @@ async function main() {
     const btn = document.getElementById("startWork");
     btn.style.backgroundColor = "rgb(192,255,192)";
     btn.onclick = () => doWork(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
+
+    if (INTERNAL.diagnosticServerThread === undefined) {
+        console.warn("please recompile runtime with /p:MonoWasmBuildVariant=multithread /p:MonoDiagnosticsMock=true" + event.type)
+        return;
+    }
 
     INTERNAL.diagnosticServerThread.port.addEventListener("message", (event) => {
         console.warn("diagnosticServerThread" + event.type)

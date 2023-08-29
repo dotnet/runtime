@@ -14,7 +14,7 @@
     <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
     <!-- This controls if we consume official binaries from MsQuic or if we use binaries published from dotnet/msquic repo.
          Release branches should generally consume MsQuic release code, transport allows us to consume and test pre-released versions -->
-    <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">true</UseQuicTransportPackage>
+    <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">false</UseQuicTransportPackage>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
@@ -28,10 +28,14 @@
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
-    <Compile Include="$(CommonPath)System\Net\SocketAddress.cs" Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs" Link="Common\System\Net\IPAddressParserStatics.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs" Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs" Link="Common\System\Net\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs" Link="Common\System\Net\Security\TlsAlertMessage.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TargetHostNameHelper.cs" Link="Common\System\Net\Security\TargetHostNameHelper.cs" />
+    <!-- IP parser -->
+    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs" Link="System\Net\IPv4AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs" Link="System\Net\IPv6AddressHelper.Common.cs" />
   </ItemGroup>
   <!-- Unsupported platforms -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
@@ -99,7 +103,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\src\System.Net.Security.csproj" SkipUseReferenceAssembly="true" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -109,6 +112,7 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -123,6 +127,11 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'freebsd'">
     <Reference Include="System.Diagnostics.StackTrace" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+
+  <!-- Workaround for https://github.com/dotnet/sdk/issues/34003 -->
+  <ItemGroup>
+    <_KnownRuntimeIdentiferPlatforms Include="osx;win" />
   </ItemGroup>
 
   <!-- Support for deploying msquic on Windows. We make msquic.dll part of runtime binaries: either from official releases or our transport feed. -->

@@ -345,7 +345,7 @@ namespace System.Net.Http.Headers
 
         private static void CheckNameValueFormat(string name, string? value)
         {
-            HeaderUtilities.CheckValidToken(name, nameof(name));
+            HeaderUtilities.CheckValidToken(name);
             CheckValueFormat(value);
         }
 

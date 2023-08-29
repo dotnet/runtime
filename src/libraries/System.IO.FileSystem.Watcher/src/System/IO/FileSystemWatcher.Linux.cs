@@ -596,6 +596,7 @@ namespace System.IO
                                 // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
                                 // should have the value, there's little we can do about it at this point,
                                 // and there's no more processing of this event we can do without it.
+                                watcher = null;
                                 continue;
                             }
                         }
@@ -667,6 +668,7 @@ namespace System.IO
                             (isDir && ((_notifyFilters & NotifyFilters.DirectoryName) == 0) ||
                             (!isDir && ((_notifyFilters & NotifyFilters.FileName) == 0))))
                         {
+                            watcher = null;
                             continue;
                         }
 
@@ -829,7 +831,7 @@ namespace System.IO
             }
 
             /// <summary>
-            /// Reads a UTF8 string from _buffer starting at the specified position and up to
+            /// Reads a UTF-8 string from _buffer starting at the specified position and up to
             /// the specified length.  Null termination is trimmed off (the length may include
             /// many null bytes, not just one, or it may include none).
             /// </summary>

@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class SatelliteAssembliesTests : BuildTestBase
+    public class SatelliteAssembliesTests : TestMainJsTestBase
     {
         public SatelliteAssembliesTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

@@ -75,6 +75,10 @@ _LIBUNWIND_HIDDEN int __unw_init_local(unw_cursor_t *cursor,
 # define REGISTER_KIND Registers_riscv
 #elif defined(__ve__)
 # define REGISTER_KIND Registers_ve
+#elif defined(__s390x__)
+# define REGISTER_KIND Registers_s390x
+#elif defined(__loongarch__) && __loongarch_grlen == 64
+#define REGISTER_KIND Registers_loongarch
 #else
 # error Architecture not supported
 #endif
@@ -194,6 +198,15 @@ _LIBUNWIND_HIDDEN int __unw_step(unw_cursor_t *cursor) {
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_step, unw_step)
 
+// Move cursor to next frame and for stage2 of unwinding.
+// This resets MTE tags of tagged frames to zero.
+extern "C" _LIBUNWIND_HIDDEN int __unw_step_stage2(unw_cursor_t *cursor) {
+  _LIBUNWIND_TRACE_API("__unw_step_stage2(cursor=%p)",
+                       static_cast<void *>(cursor));
+  AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
+  return co->step(true);
+}
+
 /// Get unwind info at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_get_proc_info(unw_cursor_t *cursor,
                                           unw_proc_info_t *info) {
@@ -261,6 +274,16 @@ _LIBUNWIND_HIDDEN int __unw_is_signal_frame(unw_cursor_t *cursor) {
   return co->isSignalFrame();
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_is_signal_frame, unw_is_signal_frame)
+
+#ifdef _AIX
+_LIBUNWIND_EXPORT uintptr_t __unw_get_data_rel_base(unw_cursor_t *cursor) {
+  _LIBUNWIND_TRACE_API("unw_get_data_rel_base(cursor=%p)",
+                       static_cast<void *>(cursor));
+  AbstractUnwindCursor *co = reinterpret_cast<AbstractUnwindCursor *>(cursor);
+  return co->getDataRelBase();
+}
+_LIBUNWIND_WEAK_ALIAS(__unw_get_data_rel_base, unw_get_data_rel_base)
+#endif
 
 #ifdef __arm__
 // Save VFP registers d0-d15 using FSTMIADX instead of FSTMIADD

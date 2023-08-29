@@ -28,7 +28,7 @@ following definition:
 			\Type{size\_t} \Var{reg\_states\_data\_size},
 			\Type{unw\_word\_t} \Var{start\_ip}, \Type{unw\_word\_t} \Var{end\_ip});
 
-The callback function may be invoked several times for each call of \Func{unw\_reg\_states\_iterate}. Each call is associcated with a instruction address range and a set of instructions on how to update register values when returning from the procedure in that address range.  For each invocation, the arguments to the callback function are:
+The callback function may be invoked several times for each call of \Func{unw\_reg\_states\_iterate}. Each call is associated with an instruction address range and a set of instructions on how to update register values when returning from the procedure in that address range.  For each invocation, the arguments to the callback function are:
 \begin{description}
 \item[\Type{void~*} \Var{token}] The token value passed to \Var{unw\_reg\_states\_callback}. \\
 \item[\Type{void~*} \Var{reg\_states\_data}] A pointer to data about

@@ -70,8 +70,6 @@
              Link="ProductionCode\System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="ProductionCode\System\IO\DelegatingStream.cs" />
-    <Compile Include="..\..\src\System\Net\Http\ByteArrayHelpers.cs"
-             Link="ProductionCode\System\Net\Http\ByteArrayHelpers.cs" />
     <Compile Include="..\..\src\System\Net\Http\EmptyContent.cs"
              Link="ProductionCode\System\Net\Http\EmptyContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\EmptyReadStream.cs"
@@ -194,6 +192,8 @@
              Link="ProductionCode\System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpContent.cs"
              Link="ProductionCode\System\Net\Http\HttpContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpIOException.cs"
+                 Link="ProductionCode\System\Net\Http\HttpIOException.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpMessageHandler.cs"
              Link="ProductionCode\System\Net\Http\HttpMessageHandler.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpMessageInvoker.cs"
@@ -202,6 +202,8 @@
              Link="ProductionCode\System\Net\Http\HttpMethod.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpParseResult.cs"
              Link="ProductionCode\System\Net\Http\HttpParseResult.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpRequestError.cs"
+                 Link="ProductionCode\System\Net\Http\HttpRequestError.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRequestException.cs"
              Link="ProductionCode\System\Net\Http\HttpRequestException.cs" />
     <Compile Include="..\..\src\System\Net\Http\RequestRetryType.cs"
@@ -287,6 +289,7 @@
     <Compile Include="Headers\HttpHeadersTest.cs" />
     <Compile Include="Headers\HttpHeaderValueCollectionTest.cs" />
     <Compile Include="Headers\HttpRequestHeadersTest.cs" />
+    <Compile Include="Headers\HttpRequestOptionsTest.cs" />
     <Compile Include="Headers\HttpResponseHeadersTest.cs" />
     <Compile Include="Headers\Int32NumberHeaderParserTest.cs" />
     <Compile Include="Headers\Int64NumberHeaderParserTest.cs" />
@@ -322,6 +325,8 @@
              Link="HPack\HPackIntegerTest.cs" />
     <Compile Include="$(CommonPath)..\tests\Tests\System\Net\aspnetcore\Http2\HuffmanDecodingTests.cs"
              Link="HPack\HuffmanDecodingTests.cs" />
+    <Compile Include="$(CommonPath)..\tests\Tests\System\Net\aspnetcore\Http3\QPackDecoderTest.cs"
+             Link="QPack\QPackDecoderTest.cs" />
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
@@ -393,8 +398,12 @@
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs"
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs"
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"

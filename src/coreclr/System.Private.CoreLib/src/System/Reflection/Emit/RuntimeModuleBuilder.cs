@@ -1289,18 +1289,13 @@ namespace System.Reflection.Emit
 
         #region Other
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             RuntimeTypeBuilder.DefineCustomAttribute(
                 this,
                 1,                                          // This is hard coding the module token to 1
                 GetMethodMetadataToken(con),
                 binaryAttribute);
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            customBuilder.CreateCustomAttribute(this, 1);   // This is hard coding the module token to 1
         }
 
         #endregion

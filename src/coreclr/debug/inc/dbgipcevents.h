@@ -870,7 +870,7 @@ template <int nMaxLengthIncludingNull>
 class MSLAYOUT EmbeddedIPCString
 {
 public:
-    // Set, caller responsibility that wcslen(pData) < nMaxLengthIncludingNull
+    // Set, caller responsibility that u16_strlen(pData) < nMaxLengthIncludingNull
     void SetString(const WCHAR * pData)
     {
         // If the string doesn't fit into the buffer, that's an issue (and so this is a real
@@ -2011,7 +2011,14 @@ struct MSLAYOUT DebuggerIPCEvent
             SIZE_T       offset;
             SIZE_T       encVersion;
             LSPTR_METHODDESC  nativeCodeMethodDescToken; // points to the MethodDesc if !isIL
+            CORDB_ADDRESS codeStartAddress;
         } BreakpointData;
+
+        struct MSLAYOUT
+        {
+            mdMethodDef funcMetadataToken;
+            VMPTR_Module pModule;
+        } DisableOptData;
 
         struct MSLAYOUT
         {

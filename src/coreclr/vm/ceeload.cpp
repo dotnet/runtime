@@ -183,7 +183,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
     }
 }
 
-#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
@@ -241,7 +241,7 @@ void Module::UpdateNewlyAddedTypes()
     m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
     m_dwCustomAttributeCount = countCustomAttributeCount;
 }
-#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
 #if PROFILING_SUPPORTED
 void Module::NotifyProfilerLoadFinished(HRESULT hr)
@@ -350,12 +350,6 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     _ASSERTE(m_pBinder == NULL);
 
     pPEAssembly->AddRef();
-}
-
-BOOL Module::IsPersistedObject(void *address)
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
 }
 
 uint32_t Module::GetNativeMetadataAssemblyCount()
@@ -545,6 +539,25 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 }
 
 #ifndef DACCESS_COMPILE
+static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembly)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pAssembly != NULL && pPEAssembly != NULL);
+
+    // Some modules are never EnC-capable
+    return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
+              pPEAssembly->IsSystem() ||
+              pPEAssembly->IsDynamic());
+}
+
 /* static */
 Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker)
 {
@@ -565,8 +578,8 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
 
     // Create the module
 
-#ifdef EnC_SUPPORTED
-    if (IsEditAndContinueCapable(pAssembly, pPEAssembly))
+#ifdef FEATURE_METADATA_UPDATER
+    if (::IsEditAndContinueCapable(pAssembly, pPEAssembly))
     {
         // if file is EnCCapable, always create an EnC-module, but EnC won't necessarily be enabled.
         // Debugger enables this by calling SetJITCompilerFlags on LoadModule callback.
@@ -575,7 +588,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
         pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
     }
     else
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
     {
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(Module))));
         pModule = new (pMemory) Module(pAssembly, pPEAssembly);
@@ -598,14 +611,14 @@ void Module::ApplyMetaData()
     }
     CONTRACTL_END;
 
-    LOG((LF_CLASSLOADER, LL_INFO100, "Module::ApplyNewMetaData %x\n", this));
+    LOG((LF_CLASSLOADER, LL_INFO100, "Module::ApplyNewMetaData this:%p\n", this));
 
     HRESULT hr = S_OK;
     ULONG ulCount;
 
-#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     UpdateNewlyAddedTypes();
-#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
     // Ensure for TypeRef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtTypeRef) + 1;
@@ -834,26 +847,6 @@ MethodTable *Module::GetGlobalMethodTable()
 
 #endif // !DACCESS_COMPILE
 
-/*static*/
-BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembly)
-{
-    CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            SUPPORTS_DAC;
-        }
-    CONTRACTL_END;
-
-    _ASSERTE(pAssembly != NULL && pPEAssembly != NULL);
-
-    // Some modules are never EnC-capable
-    return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
-              pPEAssembly->IsSystem() ||
-              pPEAssembly->IsDynamic());
-}
-
 BOOL Module::IsManifest()
 {
     WRAPPER_NO_CONTRACT;
@@ -926,10 +919,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
         DWORD dwClassGCHandles[2]  = { 0, 0 };
 
         // need to check if the type is generic and if so exclude it from iteration as we don't know the size
-        HENUMInternalHolder hGenericEnum(pImport);
-        hGenericEnum.EnumInit(mdtGenericParam, type);
-        ULONG cGenericParams = pImport->EnumGetCount(&hGenericEnum);
-        if (cGenericParams == 0)
+        if (!m_pTypeGenericInfoMap->IsGeneric(type, pImport))
         {
             HENUMInternalHolder hFieldEnum(pImport);
             hFieldEnum.EnumInit(mdtFieldDef, type);
@@ -1463,7 +1453,7 @@ BOOL Module::IsRuntimeWrapExceptions()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         if (IsRuntimeWrapExceptionsStatusComputed()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
     }
@@ -1547,37 +1537,6 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     return hr != S_OK;
 }
 
-BOOL Module::IsPreV4Assembly()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    if (!(m_dwPersistedFlags & COMPUTED_IS_PRE_V4_ASSEMBLY))
-    {
-        IMDInternalImport *pImport = GetAssembly()->GetMDImport();
-        _ASSERTE(pImport);
-
-        BOOL fIsPreV4Assembly = FALSE;
-        LPCSTR szVersion = NULL;
-        if (SUCCEEDED(pImport->GetVersionString(&szVersion)))
-        {
-            if (szVersion != NULL && strlen(szVersion) > 2)
-            {
-                fIsPreV4Assembly = (szVersion[0] == 'v' || szVersion[0] == 'V') &&
-                                   (szVersion[1] == '1' || szVersion[1] == '2');
-            }
-        }
-
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
-            (fIsPreV4Assembly ? IS_PRE_V4_ASSEMBLY : 0));
-    }
-
-    return !!(m_dwPersistedFlags & IS_PRE_V4_ASSEMBLY);
-}
 
 DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
 {
@@ -2262,8 +2221,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     // AddRef which we take inside the lock at the bottom of this method.
     CrstHolder holder(&m_ISymUnmanagedReaderCrst);
 
-    UINT lastErrorMode = 0;
-
     // If we haven't created a reader yet, do so now
     if (m_pISymUnmanagedReader == NULL)
     {
@@ -2302,33 +2259,24 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                             "reachable or needs to be reimplemented for CoreCLR!");
         }
 
-        // We're going to be working with Windows PDB format symbols. Attempt to CoCreate the symbol binder.
-        // CoreCLR supports not having a symbol reader installed, so CoCreate searches the PATH env var
-        // and then tries coreclr dll location.
-        // On desktop, the framework installer is supposed to install diasymreader.dll as well
-        // and so this shouldn't happen.
-        hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, NATIVE_SYMBOL_READER_DLL, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+        PathString symbolReaderPath;
+        hr = GetClrModuleDirectory(symbolReaderPath);
         if (FAILED(hr))
         {
-            PathString symbolReaderPath;
-            hr = GetClrModuleDirectory(symbolReaderPath);
-            if (FAILED(hr))
-            {
-                RETURN (NULL);
-            }
-            symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
-            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
-            if (FAILED(hr))
-            {
-                RETURN (NULL);
-            }
+            RETURN (NULL);
+        }
+        symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
+        hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+        if (FAILED(hr))
+        {
+            RETURN (NULL);
         }
 
         LOG((LF_CORDB, LL_INFO10, "M::GISUR: Created binder\n"));
 
         // Note: we change the error mode here so we don't get any popups as the PDB symbol reader attempts to search the
         // hard disk for files.
-        lastErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+        ErrorModeHolder errorMode{};
 
         SafeComHolder<ISymUnmanagedReader> pReader;
 
@@ -2374,8 +2322,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             if (SUCCEEDED(hr))
                 hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
         }
-
-        SetErrorMode(lastErrorMode);
 
         if (SUCCEEDED(hr))
         {
@@ -2852,18 +2798,6 @@ OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
     string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
 
     return string;
-}
-
-//
-// Used by the verifier.  Returns whether this stringref is valid.
-//
-CHECK Module::CheckStringRef(DWORD token)
-{
-    LIMITED_METHOD_CONTRACT;
-    CHECK(TypeFromToken(token)==mdtString);
-    CHECK(!IsNilToken(token));
-    CHECK(GetMDImport()->IsValidToken(token));
-    CHECK_OK;
 }
 
 mdToken Module::GetEntryPointToken()
@@ -4420,7 +4354,7 @@ void Append_Next_Item(LPWSTR* ppCursor, SIZE_T* pRemainingLen, LPCWSTR pItem, bo
     SIZE_T remainingLen = *pRemainingLen;
 
     // Calculate the length of pItem
-    SIZE_T itemLen = wcslen(pItem);
+    SIZE_T itemLen = u16_strlen(pItem);
 
     // Append pItem at pCursor
     wcscpy_s(pCursor, remainingLen, pItem);
@@ -4460,14 +4394,14 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
     // osCommandLine contains the full path to the executable.
-    SIZE_T  commandLineLen = (wcslen(osCommandLine) + 1);
+    SIZE_T  commandLineLen = (u16_strlen(osCommandLine) + 1);
 
     // We will append pwzAssemblyPath to the 'corerun' osCommandLine
-    commandLineLen += (wcslen(pwzAssemblyPath) + 1);
+    commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
 
     for (int i = 0; i < argc; i++)
     {
-        commandLineLen += (wcslen(argv[i]) + 1);
+        commandLineLen += (u16_strlen(argv[i]) + 1);
     }
     commandLineLen++;  // Add 1 for the null-termination
 
@@ -5187,6 +5121,23 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     }
 
     ECall::EnumFCallMethods();
+
+#ifdef FEATURE_METADATA_UPDATER
+    m_ClassList.EnumMemoryRegions();
+
+    DPTR(PTR_EnCEEClassData) classData = m_ClassList.Table();
+    DPTR(PTR_EnCEEClassData) classLast = classData + m_ClassList.Count();
+
+    while (classData.IsValid() && classData < classLast)
+    {
+        if ((*classData).IsValid())
+        {
+            (*classData)->EnumMemoryRegions(flags);
+        }
+
+        classData++;
+    }
+#endif // FEATURE_METADATA_UPDATER
 }
 
 FieldDesc *Module::LookupFieldDef(mdFieldDef token)

@@ -4,12 +4,14 @@
 // Thanks to Alexander Speshilov (spechuric @ github).
 
 using System;
+using Xunit;
 
 namespace Repro
 {
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Tst a = new Tst();
             a.f30();

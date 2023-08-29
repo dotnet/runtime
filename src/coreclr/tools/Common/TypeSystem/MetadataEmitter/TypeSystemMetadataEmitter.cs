@@ -206,11 +206,6 @@ namespace Internal.TypeSystem
                 return handle;
             }
 
-            if (type.IsFunctionPointer)
-            {
-                throw new ArgumentException("type");
-            }
-
             EntityHandle typeHandle;
 
             if (type.IsTypeDefinition && type is MetadataType metadataType)
@@ -269,11 +264,10 @@ namespace Internal.TypeSystem
 
         private BlobHandle GetFieldSignatureBlobHandle(FieldDesc field)
         {
-            var embeddedSigData = field.GetEmbeddedSignatureData();
             EmbeddedSignatureDataEmitter signatureDataEmitter;
-            if (embeddedSigData != null && embeddedSigData.Length != 0)
+            if (field.HasEmbeddedSignatureData)
             {
-                signatureDataEmitter = new EmbeddedSignatureDataEmitter(embeddedSigData, this);
+                signatureDataEmitter = new EmbeddedSignatureDataEmitter(field.GetEmbeddedSignatureData(), this);
             }
             else
             {

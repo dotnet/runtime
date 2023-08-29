@@ -6,6 +6,9 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);nonentrypointassembly\*</DefaultItemExcludes>
     <!-- Needed for .NET Framework. -->
     <GenerateDependencyFile>true</GenerateDependencyFile>
+
+    <!-- FluentAssertions library has a generic recursion and the warning breaks NativeAOT build -->
+    <NoWarn>$(NoWarn);IL3054</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

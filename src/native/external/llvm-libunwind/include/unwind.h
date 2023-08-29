@@ -56,9 +56,9 @@ typedef enum {
 typedef struct _Unwind_Context _Unwind_Context;   // opaque
 
 #if defined(_LIBUNWIND_ARM_EHABI)
-#include "unwind_arm_ehabi.h"
+#include <unwind_arm_ehabi.h>
 #else
-#include "unwind_itanium.h"
+#include <unwind_itanium.h>
 #endif
 
 typedef _Unwind_Reason_Code (*_Unwind_Stop_Fn)
@@ -93,7 +93,7 @@ extern void _Unwind_SjLj_Unregister(_Unwind_FunctionContext_t fc);
 #endif
 
 //
-// The following are semi-suppoted extensions to the C++ ABI
+// The following are semi-supported extensions to the C++ ABI
 //
 
 //
@@ -160,7 +160,7 @@ extern const void *_Unwind_Find_FDE(const void *pc, struct dwarf_eh_bases *);
 extern void *_Unwind_FindEnclosingFunction(void *pc);
 
 // Mac OS X does not support text-rel and data-rel addressing so these functions
-// are unimplemented
+// are unimplemented.
 extern uintptr_t _Unwind_GetDataRelBase(struct _Unwind_Context *context)
     LIBUNWIND_UNAVAIL;
 extern uintptr_t _Unwind_GetTextRelBase(struct _Unwind_Context *context)

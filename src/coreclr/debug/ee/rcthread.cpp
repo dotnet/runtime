@@ -1595,7 +1595,7 @@ bool DebuggerRCThread::IsRCThreadReady()
     // leaving the threadid still non-0. So check the actual thread object
     // and make sure it's still around.
     int ret = WaitForSingleObject(m_thread, 0);
-    LOG((LF_CORDB, LL_EVERYTHING, "DRCT::IsReady - wait(0x%p)=%d, GetLastError() = %d\n", m_thread, ret, GetLastError()));
+    LOG((LF_CORDB, LL_EVERYTHING, "DRCT::IsReady - wait(%p)=0x%x, GetLastError() = 0x%x\n", m_thread, ret, GetLastError()));
 
     if (ret != WAIT_TIMEOUT)
     {

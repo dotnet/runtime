@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct ValX0 { }
 public struct ValY0 { }
@@ -50,7 +51,8 @@ public class Test_static_assignment_class01
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         int _int1 = 1;

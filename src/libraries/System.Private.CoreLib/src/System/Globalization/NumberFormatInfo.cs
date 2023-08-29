@@ -207,7 +207,7 @@ namespace System.Globalization
         public static NumberFormatInfo InvariantInfo => s_invariantInfo ??=
             // Lazy create the invariant info. This cannot be done in a .cctor because exceptions can
             // be thrown out of a .cctor stack that will need this.
-            new NumberFormatInfo { _isReadOnly = true };
+            CultureInfo.InvariantCulture.NumberFormat;
 
         public static NumberFormatInfo GetInstance(IFormatProvider? formatProvider)
         {
@@ -244,10 +244,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -400,7 +397,7 @@ namespace System.Globalization
         {
             get
             {
-                System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
+                CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
                     NumberFormatInfo? info = culture._numInfo;
@@ -441,12 +438,9 @@ namespace System.Globalization
             get => _currencyNegativePattern;
             set
             {
-                if (value < 0 || value > 15)
+                if (value < 0 || value > 16)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 15));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 16);
                 }
 
                 VerifyWritable();
@@ -462,10 +456,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to negNumberFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 4)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 4));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 4);
                 }
 
                 VerifyWritable();
@@ -481,10 +472,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 3)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 3);
                 }
 
                 VerifyWritable();
@@ -500,10 +488,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 11)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 11));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 11);
                 }
 
                 VerifyWritable();
@@ -563,10 +548,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -623,10 +605,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 3)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 3);
                 }
 
                 VerifyWritable();
@@ -686,10 +665,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -828,25 +804,24 @@ namespace System.Globalization
                                                            | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
-                                                           | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
+                                                           | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
+                                                           | NumberStyles.AllowBinarySpecifier);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ValidateParseStyleInteger(NumberStyles style)
         {
-            // Check for undefined flags or invalid hex number flags
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0
-                && (style & ~NumberStyles.HexNumber) != 0)
+            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite.
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0 &&
+                (style & ~NumberStyles.HexNumber) != 0 &&
+                (style & ~NumberStyles.BinaryNumber) != 0)
             {
                 ThrowInvalid(style);
 
                 static void ThrowInvalid(NumberStyles value)
                 {
-                    if ((value & InvalidNumberStyles) != 0)
-                    {
-                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-                    }
-
-                    throw new ArgumentException(SR.Arg_InvalidHexStyle);
+                    throw new ArgumentException(
+                        (value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_InvalidHexBinaryStyle,
+                        nameof(style));
                 }
             }
         }
@@ -854,19 +829,12 @@ namespace System.Globalization
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
             // Check for undefined flags or hex number
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
             {
                 ThrowInvalid(style);
 
-                static void ThrowInvalid(NumberStyles value)
-                {
-                    if ((value & InvalidNumberStyles) != 0)
-                    {
-                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-                    }
-
-                    throw new ArgumentException(SR.Arg_HexStyleNotSupported);
-                }
+                static void ThrowInvalid(NumberStyles value) =>
+                    throw new ArgumentException((value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_HexBinaryStylesNotSupported, nameof(style));
             }
         }
     }

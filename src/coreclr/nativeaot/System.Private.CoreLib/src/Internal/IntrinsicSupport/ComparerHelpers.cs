@@ -88,7 +88,7 @@ namespace Internal.IntrinsicSupport
                 Environment.FailFast("Unable to create comparer");
             }
 
-            return RuntimeAugments.NewObject(comparerType);
+            return RuntimeAugments.RawNewObject(comparerType);
         }
 
         // This one is an intrinsic that is used to make enum comparisons more efficient.

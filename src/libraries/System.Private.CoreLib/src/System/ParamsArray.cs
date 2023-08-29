@@ -12,16 +12,10 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-#if CORECLR || NATIVEAOT
-
-    [InlineArray(Length)]
+    [InlineArray(2)]
     internal struct TwoObjects
     {
-        private const int Length = 2;
         internal object? Arg0;
-
-        [UnscopedRef]
-        private ref object? this[int i] => ref Unsafe.Add(ref Arg0, i);
 
         public TwoObjects(object? arg0, object? arg1)
         {
@@ -30,14 +24,10 @@ namespace System
         }
     }
 
-    [InlineArray(Length)]
+    [InlineArray(3)]
     internal struct ThreeObjects
     {
-        private const int Length = 3;
         internal object? Arg0;
-
-        [UnscopedRef]
-        private ref object? this[int i] => ref Unsafe.Add(ref Arg0, i);
 
         public ThreeObjects(object? arg0, object? arg1, object? arg2)
         {
@@ -46,33 +36,4 @@ namespace System
             this[2] = arg2;
         }
     }
-
-#else
-
-    internal struct TwoObjects
-    {
-        internal object? Arg0;
-        private object? _arg1;
-
-        public TwoObjects(object? arg0, object? arg1)
-        {
-            Arg0 = arg0;
-            _arg1 = arg1;
-        }
-    }
-
-    internal struct ThreeObjects
-    {
-        internal object? Arg0;
-        private object? _arg1;
-        private object? _arg2;
-
-        public ThreeObjects(object? arg0, object? arg1, object? arg2)
-        {
-            Arg0 = arg0;
-            _arg1 = arg1;
-            _arg2 = arg2;
-        }
-    }
-#endif
 }

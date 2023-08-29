@@ -67,6 +67,18 @@ GC_CONFIGURATION_KEYS
 #undef STRING_CONFIG
 }
 
+void GCConfig::RefreshHeapHardLimitSettings()
+{
+    GCToEEInterface::GetIntConfigValue("GCHeapHardLimit", "System.GC.HeapHardLimit", &s_GCHeapHardLimit); s_UpdatedGCHeapHardLimit = s_GCHeapHardLimit;
+    GCToEEInterface::GetIntConfigValue("GCHeapHardLimitPercent", "System.GC.HeapHardLimitPercent", &s_GCHeapHardLimitPercent); s_UpdatedGCHeapHardLimitPercent = s_GCHeapHardLimitPercent;
+    GCToEEInterface::GetIntConfigValue("GCHeapHardLimitSOH", "System.GC.HeapHardLimitSOH", &s_GCHeapHardLimitSOH); s_UpdatedGCHeapHardLimitSOH = s_GCHeapHardLimitSOH;
+    GCToEEInterface::GetIntConfigValue("GCHeapHardLimitLOH", "System.GC.HeapHardLimitLOH", &s_GCHeapHardLimitLOH); s_UpdatedGCHeapHardLimitLOH = s_GCHeapHardLimitLOH;
+    GCToEEInterface::GetIntConfigValue("GCHeapHardLimitPOH", "System.GC.HeapHardLimitPOH", &s_GCHeapHardLimitPOH); s_UpdatedGCHeapHardLimitPOH = s_GCHeapHardLimitPOH;
+    GCToEEInterface::GetIntConfigValue("GCHeapHardLimitSOHPercent", "System.GC.HeapHardLimitSOHPercent", &s_GCHeapHardLimitSOHPercent); s_UpdatedGCHeapHardLimitSOHPercent = s_GCHeapHardLimitSOHPercent;
+    GCToEEInterface::GetIntConfigValue("GCHeapHardLimitLOHPercent", "System.GC.HeapHardLimitLOHPercent", &s_GCHeapHardLimitLOHPercent); s_UpdatedGCHeapHardLimitLOHPercent = s_GCHeapHardLimitLOHPercent;
+    GCToEEInterface::GetIntConfigValue("GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", &s_GCHeapHardLimitPOHPercent); s_UpdatedGCHeapHardLimitPOHPercent = s_GCHeapHardLimitPOHPercent;
+}
+
 void GCConfig::Initialize()
 {
 #define BOOL_CONFIG(name, private_key, public_key, unused_default, unused_doc)                       \

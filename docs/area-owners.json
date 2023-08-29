@@ -1,6 +1,20 @@
 {
   "architectures": [
     {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "arch-mips64"
+    },
+    {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "arch-s390x"
+    },
+    {
       "lead": "lewing",
       "owners": [
         "BrzVlad",
@@ -41,14 +55,15 @@
     {
       "lead": "steveisok",
       "owners": [
-        ""
+        "kotlarmilos"
       ],
       "label": "os-maccatalyst"
     },
     {
       "lead": "steveisok",
       "owners": [
-        "vargaz"
+        "vargaz",
+        "kotlarmilos"
       ],
       "label": "os-ios"
     },
@@ -66,7 +81,8 @@
     {
       "lead": "steveisok",
       "owners": [
-        "vargaz"
+        "vargaz",
+        "kotlarmilos"
       ],
       "label": "os-tvos"
     },
@@ -115,7 +131,8 @@
     {
       "lead": "SamMonoRT",
       "owners": [
-        "vargaz"
+        "vargaz",
+        "kotlarmilos"
       ],
       "label": "area-Codegen-AOT-mono"
     },
@@ -248,7 +265,7 @@
       "label": "area-Diagnostics-mono"
     },
     {
-      "lead": "marek-safar",
+      "lead": "SamMonoRT",
       "owners": [
         "lambdageek"
       ],

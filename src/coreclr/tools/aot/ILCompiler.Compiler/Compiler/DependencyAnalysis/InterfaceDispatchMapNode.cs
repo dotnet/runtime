@@ -50,7 +50,6 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             var result = new DependencyList();
-            result.Add(factory.InterfaceDispatchMapIndirection(_type), "Interface dispatch map indirection node");
 
             // VTable slots of implemented interfaces are consulted during emission
             foreach (TypeDesc runtimeInterface in _type.RuntimeInterfaces)

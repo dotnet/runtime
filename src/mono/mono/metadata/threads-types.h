@@ -19,7 +19,7 @@
 #include <mono/metadata/object.h>
 #include "mono/metadata/handle.h"
 #include "mono/utils/mono-compiler.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-threads.h"
 #include "mono/metadata/class-internals.h"
 #include <mono/metadata/icalls.h>
@@ -78,6 +78,10 @@ typedef enum {
 	MONO_THREAD_CREATE_FLAGS_DEBUGGER		= 0x02,
 	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE	= 0x04,
 	MONO_THREAD_CREATE_FLAGS_SMALL_STACK	= 0x08,
+	// "external eventloop" means the thread main function can return without killing the thread
+	// and the thread will continue to be attached to the runtime and may invoke embedding APIs
+	// and managed calls.  There is usually some platform-specific way to shut down the thread.
+	MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP = 0x10,
 } MonoThreadCreateFlags;
 
 MONO_COMPONENT_API MonoInternalThread*
@@ -142,12 +146,6 @@ ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*res);
 
 ICALL_EXPORT
-gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location, gfloat value);
-
-ICALL_EXPORT
-gdouble ves_icall_System_Threading_Interlocked_Exchange_Double(gdouble *location, gdouble value);
-
-ICALL_EXPORT
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand);
 
 ICALL_EXPORT
@@ -158,12 +156,6 @@ gint64 ves_icall_System_Threading_Interlocked_CompareExchange_Long(gint64 *locat
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*comparand, MonoObject *volatile*res);
-
-ICALL_EXPORT
-gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location, gfloat value, gfloat comparand);
-
-ICALL_EXPORT
-gdouble ves_icall_System_Threading_Interlocked_CompareExchange_Double(gdouble *location, gdouble value, gdouble comparand);
 
 ICALL_EXPORT
 gint32 ves_icall_System_Threading_Interlocked_Add_Int(gint32 *location, gint32 value);

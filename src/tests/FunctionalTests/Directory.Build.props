@@ -40,6 +40,7 @@
     <InvariantGlobalization Condition="'$(TargetOS)' == 'maccatalyst' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
   </PropertyGroup>
 
   <Import Project="..\..\libraries\Directory.Build.props" />

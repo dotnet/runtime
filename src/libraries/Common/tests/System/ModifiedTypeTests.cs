@@ -17,8 +17,6 @@ namespace System.Tests.Types
         private const BindingFlags Bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TypeMembers()
         {
             FieldInfo fi = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._volatileInt), Bindings);
@@ -125,7 +123,10 @@ namespace System.Tests.Types
                 Assert.Null(t.DeclaringType);
                 Assert.Null(t.ReflectedType);
                 Assert.Null(t.TypeInitializer);
-                Assert.True(t.MetadataToken != 0);
+
+                if (PlatformDetection.IsMetadataTokenSupported)
+                    Assert.True(t.MetadataToken != 0);
+
                 Assert.False(t.IsNested);
                 Assert.True(t.IsVisible);
             }
@@ -151,8 +152,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Fields_Modified()
         {
             Type volatileInt = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._volatileInt), Bindings).GetModifiedFieldType();
@@ -190,8 +189,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Fields_Generic_Unmodified()
         {
             Type arrayGenericFcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._arrayGenericFcnPtr), Bindings).FieldType;
@@ -212,8 +209,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Fields_Generic_Modified()
         {
             Type arrayGenericFcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._arrayGenericFcnPtr), Bindings).GetModifiedFieldType();
@@ -236,8 +231,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Methods_OpenGeneric_Unmodified()
         {
             MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_ArrayOpenGenericFcnPtr), Bindings);
@@ -260,8 +253,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Methods_OpenGeneric_Modified()
         {
             MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_ArrayOpenGenericFcnPtr), Bindings);
@@ -286,8 +277,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Fields_Unmodified()
         {
             Type volatileInt = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._volatileInt), Bindings).FieldType;
@@ -319,8 +308,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Fields_Parameterized_Basic()
         {
             Type ptr_ptr_int = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._ptr_ptr_int), Bindings).GetModifiedFieldType();
@@ -341,8 +328,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Fields_Parameterized_FcnPtr()
         {
             Type ptr_fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._ptr_fcnPtr), Bindings).GetModifiedFieldType();
@@ -373,8 +358,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Fields_VerifyIdempotency()
         {
             // Call these again to ensure any backing caching strategy works.
@@ -385,8 +368,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void MethodParameters()
         {
             ParameterInfo[] parameters = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_P0IntOut), Bindings).GetParameters();
@@ -410,8 +391,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void ConstructorParameters_Unmodified()
         {
             ParameterInfo[] parameters = typeof(ModifiedTypeHolder).Project().GetConstructors()[0].GetParameters();
@@ -424,8 +403,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void ConstructorParameters_Modified()
         {
             ParameterInfo[] parameters = typeof(ModifiedTypeHolder).Project().GetConstructors()[0].GetParameters();
@@ -439,8 +416,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtrP0Out_Unmodified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtrP0Out), Bindings).GetModifiedFieldType();
@@ -451,8 +426,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtrP0Out_Modified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtrP0Out), Bindings).FieldType;
@@ -463,8 +436,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtr_fcnPtrP0Out_Unmodified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Out), Bindings).FieldType;
@@ -477,8 +448,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtr_fcnPtrP0Out_Modified()
         {
             // Modified
@@ -493,8 +462,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtr_fcnPtrP0Ref_Unmodified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Ref), Bindings).FieldType;
@@ -508,8 +475,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtr_fcnPtrP0Ref_Modified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Ref), Bindings).GetModifiedFieldType();
@@ -523,8 +488,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtr_fcnPtrRetP0Ref_Unmodified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrRetP0Out), Bindings).FieldType;
@@ -535,8 +498,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtr_fcnPtrRetP0Ref_Modified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrRetP0Out), Bindings).GetModifiedFieldType();
@@ -548,8 +509,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtr_complex_Unmodified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_complex), Bindings).FieldType;
@@ -573,8 +532,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerParameters_fcnPtr_complex_Modified()
         {
             Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_complex), Bindings).GetModifiedFieldType();
@@ -599,8 +556,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Property_FcnPtr_Complex_Unmodified()
         {
             Type mt = typeof(ModifiedTypeHolder).Project().GetProperty(nameof(ModifiedTypeHolder.Property_FcnPtr_Complex), Bindings).PropertyType;
@@ -617,8 +572,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Property_FcnPtr_Complex_Modified()
         {
             Type mt = typeof(ModifiedTypeHolder).Project().GetProperty(nameof(ModifiedTypeHolder.Property_FcnPtr_Complex), Bindings).GetModifiedPropertyType();
@@ -636,16 +589,17 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void MethodWithGenericParameter_Unmodified()
+        public static unsafe void MethodWithGenericParameterWithModifiers_Unmodified()
         {
             MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.MethodWithGenericParameter), Bindings);
             Assert.False(mi.ContainsGenericParameters);
 
             Type a1 = mi.GetParameters()[0].ParameterType;
             Assert.False(IsModifiedType(a1));
-            Assert.Equal(typeof(Tuple<int, bool>).Project(), a1.Project());
+
+            // https://github.com/dotnet/runtime/issues/90308"
+            if (!PlatformDetection.IsMonoRuntime)
+                Assert.Equal(typeof(Tuple<int, bool>).Project(), a1.Project());
 
             Type ga1 = a1.GetGenericArguments()[0];
             Assert.False(IsModifiedType(ga1));
@@ -658,16 +612,17 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void MethodWithGenericParameter_Modified()
+        public static unsafe void MethodWithGenericParameterWithModifiers_Modified()
         {
             MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.MethodWithGenericParameter), Bindings);
             Assert.False(mi.ContainsGenericParameters);
 
             Type a1 = mi.GetParameters()[0].GetModifiedParameterType();
             Assert.True(IsModifiedType(a1));
-            Assert.Equal(typeof(Tuple<int, bool>).Project(), a1.UnderlyingSystemType.Project());
+
+            // https://github.com/dotnet/runtime/issues/90308"
+            if (!PlatformDetection.IsMonoRuntime)
+                Assert.Equal(typeof(Tuple<int, bool>).Project(), a1.UnderlyingSystemType.Project());
 
             Type ga1 = a1.GetGenericArguments()[0];
             Assert.True(IsModifiedType(ga1));
@@ -682,8 +637,98 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void GenericFieldWithModifiers_Unmodified()
+        {
+            FieldInfo fi = typeof(GenericWithModifiers).Project().GetField(nameof(GenericWithModifiers.GenericField), Bindings);
+
+            Type ft = fi.FieldType;
+            Assert.False(IsModifiedType(ft));
+
+            // https://github.com/dotnet/runtime/issues/90308"
+            if (!PlatformDetection.IsMonoRuntime)
+                Assert.Equal(typeof(Tuple<int, bool>).Project(), ft.Project());
+
+            Type ga1 = ft.GetGenericArguments()[0];
+            Assert.False(IsModifiedType(ga1));
+            Assert.Equal(typeof(int).Project(), ga1);
+
+            Type ga2 = ft.GetGenericArguments()[1];
+            Assert.False(IsModifiedType(ga2));
+            Assert.Equal(typeof(bool).Project(), ga2);
+            Assert.Equal(0, ga2.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        public static unsafe void GenericFieldWithModifiers_Modified()
+        {
+            FieldInfo fi = typeof(GenericWithModifiers).Project().GetField(nameof(GenericWithModifiers.GenericField), Bindings);
+
+            Type ft = fi.GetModifiedFieldType();
+            Assert.True(IsModifiedType(ft));
+
+            // https://github.com/dotnet/runtime/issues/90308"
+            if (!PlatformDetection.IsMonoRuntime)
+                Assert.Equal(typeof(Tuple<int, bool>).Project(), ft.UnderlyingSystemType.Project());
+
+            Type ga1 = ft.GetGenericArguments()[0];
+            Assert.True(IsModifiedType(ga1));
+            Assert.Equal(typeof(int).Project(), ga1.UnderlyingSystemType);
+            Assert.Equal(0, ga1.GetOptionalCustomModifiers().Length);
+
+            Type ga2 = ft.GetGenericArguments()[1];
+            Assert.True(IsModifiedType(ga2));
+            Assert.Equal(typeof(bool).Project(), ga2.UnderlyingSystemType);
+            Assert.Equal(1, ga2.GetOptionalCustomModifiers().Length);
+            Assert.Equal(typeof(IsConst).Project(), ga2.GetOptionalCustomModifiers()[0]);
+        }
+
+        [Fact]
+        public static unsafe void GenericPropertyWithModifiers_Unmodified()
+        {
+            PropertyInfo pi = typeof(GenericWithModifiers).Project().GetProperty(nameof(GenericWithModifiers.GenericProperty), Bindings);
+
+            Type pt = pi.PropertyType;
+            Assert.False(IsModifiedType(pt));
+
+            // https://github.com/dotnet/runtime/issues/90308"
+            if (!PlatformDetection.IsMonoRuntime)
+                Assert.Equal(typeof(Tuple<int, bool>).Project(), pt.Project());
+
+            Type ga1 = pt.GetGenericArguments()[0];
+            Assert.False(IsModifiedType(ga1));
+            Assert.Equal(typeof(int).Project(), ga1);
+
+            Type ga2 = pt.GetGenericArguments()[1];
+            Assert.False(IsModifiedType(ga2));
+            Assert.Equal(typeof(bool).Project(), ga2);
+            Assert.Equal(0, ga2.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        public static unsafe void GenericPropertyWithModifiers_Modified()
+        {
+            PropertyInfo pi = typeof(GenericWithModifiers).Project().GetProperty(nameof(GenericWithModifiers.GenericProperty), Bindings);
+
+            Type pt = pi.GetModifiedPropertyType();
+            Assert.True(IsModifiedType(pt));
+
+            // https://github.com/dotnet/runtime/issues/90308"
+            if (!PlatformDetection.IsMonoRuntime)
+                Assert.Equal(typeof(Tuple<int, bool>).Project(), pt.UnderlyingSystemType.Project());
+
+            Type ga1 = pt.GetGenericArguments()[0];
+            Assert.True(IsModifiedType(ga1));
+            Assert.Equal(typeof(int).Project(), ga1.UnderlyingSystemType);
+            Assert.Equal(0, ga1.GetOptionalCustomModifiers().Length);
+
+            Type ga2 = pt.GetGenericArguments()[1];
+            Assert.True(IsModifiedType(ga2));
+            Assert.Equal(typeof(bool).Project(), ga2.UnderlyingSystemType);
+            Assert.Equal(1, ga2.GetOptionalCustomModifiers().Length);
+            Assert.Equal(typeof(IsConst).Project(), ga2.GetOptionalCustomModifiers()[0]);
+        }
+
+        [Fact]
         public static unsafe void GenericMethod_Unmodified()
         {
             MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.GenericMethod), Bindings);
@@ -696,8 +741,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void GenericMethod_Modified()
         {
             MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.GenericMethod), Bindings);
@@ -710,8 +753,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void ParameterConstraints1()
         {
             MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_GenericWithParameterConstraint1), Bindings);
@@ -736,8 +777,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void ParameterConstraints2()
         {
             MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_GenericWithParameterConstraint2), Bindings);

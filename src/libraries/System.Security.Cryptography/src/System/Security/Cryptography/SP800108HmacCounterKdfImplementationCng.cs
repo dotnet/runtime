@@ -65,6 +65,12 @@ namespace System.Security.Cryptography
                     return SHA384.HashData(data, destination);
                 case HashAlgorithmNames.SHA512:
                     return SHA512.HashData(data, destination);
+                case HashAlgorithmNames.SHA3_256:
+                    return SHA3_256.IsSupported ? SHA3_256.HashData(data, destination) : throw new PlatformNotSupportedException();
+                case HashAlgorithmNames.SHA3_384:
+                    return SHA3_384.IsSupported ? SHA3_384.HashData(data, destination) : throw new PlatformNotSupportedException();
+                case HashAlgorithmNames.SHA3_512:
+                    return SHA3_512.IsSupported ? SHA3_512.HashData(data, destination) : throw new PlatformNotSupportedException();
                 default:
                     Debug.Fail($"Unexpected hash algorithm '{hashAlgorithm.Name}'");
                     throw new CryptographicException();

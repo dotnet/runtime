@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
-using System.Transactions.Oletx;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
+// Keep this type as a ComImport type as it is used with IConnectionPointContainer (and as a result needs to use built-in COM).
 // https://docs.microsoft.com/previous-versions/windows/desktop/ms686465(v=vs.85)
 [ComImport, Guid("3A6AD9E2-23B9-11cf-AD60-00AA00A74CCD"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface ITransactionOutcomeEvents
@@ -22,7 +22,7 @@ internal interface ITransactionOutcomeEvents
         int hresult);
 
     void HeuristicDecision(
-        [MarshalAs(UnmanagedType.U4)] OletxTransactionHeuristic dwDecision,
+        OletxTransactionHeuristic dwDecision,
         IntPtr pboidReason,
         int hresult);
 

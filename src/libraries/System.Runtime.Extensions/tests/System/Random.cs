@@ -69,13 +69,13 @@ namespace System.Tests
                 Assert.InRange(r.NextInt64(20, 30), 20, 29);
             }
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 5_000_000; i++)
             {
                 float x = r.NextSingle();
                 Assert.True(x >= 0.0 && x < 1.0);
             }
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 5_000_000; i++)
             {
                 double x = r.NextDouble();
                 Assert.True(x >= 0.0 && x < 1.0);
@@ -830,7 +830,7 @@ namespace System.Tests
             AssertExtensions.SequenceEqual(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, buffer);
         }
 
-        private static Random Create(bool derived, bool seeded, int seed = 42) =>
+        private static Random Create(bool derived, bool seeded) =>
             (derived, seeded) switch
             {
                 (false, false) => new Random(),

@@ -26,7 +26,7 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
     MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
 
-    Module * pModule = pMethod->GetModule_NoLogging();
+    Module * pModule = pMethod->GetModule();
 
     _ASSERTE(pModule->IsSystem());
 }
@@ -357,7 +357,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 {
                     TypeHandle th = m_methodSig.GetLastTypeHandleThrowing(ClassLoader::DontLoadTypes);
                     CONSISTENCY_CHECK(th.CheckFullyLoaded());
-                    CONSISTENCY_CHECK(th.IsRestored_NoLogging());
+                    CONSISTENCY_CHECK(th.IsRestored());
                 }
             }
             m_methodSig.Reset();
@@ -459,19 +459,19 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 argDest.CopyStructToRegisters(pSrc, th.AsMethodTable()->GetNumInstanceFieldBytes(), 0);
             }
             else
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (argDest.IsStructPassedInRegs())
             {
                 argDest.CopyStructToRegisters(pSrc, stackSize, 0);
             }
             else
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
             {
                 PVOID pDest = argDest.GetDestinationAddress();
 
                 switch (stackSize)
                 {
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     case 1:
                         if (m_argIt.GetArgType() == ELEMENT_TYPE_U1 || m_argIt.GetArgType() == ELEMENT_TYPE_BOOLEAN)
                             *((INT64*)pDest) = (UINT8)pArguments[arg];

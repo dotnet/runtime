@@ -7,8 +7,8 @@
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Text\RegularExpressions\ValueMatch.cs" />
+    <Compile Include="System\Text\StructListBuilder.cs" />
     <Compile Include="System\Threading\StackHelper.cs" />
-    <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Capture.cs" />
     <Compile Include="System\Text\RegularExpressions\CaptureCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\CollectionDebuggerProxy.cs" />

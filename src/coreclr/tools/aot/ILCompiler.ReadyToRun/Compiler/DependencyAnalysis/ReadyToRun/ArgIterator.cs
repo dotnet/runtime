@@ -1732,16 +1732,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             int floatRegOfsInBytes = argOffset - _transitionBlock.OffsetOfFloatArgumentRegisters;
                             Debug.Assert((floatRegOfsInBytes % _transitionBlock.FloatRegisterSize) == 0);
                             pLoc.m_idxFloatReg = floatRegOfsInBytes / _transitionBlock.FloatRegisterSize;
+                            pLoc.m_cFloatReg = 1;
 
-                            if (!_argTypeHandle.IsNull() && _argTypeHandle.IsHomogeneousAggregate())
-                            {
-                                int haElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
-                                pLoc.m_cFloatReg = GetArgSize() / haElementSize;
-                            }
-                            else
-                            {
-                                pLoc.m_cFloatReg = 1;
-                            }
                             return pLoc;
                         }
 

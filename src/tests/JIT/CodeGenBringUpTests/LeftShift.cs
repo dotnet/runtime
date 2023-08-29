@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_LeftShift
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_LeftShift
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int LeftShift(int x, int y) { return x << y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int y = LeftShift(12, 3);
         if (y == 96) return Pass;

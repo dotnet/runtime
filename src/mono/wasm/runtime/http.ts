@@ -2,17 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { Module } from "./imports";
+import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
-import { fetch_like } from "./polyfills";
-import { mono_assert } from "./types";
-import { VoidPtr } from "./types/emscripten";
+import type { VoidPtr } from "./types/emscripten";
+
+
+function verifyEnvironment() {
+    if (typeof globalThis.fetch !== "function" || typeof globalThis.AbortController !== "function") {
+        const message = ENVIRONMENT_IS_NODE
+            ? "Please install `node-fetch` and `node-abort-controller` npm packages to enable HTTP client support. See also https://aka.ms/dotnet-wasm-features"
+            : "This browser doesn't support fetch API. Please use a modern browser. See also https://aka.ms/dotnet-wasm-features";
+        throw new Error(message);
+    }
+}
 
 export function http_wasm_supports_streaming_response(): boolean {
     return typeof Response !== "undefined" && "body" in Response.prototype && typeof ReadableStream === "function";
 }
 
 export function http_wasm_create_abort_controler(): AbortController {
+    verifyEnvironment();
     return new AbortController();
 }
 
@@ -25,7 +34,7 @@ export function http_wasm_abort_response(res: ResponseExtension): void {
     if (res.__reader) {
         res.__reader.cancel().catch((err) => {
             if (err && err.name !== "AbortError") {
-                Module.err("MONO_WASM: Error in http_wasm_abort_response: " + err);
+                Module.err("Error in http_wasm_abort_response: " + err);
             }
             // otherwise, it's expected
         });
@@ -40,6 +49,7 @@ export function http_wasm_fetch_bytes(url: string, header_names: string[], heade
 }
 
 export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: string | Uint8Array | null): Promise<ResponseExtension> {
+    verifyEnvironment();
     mono_assert(url && typeof url === "string", "expected url string");
     mono_assert(header_names && header_values && Array.isArray(header_names) && Array.isArray(header_values) && header_names.length === header_values.length, "expected headerNames and headerValues arrays");
     mono_assert(option_names && option_values && Array.isArray(option_names) && Array.isArray(option_values) && option_names.length === option_values.length, "expected headerNames and headerValues arrays");
@@ -57,7 +67,7 @@ export function http_wasm_fetch(url: string, header_names: string[], header_valu
     }
 
     return wrap_as_cancelable_promise(async () => {
-        const res = await fetch_like(url, options) as ResponseExtension;
+        const res = await loaderHelpers.fetch_like(url, options) as ResponseExtension;
         res.__abort_controller = abort_controller;
         return res;
     });
@@ -67,11 +77,13 @@ function get_response_headers(res: ResponseExtension): void {
     if (!res.__headerNames) {
         res.__headerNames = [];
         res.__headerValues = [];
-        const entries: Iterable<string[]> = (<any>res.headers).entries();
+        if (res.headers && (<any>res.headers).entries) {
+            const entries: Iterable<string[]> = (<any>res.headers).entries();
 
-        for (const pair of entries) {
-            res.__headerNames.push(pair[0]);
-            res.__headerValues.push(pair[1]);
+            for (const pair of entries) {
+                res.__headerNames.push(pair[0]);
+                res.__headerValues.push(pair[1]);
+            }
         }
     }
 }

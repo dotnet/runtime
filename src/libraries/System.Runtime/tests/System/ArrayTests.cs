@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
@@ -263,38 +264,37 @@ namespace System.Tests
 
             yield return new object[] { new ulong[0], 0, 0, (ulong)0, null, -1 };
 
-            // // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
-            // // IntPtr
+            // IntPtr
 
-            // IntPtr[] intPtrArray = new IntPtr[] { IntPtr.MinValue, (IntPtr)0, (IntPtr)0, IntPtr.MaxValue };
+            IntPtr[] intPtrArray = new IntPtr[] { IntPtr.MinValue, (IntPtr)0, (IntPtr)0, IntPtr.MaxValue };
 
-            // yield return new object[] { intPtrArray, 0, 4, IntPtr.MinValue, null, 0 };
-            // yield return new object[] { intPtrArray, 0, 4, (IntPtr)0, null, 1 };
-            // yield return new object[] { intPtrArray, 0, 4, IntPtr.MaxValue, null, 3 };
-            // yield return new object[] { intPtrArray, 0, 4, (IntPtr)1, null, -4 };
+            yield return new object[] { intPtrArray, 0, 4, IntPtr.MinValue, null, 0 };
+            yield return new object[] { intPtrArray, 0, 4, (IntPtr)0, null, 1 };
+            yield return new object[] { intPtrArray, 0, 4, IntPtr.MaxValue, null, 3 };
+            yield return new object[] { intPtrArray, 0, 4, (IntPtr)1, null, -4 };
 
-            // yield return new object[] { intPtrArray, 0, 1, IntPtr.MinValue, null, 0 };
-            // yield return new object[] { intPtrArray, 1, 3, IntPtr.MaxValue, null, 3 };
-            // yield return new object[] { intPtrArray, 1, 3, IntPtr.MinValue, null, -2 };
-            // yield return new object[] { intPtrArray, 1, 0, (IntPtr)0, null, -2 };
+            yield return new object[] { intPtrArray, 0, 1, IntPtr.MinValue, null, 0 };
+            yield return new object[] { intPtrArray, 1, 3, IntPtr.MaxValue, null, 3 };
+            yield return new object[] { intPtrArray, 1, 3, IntPtr.MinValue, null, -2 };
+            yield return new object[] { intPtrArray, 1, 0, (IntPtr)0, null, -2 };
 
-            // yield return new object[] { new IntPtr[0], 0, 0, (IntPtr)0, null, -1 };
+            yield return new object[] { new IntPtr[0], 0, 0, (IntPtr)0, null, -1 };
 
-            // // UIntPtr
+            // UIntPtr
 
-            // UIntPtr[] uintPtrArray = new UIntPtr[] { UIntPtr.MinValue, (UIntPtr)5, (UIntPtr)5, UIntPtr.MaxValue };
+            UIntPtr[] uintPtrArray = new UIntPtr[] { UIntPtr.MinValue, (UIntPtr)5, (UIntPtr)5, UIntPtr.MaxValue };
 
-            // yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MinValue, null, 0 };
-            // yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)5, null, 1 };
-            // yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MaxValue, null, 3 };
-            // yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)1, null, -2 };
+            yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MinValue, null, 0 };
+            yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)5, null, 1 };
+            yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MaxValue, null, 3 };
+            yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)1, null, -2 };
 
-            // yield return new object[] { uintPtrArray, 0, 1, UIntPtr.MinValue, null, 0 };
-            // yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MaxValue, null, 3 };
-            // yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MinValue, null, -2 };
-            // yield return new object[] { uintPtrArray, 1, 0, (UIntPtr)5, null, -2 };
+            yield return new object[] { uintPtrArray, 0, 1, UIntPtr.MinValue, null, 0 };
+            yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MaxValue, null, 3 };
+            yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MinValue, null, -2 };
+            yield return new object[] { uintPtrArray, 1, 0, (UIntPtr)5, null, -2 };
 
-            // yield return new object[] { new UIntPtr[0], 0, 0, (UIntPtr)0, null, -1 };
+            yield return new object[] { new UIntPtr[0], 0, 0, (UIntPtr)0, null, -1 };
 
             // Char
             char[] charArray = new char[] { char.MinValue, (char)5, (char)5, char.MaxValue };
@@ -2361,25 +2361,23 @@ namespace System.Tests
             yield return new object[] { new double[] { 1, 2, 3, 3 }, (double)1, 0, 0, -1 };
             yield return new object[] { new double[0], (double)1, 0, 0, -1 };
 
-            // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
             // IntPtr
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 0, 4, 0 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)3, 0, 4, 2 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)2, 1, 2, 1 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 1, 2, -1 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 4, 0, -1 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 0, 0, -1 };
-            //yield return new object[] { new IntPtr[0], (IntPtr)1, 0, 0, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 0, 4, 0 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)3, 0, 4, 2 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)2, 1, 2, 1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 1, 2, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 4, 0, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3 }, (IntPtr)1, 0, 0, -1 };
+            yield return new object[] { new IntPtr[0], (IntPtr)1, 0, 0, -1 };
 
-            // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
             // UIntPtr
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 0, 4, 0 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)3, 0, 4, 2 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)2, 1, 2, 1 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 1, 2, -1 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 4, 0, -1 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 0, 0, -1 };
-            //yield return new object[] { new UIntPtr[0], (UIntPtr)1, 0, 0, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 0, 4, 0 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)3, 0, 4, 2 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)2, 1, 2, 1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 1, 2, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 4, 0, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3 }, (UIntPtr)1, 0, 0, -1 };
+            yield return new object[] { new UIntPtr[0], (UIntPtr)1, 0, 0, -1 };
 
             // String
             var stringArray = new string[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
@@ -2739,25 +2737,23 @@ namespace System.Tests
             yield return new object[] { new double[] { 1, 2, 3, 3, 4 }, (double)3, 0, 0, -1 };
             yield return new object[] { new double[] { 1, 2, 3, 3, 4 }, (double)3, 3, 0, -1 };
 
-            // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
             // IntPtr
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)1, 4, 5, 0 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)3, 4, 5, 3 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)2, 2, 3, 1 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)4, 2, 3, -1 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)5, 4, 5, -1 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)3, 0, 0, -1 };
-            //yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)3, 3, 0, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)1, 4, 5, 0 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)3, 4, 5, 3 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)2, 2, 3, 1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)4, 2, 3, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)5, 4, 5, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)3, 0, 0, -1 };
+            yield return new object[] { new IntPtr[] { (IntPtr)1, (IntPtr)2, (IntPtr)3, (IntPtr)3, (IntPtr)4 }, (IntPtr)3, 3, 0, -1 };
 
-            // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
             // UIntPtr
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)1, 4, 5, 0 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)3, 4, 5, 3 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)2, 2, 3, 1 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)4, 2, 3, -1 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)5, 4, 5, -1 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)3, 0, 0, -1 };
-            //yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)3, 3, 0, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)1, 4, 5, 0 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)3, 4, 5, 3 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)2, 2, 3, 1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)4, 2, 3, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)5, 4, 5, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)3, 0, 0, -1 };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)1, (UIntPtr)2, (UIntPtr)3, (UIntPtr)3, (UIntPtr)4 }, (UIntPtr)3, 3, 0, -1 };
 
             // String
             var stringArray = new string[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
@@ -4304,6 +4300,8 @@ namespace System.Tests
             public string Value { get; set; }
 
             public bool Equals(Bar other) => string.Equals(Value, other.Value);
+            public override bool Equals(object other) => Equals(other as Bar);
+            public override int GetHashCode() => Value.GetHashCode();
         }
 
         public class Foo

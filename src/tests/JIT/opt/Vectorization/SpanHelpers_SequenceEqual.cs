@@ -5,10 +5,12 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class UnrollSequenceEqualTests
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         var testMethods = typeof(UnrollSequenceEqualTests)
             .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
@@ -21,8 +23,6 @@ public class UnrollSequenceEqualTests
         foreach (MethodInfo testMethod in testMethods)
             if ((bool)testMethod.Invoke(null, new object[] { "123456789ABCDEF01"u8.ToArray() }))
                 throw new InvalidOperationException($"{testMethod.Name} returned true.");
-
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)] static bool Test1(byte[] data) => data.AsSpan().StartsWith("0"u8);

@@ -3,13 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class X
+public class X
 {
     static int s;
     static int N;
 
-    public static void F(int[] a)
+    internal static void F(int[] a)
     {
         for (int j = 0; j < N; j++)
         {
@@ -27,7 +28,7 @@ class X
     // the return to happen before the
     // tail calls.
     //
-    public static void T(bool p, int[] a)
+    internal static void T(bool p, int[] a)
     {
         if (p)
         {
@@ -44,7 +45,8 @@ class X
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] a = new int[1000];
         N = 100;

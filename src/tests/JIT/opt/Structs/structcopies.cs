@@ -10,11 +10,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Numerics;
+using Xunit;
 
 
 namespace TestStructFields
 {
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void blockPromotion<T>(ref T s)
@@ -1713,7 +1714,8 @@ namespace TestStructFields
             return 100;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test();
         }

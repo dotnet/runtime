@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: This is the value class representing a Unicode character
-** Char methods until we create this functionality.
-**
-**
-===========================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +13,9 @@ using System.Text;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a character as a UTF-16 code unit.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -163,12 +156,12 @@ namespace System
         // Overrides System.Object.ToString.
         public override string ToString()
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         //
@@ -1197,7 +1190,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(char)) && (source[..^sizeof(char)].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > sizeof(char)) && (source[..^sizeof(char)].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -1247,7 +1240,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(char)) && (source[sizeof(char)..].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > sizeof(char)) && (source[sizeof(char)..].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -1999,6 +1992,8 @@ namespace System
         static char IUtfChar<char>.CastFrom(int value) => (char)value;
         static char IUtfChar<char>.CastFrom(uint value) => (char)value;
         static char IUtfChar<char>.CastFrom(ulong value) => (char)value;
+
+        static uint IUtfChar<char>.CastToUInt32(char value) => value;
 
         //
         // IBinaryIntegerParseAndFormatInfo

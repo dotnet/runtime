@@ -122,10 +122,6 @@
   // This is a float scratch register that does not conflict with the argument registers
   #define REG_SCRATCH_FLT          REG_F11
 
-  // This is a general register that can be optionally reserved for other purposes during codegen
-  #define REG_OPT_RSVD             REG_T1
-  #define RBM_OPT_RSVD             RBM_T1
-
   // Where is the exception object on entry to the handler block?
   #define REG_EXCEPTION_OBJECT     REG_A0
   #define RBM_EXCEPTION_OBJECT     RBM_A0

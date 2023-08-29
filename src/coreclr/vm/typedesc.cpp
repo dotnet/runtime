@@ -87,6 +87,48 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
 }
 
+BOOL TypeDesc::IsSharedByGenericInstantiations()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (HasTypeParam())
+    {
+        return GetRootTypeParam().IsCanonicalSubtype();
+    }
+
+    if (IsFnPtr())
+    {
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->IsSharedByGenericInstantiations();
+    }
+
+    return FALSE;
+}
+
+BOOL TypeDesc::ContainsGenericVariables(BOOL methodOnly)
+{
+    if (IsGenericVariable())
+    {
+        if (!methodOnly)
+            return TRUE;
+
+        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(this);
+        return TypeFromToken(pTyVar->GetTypeOrMethodDef()) == mdtMethodDef;
+    }
+
+    if (HasTypeParam())
+    {
+        return GetRootTypeParam().ContainsGenericVariables(methodOnly);
+    }
+
+    if (IsFnPtr())
+    {
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->ContainsGenericVariables(methodOnly);
+    }
+
+    return FALSE;
+}
+
+
 PTR_BaseDomain TypeDesc::GetDomain()
 {
     CONTRACTL
@@ -539,17 +581,6 @@ BOOL TypeDesc::IsRestored()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SUPPORTS_DAC;
 
-    return IsRestored_NoLogging();
-}
-
-BOOL TypeDesc::IsRestored_NoLogging()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SUPPORTS_DAC;
-
     return (m_typeAndFlags & TypeDesc::enum_flag_Unrestored) == 0;
 }
 
@@ -824,6 +855,14 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         else
         {
             _ASSERTE(TypeFromToken(defToken) == mdtTypeDef);
+
+            bool foundResult = false;
+            if (!GetModule()->m_pTypeGenericInfoMap->HasConstraints(defToken, &foundResult) && foundResult)
+            {
+                m_numConstraints = 0;
+                return;
+            }
+
             TypeHandle genericType = LoadOwnerType();
             _ASSERTE(genericType.IsGenericTypeDefinition());
 
@@ -1586,7 +1625,9 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                                 if (pMD->IsVirtual() &&
                                     pMD->IsStatic() &&
                                     (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(
-                                        pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE)))
+                                        pInterfaceMT, pMD,
+                                        ResolveVirtualStaticMethodFlags::AllowNullResult | ResolveVirtualStaticMethodFlags::VerifyImplemented | ResolveVirtualStaticMethodFlags::AllowVariantMatches,
+                                        /*uniqueResolution*/ NULL, CLASS_DEPENDENCIES_LOADED)))
                                 {
                                     virtualStaticResolutionCheckFailed = true;
                                     break;
@@ -1634,17 +1675,40 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 TypeHandle *
 FnPtrTypeDesc::GetRetAndArgTypes()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
+    LIMITED_METHOD_CONTRACT;
 
     return m_RetAndArgTypes;
 } // FnPtrTypeDesc::GetRetAndArgTypes
+
+BOOL
+FnPtrTypeDesc::IsSharedByGenericInstantiations()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    for (DWORD i = 0; i <= m_NumArgs; i++)
+    {
+        if (m_RetAndArgTypes[i].IsCanonicalSubtype())
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+} // FnPtrTypeDesc::IsSharedByGenericInstantiations
+
+BOOL
+FnPtrTypeDesc::ContainsGenericVariables(BOOL methodOnly)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    for (DWORD i = 0; i <= m_NumArgs; i++)
+    {
+        if (m_RetAndArgTypes[i].ContainsGenericVariables(methodOnly))
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+} // FnPtrTypeDesc::ContainsGenericVariables
 
 #ifndef DACCESS_COMPILE
 
@@ -1660,10 +1724,9 @@ FnPtrTypeDesc::IsExternallyVisible() const
     }
     CONTRACTL_END;
 
-    const TypeHandle * rgRetAndArgTypes = GetRetAndArgTypes();
     for (DWORD i = 0; i <= m_NumArgs; i++)
     {
-        if (!rgRetAndArgTypes[i].IsExternallyVisible())
+        if (!m_RetAndArgTypes[i].IsExternallyVisible())
         {
             return FALSE;
         }

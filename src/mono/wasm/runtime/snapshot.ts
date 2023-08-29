@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
+import { mono_log_warn } from "./logging";
 
 const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 
@@ -39,27 +39,40 @@ async function openCache(): Promise<Cache | null> {
     } catch {
         // There's no known scenario where we should get an exception here, but considering the
         // Chromium bug above, let's tolerate it and treat as "proceed without caching".
-        console.warn("MONO_WASM: Failed to open cache");
+        mono_log_warn("Failed to open cache");
         return null;
     }
 }
 
-export async function getMemorySnapshotSize(): Promise<number | undefined> {
+export async function checkMemorySnapshotSize(): Promise<void> {
     try {
+        if (!runtimeHelpers.config.startupMemoryCache) {
+            // we could start downloading DLLs because snapshot is disabled
+            return;
+        }
+
         const cacheKey = await getCacheKey();
         if (!cacheKey) {
-            return undefined;
+            return;
         }
         const cache = await openCache();
         if (!cache) {
-            return undefined;
+            return;
         }
         const res = await cache.match(cacheKey);
         const contentLength = res?.headers.get("content-length");
-        return contentLength ? parseInt(contentLength) : undefined;
+        const memorySize = contentLength ? parseInt(contentLength) : undefined;
+
+        runtimeHelpers.loadedMemorySnapshotSize = memorySize;
+        runtimeHelpers.storeMemorySnapshotPending = !memorySize;
     } catch (ex) {
-        console.warn("MONO_WASM: Failed find memory snapshot in the cache", ex);
-        return undefined;
+        mono_log_warn("Failed find memory snapshot in the cache", ex);
+    }
+    finally {
+        if (!runtimeHelpers.loadedMemorySnapshotSize) {
+            // we could start downloading DLLs because there is no snapshot yet
+            loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
+        }
     }
 }
 
@@ -79,7 +92,7 @@ export async function getMemorySnapshot(): Promise<ArrayBuffer | undefined> {
         }
         return res.arrayBuffer();
     } catch (ex) {
-        console.warn("MONO_WASM: Failed load memory snapshot from the cache", ex);
+        mono_log_warn("Failed load memory snapshot from the cache", ex);
         return undefined;
     }
 }
@@ -96,7 +109,7 @@ export async function storeMemorySnapshot(memory: ArrayBuffer) {
         }
         const copy = MonoWasmThreads
             // storing SHaredArrayBuffer in the cache is not working
-            ? (new Int8Array(memory)).slice(0)
+            ? (new Uint8Array(memory)).slice(0)
             : memory;
 
         const responseToCache = new Response(copy, {
@@ -110,7 +123,7 @@ export async function storeMemorySnapshot(memory: ArrayBuffer) {
 
         cleanupMemorySnapshots(cacheKey); // no await
     } catch (ex) {
-        console.warn("MONO_WASM: Failed to store memory snapshot in the cache", ex);
+        mono_log_warn("Failed to store memory snapshot in the cache", ex);
         return;
     }
 }
@@ -141,42 +154,32 @@ async function getCacheKey(): Promise<string | null> {
         return null;
     }
     const inputs = Object.assign({}, runtimeHelpers.config) as any;
-    // above already has env variables, runtime options, etc
-
-    if (!inputs.assetsHash) {
-        // this is fallback for blazor which does not have assetsHash yet
-        inputs.assetsHash = [];
-        for (const asset of inputs.assets) {
-            if (!asset.hash) {
-                // if we don't have hash, we can't use the cache
-                return null;
-            }
-            inputs.assetsHash.push(asset.hash);
-        }
-    }
-    // otherwise config.assetsHash already has hashes for all the assets (DLLs, ICU, .wasms, etc). 
 
     // Now we remove assets collection from the hash.
+    inputs.resourcesHash = inputs.resources.hash;
     delete inputs.assets;
+    delete inputs.resources;
     // some things are calculated at runtime, so we need to add them to the hash
-    inputs.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
+    inputs.preferredIcuAsset = loaderHelpers.preferredIcuAsset;
     // timezone is part of env variables, so it is already in the hash
 
     // some things are not relevant for memory snapshot
     delete inputs.forwardConsoleLogsToWS;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
+    delete inputs.assertAfterExit;
+    delete inputs.interopCleanupOnExit;
     delete inputs.logExitCode;
     delete inputs.pthreadPoolSize;
     delete inputs.asyncFlushOnExit;
-    delete inputs.assemblyRootFolder;
     delete inputs.remoteSources;
     delete inputs.ignorePdbLoadErrors;
     delete inputs.maxParallelDownloads;
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
+    delete inputs.extensions;
 
-    inputs.GitHash = GitHash;
+    inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;
 
     const inputsJson = JSON.stringify(inputs);

@@ -50,6 +50,13 @@ namespace ILCompiler.DependencyAnalysis
                 TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, paramType, reason);
             }
 
+            if (sig.HasEmbeddedSignatureData)
+            {
+                foreach (var sigData in sig.GetEmbeddedSignatureData())
+                    if (sigData.type != null)
+                        TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sigData.type, "Modifier in a method signature");
+            }
+
             if (_method is EcmaMethod ecmaMethod)
             {
                 DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);

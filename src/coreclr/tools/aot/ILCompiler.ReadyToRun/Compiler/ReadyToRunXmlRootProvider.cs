@@ -80,11 +80,13 @@ namespace ILCompiler
             private const string NamespaceElementName = "namespace";
             private const string _preserve = "preserve";
             private readonly IRootingServiceProvider _rootingServiceProvider;
+            private InstructionSetSupport _instructionSetSupport;
 
             public CompilationRootProvider(IRootingServiceProvider provider, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc owningModule, string xmlDocumentLocation)
                 : base(null , context, documentStream, resource, owningModule, xmlDocumentLocation, ImmutableDictionary<string, bool>.Empty)
             {
                 _rootingServiceProvider = provider;
+                _instructionSetSupport = ((ReadyToRunCompilerContext)owningModule.Context).InstructionSetSupport;
             }
 
             public void ProcessXml() => ProcessXml(false);
@@ -141,7 +143,7 @@ namespace ILCompiler
 
                 try
                 {
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    if (!CorInfoImpl.ShouldSkipCompilation(_instructionSetSupport, method))
                     {
                         ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(methodToRoot);
                         _rootingServiceProvider.AddCompilationRoot(methodToRoot, rootMinimalDependencies: false, reason: "Linker XML descriptor");

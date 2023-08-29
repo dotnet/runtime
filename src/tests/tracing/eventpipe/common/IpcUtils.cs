@@ -73,7 +73,7 @@ namespace Tracing.Tests.Common
                 foreach ((string key, string value) in environment)
                     process.StartInfo.Environment.Add(key, value);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-                process.StartInfo.Arguments = new Uri(currentAssembly.Location).LocalPath + " 0";
+                process.StartInfo.Arguments = TestLibrary.Utilities.IsNativeAot ? "0" : $"{new Uri(currentAssembly.Location).LocalPath} 0";
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardError = true;
@@ -137,6 +137,7 @@ namespace Tracing.Tests.Common
                         Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
                     }
                     Logger.logger.Log($"SubProcess exited - Exit code: {process.ExitCode}");
+                    fSuccess &= process.ExitCode == 0;
                 }
                 catch (Exception e)
                 {

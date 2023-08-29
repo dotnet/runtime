@@ -25,7 +25,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
     {
         public bool IsGenericMethodDefinition => GenericParameterCount != 0;
 
-        public MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant, out Exception exception)
+        public MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant, out Exception exception)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(DeclaringType, new QMethodDefinition(Reader, MethodHandle), methodArguments, exceptionPertainant, out exception);
         }
@@ -132,7 +132,9 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
         {
             get
             {
-                return MethodSignature.CallingConvention;
+                var sigCallingConvention = MethodSignature.CallingConvention;
+                return (sigCallingConvention & Internal.Metadata.NativeFormat.SignatureCallingConvention.HasThis) != 0
+                    ? CallingConventions.HasThis : 0;
             }
         }
 

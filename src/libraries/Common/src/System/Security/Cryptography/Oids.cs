@@ -24,6 +24,9 @@ namespace System.Security.Cryptography
         internal const string RsaPkcs1Sha256 = "1.2.840.113549.1.1.11";
         internal const string RsaPkcs1Sha384 = "1.2.840.113549.1.1.12";
         internal const string RsaPkcs1Sha512 = "1.2.840.113549.1.1.13";
+        internal const string RsaPkcs1Sha3_256 = "2.16.840.1.101.3.4.3.14";
+        internal const string RsaPkcs1Sha3_384 = "2.16.840.1.101.3.4.3.15";
+        internal const string RsaPkcs1Sha3_512 = "2.16.840.1.101.3.4.3.16";
         internal const string Esdh = "1.2.840.113549.1.9.16.3.5";
         internal const string EcDiffieHellman = "1.3.132.1.12";
         internal const string DiffieHellman = "1.2.840.10046.2.1";
@@ -65,6 +68,9 @@ namespace System.Security.Cryptography
         internal const string Sha256 = "2.16.840.1.101.3.4.2.1";
         internal const string Sha384 = "2.16.840.1.101.3.4.2.2";
         internal const string Sha512 = "2.16.840.1.101.3.4.2.3";
+        internal const string Sha3_256 = "2.16.840.1.101.3.4.2.8";
+        internal const string Sha3_384 = "2.16.840.1.101.3.4.2.9";
+        internal const string Sha3_512 = "2.16.840.1.101.3.4.2.10";
 
         // DSA CMS uses the combined signature+digest OID
         internal const string DsaWithSha1 = "1.2.840.10040.4.3";
@@ -83,6 +89,10 @@ namespace System.Security.Cryptography
         internal const string ECDsaWithSha256 = "1.2.840.10045.4.3.2";
         internal const string ECDsaWithSha384 = "1.2.840.10045.4.3.3";
         internal const string ECDsaWithSha512 = "1.2.840.10045.4.3.4";
+
+        internal const string ECDsaWithSha3_256 = "2.16.840.1.101.3.4.3.10";
+        internal const string ECDsaWithSha3_384 = "2.16.840.1.101.3.4.3.11";
+        internal const string ECDsaWithSha3_512 = "2.16.840.1.101.3.4.3.12";
 
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
         internal const string PSpecified = "1.2.840.113549.1.1.9";

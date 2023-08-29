@@ -36,7 +36,7 @@
 
 #if !defined(HOST_WIN32)
 
-#if !defined(CLOCK_MONOTONIC) || defined(HOST_DARWIN) || defined(HOST_WASM)
+#if !defined(CLOCK_MONOTONIC) || defined(HOST_DARWIN) || defined(HOST_WASI)
 #define BROKEN_CLOCK_SOURCE
 #endif
 

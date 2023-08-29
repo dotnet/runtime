@@ -33,7 +33,12 @@ set(eglib_common_sources
     gspawn.c
     gfile.c
     gfile-posix.c
-    gutf8.c)
+    gutf8.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c)
+
+if(IS_BIG_ENDIAN)
+  set_source_files_properties("${CLR_SRC_NATIVE_DIR}/minipal/utf8.c" PROPERTIES COMPILE_FLAGS "-DBIGENDIAN=1")
+endif()
 
 set(eglib_headers
   glib.h
@@ -41,7 +46,7 @@ set(eglib_headers
   gmodule.h)
 
 if(HAVE_CLOCK_NANOSLEEP)
-list(APPEND eglib_common_sources gclock-nanosleep.c)
+  list(APPEND eglib_common_sources gclock-nanosleep.c)
 endif()
 
 set(eglib_sources "${eglib_platform_sources};${eglib_common_sources}")

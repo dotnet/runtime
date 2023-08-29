@@ -23,14 +23,23 @@ export declare interface CharPtrPtr extends NativePointer {
 }
 
 export declare interface EmscriptenModule {
+    /** @deprecated Please use growableHeapI8() instead.*/
     HEAP8: Int8Array,
+    /** @deprecated Please use growableHeapI16() instead.*/
     HEAP16: Int16Array;
+    /** @deprecated Please use growableHeapI32() instead. */
     HEAP32: Int32Array;
+    /** @deprecated Please use growableHeapI64() instead. */
     HEAP64: BigInt64Array;
+    /** @deprecated Please use growableHeapU8() instead. */
     HEAPU8: Uint8Array;
+    /** @deprecated Please use growableHeapU16() instead. */
     HEAPU16: Uint16Array;
+    /** @deprecated Please use growableHeapU32() instead */
     HEAPU32: Uint32Array;
+    /** @deprecated Please use growableHeapF32() instead */
     HEAPF32: Float32Array;
+    /** @deprecated Please use growableHeapF64() instead. */
     HEAPF64: Float64Array;
 
     // this should match emcc -s EXPORTED_FUNCTIONS
@@ -48,6 +57,7 @@ export declare interface EmscriptenModule {
     getValue(ptr: number, type: string, noSafe?: number | boolean): number;
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
+    stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;
@@ -62,21 +72,8 @@ export declare interface EmscriptenModule {
     onRuntimeInitialized?: () => any;
     postRun?: (() => any)[] | (() => any);
     onAbort?: { (error: any): void };
+    onExit?: { (code: number): void };
 }
-
-export declare interface EmscriptenModuleInternal {
-    __locateFile?: (path: string, prefix?: string) => string;
-    locateFile?: (path: string, prefix?: string) => string;
-    mainScriptUrlOrBlob?: string;
-    wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
-    asm: { memory?: WebAssembly.Memory };
-    wasmMemory?: WebAssembly.Memory;
-    getWasmTableEntry(index: number): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
-}
-
 
 export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
 export type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;

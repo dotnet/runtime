@@ -24,6 +24,8 @@ namespace DebuggerTests
     DebuggerTestFirefox
 #endif
     {
+        public const string WebcilInWasmExtension = ".wasm";
+
         public DebuggerTests(ITestOutputHelper testOutput, string locale = "en-US", string driver = "debugger-driver.html")
                 : base(testOutput, locale, driver)
         {}
@@ -37,7 +39,12 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
-
+        public static bool ReleaseRuntime
+#if RELEASE_RUNTIME
+            => true;
+#else
+            => false;
+#endif
         public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
 
         public static bool WasmSingleThreaded => !WasmMultiThreaded;
@@ -1579,14 +1586,13 @@ namespace DebuggerTests
             }
         }
 
-        internal async Task SetJustMyCode(bool enabled)
+        internal virtual async Task SetJustMyCode(bool enabled)
         {
             var req = JObject.FromObject(new { JustMyCodeStepping = enabled });
             var res = await cli.SendCommand("DotnetDebugger.setDebuggerProperty", req, token);
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
         }
-
 
         internal async Task SetSymbolOptions(JObject param)
         {

@@ -77,7 +77,7 @@ namespace
         pal::string_t msg = _X("Architecture: ");
         msg.append(get_current_arch_name());
         msg.append(_X("\n")
-            _X("App host version: ") _STRINGIFY(COMMON_HOST_PKG_VER) _X("\n\n"));
+            _X("App host version: ") _STRINGIFY(HOST_VERSION) _X("\n\n"));
         return msg;
     }
 
@@ -305,7 +305,7 @@ namespace
                     details = get_apphost_details_message();
                     url = get_download_url();
                     url.append(_X("&apphost_version="));
-                    url.append(_STRINGIFY(COMMON_HOST_PKG_VER));
+                    url.append(_STRINGIFY(HOST_VERSION));
                 }
             }
 
@@ -322,20 +322,6 @@ namespace
         url.append(_X("&gui=true"));
 
         trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - details: %s"), executable_name, error_code, url.c_str(), details.c_str());
-
-        HMODULE user32 = ::LoadLibraryExW(L"user32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (user32 != nullptr)
-        {
-            using set_thread_dpi = DPI_AWARENESS_CONTEXT(WINAPI*)(DPI_AWARENESS_CONTEXT context);
-            set_thread_dpi set_thread_dpi_func = (set_thread_dpi)::GetProcAddress(user32, "SetThreadDpiAwarenessContext");
-
-            // Since this is only for errors shown when the process is about to exit, we
-            // skip resetting to the previous context to minimize impact on apphost size
-            if (set_thread_dpi_func != nullptr)
-                (void) set_thread_dpi_func(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-    
-            ::FreeLibrary(user32);
-        }
 
         if (enable_visual_styles())
         {

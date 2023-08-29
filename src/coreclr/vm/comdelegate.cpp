@@ -171,7 +171,7 @@ public:
         // Shuffle float registers first
         if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
         {
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if ((m_argLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
             {
                 // the first field is integer so just skip this.
@@ -190,7 +190,7 @@ public:
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
             {
                 m_currentGenRegIndex++;
@@ -3019,68 +3019,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     return pRealCtor;
 }
 
-
-/*@GENERICSVER: new (works for generics too)
-    Does a static validation of parameters passed into a delegate constructor.
-
-
-    For "new Delegate(obj.method)" where method is statically typed as "C::m" and
-    the static type of obj is D (some subclass of C)...
-
-    Params:
-    instHnd : Static type of the instance, from which pFtn is obtained. Ignored if pFtn
-             is static (i.e. D)
-    ftnParentHnd: Parent of the MethodDesc, pFtn, used to create the delegate (i.e. type C)
-    pFtn  : (possibly shared) MethodDesc of the function pointer used to create the delegate (i.e. C::m)
-    pDlgt : The delegate type (i.e. Delegate)
-    module: The module scoping methodMemberRef and delegateConstructorMemberRef
-    methodMemberRef: the MemberRef, MemberDef or MemberSpec of the target method  (i.e. a mdToken for C::m)
-    delegateConstructorMemberRef: the MemberRef, MemberDef or MemberSpec of the delegate constructor (i.e. a mdToken for Delegate::.ctor)
-
-    Validates the following conditions:
-    1.  If the function (pFtn) is not static, pInst should be equal to the type where
-        pFtn is defined or pInst should be a parent of pFtn's type.
-    2.  The signature of the function should be compatible with the signature
-        of the Invoke method of the delegate type.
-        The signature is retrieved from module, methodMemberRef and delegateConstructorMemberRef
-
-    NB: Although some of these arguments are redundant, we pass them in to avoid looking up
-        information that should already be available.
-        Instead of comparing type handles modulo some context, the method directly compares metadata to avoid
-        loading classes referenced in the method signatures (hence the need for the module and member refs).
-        Also, because this method works directly on metadata, without allowing any additional instantiation of the
-        free type variables in the signature of the method or delegate constructor, this code
-        will *only* verify a constructor application at the typical (ie. formal) instantiation.
-*/
-/* static */
-bool COMDelegate::ValidateCtor(TypeHandle instHnd,
-                               TypeHandle ftnParentHnd,
-                               MethodDesc *pFtn,
-                               TypeHandle dlgtHnd,
-                               bool       *pfIsOpenDelegate)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-
-        PRECONDITION(CheckPointer(pFtn));
-        PRECONDITION(!dlgtHnd.IsNull());
-        PRECONDITION(!ftnParentHnd.IsNull());
-
-        INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::CompareElementType
-    }
-    CONTRACTL_END;
-
-    DelegateEEClass *pdlgEEClass = (DelegateEEClass*)dlgtHnd.AsMethodTable()->GetClass();
-    PREFIX_ASSUME(pdlgEEClass != NULL);
-    MethodDesc *pDlgtInvoke = pdlgEEClass->GetInvokeMethod();
-    if (pDlgtInvoke == NULL)
-        return false;
-    return IsMethodDescCompatible(instHnd, ftnParentHnd, pFtn, dlgtHnd, pDlgtInvoke, DBF_RelaxedSignature, pfIsOpenDelegate);
-}
 
 BOOL COMDelegate::IsWrapperDelegate(DELEGATEREF dRef)
 {

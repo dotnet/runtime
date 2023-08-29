@@ -173,6 +173,9 @@ ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (uint16_t min_worker_threads, uint16_t max_worker_threads, uint16_t min_io_completion_threads, uint16_t max_io_completion_threads, uint16_t clr_instance_id);
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (uint16_t count, uint16_t clr_instance_id);
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (intptr_t native_overlapped, intptr_t overlapped, uint16_t clr_instance_id);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionLockCreated (intptr_t lock_id, intptr_t associated_object_id, uint16_t clr_instance_id);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStart (uint8_t contention_flags, uint16_t clr_instance_id, intptr_t lock_id, intptr_t associated_object_id, uint64_t lock_owner_thread_id);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop (uint8_t contention_flags, uint16_t clr_instance_id, double duration_ns);
 
 ICALL_EXPORT void ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array);
 ICALL_EXPORT void ves_icall_Mono_SafeStringMarshal_GFree (void *c_str);
@@ -183,6 +186,16 @@ ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelLifoSemaphore_InitInter
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr);
 ICALL_EXPORT gint32   ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms);
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count);
+
+/* include these declarations if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
+#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
+ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void);
+ICALL_EXPORT void   ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timeout_cb, intptr_t user_data);
+
+ICALL_EXPORT MonoBoolean ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void);
+ICALL_EXPORT void ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void);
+ICALL_EXPORT void ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void);
+#endif
 
 #ifdef TARGET_AMD64
 ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id);
@@ -201,6 +214,10 @@ ICALL_EXPORT guint32 ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHan
 ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (MonoQCallTypeHandle type_handle);
 
 ICALL_EXPORT gint32 ves_icall_RuntimeType_GetGenericParameterPosition (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT gint8 ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_RuntimeType_IsUnmanagedFunctionPointerInternal (MonoQCallTypeHandle type_handle);
 
 ICALL_EXPORT int ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle);
 

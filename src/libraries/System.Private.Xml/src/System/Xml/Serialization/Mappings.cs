@@ -103,14 +103,14 @@ namespace System.Xml.Serialization
         [return: NotNullIfNotNull(nameof(name))]
         internal static string? EscapeName(string? name)
         {
-            if (name == null || name.Length == 0) return name;
+            if (string.IsNullOrEmpty(name)) return name;
             return XmlConvert.EncodeLocalName(name);
         }
 
         [return: NotNullIfNotNull(nameof(name))]
         internal static string? EscapeQName(string? name)
         {
-            if (name == null || name.Length == 0) return name;
+            if (string.IsNullOrEmpty(name)) return name;
             int colon = name.LastIndexOf(':');
             if (colon < 0)
                 return XmlConvert.EncodeLocalName(name);
@@ -341,7 +341,7 @@ namespace System.Xml.Serialization
         [MemberNotNullWhen(false, nameof(_typeName))]
         internal bool IsAnonymousType
         {
-            get { return _typeName == null || _typeName.Length == 0; }
+            get { return string.IsNullOrEmpty(_typeName); }
         }
 
         internal virtual string DefaultElementName
@@ -1347,7 +1347,7 @@ namespace System.Xml.Serialization
 
                     if (_schema != null)
                     {
-                        if (_schema.Id == null || _schema.Id.Length == 0) throw new InvalidOperationException(SR.Format(SR.XmlSerializableNameMissing1, _type!.FullName));
+                        if (string.IsNullOrEmpty(_schema.Id)) throw new InvalidOperationException(SR.Format(SR.XmlSerializableNameMissing1, _type!.FullName));
                     }
                 }
             }

@@ -4,6 +4,7 @@
 using System.Net.Http.HPack;
 using System.Net.Http.QPack;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Net.Http.Headers
 {
@@ -427,7 +428,7 @@ namespace System.Net.Http.Headers
             fixed (byte* p = &MemoryMarshal.GetReference(name))
             {
                 KnownHeader? candidate = GetCandidate(new BytePtrAccessor(p, name.Length));
-                if (candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate.Name, name))
+                if (candidate != null && Ascii.EqualsIgnoreCase(name, candidate.Name))
                 {
                     return candidate;
                 }

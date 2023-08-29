@@ -17,7 +17,7 @@
     <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</AndroidTestRunnerDir>
     <WasmTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</WasmTestRunnerDir>
 
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 

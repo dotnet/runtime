@@ -123,7 +123,7 @@ struct RCW;
 // The only fields mandated by all objects are
 //
 //     * a pointer to the code:MethodTable at offset 0
-//     * a poiner to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
+//     * a pointer to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
 //         any addition information that we might need to attach to arbitrary objects.
 //
 class Object
@@ -522,6 +522,7 @@ class ArrayBase : public Object
     friend class CObjectHeader;
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
+    friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
     friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags);
     friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
@@ -738,39 +739,6 @@ public:
 };
 
 #define OFFSETOF__PtrArray__m_Array_              ARRAYBASE_SIZE
-
-/* Corresponds to the managed Span<T> and ReadOnlySpan<T> types.
-   This should only ever be passed from the managed to the unmanaged world byref,
-   as any copies of this struct made within the unmanaged world will not observe
-   potential GC relocations of the source data. */
-template < class KIND >
-class Span
-{
-private:
-    /* Keep fields below in sync with managed Span / ReadOnlySpan layout. */
-    KIND* _reference;
-    unsigned int _length;
-
-public:
-    // !! CAUTION !!
-    // Caller must take care not to reassign returned reference if this span corresponds
-    // to a managed ReadOnlySpan<T>. If KIND is a reference type, caller must use a
-    // helper like SetObjectReference instead of assigning values directly to the
-    // reference location.
-    KIND& GetAt(SIZE_T index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        _ASSERTE(index < GetLength());
-        return _reference[index];
-    }
-
-    // Gets the length (in elements) of this span.
-    __inline SIZE_T GetLength() const
-    {
-        return _length;
-    }
-};
 
 /* a TypedByRef is a structure that is used to implement VB's BYREF variants.
    it is basically a tuple of an address of some data along with a TypeHandle
@@ -1283,7 +1251,7 @@ __inline bool IsCultureEnglishOrInvariant(LPCWSTR localeName)
     LIMITED_METHOD_CONTRACT;
     if (localeName != NULL &&
         (localeName[0] == W('\0') ||
-         wcscmp(localeName, W("en-US")) == 0))
+         u16_strcmp(localeName, W("en-US")) == 0))
     {
         return true;
     }
@@ -1374,12 +1342,6 @@ public:
 
     void SetInternal(Thread *it);
     void ClearInternal();
-
-    INT32 GetManagedThreadId()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ManagedThreadId;
-    }
 
     void SetManagedThreadId(INT32 id)
     {

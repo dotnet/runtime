@@ -75,6 +75,12 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
+        public override Type GetModifiedPropertyType()
+        {
+            return ModifiedType.Create(PropertyType, _reader, _reader.GetPropertySignature(_property.Signature).Type);
+
+        }
+
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
             ArgumentNullException.ThrowIfNull(other);

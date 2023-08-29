@@ -6,12 +6,21 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Reflection.Tests
 {
-    public class MethodInfoTests
+    /// <summary>
+    /// These tests use the shared tests from the base class with MethodInfo.Invoke.
+    /// </summary>
+    public sealed class MethodInfoTests : MethodCommonTests
     {
+        public override object? Invoke(MethodInfo methodInfo, object? obj, object?[]? parameters)
+        {
+            return methodInfo.Invoke(obj, parameters);
+        }
+
+        protected override bool SupportsMissing => false;
+
         [Fact]
         public void CreateDelegate_PublicMethod()
         {
@@ -361,7 +370,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Invoke_TestData))]
-        public void Invoke(Type methodDeclaringType, string methodName, object obj, object[] parameters, object result)
+        public void InvokeWithTestData(Type methodDeclaringType, string methodName, object obj, object[] parameters, object result)
         {
             MethodInfo method = GetMethod(methodDeclaringType, methodName);
             Assert.Equal(result, method.Invoke(obj, parameters));
@@ -370,8 +379,8 @@ namespace System.Reflection.Tests
         [Fact]
         public void Invoke_ParameterSpecification_ArrayOfMissing()
         {
-            Invoke(typeof(MethodInfoDefaultParameters), "OptionalObjectParameter", new MethodInfoDefaultParameters(), new object[] { Type.Missing }, Type.Missing);
-            Invoke(typeof(MethodInfoDefaultParameters), "OptionalObjectParameter", new MethodInfoDefaultParameters(), new Missing[] { Missing.Value }, Missing.Value);
+            InvokeWithTestData(typeof(MethodInfoDefaultParameters), "OptionalObjectParameter", new MethodInfoDefaultParameters(), new object[] { Type.Missing }, Type.Missing);
+            InvokeWithTestData(typeof(MethodInfoDefaultParameters), "OptionalObjectParameter", new MethodInfoDefaultParameters(), new Missing[] { Missing.Value }, Missing.Value);
         }
 
         [Fact]
@@ -620,149 +629,6 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, methodInfo.ToString());
         }
 
-        [Fact]
-        public void InvokeNullableRefs()
-        {
-            object?[] args;
-
-            int? iNull = null;
-            args = new object[] { iNull };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.Null)).Invoke(null, args));
-            Assert.Null(args[0]);
-            Assert.False(((int?)args[0]).HasValue);
-
-            args = new object[] { iNull };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullBoxed)).Invoke(null, args));
-            Assert.Null(args[0]);
-
-            args = new object[] { iNull, 10 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValue)).Invoke(null, args));
-            Assert.IsType<int>(args[0]);
-            Assert.Equal(10, (int)args[0]);
-
-            iNull = 42;
-            args = new object[] { iNull, 42 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.ValueToNull)).Invoke(null, args));
-            Assert.Null(args[0]);
-
-            iNull = null;
-            args = new object[] { iNull, 10 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValueBoxed)).Invoke(null, args));
-            Assert.IsType<int>(args[0]);
-            Assert.Equal(10, (int)args[0]);
-
-            static MethodInfo GetMethod(string name) => typeof(NullableRefMethods).GetMethod(
-                name, BindingFlags.Public | BindingFlags.Static)!;
-        }
-
-        [Fact]
-        public void InvokeBoxedNullableRefs()
-        {
-            object?[] args;
-
-            object? iNull = null;
-            args = new object[] { iNull };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.Null)).Invoke(null, args));
-            Assert.Null(args[0]);
-
-            args = new object[] { iNull };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullBoxed)).Invoke(null, args));
-            Assert.Null(args[0]);
-
-            args = new object[] { iNull, 10 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValue)).Invoke(null, args));
-            Assert.IsType<int>(args[0]);
-            Assert.Equal(10, (int)args[0]);
-
-            iNull = 42;
-            args = new object[] { iNull, 42 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.ValueToNull)).Invoke(null, args));
-            Assert.Null(args[0]);
-
-            iNull = null;
-            args = new object[] { iNull, 10 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValueBoxed)).Invoke(null, args));
-            Assert.IsType<int>(args[0]);
-            Assert.Equal(10, (int)args[0]);
-
-            static MethodInfo GetMethod(string name) => typeof(NullableRefMethods).GetMethod(
-                name, BindingFlags.Public | BindingFlags.Static)!;
-        }
-
-        [Fact]
-        public void InvokeEnum()
-        {
-            // Enums only need to match by primitive type.
-            Assert.True((bool)GetMethod(nameof(EnumMethods.PassColorsInt)).
-                Invoke(null, new object[] { OtherColorsInt.Red }));
-
-            // Widening allowed
-            Assert.True((bool)GetMethod(nameof(EnumMethods.PassColorsInt)).
-                Invoke(null, new object[] { ColorsShort.Red }));
-
-            // Narrowing not allowed
-            Assert.Throws<ArgumentException>(() => GetMethod(nameof(EnumMethods.PassColorsShort)).
-                Invoke(null, new object[] { OtherColorsInt.Red }));
-
-            static MethodInfo GetMethod(string name) => typeof(EnumMethods).GetMethod(
-                name, BindingFlags.Public | BindingFlags.Static)!;
-        }
-
-        [Fact]
-        public static void InvokeNullableEnumParameterDefaultNo()
-        {
-            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultNo", BindingFlags.Static | BindingFlags.NonPublic);
-
-            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
-            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
-            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
-            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { Type.Missing }));
-        } 
-
-        [Fact]
-        public static void InvokeNullableEnumParameterDefaultYes()
-        {
-            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultYes", BindingFlags.Static | BindingFlags.NonPublic);
-
-            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
-            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
-            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
-            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { Type.Missing }));
-        }
-
-        [Fact]
-        public static void InvokeNonNullableEnumParameterDefaultYes()
-        {
-            MethodInfo method = typeof(EnumMethods).GetMethod("NonNullableEnumDefaultYes", BindingFlags.Static | BindingFlags.NonPublic);
-
-            Assert.Equal(YesNo.No, method.Invoke(null, new object[] { default(object) }));
-            Assert.Equal(YesNo.No, method.Invoke(null, new object[] { YesNo.No }));
-            Assert.Equal(YesNo.Yes, method.Invoke(null, new object[] { YesNo.Yes }));
-            Assert.Equal(YesNo.Yes, method.Invoke(null, new object[] { Type.Missing }));
-        }
-
-        [Fact]
-        public static void InvokeNullableEnumParameterDefaultNull()
-        {
-            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultNull", BindingFlags.Static | BindingFlags.NonPublic);
-
-            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
-            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
-            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
-            Assert.Null(method.Invoke(null, new object?[] { Type.Missing }));
-        }
-
-        [Fact]
-        public static void InvokeNullableEnumParameterNoDefault()
-        {
-            MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumNoDefault", BindingFlags.Static | BindingFlags.NonPublic);
-
-            Assert.Null(method.Invoke(null, new object?[] { default(object) }));
-            Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
-            Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
-            Assert.Throws<ArgumentException>(() => method.Invoke(null, new object?[] { Type.Missing }));
-        }
-
         public static IEnumerable<object[]> MethodNameAndArguments()
         {
             yield return new object[] { nameof(Sample.DefaultString), "Hello", "Hi" };
@@ -806,68 +672,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void ValueTypeMembers_WithOverrides()
-        {
-            ValueTypeWithOverrides obj = new() { Id = 1 };
-
-            // ToString is overridden.
-            Assert.Equal("Hello", (string)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.ToString)).
-                Invoke(obj, null));
-
-            // Ensure a normal method works.
-            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.GetId)).
-                Invoke(obj, null));
-        }
-
-        [Fact]
-        public void ValueTypeMembers_WithoutOverrides()
-        {
-            ValueTypeWithoutOverrides obj = new() { Id = 1 };
-
-            // ToString is not overridden.
-            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.ToString)).
-                Invoke(obj, null));
-
-            // Ensure a normal method works.
-            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.GetId)).
-                Invoke(obj, null));
-        }
-
-        [Fact]
-        public void NullableOfTMembers()
-        {
-            // Ensure calling a method on Nullable<T> works.
-            MethodInfo mi = GetMethod(typeof(int?), nameof(Nullable<int>.GetValueOrDefault));
-            Assert.Equal(42, mi.Invoke(42, null));
-        }
-
-        [Fact]
-        public void CopyBackWithByRefArgs()
-        {
-            object i = 42;
-            object[] args = new object[] { i };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByRef)).Invoke(null, args);
-            Assert.Equal(43, (int)args[0]);
-            Assert.NotSame(i, args[0]); // A copy should be made; a boxed instance should never be directly updated.
-
-            i = 42;
-            args = new object[] { i };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByNullableRef)).Invoke(null, args);
-            Assert.Equal(43, (int)args[0]);
-            Assert.NotSame(i, args[0]);
-
-            object o = null;
-            args = new object[] { o };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNonNullByRef)).Invoke(null, args);
-            Assert.NotNull(args[0]);
-
-            o = new object();
-            args = new object[] { o };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)).Invoke(null, args);
-            Assert.Null(args[0]);
-        }
-
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void CallStackFrame_AggressiveInlining()
@@ -894,36 +698,6 @@ namespace System.Reflection.Tests
             Assert.Contains("TestAssembly", asm.ToString());
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]        
-        private static unsafe void TestFunctionPointers()
-        {
-            void* fn = FunctionPointerMethods.GetFunctionPointer();
-
-            // Sanity checks for direct invocation.
-            Assert.True(FunctionPointerMethods.GetFunctionPointer()(42));
-            Assert.True(FunctionPointerMethods.CallFcnPtr_IntPtr((IntPtr)fn, 42));
-            Assert.True(FunctionPointerMethods.CallFcnPtr_Void(fn, 42));
-            Assert.False(FunctionPointerMethods.GetFunctionPointer()(41));
-            Assert.False(FunctionPointerMethods.CallFcnPtr_IntPtr((IntPtr)fn, 41));
-            Assert.False(FunctionPointerMethods.CallFcnPtr_Void(fn, 41));
-
-            MethodInfo m;
-
-            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_FP));
-            //  System.ArgumentException : Object of type 'System.IntPtr' cannot be converted to type 'System.Boolean(System.Int32)'
-            Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
-            Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
-
-            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_IntPtr));
-            Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
-            Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
-
-            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_Void));
-            Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
-            Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
-        }
-
         //Methods for Reflection Metadata
         private void DummyMethod1(string str, int iValue, long lValue)
         {
@@ -931,11 +705,6 @@ namespace System.Reflection.Tests
 
         private void DummyMethod2()
         {
-        }
-
-        private static MethodInfo GetMethod(Type type, string name)
-        {
-            return type.GetTypeInfo().GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance).First(method => method.Name.Equals(name));
         }
     }
 
@@ -1340,6 +1109,11 @@ namespace System.Reflection.Tests
             return ((delegate*<int, bool>)fn)(value);
         }
 
+        public static unsafe bool CallFcnPtr_UIntPtr(UIntPtr fn, int value)
+        {
+            return ((delegate*<int, bool>)fn)(value);
+        }
+
         public static unsafe bool CallFcnPtr_Void(void* fn, int value)
         {
             return ((delegate*<int, bool>)fn)(value);
@@ -1349,4 +1123,3 @@ namespace System.Reflection.Tests
     }
 #pragma warning restore 0414
 }
-

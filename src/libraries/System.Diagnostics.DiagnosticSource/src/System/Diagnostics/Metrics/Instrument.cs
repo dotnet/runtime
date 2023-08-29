@@ -34,12 +34,29 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
-        protected Instrument(Meter meter, string name, string? unit, string? description)
+        protected Instrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, null) { }
+
+        /// <summary>
+        /// Protected constructor to initialize the common instrument properties like the meter, name, description, and unit.
+        /// All classes extending Instrument need to call this constructor when constructing object of the extended class.
+        /// </summary>
+        /// <param name="meter">The meter that created the instrument.</param>
+        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="unit">Optional instrument unit of measurements.</param>
+        /// <param name="description">Optional instrument description.</param>
+        /// <param name="tags">Optional instrument tags.</param>
+        protected Instrument(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags)
         {
             Meter = meter ?? throw new ArgumentNullException(nameof(meter));
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Description = description;
             Unit = unit;
+            if (tags is not null)
+            {
+                var tagList = new List<KeyValuePair<string, object?>>(tags);
+                tagList.Sort((left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
+                Tags = tagList;
+            }
         }
 
         /// <summary>
@@ -86,6 +103,11 @@ namespace System.Diagnostics.Metrics
         /// Gets the instrument unit of measurements.
         /// </summary>
         public string? Unit { get; }
+
+        /// <summary>
+        /// Returns the tags associated with the Meter.
+        /// </summary>
+        public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 
         /// <summary>
         /// Checks if there is any listeners for this instrument.

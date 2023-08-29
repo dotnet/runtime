@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
-import { AOTProfilerOptions, BrowserProfilerOptions } from "./types";
-import cwraps from "./cwraps";
-import { MonoMethod } from "./types";
+import { ENVIRONMENT_IS_WEB, linkerEnableAotProfiler, linkerEnableBrowserProfiler, mono_assert, runtimeHelpers } from "./globals";
+import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions } from "./types/internal";
+import { profiler_c_functions as cwraps } from "./cwraps";
+import { utf8ToString } from "./strings";
 
 // Initialize the AOT profiler with OPTIONS.
 // Requires the AOT profiler to be linked into the app.
@@ -15,6 +15,7 @@ import { MonoMethod } from "./types";
 // DumpAotProfileData stores the data into INTERNAL.aotProfileData.
 //
 export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
+    mono_assert(linkerEnableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
     if (!("writeAt" in options))
@@ -26,6 +27,7 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
 }
 
 export function mono_wasm_init_browser_profiler(options: BrowserProfilerOptions): void {
+    mono_assert(linkerEnableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
     const arg = "browser:";
@@ -55,8 +57,6 @@ export const enum MeasuredBlock {
 export type TimeStamp = {
     __brand: "TimeStamp"
 }
-
-
 
 export function startMeasure(): TimeStamp {
     if (runtimeHelpers.enablePerfMeasure) {
@@ -92,7 +92,7 @@ export function mono_wasm_profiler_leave(method: MonoMethod): void {
         let methodName = methodNames.get(method as any);
         if (!methodName) {
             const chars = cwraps.mono_wasm_method_get_name(method);
-            methodName = Module.UTF8ToString(chars);
+            methodName = utf8ToString(chars);
             methodNames.set(method as any, methodName);
         }
         globalThis.performance.measure(methodName, options);

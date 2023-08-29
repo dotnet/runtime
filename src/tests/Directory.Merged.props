@@ -2,32 +2,5 @@
   <PropertyGroup>
     <InMergedTestDirectory>true</InMergedTestDirectory>
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">false</BuildAsStandalone>
-
-    <!--
-      We need to rewrite the assembly name for some tests in merged groups:
-      1. Merged test groups require consistency between the various names of tests in order
-         to reference them properly.
-      2. IL tests specify the assembly name explicitly in the source file via
-         ".assembly" lines.
-      3. Several tests can use the same IL file but build it with different command line
-         options (_il_d vs _il_r).
-
-      Note that C# tests (which may have _d, _do, _r, and _do variants) do not require this
-      because the assembly name is not embedded in the source file.
-
-      An alternative to the renaming here would be to build the different IL variants with
-      different assembly names. Unfortunately, this isn't supported from the command line.
-      One possible option would be to create an IL source file with something like
-        #define ASSEMBLY_NAME "TESTNAME_il_d"
-      and add it to the _beginning_ of the IL source list (ilasm concatenates all source
-      files). Then change the test to include ".assembly ASSEMBLY_NAME".
-    -->
-    <!--
-      Note that because this file is included from Directory.Build.props (processed before
-      the main project file for a test), the project file can override this.
-      Directory.Build.targets is typically too late as SDK .targets files will have already
-      been processed and may have used the value.
-    -->
-    <AssemblyName Condition="'$(BuildAsStandalone)' != 'true'">$(MSBuildProjectName.Replace('_il_do', '').Replace('_il_d', '').Replace('_il_ro', '').Replace('_il_r', ''))</AssemblyName>
   </PropertyGroup>
 </Project>

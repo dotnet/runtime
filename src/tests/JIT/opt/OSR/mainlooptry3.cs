@@ -9,10 +9,12 @@
 // entry point is not from the OSR entry.
 
 using System;
+using Xunit;
 
-class MainLoopCloselyNestedTry
+public class MainLoopCloselyNestedTry
 {
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {
        Console.WriteLine($"starting sum");
        int result = 0;

@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using ImmutableArrayExtensions = System.Linq.ImmutableArrayExtensions;
 
@@ -384,6 +385,12 @@ namespace System.Reflection.PortableExecutable
                 Interlocked.CompareExchange(ref _lazyPESectionBlocks, new AbstractMemoryBlock[PEHeaders.SectionHeaders.Length], null);
             }
 
+            AbstractMemoryBlock? existingBlock = Volatile.Read(ref _lazyPESectionBlocks[index]);
+            if (existingBlock != null)
+            {
+                return existingBlock;
+            }
+
             AbstractMemoryBlock newBlock;
             if (IsLoadedImage)
             {
@@ -659,7 +666,7 @@ namespace System.Reflection.PortableExecutable
 
             return new PdbChecksumDebugDirectoryData(
                 algorithmName,
-                ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref checksum));
+                ImmutableCollectionsMarshal.AsImmutableArray(checksum));
         }
 
         /// <summary>

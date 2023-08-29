@@ -8,6 +8,8 @@ MSBUILD_ARGS+=/p:MonoVerboseBuild=true
 MSBUILD_ARGS+=-bl
 endif
 
+MSBUILD_ARGS+=/p:KeepNativeSymbols=true
+
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver
@@ -81,7 +83,11 @@ app-builder:
 	$(DOTNET) build $(TOP)/src/tasks/WasmAppBuilder
 
 build-tasks:
-	$(DOTNET) build $(TOP)/src/tasks/WasmBuildTasks $(MSBUILD_ARGS)
+	$(DOTNET) build $(TOP)/src/tasks/tasks.proj /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+
+build-packages:
+	rm $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
+	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.packages+mono.manifests+packs.product -os browser -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 clean:
 	$(RM) -rf $(BUILDS_OBJ_DIR)
@@ -101,6 +107,9 @@ run-build-tests:
 
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+build-runtime-tests:
+	$(TOP)/src/tests/build.sh -mono os browser wasm $(CONFIG)
 
 build-debugger-tests-helix:
 	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \
@@ -143,9 +152,9 @@ submit-tests-helix:
 run-debugger-tests:
 	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
+	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
 	else \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing" $(TEST_ARGS); \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing" $(TEST_ARGS); \
 	fi
 
 build-dbg-proxy:

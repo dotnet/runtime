@@ -19,7 +19,9 @@
 */
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -121,9 +123,16 @@ namespace BenchmarksGame
             }
         }
 
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = (args.Length > 0 ? Int32.Parse(args[0]) : 10);
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 10;
             string result = Bench(n, true).ToString();
             if (result != "3141592653\t:10")
             {

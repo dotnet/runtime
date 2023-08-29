@@ -114,23 +114,6 @@ load_profiler_from_directory (const char *directory, const char *libname, const 
 	return FALSE;
 }
 
-static gboolean
-load_profiler_from_installation (const char *libname, const char *name, const char *desc)
-{
-	ERROR_DECL (load_error);
-
-	MonoDl *module = mono_dl_open_runtime_lib (libname, MONO_DL_EAGER, load_error);
-
-	if (!module) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open from installation: %s", mono_error_get_message_without_fields (load_error));
-		mono_error_cleanup (load_error);
-		return FALSE;
-	}
-
-	mono_error_assert_ok (load_error);
-	return load_profiler (module, name, desc);
-}
-
 /**
  * mono_profiler_load:
  *
@@ -191,9 +174,6 @@ mono_profiler_load (const char *desc)
 		goto done;
 
 	libname = g_strdup_printf ("mono-profiler-%s", mname);
-
-	if (load_profiler_from_installation (libname, mname, desc))
-		goto done;
 
 	if (load_profiler_from_directory (NULL, libname, mname, desc))
 		goto done;

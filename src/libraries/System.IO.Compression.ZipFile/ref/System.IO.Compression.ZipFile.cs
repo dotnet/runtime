@@ -8,9 +8,16 @@ namespace System.IO.Compression
 {
     public static partial class ZipFile
     {
+        public static void CreateFromDirectory(string sourceDirectoryName, System.IO.Stream destination) { }
+        public static void CreateFromDirectory(string sourceDirectoryName, System.IO.Stream destination, System.IO.Compression.CompressionLevel compressionLevel, bool includeBaseDirectory) { }
+        public static void CreateFromDirectory(string sourceDirectoryName, System.IO.Stream destination, System.IO.Compression.CompressionLevel compressionLevel, bool includeBaseDirectory, System.Text.Encoding? entryNameEncoding) { }
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName) { }
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, System.IO.Compression.CompressionLevel compressionLevel, bool includeBaseDirectory) { }
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, System.IO.Compression.CompressionLevel compressionLevel, bool includeBaseDirectory, System.Text.Encoding? entryNameEncoding) { }
+        public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName) { }
+        public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName, bool overwriteFiles) { }
+        public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding) { }
+        public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding, bool overwriteFiles) { }
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName) { }
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles) { }
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding) { }

@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'throwinnestedtryexcept' {}
+.assembly ASSEMBLY_NAME {}
 
 
 

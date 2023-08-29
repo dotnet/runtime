@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Ascii\CaseConversionTests.cs" />
+    <Compile Include="Ascii\EqualsTests.cs" />
     <Compile Include="Ascii\FromUtf16Tests.cs" />
     <Compile Include="Ascii\IsValidByteTests.cs" />
     <Compile Include="Ascii\IsValidCharTests.cs" />

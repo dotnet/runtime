@@ -270,7 +270,7 @@ namespace System.Data
             }
             else
             {
-                DataTable? table = dataSet.FindTable(null, listAccessors, 0);
+                DataTable? table = DataSet.FindTable(null, listAccessors, 0);
                 if (table != null)
                 {
                     return table.TableName;
@@ -293,7 +293,7 @@ namespace System.Data
             }
             else
             {
-                DataTable? table = dataSet.FindTable(null, listAccessors, 0);
+                DataTable? table = DataSet.FindTable(null, listAccessors, 0);
                 if (table != null)
                 {
                     return table.GetPropertyDescriptorCollection();

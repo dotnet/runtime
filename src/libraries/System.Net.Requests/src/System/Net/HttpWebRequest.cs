@@ -450,7 +450,7 @@ namespace System.Net
                 //
                 // if not check if the user is trying to set chunked:
                 //
-                fChunked = (value.IndexOf(ChunkedHeader, StringComparison.OrdinalIgnoreCase) != -1);
+                fChunked = (value.Contains(ChunkedHeader, StringComparison.OrdinalIgnoreCase));
 
                 //
                 // prevent them from adding chunked, or from adding an Encoding without
@@ -587,8 +587,8 @@ namespace System.Net
                     return;
                 }
 
-                fKeepAlive = (value.IndexOf("keep-alive", StringComparison.OrdinalIgnoreCase) != -1);
-                fClose = (value.IndexOf("close", StringComparison.OrdinalIgnoreCase) != -1);
+                fKeepAlive = (value.Contains("keep-alive", StringComparison.OrdinalIgnoreCase));
+                fClose = (value.Contains("close", StringComparison.OrdinalIgnoreCase));
 
                 //
                 // Prevent keep-alive and close from being added
@@ -642,7 +642,7 @@ namespace System.Net
                 // Prevent 100-continues from being added
                 //
 
-                fContinue100 = (value.IndexOf(ContinueHeader, StringComparison.OrdinalIgnoreCase) != -1);
+                fContinue100 = (value.Contains(ContinueHeader, StringComparison.OrdinalIgnoreCase));
 
                 if (fContinue100)
                 {
@@ -905,10 +905,7 @@ namespace System.Net
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.net_badmethod, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 if (HttpValidationHelpers.IsInvalidMethodOrHeaderString(value))
                 {
@@ -1130,7 +1127,7 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            var request = new HttpRequestMessage(new HttpMethod(_originVerb), _requestUri);
+            var request = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
 
             bool disposeRequired = false;
             HttpClient? client = null;

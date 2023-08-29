@@ -9,8 +9,8 @@ namespace System.Net.NetworkInformation
 {
     internal static class UnixCommandLinePing
     {
-        // Ubuntu has ping under /bin, OSX under /sbin, ArchLinux under /usr/bin, Android under /system/bin.
-        private static readonly string[] s_binFolders = { "/bin/", "/sbin/", "/usr/bin/", "/system/bin" };
+        // Ubuntu has ping under /bin, OSX under /sbin, ArchLinux under /usr/bin, Android under /system/bin, NixOS under /run/current-system/sw/bin.
+        private static readonly string[] s_binFolders = { "/bin", "/sbin", "/usr/bin", "/system/bin", "/run/current-system/sw/bin" };
         private const string s_ipv4PingFile = "ping";
         private const string s_ipv6PingFile = "ping6";
 

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPAdd
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_FPAdd
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPAdd(float x, float y) { return x+y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPAdd(1f, 1f);
         Console.WriteLine(y);

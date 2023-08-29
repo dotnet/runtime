@@ -6,6 +6,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="isinst_call_d.il" />
     <Compile Include="isinst_call.il" />
   </ItemGroup>
 </Project>

@@ -18,6 +18,7 @@ declare module "consts:monoDiagnosticsMock" {
     export default constant;
 }
 
-// these constants from dotnet.es6.extpost.js duplicate detection inside emscripten internals, but happen earlier
-declare const ENVIRONMENT_IS_NODE: boolean;
-declare const ENVIRONMENT_IS_WEB: boolean;
+// this will throw exception if the condition is false
+// see src\mono\wasm\runtime\rollup.config.js
+// inline this, because the lambda could allocate closure on hot path otherwise
+declare function mono_check(condition: unknown, messageFactory: string | (() => string)): asserts condition;

@@ -6,6 +6,7 @@
     <RootNamespace>Microsoft.NET.Sdk.WebAssembly</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS8632</NoWarn>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
@@ -16,8 +17,14 @@
   </ItemDefinitionGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="..\WasmAppBuilder\WebcilConverter.cs" />
+
+    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" ExcludeAssets="runtime" />
+
+    <ProjectReference Include="..\Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">

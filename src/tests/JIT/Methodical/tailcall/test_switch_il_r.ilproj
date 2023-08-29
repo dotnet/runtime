@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="test_switch.il" />
-  </ItemGroup>
-</Project>

@@ -14,9 +14,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 	[SetupLinkerKeepDebugMembers ("true")]
 #endif
 
-	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
-	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
-
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerDisplayAttribute), ".ctor(System.String)")]
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerDisplayAttribute), "set_Target(System.Type)")]
 	public class DebuggerDisplayAttributeOnAssemblyUsingTarget

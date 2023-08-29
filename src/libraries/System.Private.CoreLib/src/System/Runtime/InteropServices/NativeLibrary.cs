@@ -34,9 +34,9 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="libraryPath">The name of the native library to be loaded.</param>
         /// <returns>The handle for the loaded native library.</returns>
-        /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
-        /// <exception cref="System.DllNotFoundException ">If the library can't be found.</exception>
-        /// <exception cref="System.BadImageFormatException">If the library is not valid.</exception>
+        /// <exception cref="ArgumentNullException">If libraryPath is null</exception>
+        /// <exception cref="DllNotFoundException ">If the library can't be found.</exception>
+        /// <exception cref="BadImageFormatException">If the library is not valid.</exception>
         public static IntPtr Load(string libraryPath)
         {
             ArgumentNullException.ThrowIfNull(libraryPath);
@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices
         /// <param name="libraryPath">The name of the native library to be loaded.</param>
         /// <param name="handle">The out-parameter for the loaded native library handle.</param>
         /// <returns>True on successful load, false otherwise.</returns>
-        /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
+        /// <exception cref="ArgumentNullException">If libraryPath is null</exception>
         public static bool TryLoad(string libraryPath, out IntPtr handle)
         {
             ArgumentNullException.ThrowIfNull(libraryPath);
@@ -77,10 +77,10 @@ namespace System.Runtime.InteropServices
         /// <param name="assembly">The assembly loading the native library.</param>
         /// <param name="searchPath">The search path.</param>
         /// <returns>The handle for the loaded library.</returns>
-        /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
-        /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
-        /// <exception cref="System.DllNotFoundException">If the library can't be found.</exception>
-        /// <exception cref="System.BadImageFormatException">If the library is not valid.</exception>
+        /// <exception cref="ArgumentNullException">If libraryPath or assembly is null</exception>
+        /// <exception cref="ArgumentException">If assembly is not a RuntimeAssembly</exception>
+        /// <exception cref="DllNotFoundException">If the library can't be found.</exception>
+        /// <exception cref="BadImageFormatException">If the library is not valid.</exception>
         public static IntPtr Load(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             ArgumentNullException.ThrowIfNull(libraryName);
@@ -114,8 +114,8 @@ namespace System.Runtime.InteropServices
         /// <param name="searchPath">The search path.</param>
         /// <param name="handle">The out-parameter for the loaded native library handle.</param>
         /// <returns>True on successful load, false otherwise.</returns>
-        /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
-        /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
+        /// <exception cref="ArgumentNullException">If libraryPath or assembly is null</exception>
+        /// <exception cref="ArgumentException">If assembly is not a RuntimeAssembly</exception>
         public static bool TryLoad(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, out IntPtr handle)
         {
             ArgumentNullException.ThrowIfNull(libraryName);
@@ -151,8 +151,8 @@ namespace System.Runtime.InteropServices
         /// <param name="handle">The native library handle.</param>
         /// <param name="name">The name of the exported symbol.</param>
         /// <returns>The address of the symbol.</returns>
-        /// <exception cref="System.ArgumentNullException">If handle or name is null</exception>
-        /// <exception cref="System.EntryPointNotFoundException">If the symbol is not found</exception>
+        /// <exception cref="ArgumentNullException">If handle or name is null</exception>
+        /// <exception cref="EntryPointNotFoundException">If the symbol is not found</exception>
         public static IntPtr GetExport(IntPtr handle, string name)
         {
             ArgumentNullException.ThrowIfNull(handle);
@@ -168,7 +168,7 @@ namespace System.Runtime.InteropServices
         /// <param name="name">The name of the exported symbol.</param>
         /// <param name="address"> The out-parameter for the symbol address, if it exists.</param>
         /// <returns>True on success, false otherwise.</returns>
-        /// <exception cref="System.ArgumentNullException">If handle or name is null</exception>
+        /// <exception cref="ArgumentNullException">If handle or name is null</exception>
         public static bool TryGetExport(IntPtr handle, string name, out IntPtr address)
         {
             ArgumentNullException.ThrowIfNull(handle);
@@ -196,8 +196,8 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="assembly">The assembly for which the resolver is registered.</param>
         /// <param name="resolver">The resolver callback to register.</param>
-        /// <exception cref="System.ArgumentNullException">If assembly or resolver is null</exception>
-        /// <exception cref="System.ArgumentException">If a resolver is already set for this assembly</exception>
+        /// <exception cref="ArgumentNullException">If assembly or resolver is null</exception>
+        /// <exception cref="ArgumentException">If a resolver is already set for this assembly</exception>
         public static void SetDllImportResolver(Assembly assembly, DllImportResolver resolver)
         {
             ArgumentNullException.ThrowIfNull(assembly);

@@ -35,6 +35,12 @@ namespace structinreg
                 {
                     return ret;
                 }
+
+                ret = Program4.Main1();
+                if (ret != 100)
+                {
+                    return ret;
+                }
             }
             catch(Exception e)
             {

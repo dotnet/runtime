@@ -68,15 +68,25 @@ void MyICJI::getMethodSig(CORINFO_METHOD_HANDLE ftn,         /* IN  */
 // return information about a method private to the implementation
 //      returns false if method is not IL, or is otherwise unavailable.
 //      This method is used to fetch data needed to inline functions
-bool MyICJI::getMethodInfo(CORINFO_METHOD_HANDLE ftn, /* IN  */
-                           CORINFO_METHOD_INFO*  info /* OUT */
+bool MyICJI::getMethodInfo(CORINFO_METHOD_HANDLE  ftn,    /* IN  */
+                           CORINFO_METHOD_INFO*   info,   /* OUT */
+                           CORINFO_CONTEXT_HANDLE context /* IN  */
                            )
 {
     jitInstance->mc->cr->AddCall("getMethodInfo");
     DWORD exceptionCode = 0;
-    bool  value         = jitInstance->mc->repGetMethodInfo(ftn, info, &exceptionCode);
+    bool  value         = jitInstance->mc->repGetMethodInfo(ftn, info, context, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowException(exceptionCode);
+        ThrowRecordedException(exceptionCode);
+    return value;
+}
+
+bool MyICJI::haveSameMethodDefinition(
+    CORINFO_METHOD_HANDLE methHnd1,
+    CORINFO_METHOD_HANDLE methHnd2)
+{
+    jitInstance->mc->cr->AddCall("haveSameMethodDefinition");
+    bool value = jitInstance->mc->repHaveSameMethodDefinition(methHnd1, methHnd2);
     return value;
 }
 
@@ -96,7 +106,7 @@ CorInfoInline MyICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /* IN  */
     DWORD         exceptionCode = 0;
     CorInfoInline result        = jitInstance->mc->repCanInline(callerHnd, calleeHnd, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowException(exceptionCode);
+        ThrowRecordedException(exceptionCode);
     return result;
 }
 
@@ -158,13 +168,6 @@ CORINFO_CLASS_HANDLE MyICJI::getMethodClass(CORINFO_METHOD_HANDLE method)
 {
     jitInstance->mc->cr->AddCall("getMethodClass");
     return jitInstance->mc->repGetMethodClass(method);
-}
-
-// return module it belongs to
-CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
-{
-    jitInstance->mc->cr->AddCall("getMethodModule");
-    return jitInstance->mc->repGetMethodModule(method);
 }
 
 // This function returns the offset of the specified method in the
@@ -244,26 +247,11 @@ bool MyICJI::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG
 }
 
 // Check constraints on method type arguments (only).
-// The parent class should be checked separately using satisfiesClassConstraints(parent).
 bool MyICJI::satisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent, // the exact parent of the method
                                         CORINFO_METHOD_HANDLE method)
 {
     jitInstance->mc->cr->AddCall("satisfiesMethodConstraints");
     return jitInstance->mc->repSatisfiesMethodConstraints(parent, method);
-}
-
-// Given a delegate target class, a target method parent class,  a  target method,
-// a delegate class, check if the method signature is compatible with the Invoke method of the delegate
-// (under the typical instantiation of any free type variables in the memberref signatures).
-bool MyICJI::isCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,          /* type of the delegate target, if any */
-                                  CORINFO_CLASS_HANDLE  methodParentCls, /* exact parent of the target method, if any */
-                                  CORINFO_METHOD_HANDLE method,          /* (representative) target method, if any */
-                                  CORINFO_CLASS_HANDLE  delegateCls,     /* exact type of the delegate */
-                                  bool*                 pfIsOpenDelegate /* is the delegate open */
-                                  )
-{
-    jitInstance->mc->cr->AddCall("isCompatibleDelegate");
-    return jitInstance->mc->repIsCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
 }
 
 // load and restore the method
@@ -319,14 +307,7 @@ void MyICJI::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResolvedToken)
     jitInstance->mc->cr->AddCall("resolveToken");
     jitInstance->mc->repResolveToken(pResolvedToken, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowException(exceptionCode);
-}
-
-// Resolve metadata token into runtime method handles.
-bool MyICJI::tryResolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN* pResolvedToken)
-{
-    jitInstance->mc->cr->AddCall("tryResolveToken");
-    return jitInstance->mc->repTryResolveToken(pResolvedToken);
+        ThrowRecordedException(exceptionCode);
 }
 
 // Signature information about the call sig
@@ -357,24 +338,6 @@ CORINFO_CLASS_HANDLE MyICJI::getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResol
 {
     jitInstance->mc->cr->AddCall("getTokenTypeAsHandle");
     return jitInstance->mc->repGetTokenTypeAsHandle(pResolvedToken);
-}
-
-// Checks if the given metadata token is valid
-bool MyICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
-                          unsigned              metaTOK /* IN  */
-                          )
-{
-    jitInstance->mc->cr->AddCall("isValidToken");
-    return jitInstance->mc->repIsValidToken(module, metaTOK);
-}
-
-// Checks if the given metadata token is valid StringRef
-bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
-                              unsigned              metaTOK /* IN  */
-                              )
-{
-    jitInstance->mc->cr->AddCall("isValidStringRef");
-    return jitInstance->mc->repIsValidStringRef(module, metaTOK);
 }
 
 int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
@@ -576,6 +539,15 @@ CORINFO_FIELD_HANDLE MyICJI::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT nu
     return jitInstance->mc->repGetFieldInClass(clsHnd, num);
 }
 
+GetTypeLayoutResult MyICJI::getTypeLayout(
+    CORINFO_CLASS_HANDLE typeHnd,
+    CORINFO_TYPE_LAYOUT_NODE* nodes,
+    size_t* numNodes)
+{
+    jitInstance->mc->cr->AddCall("getTypeLayout");
+    return jitInstance->mc->repGetTypeLayout(typeHnd, nodes, numNodes);
+}
+
 bool MyICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
 {
     jitInstance->mc->cr->AddCall("checkMethodModifier");
@@ -584,10 +556,14 @@ bool MyICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier,
 }
 
 // returns the "NEW" helper optimized for "newCls."
-CorInfoHelpFunc MyICJI::getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects)
+CorInfoHelpFunc MyICJI::getNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects)
 {
     jitInstance->mc->cr->AddCall("getNewHelper");
-    return jitInstance->mc->repGetNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+    DWORD exceptionCode = 0;
+    CorInfoHelpFunc result = jitInstance->mc->repGetNewHelper(classHandle, pHasSideEffects, &exceptionCode);
+    if (exceptionCode != 0)
+        ThrowRecordedException(exceptionCode);
+    return result;
 }
 
 // returns the newArr (1-Dim array) helper optimized for "arrayCls."
@@ -759,13 +735,6 @@ bool MyICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
     return jitInstance->mc->repCanCast(child, parent);
 }
 
-// TRUE if cls1 and cls2 are considered equivalent types.
-bool MyICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    jitInstance->mc->cr->AddCall("areTypesEquivalent");
-    return jitInstance->mc->repAreTypesEquivalent(cls1, cls2);
-}
-
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
 TypeCompareState MyICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
@@ -780,13 +749,6 @@ TypeCompareState MyICJI::compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORI
 {
     jitInstance->mc->cr->AddCall("compareTypesForEquality");
     return jitInstance->mc->repCompareTypesForEquality(cls1, cls2);
-}
-
-// returns the intersection of cls1 and cls2.
-CORINFO_CLASS_HANDLE MyICJI::mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    jitInstance->mc->cr->AddCall("mergeClasses");
-    return jitInstance->mc->repMergeClasses(cls1, cls2);
 }
 
 // Returns true if cls2 is known to be a more specific type than cls1
@@ -824,13 +786,6 @@ CorInfoType MyICJI::getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HAND
 {
     jitInstance->mc->cr->AddCall("getChildType");
     return jitInstance->mc->repGetChildType(clsHnd, clsRet);
-}
-
-// Check constraints on type arguments of this class and parent classes
-bool MyICJI::satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("satisfiesClassConstraints");
-    return jitInstance->mc->repSatisfiesClassConstraints(cls);
 }
 
 // Check if this is a single dimensional array type
@@ -924,16 +879,16 @@ void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     jitInstance->mc->repGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
-uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalFieldInfo");
-    return jitInstance->mc->repGetThreadLocalFieldInfo(field);
+    return jitInstance->mc->repGetThreadLocalFieldInfo(field, isGCType);
 }
 
-void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
-    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);
+    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 // Returns true iff "fldHnd" represents a static field.
@@ -1114,7 +1069,7 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
     jitInstance->mc->cr->AddCall("getArgType");
     CorInfoTypeWithMod value = jitInstance->mc->repGetArgType(sig, args, vcTypeRet, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowException(exceptionCode);
+        ThrowRecordedException(exceptionCode);
     return value;
 }
 
@@ -1136,7 +1091,7 @@ CORINFO_CLASS_HANDLE MyICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
     jitInstance->mc->cr->AddCall("getArgClass");
     CORINFO_CLASS_HANDLE value = jitInstance->mc->repGetArgClass(sig, args, &exceptionCode);
     if (exceptionCode != 0)
-        ThrowException(exceptionCode);
+        ThrowRecordedException(exceptionCode);
     return value;
 }
 
@@ -1146,60 +1101,6 @@ CorInfoHFAElemType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
     jitInstance->mc->cr->AddCall("getHFAType");
     CorInfoHFAElemType value = jitInstance->mc->repGetHFAType(hClass);
     return value;
-}
-
-/*****************************************************************************
-* ICorErrorInfo contains methods to deal with SEH exceptions being thrown
-* from the corinfo interface.  These methods may be called when an exception
-* with code EXCEPTION_COMPLUS is caught.
-*****************************************************************************/
-
-// Returns the HRESULT of the current exception
-HRESULT MyICJI::GetErrorHRESULT(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("GetErrorHRESULT");
-    LogError("Hit unimplemented GetErrorHRESULT");
-    DebugBreakorAV(76);
-    return 0;
-}
-
-// Fetches the message of the current exception
-// Returns the size of the message (including terminating null). This can be
-// greater than bufferLength if the buffer is insufficient.
-uint32_t MyICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_t* buffer, uint32_t bufferLength)
-{
-    jitInstance->mc->cr->AddCall("GetErrorMessage");
-    LogError("Hit unimplemented GetErrorMessage");
-    DebugBreakorAV(77);
-    return 0;
-}
-
-// returns EXCEPTION_EXECUTE_HANDLER if it is OK for the compile to handle the
-//                        exception, abort some work (like the inlining) and continue compilation
-// returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
-//                    things like ThreadStoppedException ...
-// returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-
-int MyICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("FilterException");
-    int result = jitInstance->mc->repFilterException(pExceptionPointers);
-    return result;
-}
-
-void MyICJI::ThrowExceptionForJitResult(HRESULT result)
-{
-    jitInstance->mc->cr->AddCall("ThrowExceptionForJitResult");
-    LogError("Hit unimplemented ThrowExceptionForJitResult");
-    DebugBreakorAV(80);
-}
-
-// Throws an exception defined by the given throw helper.
-void MyICJI::ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper)
-{
-    jitInstance->mc->cr->AddCall("ThrowExceptionForHelper");
-    LogError("Hit unimplemented ThrowExceptionForHelper");
-    DebugBreakorAV(81);
 }
 
 /*****************************************************************************
@@ -1275,17 +1176,6 @@ unsigned MyICJI::getMethodHash(CORINFO_METHOD_HANDLE ftn /* IN */
     return jitInstance->mc->repGetMethodHash(ftn);
 }
 
-// this function is for debugging only.
-size_t MyICJI::findNameOfToken(CORINFO_MODULE_HANDLE              module,        /* IN  */
-                               mdToken                            metaTOK,       /* IN  */
-                               _Out_writes_(FQNameCapacity) char* szFQName,      /* OUT */
-                               size_t                             FQNameCapacity /* IN */
-                               )
-{
-    jitInstance->mc->cr->AddCall("findNameOfToken");
-    return jitInstance->mc->repFindNameOfToken(module, metaTOK, szFQName, FQNameCapacity);
-}
-
 bool MyICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     /* IN */ CORINFO_CLASS_HANDLE                                  structHnd,
     /* OUT */ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
@@ -1311,12 +1201,6 @@ uint32_t MyICJI::getThreadTLSIndex(void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("getThreadTLSIndex");
     return jitInstance->mc->repGetThreadTLSIndex(ppIndirection);
-}
-
-const void* MyICJI::getInlinedCallFrameVptr(void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getInlinedCallFrameVptr");
-    return jitInstance->mc->repGetInlinedCallFrameVptr(ppIndirection);
 }
 
 int32_t* MyICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
@@ -1489,23 +1373,7 @@ void MyICJI::getCallInfo(
     jitInstance->mc->repGetCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult,
                                     &exceptionCode);
     if (exceptionCode != 0)
-        ThrowException(exceptionCode);
-}
-
-bool MyICJI::canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType)
-
-{
-    jitInstance->mc->cr->AddCall("canAccessFamily");
-    return jitInstance->mc->repCanAccessFamily(hCaller, hInstanceType);
-}
-// Returns TRUE if the Class Domain ID is the RID of the class (currently true for every class
-// except reflection emitted classes and generics)
-bool MyICJI::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("isRIDClassDomainID");
-    LogError("Hit unimplemented isRIDClassDomainID");
-    DebugBreakorAV(107);
-    return false;
+        ThrowRecordedException(exceptionCode);
 }
 
 // returns the class's domain ID for accessing shared statics
@@ -1515,10 +1383,16 @@ unsigned MyICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection
     return jitInstance->mc->repGetClassDomainID(cls, ppIndirection);
 }
 
-bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool MyICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
-    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    jitInstance->mc->cr->AddCall("getStaticFieldContent");
+    return jitInstance->mc->repGetStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+}
+
+bool MyICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    jitInstance->mc->cr->AddCall("getObjectContent");
+    return jitInstance->mc->repGetObjectContent(obj, buffer, bufferSize, valueOffset);
 }
 
 // return the class handle for the current value of a static field
@@ -1901,12 +1775,11 @@ void MyICJI::recordRelocation(void*    location,   /* IN  */
                               void*    locationRW, /* IN  */
                               void*    target,     /* IN  */
                               uint16_t fRelocType, /* IN  */
-                              uint16_t slotNum,    /* IN  */
                               int32_t  addlDelta   /* IN  */
                               )
 {
     jitInstance->mc->cr->AddCall("recordRelocation");
-    jitInstance->mc->cr->repRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    jitInstance->mc->cr->repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
 uint16_t MyICJI::getRelocTypeHint(void* target)

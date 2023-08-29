@@ -269,7 +269,7 @@ int DwGetAppDescription(                // Number of characters written.
     }
 
     // If the description is a single space, ignore it.
-    if (wcscmp(fileDescription, W(" ")) == 0)
+    if (u16_strcmp(fileDescription, W(" ")) == 0)
     {
         return 0;
     }
@@ -401,7 +401,7 @@ int DwGetAssemblyVersion(               // Number of characters written.
     }
 
     // If the assembly version is a single space, ignore it.
-    if (wcscmp(assemblyVersion, W(" ")) == 0)
+    if (u16_strcmp(assemblyVersion, W(" ")) == 0)
     {
         return 0;
     }
@@ -1061,7 +1061,7 @@ ContractFailureKind GetContractFailureKind(OBJECTREF obj)
                 // getting closer, now look for all three fields on ContractException
                 const int requiredFieldMatches = 3;
 
-                PTR_EEClass pEEClass = pMT->GetClass_NoLogging();
+                PTR_EEClass pEEClass = pMT->GetClass();
 
                 PTR_FieldDesc pFD = pEEClass->GetFieldDescList();
                 PTR_FieldDesc pFDEnd = pFD + numFields;

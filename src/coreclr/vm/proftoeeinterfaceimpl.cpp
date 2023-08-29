@@ -125,6 +125,7 @@
 #include "safemath.h"
 #include "threadsuspend.h"
 #include "inlinetracking.h"
+#include "frozenobjectheap.h"
 
 #ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
@@ -570,6 +571,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     else if (id == IID_ICorProfilerInfo13)
     {
         *pInterface = static_cast<ICorProfilerInfo13 *>(this);
+    }
+    else if (id == IID_ICorProfilerInfo14)
+    {
+        *pInterface = static_cast<ICorProfilerInfo14 *>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -4121,7 +4126,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
             wszFileName = strScopeName.GetUnicode();
         }
 
-        ULONG trueLen = (ULONG)(wcslen(wszFileName) + 1);
+        ULONG trueLen = (ULONG)(u16_strlen(wszFileName) + 1);
 
         // Return name of module as required.
         if (wszName && cchName > 0)
@@ -4332,7 +4337,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
 
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    if (!pPEAssembly->HasLoadedPEImage())
+    if (!pPEAssembly->IsLoaded())
         return (CORPROF_E_DATAINCOMPLETE);
 
     LPCBYTE pbMethod = NULL;
@@ -4442,7 +4447,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
     Module * pModule = (Module *) moduleId;
 
     if (pModule->IsBeingUnloaded() ||
-        !pModule->GetPEAssembly()->HasLoadedPEImage())
+        !pModule->GetPEAssembly()->IsLoaded())
     {
         return (CORPROF_E_DATAINCOMPLETE);
     }
@@ -5606,7 +5611,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     if (szFriendlyName != NULL)
     {
         // Get the module file name
-        ULONG trueLen = (ULONG)(wcslen(szFriendlyName) + 1);
+        ULONG trueLen = (ULONG)(u16_strlen(szFriendlyName) + 1);
 
         // Return name of module as required.
         if (szName && cchName > 0)
@@ -6483,7 +6488,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
         ss.Normalize();
         LPCWSTR methodName = ss.GetUnicode();
 
-        ULONG trueLen = (ULONG)(wcslen(methodName) + 1);
+        ULONG trueLen = (ULONG)(u16_strlen(methodName) + 1);
 
         // Return name of method as required.
         if (wszName && cchName > 0)
@@ -7237,6 +7242,28 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(
         LL_INFO1000,
         "**PROF: EventPipeCreateProvider.\n"));
 
+    return EventPipeCreateProvider2(providerName, NULL, pProvider);
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider2(
+    const WCHAR               *providerName,
+    EventPipeProviderCallback *pCallback,
+    EVENTPIPE_PROVIDER        *pProvider)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeCreateProvider2.\n"));
+
 #ifdef FEATURE_PERFTRACING
     if (providerName == NULL || pProvider == NULL)
     {
@@ -7246,7 +7273,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(
     HRESULT hr = S_OK;
     EX_TRY
     {
-        EventPipeProvider *pRealProvider = EventPipeAdapter::CreateProvider(providerName, nullptr);
+        EventPipeProvider *pRealProvider = EventPipeAdapter::CreateProvider(providerName, (EventPipeCallback)pCallback);
         if (pRealProvider == NULL)
         {
             hr = E_FAIL;
@@ -7586,6 +7613,107 @@ HRESULT ProfToEEInterfaceImpl::GetObjectIDFromHandle(
     return S_OK;
 }
 
+HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** ppEnum)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+
+        // FrozenObjectHeapManager takes a lock
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF, LL_INFO1000, "**PROF: EnumerateNonGCObjects.\n"));
+
+    if (NULL == ppEnum)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+
+    *ppEnum = NULL;
+
+    NewHolder<ProfilerObjectEnum> pEnum(new (nothrow) ProfilerObjectEnum());
+    if (pEnum == NULL || !pEnum->Init())
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Extract();
+
+    return hr;
+}
+
+HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
+                                                  ULONG *pcObjectRanges,
+                                                  COR_PRF_NONGC_HEAP_RANGE ranges[])
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+
+        // FrozenObjectHeapManager takes a lock
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    if ((cObjectRanges > 0) && (ranges == nullptr))
+    {
+        // Copy GetGenerationBounds's behavior for consistency
+        return E_INVALIDARG;
+    }
+
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManagerNoThrow();
+    if (foh == nullptr)
+    {
+        *pcObjectRanges = 0;
+        return S_OK;
+    }
+    CrstHolder ch(&foh->m_Crst);
+
+    const unsigned segmentsCount = foh->m_FrozenSegments.GetCount();
+    FrozenObjectSegment** segments = foh->m_FrozenSegments.GetElements();
+    if (segments != nullptr && segmentsCount > 0)
+    {
+        const ULONG segmentsToInspect = min(cObjectRanges, (ULONG)segmentsCount);
+
+        for (unsigned segIdx = 0; segIdx < segmentsToInspect; segIdx++)
+        {
+            uint8_t* firstObj = segments[segIdx]->m_pStart + sizeof(ObjHeader);
+
+            // Start of the segment (first object)
+            ranges[segIdx].rangeStart = (ObjectID)firstObj;
+
+            // Total size reserved for a segment
+            ranges[segIdx].rangeLengthReserved = (UINT_PTR)segments[segIdx]->m_Size - sizeof(ObjHeader);
+
+            // Size of the segment that is currently in use
+            ranges[segIdx].rangeLength = (UINT_PTR)(segments[segIdx]->m_pCurrent - firstObj);
+        }
+
+        if (pcObjectRanges != nullptr)
+        {
+            *pcObjectRanges = (ULONG)segmentsCount;
+        }
+    }
+    else
+    {
+        if (pcObjectRanges != nullptr)
+        {
+            *pcObjectRanges = 0;
+        }
+    }
+    return S_OK;
+}
 
 /*
  * GetStringLayout
@@ -9141,6 +9269,15 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
 
     IGCHeap *hp = GCHeapUtilities::GetGCHeap();
 
+    if (hp->IsInFrozenSegment((Object*)objectId))
+    {
+        range->generation = (COR_PRF_GC_GENERATION)INT32_MAX;
+        range->rangeStart = 0;
+        range->rangeLength = 0;
+        range->rangeLengthReserved = 0;
+        return CORPROF_E_NOT_GC_OBJECT;
+    }
+
     uint8_t* pStart;
     uint8_t* pAllocated;
     uint8_t* pReserved;
@@ -9576,7 +9713,7 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
         PCWSTR pczVersionString = CLR_PRODUCT_VERSION_L;
 
         // Get the module file name
-        ULONG trueLen = (ULONG)(wcslen(pczVersionString) + 1);
+        ULONG trueLen = (ULONG)(u16_strlen(pczVersionString) + 1);
 
         // Return name of module as required.
         if (szVersionString && cchVersionString > 0)
@@ -10622,9 +10759,22 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+HCIMPL2_RAW(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
+GCX_COOP_THREAD_EXISTS(GET_THREAD());
+HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
+
+    if (GetThreadNULLOk() == NULL)
+    {
+        Thread *pThread = SetupThreadNoThrow();
+        if (pThread == NULL)
+        {
+            return;
+        }
+    }
+
+    GCX_COOP();
 
 #ifdef PROFILING_SUPPORTED
 
@@ -10792,7 +10942,9 @@ LExit:
 }
 HCIMPLEND
 
-HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+HCIMPL2_RAW(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
+GCX_COOP();
+HCIMPL_PROLOG(ProfileLeave)
 {
     FCALL_CONTRACT;
 

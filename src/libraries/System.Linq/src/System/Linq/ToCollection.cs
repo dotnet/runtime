@@ -29,6 +29,69 @@ namespace System.Linq
             return source is IIListProvider<TSource> listProvider ? listProvider.ToList() : new List<TSource>(source);
         }
 
+        /// <summary>
+        /// Creates a <see cref="Dictionary{TKey,TValue}"/> from an <see cref="IEnumerable{T}"/> according to the default comparer for the key type.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys from elements of <paramref name="source"/></typeparam>
+        /// <typeparam name="TValue">The type of the values from elements of <paramref name="source"/></typeparam>
+        /// <param name="source">The <see cref="IEnumerable{T}"/> to create a <see cref="Dictionary{TKey,TValue}"/> from.</param>
+        /// <returns>A <see cref="Dictionary{TKey,TValue}"/> that contains keys and values from <paramref name="source"/> and uses default comparer for the key type.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is a null reference.</exception>
+        /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys.</exception>
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source) where TKey : notnull =>
+            source.ToDictionary(null);
+
+        /// <summary>
+        /// Creates a <see cref="Dictionary{TKey,TValue}"/> from an <see cref="IEnumerable{T}"/> according to specified key comparer.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys from elements of <paramref name="source"/></typeparam>
+        /// <typeparam name="TValue">The type of the values from elements of <paramref name="source"/></typeparam>
+        /// <param name="source">The <see cref="IEnumerable{T}"/> to create a <see cref="Dictionary{TKey,TValue}"/> from.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{TKey}"/> to compare keys.</param>
+        /// <returns>A <see cref="Dictionary{TKey,TValue}"/> that contains keys and values from <paramref name="source"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is a null reference.</exception>
+        /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys.</exception>
+        /// <remarks>
+        /// If <paramref name="comparer"/> is null, the default equality comparer <see cref="EqualityComparer{TKey}.Default"/> is used to compare keys.
+        /// </remarks>
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? comparer) where TKey : notnull
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            return new(source, comparer);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Dictionary{TKey,TValue}"/> from an <see cref="IEnumerable{T}"/> according to the default comparer for the key type.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys from elements of <paramref name="source"/></typeparam>
+        /// <typeparam name="TValue">The type of the values from elements of <paramref name="source"/></typeparam>
+        /// <param name="source">The <see cref="IEnumerable{T}"/> to create a <see cref="Dictionary{TKey,TValue}"/> from.</param>
+        /// <returns>A <see cref="Dictionary{TKey,TValue}"/> that contains keys and values from <paramref name="source"/> and uses default comparer for the key type.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is a null reference.</exception>
+        /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys.</exception>
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<(TKey Key, TValue Value)> source) where TKey : notnull =>
+            source.ToDictionary(null);
+
+        /// <summary>
+        /// Creates a <see cref="Dictionary{TKey,TValue}"/> from an <see cref="IEnumerable{T}"/> according to specified key comparer.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys from elements of <paramref name="source"/></typeparam>
+        /// <typeparam name="TValue">The type of the values from elements of <paramref name="source"/></typeparam>
+        /// <param name="source">The <see cref="IEnumerable{T}"/> to create a <see cref="Dictionary{TKey,TValue}"/> from.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{TKey}"/> to compare keys.</param>
+        /// <returns>A <see cref="Dictionary{TKey,TValue}"/> that contains keys and values from <paramref name="source"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is a null reference.</exception>
+        /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys.</exception>
+        /// <remarks>
+        /// If <paramref name="comparer"/> is null, the default equality comparer <see cref="EqualityComparer{TKey}.Default"/> is used to compare keys.
+        /// </remarks>
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<(TKey Key, TValue Value)> source, IEqualityComparer<TKey>? comparer) where TKey : notnull =>
+            source.ToDictionary(vt => vt.Key, vt => vt.Value, comparer);
+
         public static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) where TKey : notnull =>
             ToDictionary(source, keySelector, null);
 

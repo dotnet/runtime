@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 
@@ -8,11 +9,17 @@ namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
-        public readonly X509Certificate2 Certificate;
-        public ReadOnlySpan<X509Certificate2> IntermediateCertificates => _intermediateCertificates;
-
-        private readonly X509Certificate2[] _intermediateCertificates;
         internal readonly SslCertificateTrust? Trust;
+
+        /// <summary>
+        /// Gets the target (leaf) certificate of the built chain.
+        /// </summary>
+        public X509Certificate2 TargetCertificate { get; }
+
+        /// <summary>
+        /// Gets the intermediate certificates for the built chain.
+        /// </summary>
+        public ReadOnlyCollection<X509Certificate2> IntermediateCertificates { get; }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline)
@@ -111,7 +118,7 @@ namespace System.Net.Security
                 }
             }
 
-            SslStreamCertificateContext ctx = new SslStreamCertificateContext(target, intermediates, trust);
+            SslStreamCertificateContext ctx = new SslStreamCertificateContext(target, new ReadOnlyCollection<X509Certificate2>(intermediates), trust);
 
             // On Linux, AddRootCertificate will start a background download of an OCSP response,
             // unless this context was built "offline", or this came from the internal Create(X509Certificate2)
@@ -133,7 +140,7 @@ namespace System.Net.Security
 
         internal SslStreamCertificateContext Duplicate()
         {
-            return new SslStreamCertificateContext(new X509Certificate2(Certificate), _intermediateCertificates, Trust);
+            return new SslStreamCertificateContext(new X509Certificate2(TargetCertificate), IntermediateCertificates, Trust);
         }
     }
 }

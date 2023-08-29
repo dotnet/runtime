@@ -94,7 +94,7 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
 
 
-        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? abortController = null, JSObject? fetchResponse = null)
+        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? abortController, JSObject? fetchResponse)
         {
             if (promise.IsCompletedSuccessfully)
             {
@@ -104,16 +104,17 @@ namespace System.Net.Http
             {
                 using (var operationRegistration = cancellationToken.Register(() =>
                 {
-                    CancelablePromise.CancelPromise(promise);
-                    if (abortController != null)
+                    CancelablePromise.CancelPromise(promise, static (JSObject? _fetchResponse, JSObject? _abortController) =>
                     {
-                        AbortRequest(abortController);
-                    }
-                    if (fetchResponse != null)
-                    {
-                        AbortResponse(fetchResponse);
-                    }
-
+                        if (_abortController != null)
+                        {
+                            AbortRequest(_abortController);
+                        }
+                        if (_fetchResponse != null)
+                        {
+                            AbortResponse(_fetchResponse);
+                        }
+                    }, fetchResponse, abortController);
                 }))
                 {
                     return await promise.ConfigureAwait(true);

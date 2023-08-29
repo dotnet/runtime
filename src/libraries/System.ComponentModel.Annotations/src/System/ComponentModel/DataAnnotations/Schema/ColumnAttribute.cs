@@ -28,11 +28,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// <param name="name">The name of the column the property is mapped to.</param>
         public ColumnAttribute(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException(SR.Format(SR.ArgumentIsNullOrWhitespace, nameof(name)), nameof(name));
-            }
-
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
             Name = name;
         }
 
@@ -64,11 +60,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
             get => _typeName;
             set
             {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    throw new ArgumentException(SR.Format(SR.ArgumentIsNullOrWhitespace, nameof(value)), nameof(value));
-                }
-
+                ArgumentException.ThrowIfNullOrWhiteSpace(value);
                 _typeName = value;
             }
         }

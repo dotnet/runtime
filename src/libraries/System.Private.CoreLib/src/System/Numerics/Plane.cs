@@ -61,7 +61,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane CreateFromVertices(Vector3 point1, Vector3 point2, Vector3 point3)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
                 Vector3 a = point2 - point1;
                 Vector3 b = point3 - point1;
@@ -126,7 +126,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DotCoordinate(Plane plane, Vector3 value)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
                 return Vector3.Dot(plane.Normal, value) + plane.D;
             }
@@ -146,7 +146,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DotNormal(Plane plane, Vector3 value)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
                 return Vector3.Dot(plane.Normal, value);
             }
@@ -164,7 +164,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Normalize(Plane value)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
                 float normalLengthSquared = value.Normal.LengthSquared();
                 if (MathF.Abs(normalLengthSquared - 1.0f) < NormalizeEpsilon)

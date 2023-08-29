@@ -199,6 +199,9 @@ namespace System.Tests
             yield return new object[] { "12", NumberStyles.HexNumber, emptyFormat, (ushort)0x12 };
             yield return new object[] { "abc", NumberStyles.HexNumber, emptyFormat, (ushort)0xabc };
             yield return new object[] { "ABC", NumberStyles.HexNumber, null, (ushort)0xabc };
+            yield return new object[] { "10010", NumberStyles.BinaryNumber, emptyFormat, (ushort)0b10010};
+            yield return new object[] { "101010111100", NumberStyles.BinaryNumber, emptyFormat, (ushort)0b101010111100 };
+            yield return new object[] { "101010111100", NumberStyles.BinaryNumber, null, (ushort)0b101010111100 };
             yield return new object[] { "$1,000", NumberStyles.Currency, customFormat, (ushort)1000 };
         }
 
@@ -250,6 +253,7 @@ namespace System.Tests
             // > max value
             yield return new object[] { "65536", NumberStyles.Integer, null, typeof(OverflowException) };
             yield return new object[] { "10000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { "10000000000000000", NumberStyles.BinaryNumber, null, typeof(OverflowException) };
         }
 
         [Theory]
@@ -290,16 +294,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.BinaryNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.BinaryNumber)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
         {
             ushort result = 0;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => ushort.TryParse("1", style, null, out result));
             Assert.Equal(default(ushort), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>("style", () => ushort.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>("style", () => ushort.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -314,6 +320,7 @@ namespace System.Tests
             yield return new object[] { "+123", 0, 2, NumberStyles.Integer, null, (ushort)1 };
             yield return new object[] { "+123", 1, 3, NumberStyles.Integer, null, (ushort)123 };
             yield return new object[] { "AJK", 0, 1, NumberStyles.HexNumber, new NumberFormatInfo(), (ushort)0XA };
+            yield return new object[] { "111", 0, 1, NumberStyles.BinaryNumber, new NumberFormatInfo(), (ushort)0b1 };
             yield return new object[] { "$1,000", 0, 2, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (ushort)1 };
             yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (ushort)10 };
         }
@@ -355,6 +362,49 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => ushort.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(ushort.TryParse(value.AsSpan(), style, provider, out result));
+                Assert.Equal(0u, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, ushort expected)
+        {
+            ushort result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(ushort.TryParse(valueUtf8, out result));
+                Assert.Equal(expected, result);
+            }
+
+            Assert.Equal(expected, ushort.Parse(valueUtf8, style, provider));
+
+            Assert.True(ushort.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ushort result;
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(ushort.TryParse(valueUtf8, out result));
+                    Assert.Equal(0u, result);
+                }
+
+                Assert.Throws(exceptionType, () => ushort.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(ushort.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0u, result);
             }
         }

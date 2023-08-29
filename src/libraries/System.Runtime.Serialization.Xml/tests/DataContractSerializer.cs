@@ -19,7 +19,8 @@ using System.Xml.Linq;
 using System.Xml.Schema;
 using Xunit;
 using System.Runtime.Serialization.Tests;
-
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 
 public static partial class DataContractSerializerTests
 {
@@ -1113,6 +1114,88 @@ public static partial class DataContractSerializerTests
         var y = DataContractSerializerHelper.SerializeAndDeserialize<__TypeNameWithSpecialCharacters\u6F22\u00F1>(x, "<__TypeNameWithSpecialCharacters\u6F22\u00F1 xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><PropertyNameWithSpecialCharacters\u6F22\u00F1>Test</PropertyNameWithSpecialCharacters\u6F22\u00F1></__TypeNameWithSpecialCharacters\u6F22\u00F1>");
 
         Assert.Equal(x.PropertyNameWithSpecialCharacters\u6F22\u00F1, y.PropertyNameWithSpecialCharacters\u6F22\u00F1);
+    }
+
+    [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
+    public static void DCS_TypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: false, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
+    public static void DCS_CollectionTypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: true, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteAndUnload(string assemblyfile, string typename, bool makeCollection, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("DataContractSerializerTests", true, fullPath);
+        object obj;
+        wref = new WeakReference(alc);
+
+        // Load assembly by path. By name, and it gets loaded in the default ALC.
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+
+        // Ensure the type loaded in the intended non-Default ALC
+        var type = asm.GetType(typename);
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(type.Assembly), alc);
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        if (makeCollection)
+        {
+            int arrayLength = 3;
+            var array = Array.CreateInstance(type, arrayLength);
+            for (int i = 0; i < arrayLength; i++)
+            {
+                array.SetValue(Activator.CreateInstance(type), i);
+            }
+            type = array.GetType();
+            obj = array;
+        }
+        else
+        {
+            obj = Activator.CreateInstance(type);
+        }
+
+        // Round-Trip the instance
+        var dcs = new DataContractSerializer(type);
+        var rtobj = DataContractSerializerHelper.SerializeAndDeserialize<object>(obj, null, null, () => dcs, true, false);
+        Assert.NotNull(rtobj);
+        if (makeCollection)
+            Assert.Equal(obj, rtobj);
+        else
+            Assert.True(rtobj.Equals(obj));
+
+        alc.Unload();
     }
 
     [Fact]
@@ -4041,6 +4124,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
     public static void DCS_FileStreamSurrogate()
     {
         using (var testFile = TempFile.Create())
@@ -4108,6 +4192,7 @@ public static partial class DataContractSerializerTests
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
     public static void DCS_MemoryStream_Serialize_UsesBuiltInAdapter()
     {
         ValidateObject(
@@ -4167,6 +4252,7 @@ public static partial class DataContractSerializerTests
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
     public static void DCS_MemoryStream_Deserialize_CompatibleWithFullFramework()
     {
         // The payloads in this test were generated by a Full Framework application.

@@ -13,7 +13,7 @@ To add a new web worker, add a definition here and modify the
 
 ## Caveats: a note about pthreads
 
-The workers in this directory are completely standalone from the Emscripten pthreads! they do not have access to the shared instance memory, and do not load the Emscripten `dotnet.js`.  As a result, the workers in this directory cannot use any of pthread APIs or otherwise interact with the runtime in any way, except through message passing, or by having something in the runtime set up their own shared array buffer (which would be inaccessible from wasm).
+The workers in this directory are completely standalone from the Emscripten pthreads! they do not have access to the shared instance memory, and do not load the Emscripten `dotnet.native.js`.  As a result, the workers in this directory cannot use any of pthread APIs or otherwise interact with the runtime in any way, except through message passing, or by having something in the runtime set up their own shared array buffer (which would be inaccessible from wasm).
 
 On the other hand, the workers in this directory also do not depend on a .NET runtime compiled with `-s USE_PTHREADS` and are thus usable on sufficiently new browser using the single-threaded builds of .NET for WebAssembly.
 

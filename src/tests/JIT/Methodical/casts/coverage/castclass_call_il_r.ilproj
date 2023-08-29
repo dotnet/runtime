@@ -5,6 +5,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="castclass_call_r.il" />
     <Compile Include="castclass_call.il" />
   </ItemGroup>
 </Project>

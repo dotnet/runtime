@@ -32,14 +32,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works, using Unsafe.ReadUnaligned
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.ReadUnaligned
                 test.RunLclVarScenario_UnsafeRead();
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
@@ -90,17 +84,8 @@ namespace JIT.HardwareIntrinsics.Arm
         private static {Op1BaseType} _data1;
         private static {Op2BaseType} _data2;
 
-        private static {Op1BaseType} _clsVar1;
-        private static {Op2BaseType} _clsVar2;
-
         private {Op1BaseType} _fld1;
         private {Op2BaseType} _fld2;
-
-        static ScalarBinaryOpTest__{TestName}()
-        {
-            _clsVar1 = {NextValueOp1};
-            _clsVar2 = {NextValueOp2};
-        }
 
         public ScalarBinaryOpTest__{TestName}()
         {
@@ -142,18 +127,6 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(_data1, _data2, ({RetBaseType})result);
         }
 
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar1,
-                _clsVar2
-            );
-
-            ValidateResult(_clsVar1, _clsVar2, result);
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -163,16 +136,6 @@ namespace JIT.HardwareIntrinsics.Arm
             var result = {Isa}.{Method}(data1, data2);
 
             ValidateResult(data1, data2, result);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new ScalarBinaryOpTest__{TestName}();
-            var result = {Isa}.{Method}(test._fld1, test._fld2);
-
-            ValidateResult(test._fld1, test._fld2, result);
         }
 
         public void RunClassFldScenario()

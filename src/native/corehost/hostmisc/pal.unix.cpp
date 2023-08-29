@@ -16,7 +16,6 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <ctime>
-#include <locale>
 #include <pwd.h>
 #include "config.h"
 #include <minipal/getexepath.h>
@@ -1104,5 +1103,16 @@ bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const st
 #else
     // On Linux, paths are case-sensitive
     return path1 == path2;
+#endif
+}
+
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+extern void initialize_static_createdump();
+#endif
+
+void pal::initialize_createdump()
+{
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+    initialize_static_createdump();
 #endif
 }

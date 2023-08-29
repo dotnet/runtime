@@ -26,6 +26,9 @@ namespace System.Xml.Serialization
 
         internal Dictionary<string, EnumMapping> Enums => _enums ??= new Dictionary<string, EnumMapping>();
 
+        private static readonly string[] s_checkTypeString = new string[] { "checkType" };
+        private static readonly Type[] s_boolType = new Type[] { typeof(bool) };
+
         private sealed class Member
         {
             private readonly string _source;
@@ -503,7 +506,7 @@ namespace System.Xml.Serialization
                 MethodInfo XmlSerializationReader_set_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                     "set_IsReturnValue",
                     CodeGenerator.InstanceBindingFlags,
-                    new Type[] { typeof(bool) }
+                    s_boolType
                     )!;
                 ilg.Ldarg(0);
                 ilg.Ldc(true);
@@ -1289,8 +1292,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 nullableMapping.TypeDesc!.Type!,
                 GetMethodBuilder(methodName!),
-                new Type[] { typeof(bool) },
-                new string[] { "checkType" },
+                s_boolType,
+                s_checkTypeString,
                 CodeGenerator.PrivateMethodAttributes);
 
             LocalBuilder oLoc = ilg.DeclareLocal(nullableMapping.TypeDesc.Type!, "o");
@@ -1525,7 +1528,7 @@ namespace System.Xml.Serialization
                     MethodInfo XmlSerializationReader_set_DecodeName = typeof(XmlSerializationReader).GetMethod(
                          "set_DecodeName",
                          CodeGenerator.InstanceBindingFlags,
-                         new Type[] { typeof(bool) }
+                         s_boolType
                          )!;
                     ilg.Ldarg(0);
                     ilg.Ldc(false);
@@ -1566,7 +1569,7 @@ namespace System.Xml.Serialization
                         // find anyElement if present.
                         for (int j = 0; j < mapping.Elements!.Length; j++)
                         {
-                            if (mapping.Elements[j].Any && (mapping.Elements[j].Name == null || mapping.Elements[j].Name.Length == 0))
+                            if (mapping.Elements[j].Any && string.IsNullOrEmpty(mapping.Elements[j].Name))
                             {
                                 anyElement = member;
                                 break;
@@ -2231,7 +2234,7 @@ namespace System.Xml.Serialization
                 {
                     ElementAccessor e = elements[j];
                     string? ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
-                    if (e.Any && (e.Name == null || e.Name.Length == 0)) continue;
+                    if (e.Any && string.IsNullOrEmpty(e.Name)) continue;
 
                     if (!firstElement)
                         qnames += ", ";
@@ -2495,7 +2498,7 @@ namespace System.Xml.Serialization
                 {
                     ElementAccessor e = elements[j];
                     string? ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
-                    if (!isSequence && e.Any && (e.Name == null || e.Name.Length == 0)) continue;
+                    if (!isSequence && e.Any && string.IsNullOrEmpty(e.Name)) continue;
                     if (!firstElement || (!isSequence && count > 0))
                     {
                         ilg.InitElseIf();
@@ -2559,7 +2562,7 @@ namespace System.Xml.Serialization
                         MethodInfo XmlSerializationReader_set_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                             "set_IsReturnValue",
                             CodeGenerator.InstanceBindingFlags,
-                            new Type[] { typeof(bool) }
+                            s_boolType
                             )!;
                         ilg.Ldarg(0);
                         ilg.Ldc(false);
@@ -3015,7 +3018,7 @@ namespace System.Xml.Serialization
                     CodeGenerator.PrivateMethodAttributes,
                     // See WriteNullableMethod for different return type logic
                     element.Mapping.TypeDesc!.Type,
-                    new Type[] { typeof(bool) }
+                    s_boolType
                     );
                 ilg.Call(methodBuilder);
                 WriteSourceEnd(source, element.Mapping.TypeDesc.Type!);
@@ -3209,7 +3212,7 @@ namespace System.Xml.Serialization
                         MethodInfo XmlSerializationReader_ReadXmlXXX = typeof(XmlSerializationReader).GetMethod(
                               isDoc ? "ReadXmlDocument" : "ReadXmlNode",
                               CodeGenerator.InstanceBindingFlags,
-                              new Type[] { typeof(bool) }
+                              s_boolType
                               )!;
                         ilg.Ldarg(0);
                         ilg.Ldc(element.Any ? false : true);

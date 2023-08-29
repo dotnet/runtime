@@ -174,9 +174,9 @@ private:
             fprintf(stderr, "GCHeapSurvivalAndMovement ");
         }
 
-        if (keyword & GCEventKeyword_GCHeapCollect)
+        if (keyword & GCEventKeyword_ManagedHeapCollect)
         {
-            fprintf(stderr, "GCHeapCollect ");
+            fprintf(stderr, "ManagedHeapCollect ");
         }
 
         if (keyword & GCEventKeyword_GCHeapAndTypeNames)
@@ -256,10 +256,16 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
       }                                                           \
   }
 
-#define DYNAMIC_EVENT(name, level, keyword, ...)                                                                   \
-  inline bool GCEventEnabled##name() { return GCEventStatus::IsEnabled(GCEventProvider_Default, keyword, level); } \
-  template<typename... EventActualArgument>                                                                        \
-  inline void GCEventFire##name(EventActualArgument... arguments) { FireDynamicEvent<__VA_ARGS__>(#name, arguments...); }
+#define DYNAMIC_EVENT(name, level, keyword, version, ...)                        \
+  inline bool GCEventEnabled##name##_V##version() { return GCEventStatus::IsEnabled(GCEventProvider_Default, keyword, level); } \
+  template<typename... EventActualArgument>                                      \
+  inline void GCEventFire##name##_V##version(EventActualArgument... arguments)   \
+  {                                                                              \
+      if (GCEventEnabled##name##_V##version())                                   \
+      {                                                                          \
+          FireDynamicEvent<__VA_ARGS__>(#name, (uint16_t)version, arguments...); \
+      }                                                                          \
+  }
 
 #include "gcevents.h"
 

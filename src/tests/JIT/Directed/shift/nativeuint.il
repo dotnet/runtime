@@ -13,7 +13,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'nativeuint'
+.assembly ASSEMBLY_NAME
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,

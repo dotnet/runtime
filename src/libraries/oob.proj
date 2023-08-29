@@ -9,7 +9,6 @@
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
-    <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
                       Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
@@ -24,12 +23,9 @@
     <ProjectReference Remove="@(ProjectReference)" />
     <ProjectReference Include="sfx-ref.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="oob-ref.proj" />
-    <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
   </ItemGroup>
 
   <ImportGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
-    <!-- Re-generate the targeting pack's framework list to include shims. -->
-    <Import Project="frameworklist.targets" />
     <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
     <Import Project="$(RepositoryEngineeringDir)illink.targets" />
   </ImportGroup>
@@ -56,7 +52,7 @@
           DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
           Outputs="$(OOBAssembliesTrimMarkerFile)">
-    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRid) out-of-band assemblies with ILLinker..." Importance="high" />
+    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRID) out-of-band assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>

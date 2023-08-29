@@ -155,9 +155,10 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (types == null || types.Length == 0)
                 {
                     // no arguments
+                    PropertyInfo firstCandidate = candidates[0];
+
                     if (candidates.Count == 1)
                     {
-                        PropertyInfo firstCandidate = candidates[0];
                         if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                             return null;
                         return firstCandidate;
@@ -165,8 +166,10 @@ namespace System.Reflection.Runtime.TypeInfos
                     else
                     {
                         if (returnType is null)
+                        {
                             // if we are here we have no args or property type to select over and we have more than one property with that name
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
+                        }
                     }
                 }
 

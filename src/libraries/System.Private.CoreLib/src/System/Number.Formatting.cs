@@ -637,7 +637,7 @@ namespace System
             // because we know we have enough digits to satisfy roundtrippability), we should validate
             // that the number actually roundtrips back to the original result.
 
-            Debug.Assert(((precision != -1) && (precision < DoublePrecision)) || (BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(NumberToDouble(ref number))));
+            Debug.Assert(((precision != -1) && (precision < DoublePrecision)) || (BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(NumberToFloat<double>(ref number))));
 
             if (fmt != 0)
             {
@@ -748,7 +748,7 @@ namespace System
             // because we know we have enough digits to satisfy roundtrippability), we should validate
             // that the number actually roundtrips back to the original result.
 
-            Debug.Assert(((precision != -1) && (precision < SinglePrecision)) || (BitConverter.SingleToInt32Bits(value) == BitConverter.SingleToInt32Bits(NumberToSingle(ref number))));
+            Debug.Assert(((precision != -1) && (precision < SinglePrecision)) || (BitConverter.SingleToInt32Bits(value) == BitConverter.SingleToInt32Bits(NumberToFloat<float>(ref number))));
 
             if (fmt != 0)
             {
@@ -843,7 +843,7 @@ namespace System
             // because we know we have enough digits to satisfy roundtrippability), we should validate
             // that the number actually roundtrips back to the original result.
 
-            Debug.Assert(((precision != -1) && (precision < HalfPrecision)) || (BitConverter.HalfToInt16Bits(value) == BitConverter.HalfToInt16Bits(NumberToHalf(ref number))));
+            Debug.Assert(((precision != -1) && (precision < HalfPrecision)) || (BitConverter.HalfToInt16Bits(value) == BitConverter.HalfToInt16Bits(NumberToFloat<Half>(ref number))));
 
             if (fmt != 0)
             {
@@ -907,7 +907,7 @@ namespace System
             }
         }
 
-        private static char GetHexBase(char fmt)
+        internal static char GetHexBase(char fmt)
         {
             // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
             // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code produces lowercase.
@@ -1675,7 +1675,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt32ToDecStr<TChar>(int value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryNegativeInt32ToDecStr<TChar>(int value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value < 0);
@@ -1724,7 +1724,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt32ToHexStr<TChar>(int value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryInt32ToHexStr<TChar>(int value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1999,7 +1999,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt32ToDecStr<TChar>(uint value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2019,7 +2019,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt32ToDecStr<TChar>(uint value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2108,7 +2108,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt64ToDecStr<TChar>(long value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryNegativeInt64ToDecStr<TChar>(long value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value < 0);
@@ -2157,7 +2157,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt64ToHexStr<TChar>(long value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryInt64ToHexStr<TChar>(long value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2427,7 +2427,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2448,7 +2448,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
@@ -3605,7 +3605,7 @@ namespace System
         }
 
         /// <summary>Appends a char to the builder when the char is not known to be ASCII.</summary>
-        /// <remarks>This requires a helper as if the character isn't ASCII, for UTF8 encoding it will result in multiple bytes added.</remarks>
+        /// <remarks>This requires a helper as if the character isn't ASCII, for UTF-8 encoding it will result in multiple bytes added.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IUtfChar<TChar>
         {

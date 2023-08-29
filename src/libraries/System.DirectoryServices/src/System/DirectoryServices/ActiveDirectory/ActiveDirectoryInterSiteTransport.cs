@@ -74,7 +74,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                de.RefreshCache(new string[] { "options" });
+                de.RefreshCache(s_options);
             }
             catch (COMException e)
             {
@@ -223,7 +223,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     ADSearcher adSearcher = new ADSearcher(_cachedEntry,
                                                              "(&(objectClass=siteLink)(objectCategory=SiteLink))",
-                                                             new string[] { "cn" },
+                                                             s_cn,
                                                              SearchScope.OneLevel);
                     SearchResultCollection? results = null;
 
@@ -271,7 +271,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     ADSearcher adSearcher = new ADSearcher(_cachedEntry,
                                                              "(&(objectClass=siteLinkBridge)(objectCategory=SiteLinkBridge))",
-                                                             new string[] { "cn" },
+                                                             s_cn,
                                                              SearchScope.OneLevel);
                     SearchResultCollection? results = null;
 
@@ -306,6 +306,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _bridgeCollection;
             }
         }
+
+        private static readonly string[] s_options = new string[] { "options" };
+        private static readonly string[] s_cn = new string[] { "cn" };
 
         public void Save()
         {

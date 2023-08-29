@@ -90,7 +90,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - linux_x64
+          - linux_x64_dev_innerloop
           jobParameters:
             testGroup: innerloop
             nameSuffix: Runtime_Release
@@ -111,7 +111,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - linux_x64
+          - linux_x64_dev_innerloop
           jobParameters:
             testGroup: innerloop
             nameSuffix: RuntimeFlavor_Mono
@@ -151,7 +151,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - linux_x64
+          - linux_x64_dev_innerloop
           jobParameters:
             nameSuffix: Libraries_AllConfigurations
             buildArgs: -subset libs -allconfigurations

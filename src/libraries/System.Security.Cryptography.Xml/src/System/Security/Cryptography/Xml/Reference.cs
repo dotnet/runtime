@@ -149,6 +149,8 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        private static readonly string[] s_expectedAttrNames = new string[] { "Id", "URI", "Type" };
+
         //
         // public methods
         //
@@ -214,7 +216,7 @@ namespace System.Security.Cryptography.Xml
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
             _type = Utils.GetAttribute(value, "Type", SignedXml.XmlDsigNamespaceUrl);
-            if (!Utils.VerifyAttributes(value, new string[] { "Id", "URI", "Type" }))
+            if (!Utils.VerifyAttributes(value, s_expectedAttrNames))
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference");
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);

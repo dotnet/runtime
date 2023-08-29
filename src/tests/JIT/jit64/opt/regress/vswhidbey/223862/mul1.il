@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 
-.assembly 'mul1' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern mscorlib{auto}
 .class public cprop_test {
 .method public static int32 Main() {

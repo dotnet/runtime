@@ -135,7 +135,42 @@ namespace ILCompiler.Dataflow
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
             var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true);
-            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName());
+
+            // We need to apply annotations to this type, and its base/interface types (recursively)
+            // But the annotations on base/interfaces may already be applied so we don't need to apply those
+            // again (and should avoid doing so as it would produce extra warnings).
+            MessageOrigin origin = new MessageOrigin(type);
+            if (type.HasBaseType)
+            {
+                var baseAnnotation = flowAnnotations.GetTypeAnnotation(type.BaseType);
+                var annotationToApplyToBase = Annotations.GetMissingMemberTypes(annotation, baseAnnotation);
+
+                // Apply any annotations that didn't exist on the base type to the base type.
+                // This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
+                // subset of those annotations.
+                reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotationToApplyToBase, type.GetDisplayName(), declaredOnly: false);
+            }
+
+            // Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
+            // annotations to interfaces separately if dealing with DAMT.All or DAMT.Interfaces.
+            if (annotation.HasFlag(DynamicallyAccessedMemberTypes.Interfaces))
+            {
+                var annotationToApplyToInterfaces = annotation == DynamicallyAccessedMemberTypes.All ? annotation : DynamicallyAccessedMemberTypes.Interfaces;
+                foreach (var iface in type.RuntimeInterfaces)
+                {
+                    if (flowAnnotations.GetTypeAnnotation(iface).HasFlag(annotationToApplyToInterfaces))
+                        continue;
+
+                    // Apply All or Interfaces to the interface type.
+                    // DAMT.All may produce redundant warnings from implementing types, when the interface type already had some annotations.
+                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, iface, annotationToApplyToInterfaces, type.GetDisplayName(), declaredOnly: false);
+                }
+            }
+
+            // The annotations this type inherited from its base types or interfaces should not produce
+            // warnings on the respective base/interface members, since those are already covered by applying
+            // the annotations to those types. So we only need to handle the members directly declared on this type.
+            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName(), declaredOnly: true);
             return reflectionMarker.Dependencies;
         }
 
@@ -193,7 +228,7 @@ namespace ILCompiler.Dataflow
         protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, returnValue.Method.GetDisplayName());
 
-        protected override void HandleTypeReflectionAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
+        protected override void HandleTypeTokenAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
         {
             // Note that ldtoken alone is technically a reflection access to the type
             // it doesn't lead to full reflection marking of the type
@@ -204,20 +239,20 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(accessedType);
         }
 
-        protected override void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
+        protected override void HandleMethodTokenAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 
-            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedMethod, _origin));
+            TrimAnalysisPatterns.Add(new TrimAnalysisTokenAccessPattern(accessedMethod, _origin));
 
             ProcessGenericArgumentDataFlow(accessedMethod);
         }
 
-        protected override void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
+        protected override void HandleFieldTokenAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 
-            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedField, _origin));
+            TrimAnalysisPatterns.Add(new TrimAnalysisTokenAccessPattern(accessedField, _origin));
 
             ProcessGenericArgumentDataFlow(accessedField);
         }
@@ -444,7 +479,7 @@ namespace ILCompiler.Dataflow
                                         && systemTypeValue.RepresentedType.Type.GetParameterlessConstructor() is MethodDesc ctorMethod
                                         && !reflectionMarker.Factory.MetadataManager.IsReflectionBlocked(ctorMethod))
                                     {
-                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod), "Marshal API");
+                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Marshal API");
                                     }
                                 }
                             }

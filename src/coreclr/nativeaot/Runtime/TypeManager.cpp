@@ -45,7 +45,6 @@ TypeManager::TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader, void** pCl
     int length;
     m_pStaticsGCDataSection = (uint8_t*)GetModuleSection(ReadyToRunSectionType::GCStaticRegion, &length);
     m_pThreadStaticsDataSection = (uint8_t*)GetModuleSection(ReadyToRunSectionType::ThreadStaticRegion, &length);
-    m_pDispatchMapTable = (DispatchMap **)GetModuleSection(ReadyToRunSectionType::InterfaceDispatchTable, &length);
 }
 
 void * TypeManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)

@@ -53,6 +53,10 @@ namespace System.Net.Http
                 // Clear the authorization header.
                 request.Headers.Authorization = null;
 
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    HttpTelemetry.Log.Redirect(redirectUri.AbsoluteUri);
+                }
                 if (NetEventSource.Log.IsEnabled())
                 {
                     Trace($"Redirecting from {request.RequestUri} to {redirectUri} in response to status code {(int)response.StatusCode} '{response.StatusCode}'.", request.GetHashCode());

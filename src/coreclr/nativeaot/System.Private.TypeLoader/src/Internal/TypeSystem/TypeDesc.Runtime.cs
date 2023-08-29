@@ -77,23 +77,16 @@ namespace Internal.TypeSystem
                         // Generic type. First make sure we have type handles for the arguments, then check
                         // the instantiation.
                         bool argumentsRegistered = true;
-                        bool arrayArgumentsFound = false;
                         for (int i = 0; i < instantiation.Length; i++)
                         {
                             if (!instantiation[i].RetrieveRuntimeTypeHandleIfPossible())
                             {
                                 argumentsRegistered = false;
-                                arrayArgumentsFound = arrayArgumentsFound || (instantiation[i] is ArrayType);
                             }
                         }
 
                         RuntimeTypeHandle rtth;
-
-                        // If at least one of the arguments is not known to the runtime, we take a slower
-                        // path to compare the current type we need a handle for to the list of generic
-                        // types statically available, by loading them as DefTypes and doing a DefType comparaison
-                        if ((argumentsRegistered && TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(new TypeLoaderEnvironment.HandleBasedGenericTypeLookup(typeAsDefType), out rtth)) ||
-                            (arrayArgumentsFound && TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(new TypeLoaderEnvironment.DefTypeBasedGenericTypeLookup(typeAsDefType), out rtth)))
+                        if (argumentsRegistered && TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(new TypeLoaderEnvironment.GenericTypeLookupData(typeAsDefType), out rtth))
                         {
                             typeAsDefType.SetRuntimeTypeHandleUnsafe(rtth);
                             return true;
@@ -115,9 +108,9 @@ namespace Internal.TypeSystem
                     if ((type is ArrayType &&
                           TypeLoaderEnvironment.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth))
                            ||
-                        (type is PointerType && TypeSystemContext.PointerTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
+                        (type is PointerType && TypeLoaderEnvironment.TryGetPointerTypeForTargetType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
                            ||
-                        (type is ByRefType && TypeSystemContext.ByRefTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth)))
+                        (type is ByRefType && TypeLoaderEnvironment.TryGetByRefTypeForTargetType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth)))
                     {
                         typeAsParameterType.SetRuntimeTypeHandleUnsafe(rtth);
                         return true;
@@ -127,6 +120,37 @@ namespace Internal.TypeSystem
             else if (type is SignatureVariable)
             {
                 // SignatureVariables do not have RuntimeTypeHandles
+            }
+            else if (type is FunctionPointerType functionPointerType)
+            {
+                MethodSignature sig = functionPointerType.Signature;
+                if (sig.ReturnType.RetrieveRuntimeTypeHandleIfPossible())
+                {
+                    RuntimeTypeHandle[] parameterHandles = new RuntimeTypeHandle[sig.Length];
+                    bool handlesAvailable = true;
+                    for (int i = 0; i < parameterHandles.Length; i++)
+                    {
+                        if (sig[i].RetrieveRuntimeTypeHandleIfPossible())
+                        {
+                            parameterHandles[i] = sig[i].RuntimeTypeHandle;
+                        }
+                        else
+                        {
+                            handlesAvailable = false;
+                            break;
+                        }
+                    }
+
+                    if (handlesAvailable
+                        && TypeLoaderEnvironment.Instance.TryLookupFunctionPointerTypeForComponents(
+                            sig.ReturnType.RuntimeTypeHandle, parameterHandles,
+                            isUnmanaged: (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) != 0,
+                            out RuntimeTypeHandle rtth))
+                    {
+                        functionPointerType.SetRuntimeTypeHandleUnsafe(rtth);
+                        return true;
+                    }
+                }
             }
             else
             {

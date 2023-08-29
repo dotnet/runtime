@@ -10,6 +10,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -17,7 +19,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.Workload.Build.Tasks
 {
-    public class InstallWorkloadFromArtifacts : Task
+    public partial class InstallWorkloadFromArtifacts : Task
     {
         [Required, NotNull]
         public ITaskItem[]    WorkloadIds        { get; set; } = Array.Empty<ITaskItem>();
@@ -47,6 +49,9 @@ namespace Microsoft.Workload.Build.Tasks
         private string _tempDir = string.Empty;
         private string _nugetCachePath = string.Empty;
 
+        [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
+        private static partial Regex bandVersionRegex();
+
         public override bool Execute()
         {
             _tempDir = Path.Combine(Path.GetTempPath(), $"workload-{Path.GetRandomFileName()}");
@@ -64,7 +69,6 @@ namespace Microsoft.Workload.Build.Tasks
                     throw new LogAsErrorException($"Cannot find {nameof(LocalNuGetsPath)}={LocalNuGetsPath} . " +
                                                     "Set it to the Shipping packages directory in artifacts.");
 
-                ExecuteHackForRenamedManifest();
                 if (!InstallAllManifests())
                     return false;
 
@@ -152,29 +156,6 @@ namespace Microsoft.Workload.Build.Tasks
             UpdateAppRef(req.TargetPath, req.Version);
 
             return !Log.HasLoggedErrors;
-        }
-
-        private void ExecuteHackForRenamedManifest()
-        {
-            // HACK - Because the microsoft.net.workload.mono.toolchain is being renamed to microsoft.net.workload.mono.toolchain.current
-            // but the sdk doesn't have the change yet.
-            string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
-                                            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2})
-                                .FirstOrDefault();
-            if (txtPath is null)
-                throw new LogAsErrorException($"Could not find IncludedWorkloadManifests.txt in {SdkWithNoWorkloadInstalledPath}");
-
-            string stampPath = Path.Combine(Path.GetDirectoryName(txtPath)!, ".stamp");
-            if (File.Exists(stampPath))
-                return;
-
-            var lines = File.ReadAllLines(txtPath)
-                            .Select(line => line == "microsoft.net.workload.mono.toolchain"
-                                                ? "microsoft.net.workload.mono.toolchain.current"
-                                                : line);
-            File.WriteAllLines(txtPath, lines);
-
-            File.WriteAllText(stampPath, "");
         }
 
         private bool InstallAllManifests()
@@ -293,7 +274,7 @@ namespace Microsoft.Workload.Build.Tasks
         private string GetNuGetConfig()
         {
             string contents = File.ReadAllText(TemplateNuGetConfigPath);
-            if (contents.IndexOf(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase) < 0)
+            if (!contents.Contains(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase))
                 throw new LogAsErrorException($"Could not find {s_nugetInsertionTag} in {TemplateNuGetConfigPath}");
 
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{LocalNuGetsPath}"" />");
@@ -315,8 +296,15 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
+            var bandVersion = VersionBandForManifestPackages;
+            // regex matching the version band, e.g. 6.0.100-preview.3.21202.5 => 6.0.100-preview.3
+            string packagePreleaseVersion = bandVersionRegex().Match(version).Groups[1].Value;
+            string bandPreleaseVersion = bandVersionRegex().Match(bandVersion).Groups[1].Value;
 
-            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBandForManifestPackages}",
+            if (packagePreleaseVersion != bandPreleaseVersion && packagePreleaseVersion != "-dev" && packagePreleaseVersion != "-ci")
+                bandVersion = bandVersion.Replace (bandPreleaseVersion, packagePreleaseVersion);
+
+            PackageReference pkgRef = new(Name: $"{name}.Manifest-{bandVersion}",
                                           Version: version,
                                           OutputDir: outputDir,
                                           relativeSourceDir: "data");
@@ -435,7 +423,7 @@ namespace Microsoft.Workload.Build.Tasks
             public string Version => Workload.GetMetadata("Version");
             public string TargetPath => Target.GetMetadata("InstallPath");
             public string StampPath => Target.GetMetadata("StampPath");
-            public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").ToLowerInvariant() == "true";
+            public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").Equals("true", StringComparison.InvariantCultureIgnoreCase);
             public string WorkloadId => Workload.ItemSpec;
 
             public bool Validate(TaskLoggingHelper log)

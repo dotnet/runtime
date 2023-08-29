@@ -2,20 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Test case where throw helper is in the try entry block.
 //
 // Throw helper merging is run lexically backwards,
 // so the optimization may introduce a jump into the middle of the try.
 
-class ThrowHelperAtTryEntry
+public class ThrowHelperAtTryEntry
 {
     static void ThrowHelper()
     {
         throw new Exception();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int x = 0;
         bool p = true;

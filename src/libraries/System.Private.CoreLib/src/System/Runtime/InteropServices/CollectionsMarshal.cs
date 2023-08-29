@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -15,6 +16,7 @@ namespace System.Runtime.InteropServices
         /// Items should not be added or removed from the <see cref="List{T}"/> while the <see cref="Span{T}"/> is in use.
         /// </summary>
         /// <param name="list">The list to get the data view over.</param>
+        /// <typeparam name="T">The type of the elements in the list.</typeparam>
         public static Span<T> AsSpan<T>(List<T>? list)
             => list is null ? default : new Span<T>(list._items, 0, list._size);
 
@@ -23,6 +25,8 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
         /// <param name="key">The key used for lookup.</param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
         /// <remarks>
         /// Items should not be added or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.
         /// The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
@@ -36,8 +40,46 @@ namespace System.Runtime.InteropServices
         /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
         /// <param name="key">The key used for lookup.</param>
         /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
         /// <remarks>Items should not be added to or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull
             => ref Dictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
+
+        /// <summary>
+        /// Sets the count of the <see cref="List{T}"/> to the specified value.
+        /// </summary>
+        /// <param name="list">The list to set the count of.</param>
+        /// <param name="count">The value to set the list's count to.</param>
+        /// <typeparam name="T">The type of the elements in the list.</typeparam>
+        /// <exception cref="NullReferenceException">
+        /// <paramref name="list"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="count"/> is negative.
+        /// </exception>
+        /// <remarks>
+        /// When increasing the count, uninitialized data is being exposed.
+        /// </remarks>
+        public static void SetCount<T>(List<T> list, int count)
+        {
+            if (count < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(count));
+            }
+
+            list._version++;
+
+            if (count > list.Capacity)
+            {
+                list.Grow(count);
+            }
+            else if (count < list._size && RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                Array.Clear(list._items, count, list._size - count);
+            }
+
+            list._size = count;
+        }
     }
 }

@@ -12,7 +12,7 @@ using System.Transactions.Oletx;
 
 namespace System.Transactions.DtcProxyShim;
 
-internal sealed class DtcProxyShimFactory
+internal sealed partial class DtcProxyShimFactory
 {
     // Used to synchronize access to the proxy.  This is necessary in
     // initialization because the proxy doesn't like multiple simultaneous callers
@@ -45,19 +45,18 @@ internal sealed class DtcProxyShimFactory
         => _eventHandle = notificationEventHandle;
 
     // https://docs.microsoft.com/previous-versions/windows/desktop/ms678898(v=vs.85)
-    [DllImport(Interop.Libraries.Xolehlp, CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
+    [LibraryImport(Interop.Libraries.Xolehlp, StringMarshalling = StringMarshalling.Utf16)]
     [RequiresUnreferencedCode(TransactionManager.DistributedTransactionTrimmingWarning)]
-    private static extern void DtcGetTransactionManagerExW(
+    private static unsafe partial int DtcGetTransactionManagerExW(
         [MarshalAs(UnmanagedType.LPWStr)] string? pszHost,
         [MarshalAs(UnmanagedType.LPWStr)] string? pszTmName,
         in Guid riid,
         int grfOptions,
-        object? pvConfigPararms,
+        void* pvConfigPararms,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionDispenser ppvObject);
 
     [RequiresUnreferencedCode(TransactionManager.DistributedTransactionTrimmingWarning)]
-    private static void DtcGetTransactionManager(string? nodeName, out ITransactionDispenser localDispenser) =>
-        DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out localDispenser);
+    private static unsafe void DtcGetTransactionManager(string? nodeName, out ITransactionDispenser localDispenser) => Marshal.ThrowExceptionForHR(DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out localDispenser));
 
     public void ConnectToProxy(
         string? nodeName,
@@ -261,7 +260,7 @@ internal sealed class DtcProxyShimFactory
         out OletxTransactionIsolationLevel isolationLevel,
         out TransactionShim transactionShim)
     {
-        var cloner = (ITransactionCloner)transactionNative;
+        var cloner = (ITransactionCloner)TransactionInterop.GetITransactionFromIDtcTransaction(transactionNative);
         cloner.CloneWithCommitDisabled(out ITransaction transaction);
 
         SetupTransaction(transaction, managedIdentifier, out transactionIdentifier, out isolationLevel, out transactionShim);
@@ -329,7 +328,7 @@ internal sealed class DtcProxyShimFactory
         transaction.GetTransactionInfo(out OletxXactTransInfo xactInfo);
 
         // Register for outcome events.
-        var pContainer = (IConnectionPointContainer)transaction;
+        var pContainer = (IConnectionPointContainer)TransactionInterop.GetDtcTransaction(transaction);
         var guid = Guids.IID_ITransactionOutcomeEvents_Guid;
         pContainer.FindConnectionPoint(ref guid, out IConnectionPoint? pConnPoint);
         pConnPoint!.Advise(transactionNotifyShim, out int connPointCookie);

@@ -13,7 +13,15 @@ etc. The edges represent the dependencies.
 
 The ILLink analyzer needs a ILLink dependencies file as an input. It
 can be retrieved by enabling dependencies dumping during trimming of a
-Xamarin.Android, Xamarin.iOS, or .NET SDK style project.
+project.
+
+For console .NET projects you need to publish the application
+with trimming enabled and use the `_TrimmerDumpDependencies` property:
+
+```dotnet publish /p:PublishTrimmed=true /p:_TrimmerDumpDependencies=true```
+
+In this case the dependencies file will be in
+`obj/<Configuration>/<TargetFramework>/<RID>/linked/linker-dependencies.xml`.
 
 For Xamarin.Android and Xamarin.iOS, that can be done on the command line by setting
 `LinkerDumpDependencies` property to `true` and building the

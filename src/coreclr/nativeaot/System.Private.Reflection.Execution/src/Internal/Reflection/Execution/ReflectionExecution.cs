@@ -77,8 +77,7 @@ namespace Internal.Reflection.Execution
             if (!qMethodDefinition.IsNativeFormatMetadataBased)
                 return false;
 
-            if (!ExecutionEnvironment.TryGetMetadataForNamedType(declaringTypeHandle, out QTypeDefinition qTypeDefinition))
-                return false;
+            QTypeDefinition qTypeDefinition = ExecutionEnvironment.GetMetadataForNamedType(declaringTypeHandle);
 
             Debug.Assert(qTypeDefinition.IsNativeFormatMetadataBased);
             Debug.Assert(qTypeDefinition.NativeFormatReader == qMethodDefinition.NativeFormatReader);

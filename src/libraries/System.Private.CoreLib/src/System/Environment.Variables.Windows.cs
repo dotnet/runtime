@@ -30,6 +30,16 @@ namespace System
             return builder.ToString();
         }
 
+        /// <summary>GetEnvironmentVariableCore that avoids using the ArrayPool. Environment variables must be less than 128 characters in length or won't be found.</summary>
+        internal static string? GetEnvironmentVariableCore_NoArrayPool(string variable)
+        {
+            Span<char> span = stackalloc char[128];
+            uint length = Interop.Kernel32.GetEnvironmentVariable(variable, ref MemoryMarshal.GetReference(span), (uint)span.Length);
+            return length > 0 && length <= span.Length ?
+                span.Slice(0, (int)length).ToString() :
+                null;
+        }
+
         private static void SetEnvironmentVariableCore(string variable, string? value)
         {
             if (!Interop.Kernel32.SetEnvironmentVariable(variable, value))

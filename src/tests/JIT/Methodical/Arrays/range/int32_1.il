@@ -21,7 +21,7 @@
   
 }
 
-.assembly 'int32_1'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

@@ -45,6 +45,17 @@ namespace System.Net.Security
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CanEncryptEmptyMessage = true;
 
+        private static readonly byte[] s_sessionTokenBuffer = InitSessionTokenBuffer();
+
+        private static byte[] InitSessionTokenBuffer()
+        {
+            var schannelSessionToken = new Interop.SChannel.SCHANNEL_SESSION_TOKEN() {
+                dwTokenType = Interop.SChannel.SCHANNEL_SESSION,
+                dwFlags = Interop.SChannel.SSL_SESSION_DISABLE_RECONNECTS,
+            };
+            return MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(in schannelSessionToken)).ToArray();
+        }
+
         public static void VerifyPackageInfo()
         {
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
@@ -139,6 +150,7 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
+            bool newContext = context == null;
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
             scoped InputSecurityBuffers inputBuffers = default;
@@ -163,6 +175,20 @@ namespace System.Net.Security
                             ref resultBuffer,
                             ref unusedAttributes);
 
+            if (!sslAuthenticationOptions.AllowTlsResume && newContext && context != null)
+            {
+                var securityBuffer = new SecurityBuffer(s_sessionTokenBuffer, SecurityBufferType.SECBUFFER_TOKEN);
+
+                SecurityStatusPal result = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(SSPIWrapper.ApplyControlToken(
+                    GlobalSSPI.SSPISecureChannel,
+                    ref context,
+                    in securityBuffer));
+
+                if (result.ErrorCode != SecurityStatusPalErrorCode.OK)
+                {
+                    return result;
+                }
+            }
             outputBuffer = resultBuffer.token;
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
@@ -206,15 +232,15 @@ namespace System.Net.Security
                 {
                     SafeFreeCredential_SECURITY handle = (SafeFreeCredential_SECURITY)cred;
                     // We need to create copy to avoid Disposal issue.
-                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.Certificate);
+                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.TargetCertificate);
                 }
 
                 return cred;
             }
             catch (Win32Exception e) when (e.NativeErrorCode == (int)Interop.SECURITY_STATUS.NoCredentials && certificateContext != null)
             {
-                Debug.Assert(certificateContext.Certificate.HasPrivateKey);
-                using SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateContext.Certificate.Handle);
+                Debug.Assert(certificateContext.TargetCertificate.HasPrivateKey);
+                using SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateContext.TargetCertificate.Handle);
                 // on Windows we do not support ephemeral keys.
                 throw new AuthenticationException(safeCertContextHandle.HasEphemeralPrivateKey ? SR.net_auth_ephemeral : SR.net_auth_SSPI, e);
             }
@@ -249,7 +275,7 @@ namespace System.Net.Security
         // It only supports TLS up to 1.2
         public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions)
         {
-            X509Certificate2? certificate = authOptions.CertificateContext?.Certificate;
+            X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
             bool isServer = authOptions.IsServer;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
@@ -278,6 +304,11 @@ namespace System.Net.Security
                 flags =
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
+                if (!authOptions.AllowTlsResume)
+                {
+                    // Works only on server
+                    flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_DISABLE_RECONNECTS;
+                }
             }
 
             EncryptionPolicy policy = authOptions.EncryptionPolicy;
@@ -298,6 +329,11 @@ namespace System.Net.Security
                 protocolFlags,
                 policy);
 
+            if (!isServer && !authOptions.AllowTlsResume)
+            {
+                secureCredential.dwSessionLifespan = -1;
+            }
+
             if (certificate != null)
             {
                 secureCredential.cCreds = 1;
@@ -311,7 +347,7 @@ namespace System.Net.Security
         // This function uses new crypto API to support TLS 1.3 and beyond.
         public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslAuthenticationOptions authOptions)
         {
-            X509Certificate2? certificate = authOptions.CertificateContext?.Certificate;
+            X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
             bool isServer = authOptions.IsServer;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
@@ -324,6 +360,11 @@ namespace System.Net.Security
                 if (authOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
                 {
                     flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
+                }
+                if (!authOptions.AllowTlsResume)
+                {
+                    // Works only on server
+                    flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_DISABLE_RECONNECTS;
                 }
             }
             else
@@ -369,6 +410,11 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS credential = default;
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
+            if (!isServer && !authOptions.AllowTlsResume)
+            {
+                credential.dwSessionLifespan = -1;
+            }
+
             if (certificate != null)
             {
                 credential.cCreds = 1;
@@ -500,7 +546,7 @@ namespace System.Net.Security
             }
         }
 
-        public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        public static SecurityStatusPal ApplyAlertToken(SafeDeleteSslContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
             var alertToken = new Interop.SChannel.SCHANNEL_ALERT_TOKEN
             {
@@ -521,7 +567,7 @@ namespace System.Net.Security
 
         private static readonly byte[] s_schannelShutdownBytes = BitConverter.GetBytes(Interop.SChannel.SCHANNEL_SHUTDOWN);
 
-        public static SecurityStatusPal ApplyShutdownToken(SafeDeleteContext? securityContext)
+        public static SecurityStatusPal ApplyShutdownToken(SafeDeleteSslContext? securityContext)
         {
             var securityBuffer = new SecurityBuffer(s_schannelShutdownBytes, SecurityBufferType.SECBUFFER_TOKEN);
 

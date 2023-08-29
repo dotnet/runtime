@@ -22,43 +22,50 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public async Task MultipleImportAsync()
         {
-            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
-            var second = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");
+            var second = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");
             Assert.NotNull(first);
             Assert.NotNull(second);
             Assert.Equal("object", first.GetTypeOfProperty("instance"));
             var instance1 = first.GetPropertyAsJSObject("instance");
             var instance2 = second.GetPropertyAsJSObject("instance");
             Assert.Same(instance1, instance2);
+            first.Dispose();
+            second.Dispose();
+            instance1.Dispose();
         }
 
         [Fact]
         public async Task CancelableImportAsync()
         {
             var cts = new CancellationTokenSource();
-            var exTask = Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", cts.Token));
+            var exTask = Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", cts.Token));
             cts.Cancel();
             var actualEx2 = await exTask;
-            Assert.Equal("OperationCanceledException", actualEx2.Message);
+            Assert.Equal("Error: OperationCanceledException", actualEx2.Message);
 
-            var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", new CancellationToken(true)));
-            Assert.Equal("OperationCanceledException", actualEx.Message);
+            var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", new CancellationToken(true)));
+            Assert.Equal("Error: OperationCanceledException", actualEx.Message);
         }
 
         [Fact]
         public unsafe void GlobalThis()
         {
-            Assert.Null(JSHost.GlobalThis.GetPropertyAsString("dummy"));
-            Assert.False(JSHost.GlobalThis.HasProperty("dummy"));
-            Assert.Equal("undefined", JSHost.GlobalThis.GetTypeOfProperty("dummy"));
-            Assert.Equal("function", JSHost.GlobalThis.GetTypeOfProperty("Array"));
-            Assert.NotNull(JSHost.GlobalThis.GetPropertyAsJSObject("javaScriptTestHelper"));
+            var globalThis = JSHost.GlobalThis;
+            Assert.Null(globalThis.GetPropertyAsString("dummy"));
+            Assert.False(globalThis.HasProperty("dummy"));
+            Assert.Equal("undefined", globalThis.GetTypeOfProperty("dummy"));
+            Assert.Equal("function", globalThis.GetTypeOfProperty("Array"));
+            var javaScriptTestHelper = globalThis.GetPropertyAsJSObject("javaScriptTestHelper");
+            Assert.NotNull(javaScriptTestHelper);
+            globalThis.Dispose();
+            javaScriptTestHelper.Dispose();
         }
 
         [Fact]
         public unsafe void DotnetInstance()
         {
-#if ENABLE_LEGACY_JS_INTEROP
+#if !DISABLE_LEGACY_JS_INTEROP
             Assert.True(JSHost.DotnetInstance.HasProperty("MONO"));
             Assert.Equal("object", JSHost.DotnetInstance.GetTypeOfProperty("MONO"));
 #endif
@@ -300,7 +307,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { new object[] { "JSData" } }; // special cased, so we call createData in the test itself
             yield return new object[] { new object[] { new byte[] { }, new int[] { }, new double[] { }, new string[] { }, new object[] { } } };
             yield return new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" }, new object[] { } } };
-            yield return new object[] { new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" } , new object(), new SomethingRef(), new SomethingStruct(), new Exception("test") } } };
+            yield return new object[] { new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" }, new object(), new SomethingRef(), new SomethingStruct(), new Exception("test") } } };
             yield return new object[] { new object[] { } };
             yield return new object[] { null };
         }
@@ -362,7 +369,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { new object[] { (ushort)0 } };
             yield return new object[] { new object[] { new SomethingStruct[] { } } };
             yield return new object[] { new object[] { new SomethingRef[] { }, } };
-            yield return new object[] { new object[] { new ArraySegment<byte>(new byte[] { 11 }) , } };
+            yield return new object[] { new object[] { new ArraySegment<byte>(new byte[] { 11 }), } };
         }
         delegate void dummyDelegate();
         static void dummyDelegateA()
@@ -1428,7 +1435,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var stack = JavaScriptTestHelper.catch1stack("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
             Assert.Contains(nameof(JavaScriptTestHelper.ThrowFromJSExport), stack);
-            Assert.Contains("catch1stack", stack);
+            if (PlatformDetection.IsBrowserDomSupportedOrNodeJS)
+            {
+                Assert.Contains("catch1stack", stack);
+            }
         }
 
         #endregion Exception
@@ -1502,16 +1512,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77334")]
         public async Task JsImportTaskTypes()
         {
-            object a = new object();
-            Exception e = new Exception();
-            JSObject j = JSHost.GlobalThis;
-            Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
-            Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
-            Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
-            Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
+            for(int i=0;i<100;i++)
+            {
+                object a = new object();
+                Exception e = new Exception();
+                JSObject j = JSHost.GlobalThis;
+                Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
+                Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
+                Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
+                Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
+                GC.Collect();
+                await Task.Delay(10);
+            }
         }
 
         [Fact]
@@ -2093,7 +2107,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await JavaScriptTestHelper.InitializeAsync();
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public async Task DisposeAsync()
+        {
+            await JavaScriptTestHelper.DisposeAsync();
+        }
 
         // js Date doesn't have nanosecond precision
         public static DateTime TrimNano(DateTime date)

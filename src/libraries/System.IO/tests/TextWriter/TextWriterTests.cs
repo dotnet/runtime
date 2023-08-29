@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -665,6 +666,36 @@ namespace System.IO.Tests
             ValueTask vt = tw.DisposeAsync();
             Assert.True(vt.IsFaulted);
             Assert.Same(e, vt.AsTask().Exception.InnerException);
+        }
+
+        [Fact]
+        public async Task FlushAsync_Precanceled()
+        {
+            Assert.Equal(TaskStatus.RanToCompletion, TextWriter.Null.FlushAsync(new CancellationToken(true)).Status);
+            Assert.Equal(TaskStatus.Canceled, TextWriter.Synchronized(TextWriter.Null).FlushAsync(new CancellationToken(true)).Status);
+
+            var ttw = new TrackingTextWriter();
+            Assert.Equal(TaskStatus.RanToCompletion, ttw.FlushAsync(new CancellationTokenSource().Token).Status);
+            Assert.True(ttw.NonCancelableFlushAsyncCalled);
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            Task t = ttw.FlushAsync(cts.Token);
+            Assert.Equal(TaskStatus.Canceled, t.Status);
+            Assert.Equal(cts.Token, (await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t)).CancellationToken);
+        }
+
+        private sealed class TrackingTextWriter : TextWriter
+        {
+            public bool NonCancelableFlushAsyncCalled;
+
+            public override Encoding Encoding => Encoding.UTF8;
+
+            public override Task FlushAsync()
+            {
+                NonCancelableFlushAsyncCalled = true;
+                return Task.CompletedTask;
+            }
         }
 
         private sealed class InvokeActionOnDisposeTextWriter : TextWriter

@@ -11,46 +11,54 @@
 // Values can also be embedded in the compiled binary.
 //
 
+#ifndef RHCONFIG_H
+#define RHCONFIG_H
 
 #ifndef DACCESS_COMPILE
 
-#define FEATURE_EMBEDDED_CONFIG
-#define FEATURE_ENVIRONMENT_VARIABLE_CONFIG
+#include <sal.h>
 
 class RhConfig
 {
-
-#define CONFIG_INI_NOT_AVAIL (void*)0x1  //signal for ini file failed to load
-#define CONFIG_KEY_MAXLEN 50             //arbitrary max length of config keys increase if needed
-#define CONFIG_VAL_MAXLEN 8              //32 bit uint in hex
-
-private:
-    struct ConfigPair
+#define CONFIG_VAL_MAXLEN 16              //64 bit uint in hex
+public:
+    struct Config
     {
+        uint32_t m_count;
+        char* m_first[];
     public:
-        TCHAR Key[CONFIG_KEY_MAXLEN + 1];  //maxlen + null terminator
-        TCHAR Value[CONFIG_VAL_MAXLEN + 1]; //maxlen + null terminator
+        uint32_t GetCount() { return m_count; }
+        char* GetKeyAt(int32_t index) { return m_first[index]; }
+        char* GetValueAt(int32_t index) { return m_first[m_count + index]; }
+        char** GetKeys() { return m_first; }
+        char** GetValues() { return &m_first[m_count]; }
     };
 
-#ifdef FEATURE_EMBEDDED_CONFIG
-    // g_embeddedSettings is a buffer of ConfigPair structs embedded in the compiled binary.
-    //
-    //NOTE: g_embeddedSettings is only set in ReadEmbeddedSettings and must be set atomically only once
-    //      using PalInterlockedCompareExchangePointer to avoid races when initializing
-    void* volatile g_embeddedSettings = NULL;
-#endif // FEATURE_EMBEDDED_CONFIG
+    class Environment
+    {
+    public: // static
+        static bool TryGetBooleanValue(const char* name, bool* value);
+        static bool TryGetIntegerValue(const char* name, uint64_t* value, bool decimal = false);
 
-public:
+        // Get environment variable configuration as a string. On success, the caller owns the returned string value.
+        static bool TryGetStringValue(const char* name, char** value);
+    };
 
-    bool ReadConfigValue(_In_z_ const TCHAR* wszName, uint32_t* pValue, bool decimal = false);
+    bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
+    bool ReadKnobUInt64Value(_In_z_ const char* wszName, uint64_t* pValue);
+    bool ReadKnobBooleanValue(_In_z_ const char* wszName, bool* pValue);
+
+    char** GetKnobNames();
+    char** GetKnobValues();
+    uint32_t GetKnobCount();
 
 #define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
-    uint32_t Get##_name()                                 \
+    uint64_t Get##_name()                                 \
     {                                                   \
         if (m_uiConfigValuesRead & (1 << RCV_##_name))  \
             return m_uiConfigValues[RCV_##_name];       \
-        uint32_t uiValue;                               \
-        m_uiConfigValues[RCV_##_name] = ReadConfigValue(_T(#_name), &uiValue) ? uiValue : defaultVal; \
+        uint64_t uiValue;                               \
+        m_uiConfigValues[RCV_##_name] = ReadConfigValue(#_name, &uiValue) ? uiValue : defaultVal; \
         m_uiConfigValuesRead |= 1 << RCV_##_name;       \
         return m_uiConfigValues[RCV_##_name];           \
     }
@@ -91,29 +99,16 @@ private:
 #define CONFIG_FILE_MAXLEN RCV_Count * sizeof(ConfigPair) + 2000
 
 private:
-    //Parses one line of config and populates values in the passed in configPair
-    //returns: true if the parsing was successful, false if the parsing failed.
-    //NOTE: if the method fails configPair is left in an uninitialized state
-    bool ParseConfigLine(_Out_ ConfigPair* configPair, _In_z_ const char * line);
-
-#ifdef FEATURE_EMBEDDED_CONFIG
-    void ReadEmbeddedSettings();
-
-    uint32_t GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer);
-#endif // FEATURE_EMBEDDED_CONFIG
-
-    uint32_t GetConfigVariable(_In_z_ const TCHAR* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer);
-
-    static bool priv_isspace(char c)
-    {
-        return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
-    }
-
+    // Gets a pointer to the embedded configuration value. Memory is held by the callee.
+    // Returns true if the variable was found, false otherwise
+    bool GetEmbeddedVariable(Config* config, _In_z_ const char* configName, bool caseSensitive, _Out_ const char** configValue);
 
     uint32_t  m_uiConfigValuesRead;
-    uint32_t  m_uiConfigValues[RCV_Count];
+    uint64_t  m_uiConfigValues[RCV_Count];
 };
 
 extern RhConfig * g_pRhConfig;
 
 #endif //!DACCESS_COMPILE
+
+#endif // RHCONFIG_H

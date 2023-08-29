@@ -1452,7 +1452,7 @@ namespace System.Xml.Schema
                     break;
 
                 case XmlTypeCode.Language:
-                    if (s == null || s.Length == 0)
+                    if (string.IsNullOrEmpty(s))
                     {
                         return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
                     }

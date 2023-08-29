@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -14,7 +15,7 @@ namespace System.Collections.Frozen
         private protected readonly TKey[] _keys;
         private protected readonly TValue[] _values;
 
-        protected KeysAndValuesFrozenDictionary(Dictionary<TKey, TValue> source, bool optimizeForReading = true) : base(source.Comparer)
+        protected KeysAndValuesFrozenDictionary(Dictionary<TKey, TValue> source, bool keysAreHashCodes = false) : base(source.Comparer)
         {
             Debug.Assert(source.Count != 0);
 
@@ -24,15 +25,24 @@ namespace System.Collections.Frozen
             _keys = new TKey[entries.Length];
             _values = new TValue[entries.Length];
 
-            _hashTable = FrozenHashTable.Create(
-                entries.Length,
-                index => Comparer.GetHashCode(entries[index].Key),
-                (destIndex, srcIndex) =>
-                {
-                    _keys[destIndex] = entries[srcIndex].Key;
-                    _values[destIndex] = entries[srcIndex].Value;
-                },
-                optimizeForReading);
+            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entries.Length);
+            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entries.Length);
+            for (int i = 0; i < entries.Length; i++)
+            {
+                hashCodes[i] = Comparer.GetHashCode(entries[i].Key);
+            }
+
+            _hashTable = FrozenHashTable.Create(hashCodes, keysAreHashCodes);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _keys[destIndex] = entries[srcIndex].Key;
+                _values[destIndex] = entries[srcIndex].Value;
+            }
+
+            ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }
 
         /// <inheritdoc />

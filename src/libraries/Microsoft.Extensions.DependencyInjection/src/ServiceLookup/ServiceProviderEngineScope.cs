@@ -3,15 +3,18 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable, IServiceScopeFactory
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ServiceProviderEngineScopeDebugView))]
+    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IKeyedServiceProvider, IAsyncDisposable, IServiceScopeFactory
     {
-        // For testing only
+        // For testing and debugging only
         internal IList<object> Disposables => _disposables ?? (IList<object>)Array.Empty<object>();
 
         private bool _disposed;
@@ -25,6 +28,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         internal Dictionary<ServiceCacheKey, object?> ResolvedServices { get; }
+
+        internal bool Disposed => _disposed;
 
         // This lock protects state on the scope, in particular, for the root scope, it protects
         // the list of disposable entries only, since ResolvedServices are cached on CallSites
@@ -42,7 +47,27 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return RootProvider.GetService(serviceType, this);
+            return RootProvider.GetService(ServiceIdentifier.FromServiceType(serviceType), this);
+        }
+
+        public object? GetKeyedService(Type serviceType, object? serviceKey)
+        {
+            if (_disposed)
+            {
+                ThrowHelper.ThrowObjectDisposedException();
+            }
+
+            return RootProvider.GetKeyedService(serviceType, serviceKey, this);
+        }
+
+        public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
+        {
+            if (_disposed)
+            {
+                ThrowHelper.ThrowObjectDisposedException();
+            }
+
+            return RootProvider.GetRequiredKeyedService(serviceType, serviceKey, this);
         }
 
         public IServiceProvider ServiceProvider => this;
@@ -82,7 +107,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 else
                 {
                     // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
-                    Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
+                    object? localService = service; // copy to avoid closure on other paths
+                    Task.Run(() => ((IAsyncDisposable)localService).DisposeAsync().AsTask()).GetAwaiter().GetResult();
                 }
 
                 ThrowHelper.ThrowObjectDisposedException();
@@ -201,6 +227,35 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // trying to get a cached singleton service. If it doesn't find it
             // it will try to create a new one which will result in an ObjectDisposedException.
             return _disposables;
+        }
+
+        internal string DebuggerToString()
+        {
+            string debugText = $"ServiceDescriptors = {RootProvider.CallSiteFactory.Descriptors.Length}";
+            if (!IsRootScope)
+            {
+                debugText += $", IsScope = true";
+            }
+            if (_disposed)
+            {
+                debugText += $", Disposed = true";
+            }
+            return debugText;
+        }
+
+        private sealed class ServiceProviderEngineScopeDebugView
+        {
+            private readonly ServiceProviderEngineScope _serviceProvider;
+
+            public ServiceProviderEngineScopeDebugView(ServiceProviderEngineScope serviceProvider)
+            {
+                _serviceProvider = serviceProvider;
+            }
+
+            public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.RootProvider.CallSiteFactory.Descriptors);
+            public List<object> Disposables => new List<object>(_serviceProvider.Disposables);
+            public bool Disposed => _serviceProvider._disposed;
+            public bool IsScope => !_serviceProvider.IsRootScope;
         }
     }
 }

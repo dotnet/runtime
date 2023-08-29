@@ -424,37 +424,9 @@ namespace System.Reflection.Emit
             return _tb.IsDefined(attributeType, inherit);
         }
 
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType()
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            return SymbolType.FormCompoundType("[]", this, 0)!;
-        }
-
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType(int rank)
-        {
-            string s = GetRankString(rank);
-            return SymbolType.FormCompoundType(s, this, 0)!;
-        }
-
-        public override Type MakeByRefType()
-        {
-            return SymbolType.FormCompoundType("&", this, 0)!;
-        }
-
-        public override Type MakePointerType()
-        {
-            return SymbolType.FormCompoundType("*", this, 0)!;
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            _tb.SetCustomAttribute(customBuilder);
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
+            _tb.SetCustomAttribute(con, binaryAttribute);
         }
 
         internal override bool IsUserType
