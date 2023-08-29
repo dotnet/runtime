@@ -1,0 +1,59 @@
+<!--
+
+    Configure Helix work items for doing a SuperPMI collection.
+    This file is only included if $(SuperPmiCollect) is 'true'.
+
+-->
+
+<Project>
+
+  <ItemGroup Condition=" '$(TargetOS)' == 'windows' ">
+    <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
+    <HelixPreCommand Include="set spmi_enable_collection=1" />
+    <!-- spmi_collect_dir can point to any temporary directory. We choose %HELIX_WORKITEM_PAYLOAD%\spmi_collect for convenience, and
+         because we know it can be used, but %TEMP%\spmi_collect might be better. -->
+    <HelixPreCommand Include="set spmi_collect_dir=%HELIX_WORKITEM_PAYLOAD%\spmi_collect" />
+    <HelixPreCommand Include="if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%" />
+    <HelixPreCommand Include="set spmi_core_root=%HELIX_CORRELATION_PAYLOAD%\coreclr" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' == 'windows' ">
+    <!-- Merge all the per-test generated .MC files as a post-step. Superpmi.py needs superpmi, mcs, and the JIT to do processing. -->
+    <HelixPostCommand Include="echo on" />
+    <HelixPostCommand Include="set spmi_core_root=%HELIX_CORRELATION_PAYLOAD%\coreclr" />
+    <HelixPostCommand Include="set spmi_collection_name=$(SuperPmiCollectionName)" />
+    <HelixPostCommand Include="set spmi_collection_type=$(SuperPmiCollectionType)" />
+    <HelixPostCommand Include="set spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="set spmi_superpmi_py=%HELIX_CORRELATION_PAYLOAD%\spmi_scripts\superpmi.py" />
+    <HelixPostCommand Include="set spmi_upload_dir=%HELIX_WORKITEM_UPLOAD_ROOT%" />
+    <HelixPostCommand Include="if not exist %spmi_upload_dir% mkdir %spmi_upload_dir%" />
+    <HelixPostCommand Include="set spmi_output_base_name=%spmi_collection_name%.%spmi_collection_type%.%spmi_collection_mch_file_tag%" />
+    <HelixPostCommand Include="set spmi_finalmch=%spmi_upload_dir%\%spmi_output_base_name%.mch" />
+    <HelixPostCommand Include="set spmi_log_file=%spmi_upload_dir%\%spmi_output_base_name%.log" />
+    <HelixPostCommand Include="%HELIX_PYTHONPATH% %spmi_superpmi_py% collect -log_level DEBUG -core_root %spmi_core_root% --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir %spmi_collect_dir% -output_mch_path %spmi_finalmch% -log_file %spmi_log_file%" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' != 'windows' ">
+    <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
+    <HelixPreCommand Include="export spmi_enable_collection=1" />
+    <HelixPreCommand Include="export spmi_collect_dir=$HELIX_WORKITEM_PAYLOAD/spmi_collect" />
+    <HelixPreCommand Include="mkdir -p $spmi_collect_dir" />
+    <HelixPreCommand Include="export spmi_core_root=$HELIX_CORRELATION_PAYLOAD/coreclr" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' != 'windows' ">
+    <!-- Merge all the per-test generated .MC files as a post-step. Superpmi.py needs superpmi, mcs, and the JIT to do processing. -->
+    <HelixPostCommand Include="export spmi_core_root=$HELIX_CORRELATION_PAYLOAD/coreclr" />
+    <HelixPostCommand Include="export spmi_collection_name=$(SuperPmiCollectionName)" />
+    <HelixPostCommand Include="export spmi_collection_type=$(SuperPmiCollectionType)" />
+    <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD/spmi_scripts/superpmi.py" />
+    <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
+    <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />
+    <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_mch_file_tag" />
+    <HelixPostCommand Include="export spmi_finalmch=$spmi_upload_dir/$spmi_output_base_name.mch" />
+    <HelixPostCommand Include="export spmi_log_file=$spmi_upload_dir/$spmi_output_base_name.log" />
+    <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $spmi_core_root --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
+  </ItemGroup>
+
+</Project>
