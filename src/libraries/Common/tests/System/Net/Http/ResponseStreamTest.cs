@@ -232,35 +232,83 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
-        [InlineData(false)]
         [InlineData(true)]
+        [InlineData(false)]
         public async Task BrowserHttpHandler_StreamingRequest(bool useStringContent)
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
 
-            var bodyContent = new String('A', 1024 * 100);
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteVerifyUploadServer);
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+
+            int expectedBodyLength;
+            if (useStringContent)
+            {
+                string bodyContent = "Hello World";
+                expectedBodyLength = bodyContent.Length;
+                req.Content = new StringContent(bodyContent);
+            }
+            else
+            {
+                expectedBodyLength = 1500 * 1024 * 1024;
+                int remaining = expectedBodyLength;
+                req.Content = new StreamContent(new DelegateStream(
+                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    {
+                        if (remaining > 0)
+                        {
+                            int send = Math.Min(remaining, count);
+                            buffer.AsSpan(offset, send).Fill(65);
+                            remaining -= send;
+                            return Task.FromResult(send);
+                        }
+                        return Task.FromResult(0);
+                    }));
+            }
+
+            req.Content.Headers.Add("Content-MD5-Skip", "browser");
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
+            using (HttpResponseMessage response = await client.SendAsync(req))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(expectedBodyLength.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
+                Assert.Equal(useStringContent, response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
+                if (useStringContent)
+                {
+                    Assert.Equal(expectedBodyLength.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Headers-ContentLength")));
+                }
+            }
+        }
+
+        // Duplicate of PostAsync_ThrowFromContentCopy_RequestFails using remote server
+        [OuterLoop]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task BrowserHttpHandler_StreamingRequest_ThrowFromContentCopy_RequestFails(bool syncFailure)
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
 
             var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer);
 
             req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
 
-            if (useStringContent)
-            {
-                req.Content = new StringContent(bodyContent);
-            }
-            else
-            {
-                req.Content = new ByteArrayContent(Encoding.UTF8.GetBytes(bodyContent));
-            }
+            Exception error = new FormatException();
+            var content = new StreamContent(new DelegateStream(
+                canSeekFunc: () => true,
+                lengthFunc: () => 12345678,
+                positionGetFunc: () => 0,
+                canReadFunc: () => true,
+                readFunc: (buffer, offset, count) => throw error,
+                readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
+
+            req.Content = content;
 
             using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
-            using (HttpResponseMessage response = await client.SendAsync(req))
             {
-                string responseBody = await response.Content.ReadAsStringAsync();
-
-                _output.WriteLine(responseBody);
-                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseBody, "BodyContent", bodyContent));
-                Assert.Equal(useStringContent, TestHelper.JsonMessageContainsKeyValue(responseBody, "Content-Length", bodyContent.Length.ToString()));
+                Assert.Same(error, await Assert.ThrowsAsync<FormatException>(() => client.SendAsync(req)));
             }
         }
 

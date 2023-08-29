@@ -32,8 +32,12 @@ namespace System.Net.Http
         public static partial void ReadableStreamControllerEnqueue(
             JSObject controller,
             IntPtr bufferPtr,
-            int bufferLength,
-            string? error);
+            int bufferLength);
+
+        [JSImport("INTERNAL.http_wasm_readable_stream_controller_error")]
+        public static partial void ReadableStreamControllerError(
+            JSObject controller,
+            Exception error);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
         private static partial string[] _GetResponseHeaderNames(

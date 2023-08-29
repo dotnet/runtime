@@ -250,7 +250,7 @@ namespace System.Net.Http
                                 }
                                 else
                                 {
-                                    view = buffer ??= new byte[500];
+                                    view = buffer ??= new byte[65536];
                                 }
 
                                 try
@@ -258,17 +258,17 @@ namespace System.Net.Http
                                     int length = await stream.ReadAsync(view, cancellationToken).ConfigureAwait(true);
                                     using (Buffers.MemoryHandle handle = view.Pin())
                                     {
-                                        ReadableStreamControllerEnqueueUnsafe(controller, handle, length, null);
+                                        ReadableStreamControllerEnqueueUnsafe(controller, handle, length);
                                     }
                                 }
                                 catch (Exception ex)
                                 {
-                                    BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, IntPtr.Zero, 0, ex.Message);
+                                    BrowserHttpInterop.ReadableStreamControllerError(controller, ex);
                                 }
                             };
 
-                            unsafe static void ReadableStreamControllerEnqueueUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length, string? error) =>
-                                BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, (IntPtr)handle.Pointer, length, error);
+                            unsafe static void ReadableStreamControllerEnqueueUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length) =>
+                                BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, (IntPtr)handle.Pointer, length);
 
                             promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, pull);
                         }
