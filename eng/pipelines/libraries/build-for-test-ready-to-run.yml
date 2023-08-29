@@ -33,7 +33,13 @@ jobs:
       osSubgroup: ${{ parameters.osSubgroup }}
       platform: ${{ parameters.platform }}
       pool: ${{ parameters.pool }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       targetRid: ${{ parameters.targetRid }}
       timeoutInMinutes: 120
       variables: ${{ parameters.variables }}
+
+      extraStepsTemplate: '/eng/pipelines/libraries/run-test-ready-to-run.yml'
+      extraStepsParameters:
+        libsBuildConfig: ${{ parameters.libsAndPacksConfig }}
+        variables: ${{ parameters.variables }}
