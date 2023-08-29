@@ -1,6 +1,16 @@
 <Project>
 
-  <Import Project="$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/build/Microsoft.NET.ILLink.Tasks.props" />
+  <PropertyGroup>
+    <_ILLinkTasksSourceDir>$(ToolsProjectRoot)illink/src/ILLink.Tasks/</_ILLinkTasksSourceDir>
+    <ILLinkAnalyzersPropsPath>$(ToolsProjectRoot)illink/src/ILLink.RoslynAnalyzer/build/Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Import Project="$(_ILLinkTasksSourceDir)build/Microsoft.NET.ILLink.Tasks.props" />
 
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>

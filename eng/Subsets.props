@@ -206,7 +206,6 @@
 
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
   </ItemGroup>
 
@@ -417,7 +416,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" />
     <ProjectToBuild Include="$(MonoProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="mono" />
   </ItemGroup>
 
@@ -455,7 +453,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.ref+')) or $(_subset.Contains('+libs.src+')) or $(_subset.Contains('+libs.sfx+'))">
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" />
     <ProjectToBuild Include="$(LibrariesProjectRoot)sfx.proj"
                     Category="libs"
                     Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
@@ -466,7 +463,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.ref+')) or $(_subset.Contains('+libs.src+')) or $(_subset.Contains('+libs.oob+'))">
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" />
     <ProjectToBuild Include="$(LibrariesProjectRoot)oob.proj" Category="libs">
       <AdditionalProperties Condition="$(_subset.Contains('+libs.ref+'))">%(AdditionalProperties);RefOnly=true</AdditionalProperties>
     </ProjectToBuild>
