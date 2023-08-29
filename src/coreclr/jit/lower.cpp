@@ -7483,7 +7483,28 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount)
         {
             if (registerCount == varDsc->lvFieldCnt)
             {
+                int hfaFields           = 0;
                 canEnregisterAsMultiReg = true;
+                for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
+                {
+                    LclVarDsc* fieldDesc = comp->lvaGetDesc(varDsc->lvFieldLclStart + i);
+                    if (fieldDesc->lvIsHfa())
+                    {
+                        // Let's see if all fields are HFAs
+                        hfaFields++;
+                    }
+                    else if (((fieldDesc->lvFldOffset % REGSIZE_BYTES) != 0) || (fieldDesc->lvSize() >= REGSIZE_BYTES))
+                    {
+                        // Otherwise, we expect two ints/longs
+                        canEnregisterAsMultiReg = false;
+                        break;
+                    }
+                }
+                if (hfaFields != registerCount)
+                {
+                    // A mix of HFAs with non-HFAs
+                    canEnregisterAsMultiReg = false;
+                }
             }
         }
     }
