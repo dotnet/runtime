@@ -11,7 +11,7 @@ class Program
     {
         string stackTrace = Environment.StackTrace;
 
-        Console.WriteLine(stackTrace);
+        Console.WriteLine($"Current stack trace: {stackTrace}");
 
 #if STRIPPED
         const bool expected = false;
@@ -19,7 +19,12 @@ class Program
         const bool expected = true;
 #endif
         bool actual = stackTrace.Contains(nameof(Main)) && stackTrace.Contains(nameof(Program));
-        return expected == actual ? 100 : 1;
+
+        int exitCode = expected == actual ? 100 : 1;
+
+        Console.WriteLine($"Exit code: {exitCode}");
+
+        return exitCode;
     }
 
 }
