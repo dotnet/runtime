@@ -1067,7 +1067,7 @@ OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
 }
 #endif // FEATURE_COMINTEROP
 
-bool IsValidForGenericMarshalling(MethodTable* pMT, bool isFieldScenario, bool builtInMarshallingEnabled = true)
+bool IsValidForGenericMarshalling(MethodTable* pMT, bool isFieldScenario, bool builtInMarshallingEnabled)
 {
     _ASSERTE(pMT != NULL);
 
