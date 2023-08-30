@@ -695,7 +695,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' ">
-    <!-- Merge all the per-test generted .MC files as a post-step -->
+    <!-- Merge all the per-test generated .MC files as a post-step -->
     <HelixPostCommand Include="set spmi_collection_name=coreclr_tests" />
     <HelixPostCommand Include="set spmi_collection_type=run" />
     <HelixPostCommand Include="set spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
@@ -742,7 +742,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
-    <!-- Merge all the per-test generted .MC files as a post-step -->
+    <!-- Merge all the per-test generated .MC files as a post-step -->
     <HelixPostCommand Include="export spmi_collection_name=coreclr_tests" />
     <HelixPostCommand Include="export spmi_collection_type=run" />
     <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />

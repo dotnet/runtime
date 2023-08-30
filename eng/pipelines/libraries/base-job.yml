@@ -24,6 +24,7 @@ parameters:
   pool: ''
   runTests: false
   pgoType: ''
+  SuperPmiCollect: false
 
 jobs:
   - template: /eng/common/templates/job/job.yml
