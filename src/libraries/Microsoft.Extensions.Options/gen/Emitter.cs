@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Options.Generators
             else
             {
                 _modifier = "internal";
-                string suffix = $"_{GetNonRandomizedHashCode($"{compilation.SourceModule.Name}"):X8}";
+                string suffix = $"_{GetNonRandomizedHashCode(compilation.SourceModule.Name):X8}";
                 _staticValidationAttributeHolderClassName += suffix;
                 _staticValidatorHolderClassName += suffix;
             }
