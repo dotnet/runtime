@@ -8,7 +8,7 @@ import type { RuntimeAPI } from "./types";
 
 import { Module, linkerDisableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, is_nullish } from "./types/internal";
-import { configureEmscriptenStartup, configureWorkerStartup } from "./startup";
+import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
 import { export_internal } from "./exports-internal";
@@ -143,5 +143,5 @@ class RuntimeList {
 
 // export external API
 export {
-    passEmscriptenInternals, initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals
+    passEmscriptenInternals, initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals
 };

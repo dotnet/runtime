@@ -6452,8 +6452,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		generic_context = &generic_container->context;
 	cfg->generic_context = generic_context;
 
-	if (!cfg->gshared)
-		g_assert (!sig->has_type_parameters);
+	if (!cfg->gshared) {
+		gboolean check_type_parameter = TRUE;
+		if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+			g_assert (info);
+			if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR)
+				check_type_parameter = FALSE;
+		}
+
+		if (check_type_parameter)
+			g_assert (!sig->has_type_parameters);
+	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
 		g_assert (method->is_inflated);
