@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_NODE, Module, createPromiseController, loaderHelpers, mono_assert } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
 import type { VoidPtr } from "./types/emscripten";
 
@@ -72,13 +72,13 @@ export function http_wasm_readable_stream_controller_enqueue(controller: Readabl
             controller.enqueue(copy);
         }
     }
-    controller.__resolve_controller();
+    controller.__resolve_pull();
 }
 
 export function http_wasm_readable_stream_controller_error(controller: ReadableByteStreamControllerExtension, error: Error): void {
     controller.__reject_fetch(error);
     controller.error(error);
-    controller.__resolve_controller();
+    controller.__resolve_pull();
 }
 
 export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamControllerExtension, desired_size: number) => void): Promise<ResponseExtension> {
@@ -87,16 +87,19 @@ export function http_wasm_fetch_stream(url: string, header_names: string[], head
             type: "bytes",
             autoAllocateChunkSize: 65536,
             pull(controller: ReadableByteStreamController) {
-                return new Promise(resolve_controller => {
-                    const c = controller as ReadableByteStreamControllerExtension;
-                    let desired_size = c.desiredSize;
-                    if (c.byobRequest && c.byobRequest.view) { // waiting on https://github.com/WebAssembly/design/issues/1162 so we can pass the view to .net
-                        desired_size = c.byobRequest.view.byteLength;
-                    }
-                    c.__resolve_controller = resolve_controller;
-                    c.__reject_fetch = reject_fetch;
-                    pull(c, desired_size || 0);
-                });
+                const { promise: pull_promise, promise_control: pull_promise_control } = createPromiseController<void>();
+                const c = controller as ReadableByteStreamControllerExtension;
+                let desired_size = c.desiredSize;
+                if (c.byobRequest && c.byobRequest.view) { // waiting on https://github.com/WebAssembly/design/issues/1162 so we can pass the view to .net
+                    desired_size = c.byobRequest.view.byteLength;
+                }
+                c.__resolve_pull = pull_promise_control.resolve;
+                c.__reject_fetch = reject_fetch;
+                pull(c, desired_size || 0);
+                return pull_promise;
+            },
+            cancel(reason) {
+                reject_fetch(reason);
             },
         });
 
@@ -216,7 +219,7 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
 }
 
 interface ReadableByteStreamControllerExtension extends ReadableByteStreamController {
-    __resolve_controller: () => void
+    __resolve_pull: () => void
     __reject_fetch: (error: Error) => void
 }
 
