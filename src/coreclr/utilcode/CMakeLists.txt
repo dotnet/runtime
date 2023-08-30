@@ -6,7 +6,6 @@ set(UTILCODE_COMMON_SOURCES
   ex.cpp
   sbuffer.cpp
   sstring_com.cpp
-  fstring.cpp
   namespaceutil.cpp
   makepath.cpp
   splitpath.cpp
