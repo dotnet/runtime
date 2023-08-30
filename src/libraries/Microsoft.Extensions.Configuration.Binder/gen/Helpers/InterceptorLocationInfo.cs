@@ -15,28 +15,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public InterceptorLocationInfo(IInvocationOperation operation)
         {
-            SyntaxNode operationSyntax = operation.Syntax;
-            TextSpan operationSpan = operationSyntax.Span;
-            SyntaxTree operationSyntaxTree = operationSyntax.SyntaxTree;
+            MemberAccessExpressionSyntax memberAccessExprSyntax = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)operation.Syntax).Expression);
+            SyntaxTree operationSyntaxTree = operation.Syntax.SyntaxTree;
+            TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
+            FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
 
-            FilePath = GetInterceptorFilePath(operationSyntaxTree, operation.SemanticModel?.Compilation.Options.SourceReferenceResolver);
+            LineNumber = linePosSpan.StartLinePosition.Line + 1;
+            CharacterNumber = linePosSpan.StartLinePosition.Character + 1;
+            FilePath = GetInterceptorFilePath();
 
-            FileLinePositionSpan span = operationSyntaxTree.GetLineSpan(operationSpan);
-            LineNumber = span.StartLinePosition.Line + 1;
-
-            // Calculate the character offset to the end of the binding invocation detected.
-            int invocationLength = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)operationSyntax).Expression).Expression.Span.Length;
-            CharacterNumber = span.StartLinePosition.Character + invocationLength + 2;
+            // Use the same logic used by the interceptors API for resolving the source mapped value of a path.
+            // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
+            string GetInterceptorFilePath()
+            {
+                SourceReferenceResolver? sourceReferenceResolver = operation.SemanticModel?.Compilation.Options.SourceReferenceResolver;
+                return sourceReferenceResolver?.NormalizePath(operationSyntaxTree.FilePath, baseFilePath: null) ?? operationSyntaxTree.FilePath;
+            }
         }
 
         public string FilePath { get; }
         public int LineNumber { get; }
         public int CharacterNumber { get; }
-
-        // Utilize the same logic used by the interceptors API for resolving the source mapped value of a path.
-        // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
-        private static string GetInterceptorFilePath(SyntaxTree tree, SourceReferenceResolver? resolver) =>
-            resolver?.NormalizePath(tree.FilePath, baseFilePath: null) ?? tree.FilePath;
     }
 
     internal sealed record ConfigurationBinderInterceptorInfo
@@ -52,7 +51,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         }
 
         public OverloadInterceptorInfo GetOverloadInfo(MethodsToGen_ConfigurationBinder overload) =>
-            DetermineOverload(overload, initIfNull: false) ?? throw new ArgumentNullException(nameof(overload));
+            DetermineOverload(overload, initIfNull: false) ?? throw new ArgumentOutOfRangeException(nameof(overload));
 
         private OverloadInterceptorInfo? DetermineOverload(MethodsToGen_ConfigurationBinder overload, bool initIfNull)
         {
