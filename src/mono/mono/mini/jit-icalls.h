@@ -234,7 +234,7 @@ ICALL_EXPORT void mono_throw_platform_not_supported (void);
 
 ICALL_EXPORT void mono_throw_invalid_program (const char *msg);
 
-ICALL_EXPORT void mono_throw_type_load (void);
+ICALL_EXPORT void mono_throw_type_load (const char* msg);
 
 ICALL_EXPORT void mono_dummy_jit_icall (void);
 
