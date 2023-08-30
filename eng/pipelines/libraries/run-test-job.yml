@@ -28,31 +28,6 @@ parameters:
   SuperPmiCollectionName: 'libraries_tests'
   dependsOn: []
 
-variables:
-
-  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-    - name: runTestJobDisplayName
-      value: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-    - name: runTestJobName
-      value: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-  - ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
-    - name: runTestJobDisplayName
-      value: 'Test Run'
-    - name: runTestJobName
-      value: test_run
-  - ${{ if eq(parameters.SuperPmiCollect, true) }}:
-    - template: /eng/pipelines/libraries/superpmi-collect-variables.yml
-      parameters:
-        buildConfig: ${{ parameters.buildConfig }}
-        osGroup: ${{ parameters.osGroup }}
-        osSubgroup: ${{ parameters.osSubgroup }}
-        archType: ${{ parameters.archType }}
-        liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        runtimeDisplayName: ${{ parameters.runtimeDisplayName }}
-        SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
-        SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
-
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
     parameters:
@@ -72,8 +47,16 @@ jobs:
       testScope: ${{ parameters.testScope }}
       SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
       runTests: true
-      displayName: $(runTestJobDisplayName)
-      name: $(runTestJobName)
+      ${{ if eq(parameters.SuperPmiCollect, true) }}:
+        displayName: ${{ format('SuperPMI collection {0} {1} {2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        name: ${{ format('spmi_{0}_{1}_{2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+      ${{ else }}:
+        ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+          name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
+          displayName: 'Test Run'
+          name: test_run
       ${{ if eq(parameters.interpreter, 'true') }}:
         testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
@@ -97,6 +80,15 @@ jobs:
 
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
+
+        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+          - template: /eng/pipelines/libraries/superpmi-collect-variables.yml
+            parameters:
+              buildConfig: ${{ parameters.buildConfig }}
+              osGroup: ${{ parameters.osGroup }}
+              archType: ${{ parameters.archType }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+
         - ${{ parameters.variables }}
 
       steps:
