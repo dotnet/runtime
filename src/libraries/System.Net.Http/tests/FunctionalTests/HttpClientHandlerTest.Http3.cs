@@ -1626,7 +1626,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ServerSendsTrailingHeaders_Success()
         {
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
-            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            SemaphoreSlim clientFinishedSemaphore = new SemaphoreSlim(0);
 
             Task serverTask = Task.Run(async () =>
             {
@@ -1637,7 +1637,7 @@ namespace System.Net.Http.Functional.Tests
                 await requestStream.ReadRequestDataAsync();
                 await requestStream.SendResponseAsync(isFinal: false);
                 await requestStream.SendResponseHeadersAsync(null, new[] { new HttpHeaderData("MyHeader", "MyValue") });
-                await semaphore.WaitAsync();
+                await clientFinishedSemaphore.WaitAsync(TimeSpan.FromSeconds(20));
             });
 
             Task clientTask = Task.Run(async () =>
@@ -1657,7 +1657,7 @@ namespace System.Net.Http.Functional.Tests
                 (string key, IEnumerable<string> value) = Assert.Single(response.TrailingHeaders);
                 Assert.Equal("MyHeader", key);
                 Assert.Equal("MyValue", Assert.Single(value));
-                semaphore.Release();
+                clientFinishedSemaphore.Release();
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
