@@ -31,7 +31,7 @@ internal sealed class WasmTestMessagesProcessor
                 logMessage = JsonSerializer.Deserialize<WasmLogMessage>(message);
                 if (logMessage != null)
                 {
-                    line = logMessage.payload + " " + string.Join(" ", logMessage.arguments ?? Enumerable.Empty<string>());
+                    line = logMessage.payload + " " + string.Join(" ", logMessage.arguments ?? Enumerable.Empty<object>());
                 }
                 else
                 {
