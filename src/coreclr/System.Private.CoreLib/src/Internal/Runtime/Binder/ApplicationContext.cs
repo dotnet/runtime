@@ -15,6 +15,11 @@ namespace Internal.Runtime.Binder
         public string? NIFileName;
     }
 
+    internal record struct FailureCacheKey(string SimpleName, AssemblyVersion Version)
+    {
+        public FailureCacheKey(AssemblyName assemblyName) : this(assemblyName.SimpleName, assemblyName.Version) { }
+    }
+
     internal class ApplicationContext
     {
         private volatile int _version;
@@ -23,7 +28,7 @@ namespace Internal.Runtime.Binder
 
         private readonly Dictionary<AssemblyName, Assembly> _executionContext = new Dictionary<AssemblyName, Assembly>();
 
-        public Dictionary<string, int> FailureCache { get; } = new Dictionary<string, int>();
+        public Dictionary<FailureCacheKey, Exception?> FailureCache { get; } = new Dictionary<FailureCacheKey, Exception?>();
 
         public object ContextCriticalSection { get; } = new object();
 
@@ -293,9 +298,9 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        public void AddToFailureCache(string assemblyNameOrPath, int hResult)
+        public void AddToFailureCache(AssemblyName assemblyName, Exception? failure)
         {
-            FailureCache.Add(assemblyNameOrPath, hResult);
+            FailureCache.Add(new FailureCacheKey(assemblyName), failure);
             IncrementVersion();
         }
     }

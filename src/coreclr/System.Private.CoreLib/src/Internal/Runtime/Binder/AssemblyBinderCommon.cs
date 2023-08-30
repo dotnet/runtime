@@ -188,33 +188,33 @@ namespace Internal.Runtime.Binder
         // static Assembly? BindToSystem(string systemDirectory);
         // static Assembly? BindToSystemSatellite(string systemDirectory, string simpleName, string cultureName);
 
-        static BindResult BindByName(ApplicationContext applicationContext, AssemblyName assemblyName, bool skipFailureChecking, bool skipVersionCompatibilityCheck, bool excludeAppPaths)
+        private static BindResult BindByName(ApplicationContext applicationContext, AssemblyName assemblyName, bool skipFailureChecking, bool skipVersionCompatibilityCheck, bool excludeAppPaths)
         {
-            BindResult bindResult = default;
-
             // Look for already cached binding failure (ignore PA, every PA will lock the context)
-            string assemblyDisplayName = assemblyName.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_VERSION);
 
-            try
+            if (applicationContext.FailureCache.TryGetValue(new FailureCacheKey(assemblyName), out Exception? failure))
             {
-                applicationContext.FailureCache.TryGetValue(assemblyDisplayName, out int hr);
-                if (hr < 0) // FAILED(hr)
+                if (failure != null) // FAILED(hr)
                 {
-                    if (hr == HResults.E_FILENOTFOUND && skipFailureChecking)
+                    if (failure is FileNotFoundException && skipFailureChecking)
                     {
                         // Ignore pre-existing transient bind error (re-bind will succeed)
-                        applicationContext.FailureCache.Remove(assemblyDisplayName);
+                        applicationContext.FailureCache.Remove(new FailureCacheKey(assemblyName));
                     }
 
                     return default;
                 }
-                else if (hr == HResults.S_FALSE)
+                else // hr == HResults.S_FALSE
                 {
                     // workaround: Special case for byte arrays. Rerun the bind to create binding log.
                     assemblyName.IsDefinition = true;
-                    hr = HResults.S_OK;
                 }
+            }
 
+            BindResult bindResult = default;
+
+            try
+            {
                 if (!IsValidArchitecture(assemblyName.Architecture))
                 {
                     // Assembly reference contains wrong architecture
@@ -238,7 +238,7 @@ namespace Internal.Runtime.Binder
                     if (ex is not FileNotFoundException)
                     {
                         // Cache non-transient bind error for byte-array
-                        ex = Marshal.GetExceptionForHR(HResults.S_FALSE)!;
+                        ex = null!;
                     }
                     else
                     {
@@ -247,9 +247,9 @@ namespace Internal.Runtime.Binder
                     }
                 }
 
-                applicationContext.AddToFailureCache(assemblyDisplayName, ex.HResult);
+                applicationContext.AddToFailureCache(assemblyName, ex);
 
-                throw ex;
+                throw;
             }
         }
 
