@@ -531,7 +531,7 @@ namespace System
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
-        public static long ToInt128(byte[] value, int startIndex)
+        public static Int128 ToInt128(byte[] value, int startIndex)
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
@@ -540,7 +540,7 @@ namespace System
             if (startIndex > value.Length - sizeof(Int128))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ByteArrayTooSmallForValue, ExceptionArgument.value);
 
-            return Unsafe.ReadUnaligned<long>(ref value[startIndex]);
+            return Unsafe.ReadUnaligned<Int128>(ref value[startIndex]);
         }
 
         /// <summary>
@@ -550,11 +550,11 @@ namespace System
         /// <returns>A 128-bit signed integer representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 16.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static long ToInt128(ReadOnlySpan<byte> value)
+        public static Int128 ToInt128(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(Int128))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
-            return Unsafe.ReadUnaligned<long>(ref MemoryMarshal.GetReference(value));
+            return Unsafe.ReadUnaligned<Int128>(ref MemoryMarshal.GetReference(value));
         }
 
         /// <summary>
@@ -657,7 +657,7 @@ namespace System
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
         [CLSCompliant(false)]
-        public static ulong ToUInt128(byte[] value, int startIndex) => unchecked((UInt128)ToInt128(value, startIndex));
+        public static UInt128 ToUInt128(byte[] value, int startIndex) => unchecked((UInt128)ToInt128(value, startIndex));
 
         /// <summary>
         /// Converts a read-only byte span into a 128-bit unsigned integer.
@@ -667,7 +667,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 16.</exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong ToUInt128(ReadOnlySpan<byte> value)
+        public static UInt128 ToUInt128(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(UInt128))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
