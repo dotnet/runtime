@@ -26,7 +26,7 @@ namespace Internal.Runtime.Binder
 
         public int Version => _version;
 
-        private readonly Dictionary<AssemblyName, Assembly> _executionContext = new Dictionary<AssemblyName, Assembly>();
+        public Dictionary<AssemblyName, Assembly> ExecutionContext { get; } = new Dictionary<AssemblyName, Assembly>();
 
         public Dictionary<FailureCacheKey, Exception?> FailureCache { get; } = new Dictionary<FailureCacheKey, Exception?>();
 

@@ -325,12 +325,23 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        static void BindByTpaList(ApplicationContext applicationContext, AssemblyName assemblyName, bool excludeAppPaths, ref BindResult bindResult)
+        private static Assembly? FindInExecutionContext(ApplicationContext applicationContext, AssemblyName assemblyName)
         {
-            throw null;
+            applicationContext.ExecutionContext.TryGetValue(assemblyName, out Assembly? assembly);
+
+            // Set any found context entry. It is up to the caller to check the returned HRESULT
+            // for errors due to validation
+
+            if (assembly != null && assemblyName.IsDefinition
+                && (assembly.AssemblyName.Architecture != assemblyName.Architecture))
+            {
+                throw new Exception("FUSION_E_APP_DOMAIN_LOCKED");
+            }
+
+            return assembly;
         }
 
-        static Assembly? FindInExecutionContext(ApplicationContext applicationContext, AssemblyName assembly)
+        static void BindByTpaList(ApplicationContext applicationContext, AssemblyName assemblyName, bool excludeAppPaths, ref BindResult bindResult)
         {
             throw null;
         }
