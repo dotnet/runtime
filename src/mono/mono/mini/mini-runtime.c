@@ -4478,7 +4478,8 @@ init_class (MonoClass *klass)
 	 */
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		// FIXME: Support Vector2/Vector3
-		if (!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
+		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector4") || 
+			!strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif
