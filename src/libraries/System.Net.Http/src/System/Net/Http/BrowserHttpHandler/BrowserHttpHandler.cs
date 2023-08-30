@@ -253,17 +253,20 @@ namespace System.Net.Http
                                     view = buffer ??= new byte[65536];
                                 }
 
-                                try
+                                using (controller)
                                 {
-                                    int length = await stream.ReadAsync(view, cancellationToken).ConfigureAwait(true);
-                                    using (Buffers.MemoryHandle handle = view.Pin())
+                                    try
                                     {
-                                        ReadableStreamControllerEnqueueUnsafe(controller, handle, length);
+                                        int length = await stream.ReadAsync(view, cancellationToken).ConfigureAwait(true);
+                                        using (Buffers.MemoryHandle handle = view.Pin())
+                                        {
+                                            ReadableStreamControllerEnqueueUnsafe(controller, handle, length);
+                                        }
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    BrowserHttpInterop.ReadableStreamControllerError(controller, ex);
+                                    catch (Exception ex)
+                                    {
+                                        BrowserHttpInterop.ReadableStreamControllerError(controller, ex);
+                                    }
                                 }
                             };
 
