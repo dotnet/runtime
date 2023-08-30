@@ -3319,7 +3319,7 @@ BOOL NDirect::MarshalingRequired(
             case ELEMENT_TYPE_GENERICINST:
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
-                bool isValidGeneric = IsValidForGenericMarshalling( hndArgType.GetMethodTable(), false, runtimeMarshallingEnabled));
+                bool isValidGeneric = IsValidForGenericMarshalling(hndArgType.GetMethodTable(), false, runtimeMarshallingEnabled);
                 if(!hndArgType.IsValueType() ||  !isValidGeneric)
                     return true;
 
