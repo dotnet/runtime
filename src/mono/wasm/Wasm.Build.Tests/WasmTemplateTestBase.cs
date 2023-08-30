@@ -31,8 +31,11 @@ public abstract class WasmTemplateTestBase : BuildTestBase
               <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
                   <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
               </Target>
+
+              <Import Project="WasmOverridePacks.targets" />
             </Project>
             """);
+        File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)));
 
         new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
