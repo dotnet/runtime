@@ -40,14 +40,15 @@ internal sealed class WasmTestMessagesProcessor
             }
             catch (JsonException)
             {
-                line = message.TrimEnd();
+                line = message;
             }
         }
         else
         {
-            line = message.TrimEnd();
+            line = message;
         }
 
+        line = line.TrimEnd();
         switch (logMessage?.method?.ToLowerInvariant())
         {
             case "console.debug": _logger.LogDebug(line); break;
