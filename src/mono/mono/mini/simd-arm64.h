@@ -29,6 +29,7 @@ SIMD_OP  (64,  OP_XCOMPARE_FP, CMP_LE,               WTDSS_REV,           _UNDEF
 
 SIMD_OP  (64,  OP_XBINOP,      OP_IADD,              WTDSS,              arm_neon_add,     arm_neon_add,     arm_neon_add,     _UNDEF,           _UNDEF,           _UNDEF)  
 SIMD_OP  (64,  OP_XBINOP,      OP_FADD,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fadd,    _UNDEF)
+SIMD_OP  (64,  OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS,   WTDS,    _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fabs,    _UNDEF)
 
 /* 128-bit vectors */
 /*         Width  Opcode          Function              Operand config      I8                I16               I32               I64               F32               F64         */
