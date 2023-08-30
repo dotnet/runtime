@@ -269,41 +269,22 @@ namespace System.Net.Http
 
         private static async void ReadableStreamPull(JSObject controller, int desiredSize, object state)
         {
-            using (controller)
+            try
             {
-                try
+                ReadableStreamPullState pullState = (ReadableStreamPullState)state;
+                Memory<byte> buffer = await pullState.ReadAsync(desiredSize).ConfigureAwait(true);
+                using (Buffers.MemoryHandle handle = buffer.Pin())
                 {
-                    ReadableStreamPullState pullState = (ReadableStreamPullState)state;
-
-                    byte[]? buffer = pullState.Buffer;
-                    Memory<byte> view;
-                    if (desiredSize > 0)
-                    {
-                        if (buffer is null || buffer.Length < desiredSize)
-                        {
-                            view = buffer = new byte[desiredSize];
-                        }
-                        else
-                        {
-                            view = buffer.AsMemory(0, desiredSize);
-                        }
-                    }
-                    else
-                    {
-                        view = buffer ??= new byte[65536];
-                    }
-                    pullState.Buffer = buffer;
-
-                    int length = await pullState.Stream.ReadAsync(view, pullState.CancellationToken).ConfigureAwait(true);
-                    using (Buffers.MemoryHandle handle = view.Pin())
-                    {
-                        ReadableStreamControllerEnqueueUnsafe(controller, handle, length);
-                    }
+                    ReadableStreamControllerEnqueueUnsafe(controller, handle, buffer.Length);
                 }
-                catch (Exception ex)
-                {
-                    BrowserHttpInterop.ReadableStreamControllerError(controller, ex);
-                }
+            }
+            catch (Exception ex)
+            {
+                BrowserHttpInterop.ReadableStreamControllerError(controller, ex);
+            }
+            finally
+            {
+                controller.Dispose();
             }
 
             unsafe static void ReadableStreamControllerEnqueueUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length) =>
@@ -376,17 +357,40 @@ namespace System.Net.Http
 
     internal sealed class ReadableStreamPullState
     {
+        private readonly Stream _stream;
+        private readonly CancellationToken _cancellationToken;
+        private byte[]? _buffer;
+
         public ReadableStreamPullState(Stream stream, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            Stream = stream;
-            CancellationToken = cancellationToken;
+            _stream = stream;
+            _cancellationToken = cancellationToken;
         }
 
-        public Stream Stream { get; }
-        public CancellationToken CancellationToken { get; }
-        public byte[]? Buffer { get; set; }
+        public async Task<Memory<byte>> ReadAsync(int desiredSize)
+        {
+            Memory<byte> view;
+            if (desiredSize > 0)
+            {
+                if (_buffer is null || _buffer.Length < desiredSize)
+                {
+                    view = _buffer = new byte[desiredSize];
+                }
+                else
+                {
+                    view = _buffer.AsMemory(0, desiredSize);
+                }
+            }
+            else
+            {
+                view = _buffer ??= new byte[65536];
+            }
+
+            int length = await _stream.ReadAsync(view, _cancellationToken).ConfigureAwait(true);
+            return view.Slice(0, length);
+        }
     }
 
     internal sealed class WasmFetchResponse : IDisposable
