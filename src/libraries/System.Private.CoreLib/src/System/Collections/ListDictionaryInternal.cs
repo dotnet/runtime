@@ -10,6 +10,7 @@ namespace System.Collections
     /// Recommended for collections that typically include fewer than 10 items.
     /// </summary>
     [DebuggerDisplay("Count = {count}")]
+    [DebuggerTypeProxy(typeof(ListDictionaryInternalDebugView))]
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
@@ -200,6 +201,17 @@ namespace System.Collections
                 last!.next = node.next;
             }
             count--;
+        }
+
+        internal KeyValuePairs[] ToKeyValuePairsArray()
+        {
+            var array = new KeyValuePairs[count];
+            int index = 0;
+            for (DictionaryNode? node = head; node != null; node = node.next)
+            {
+                array[index++] = new KeyValuePairs(node.key, node.value);
+            }
+            return array;
         }
 
         private sealed class NodeEnumerator : IDictionaryEnumerator
@@ -404,6 +416,20 @@ namespace System.Collections
             public object key = null!;
             public object? value;
             public DictionaryNode? next;
+        }
+
+        internal sealed class ListDictionaryInternalDebugView
+        {
+            private readonly ListDictionaryInternal list;
+
+            public ListDictionaryInternalDebugView(ListDictionaryInternal list)
+            {
+                ArgumentNullException.ThrowIfNull(list);
+                this.list = list;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public KeyValuePairs[] Items => list.ToKeyValuePairsArray();
         }
     }
 }
