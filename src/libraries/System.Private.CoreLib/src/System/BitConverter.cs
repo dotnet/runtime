@@ -552,7 +552,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Int128 ToInt128(ReadOnlySpan<byte> value)
         {
-            if (value.Length < sizeof(Int128))
+            if (value.Length < Int128.Size)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
             return Unsafe.ReadUnaligned<Int128>(ref MemoryMarshal.GetReference(value));
         }
@@ -669,7 +669,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UInt128 ToUInt128(ReadOnlySpan<byte> value)
         {
-            if (value.Length < sizeof(UInt128))
+            if (value.Length < UInt128.Size)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
             return Unsafe.ReadUnaligned<UInt128>(ref MemoryMarshal.GetReference(value));
         }
