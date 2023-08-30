@@ -19,5 +19,13 @@ namespace Internal.Runtime.Binder
             Build = Unspecified;
             Revision = Unspecified;
         }
+
+        public bool HasMajor => Major != Unspecified;
+
+        public bool HasMinor => Minor != Unspecified;
+
+        public bool HasBuild => Build != Unspecified;
+
+        public bool HasRevision => Revision != Unspecified;
     }
 }

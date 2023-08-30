@@ -17,6 +17,69 @@ namespace Internal.Runtime.Binder
 
     internal static class AssemblyBinderCommon
     {
+        public static bool IsCompatibleAssemblyVersion(AssemblyName requestedName, AssemblyName foundName)
+        {
+            AssemblyVersion pRequestedVersion = requestedName.Version;
+            AssemblyVersion pFoundVersion = foundName.Version;
+
+            if (!pRequestedVersion.HasMajor)
+            {
+                // An unspecified requested version component matches any value for the same component in the found version,
+                // regardless of lesser-order version components
+                return true;
+            }
+            if (!pFoundVersion.HasMajor || pRequestedVersion.Major > pFoundVersion.Major)
+            {
+                // - A specific requested version component does not match an unspecified value for the same component in
+                //   the found version, regardless of lesser-order version components
+                // - Or, the requested version is greater than the found version
+                return false;
+            }
+            if (pRequestedVersion.Major < pFoundVersion.Major)
+            {
+                // The requested version is less than the found version
+                return true;
+            }
+
+            if (!pRequestedVersion.HasMinor)
+            {
+                return true;
+            }
+            if (!pFoundVersion.HasMinor || pRequestedVersion.Minor > pFoundVersion.Minor)
+            {
+                return false;
+            }
+            if (pRequestedVersion.Minor < pFoundVersion.Minor)
+            {
+                return true;
+            }
+
+            if (!pRequestedVersion.HasBuild)
+            {
+                return true;
+            }
+            if (!pFoundVersion.HasBuild || pRequestedVersion.Build > pFoundVersion.Build)
+            {
+                return false;
+            }
+            if (pRequestedVersion.Build < pFoundVersion.Build)
+            {
+                return true;
+            }
+
+            if (!pRequestedVersion.HasRevision)
+            {
+                return true;
+            }
+            if (!pFoundVersion.HasRevision || pRequestedVersion.Revision > pFoundVersion.Revision)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public static void CreateImageAssembly(IntPtr pPEImage, ref BindResult bindResult) => bindResult.SetResult(new Assembly(pPEImage, isInTPA: false));
+
         // defined in System.Reflection.PortableExecutable.Machine, but it's in System.Reflection.Metadata
         // also defined in System.Reflection.ImageFileMachine
         private const int IMAGE_FILE_MACHINE_I386 = 0x014c;  // Intel 386.
