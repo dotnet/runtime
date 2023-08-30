@@ -1,6 +1,6 @@
 parameters:
   archType: ''
-  libsBuildConfig: ''
+  buildConfig: ''
   osGroup: ''
   variables: []
 
@@ -9,7 +9,7 @@ steps:
             -subset libs.tests -test
             -arch ${{ parameters.archType }}
             -os ${{ parameters.osGroup }}
-            -c ${{ parameters.libsBuildConfig }}
+            -c ${{ parameters.buildConfig }}
             /p:TestReadyToRun=true
             /p:RunSmokeTestsOnly=true
     displayName: Build and Run Libs Tests with TestReadyToRun

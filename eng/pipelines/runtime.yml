@@ -349,14 +349,11 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/libraries/build-for-test-ready-to-run.yml
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Checked
+          buildConfig: Release
           platforms:
             - linux_x64
             - osx_x64
             - windows_x64
-          jobParameters:
-            coreclrConfig: Checked
-            libsAndPacksConfig: Release
 
       # # Build and test clr tools
       # - template: /eng/pipelines/common/platform-matrix.yml

@@ -1,11 +1,10 @@
 parameters:
   archType: ''
   container: ''
-  coreclrConfig: ''
+  buildConfig: ''
   crossBuild: false
   dependOnEvaluatePaths: false
   helixQueues: ''
-  libsAndPacksConfig: ''
   osGroup: ''
   osSubgroup: ''
   platform: ''
@@ -19,9 +18,8 @@ jobs:
   - template: /eng/pipelines/common/global-build-job.yml
     parameters:
       buildArgs: -s clr+libs+packs
-                 -c ${{ parameters.libsAndPacksConfig }}
-                 -rc ${{ parameters.coreclrConfig }}
-      buildConfig: ${{ parameters.coreclrConfig }}
+                 -c ${{ parameters.buildConfig }}
+      buildConfig: ${{ parameters.buildConfig }}
 
       archType: ${{ parameters.archType }}
       container: ${{ parameters.container }}
@@ -41,5 +39,4 @@ jobs:
 
       extraStepsTemplate: '/eng/pipelines/libraries/run-test-ready-to-run.yml'
       extraStepsParameters:
-        libsBuildConfig: ${{ parameters.libsAndPacksConfig }}
         variables: ${{ parameters.variables }}
