@@ -35,7 +35,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
               <Import Project="WasmOverridePacks.targets" />
             </Project>
             """);
-        File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)));
+        File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
         new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
