@@ -79,7 +79,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		public virtual void Check (LinkedTestCaseResult linkResult)
+		public virtual void Check (TrimmedTestCaseResult linkResult)
 		{
 			InitializeResolvers (linkResult);
 
@@ -122,7 +122,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyILOfOtherAssemblies (LinkedTestCaseResult linkResult)
+		void VerifyILOfOtherAssemblies (TrimmedTestCaseResult linkResult)
 		{
 			foreach (var linkedAssemblyPath in linkResult.Sandbox.OutputDirectory.Files ("*.dll")) {
 				if (linkedAssemblyPath == linkResult.OutputAssemblyPath)
@@ -135,12 +135,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual ILChecker CreateILChecker () => new ();
 
-		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
+		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
 		{
 			return new AssemblyChecker (original, linked, linkedTestCase);
 		}
 
-		void InitializeResolvers (LinkedTestCaseResult linkedResult)
+		void InitializeResolvers (TrimmedTestCaseResult linkedResult)
 		{
 			_originalsResolver.AddSearchDirectory (linkedResult.ExpectationsAssemblyPath.Parent.ToString ());
 			_linkedResolver.AddSearchDirectory (linkedResult.OutputAssemblyPath.Parent.ToString ());
@@ -215,7 +215,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyExitCode (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		void VerifyExitCode (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
 				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
@@ -270,14 +270,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		protected virtual void AdditionalChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
 		}
 
-		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
+		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			CreateILChecker ().Check(linkResult, original);
 			ValidateTypeRefsHaveValidAssemblyRefs (linked);
@@ -753,7 +753,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			yield return assembly;
 		}
 
-		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger, bool checkRemainingErrors)
+		void VerifyLoggedMessages (AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();

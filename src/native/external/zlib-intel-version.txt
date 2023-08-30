@@ -12,3 +12,5 @@ copied into our repo in order to build. Since then, we've just updated only
 those files in-place, ignoring other files in the intel/zlib repo. If new files
 are introduced which are necessary for building the product, feel free to bring
 those down as well.
+
+We have also applied the custom patches under the patches/zlib-intel folder.

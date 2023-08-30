@@ -8,14 +8,14 @@ using ILCompiler.Logging;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestLogWriter : ILogWriter
+	public class TrimmingTestLogger : ILogWriter
 	{
 		private readonly StringWriter _infoStringWriter;
 		private readonly TextWriter _infoWriter;
 
 		private readonly List<MessageContainer> _messageContainers;
 
-		public TestLogWriter ()
+		public TrimmingTestLogger ()
 		{
 			_infoStringWriter = new StringWriter ();
 			_infoWriter = TextWriter.Synchronized (_infoStringWriter);

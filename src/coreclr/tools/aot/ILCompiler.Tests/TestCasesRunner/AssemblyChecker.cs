@@ -40,7 +40,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private readonly BaseAssemblyResolver originalsResolver;
 		private readonly ReaderParameters originalReaderParameters;
 		private readonly AssemblyDefinition originalAssembly;
-		private readonly ILCompilerTestCaseResult testResult;
+		private readonly TrimmedTestCaseResult testResult;
 
 		private readonly Dictionary<AssemblyQualifiedToken, LinkedEntity> linkedMembers;
 		private readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
@@ -67,7 +67,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			BaseAssemblyResolver originalsResolver,
 			ReaderParameters originalReaderParameters,
 			AssemblyDefinition original,
-			ILCompilerTestCaseResult testResult)
+			TrimmedTestCaseResult testResult)
 		{
 			this.originalsResolver = originalsResolver;
 			this.originalReaderParameters = originalReaderParameters;

@@ -63,10 +63,22 @@
   </Target>
 
   <Target Name="GetSupportedPackages">
-    <!-- Adding NetCoreAppCurrent to the supported test frameworks list to avoid a test gap when
-         the repository retargets NetCoreAppCurrent to the next major version. -->
     <ItemGroup>
+      <SupportedTestFramework Include="$(NetCoreAppMinimum)" />
+      <SupportedTestFramework Include="$(NetCoreAppPrevious)" />
       <SupportedTestFramework Include="$(NetCoreAppCurrent)" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <SupportedTestFramework Include="netstandard2.0" />
+      <SupportedTestFramework Include="netstandard2.1" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <SupportedTestFramework Include="$(NetFrameworkMinimum)" />
+      <SupportedTestFramework Include="net471" />
+      <SupportedTestFramework Include="net472" />
+      <SupportedTestFramework Include="net48" />
     </ItemGroup>
 
     <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)"

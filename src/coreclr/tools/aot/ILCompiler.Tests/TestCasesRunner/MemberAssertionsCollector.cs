@@ -37,7 +37,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private CompilerTypeSystemContext CreateTypeSystemContext ()
 		{
-			ILCompilerDriver.ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
+			TrimmingDriver.ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
 			CompilerTypeSystemContext typeSystemContext =
 				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
@@ -49,7 +49,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				references.Add (assembly.GetName ().Name!, assembly.Location!);
 			}
 			typeSystemContext.ReferenceFilePaths = references;
-			typeSystemContext.SetSystemModule (typeSystemContext.GetModuleForSimpleName (ILCompilerDriver.DefaultSystemModule));
+			typeSystemContext.SetSystemModule (typeSystemContext.GetModuleForSimpleName (TrimmingDriver.DefaultSystemModule));
 
 			return typeSystemContext;
 		}

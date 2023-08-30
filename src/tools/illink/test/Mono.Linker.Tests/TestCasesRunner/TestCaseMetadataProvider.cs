@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return tclo;
 		}
 
-		public virtual void CustomizeLinker (LinkerDriver linker, LinkerCustomizations customizations)
+		public virtual void CustomizeLinker (TrimmingDriver linker, TrimmingCustomizations customizations)
 		{
 			if (!_testCaseTypeDefinition.CustomAttributes.Any (a => a.AttributeType.IsTypeOf<SkipKeptItemsValidationAttribute> ())
 				|| _testCaseTypeDefinition.CustomAttributes.Any (attr =>

@@ -6,12 +6,12 @@ using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class LinkerArgumentBuilder
+	public class TrimmingArgumentBuilder
 	{
 		private readonly List<string> _arguments = new List<string> ();
 		private readonly TestCaseMetadataProvider _metadataProvider;
 
-		public LinkerArgumentBuilder (TestCaseMetadataProvider metadataProvider)
+		public TrimmingArgumentBuilder (TestCaseMetadataProvider metadataProvider)
 		{
 			_metadataProvider = metadataProvider;
 		}
@@ -157,7 +157,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Append (file);
 		}
 
-		public string[] ToArgs ()
+		public string[] Build ()
 		{
 			return _arguments.ToArray ();
 		}

@@ -5,11 +5,11 @@ using System.Collections.Generic;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class LinkerTestLogger : ILogger
+	public class TrimmingTestLogger : ILogger
 	{
 		readonly List<MessageContainer> MessageContainers;
 
-		public LinkerTestLogger ()
+		public TrimmingTestLogger ()
 		{
 			MessageContainers = new List<MessageContainer> ();
 		}
