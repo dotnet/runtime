@@ -81,30 +81,36 @@ export function http_wasm_readable_stream_controller_error(controller: ReadableB
     controller.__resolve_pull();
 }
 
-export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamControllerExtension, desired_size: number, pull_state: any) => void, pull_state: any): Promise<ResponseExtension> {
-    return new Promise((resolve_fetch, reject_fetch) => {
-        const body = new ReadableStream({
-            type: "bytes",
-            autoAllocateChunkSize: 65536,
-            pull(controller: ReadableByteStreamController) {
-                const { promise: pull_promise, promise_control: pull_promise_control } = createPromiseController<void>();
-                const c = controller as ReadableByteStreamControllerExtension;
-                let desired_size = c.desiredSize;
-                if (c.byobRequest && c.byobRequest.view) { // waiting on https://github.com/WebAssembly/design/issues/1162 so we can pass the view to .net
-                    desired_size = c.byobRequest.view.byteLength;
-                }
-                c.__resolve_pull = pull_promise_control.resolve;
-                c.__reject_fetch = reject_fetch;
-                pull(c, desired_size || 0, pull_state);
-                return pull_promise;
-            },
-            cancel(reason) {
-                reject_fetch(reason);
-            },
-        });
-
-        http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, body).then(resolve_fetch, reject_fetch);
+export async function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamControllerExtension, desired_size: number, pull_state: any) => void, pull_state: any): Promise<ResponseExtension> {
+    const { promise: fetch_promise, promise_control: fetch_promise_control } = createPromiseController<ResponseExtension>();
+    const body = new ReadableStream({
+        type: "bytes",
+        autoAllocateChunkSize: 65536,
+        pull(controller: ReadableByteStreamController) {
+            const { promise: pull_promise, promise_control: pull_promise_control } = createPromiseController<void>();
+            const c = controller as ReadableByteStreamControllerExtension;
+            let desired_size = c.desiredSize;
+            if (c.byobRequest && c.byobRequest.view) { // waiting on https://github.com/WebAssembly/design/issues/1162 so we can pass the view to .net
+                desired_size = c.byobRequest.view.byteLength;
+            }
+            c.__resolve_pull = pull_promise_control.resolve;
+            c.__reject_fetch = fetch_promise_control.reject;
+            pull(c, desired_size || 0, pull_state);
+            return pull_promise;
+        },
+        cancel(reason) {
+            fetch_promise_control.reject(reason);
+        },
     });
+
+    try {
+        const response = await http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, body);
+        fetch_promise_control.resolve(response);
+    } catch (e) {
+        fetch_promise_control.reject(e);
+    }
+
+    return await fetch_promise;
 }
 
 export function http_wasm_fetch_bytes(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, bodyPtr: VoidPtr, bodyLength: number): Promise<ResponseExtension> {
