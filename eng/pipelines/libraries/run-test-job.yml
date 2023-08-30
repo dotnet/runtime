@@ -28,6 +28,31 @@ parameters:
   SuperPmiCollectionName: 'libraries_tests'
   dependsOn: []
 
+variables:
+
+  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+    - name: runTestJobDisplayName
+      value: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+    - name: runTestJobName
+      value: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+  - ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
+    - name: runTestJobDisplayName
+      value: 'Test Run'
+    - name: runTestJobName
+      value: test_run
+  - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+    - template: /eng/pipelines/libraries/superpmi-collect-variables.yml
+      parameters:
+        buildConfig: ${{ parameters.buildConfig }}
+        osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup }}
+        archType: ${{ parameters.archType }}
+        liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        runtimeDisplayName: ${{ parameters.runtimeDisplayName }}
+        SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
+        SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
+
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
     parameters:
@@ -47,16 +72,8 @@ jobs:
       testScope: ${{ parameters.testScope }}
       SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
       runTests: true
-      ${{ if eq(parameters.SuperPmiCollect, true) }}:
-        displayName: ${{ format('SuperPMI collection {0} {1} {2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-        name: ${{ format('spmi_{0}_{1}_{2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-      ${{ else }}:
-        ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-          name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-        ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
-          displayName: 'Test Run'
-          name: test_run
+      displayName: $(runTestJobDisplayName)
+      name: $(runTestJobName)
       ${{ if eq(parameters.interpreter, 'true') }}:
         testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
@@ -80,50 +97,6 @@ jobs:
 
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
-
-        # Variables used for SuperPMI collection
-        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
-          - name: buildConfigUpper
-            ${{ if eq(parameters.buildConfig, 'debug') }}:
-              value: 'Debug'
-            ${{ if eq(parameters.buildConfig, 'release') }}:
-              value: 'Release'
-            ${{ if eq(parameters.buildConfig, 'checked') }}:
-              value: 'Checked'
-          - name: _runtimeX64DownloadPath
-            value: ''
-          # superpmi.py 'merge-mch' needs to be able to find the mcs tool. Point SuperPmiMcsPath at the downloaded CoreCLR binaries. For non-x64 targets, download an x64
-          # build and point at that. Pass this to superpmi.py as the '-core_root' argument. It's not actually a "Core_Root" directory, but all it needs is to find mcs.
-          - name: SuperPmiMcsPath
-            value: $(_runtimeDownloadPath)
-          - ${{ if ne(parameters.archType, 'x64') }}:
-            - name: _runtimeX64DownloadPath
-              value: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}.x64'
-            - name: SuperPmiMcsPath
-              value: $(_runtimeX64DownloadPath)
-          - ${{ if eq(parameters.osGroup, 'windows') }}:
-            - name: PythonScript
-              value: 'py -3'
-            - name: PipScript
-              value: 'py -3 -m pip'
-            - name: MchFilesLocation
-              value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
-            - name: MergedMchFileLocation
-              value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
-            - name: SpmiLogsLocation
-              value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
-          - ${{ if ne(parameters.osGroup, 'windows') }}:
-            - name: PythonScript
-              value: 'python3'
-            - name: PipScript
-              value: 'pip3'
-            - name: MchFilesLocation
-              value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
-            - name: MergedMchFileLocation
-              value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
-            - name: SpmiLogsLocation
-              value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
-
         - ${{ parameters.variables }}
 
       steps:
