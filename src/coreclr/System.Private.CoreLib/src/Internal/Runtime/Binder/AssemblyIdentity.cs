@@ -21,13 +21,25 @@ namespace Internal.Runtime.Binder
         IDENTITY_FLAG_FULL_NAME = IDENTITY_FLAG_SIMPLE_NAME | IDENTITY_FLAG_VERSION
     }
 
+    internal enum PEKind : uint
+    {
+        None = 0x00000000,
+        MSIL = 0x00000001,
+        I386 = 0x00000002,
+        IA64 = 0x00000003,
+        AMD64 = 0x00000004,
+        ARM = 0x00000005,
+        ARM64 = 0x00000006,
+        Invalid = 0xffffffff,
+    }
+
     internal class AssemblyIdentity
     {
         public string SimpleName = string.Empty;
         public AssemblyVersion Version = new AssemblyVersion();
         public string CultureOrLanguage = string.Empty;
         public byte[] PublicKeyOrTokenBLOB = Array.Empty<byte>();
-        public ProcessorArchitecture ProcessorArchitecture;
+        public PEKind ProcessorArchitecture;
         public AssemblyContentType ContentType;
         public AssemblyIdentityFlags IdentityFlags;
     }
