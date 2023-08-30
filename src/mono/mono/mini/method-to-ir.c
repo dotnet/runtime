@@ -11928,7 +11928,7 @@ mono_ldptr:
 		case MONO_CEE_CONSTRAINED_:
 			constrained_class = mini_get_class (method, token, generic_context);
 			IF_TYPELOAD_ERROR (constrained_class) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
+				HANDLE_TYPELOAD_ERROR (cfg, constrained_class);
 			}
 			ins_has_side_effect = FALSE;
 			break;
