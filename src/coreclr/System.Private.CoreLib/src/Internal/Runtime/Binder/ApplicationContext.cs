@@ -33,7 +33,8 @@ namespace Internal.Runtime.Binder
         public object ContextCriticalSection { get; } = new object();
 
         private readonly List<string> _platformResourceRoots = new List<string>();
-        private readonly List<string> _appPaths = new List<string>();
+
+        public List<string> AppPaths { get; } = new List<string>();
 
         public Dictionary<string, TPAEntry>? TrustedPlatformAssemblyMap { get; private set; }
 
@@ -294,7 +295,7 @@ namespace Internal.Runtime.Binder
                         throw new ArgumentException(nameof(pathName));
                     }
 
-                    _appPaths.Add(pathName);
+                    AppPaths.Add(pathName);
                 }
             }
         }

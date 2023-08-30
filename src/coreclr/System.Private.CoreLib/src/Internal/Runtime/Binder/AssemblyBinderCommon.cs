@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace Internal.Runtime.Binder
 {
@@ -341,7 +343,174 @@ namespace Internal.Runtime.Binder
             return assembly;
         }
 
-        static void BindByTpaList(ApplicationContext applicationContext, AssemblyName assemblyName, bool excludeAppPaths, ref BindResult bindResult)
+        //
+        // Tests whether a candidate assembly's name matches the requested.
+        // This does not do a version check.  The binder applies version policy
+        // further up the stack once it gets a successful bind.
+        //
+        private static bool TestCandidateRefMatchesDef(AssemblyName requestedAssemblyName, AssemblyName boundAssemblyName, bool tpaListAssembly)
+        {
+            AssemblyNameIncludeFlags includeFlags = AssemblyNameIncludeFlags.INCLUDE_DEFAULT;
+
+            if (!tpaListAssembly)
+            {
+                if (requestedAssemblyName.IsNeutralCulture)
+                {
+                    includeFlags |= AssemblyNameIncludeFlags.EXCLUDE_CULTURE;
+                }
+            }
+
+            if (requestedAssemblyName.Architecture != PEKind.None)
+            {
+                includeFlags |= AssemblyNameIncludeFlags.INCLUDE_ARCHITECTURE;
+            }
+
+            return boundAssemblyName.Equals(requestedAssemblyName, includeFlags);
+        }
+
+        // TODO: BindSatelliteResource
+
+        /*
+         * BindByTpaList is the entry-point for the custom binding algorithm in CoreCLR.
+         *
+         * The search for assemblies will proceed in the following order:
+         *
+         * If this application is a single-file bundle, the meta-data contained in the bundle
+         * will be probed to find the requested assembly. If the assembly is not found,
+         * The list of platform assemblies (TPAs) are considered next.
+         *
+         * Platform assemblies are specified as a list of files.  This list is the only set of
+         * assemblies that we will load as platform.  They can be specified as IL or NIs.
+         *
+         * Resources for platform assemblies are located by probing starting at the Platform Resource Roots,
+         * a set of folders configured by the host.
+         *
+         * If a requested assembly identity cannot be found in the TPA list or the resource roots,
+         * it is considered an application assembly.  We probe for application assemblies in the
+         * AppPaths, a list of paths containing IL files and satellite resource folders.
+         *
+         */
+
+        public static void BindByTpaList(ApplicationContext applicationContext, AssemblyName requestedAssemblyName, bool excludeAppPaths, ref BindResult bindResult)
+        {
+            bool fPartialMatchOnTpa = false;
+
+            if (requestedAssemblyName.IsNeutralCulture)
+            {
+                // IF_FAIL_GO(BindSatelliteResource(pApplicationContext, pRequestedAssemblyName, pBindResult));
+            }
+            else
+            {
+                Assembly? tpaAssembly = null;
+
+                // Is assembly in the bundle?
+                // Single-file bundle contents take precedence over TPA.
+                // The list of bundled assemblies is contained in the bundle manifest, and NOT in the TPA.
+                // Therefore the bundle is first probed using the assembly's simple name.
+                // If found, the assembly is loaded from the bundle.
+
+                // if (Bundle::AppIsBundle())
+
+                // Is assembly on TPA list?
+                Debug.Assert(applicationContext.TrustedPlatformAssemblyMap != null);
+                if (applicationContext.TrustedPlatformAssemblyMap.TryGetValue(requestedAssemblyName.SimpleName, out TPAEntry tpaEntry))
+                {
+                    string? tpaFileName = tpaEntry.NIFileName ?? tpaEntry.ILFileName;
+                    Debug.Assert(tpaFileName != null);
+
+                    try
+                    {
+                        tpaAssembly = GetAssembly(tpaFileName, isInTPA: true);
+                        // BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
+
+                        bindResult.SetAttemptResult(tpaAssembly, null);
+
+                        if (TestCandidateRefMatchesDef(requestedAssemblyName, tpaAssembly.AssemblyName, true))
+                        {
+                            // We have found the requested assembly match on TPA with validation of the full-qualified name. Bind to it.
+                            bindResult.SetResult(tpaAssembly);
+                            bindResult.SetAttemptResult(tpaAssembly, null);
+                            return;
+                        }
+                        else
+                        {
+                            // We found the assembly on TPA but it didn't match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
+                            // assembly in the App paths.
+                            bindResult.SetAttemptResult(tpaAssembly, new Exception("FUSION_E_REF_DEF_MISMATCH"));
+                            fPartialMatchOnTpa = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        bindResult.SetAttemptResult(null, ex);
+
+                        // On file not found, simply fall back to app path probing
+                        if (ex is not FileNotFoundException)
+                        {
+                            // Any other error is fatal
+                            throw;
+                        }
+                    }
+
+                    // We either didn't find a candidate, or the ref-def failed.  Either way; fall back to app path probing.
+                }
+
+                if (!excludeAppPaths)
+                {
+                    // Probe AppPaths
+
+                    try
+                    {
+                        Assembly assembly = BindAssemblyByProbingPaths(applicationContext.AppPaths, requestedAssemblyName);
+                        bindResult.SetAttemptResult(assembly, null);
+
+                        // At this point, we have found an assembly with the expected name in the App paths. If this was also found on TPA,
+                        // make sure that the app assembly has the same fullname (excluding version) as the TPA version. If it does, then
+                        // we should bind to the TPA assembly. If it does not, then bind to the app assembly since it has a different fullname than the
+                        // TPA assembly.
+                        if (fPartialMatchOnTpa)
+                        {
+                            Debug.Assert(tpaAssembly != null);
+
+                            if (TestCandidateRefMatchesDef(assembly.AssemblyName, tpaAssembly.AssemblyName, true))
+                            {
+                                // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
+                                bindResult.SetResult(tpaAssembly);
+                                bindResult.SetAttemptResult(tpaAssembly, null);
+                                return;
+                            }
+                            else
+                            {
+                                // Fullname (SimpleName+Culture+PKT) did not match for TPA and app assembly - so bind to app instance.
+                                bindResult.SetResult(assembly);
+                                return;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        bindResult.SetAttemptResult(null, ex);
+
+                        if (ex is not FileNotFoundException)
+                        {
+                            throw;
+                        }
+                    }
+                }
+            }
+
+            // Couldn't find a matching assembly in any of the probing paths
+            // Return S_FALSE here. BindByName will interpret a successful HRESULT
+            // and lack of BindResult as a failure to find a matching assembly.
+            return;
+        }
+
+        static Assembly BindAssemblyByProbingPaths(List<string> appPaths, AssemblyName requestedAssemblyName)
+        {
+            throw null;
+        }
+
+        static Assembly GetAssembly(string assemblyPath, bool isInTPA)
         {
             throw null;
         }
