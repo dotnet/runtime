@@ -11,6 +11,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Internal;
 
+#if NETCOREAPP
+[assembly: System.Reflection.Metadata.MetadataUpdateHandler(typeof(Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ActivatorUtilitiesUpdateHandler))]
+#endif
+
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
@@ -18,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class ActivatorUtilities
     {
-        private static ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfoEx = new();
+        private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
 
 #if NET8_0_OR_GREATER
         // Maximum number of fixed arguments for ConstructorInvoker.Invoke(arg1, etc).
@@ -50,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException(SR.CannotCreateAbstractClasses);
             }
 
-            if (!s_constructorInfoEx.TryGetValue(instanceType, out ConstructorInfoEx[]? constructors))
+            if (!s_constructorInfos.TryGetValue(instanceType, out ConstructorInfoEx[]? constructors))
             {
                 ConstructorInfo[] ctors = instanceType.GetConstructors();
                 ConstructorInfoEx[] temp = new ConstructorInfoEx[ctors.Length];
@@ -59,10 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     temp[i] = new ConstructorInfoEx(ctors[i]);
                 }
 
-                // Overwrite if another thread already set; they would contain the same information.
-                s_constructorInfoEx[instanceType] = temp;
-
-                constructors = temp;
+                constructors = s_constructorInfos.GetOrAdd(instanceType, temp);
             }
 
             ConstructorInfoEx? constructor;
@@ -593,7 +594,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
-        private class ConstructorInfoEx
+        private sealed class ConstructorInfoEx
         {
             public readonly ConstructorInfo Info;
             public readonly ParameterInfo[] Parameters;
@@ -1049,5 +1050,17 @@ namespace Microsoft.Extensions.DependencyInjection
             return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
         }
 #endif // NET8_0_OR_GREATER
+
+#if NETCOREAPP
+        internal static class ActivatorUtilitiesUpdateHandler
+        {
+            public static void ClearCache(Type[]? _)
+            {
+                // Ignore the types in Type[]; just clear out the cache.
+                // This avoids searching for references to these types in constructor arguments.
+                s_constructorInfos.Clear();
+            }
+        }
+#endif
     }
 }
