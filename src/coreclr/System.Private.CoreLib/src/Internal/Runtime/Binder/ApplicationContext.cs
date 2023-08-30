@@ -38,7 +38,7 @@ namespace Internal.Runtime.Binder
 
         public Dictionary<string, TPAEntry>? TrustedPlatformAssemblyMap { get; private set; }
 
-        private void IncrementVersion() => Interlocked.Increment(ref _version);
+        public void IncrementVersion() => Interlocked.Increment(ref _version);
 
         private const char PATH_SEPARATOR_CHAR = ';';
 

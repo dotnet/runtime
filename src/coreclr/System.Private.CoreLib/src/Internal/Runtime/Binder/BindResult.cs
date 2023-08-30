@@ -14,7 +14,7 @@ namespace Internal.Runtime.Binder
             public bool Attempted;
         }
 
-        public bool IsInContextBound { get; private set; }
+        public bool IsContextBound { get; private set; }
         public Assembly? Assembly { get; private set; }
 
         private AttemptResult _inContextAttempt;
@@ -37,7 +37,7 @@ namespace Internal.Runtime.Binder
         public void SetResult(Assembly assembly, bool isInContext = false)
         {
             Assembly = assembly;
-            IsInContextBound = isInContext;
+            IsContextBound = isInContext;
         }
 
         public void SetNoResult()

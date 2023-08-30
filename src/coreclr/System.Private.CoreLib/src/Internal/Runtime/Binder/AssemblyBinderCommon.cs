@@ -505,17 +505,99 @@ namespace Internal.Runtime.Binder
             return;
         }
 
+        // static Assembly GetAssembly(string assemblyPath, bool isInTPA, BundleFileLocation);
+
+        public static void Register(ApplicationContext applicationContext, ref BindResult bindResult)
+        {
+            Debug.Assert(bindResult.IsContextBound);
+            Debug.Assert(bindResult.Assembly != null);
+
+            applicationContext.IncrementVersion();
+
+            // Register the bindResult in the ExecutionContext only if we dont have it already.
+            // This method is invoked under a lock (by its caller), so we are thread safe.
+            Assembly? assembly = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName);
+
+            if (assembly == null)
+            {
+                applicationContext.ExecutionContext.Add(bindResult.Assembly.AssemblyName, bindResult.Assembly);
+            }
+            else
+            {
+                // Update the BindResult with the assembly we found
+                bindResult.SetResult(assembly, isInContext: true);
+            }
+        }
+
+        public static bool RegisterAndGetHostChosen(ApplicationContext applicationContext, int kContextVersion, BindResult bindResult, out BindResult hostBindResult)
+        {
+            Debug.Assert(bindResult.Assembly != null);
+            hostBindResult = default;
+
+            if (!bindResult.IsContextBound)
+            {
+                hostBindResult = bindResult;
+
+                // Lock the application context
+                lock (applicationContext.ContextCriticalSection)
+                {
+                    // Only perform costly validation if other binds succeeded before us
+                    if (kContextVersion != applicationContext.Version)
+                    {
+                        if (OtherBindInterferred(applicationContext, bindResult)) // S_FALSE == return true
+                        {
+                            // Another bind interfered
+                            return false; // S_FALSE == return false
+                        }
+                    }
+
+                    // No bind interfered, we can now register
+                    Register(applicationContext, ref hostBindResult);
+                }
+            }
+            else
+            {
+                // No work required. Return the input
+                hostBindResult = bindResult;
+            }
+
+            return true;
+        }
+
+        private static bool OtherBindInterferred(ApplicationContext applicationContext, BindResult bindResult)
+        {
+            Debug.Assert(bindResult.Assembly != null);
+
+            // Look for already cached binding failure (ignore PA, every PA will lock the context)
+            if (!applicationContext.FailureCache.ContainsKey(new FailureCacheKey(bindResult.Assembly.AssemblyName)))
+            {
+                // hr == S_OK
+                try
+                {
+                    Assembly? assembly = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName);
+                    if (assembly != null) // SUCCEEDED(hr)
+                    {
+                        // We can accept this bind in the domain
+                        return false; // S_OK == return false
+                    }
+                }
+                catch
+                {
+                    // No throwing
+                }
+
+            }
+
+            // Some other bind interfered
+            return true; // S_FALSE == return true
+        }
+
         static Assembly BindAssemblyByProbingPaths(List<string> appPaths, AssemblyName requestedAssemblyName)
         {
             throw null;
         }
 
         static Assembly GetAssembly(string assemblyPath, bool isInTPA)
-        {
-            throw null;
-        }
-
-        static bool RegisterAndGetHostChosen(ApplicationContext applicationContext, int kContextVersion, BindResult bindResult, out BindResult hostBindResult)
         {
             throw null;
         }
