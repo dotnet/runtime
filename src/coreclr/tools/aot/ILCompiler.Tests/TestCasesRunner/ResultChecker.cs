@@ -156,7 +156,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected virtual void AdditionalChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
-			VerifyLoggedMessages (original, linkResult.LogWriter, checkRemainingErrors);
+			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 		}
 
 		private static bool IsProducedByNativeAOT (CustomAttribute attr)
