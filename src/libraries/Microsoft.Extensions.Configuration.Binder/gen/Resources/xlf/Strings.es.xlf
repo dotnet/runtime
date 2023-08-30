@@ -29,12 +29,12 @@
       </trans-unit>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="new">The project's language version has to be at least 'C# 12'.</target>
+        <target state="translated">La versión del lenguaje del proyecto debe ser al menos "C# 12".</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 12</source>
-        <target state="new">Language version is required to be at least C# 12</target>
+        <target state="translated">La versión del lenguaje debe ser al menos C# 12</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingPublicInstanceConstructor">
