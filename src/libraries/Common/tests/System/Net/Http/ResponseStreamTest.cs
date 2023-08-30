@@ -231,6 +231,59 @@ namespace System.Net.Http.Functional.Tests
 #if NETCOREAPP
 
         [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_Streaming()
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteHttp2Server.BaseUri + "echobody.ashx");
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            byte[] body = new byte[1024 * 1024];
+            Random.Shared.NextBytes(body);
+
+            int readOffset = 0;
+            req.Content = new StreamContent(new DelegateStream(
+                readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
+                {
+                    await Task.Delay(1);
+                    if (readOffset < body.Length)
+                    {
+                        int send = Math.Min(body.Length - readOffset, count);
+                        body.AsSpan(readOffset, send).CopyTo(buffer.AsSpan(offset, send));
+                        readOffset += send;
+                        return send;
+                    }
+                    return 0;
+                }));
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
+            using (HttpResponseMessage response = await client.SendAsync(req))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                // Streaming requests can't set Content-Length
+                Assert.False(response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
+                // Streaming response uses StreamContent
+                Assert.Equal(typeof(StreamContent), response.Content.GetType());
+
+                var stream = await response.Content.ReadAsStreamAsync();
+                var buffer = new byte[1024 * 1024];
+                int totalCount = 0;
+                int fetchedCount = 0;
+                do
+                {
+                    fetchedCount = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    Assert.True(body.AsSpan(totalCount, fetchedCount).SequenceEqual(buffer.AsSpan(0, fetchedCount)));
+                    totalCount += fetchedCount;
+                } while (fetchedCount != 0);
+                Assert.Equal(body.Length, totalCount);
+            }
+        }
+
+        [OuterLoop]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         [InlineData(true)]
         [InlineData(false)]
@@ -242,17 +295,17 @@ namespace System.Net.Http.Functional.Tests
 
             req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
 
-            int expectedBodyLength;
+            int size;
             if (useStringContent)
             {
                 string bodyContent = "Hello World";
-                expectedBodyLength = bodyContent.Length;
+                size = bodyContent.Length;
                 req.Content = new StringContent(bodyContent);
             }
             else
             {
-                expectedBodyLength = 1500 * 1024 * 1024;
-                int remaining = expectedBodyLength;
+                size = 1500 * 1024 * 1024;
+                int remaining = size;
                 req.Content = new StreamContent(new DelegateStream(
                     readAsyncFunc: (buffer, offset, count, cancellationToken) =>
                     {
@@ -273,11 +326,12 @@ namespace System.Net.Http.Functional.Tests
             using (HttpResponseMessage response = await client.SendAsync(req))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.Equal(expectedBodyLength.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
+                Assert.Equal(size.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
+                // Streaming requests can't set Content-Length
                 Assert.Equal(useStringContent, response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
                 if (useStringContent)
                 {
-                    Assert.Equal(expectedBodyLength.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Headers-ContentLength")));
+                    Assert.Equal(size.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Headers-ContentLength")));
                 }
             }
         }
@@ -327,6 +381,7 @@ namespace System.Net.Http.Functional.Tests
             // we need to switch off Response buffering of default ResponseContentRead option
             using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
             {
+                // Streaming response uses StreamContent
                 Assert.Equal(typeof(StreamContent), response.Content.GetType());
 
                 Assert.Equal("application/octet-stream", response.Content.Headers.ContentType.MediaType);
