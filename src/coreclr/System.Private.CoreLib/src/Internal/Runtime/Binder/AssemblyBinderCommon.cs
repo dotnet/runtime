@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.Binder
 {
@@ -138,6 +142,125 @@ namespace Internal.Runtime.Binder
                     throw new BadImageFormatException();
                 }
             }
+        }
+
+        public static Assembly? BindAssembly(AssemblyBinder binder, AssemblyName assemblyName, bool excludeAppPaths)
+        {
+            int kContextVersion = 0;
+            BindResult bindResult;
+            ApplicationContext applicationContext = binder.AppContext;
+
+        // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+        //BinderTracing::ResolutionAttemptedOperation tracer{ pAssemblyName, pBinder, 0 /*managedALC*/, hr};
+
+        Retry:
+            lock (applicationContext.ContextCriticalSection)
+            {
+                bindResult = BindByName(applicationContext, assemblyName, false, false, excludeAppPaths);
+
+                // Remember the post-bind version
+                kContextVersion = applicationContext.Version;
+            }
+
+            // tracer.TraceBindResult(bindResult);
+
+            if (bindResult.Assembly != null)
+            {
+                if (RegisterAndGetHostChosen(applicationContext, kContextVersion, bindResult, out BindResult hostBindResult))
+                {
+                    Debug.Assert(hostBindResult.Assembly != null);
+                    return hostBindResult.Assembly;
+                }
+                else
+                {
+                    // Another bind interfered. We need to retry the entire bind.
+                    // This by design loops as long as needed because by construction we eventually
+                    // will succeed or fail the bind.
+                    bindResult = default;
+                    goto Retry;
+                }
+            }
+
+            return null;
+        }
+
+        // Skipped - the managed binder can't bootstrap CoreLib
+        // static Assembly? BindToSystem(string systemDirectory);
+        // static Assembly? BindToSystemSatellite(string systemDirectory, string simpleName, string cultureName);
+
+        static BindResult BindByName(ApplicationContext applicationContext, AssemblyName assemblyName, bool skipFailureChecking, bool skipVersionCompatibilityCheck, bool excludeAppPaths)
+        {
+            BindResult bindResult = default;
+
+            // Look for already cached binding failure (ignore PA, every PA will lock the context)
+            string assemblyDisplayName = assemblyName.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_VERSION);
+
+            try
+            {
+                applicationContext.FailureCache.TryGetValue(assemblyDisplayName, out int hr);
+                if (hr < 0) // FAILED(hr)
+                {
+                    if (hr == HResults.E_FILENOTFOUND && skipFailureChecking)
+                    {
+                        // Ignore pre-existing transient bind error (re-bind will succeed)
+                        applicationContext.FailureCache.Remove(assemblyDisplayName);
+                    }
+
+                    return default;
+                }
+                else if (hr == HResults.S_FALSE)
+                {
+                    // workaround: Special case for byte arrays. Rerun the bind to create binding log.
+                    assemblyName.IsDefinition = true;
+                    hr = HResults.S_OK;
+                }
+
+                if (!IsValidArchitecture(assemblyName.Architecture))
+                {
+                    // Assembly reference contains wrong architecture
+                    throw new Exception("FUSION_E_INVALID_NAME");
+                }
+
+                bindResult = BindLocked(applicationContext, assemblyName, skipVersionCompatibilityCheck, excludeAppPaths);
+
+                if (bindResult.Assembly == null)
+                {
+                    // Behavior rules are clueless now
+                    throw new FileNotFoundException();
+                }
+
+                return bindResult;
+            }
+            catch (Exception ex)
+            {
+                if (skipFailureChecking)
+                {
+                    if (ex is not FileNotFoundException)
+                    {
+                        // Cache non-transient bind error for byte-array
+                        ex = Marshal.GetExceptionForHR(HResults.S_FALSE)!;
+                    }
+                    else
+                    {
+                        // Ignore transient bind error (re-bind will succeed)
+                        return bindResult;
+                    }
+                }
+
+                applicationContext.AddToFailureCache(assemblyDisplayName, ex.HResult);
+
+                throw ex;
+            }
+        }
+
+        static BindResult BindLocked(ApplicationContext applicationContext, AssemblyName assemblyName, bool skipVersionCompatibilityCheck, bool excludeAppPaths)
+        {
+            throw null;
+        }
+
+        static bool RegisterAndGetHostChosen(ApplicationContext applicationContext, int kContextVersion, BindResult bindResult, out BindResult hostBindResult)
+        {
+            throw null;
         }
 
         public static bool IsValidArchitecture(PEKind architecture)

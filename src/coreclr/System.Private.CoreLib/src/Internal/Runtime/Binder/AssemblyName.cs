@@ -62,7 +62,7 @@ namespace Internal.Runtime.Binder
                     | INCLUDE_PUBLIC_KEY_TOKEN,
     }
 
-    internal sealed unsafe class AssemblyName : AssemblyIdentity
+    internal sealed unsafe class AssemblyName : AssemblyIdentity, IEquatable<AssemblyName>
     {
         public bool IsDefinition;
 
@@ -175,9 +175,9 @@ namespace Internal.Runtime.Binder
         }
 
         // TODO: Is this simple comparison enough?
-        public bool IsCoreLib => SimpleName == CoreLib.Name;
+        public bool IsCoreLib => string.EqualsOrdinalIgnoreCase(SimpleName, CoreLib.Name);
 
-        public bool IsNeutralCulture => CultureOrLanguage == NeutralCulture;
+        public bool IsNeutralCulture => string.EqualsOrdinalIgnoreCase(CultureOrLanguage, NeutralCulture);
 
         // Foo internal calls
 
@@ -193,6 +193,8 @@ namespace Internal.Runtime.Binder
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IMdInternalImport BinderAcquireImport(IntPtr pPEImage, int* dwPAFlags);
+
+        public override int GetHashCode() => GetHashCode(AssemblyNameIncludeFlags.INCLUDE_ALL);
 
         public int GetHashCode(AssemblyNameIncludeFlags dwIncludeFlags)
         {
@@ -302,8 +304,15 @@ namespace Internal.Runtime.Binder
             return (int)dwHash;
         }
 
-        public bool Equals(AssemblyIdentity other, AssemblyNameIncludeFlags dwIncludeFlags)
+        public override bool Equals(object? obj) => obj is AssemblyName other && Equals(other);
+
+        public bool Equals(AssemblyName? other) => Equals(other, AssemblyNameIncludeFlags.INCLUDE_ALL);
+
+        public bool Equals(AssemblyIdentity? other, AssemblyNameIncludeFlags dwIncludeFlags)
         {
+            if (other is null)
+                return false;
+
             bool fEquals = false;
 
             if (ContentType == System.Reflection.AssemblyContentType.WindowsRuntime)

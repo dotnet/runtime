@@ -18,9 +18,15 @@ namespace Internal.Runtime.Binder
     internal class ApplicationContext
     {
         private volatile int _version;
+
+        public int Version => _version;
+
         private readonly Dictionary<AssemblyName, Assembly> _executionContext = new Dictionary<AssemblyName, Assembly>();
-        private readonly Dictionary<string, Exception?> _failureCache = new();
-        private readonly object _contextCriticalSection = new object();
+
+        public Dictionary<string, int> FailureCache { get; } = new Dictionary<string, int>();
+
+        public object ContextCriticalSection { get; } = new object();
+
         private readonly List<string> _platformResourceRoots = new List<string>();
         private readonly List<string> _appPaths = new List<string>();
         private Dictionary<string, TPAEntry>? _trustedPlatformAssemblyMap;
@@ -190,7 +196,7 @@ namespace Internal.Runtime.Binder
         {
             if (acquireLock)
             {
-                lock (_contextCriticalSection)
+                lock (ContextCriticalSection)
                 {
                     Core(trustedPlatformAssemblies, platformResourceRoots, appPaths);
                 }
@@ -287,9 +293,9 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        public void AddToFailureCache(string assemblyNameOrPath, Exception bindException)
+        public void AddToFailureCache(string assemblyNameOrPath, int hResult)
         {
-            _failureCache.Add(assemblyNameOrPath, bindException);
+            FailureCache.Add(assemblyNameOrPath, hResult);
             IncrementVersion();
         }
     }
