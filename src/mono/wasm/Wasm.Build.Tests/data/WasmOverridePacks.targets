@@ -60,4 +60,9 @@
                  Condition="'%(_targetingPackReferenceWithExclusion.ExternallyResolved)' == 'true' and '%(_targetingPackReferenceWithExclusion.Filename)' == '%(_targetingPackReferenceWithExclusion.Exclusion)'" />
     </ItemGroup>
   </Target>
+
+  <ItemGroup>
+    <KnownWebAssemblySdkPack Update="Microsoft.NET.Sdk.WebAssembly.Pack"
+      WebAssemblySdkPackVersion="$(_RuntimePackInWorkloadVersionCurrent)" />
+  </ItemGroup>
 </Project>
