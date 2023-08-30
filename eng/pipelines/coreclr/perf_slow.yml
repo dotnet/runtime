@@ -35,7 +35,7 @@ extends:
       jobs:
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-        
+
         # build mono
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -114,22 +114,17 @@ extends:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
+            buildConfig: Release
             runtimeFlavor: mono
             platforms:
             - browser_wasm
             jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=arm64 /p:AotHostOS=$(_hostedOS)
               nameSuffix: wasm
               isOfficialBuild: false
-              extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+              extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
               extraStepsParameters:
-                rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-                includeRootFolder: true
-                displayName: Browser Wasm Artifacts
-                artifactName: BrowserWasm
-                archiveType: zip
-                archiveExtension: .zip
+                configForBuild: Release
 
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
