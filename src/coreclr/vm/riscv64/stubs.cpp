@@ -948,7 +948,15 @@ void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTarget
 
 void UMEntryThunkCode::Poison()
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
+    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
+
+    pThisRW->m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
+
+    // ld   a0, 24(t6)
+    pThisRW->m_code[1] = 0x018fb503;
+
+    ClrFlushInstructionCache(&m_code,sizeof(m_code));
 }
 
 #endif // DACCESS_COMPILE
