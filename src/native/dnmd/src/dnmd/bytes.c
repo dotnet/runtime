@@ -29,6 +29,11 @@ bool advance_stream(uint8_t const** data, size_t* data_len, size_t b)
     return true;
 }
 
+bool advance_output_stream(uint8_t** data, size_t* data_len, size_t b)
+{
+    return advance_stream((uint8_t const**)data, data_len, b);
+}
+
 // This is a little-endian format in the physical form.
 static bool read_le(uint8_t const** data, size_t* data_len, void* o, size_t o_size)
 {

@@ -8,6 +8,9 @@
 #include <string.h>
 #include <corhdr.h>
 #include <dnmd.h>
+#ifdef DNMD_PORTABLE_PDB
+#include <dnmd_pdb.h>
+#endif
 
 // Implementations for missing bounds checking APIs.
 // See https://en.cppreference.com/w/c/error#Bounds_checking
@@ -391,6 +394,8 @@ bool read_u32(uint8_t const** data, size_t* data_len, uint32_t* o);
 bool read_i32(uint8_t const** data, size_t* data_len, int32_t* o);
 bool read_u64(uint8_t const** data, size_t* data_len, uint64_t* o);
 bool read_i64(uint8_t const** data, size_t* data_len, int64_t* o);
+
+bool advance_output_stream(uint8_t** data, size_t* data_len, size_t b);
 
 bool write_u8(uint8_t** data, size_t* data_len, uint8_t o);
 bool write_i8(uint8_t** data, size_t* data_len, int8_t o);

@@ -78,17 +78,10 @@ set_target_properties(dnmd_interfaces PROPERTIES
   PUBLIC_HEADER ../inc/dnmd_interfaces.hpp
   INTERPROCEDURAL_OPTIMIZATION $<$<NOT:$<CONFIG:DEBUG>>:TRUE>)
   
-install(TARGETS dnmd_interfaces_static EXPORT interfaces_static
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
-
-install(EXPORT interfaces_static NAMESPACE dnmd:: FILE dnmdinterfaces_static.cmake DESTINATION lib/cmake/dnmd)
-
-install(TARGETS dnmd_interfaces EXPORT interfaces
+install(TARGETS dnmd_interfaces dnmd_interfaces_static EXPORT interfaces
   PUBLIC_HEADER DESTINATION include
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
 
 install(EXPORT interfaces NAMESPACE dnmd:: FILE dnmdinterfaces.cmake DESTINATION lib/cmake/dnmd)
-  

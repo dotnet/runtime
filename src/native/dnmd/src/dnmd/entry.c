@@ -1,6 +1,7 @@
 #include "internal.h"
 
 #include <stdio.h>
+#include <inttypes.h>
 
 // mdlib magic number for context
 #define MDLIB_MAGIC_NUMBER 0x3d71b
@@ -343,6 +344,19 @@ static bool dump_table_rows(mdtable_t* table)
     uint32_t raw_values[ARRAY_SIZE(to_get)];
 
 #define IF_NOT_ONE_REPORT_RAW(exp) if (1 != (exp)) { printf("Invalid (%u) [%#x]|", j, raw_values[j]); continue; }
+#define IF_INVALID_BLOB_REPORT_RAW(parse_fn, handle_or_cursor, blob_type, result_buf, result_buf_len) \
+    { \
+    result_buf = NULL; \
+    md_blob_parse_result_t result = parse_fn(handle_or_cursor, blob, blob_len, result_buf, &result_buf_len); \
+    if (result == mdbpr_InvalidBlob) { printf("Invalid PDB Blob (" blob_type ") Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]); continue; } \
+    assert(result == mdbpr_InsufficientBuffer); \
+    result_buf = malloc(result_buf_len); \
+    if (result_buf == NULL) { printf("Ran out of memory when parsing PDB blob.\n"); return false; } \
+    result = parse_fn(handle_or_cursor, blob, blob_len, result_buf, &result_buf_len); \
+    if (result == mdbpr_InvalidBlob) { printf("Invalid PDB Blob (" blob_type ") Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]); free(result_buf); continue; } \
+    assert(result == mdbpr_Success); \
+    }
+
     for (uint32_t i = 0; i < table->row_count; ++i)
     {
         if (!md_get_column_values_raw(cursor, table->column_count, to_get, raw_values))
@@ -371,7 +385,172 @@ static bool dump_table_rows(mdtable_t* table)
             }
             else if (table->column_details[j] & mdtc_hblob)
             {
-                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, IDX(j), 1, &blob, &blob_len));
+                col_index_t col = IDX(j);
+#ifdef DNMD_PORTABLE_PDB
+                if (table->table_id == mdtid_Document && col == mdtDocument_Name)
+                {
+                    IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
+                    
+                    char* document_name;
+                    size_t name_len;
+                    IF_INVALID_BLOB_REPORT_RAW(md_parse_document_name, table->cxt, "DocumentName", document_name, name_len);
+                    printf("DocumentName: '%s' [%#x]|", document_name, raw_values[j]);
+                    free(document_name);
+                    continue;
+                }
+                else if (table->table_id == mdtid_MethodDebugInformation && col == mdtMethodDebugInformation_SequencePoints)
+                {
+                    IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
+                    
+                    if (blob_len == 0)
+                    {
+                        printf("Empty SequencePoints: Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]);
+                        continue;
+                    }
+
+                    md_sequence_points_t* sequence_points;
+                    size_t sequence_points_len;
+                    IF_INVALID_BLOB_REPORT_RAW(md_parse_sequence_points, cursor, "SequencePoints", sequence_points, sequence_points_len);
+                    printf("SequencePoints: LocalSignature 0x%08x (mdToken) ", sequence_points->signature);
+                    mdToken document_tok;
+                    md_cursor_to_token(sequence_points->document, &document_tok);
+                    printf("Document 0x%08x (mdToken) ", document_tok);
+                    printf("{ ");
+                    bool first = true;
+                    for (uint32_t k = 0; k < sequence_points->record_count; ++k)
+                    {
+                        if (!first)
+                        {
+                            printf(", ");
+                        }
+                        first = false;
+                        if (sequence_points->records[k].kind == mdsp_DocumentRecord)
+                        {
+                            printf("document-record: ");
+                            md_cursor_to_token(sequence_points->records[k].document.document, &document_tok);
+                            printf("0x%08x (mdToken)", document_tok);
+                        }
+                        else if (sequence_points->records[k].kind == mdsp_HiddenSequencePointRecord)
+                        {
+                            printf("hidden-sequence-point-record: %u", sequence_points->records[k].hidden_sequence_point.il_offset);
+                        }
+                        else if (sequence_points->records[k].kind == mdsp_SequencePointRecord)
+                        {
+                            printf("sequence-point-record: (%u, %u, %" PRId64 ", %" PRId64 ", %" PRId64 ")",
+                                sequence_points->records[k].sequence_point.il_offset,
+                                sequence_points->records[k].sequence_point.num_lines,
+                                sequence_points->records[k].sequence_point.delta_columns,
+                                sequence_points->records[k].sequence_point.start_line,
+                                sequence_points->records[k].sequence_point.start_column);
+                        }
+                        else
+                        {
+                            assert(!"Invalid sequence point record kind.");
+                        }
+                    }
+                    
+                    printf(" } [%#x]|", raw_values[j]);
+
+                    free(sequence_points);
+                    continue;
+                }
+                else if (table->table_id == mdtid_LocalConstant && col == mdtLocalConstant_Signature)
+                {
+                    IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
+                    md_local_constant_sig_t* local_constant_sig;
+                    size_t local_constant_sig_len;
+                    IF_INVALID_BLOB_REPORT_RAW(md_parse_local_constant_sig, table->cxt, "LocalConstantSig", local_constant_sig, local_constant_sig_len);
+                    printf("LocalConstantSig: ");
+                    for (uint32_t k = 0; k < local_constant_sig->custom_modifier_count; ++k)
+                    {
+                        printf("%s(0x%08x) ", local_constant_sig->custom_modifiers[k].required ? "modreq" : "modopt", local_constant_sig->custom_modifiers[k].type);
+                    }
+
+                    if (local_constant_sig->constant_kind == mdck_PrimitiveConstant)
+                    {
+                        printf("Primitive: 0x%02x ", local_constant_sig->primitive.type_code);
+                    }
+                    else if (local_constant_sig->constant_kind == mdck_EnumConstant)
+                    {
+                        printf("Enum: 0x%02x{0x%08x (mdToken)} ", local_constant_sig->enum_constant.type_code, local_constant_sig->enum_constant.enum_type);
+                    }
+                    else if (local_constant_sig->constant_kind == mdck_GeneralConstant)
+                    {
+                        printf("General: 0x%02x{0x%08x (mdToken)} ", local_constant_sig->general.kind, local_constant_sig->general.type);
+                    }
+                    else
+                    {
+                        assert(!"Invalid constant kind.");
+                    }
+                    printf("Value Offset: %zu (len: %zu) [%#x]|", local_constant_sig->value_blob - table->cxt->blob_heap.ptr, local_constant_sig->value_len, raw_values[j]);
+                    
+                    free(local_constant_sig);
+                    continue;
+                }
+                else if (table->table_id == mdtid_ImportScope && col == mdtImportScope_Imports)
+                {
+                    IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
+                    
+                    if (blob_len == 0)
+                    {
+                        printf("Empty Imports: Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]);
+                        continue;
+                    }
+
+                    md_imports_t* imports;
+                    size_t imports_len;
+                    IF_INVALID_BLOB_REPORT_RAW(md_parse_imports, table->cxt, "Imports", imports, imports_len);
+                    printf("{ ");
+                    bool first = true;
+                    for (uint32_t k = 0; k < imports->count; ++k)
+                    {
+                        if (!first)
+                        {
+                            printf(", ");
+                        }
+                        first = false;
+                        switch (imports->imports[k].kind)
+                        {
+                        case mdidk_ImportNamespace:
+                            printf("ns('%.*s')", imports->imports[k].target_namespace_len, imports->imports[k].target_namespace);
+                            break;
+                        case mdidk_ImportAssemblyNamespace:
+                            printf("ns('%.*s' in 0x%08x (mdToken))", imports->imports[k].target_namespace_len, imports->imports[k].target_namespace, imports->imports[k].assembly);
+                            break;
+                        case mdidk_ImportType:
+                            printf("type(0x%08x (mdToken))", imports->imports[k].target_type);
+                            break;
+                        case mdidk_ImportXmlNamespace:
+                            printf("xml-alias('%.*s' for '%.*s')", imports->imports[k].alias_len, imports->imports[k].alias, imports->imports[k].target_namespace_len, imports->imports[k].target_namespace);
+                            break;
+                        case mdidk_ImportAssemblyReferenceAlias:
+                            printf("import-alias('%.*s')", imports->imports[k].alias_len, imports->imports[k].alias);
+                            break;
+                        case mdidk_AliasAssemblyReference:
+                            printf("alias('%.*s' for 0x%08x (mdToken))", imports->imports[k].alias_len, imports->imports[k].alias, imports->imports[k].assembly);
+                            break;
+                        case mdidk_AliasNamespace:
+                            printf("alias('%.*s' for '%.*s')", imports->imports[k].alias_len, imports->imports[k].alias, imports->imports[k].target_namespace_len, imports->imports[k].target_namespace);
+                            break;
+                        case mdidk_AliasAssemblyNamespace:
+                            printf("alias('%.*s' for '%.*s' in 0x%08x (mdToken))", imports->imports[k].alias_len, imports->imports[k].alias, imports->imports[k].target_namespace_len, imports->imports[k].target_namespace, imports->imports[k].assembly);
+                            break;
+                        case mdidk_AliasType:
+                            printf("alias('%.*s' for  0x%08x (mdToken))", imports->imports[k].alias_len, imports->imports[k].alias, imports->imports[k].target_type);
+                            break;
+                        default:
+                            assert(!"Invalid import kind.");
+                            break;
+                        }
+                    }
+                    
+                    printf(" } [%#x]|", raw_values[j]);
+
+                    free(imports);
+                    continue;
+                }
+#endif
+                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
                 printf("Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]);
             }
             else if (table->column_details[j] & mdtc_hus)
@@ -397,6 +576,7 @@ static bool dump_table_rows(mdtable_t* table)
     }
     printf("\n");
 #undef IF_NOT_ONE_REPORT_RAW
+#undef IF_INVALID_BLOB_REPORT_RAW
 
     return true;
 }
@@ -576,11 +756,6 @@ static size_t get_image_size(mdcxt_t* cxt)
     save_size += get_stream_header_and_contents_size("#~", get_table_stream_size(cxt));
 
     return save_size;
-}
-
-static bool advance_output_stream(uint8_t** data, size_t* data_len, size_t b)
-{
-    return advance_stream((uint8_t const**)data, data_len, b);
 }
 
 // II.24.2.2 Stream header
