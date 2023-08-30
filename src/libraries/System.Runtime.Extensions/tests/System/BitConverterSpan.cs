@@ -15,9 +15,11 @@ namespace System.Tests
             Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, (short)2));
             Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, 2));
             Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, (long)2));
+            Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, (Int128)2));
             Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, (ushort)2));
             Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, (uint)2));
             Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, (ulong)2));
+            Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, (UInt128)2));
             Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, (float)2));
             Assert.False(BitConverter.TryWriteBytes(Span<byte>.Empty, 2.0));
         }
@@ -29,9 +31,11 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToInt16(Span<byte>.Empty); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToInt32(Span<byte>.Empty); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToInt64(Span<byte>.Empty); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToInt128(Span<byte>.Empty); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToUInt16(Span<byte>.Empty); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToUInt32(Span<byte>.Empty); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToUInt64(Span<byte>.Empty); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToUInt128(Span<byte>.Empty); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToSingle(Span<byte>.Empty); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToDouble(Span<byte>.Empty); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { BitConverter.ToBoolean(Span<byte>.Empty); });
@@ -86,6 +90,14 @@ namespace System.Tests
             Assert.Equal(expected, span.ToArray());
         }
 
+        public override void ConvertFromInt128(long num, byte[] expected)
+        {
+            expected = RangeToLittleEndian(expected, 0, 16);
+            Span<byte> span = new Span<byte>(new byte[16]);
+            Assert.True(BitConverter.TryWriteBytes(span, num));
+            Assert.Equal(expected, span.ToArray());
+        }
+
         public override void ConvertFromUShort(ushort num, byte[] expected)
         {
             expected = RangeToLittleEndian(expected, 0, 2);
@@ -106,6 +118,14 @@ namespace System.Tests
         {
             expected = RangeToLittleEndian(expected, 0, 8);
             Span<byte> span = new Span<byte>(new byte[8]);
+            Assert.True(BitConverter.TryWriteBytes(span, num));
+            Assert.Equal(expected, span.ToArray());
+        }
+
+        public override void ConvertFromUInt128(UInt128 num, byte[] expected)
+        {
+            expected = RangeToLittleEndian(expected, 0, 16);
+            Span<byte> span = new Span<byte>(new byte[16]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
         }
@@ -163,6 +183,13 @@ namespace System.Tests
             Assert.Equal(expected, BitConverter.ToInt64(span.Slice(index)));
         }
 
+        public override void ToInt128(int index, Int128 expected, byte[] byteArray)
+        {
+            byteArray = RangeToLittleEndian(byteArray, index, 16);
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
+            Assert.Equal(expected, BitConverter.ToInt128(span.Slice(index)));
+        }
+
         public override void ToUInt16(int index, ushort expected, byte[] byteArray)
         {
             byteArray = RangeToLittleEndian(byteArray, index, 2);
@@ -182,6 +209,13 @@ namespace System.Tests
             byteArray = RangeToLittleEndian(byteArray, index, 8);
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToUInt64(span.Slice(index)));
+        }
+
+        public override void ToUInt128(int index, UInt128 expected, byte[] byteArray)
+        {
+            byteArray = RangeToLittleEndian(byteArray, index, 16);
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
+            Assert.Equal(expected, BitConverter.ToUInt128(span.Slice(index)));
         }
 
         public override void ToHalf(int index, Half expected, byte[] byteArray)
