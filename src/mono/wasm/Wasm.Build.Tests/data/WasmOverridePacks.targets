@@ -23,6 +23,13 @@
                             NuGetPackageVersion="$(_RuntimePackInWorkloadVersionCurrent)"
                             PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)\$(_RuntimePackInWorkloadVersionCurrent)"
                             RuntimeIdentifier="$(RuntimeIdentifier)" />
+      <ResolvedRuntimePack Condition="$(RuntimeIdentifier) == 'browser-wasm'"
+                            Update="Microsoft.NETCore.App.Runtime.Mono.multithread.$(RuntimeIdentifier)"
+                            FrameworkName="Microsoft.NETCore.App"
+                            NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.multithread.$(RuntimeIdentifier)"
+                            NuGetPackageVersion="$(_RuntimePackInWorkloadVersionCurrent)"
+                            PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.multithread.$(RuntimeIdentifier)\$(_RuntimePackInWorkloadVersionCurrent)"
+                            RuntimeIdentifier="$(RuntimeIdentifier)" />
 
        <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
                                    RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
