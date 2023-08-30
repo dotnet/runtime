@@ -119,6 +119,8 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyIdentity.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyVersion.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
@@ -248,7 +250,7 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
-    </Compile>    
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
