@@ -85,7 +85,7 @@ export function get_marshaler_to_js_by_type(marshaler_type: MarshalerType): Mars
         return undefined;
     }
     const converter = cs_to_js_marshalers.get(marshaler_type);
-    mono_assert(converter && typeof converter === "function", () => `ERR41: Unknown converter for type ${marshaler_type}`);
+    mono_assert(converter && typeof converter === "function", () => `ERR41: Unknown converter for type ${marshaler_type}. For more information see https://aka.ms/dotnet-wasm-jsinterop`);
     return converter;
 }
 
@@ -224,7 +224,7 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, 
             // when we arrived here from _marshal_cs_object_to_js
             res_converter = cs_to_js_marshalers.get(type);
         }
-        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]} `);
+        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}. For more information see https://aka.ms/dotnet-wasm-jsinterop`);
 
         // this is already resolved
         const val = res_converter(arg);
@@ -256,7 +256,7 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, 
             // when we arrived here from _marshal_cs_object_to_js
             res_converter = cs_to_js_marshalers.get(type);
         }
-        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}`);
+        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}. For more information see https://aka.ms/dotnet-wasm-jsinterop`);
 
         const js_value = res_converter!(argInner);
         orig_resolve(js_value);
@@ -291,7 +291,7 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
         else if (value_type !== MarshalerType.Task) {
             // this is already resolved task
             const sub_converter = cs_to_js_marshalers.get(value_type);
-            mono_assert(sub_converter, () => `Unknown sub_converter for type ${MarshalerType[value_type]} `);
+            mono_assert(sub_converter, () => `Unknown sub_converter for type ${MarshalerType[value_type]}. For more information see https://aka.ms/dotnet-wasm-jsinterop`);
             const data = sub_converter(arg_value);
             promise_control.resolve(data);
         }
@@ -406,7 +406,7 @@ function _marshal_cs_object_to_js(arg: JSMarshalerArgument): any {
 
     // other types
     const converter = cs_to_js_marshalers.get(marshaler_type);
-    mono_assert(converter, () => `Unknown converter for type ${MarshalerType[marshaler_type]}`);
+    mono_assert(converter, () => `Unknown converter for type ${MarshalerType[marshaler_type]}. For more information see https://aka.ms/dotnet-wasm-jsinterop`);
     return converter(arg);
 }
 
@@ -461,7 +461,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
         result = sourceView.slice();//copy
     }
     else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]} `);
+        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. For more information see https://aka.ms/dotnet-wasm-jsinterop`);
     }
     Module._free(<any>buffer_ptr);
     return result;
@@ -483,7 +483,7 @@ function _marshal_span_to_js(arg: JSMarshalerArgument, element_type?: MarshalerT
         result = new Span(<any>buffer_ptr, length, MemoryViewType.Double);
     }
     else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]} `);
+        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. For more information see https://aka.ms/dotnet-wasm-jsinterop`);
     }
     return result;
 }
@@ -504,7 +504,7 @@ function _marshal_array_segment_to_js(arg: JSMarshalerArgument, element_type?: M
         result = new ArraySegment(<any>buffer_ptr, length, MemoryViewType.Double);
     }
     else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]} `);
+        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. For more information see https://aka.ms/dotnet-wasm-jsinterop`);
     }
     const gc_handle = get_arg_gc_handle(arg);
     if (BuildConfiguration === "Debug") {
