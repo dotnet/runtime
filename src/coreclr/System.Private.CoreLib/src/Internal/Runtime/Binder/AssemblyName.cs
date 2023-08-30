@@ -347,6 +347,31 @@ namespace Internal.Runtime.Binder
 
             return fEquals;
         }
+
+        public string GetDisplayName(AssemblyNameIncludeFlags dwIncludeFlags)
+        {
+            AssemblyIdentityFlags dwUseIdentityFlags = IdentityFlags;
+
+            // Prune unwanted name parts
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_VERSION) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_VERSION;
+            }
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_ARCHITECTURE) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_PROCESSOR_ARCHITECTURE;
+            }
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_RETARGETABLE) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_RETARGETABLE;
+            }
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_CONTENT_TYPE) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_CONTENT_TYPE;
+            }
+
+            return TextualIdentityParser.ToString(this, dwUseIdentityFlags);
+        }
     }
 
     internal unsafe interface IMdInternalImport : IDisposable

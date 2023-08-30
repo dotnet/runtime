@@ -123,6 +123,7 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyIdentity.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyName.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyVersion.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\TextualIdentityParser.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
