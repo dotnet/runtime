@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="pinvoke-allPlatforms.cs" />
+    <Compile Include="GameControllerButtonBind.cs" />
+  </ItemGroup>
+</Project>
