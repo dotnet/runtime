@@ -14,11 +14,11 @@ import {
     _now, getWasmFunctionTable, applyOptions,
     recordFailure, getOptions,
     getCounter, modifyCounter,
-    jiterpreter_allocate_tables
+    jiterpreter_allocate_tables, getRawCwrap
 } from "./jiterpreter-support";
 import { JiterpreterTable, JiterpCounter, JitQueue } from "./jiterpreter-enums";
 import {
-    compileDoJitCall
+    compileDoJitCall, doJitCallBuilder
 } from "./jiterpreter-feature-detect";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
@@ -189,9 +189,33 @@ export function mono_interp_invoke_wasm_jit_call_trampoline(
     const thunk = <Function>getWasmTableEntry(thunkIndex);
     try {
         thunk(ret_sp, sp, ftndesc, thrown);
-    } catch (exc) {
+    } catch (exc: any) {
         receiveWorkerHeapViews();
-        setU32_unchecked(thrown, 1);
+        const exceptionTag = (<any>Module)["asm"]["__cpp_exception"];
+        const haveTag = exceptionTag instanceof (<any>WebAssembly).Tag;
+        if (
+            !haveTag || (
+                (exc instanceof (<any>WebAssembly).Exception) &&
+                exc.is(exceptionTag)
+            )
+        ) {
+            setU32_unchecked(thrown, 1);
+
+            // Call begin_catch and then end_catch to clean it up.
+            if (haveTag) {
+                // Wasm EH is enabled, so we know that the current exception is a C++ exception
+                const ptr = exc.getArg(exceptionTag, 0);
+                cwraps.mono_jiterp_begin_catch(ptr);
+                cwraps.mono_jiterp_end_catch();
+            } else if (typeof (exc) === "number") {
+                // emscripten JS exception
+                cwraps.mono_jiterp_begin_catch(exc);
+                cwraps.mono_jiterp_end_catch();
+            } else
+                throw exc;
+        } else {
+            throw exc;
+        }
     }
 }
 
@@ -265,7 +289,7 @@ function getIsWasmEhSupported(): boolean {
     // Probe whether the current environment can handle wasm exceptions
     try {
         doJitCallModule = compileDoJitCall();
-        wasmEhSupported = true;
+        wasmEhSupported = doJitCallModule !== undefined;
     } catch (exc) {
         mono_log_info("Disabling WASM EH support due to JIT failure", exc);
         wasmEhSupported = false;
@@ -284,14 +308,39 @@ export function mono_jiterp_do_jit_call_indirect(
     const table = getWasmFunctionTable();
     const jitCallCb = table.get(jit_call_cb);
 
+    const exceptionTag = (<any>Module)["asm"]["__cpp_exception"];
+    const haveTag = exceptionTag instanceof (<any>WebAssembly).Tag;
+
     // This should perform better than the regular mono_llvm_cpp_catch_exception because the call target
     //  is statically known, not being pulled out of a table.
     const do_jit_call_indirect_js = function (unused: number, _cb_data: VoidPtr, _thrown: Int32Ptr) {
         try {
             jitCallCb(_cb_data);
-        } catch (exc) {
+        } catch (exc: any) {
             receiveWorkerHeapViews();
-            setU32_unchecked(_thrown, 1);
+            if (
+                !haveTag || (
+                    (exc instanceof (<any>WebAssembly).Exception) &&
+                    exc.is(exceptionTag)
+                )
+            ) {
+                setU32_unchecked(_thrown, 1);
+
+                // Call begin_catch and then end_catch to clean it up.
+                if (haveTag) {
+                    // Wasm EH is enabled, so we know that the current exception is a C++ exception
+                    const ptr = exc.getArg(exceptionTag, 0);
+                    cwraps.mono_jiterp_begin_catch(ptr);
+                    cwraps.mono_jiterp_end_catch();
+                } else if (typeof (exc) === "number") {
+                    // emscripten JS exception
+                    cwraps.mono_jiterp_begin_catch(exc);
+                    cwraps.mono_jiterp_end_catch();
+                } else
+                    throw exc;
+            } else {
+                throw exc;
+            }
         }
     };
 
@@ -300,14 +349,8 @@ export function mono_jiterp_do_jit_call_indirect(
         // Wasm EH is supported which means doJitCallModule was loaded and compiled.
         // Now that we have jit_call_cb, we can instantiate it.
         try {
-            const instance = new WebAssembly.Instance(doJitCallModule!, {
-                i: {
-                    jit_call_cb: jitCallCb,
-                },
-                m: {
-                    h: (<any>Module).getMemory()
-                },
-            });
+            doJitCallBuilder!.setImportFunction("jit_call_cb", jitCallCb);
+            const instance = new WebAssembly.Instance(doJitCallModule!, doJitCallBuilder!.getWasmImports());
             const impl = instance.exports.do_jit_call_indirect;
             if (typeof (impl) !== "function")
                 throw new Error("Did not find exported do_jit_call handler");
@@ -316,6 +359,7 @@ export function mono_jiterp_do_jit_call_indirect(
             jiterpreter_allocate_tables(Module);
             // We successfully instantiated it so we can register it as the new do_jit_call handler
             const result = addWasmFunctionPointer(JiterpreterTable.DoJitCall, impl);
+            // mono_log_info("Installed do_jit_call_indirect");
             cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             failed = false;
         } catch (exc) {
@@ -331,15 +375,18 @@ export function mono_jiterp_do_jit_call_indirect(
             // HACK: It's not safe to use Module.addFunction in a multithreaded scenario
             if (MonoWasmThreads) {
                 // Use mono_llvm_cpp_catch_exception instead
+                // mono_log_info("Installed mono_llvm_cpp_catch_exception");
                 cwraps.mono_jiterp_update_jit_call_dispatcher(0);
             } else {
                 // Use the JS helper function defined up above
+                // mono_log_info("Installed do_jit_call_indirect_js");
                 const result = Module.addFunction(do_jit_call_indirect_js, "viii");
                 cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             }
         } catch {
             // CSP policy or some other problem could break Module.addFunction, so in that case, pass 0
             // This will cause the runtime to use mono_llvm_cpp_catch_exception
+            // mono_log_info("Installed mono_llvm_cpp_catch_exception");
             cwraps.mono_jiterp_update_jit_call_dispatcher(0);
         }
     }
@@ -378,6 +425,14 @@ export function mono_interp_flush_jitcall_queue(): void {
                 "thrown": WasmValtype.i32,
             }, WasmValtype.void, true
         );
+        builder.defineType("begin_catch", {
+            "ptr": WasmValtype.i32,
+        }, WasmValtype.void, true);
+        builder.defineType("end_catch", {
+        }, WasmValtype.void, true);
+
+        builder.defineImportedFunction("i", "begin_catch", "begin_catch", true, getRawCwrap("mono_jiterp_begin_catch"));
+        builder.defineImportedFunction("i", "end_catch", "end_catch", true, getRawCwrap("mono_jiterp_end_catch"));
     } else
         builder.clear(0);
 
@@ -450,6 +505,9 @@ export function mono_interp_flush_jitcall_queue(): void {
         // Assign import indices so they get emitted in the import section
         for (let i = 0; i < trampImports.length; i++)
             builder.markImportAsUsed(trampImports[i][0]);
+
+        builder.markImportAsUsed("begin_catch");
+        builder.markImportAsUsed("end_catch");
 
         builder._generateImportSection(false);
 
@@ -830,7 +888,10 @@ function generate_wasm_body(
 
     // If the call threw a JS or wasm exception, set the thrown flag
     if (builder.options.enableWasmEh) {
-        builder.appendU8(WasmOpcode.catch_all);
+        builder.appendU8(WasmOpcode.catch_);
+        builder.appendULeb(builder.getTypeIndex("__cpp_exception"));
+        builder.callImport("begin_catch");
+        builder.callImport("end_catch");
         builder.local("thrown");
         builder.i32_const(1);
         builder.appendU8(WasmOpcode.i32_store);

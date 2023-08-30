@@ -147,6 +147,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_tlqueue_next", "number", ["number"]],
     [true, "mono_jiterp_tlqueue_add", "number", ["number", "number"]],
     [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
+    [true, "mono_jiterp_begin_catch", "void", ["number"]],
+    [true, "mono_jiterp_end_catch", "void", []],
 
     ...diagnostics_cwraps,
     ...legacy_interop_cwraps
@@ -291,6 +293,8 @@ export interface t_Cwraps {
     // returns new size of queue after add
     mono_jiterp_tlqueue_add(queue: number, value: VoidPtr): number;
     mono_jiterp_tlqueue_clear(queue: number): void;
+    mono_jiterp_begin_catch(ptr: number): void;
+    mono_jiterp_end_catch(): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

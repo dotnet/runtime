@@ -2,43 +2,59 @@ import {
     WasmValtype, WasmOpcode, WasmSimdOpcode
 } from "./jiterpreter-opcodes";
 import {
-    WasmBuilder,
+    WasmBuilder, getRawCwrap
 } from "./jiterpreter-support";
 
-export function compileDoJitCall () : WebAssembly.Module {
-    const builder = new WasmBuilder(0);
-    builder.defineType("jit_call_cb", {
+export let doJitCallBuilder : WasmBuilder | undefined = undefined;
+
+export function compileDoJitCall () : WebAssembly.Module | undefined {
+    doJitCallBuilder = new WasmBuilder(0);
+    if (doJitCallBuilder.getExceptionTag() === undefined)
+        return undefined;
+
+    doJitCallBuilder.defineType("jit_call_cb", {
         "cb_data": WasmValtype.i32,
     }, WasmValtype.void, true);
-    builder.defineType("do_jit_call", {
+    doJitCallBuilder.defineType("begin_catch", {
+        "ptr": WasmValtype.i32,
+    }, WasmValtype.void, true);
+    doJitCallBuilder.defineType("end_catch", {
+    }, WasmValtype.void, true);
+    doJitCallBuilder.defineType("do_jit_call", {
         "unused": WasmValtype.i32,
         "cb_data": WasmValtype.i32,
         "thrown": WasmValtype.i32,
     }, WasmValtype.void, true);
-    builder.defineImportedFunction("i", "jit_call_cb", "jit_call_cb", true);
-    builder.defineFunction({
+    doJitCallBuilder.defineImportedFunction("i", "jit_call_cb", "jit_call_cb", true);
+    doJitCallBuilder.defineImportedFunction("i", "begin_catch", "begin_catch", true, getRawCwrap("mono_jiterp_begin_catch"));
+    doJitCallBuilder.defineImportedFunction("i", "end_catch", "end_catch", true, getRawCwrap("mono_jiterp_end_catch"));
+    doJitCallBuilder.defineFunction({
         type: "do_jit_call",
         name: "do_jit_call_indirect",
         export: true,
         locals: {}
     }, () => {
-        builder.block(WasmValtype.void, WasmOpcode.try_);
-        builder.local("cb_data");
-        builder.callImport("jit_call_cb");
-        builder.appendU8(WasmOpcode.catch_all);
-        builder.local("thrown");
-        builder.i32_const(1);
-        builder.appendU8(WasmOpcode.i32_store);
-        builder.appendMemarg(0, 0);
-        builder.endBlock();
-        builder.appendU8(WasmOpcode.end);
+        doJitCallBuilder = doJitCallBuilder!;
+        doJitCallBuilder.block(WasmValtype.void, WasmOpcode.try_);
+        doJitCallBuilder.local("cb_data");
+        doJitCallBuilder.callImport("jit_call_cb");
+        doJitCallBuilder.appendU8(WasmOpcode.catch_);
+        doJitCallBuilder.appendULeb(doJitCallBuilder.getTypeIndex("__cpp_exception"));
+        doJitCallBuilder.callImport("begin_catch");
+        doJitCallBuilder.callImport("end_catch");
+        doJitCallBuilder.local("thrown");
+        doJitCallBuilder.i32_const(1);
+        doJitCallBuilder.appendU8(WasmOpcode.i32_store);
+        doJitCallBuilder.appendMemarg(0, 0);
+        doJitCallBuilder.endBlock();
+        doJitCallBuilder.appendU8(WasmOpcode.end);
     });
     // Magic number and version
-    builder.appendU32(0x6d736100);
-    builder.appendU32(1);
-    builder.generateTypeSection();
-    builder.emitImportsAndFunctions(false);
-    const buffer = builder.getArrayView();
+    doJitCallBuilder.appendU32(0x6d736100);
+    doJitCallBuilder.appendU32(1);
+    doJitCallBuilder.generateTypeSection();
+    doJitCallBuilder.emitImportsAndFunctions(false);
+    const buffer = doJitCallBuilder.getArrayView();
     return new WebAssembly.Module(buffer);
 }
 
