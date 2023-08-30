@@ -232,48 +232,9 @@ namespace System.Net.Http
                             Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
                             cancellationToken.ThrowIfCancellationRequested();
 
-                            byte[]? buffer = null;
+                            ReadableStreamPullState pullState = new ReadableStreamPullState(stream, cancellationToken);
 
-                            var pull = async void (JSObject controller, int desiredSize) =>
-                            {
-                                Memory<byte> view;
-                                if (desiredSize > 0)
-                                {
-                                    if (buffer is null || buffer.Length < desiredSize)
-                                    {
-                                        view = buffer = new byte[desiredSize];
-                                    }
-                                    else
-                                    {
-                                        view = buffer.AsMemory(0, desiredSize);
-                                    }
-                                }
-                                else
-                                {
-                                    view = buffer ??= new byte[65536];
-                                }
-
-                                using (controller)
-                                {
-                                    try
-                                    {
-                                        int length = await stream.ReadAsync(view, cancellationToken).ConfigureAwait(true);
-                                        using (Buffers.MemoryHandle handle = view.Pin())
-                                        {
-                                            ReadableStreamControllerEnqueueUnsafe(controller, handle, length);
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        BrowserHttpInterop.ReadableStreamControllerError(controller, ex);
-                                    }
-                                }
-                            };
-
-                            unsafe static void ReadableStreamControllerEnqueueUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length) =>
-                                BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, (IntPtr)handle.Pointer, length);
-
-                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, pull);
+                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, ReadableStreamPull, pullState);
                         }
                         else
                         {
@@ -304,6 +265,49 @@ namespace System.Net.Http
                 abortController?.Dispose();
                 throw;
             }
+        }
+
+        private static async void ReadableStreamPull(JSObject controller, int desiredSize, object state)
+        {
+            using (controller)
+            {
+                try
+                {
+                    ReadableStreamPullState pullState = (ReadableStreamPullState)state;
+
+                    byte[]? buffer = pullState.Buffer;
+                    Memory<byte> view;
+                    if (desiredSize > 0)
+                    {
+                        if (buffer is null || buffer.Length < desiredSize)
+                        {
+                            view = buffer = new byte[desiredSize];
+                        }
+                        else
+                        {
+                            view = buffer.AsMemory(0, desiredSize);
+                        }
+                    }
+                    else
+                    {
+                        view = buffer ??= new byte[65536];
+                    }
+                    pullState.Buffer = buffer;
+
+                    int length = await pullState.Stream.ReadAsync(view, pullState.CancellationToken).ConfigureAwait(true);
+                    using (Buffers.MemoryHandle handle = view.Pin())
+                    {
+                        ReadableStreamControllerEnqueueUnsafe(controller, handle, length);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    BrowserHttpInterop.ReadableStreamControllerError(controller, ex);
+                }
+            }
+
+            unsafe static void ReadableStreamControllerEnqueueUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length) =>
+                BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, (IntPtr)handle.Pointer, length);
         }
 
         private static HttpResponseMessage ConvertResponse(HttpRequestMessage request, WasmFetchResponse fetchResponse)
@@ -368,6 +372,21 @@ namespace System.Net.Http
                 return ConvertResponse(request, fetchRespose);
             }
         }
+    }
+
+    internal sealed class ReadableStreamPullState
+    {
+        public ReadableStreamPullState(Stream stream, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            Stream = stream;
+            CancellationToken = cancellationToken;
+        }
+
+        public Stream Stream { get; }
+        public CancellationToken CancellationToken { get; }
+        public byte[]? Buffer { get; set; }
     }
 
     internal sealed class WasmFetchResponse : IDisposable

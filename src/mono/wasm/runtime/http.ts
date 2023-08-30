@@ -81,7 +81,7 @@ export function http_wasm_readable_stream_controller_error(controller: ReadableB
     controller.__resolve_pull();
 }
 
-export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamControllerExtension, desired_size: number) => void): Promise<ResponseExtension> {
+export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, pull: (controller: ReadableByteStreamControllerExtension, desired_size: number, pull_state: any) => void, pull_state: any): Promise<ResponseExtension> {
     return new Promise((resolve_fetch, reject_fetch) => {
         const body = new ReadableStream({
             type: "bytes",
@@ -95,7 +95,7 @@ export function http_wasm_fetch_stream(url: string, header_names: string[], head
                 }
                 c.__resolve_pull = pull_promise_control.resolve;
                 c.__reject_fetch = reject_fetch;
-                pull(c, desired_size || 0);
+                pull(c, desired_size || 0, pull_state);
                 return pull_promise;
             },
             cancel(reason) {
