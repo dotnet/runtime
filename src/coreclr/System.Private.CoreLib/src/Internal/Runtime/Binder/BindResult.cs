@@ -39,5 +39,10 @@ namespace Internal.Runtime.Binder
             Assembly = assembly;
             IsInContextBound = isInContext;
         }
+
+        public void SetNoResult()
+        {
+            Assembly = null;
+        }
     }
 }

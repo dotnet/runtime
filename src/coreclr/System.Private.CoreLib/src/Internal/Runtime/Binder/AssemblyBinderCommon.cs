@@ -221,7 +221,7 @@ namespace Internal.Runtime.Binder
                     throw new Exception("FUSION_E_INVALID_NAME");
                 }
 
-                bindResult = BindLocked(applicationContext, assemblyName, skipVersionCompatibilityCheck, excludeAppPaths);
+                BindLocked(applicationContext, assemblyName, skipVersionCompatibilityCheck, excludeAppPaths, ref bindResult);
 
                 if (bindResult.Assembly == null)
                 {
@@ -253,7 +253,84 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        static BindResult BindLocked(ApplicationContext applicationContext, AssemblyName assemblyName, bool skipVersionCompatibilityCheck, bool excludeAppPaths)
+        private static void BindLocked(ApplicationContext applicationContext, AssemblyName assemblyName, bool skipVersionCompatibilityCheck, bool excludeAppPaths, ref BindResult bindResult)
+        {
+            bool isTpaListProvided = applicationContext.TrustedPlatformAssemblyMap != null;
+            Assembly? assembly = null;
+
+            try
+            {
+                assembly = FindInExecutionContext(applicationContext, assemblyName);
+            }
+            catch (Exception ex)
+            {
+                bindResult.SetAttemptResult(assembly, ex, isInContext: true);
+                throw;
+            }
+
+            if (assembly == null) // if (FAILED(hr) || pAssembly == NULL)
+            {
+                bindResult.SetAttemptResult(null, null, isInContext: true);
+            }
+
+            if (assembly != null)
+            {
+                if (!skipVersionCompatibilityCheck)
+                {
+                    // Can't give higher version than already bound
+                    bool isCompatible = IsCompatibleAssemblyVersion(assemblyName, assembly.AssemblyName);
+                    Exception? exception = isCompatible ? null : new Exception("FUSION_E_APP_DOMAIN_LOCKED");
+                    bindResult.SetAttemptResult(assembly, exception, isInContext: true);
+
+                    // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                    if (exception != null && isTpaListProvided) // hr == FUSION_E_APP_DOMAIN_LOCKED
+                        exception = new Exception("FUSION_E_REF_DEF_MISMATCH");
+
+                    if (exception != null)
+                        throw exception;
+                }
+                else
+                {
+                    bindResult.SetAttemptResult(assembly, null, isInContext: true);
+                }
+
+                bindResult.SetResult(assembly, isInContext: true);
+            }
+            else if (isTpaListProvided)
+            {
+                // BindByTpaList handles setting attempt results on the bind result
+                try
+                {
+                    BindByTpaList(applicationContext, assemblyName, excludeAppPaths, ref bindResult);
+
+                    if (bindResult.Assembly != null) // SUCCEEDED(hr) && pBindResult->HaveResult()
+                    {
+                        bool isCompatible = IsCompatibleAssemblyVersion(assemblyName, bindResult.Assembly.AssemblyName);
+                        Exception? exception = isCompatible ? null : new Exception("FUSION_E_APP_DOMAIN_LOCKED");
+                        bindResult.SetAttemptResult(bindResult.Assembly, exception, isInContext: false);
+
+                        // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                        if (exception != null && isTpaListProvided) // hr == FUSION_E_APP_DOMAIN_LOCKED
+                            exception = new Exception("FUSION_E_REF_DEF_MISMATCH");
+
+                        if (exception != null)
+                            throw exception;
+                    }
+                }
+                catch
+                {
+                    bindResult.SetNoResult();
+                    throw;
+                }
+            }
+        }
+
+        static void BindByTpaList(ApplicationContext applicationContext, AssemblyName assemblyName, bool excludeAppPaths, ref BindResult bindResult)
+        {
+            throw null;
+        }
+
+        static Assembly? FindInExecutionContext(ApplicationContext applicationContext, AssemblyName assembly)
         {
             throw null;
         }

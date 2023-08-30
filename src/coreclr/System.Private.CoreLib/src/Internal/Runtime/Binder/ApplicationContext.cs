@@ -34,7 +34,8 @@ namespace Internal.Runtime.Binder
 
         private readonly List<string> _platformResourceRoots = new List<string>();
         private readonly List<string> _appPaths = new List<string>();
-        private Dictionary<string, TPAEntry>? _trustedPlatformAssemblyMap;
+
+        public Dictionary<string, TPAEntry>? TrustedPlatformAssemblyMap { get; private set; }
 
         private void IncrementVersion() => Interlocked.Increment(ref _version);
 
@@ -213,7 +214,7 @@ namespace Internal.Runtime.Binder
 
             void Core(string trustedPlatformAssemblies, string platformResourceRoots, string appPaths)
             {
-                if (_trustedPlatformAssemblyMap != null)
+                if (TrustedPlatformAssemblyMap != null)
                 {
                     return;
                 }
@@ -222,7 +223,7 @@ namespace Internal.Runtime.Binder
                 // Parse TrustedPlatformAssemblies
                 //
 
-                _trustedPlatformAssemblyMap = new Dictionary<string, TPAEntry>(StringComparer.InvariantCultureIgnoreCase);
+                TrustedPlatformAssemblyMap = new Dictionary<string, TPAEntry>(StringComparer.InvariantCultureIgnoreCase);
                 for (int i = 0; i < trustedPlatformAssemblies.Length;)
                 {
                     if (!GetNextTPAPath(trustedPlatformAssemblies, ref i, dllOnly: false, out string fileName, out string simpleName, out bool isNativeImage))
@@ -230,7 +231,7 @@ namespace Internal.Runtime.Binder
                         break;
                     }
 
-                    if (_trustedPlatformAssemblyMap.TryGetValue(simpleName, out TPAEntry existingEntry))
+                    if (TrustedPlatformAssemblyMap.TryGetValue(simpleName, out TPAEntry existingEntry))
                     {
                         //
                         // We want to store only the first entry matching a simple name we encounter.
@@ -254,7 +255,7 @@ namespace Internal.Runtime.Binder
                         existingEntry.ILFileName = fileName;
                     }
 
-                    _trustedPlatformAssemblyMap[simpleName] = existingEntry;
+                    TrustedPlatformAssemblyMap[simpleName] = existingEntry;
                 }
 
                 //
