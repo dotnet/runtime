@@ -50,11 +50,6 @@
 #include "dacimpl.h"
 
 
-#define STRSAFE_NO_DEPRECATE
-#include <strsafe.h>
-#undef _ftcscat
-#undef _ftcscpy
-
 // from ntstatus.h
 #define STATUS_STOWED_EXCEPTION          ((NTSTATUS)0xC000027BL)
 
