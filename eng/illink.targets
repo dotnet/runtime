@@ -12,8 +12,11 @@
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
-                      SkipGetTargetFrameworkProperties="true"
-                      SetConfiguration="Configuration=$(ToolsConfiguration)" />
+                      SetConfiguration="Configuration=$(ToolsConfiguration)">
+        <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
+        <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
+        <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$(_ILLinkTasksSourceDir)build/Microsoft.NET.ILLink.Tasks.props" />
