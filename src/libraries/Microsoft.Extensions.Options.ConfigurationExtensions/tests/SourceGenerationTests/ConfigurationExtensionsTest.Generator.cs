@@ -9,75 +9,152 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
 {
     public partial class ConfigurationExtensionsTests
     {
-        /// <summary>
-        /// This is a regression test for https://github.com/dotnet/runtime/issues/90851.
-        /// It asserts that the configuration binding source generator properly formats
-        /// binding invocation source locations that the generated interceptors replace.
-        /// A location issue that's surfaced is emitting the right location of invocations
-        /// that are on a different line than the containing binder type or the static
-        /// extension binder class (e.g. ConfigurationBinder.Bind).
-        /// </summary>
+        // These are regression tests for https://github.com/dotnet/runtime/issues/90851
+        // Source Generator Interceptors rely on identifying an accurate invocation
+        // source location (line and character positions). These tests cover newline
+        // and whitespace scenarios to ensure the interceptors get wired up correctly.
+
         [Fact]
-        public void TestBindingInvocationsWithIrregularCSharpSyntax()
+        public void TestBindingInvocationsWithNewlines_BindExtension()
         {
-            // Tests binding invocation variants with irregular C# syntax, interspersed with white space.
-
-            // Options builder extensions.
-
             OptionsBuilder<FakeOptions>? optionsBuilder = CreateOptionsBuilder();
 
+            // Newline between instance and invocation using configureBinder argument (with the dot on the first line)
+            optionsBuilder.
+                Bind(s_emptyConfig, configureBinder: null);
+
+            // Newline between instance and invocation using configureBinder argument (with the dot on the second line)
             optionsBuilder
                 .Bind(s_emptyConfig, configureBinder: null);
 
+            // Newline between instance and invocation (with the dot on the first line)
+            optionsBuilder.
+                Bind(s_emptyConfig);
+
+            // Newline between instance and invocation (with the dot on the second line)
             optionsBuilder
                 .Bind(s_emptyConfig);
 
+            // Newlines in every place possible
+            optionsBuilder
+                .
+                Bind
+                (
+                    s_emptyConfig
+                    ,
+                    configureBinder
+                    :
+                    null
+                )
+                ;
+        }
+
+        [Fact]
+        public void TestBindingInvocationsWithNewlines_BindConfigurationExtension()
+        {
+            OptionsBuilder<FakeOptions>? optionsBuilder = CreateOptionsBuilder();
+
+            // Newline between instance and invocation using configureBinder argument (with the dot on the first line)
             optionsBuilder.
                 BindConfiguration(configSectionPath: "path",
                 _ => { });
 
+            // Newline between instance and invocation using configureBinder argument (with the dot on the second line)
+            optionsBuilder
+                .BindConfiguration(configSectionPath: "path",
+                _ => { });
+
+            // Newlines between the instance and invocation and within the arguments. No indentation before invocation.
             optionsBuilder.
             BindConfiguration(
                 configSectionPath: "path",
                 _ => { });
 
-            // Service collection extensions.
+            // Newlines in every place possible
+            optionsBuilder
+                .
+                BindConfiguration
+                (
+                    configSectionPath
+                    :
+                    "path"
+                    ,
+                    _
+                    =>
+                    {
+                    }
+                )
+                ;
+        }
 
+        [Fact]
+        public void TestBindingInvocationsWithNewlines_ConfigureExtension()
+        {
+            OptionsBuilder<FakeOptions>? optionsBuilder = CreateOptionsBuilder();
             IServiceCollection services = new ServiceCollection();
 
-            services
-                .Configure<
-                    FakeOptions>(
-                name: null!, s_emptyConfig);
-
+            // Newlines between each method call
             services
                 .Configure<FakeOptions>(s_emptyConfig)
                 .AddOptions<FakeOptions>();
 
-            services.
-                Configure<FakeOptions>(
-                name: null, s_emptyConfig,
-                configureBinder: null);
+            // Newlines in every place possible
+            services
+                .
+                Configure
+                <
+                    FakeOptions
+                >
+                (
+                    name
+                    :
+                    null!
+                    ,
+                    s_emptyConfig
+                )
+                ;
+        }
 
-            // Test extensions class syntax.
+        [Fact]
+        public void TestBindingInvocationsWithNewlines_StaticCalls()
+        {
+            OptionsBuilder<FakeOptions>? optionsBuilder = CreateOptionsBuilder();
+            IServiceCollection services = new ServiceCollection();
 
+            // Bind: Newlines in every place possible
             OptionsBuilderConfigurationExtensions
-                .Bind(optionsBuilder, s_emptyConfig);
+                .
+                Bind
+                (
+                    optionsBuilder
+                    ,
+                    s_emptyConfig
+                )
+                ;
 
-            OptionsBuilderConfigurationExtensions.
-                BindConfiguration(optionsBuilder,
-                "path");
-
-            OptionsConfigurationServiceCollectionExtensions
-                .Configure
-                <FakeOptions>(services,
-                s_emptyConfig);
-
-            OptionsConfigurationServiceCollectionExtensions
-                .Configure<FakeOptions
-                >(
-                services, s_emptyConfig
+            // // BindConfiguration: Newlines in every place possible
+            OptionsBuilderConfigurationExtensions
+                .
+                BindConfiguration
+                (
+                    optionsBuilder
+                    ,
+                    "path"
                 );
+
+            // Configure: Newlines in every place possible
+            OptionsConfigurationServiceCollectionExtensions
+                .
+                Configure
+                <
+                    FakeOptions
+                >
+                (
+                    services
+                    ,
+                    s_emptyConfig
+                )
+                ;
         }
     }
 }
