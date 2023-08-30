@@ -116,8 +116,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          # - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          - linux_musl_arm64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           testGroup: outerloop
 
       #
@@ -170,5 +169,5 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
           platforms:
-          - linux_musl_arm64
-          # - windows_x64
+          - linux_x64
+          - windows_x64
