@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -27,7 +29,14 @@ internal sealed class WasmTestMessagesProcessor
             try
             {
                 logMessage = JsonSerializer.Deserialize<WasmLogMessage>(message);
-                line = logMessage?.payload ?? message.TrimEnd();
+                if (logMessage != null)
+                {
+                    line = logMessage.payload + " " + string.Join(" ", logMessage.arguments ?? Enumerable.Empty<string>());
+                }
+                else
+                {
+                    line = message;
+                }
             }
             catch (JsonException)
             {

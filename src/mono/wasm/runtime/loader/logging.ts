@@ -73,7 +73,7 @@ export function setup_proxy_console(id: string, console: Console, origin: string
                     func(JSON.stringify({
                         method: prefix,
                         payload: payload,
-                        arguments: args
+                        arguments: args.slice(1)
                     }));
                 } else {
                     func([prefix + payload, ...args.slice(1)]);
