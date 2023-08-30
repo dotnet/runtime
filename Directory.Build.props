@@ -408,7 +408,6 @@
                                 '$(IsTestSupportProject)' != 'true' and
                                 '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true' and
                                 '$(MSBuildProjectExtension)' != '.pkgproj' and
-                                '$(MSBuildProjectExtension)' != '.proj' and
                                 '$(UsingMicrosoftNoTargetsSdk)' != 'true' and
                                 '$(UsingMicrosoftTraversalSdk)' != 'true'">true</IsSourceProject>
   </PropertyGroup>
