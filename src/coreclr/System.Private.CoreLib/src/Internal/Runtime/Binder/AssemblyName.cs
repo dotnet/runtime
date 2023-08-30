@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -45,6 +46,22 @@ namespace Internal.Runtime.Binder
         afContentType_Mask = 0x0E00, // Bits describing ContentType
     }
 
+    internal enum AssemblyNameIncludeFlags
+    {
+        INCLUDE_DEFAULT = 0x00,
+        INCLUDE_VERSION = 0x01,
+        INCLUDE_ARCHITECTURE = 0x02,
+        INCLUDE_RETARGETABLE = 0x04,
+        INCLUDE_CONTENT_TYPE = 0x08,
+        INCLUDE_PUBLIC_KEY_TOKEN = 0x10,
+        EXCLUDE_CULTURE = 0x20,
+        INCLUDE_ALL = INCLUDE_VERSION
+                    | INCLUDE_ARCHITECTURE
+                    | INCLUDE_RETARGETABLE
+                    | INCLUDE_CONTENT_TYPE
+                    | INCLUDE_PUBLIC_KEY_TOKEN,
+    }
+
     internal sealed unsafe class AssemblyName : AssemblyIdentity
     {
         public bool IsDefinition;
@@ -60,7 +77,7 @@ namespace Internal.Runtime.Binder
             int* dwPAFlags = stackalloc int[2];
             using IMdInternalImport pIMetaDataAssemblyImport = BinderAcquireImport(pPEImage, dwPAFlags);
 
-            ProcessorArchitecture = AssemblyBinderCommon.TranslatePEToArchitectureType(dwPAFlags);
+            Architecture = AssemblyBinderCommon.TranslatePEToArchitectureType(dwPAFlags);
 
             // Get the assembly token
             uint mda;
@@ -160,6 +177,11 @@ namespace Internal.Runtime.Binder
             }
         }
 
+        // TODO: Is this simple comparison enough?
+        public bool IsCoreLib => SimpleName == CoreLib.Name;
+
+        public bool IsNeutralCulture => CultureOrLanguage == NeutralCulture;
+
         // Foo internal calls
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -174,6 +196,157 @@ namespace Internal.Runtime.Binder
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IMdInternalImport BinderAcquireImport(IntPtr pPEImage, int* dwPAFlags);
+
+        public int GetHashCode(AssemblyNameIncludeFlags dwIncludeFlags)
+        {
+            uint dwHash = 0;
+            AssemblyIdentityFlags dwUseIdentityFlags = IdentityFlags;
+
+            // Prune unwanted name parts
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_VERSION) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_VERSION;
+            }
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_ARCHITECTURE) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_PROCESSOR_ARCHITECTURE;
+            }
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_RETARGETABLE) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_RETARGETABLE;
+            }
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_CONTENT_TYPE) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_CONTENT_TYPE;
+            }
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_PUBLIC_KEY_TOKEN) == 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY;
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN;
+            }
+            if ((dwIncludeFlags & AssemblyNameIncludeFlags.EXCLUDE_CULTURE) != 0)
+            {
+                dwUseIdentityFlags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE;
+            }
+
+            static uint HashCaseInsensitive(string str)
+            {
+                // ported from SString::HashCaseInsensitive
+                uint hash = 5381;
+
+                foreach (char ch in str)
+                {
+                    hash = ((hash << 5) + hash) ^ char.ToUpperInvariant(ch);
+                }
+
+                return hash;
+            }
+
+            static uint HashBytes(ReadOnlySpan<byte> bytes)
+            {
+                // ported from coreclr/inc/utilcode.h
+                uint hash = 5831;
+
+                foreach (byte b in bytes)
+                {
+                    hash = ((hash << 5) + hash) ^ b;
+                }
+
+                return hash;
+            }
+
+            dwHash ^= HashCaseInsensitive(SimpleName);
+            dwHash = BitOperations.RotateLeft(dwHash, 4);
+
+            if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY) != 0 ||
+                (dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN) != 0)
+            {
+                dwHash ^= HashBytes(PublicKeyOrTokenBLOB);
+                dwHash = BitOperations.RotateLeft(dwHash, 4);
+            }
+
+            if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_VERSION) != 0)
+            {
+
+                dwHash ^= (uint)Version.Major;
+                dwHash = BitOperations.RotateLeft(dwHash, 8);
+                dwHash ^= (uint)Version.Minor;
+                dwHash = BitOperations.RotateLeft(dwHash, 8);
+                dwHash ^= (uint)Version.Build;
+                dwHash = BitOperations.RotateLeft(dwHash, 8);
+                dwHash ^= (uint)Version.Revision;
+                dwHash = BitOperations.RotateLeft(dwHash, 8);
+            }
+
+            if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE) != 0)
+            {
+                dwHash ^= HashCaseInsensitive(NormalizedCulture);
+                dwHash = BitOperations.RotateLeft(dwHash, 4);
+            }
+
+            if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_RETARGETABLE) != 0)
+            {
+                dwHash ^= 1;
+                dwHash = BitOperations.RotateLeft(dwHash, 4);
+            }
+
+            if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PROCESSOR_ARCHITECTURE) != 0)
+            {
+                dwHash ^= (uint)Architecture;
+                dwHash = BitOperations.RotateLeft(dwHash, 4);
+            }
+
+            if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_CONTENT_TYPE) != 0)
+            {
+                dwHash ^= (uint)ContentType;
+                dwHash = BitOperations.RotateLeft(dwHash, 4);
+            }
+
+            return (int)dwHash;
+        }
+
+        public bool Equals(AssemblyIdentity other, AssemblyNameIncludeFlags dwIncludeFlags)
+        {
+            bool fEquals = false;
+
+            if (ContentType == System.Reflection.AssemblyContentType.WindowsRuntime)
+            {   // Assembly is meaningless for WinRT, all assemblies form one joint type namespace
+                return ContentType == other.ContentType;
+            }
+
+            if (string.Equals(SimpleName, other.SimpleName, StringComparison.InvariantCultureIgnoreCase) &&
+                ContentType == other.ContentType)
+            {
+                fEquals = true;
+
+                if ((dwIncludeFlags & AssemblyNameIncludeFlags.EXCLUDE_CULTURE) == 0)
+                {
+                    fEquals = string.Equals(NormalizedCulture, other.NormalizedCulture, StringComparison.InvariantCultureIgnoreCase);
+                }
+
+                if (fEquals && (dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_PUBLIC_KEY_TOKEN) != 0)
+                {
+                    fEquals = PublicKeyOrTokenBLOB.AsSpan().SequenceEqual(other.PublicKeyOrTokenBLOB);
+                }
+
+                if (fEquals && ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_ARCHITECTURE) != 0))
+                {
+                    fEquals = Architecture == other.Architecture;
+                }
+
+                if (fEquals && ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_VERSION) != 0))
+                {
+                    fEquals = Version == other.Version;
+                }
+
+                if (fEquals && ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_RETARGETABLE) != 0))
+                {
+                    fEquals = IsRetargetable == other.IsRetargetable;
+                }
+            }
+
+            return fEquals;
+        }
     }
 
     internal unsafe interface IMdInternalImport : IDisposable
