@@ -348,6 +348,7 @@ ep_session_enable_rundown (EventPipeSession *session)
 		ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider));
 	}
 
+	ep_session_set_rundown_thread_id (session, ep_thread_get_os_thread_id (ep_thread_get ()));
 	ep_session_set_rundown_enabled (session, true);
 	result = true;
 
@@ -521,6 +522,11 @@ ep_session_write_event (
 
 	// Filter events specific to "this" session based on precomputed flag on provider/events.
 	if (ep_event_is_enabled_by_mask (ep_event, ep_session_get_mask (session))) {
+		if (ep_session_get_rundown_enabled (session) && (ep_session_get_rundown_thread_id (session) != ep_thread_get_os_thread_id (ep_thread_get ()))) {
+			EP_ASSERT (ep_session_get_rundown_thread_id (session) != 0);
+			return false;
+		}
+
 		if (session->synchronous_callback) {
 			session->synchronous_callback (
 				ep_event_get_provider (ep_event),
