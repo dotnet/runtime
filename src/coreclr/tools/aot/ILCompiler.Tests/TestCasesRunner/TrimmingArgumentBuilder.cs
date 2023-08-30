@@ -8,16 +8,16 @@ using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class ILCompilerOptionsBuilder
+	public class TrimmingArgumentBuilder
 	{
-		//public TrimmerOptions Options { get; } = new();
 		private readonly TestCaseMetadataProvider _metadataProvider;
 
-		public readonly ILCompilerOptions Options;
+		private ILCompilerOptions? _options;
+		private ILCompilerOptions Options => _options ?? throw new InvalidOperationException ("Invalid state: Build() was already called");
 
-		public ILCompilerOptionsBuilder (TestCaseMetadataProvider metadataProvider)
+		public TrimmingArgumentBuilder (TestCaseMetadataProvider metadataProvider)
 		{
-			Options = new ILCompilerOptions ();
+			_options = new ILCompilerOptions ();
 			_metadataProvider = metadataProvider;
 
 			string runtimeBinDir = (string) AppContext.GetData ("Mono.Linker.Tests.RuntimeBinDirectory")!;
@@ -259,6 +259,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (empty) {
 				throw new Exception ("No files matching " + pattern);
 			}
+		}
+
+		public ILCompilerOptions Build ()
+		{
+			var options = Options;
+			_options = null;
+			return options;
 		}
 	}
 }

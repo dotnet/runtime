@@ -7,7 +7,7 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class ILCompilerTestCaseResult
+	public class TrimmedTestCaseResult
 	{
 		public readonly TestCase TestCase;
 		public readonly NPath InputAssemblyPath;
@@ -15,19 +15,31 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public readonly TestCaseSandbox Sandbox;
 		public readonly TestCaseMetadataProvider MetadataProvider;
 		public readonly ManagedCompilationResult CompilationResult;
+		public readonly TrimmingTestLogger LogWriter;
 		public readonly ILScanResults TrimmingResults;
-		public readonly TestLogWriter LogWriter;
 
-		public ILCompilerTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadataProvider metadataProvider, ManagedCompilationResult compilationResult, ILScanResults trimmingResults, TestLogWriter logWriter)
+		public TrimmedTestCaseResult (
+			TestCase testCase,
+			NPath inputAssemblyPath,
+			NPath outputAssemblyPath,
+			NPath expectationsAssemblyPath,
+			TestCaseSandbox sandbox,
+			TestCaseMetadataProvider metadataProvider,
+			ManagedCompilationResult compilationResult,
+			TrimmingTestLogger logWriter,
+			TrimmingCustomizations? customizations,
+			ILScanResults trimmingResults)
 		{
+			// Ignore outputAssemblyPath because ILCompiler trimming tests don't write output assemblies.
+			// Ignore TrimmingCustomizatoins which are not used by ILCompiler trimming tests.
 			TestCase = testCase;
 			InputAssemblyPath = inputAssemblyPath;
 			ExpectationsAssemblyPath = expectationsAssemblyPath;
 			Sandbox = sandbox;
 			MetadataProvider = metadataProvider;
-			CompilationResult = compilationResult;
-			TrimmingResults = trimmingResults;
+			CompilationResult = compilationResult;			
 			LogWriter = logWriter;
+			TrimmingResults = trimmingResults;
 		}
 	}
 }

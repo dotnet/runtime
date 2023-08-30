@@ -1,12 +1,14 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+using System;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class LinkedTestCaseResult
+	public class TrimmedTestCaseResult
 	{
 		public readonly TestCase TestCase;
 		public readonly NPath InputAssemblyPath;
@@ -15,11 +17,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public readonly TestCaseSandbox Sandbox;
 		public readonly TestCaseMetadataProvider MetadataProvider;
 		public readonly ManagedCompilationResult CompilationResult;
-		public readonly LinkerTestLogger Logger;
-		public readonly LinkerCustomizations Customizations;
+		public readonly TrimmingTestLogger Logger;
+		public readonly TrimmingCustomizations Customizations;
 		public readonly int ExitCode;
 
-		public LinkedTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath outputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadataProvider metadataProvider, ManagedCompilationResult compilationResult, LinkerTestLogger logger, LinkerCustomizations customizations, int exitCode)
+		public TrimmedTestCaseResult (
+			TestCase testCase,
+			NPath inputAssemblyPath,
+			NPath outputAssemblyPath,
+			NPath expectationsAssemblyPath,
+			TestCaseSandbox sandbox,
+			TestCaseMetadataProvider metadataProvider,
+			ManagedCompilationResult compilationResult,
+			TrimmingTestLogger logger,
+			TrimmingCustomizations? customizations,
+			TrimmingResults trimmingResults)
 		{
 			TestCase = testCase;
 			InputAssemblyPath = inputAssemblyPath;
@@ -29,8 +41,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			MetadataProvider = metadataProvider;
 			CompilationResult = compilationResult;
 			Logger = logger;
-			Customizations = customizations;
-			ExitCode = exitCode;
+			Customizations = customizations ?? throw new InvalidOperationException ("Customizations must be provided");
+			ExitCode = trimmingResults.ExitCode;
 		}
 	}
 }

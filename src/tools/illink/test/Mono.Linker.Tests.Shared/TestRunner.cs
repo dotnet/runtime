@@ -1,17 +1,18 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Mono.Cecil;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
-using Xunit.Sdk;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestRunner
+	public partial class TestRunner
 	{
 		private readonly ObjectFactory _factory;
 
@@ -20,14 +21,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_factory = factory;
 		}
 
-		public virtual ILCompilerTestCaseResult? Run (TestCase testCase)
+		public virtual TrimmedTestCaseResult? Run (TestCase testCase)
 		{
 			try {
 				using (var fullTestCaseAssemblyDefinition = AssemblyDefinition.ReadAssembly (testCase.OriginalTestCaseAssemblyPath.ToString ())) {
 					var compilationMetadataProvider = _factory.CreateCompilationMetadataProvider (testCase, fullTestCaseAssemblyDefinition);
 
 					if (compilationMetadataProvider.IsIgnored (out string? ignoreReason))
-						throw new IgnoreTestException (ignoreReason);
+						IgnoreTest (ignoreReason);
 
 					var sandbox = Sandbox (testCase, compilationMetadataProvider);
 					var compilationResult = Compile (sandbox, compilationMetadataProvider);
@@ -45,7 +46,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		public virtual ILCompilerTestCaseResult Relink (ILCompilerTestCaseResult result)
+		partial void IgnoreTest (string reason);
+
+		public virtual TrimmedTestCaseResult Relink (TrimmedTestCaseResult result)
 		{
 			PrepForLink (result.Sandbox, result.CompilationResult);
 			return Link (result.TestCase, result.Sandbox, result.CompilationResult, result.MetadataProvider);
@@ -74,14 +77,36 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var expectationsCommonReferences = metadataProvider.GetCommonReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 			var expectationsMainAssemblyReferences = metadataProvider.GetReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 
-			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName!, sourceFiles, commonReferences, mainAssemblyReferences, new string[] { "NATIVEAOT" }, resources, additionalArguments));
-			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName!, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] { "INCLUDE_EXPECTATIONS", "NATIVEAOT" }, resources, additionalArguments));
+			var additionalDefines = GetAdditionalDefines ();
+			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (
+				sandbox.InputDirectory,
+				assemblyName,
+				sourceFiles,
+				commonReferences,
+				mainAssemblyReferences,
+				additionalDefines?.ToArray (),
+				resources,
+				additionalArguments));
+
+			var expectationsDefines = new string[] { "INCLUDE_EXPECTATIONS" };
+			if (additionalDefines != null)
+				expectationsDefines = expectationsDefines.Concat (additionalDefines).ToArray ();
+
+			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (
+				sandbox.ExpectationsDirectory,
+				assemblyName,
+				sourceFiles,
+				expectationsCommonReferences,
+				expectationsMainAssemblyReferences,
+				expectationsDefines,
+				resources,
+				additionalArguments));
 
 			NPath? inputAssemblyPath = null;
 			NPath? expectationsAssemblyPath = null;
 			try {
-				inputAssemblyPath = GetResultOfTaskThatMakesXUnitAssertions (inputTask);
-				expectationsAssemblyPath = GetResultOfTaskThatMakesXUnitAssertions (expectationsTask);
+				inputAssemblyPath = GetResultOfTaskThatMakesAssertions (inputTask);
+				expectationsAssemblyPath = GetResultOfTaskThatMakesAssertions (expectationsTask);
 			} catch (Exception) {
 				// If completing the input assembly task threw, we need to wait for the expectations task to complete before continuing
 				// otherwise we could set the next test up for a race condition with the expectations compilation over access to the sandbox directory
@@ -99,41 +124,50 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
 
+		private partial IEnumerable<string>? GetAdditionalDefines();
+
 		protected virtual void PrepForLink (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult)
 		{
 		}
 
-		private ILCompilerTestCaseResult Link (TestCase testCase, TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TestCaseMetadataProvider metadataProvider)
+		private TrimmedTestCaseResult Link (TestCase testCase, TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TestCaseMetadataProvider metadataProvider)
 		{
 			var trimmer = _factory.CreateTrimmer ();
+			var trimmingCustomizations = CustomizeLinker (trimmer, metadataProvider);
 
-			var builder = _factory.CreateTrimmerOptionsBuilder (metadataProvider);
+			var builder = _factory.CreateTrimmingArgumentBuilder (metadataProvider);
 
-			AddLinkOptions (sandbox, compilationResult, builder, metadataProvider);
+			AddTrimmingOptions (sandbox, compilationResult, builder, metadataProvider);
 
-			var logWriter = new TestLogWriter ();
-			var trimmingResults = trimmer.Trim (builder.Options, logWriter);
+			var logger = new TrimmingTestLogger ();
+			var trimmingResults = trimmer.Trim (builder.Build (), trimmingCustomizations, logger);
 
-			return new ILCompilerTestCaseResult (testCase, compilationResult.InputAssemblyPath, compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, trimmingResults, logWriter);
+			return new TrimmedTestCaseResult (
+				testCase,
+				compilationResult.InputAssemblyPath,
+				sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName),
+				compilationResult.ExpectationsAssemblyPath,
+				sandbox,
+				metadataProvider,
+				compilationResult,
+				logger,
+				trimmingCustomizations,
+				trimmingResults);
 		}
 
-		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, ILCompilerOptionsBuilder builder, TestCaseMetadataProvider metadataProvider)
+		protected virtual void AddTrimmingOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder, TestCaseMetadataProvider metadataProvider)
 		{
 			var caseDefinedOptions = metadataProvider.GetLinkerOptions (sandbox.InputDirectory);
 
-			builder.AddOutputDirectory (sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileNameWithoutExtension + ".obj"));
+			AddOutputDirectory (sandbox, compilationResult, builder);
 
 			foreach (var rspFile in sandbox.ResponseFiles)
 				builder.AddResponseFile (rspFile);
 
 			foreach (var inputReference in sandbox.InputDirectory.Files ()) {
 				var ext = inputReference.ExtensionWithDot;
-				if (ext == ".dll" || ext == ".exe") {
-					// It's important to add all assemblies as "link" assemblies since the default configuration
-					// is to run the compiler in multi-file mode which will not process anything which is just in the reference set.
-					builder.AddLinkAssembly (inputReference);
-					builder.AddReference (inputReference);
-				}
+				if (ext == ".dll" || ext == ".exe")
+					AddInputReference (inputReference, builder);
 			}
 			var coreAction = caseDefinedOptions.TrimMode ?? "skip";
 			foreach (var extraReference in metadataProvider.GetExtraLinkerReferences ()) {
@@ -146,18 +180,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
 
-		private static T GetResultOfTaskThatMakesXUnitAssertions<T> (Task<T> task)
-		{
-			try {
-				return task.Result;
-			} catch (AggregateException e) {
-				if (e.InnerException != null) {
-					if (e.InnerException is XunitException)
-						throw e.InnerException;
-				}
+		protected partial TrimmingCustomizations? CustomizeLinker (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider);
 
-				throw;
-			}
-		}
+		static partial void AddOutputDirectory (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder);
+
+		static partial void AddInputReference (NPath inputReference, TrimmingArgumentBuilder builder);
 	}
 }

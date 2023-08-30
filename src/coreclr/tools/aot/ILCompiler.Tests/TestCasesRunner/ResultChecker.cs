@@ -45,7 +45,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_linkedReaderParameters = linkedReaderParameters;
 		}
 
-		public virtual void Check (ILCompilerTestCaseResult testResult)
+		public virtual void Check (TrimmedTestCaseResult testResult)
 		{
 			InitializeResolvers (testResult);
 
@@ -85,12 +85,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, ILCompilerTestCaseResult testResult)
+		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, TrimmedTestCaseResult testResult)
 		{
 			return new AssemblyChecker (_originalsResolver, _originalReaderParameters, original, testResult);
 		}
 
-		private void InitializeResolvers (ILCompilerTestCaseResult linkedResult)
+		private void InitializeResolvers (TrimmedTestCaseResult linkedResult)
 		{
 			_originalsResolver.AddSearchDirectory (linkedResult.ExpectationsAssemblyPath.Parent.ToString ());
 		}
@@ -103,7 +103,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return _originalsResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _originalReaderParameters);
 		}
 
-		private static void PerformOutputAssemblyChecks (AssemblyDefinition original, ILCompilerTestCaseResult testResult)
+		private static void PerformOutputAssemblyChecks (AssemblyDefinition original, TrimmedTestCaseResult testResult)
 		{
 			var assembliesToCheck = original.MainModule.Types.SelectMany (t => t.CustomAttributes).Where (ExpectationsProvider.IsAssemblyAssertion);
 			var actionAssemblies = new HashSet<string> ();
@@ -147,13 +147,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 #pragma warning disable IDE0060 // Remove unused parameter
-		private static void PerformOutputSymbolChecks (AssemblyDefinition original, ILCompilerTestCaseResult testResult)
+		private static void PerformOutputSymbolChecks (AssemblyDefinition original, TrimmedTestCaseResult testResult)
 #pragma warning restore IDE0060 // Remove unused parameter
 		{
 			// While NativeAOT has symbols, verifying them is rather difficult
 		}
 
-		protected virtual void AdditionalChecking (ILCompilerTestCaseResult linkResult, AssemblyDefinition original)
+		protected virtual void AdditionalChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.LogWriter, checkRemainingErrors);
@@ -180,12 +180,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			yield return assembly;
 		}
 
-		protected virtual void InitialChecking (ILCompilerTestCaseResult testResult, AssemblyDefinition original)
+		protected virtual void InitialChecking (TrimmedTestCaseResult testResult, AssemblyDefinition original)
 		{
 			// PE verifier is done here in ILLinker, but that's not possible with NativeAOT
 		}
 
-		private void VerifyLoggedMessages (AssemblyDefinition original, TestLogWriter logger, bool checkRemainingErrors)
+		private void VerifyLoggedMessages (AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
