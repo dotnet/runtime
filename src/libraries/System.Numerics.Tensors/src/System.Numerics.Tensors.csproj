@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Numerics\ref\Microsoft.Bcl.Numerics.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Numerics\src\Microsoft.Bcl.Numerics.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
 </Project>
