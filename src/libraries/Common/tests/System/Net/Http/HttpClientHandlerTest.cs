@@ -1904,7 +1904,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (enableWasmStreaming && PlatformDetection.IsBrowser && UseVersion < HttpVersion.Version20)
+            if (enableWasmStreaming && PlatformDetection.IsBrowser && UseVersion < HttpVersion20.Value)
             {
                 // Browser request streaming is only supported on HTTP/2 or higher
                 return;
