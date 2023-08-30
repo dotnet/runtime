@@ -119,6 +119,7 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\Assembly.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyBinderCommon.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyIdentity.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyName.cs" />

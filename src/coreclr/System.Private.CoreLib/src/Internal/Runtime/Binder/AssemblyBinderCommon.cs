@@ -76,5 +76,26 @@ namespace Internal.Runtime.Binder
                 }
             }
         }
+
+        public static bool IsValidArchitecture(PEKind architecture)
+        {
+            if (architecture is PEKind.MSIL or PEKind.None)
+                return true;
+
+            PEKind processArchitecture =
+#if TARGET_X86
+                PEKind.I386;
+#elif TARGET_AMD64
+                PEKind.AMD64;
+#elif TARGET_ARM
+                PEKind.ARM;
+#elif TARGET_ARM64
+                PEKind.ARM64;
+#else
+                PEKind.MSIL;
+#endif
+
+            return architecture == processArchitecture;
+        }
     }
 }

@@ -66,14 +66,11 @@ namespace Internal.Runtime.Binder
     {
         public bool IsDefinition;
 
-        public AssemblyName()
+        public AssemblyName(IntPtr pPEImage)
         {
             IdentityFlags |=
                 AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE | AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL;
-        }
 
-        public void Init(IntPtr pPEImage)
-        {
             int* dwPAFlags = stackalloc int[2];
             using IMdInternalImport pIMetaDataAssemblyImport = BinderAcquireImport(pPEImage, dwPAFlags);
 
