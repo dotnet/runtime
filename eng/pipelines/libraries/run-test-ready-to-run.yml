@@ -6,7 +6,7 @@ parameters:
 
 steps:
   - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci
-            -subset libs.tests
+            -subset libs.tests -test
             -arch ${{ parameters.archType }}
             -os ${{ parameters.osGroup }}
             -c ${{ parameters.libsBuildConfig }}
