@@ -278,7 +278,7 @@ ThePreStubPatchLabel
     WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
         PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
 
-        ; x0-x7 will contain intended new state
+        ; x0-x7, x10 will contain intended new state
         ; x8 will preserve skipEphemeralCheck
         ; x12 will be used for pointers
 
@@ -296,30 +296,33 @@ ThePreStubPatchLabel
 #ifdef WRITE_BARRIER_CHECK
         adrp     x12, $g_GCShadow
         ldr      x2, [x12, $g_GCShadow]
+
+        adrp     x12, $g_GCShadowEnd
+        ldr      x3, [x12, $g_GCShadowEnd]
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         adrp     x12, g_sw_ww_table
-        ldr      x3, [x12, g_sw_ww_table]
+        ldr      x4, [x12, g_sw_ww_table]
 #endif
 
         adrp     x12, g_ephemeral_low
-        ldr      x4, [x12, g_ephemeral_low]
+        ldr      x5, [x12, g_ephemeral_low]
 
         adrp     x12, g_ephemeral_high
-        ldr      x5, [x12, g_ephemeral_high]
+        ldr      x6, [x12, g_ephemeral_high]
 
         ; Check skipEphemeralCheck
         cbz      x8, EphemeralCheckEnabled
-        movz     x4, #0
-        movn     x5, #0
+        movz     x5, #0
+        movn     x6, #0
 
 EphemeralCheckEnabled
         adrp     x12, g_lowest_address
-        ldr      x6, [x12, g_lowest_address]
+        ldr      x7, [x12, g_lowest_address]
 
         adrp     x12, g_highest_address
-        ldr      x7, [x12, g_highest_address]
+        ldr      x10, [x12, g_highest_address]
 
         ; Update wbs state
         adrp     x12, JIT_WriteBarrier_Table_Loc
@@ -329,6 +332,7 @@ EphemeralCheckEnabled
         stp      x2, x3, [x12], 16
         stp      x4, x5, [x12], 16
         stp      x6, x7, [x12], 16
+        str      x10, [x12], 8
 
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
@@ -344,6 +348,8 @@ wbs_card_table
 wbs_card_bundle_table
         DCQ 0
 wbs_GCShadow
+        DCQ 0
+wbs_GCShadowEnd
         DCQ 0
 wbs_sw_ww_table
         DCQ 0
@@ -433,8 +439,7 @@ NotInHeap
         add      x12, x13, x12
 
         ; if (pShadow >= $g_GCShadowEnd) goto end
-        adrp     x13, $g_GCShadowEnd
-        ldr      x13, [x13, $g_GCShadowEnd]
+        ldr      x13, wbs_GCShadowEnd
         cmp      x12, x13
         bhs      ShadowUpdateEnd
 
