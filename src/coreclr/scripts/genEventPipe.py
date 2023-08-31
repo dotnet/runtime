@@ -153,9 +153,9 @@ def generateClrEventPipeWriteEventsImpl(
     # EventPipeProvider and EventPipeEvent initialization
     callbackName = 'EventPipeEtwCallback' + providerPrettyName
     createProviderFunc = ""
-    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
+    if runtimeFlavor.coreclr:
         createProviderFunc = "EventPipeAdapter::CreateProvider"
-    elif runtimeFlavor.mono:
+    elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
         createProviderFunc = "create_provider"
 
     eventPipeCallbackCastExpr = ""
@@ -205,13 +205,15 @@ def generateClrEventPipeWriteEventsImpl(
                 needStack = "false"
 
         addEventFunc = ""
-        if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
+        if runtimeFlavor.coreclr:
             addEventFunc = "EventPipeAdapter::AddEvent"
         elif runtimeFlavor.mono:
             addEventFunc = "provider_add_event"
+        elif runtimeFlavor.nativeaot:
+            addEventFunc = "ep_provider_add_event"
 
-        initEvent = """    EventPipeEvent%s = %s(EventPipeProvider%s,%s,%s,%s,%s,%s);
-""" % (eventName, addEventFunc, providerPrettyName, eventValue, eventKeywordsMask, eventVersion, eventLevel, needStack)
+        initEvent = """    EventPipeEvent%s = %s(EventPipeProvider%s,%s,%s,%s,%s,%s%s);
+""" % (eventName, addEventFunc, providerPrettyName, eventValue, eventKeywordsMask, eventVersion, eventLevel, needStack, (",NULL,0" if runtimeFlavor.nativeaot else ""))
 
         WriteEventImpl.append(initEvent)
     WriteEventImpl.append("}")
@@ -388,12 +390,15 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             checking = """    ep_raise_error_if_nok (success);\n\n"""
 
     body = ""
-    if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
+    if runtimeFlavor.coreclr:
         body = "    EventPipeAdapter::WriteEvent(EventPipeEvent" + \
             eventName + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
     elif runtimeFlavor.mono:
         body = "    ep_write_event (EventPipeEvent" + \
             eventName + ", (uint8_t *)buffer, (uint32_t)offset, ActivityId, RelatedActivityId);\n"
+    elif runtimeFlavor.nativeaot:
+        body = "    ep_write_event (EventPipeEvent" + \
+            eventName + ", (uint8_t *)buffer, (uint32_t)offset, reinterpret_cast<const uint8_t*>(ActivityId), reinterpret_cast<const uint8_t*>(RelatedActivityId));\n"
 
     header += "\n"
     footer = ""
@@ -713,9 +718,19 @@ def getAotEventPipeHelperFileImplPrefix():
 #include <common.h>
 #include <gcenv.h>
 
-#include <eventpipeadapter.h>
 #include <eventtrace_context.h>
 #include <gcheaputilities.h>
+
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-provider.h>
+#include <eventpipe/ep-config.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-instance.h>
+#include <eventpipe/ep-session.h>
+#include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-metadata-generator.h>
+#include <eventpipe/ep-event-payload.h>
+#include <eventpipe/ep-buffer-manager.h>
 
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
@@ -793,6 +808,14 @@ bool WriteToBuffer(const char *str, BYTE *&buffer, size_t& offset, size_t& size,
     memcpy(buffer + offset, str, len);
     offset += len;
     return true;
+}
+
+EventPipeProvider * create_provider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
+{
+    ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
+    EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
+    ep_rt_utf8_string_free (providerNameUTF8);
+    return provider;
 }
 
 """
@@ -1113,9 +1136,19 @@ def getAotEventPipeImplFilePrefix():
 #include <common.h>
 #include <gcenv.h>
 
-#include <eventpipeadapter.h>
 #include <eventtrace_context.h>
 #include <gcheaputilities.h>
+
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-provider.h>
+#include <eventpipe/ep-config.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-instance.h>
+#include <eventpipe/ep-session.h>
+#include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-metadata-generator.h>
+#include <eventpipe/ep-event-payload.h>
+#include <eventpipe/ep-buffer-manager.h>
 
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
@@ -1128,6 +1161,8 @@ def getAotEventPipeImplFilePrefix():
 bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
 bool WriteToBuffer(const WCHAR* str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
 bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+
+EventPipeProvider * create_provider(const WCHAR*, EventPipeCallback, void* pCallbackContext = nullptr);
 
 template <typename T>
 bool WriteToBuffer(const T &value, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)

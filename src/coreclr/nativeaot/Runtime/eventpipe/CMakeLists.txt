@@ -12,15 +12,9 @@ set(NONEXTERN_ARG "--nonextern")
 set(NOXPLATHEADER_ARG "--noxplatheader")
 
 # Platform agnostic source generation, clretwallmain.h/cpp, disabledclretwallmain.cpp, clreventpipewriteevents.h, etmdummy.h
-set (GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES "")
-list(APPEND GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES
-  ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
-)
+set (GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp)
 
-set (GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES "")
-list(APPEND GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES
-  ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp
-)
+set (GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES ${GENERATED_INCLUDE_DIR}/disabledclretwallmain.cpp)
 
 set(GENERATE_PLAT_AGNOSTIC_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
 
@@ -37,7 +31,7 @@ add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
   COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --incList ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
   COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
-  DEPENDS ${EVENT_MANIFEST} ${GENEVENTING_SCRIPT}
+  DEPENDS ${EVENT_MANIFEST} ${GENERATE_PLAT_AGNOSTIC_SCRIPT}
   VERBATIM
 )
 
@@ -72,6 +66,8 @@ endforeach()
 add_custom_command(OUTPUT ${GEN_EVENTPIPE_PROVIDER_SOURCES}
   COMMAND ${GENERATE_COMMAND}
   DEPENDS ${GENERATE_EVENTPIPE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
+
+set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES GENERATED TRUE)
 
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
@@ -179,7 +175,6 @@ list(APPEND AOT_EVENTPIPE_SHIM_HEADERS
 
 list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
    ${RUNTIME_DIR}/eventpipeinternal.cpp
-   ${RUNTIME_DIR}/eventpipeadapter.h
    ${RUNTIME_DIR}/EnabledEventPipeInterface.cpp
    ${RUNTIME_DIR}/runtimeeventinternal.cpp
 )
