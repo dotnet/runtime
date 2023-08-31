@@ -121,7 +121,8 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
-            EnvVars["WBTOverrideRuntimePack"] = "true";
+            if (IsWorkload)
+                EnvVars["WBTOverrideRuntimePack"] = "true";
 
             if (!UseWebcil)
             {
