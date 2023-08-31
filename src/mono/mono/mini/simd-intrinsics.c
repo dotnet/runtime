@@ -5278,11 +5278,11 @@ emit_x86_intrinsics (
 			MonoInst* tuple_addr;
 			EMIT_NEW_TEMPLOADA (cfg, tuple_addr, tuple->inst_c0);
 
-			MonoClassField* field1 = mono_class_get_field_from_name_full (span->klass, "Item1", NULL);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, span_addr->dreg, field1->offset - obj_size, div->dreg);
-			MonoClassField* field2 = mono_class_get_field_from_name_full (span->klass, "Item2", NULL);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, span_addr->dreg, field2->offset - obj_size, upper_and_remainder->dreg);
-			EMIT_NEW_TEMPLOAD (cfg, ins, span->inst_c0);
+			MonoClassField* field1 = mono_class_get_field_from_name_full (tuple->klass, "Item1", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, tuple_addr->dreg, field1->offset - obj_size, div->dreg);
+			MonoClassField* field2 = mono_class_get_field_from_name_full (tuple->klass, "Item2", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, tuple_addr->dreg, field2->offset - obj_size, upper_and_remainder->dreg);
+			EMIT_NEW_TEMPLOAD (cfg, ins, tuple->inst_c0);
 			return ins;
 
 			/*MonoInst* rem; // moving the remainder to the correct reg
