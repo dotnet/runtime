@@ -25558,7 +25558,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 
     if (addr != nullptr)
     {
-        assert((varTypeIsI(addr) || addr->IsVectorConst()));
+        assert(varTypeIsI(addr));
         return true;
     }
 
