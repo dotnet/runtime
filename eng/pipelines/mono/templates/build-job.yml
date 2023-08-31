@@ -138,6 +138,17 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - powershell: |
+          & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
+          pushd $env:TEMP
+          curl.exe -JLO http://aka.ms/vscollect.exe
+          ./vscollect.exe
+          popd
+          mkdir $(Build.SourcesDirectory)\artifacts\log
+          mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspre.zip
+        condition: always()
+
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: ./build$(scriptExt) -subset mono+clr.hosts $(crossArg) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(darwinFrameworks)
@@ -189,6 +200,16 @@ jobs:
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
             NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - powershell: |
+          & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
+          pushd $env:TEMP
+          curl.exe -JLO http://aka.ms/vscollect.exe
+          ./vscollect.exe
+          popd
+          mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspost.zip
+        condition: always()
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

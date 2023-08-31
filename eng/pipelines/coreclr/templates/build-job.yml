@@ -135,6 +135,17 @@ jobs:
     - ${{ parameters.variables }}
 
     steps:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - powershell: |
+          & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
+          pushd $env:TEMP
+          curl.exe -JLO http://aka.ms/vscollect.exe
+          ./vscollect.exe
+          popd
+          mkdir $(Build.SourcesDirectory)\artifacts\log
+          mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspre.zip
+        condition: always()
+
 
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
@@ -291,6 +302,17 @@ jobs:
       - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - powershell: |
+          & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
+          pushd $env:TEMP
+          curl.exe -JLO http://aka.ms/vscollect.exe
+          ./vscollect.exe
+          popd
+          mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspost.zip
+        condition: always()
+
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

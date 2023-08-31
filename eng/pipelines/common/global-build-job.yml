@@ -148,6 +148,17 @@ jobs:
       clean: true
       fetchDepth: $(checkoutFetchDepth)
 
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - powershell: |
+          & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
+          pushd $env:TEMP
+          curl.exe -JLO http://aka.ms/vscollect.exe
+          ./vscollect.exe
+          popd
+          mkdir $(Build.SourcesDirectory)\artifacts\log
+          mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspre.zip
+        condition: always()
+
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
@@ -228,6 +239,16 @@ jobs:
           pgoType: ${{ parameters.pgoType }}
           shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - powershell: |
+          & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
+          pushd $env:TEMP
+          curl.exe -JLO http://aka.ms/vscollect.exe
+          ./vscollect.exe
+          popd
+          mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspost.zip
+        condition: always()
 
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs

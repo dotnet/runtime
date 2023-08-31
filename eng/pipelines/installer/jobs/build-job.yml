@@ -305,6 +305,17 @@ jobs:
         clean: true
         fetchDepth: $(checkoutFetchDepth)
 
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - powershell: |
+            & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
+            pushd $env:TEMP
+            curl.exe -JLO http://aka.ms/vscollect.exe
+            ./vscollect.exe
+            popd
+            mkdir $(Build.SourcesDirectory)\artifacts\log
+            mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspre.zip
+          condition: always()
+
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - ${{ if ne(parameters.osGroup, 'windows') }}:
           - task: Bash@3
@@ -375,6 +386,17 @@ jobs:
         - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.tests+packs
           displayName: Build and Package
           continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
+
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - powershell: |
+            & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
+            pushd $env:TEMP
+            curl.exe -JLO http://aka.ms/vscollect.exe
+            ./vscollect.exe
+            popd
+            mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspost.zip
+          condition: always()
+
 
       - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: |
