@@ -11899,7 +11899,7 @@ mono_ldptr:
 			break;
 		case MONO_CEE_CONSTRAINED_:
 			constrained_class = mini_get_class (method, token, generic_context);
-			CHECK_TYPELOAD (klass);
+			CHECK_TYPELOAD (constrained_class);
 			ins_has_side_effect = FALSE;
 			break;
 		case MONO_CEE_CPBLK:
