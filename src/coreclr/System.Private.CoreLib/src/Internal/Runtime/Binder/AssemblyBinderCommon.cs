@@ -36,6 +36,9 @@ namespace Internal.Runtime.Binder
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ReleasePEImage(IntPtr pPEImage);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void PEImage_GetMVID(IntPtr pPEImage, out Guid mvid);
+
         public static bool IsCompatibleAssemblyVersion(AssemblyName requestedName, AssemblyName foundName)
         {
             AssemblyVersion pRequestedVersion = requestedName.Version;
@@ -730,6 +733,110 @@ namespace Internal.Runtime.Binder
             // Some other bind interfered
             return HResults.S_FALSE;
         }
+
+        // BindUsingHostAssemblyResolver
+
+        public static int BindUsingPEImage(AssemblyBinder binder, AssemblyName assemblyName, IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly)
+        {
+            int hr;
+
+            int kContextVersion = 0;
+            BindResult bindResult = default;
+
+            // Prepare binding data
+            assembly = null;
+            ApplicationContext applicationContext = binder.AppContext;
+
+            // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+            // BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pBinder, 0 /*managedALC*/, hr};
+
+        Retry:
+            bool mvidMismatch = false;
+
+            // Lock the application context
+            lock (applicationContext.ContextCriticalSection)
+            {
+                // Attempt uncached bind and register stream if possible
+                // We skip version compatibility check - so assemblies with same simple name will be reported
+                // as a successful bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
+                hr = BindByName(applicationContext, assemblyName, true, true, excludeAppPaths, ref bindResult);
+
+                if (hr == HResults.E_FILENOTFOUND)
+                {
+                    // IF_FAIL_GO(CreateImageAssembly(pPEImage, &bindResult));
+                    try
+                    {
+                        bindResult.SetResult(new Assembly(pPEImage, false));
+                    }
+                    catch (Exception ex)
+                    {
+                        return ex.HResult;
+                    }
+                }
+                else if (hr == HResults.S_OK)
+                {
+                    if (bindResult.Assembly != null)
+                    {
+                        // Attempt was made to load an assembly that has the same name as a previously loaded one. Since same name
+                        // does not imply the same assembly, we will need to check the MVID to confirm it is the same assembly as being
+                        // requested.
+
+                        Guid incomingMVID;
+                        Guid boundMVID;
+
+                        try
+                        {
+                            PEImage_GetMVID(pPEImage, out incomingMVID);
+                            PEImage_GetMVID(bindResult.Assembly.PEImage, out boundMVID);
+                        }
+                        catch (Exception ex)
+                        {
+                            return ex.HResult;
+                        }
+
+                        mvidMismatch = incomingMVID != boundMVID;
+                        if (mvidMismatch)
+                        {
+                            // MVIDs do not match, so fail the load.
+                            return HResults.COR_E_FILELOAD;
+                        }
+
+                        // MVIDs match - request came in for the same assembly that was previously loaded.
+                        // Let it through...
+                    }
+                }
+
+                // Remember the post-bind version of the context
+                kContextVersion = applicationContext.Version;
+            }
+
+            if (bindResult.Assembly != null)
+            {
+                // This has to happen outside the binder lock as it can cause new binds
+                hr = RegisterAndGetHostChosen(applicationContext, kContextVersion, bindResult, out BindResult hostBindResult);
+                if (hr < 0) return hr;
+
+                if (hr == HResults.S_FALSE)
+                {
+                    // tracer.TraceBindResult(bindResult);
+
+                    // Another bind interfered. We need to retry entire bind.
+                    // This by design loops as long as needed because by construction we eventually
+                    // will succeed or fail the bind.
+                    bindResult = default;
+                    goto Retry;
+                }
+                else if (hr == HResults.S_OK)
+                {
+                    assembly = hostBindResult.Assembly;
+                }
+            }
+
+            // tracer.TraceBindResult(bindResult, mvidMismatch);
+            return hr;
+        }
+
+        // CreateDefaultBinder
 
         public static bool IsValidArchitecture(PEKind architecture)
         {
