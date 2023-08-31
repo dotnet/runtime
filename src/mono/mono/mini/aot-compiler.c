@@ -9580,7 +9580,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		mono_atomic_inc_i32 (&acfg->stats.genericcount);
 		return;
 	}
-	
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 		/* Some instances cannot be JITted due to constraints etc. */
 		if (!method->is_inflated)
