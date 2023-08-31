@@ -3844,10 +3844,12 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			else if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR) {
 				encode_method_ref (acfg, info->d.unsafe_accessor.method, p, &p);
 				encode_value (info->d.unsafe_accessor.kind, p, &p);
-				/* WISH: is there some kind of string heap token we could use here? */
-				uint32_t len = (uint32_t) strlen (info->d.unsafe_accessor.member_name);
-				encode_value (len, p, &p);
-				encode_string (info->d.unsafe_accessor.member_name, p, &p);
+				if (info->d.unsafe_accessor.member_name) {
+					/* WISH: is there some kind of string heap token we could use here? */
+					uint32_t len = (uint32_t) strlen (info->d.unsafe_accessor.member_name);
+					encode_value (len, p, &p);
+					encode_string (info->d.unsafe_accessor.member_name, p, &p);
+				}
 			}
 			else if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN)
 				encode_signature (acfg, info->d.interp_in.sig, p, &p);

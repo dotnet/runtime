@@ -770,6 +770,9 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_fmovd(p, dd, dn) arm_format_fmov ((p), 0x1, (dn), (dd))
 #define arm_fmovs(p, dd, dn) arm_format_fmov ((p), 0x0, (dn), (dd))
 
+/* C7.2.132 FMOV (scalar, imm) */
+#define arm_fmov_imm(p, type, imm, rd) arm_emit ((p), 0b00011110001000000001000000000000 | ((type) << 22) | ((imm) << 13) | ((rd) << 0))
+
 /* C6.3.54 FCMP */
 #define arm_format_fcmp(p, type, opc, rn, rm) arm_emit ((p), (0x1e << 24) | ((type) << 22) | (0x1 << 21) | ((rm) << 16) | (0x8 << 10) | ((rn) << 5) | ((opc) << 3))
 

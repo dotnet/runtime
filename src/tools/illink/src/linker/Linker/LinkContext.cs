@@ -50,6 +50,7 @@ namespace Mono.Linker
 		public virtual MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
 		public virtual Tracer CreateTracer (LinkContext context) => new Tracer (context);
 		public virtual EmbeddedXmlInfo CreateEmbeddedXmlInfo () => new ();
+		public virtual AssemblyResolver CreateResolver (LinkContext context) => new AssemblyResolver (context, new ReaderParameters ());
 	}
 
 	public static class TargetRuntimeVersion
@@ -107,7 +108,7 @@ namespace Mono.Linker
 
 		public bool LinkSymbols { get; set; }
 
-		public readonly bool KeepMembersForDebugger = true;
+		public bool KeepMembersForDebugger { get; set; } = true;
 
 		public bool IgnoreUnresolved { get; set; }
 
@@ -194,11 +195,16 @@ namespace Mono.Linker
 		public SerializationMarker SerializationMarker { get; }
 
 		public LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory)
+			: this(pipeline, logger, outputDirectory, new UnintializedContextFactory ())
+		{
+		}
+
+		protected LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
 		{
 			_pipeline = pipeline;
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
-			_resolver = new AssemblyResolver (this);
+			_resolver = factory.CreateResolver (this);
 			_typeNameResolver = new TypeNameResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
@@ -211,7 +217,6 @@ namespace Mono.Linker
 
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
 
-			var factory = new UnintializedContextFactory ();
 			_annotations = factory.CreateAnnotationStore (this);
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			SerializationMarker = new SerializationMarker (this);

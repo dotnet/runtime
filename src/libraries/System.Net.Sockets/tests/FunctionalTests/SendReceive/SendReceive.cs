@@ -67,7 +67,7 @@ namespace System.Net.Sockets.Tests
                             var recvBuffer = new byte[256];
                             while (true)
                             {
-                                int received = await ReceiveAsync(remote, new ArraySegment<byte>(recvBuffer));
+                                int received = await ReceiveAsync(remote, new ArraySegment<byte>(recvBuffer)).WaitAsync(TestSettings.PassingTestTimeout);
                                 if (received == 0)
                                 {
                                     break;
@@ -86,7 +86,7 @@ namespace System.Net.Sockets.Tests
                                 new ArraySegment<byte>(new byte[64], 9, 33)};
                             while (true)
                             {
-                                int received = await ReceiveAsync(remote, recvBuffers);
+                                int received = await ReceiveAsync(remote, recvBuffers).WaitAsync(TestSettings.PassingTestTimeout);
                                 if (received == 0)
                                 {
                                     break;
@@ -109,7 +109,9 @@ namespace System.Net.Sockets.Tests
                 EndPoint clientEndpoint = server.LocalEndPoint;
                 using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    await ConnectAsync(client, clientEndpoint).WaitAsync(TestSettings.PassingTestTimeout);
+                    await ConnectAsync(client, clientEndpoint)
+                        .WaitAsync(TestSettings.PassingTestTimeout)
+                        .ConfigureAwait(false);
 
                     var random = new Random();
                     if (!useMultipleBuffers)
@@ -118,7 +120,9 @@ namespace System.Net.Sockets.Tests
                         for (int sent = 0, remaining = BytesToSend; remaining > 0; remaining -= sent)
                         {
                             random.NextBytes(sendBuffer);
-                            sent = await SendAsync(client, new ArraySegment<byte>(sendBuffer, 0, Math.Min(sendBuffer.Length, remaining)));
+                            sent = await SendAsync(client, new ArraySegment<byte>(sendBuffer, 0, Math.Min(sendBuffer.Length, remaining)))
+                                .WaitAsync(TestSettings.PassingTestTimeout)
+                                .ConfigureAwait(false);
                             bytesSent += sent;
                             sentChecksum.Add(sendBuffer, 0, sent);
                         }
@@ -137,7 +141,9 @@ namespace System.Net.Sockets.Tests
                                 random.NextBytes(sendBuffers[i].Array);
                             }
 
-                            sent = await SendAsync(client, sendBuffers);
+                            sent = await SendAsync(client, sendBuffers)
+                                .WaitAsync(TestSettings.PassingTestTimeout)
+                                .ConfigureAwait(false);
 
                             bytesSent += sent;
                             for (int i = 0, remaining = sent; i < sendBuffers.Count && remaining > 0; i++)
@@ -152,7 +158,7 @@ namespace System.Net.Sockets.Tests
 
                     client.LingerState = new LingerOption(true, LingerTime);
                     client.Shutdown(SocketShutdown.Send);
-                    await serverProcessingTask.WaitAsync(TestSettings.PassingTestTimeout);
+                    await serverProcessingTask.WaitAsync(TestSettings.PassingTestTimeout).ConfigureAwait(false);
                 }
 
                 Assert.Equal(bytesSent, bytesReceived);

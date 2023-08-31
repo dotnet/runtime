@@ -4655,20 +4655,12 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     if (fgGlobalMorph && lclNode->OperIs(GT_LCL_VAR) && varDsc->lvNormalizeOnLoad() &&
         /* TODO-ASG: delete this zero-diff quirk */ lclNode->CanCSE())
     {
-        // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
-        // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
-        // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
-        // here with local assertions, and "expanded", i. e. CAST(small type <- LCL_VAR(int V00)).
-        // This is a pretty fundamental problem with how normalize-on-load locals appear to the optimizer.
-        // This quirk preserves the previous behavior.
-        // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
-        var_types lclVarType  = varDsc->TypeGet();
-        bool      isBoolQuirk = lclVarType == TYP_BOOL;
+        var_types lclVarType = varDsc->TypeGet();
 
         // Assertion prop can tell us to omit adding a cast here. This is useful when the local is a small-typed
         // parameter that is passed in a register: in that case, the ABI specifies that the upper bits might be
         // invalid, but the assertion guarantees us that we have normalized when we wrote it.
-        if (optLocalAssertionProp && !isBoolQuirk &&
+        if (optLocalAssertionProp &&
             optAssertionIsSubrange(lclNode, IntegralRange::ForType(lclVarType), apFull) != NO_ASSERTION_INDEX)
         {
             // The previous assertion can guarantee us that if this node gets
@@ -10764,6 +10756,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 #else
             if (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot)
 #endif
+            {
+                break;
+            }
+
+            // Must be working with the same types of vectors.
+            if (hwop1->TypeGet() != node->TypeGet())
             {
                 break;
             }

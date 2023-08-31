@@ -71,6 +71,7 @@ LOCAL_LABEL(LNoFloatingPoint):
         // Note that remoting expect target in r4.
         ldr     r4, [r5,#CallDescrData__pTarget]
         blx     r4
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
 
         ldr     r3, [r5,#CallDescrData__fpReturnSize]
 
@@ -125,6 +126,9 @@ LOCAL_LABEL(LReturnDone):
 
         EPILOG_STACK_RESTORE_OFFSET   r7, #8
         EPILOG_POP              "{r4,r5,r7,pc}"
+
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+    .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
 
         NESTED_END CallDescrWorkerInternal,_TEXT
 

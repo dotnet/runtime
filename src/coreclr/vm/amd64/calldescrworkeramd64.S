@@ -95,7 +95,7 @@ LOCAL_LABEL(NoStackArguments):
         movsd   xmm7, [rax + 112]
 LOCAL_LABEL(NoFloatArguments):
         call    qword ptr [rbx + CallDescrData__pTarget]     // call target function
-
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
         // Save FP return value
 
         mov     ecx, dword ptr [rbx + CallDescrData__fpReturnSize]
@@ -159,6 +159,7 @@ LOCAL_LABEL(ReturnsDouble):
         movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
         jmp     LOCAL_LABEL(Epilog)
 
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+    .quad LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
+
 NESTED_END CallDescrWorkerInternal, _TEXT
-
-

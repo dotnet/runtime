@@ -45,6 +45,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private static class Identifier
             {
                 public const string binderOptions = nameof(binderOptions);
+                public const string config = nameof(config);
+                public const string configureBinder = nameof(configureBinder);
                 public const string configureOptions = nameof(configureOptions);
                 public const string configuration = nameof(configuration);
                 public const string configSectionPath = nameof(configSectionPath);
@@ -55,7 +57,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string getPath = nameof(getPath);
                 public const string key = nameof(key);
                 public const string name = nameof(name);
-                public const string obj = nameof(obj);
+                public const string instance = nameof(instance);
                 public const string optionsBuilder = nameof(optionsBuilder);
                 public const string originalCount = nameof(originalCount);
                 public const string section = nameof(section);
@@ -211,12 +213,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _emitBlankLineBeforeNextStatement = true;
             }
 
-            private void EmitCheckForNullArgument_WithBlankLine(string paramName)
+            private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool voidReturn = false)
             {
+                string returnExpr = voidReturn
+                    ? "return"
+                    : $"throw new ArgumentNullException(nameof({paramName}))";
+
                 _writer.WriteLine($$"""
                     if ({{paramName}} is null)
                     {
-                        throw new ArgumentNullException(nameof({{paramName}}));
+                        {{returnExpr}};
                     }
                     """);
 
