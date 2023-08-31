@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	public class AssemblyChecker
 	{
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
-		readonly LinkedTestCaseResult linkedTestCase;
+		readonly TrimmedTestCaseResult linkedTestCase;
 
 		HashSet<string> linkedMembers;
 		readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 		bool checkNames;
 
-		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
+		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
 		{
 			this.originalAssembly = original;
 			this.linkedAssembly = linked;

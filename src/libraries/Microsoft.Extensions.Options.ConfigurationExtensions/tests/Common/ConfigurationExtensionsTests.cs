@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
 {
-    public class ConfigurationExtensionsTests
+    public partial class ConfigurationExtensionsTests
     {
         private static IConfiguration s_emptyConfig { get; } = new ConfigurationBuilder().Build();
 

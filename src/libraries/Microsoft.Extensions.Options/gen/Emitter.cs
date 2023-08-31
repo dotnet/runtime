@@ -239,7 +239,7 @@ namespace Microsoft.Extensions.Options.Generators
                 OutLn($"validationAttributes.Add({_staticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName});");
             }
 
-            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{vm.Name}, context, validationResults, validationAttributes))");
+            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{vm.Name}!, context, validationResults, validationAttributes))");
             OutOpenBrace();
             OutLn($"builder.AddResults(validationResults);");
             OutCloseBrace();
