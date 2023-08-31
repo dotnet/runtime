@@ -28,6 +28,14 @@ namespace System
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
         {
+            System.Diagnostics.Debug.Write("TimeZoneInfo.GetUtcStandardDisplayName is called.\n");
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+            {
+                // For this target, be consistent with other time zone display names that use an abbreviation.
+                return "UTC";
+            }
+#endif
             // Don't bother looking up the name for invariant or English cultures
             CultureInfo uiCulture = CultureInfo.CurrentUICulture;
             if (GlobalizationMode.Invariant || uiCulture.Name.Length == 0 || uiCulture.TwoLetterISOLanguageName == "en")
@@ -48,6 +56,13 @@ namespace System
         // Helper function to get the full display name for the UTC static time zone instance
         private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+            {
+                // For this target, be consistent with other time zone display names that use the ID.
+                return $"(UTC) {timeZoneId}";
+            }
+#endif
             return $"(UTC) {standardDisplayName}";
         }
 #pragma warning restore IDE0060
@@ -89,19 +104,24 @@ namespace System
                 return;
             }
 
-            string? timeZoneDisplayName;
-            bool result = Interop.CallStringMethod(
-                (buffer, locale, id, type) =>
+        string? timeZoneDisplayName;
+        bool result = Interop.CallStringMethod(
+            (buffer, locale, id, type) =>
+            {
+                fixed (char* bufferPtr = buffer)
                 {
-                    fixed (char* bufferPtr = buffer)
-                    {
-                        return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
-                    }
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
+                        return Interop.Globalization.GetTimeZoneDisplayNameNative(locale, locale.Length, id, id.Length, type, bufferPtr, buffer.Length);
+#endif
+                    return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
+                }
                 },
                 uiCulture,
                 timeZoneId,
                 nameType,
                 out timeZoneDisplayName);
+System.Diagnostics.Debug.Write("After First call TimeZoneInfo.GetDisplayName: timeZoneDisplayName = " + timeZoneDisplayName + "\n");
 
             if (!result && uiCulture != FallbackCultureName)
             {
@@ -111,6 +131,10 @@ namespace System
                     {
                         fixed (char* bufferPtr = buffer)
                         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                            if (GlobalizationMode.Hybrid)
+                                return Interop.Globalization.GetTimeZoneDisplayNameNative(locale, locale.Length, id, id.Length, type, bufferPtr, buffer.Length);
+#endif
                             return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
                         }
                     },
@@ -119,7 +143,6 @@ namespace System
                     nameType,
                     out timeZoneDisplayName);
             }
-
             // If there is an unknown error, don't set the displayName field.
             // It will be set to the abbreviation that was read out of the tzfile.
             if (result && !string.IsNullOrEmpty(timeZoneDisplayName))
@@ -239,7 +262,7 @@ namespace System
 
         // Helper function that gets an exmplar city name either from ICU or from the IANA time zone ID itself
         private static string GetExemplarCityName(string timeZoneId, string uiCultureName)
-        {
+        {//
             // First try to get the name through the localization data.
             string? exemplarCityName = null;
             GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.ExemplarCity, uiCultureName, ref exemplarCityName);
@@ -256,8 +279,17 @@ namespace System
         // Helper function that returns an alternative ID using ICU data. Used primarily for converting from Windows IDs.
         private static unsafe string? GetAlternativeId(string id, out bool idIsIana)
         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            //if (!GlobalizationMode.Hybrid)
+            //{
+                // No alternative IDs in this target.
+                idIsIana = false;
+                return null;
+            //}
+#else
             idIsIana = false;
             return TryConvertWindowsIdToIanaId(id, null, out string? ianaId) ? ianaId : null;
+#endif
         }
     }
 }
