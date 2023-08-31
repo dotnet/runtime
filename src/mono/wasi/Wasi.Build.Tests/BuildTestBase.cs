@@ -296,6 +296,8 @@ namespace Wasm.Build.Tests
                   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
                       <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
                   </Target>
+
+                  <Import Project="WasmOverridePacks.targets" />
                 </Project>
                 """);
 

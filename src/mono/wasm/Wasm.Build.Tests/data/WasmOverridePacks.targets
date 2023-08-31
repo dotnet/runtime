@@ -1,7 +1,6 @@
 <Project>
   <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->
   <Target Name="RemoveRuntimePackFromDownloadItem"
-          Condition="'$(WBTOverrideRuntimePack)' == 'true' and '$(WasmNativeWorkload)' == 'true'"
           AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <PackageDownload Remove="@(PackageDownload)"
@@ -13,29 +12,21 @@
 
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
-          Condition="'$(WBTOverrideRuntimePack)' == 'true' and '$(WasmNativeWorkload)' == 'true'"
           AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
       <ResolvedRuntimePack
-                            Update="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
-                            FrameworkName="Microsoft.NETCore.App"
-                            NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
-                            NuGetPackageVersion="$(_RuntimePackInWorkloadVersionCurrent)"
-                            PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)\$(_RuntimePackInWorkloadVersionCurrent)"
-                            RuntimeIdentifier="$(RuntimeIdentifier)" />
-      <ResolvedRuntimePack Condition="$(RuntimeIdentifier) == 'browser-wasm'"
-                            Update="Microsoft.NETCore.App.Runtime.Mono.multithread.$(RuntimeIdentifier)"
-                            FrameworkName="Microsoft.NETCore.App"
-                            NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.multithread.$(RuntimeIdentifier)"
-                            NuGetPackageVersion="$(_RuntimePackInWorkloadVersionCurrent)"
-                            PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.multithread.$(RuntimeIdentifier)\$(_RuntimePackInWorkloadVersionCurrent)"
-                            RuntimeIdentifier="$(RuntimeIdentifier)" />
+          FrameworkName="Microsoft.NETCore.App"
+          NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
+          NuGetPackageVersion="$(_RuntimePackInWorkloadVersionCurrent)"
+          PackageDirectory="$(NetCoreTargetingPackRoot)\%(Identity)\$(_RuntimePackInWorkloadVersionCurrent)"
+          RuntimeIdentifier="$(RuntimeIdentifier)" />
 
-       <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
-                                   RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
-                                   RuntimePackVersion="$(_RuntimePackInWorkloadVersionCurrent)"
-                                   RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)\$(_RuntimePackInWorkloadVersionCurrent)"
-                                   RuntimeIdentifier="$(RuntimeIdentifier)" />
+      <ResolvedFrameworkReference
+          Condition="'%(Identity)' == 'Microsoft.NETCore.App'"
+          RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
+          RuntimePackVersion="$(_RuntimePackInWorkloadVersionCurrent)"
+          RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)\$(_RuntimePackInWorkloadVersionCurrent)"
+          RuntimeIdentifier="$(RuntimeIdentifier)" />
     </ItemGroup>
   </Target>
 
@@ -50,7 +41,6 @@
 
   <!-- Filter out conflicting implicit assembly references. -->
   <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(WBTOverrideRuntimePack)' == 'true' and '$(WasmNativeWorkload)' == 'true'"
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
