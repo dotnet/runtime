@@ -49,6 +49,7 @@ public abstract class BenchTask
         public virtual int InitialSamples => 10;
         public virtual int NumberOfRuns => 5;
         public virtual int RunLength => 5000;
+        public virtual Task<bool> IsEnabled() => Task.FromResult(true);
 
         public virtual Task BeforeBatch() { return Task.CompletedTask; }
 

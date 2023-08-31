@@ -14,6 +14,7 @@ System.Collections.Generic.IAsyncEnumerator</PackageDescription>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'netstandard2.1'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
@@ -45,8 +46,9 @@ System.Collections.Generic.IAsyncEnumerator</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs">
       <Link>System.Private.CoreLib\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs</Link>
     </Compile>
-  
+
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>

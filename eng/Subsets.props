@@ -558,11 +558,13 @@
       <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'libs'">%(AdditionalProperties);Configuration=$(LibrariesConfiguration)</AdditionalProperties>
       <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'host'">%(AdditionalProperties);Configuration=$(HostConfiguration)</AdditionalProperties>
       <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'tasks'">%(AdditionalProperties);Configuration=$(TasksConfiguration)</AdditionalProperties>
+      <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'tools'">%(AdditionalProperties);Configuration=$(ToolsConfiguration)</AdditionalProperties>
 
       <!-- Propagate configurations for cross-subset builds -->
       <AdditionalProperties>%(AdditionalProperties);LibrariesConfiguration=$(LibrariesConfiguration)</AdditionalProperties>
       <AdditionalProperties>%(AdditionalProperties);HostConfiguration=$(HostConfiguration)</AdditionalProperties>
       <AdditionalProperties>%(AdditionalProperties);TasksConfiguration=$(TasksConfiguration)</AdditionalProperties>
+      <AdditionalProperties>%(AdditionalProperties);ToolsConfiguration=$(ToolsConfiguration)</AdditionalProperties>
     </ProjectToBuild>
   </ItemGroup>
 

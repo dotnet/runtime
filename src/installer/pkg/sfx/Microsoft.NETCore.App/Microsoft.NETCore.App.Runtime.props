@@ -114,7 +114,7 @@
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
-      <CoreCLROptimizationFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc" 
+      <CoreCLROptimizationFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
                                 Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
         <TargetPath>tools</TargetPath>
       </CoreCLROptimizationFiles>
