@@ -261,7 +261,8 @@ namespace System.Net.Http.Functional.Tests
                 }));
 
             using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
-            using (HttpResponseMessage response = await client.SendAsync(req))
+            // we need to switch off Response buffering of default ResponseContentRead option
+            using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 // Streaming requests can't set Content-Length
@@ -270,6 +271,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(typeof(StreamContent), response.Content.GetType());
 
                 var stream = await response.Content.ReadAsStreamAsync();
+                Assert.Equal("ReadOnlyStream", stream.GetType().Name);
                 var buffer = new byte[1024 * 1024];
                 int totalCount = 0;
                 int fetchedCount = 0;
