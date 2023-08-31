@@ -96,12 +96,17 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         }
     }
 
+#if defined(FEATURE_HW_INTRINSICS)
+    if(comp->IsBaselineVector512IsaSupportedOpportunistically() && node->Data()->OperIs(GT_CNS_VEC) && node->Data()->AsVecCon()->TypeIs(TYP_SIMD64))
+    {
+        TryCompressConstVecData(node);
+    }
+#endif
     // Optimization: do not unnecessarily zero-extend the result of setcc.
     if (varTypeIsByte(node) && (node->Data()->OperIsCompare() || node->Data()->OperIs(GT_SETCC)))
     {
         node->Data()->ChangeType(TYP_BYTE);
     }
-
     ContainCheckStoreIndir(node);
 }
 
@@ -7663,6 +7668,20 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         {
             switch (parentIntrinsicId)
             {
+                case NI_AVX512F_BroadcastVector128ToVector512:
+                {
+                    if(parentNode->OperIsMemoryLoad())
+                    {
+                        supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
+                        break;
+                    }
+                    else
+                    {
+                        supportsGeneralLoads = true;
+                        break;
+                    }
+                }
+
                 case NI_SSE41_ConvertToVector128Int16:
                 case NI_SSE41_ConvertToVector128Int32:
                 case NI_SSE41_ConvertToVector128Int64:
@@ -8513,6 +8532,43 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 }
 
 //----------------------------------------------------------------------------------------------
+// TryCompressConstVecData:
+//  Try to compress the constant vector input if it has duplicated parts and can be optimized by
+//  broadcast
+//
+//  Arguments:
+//     node - the storeind node.
+//
+//  Return:
+//     return true if compress success.
+bool Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
+{
+    assert(node->Data()->OperIs(GT_CNS_VEC));
+    GenTreeVecCon* vecCon = node->Data()->AsVecCon();
+    // Try use broadcasti128
+    if(vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[1] &&
+       vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[2] &&
+       vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[3])
+    {
+        simd16_t simd16Val = {};
+        simd16Val.f64[0] = vecCon->gtSimd64Val.f64[0];
+        simd16Val.f64[1] = vecCon->gtSimd64Val.f64[1];
+        GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD16);
+        memcpy(&compressedVecCon->gtSimdVal, &simd16Val, sizeof(simd16_t));
+        // GenTreeIndir* compressedVecConIndir = comp->gtNewIndir(TYP_I_IMPL, compressedVecCon, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        BlockRange().InsertBefore(node->Data(), compressedVecCon);
+        // BlockRange().InsertBefore(node->Data(), compressedVecConIndir);
+        BlockRange().Remove(vecCon);
+        GenTreeHWIntrinsic* broadcast128 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector128ToVector512, CORINFO_TYPE_UINT, 64);
+        BlockRange().InsertBefore(node, broadcast128);
+        node->Data() = broadcast128;
+        LowerNode(broadcast128);
+        return true;
+    }
+    return false;
+}
+
+//----------------------------------------------------------------------------------------------
 // ContainCheckHWIntrinsicAddr: Perform containment analysis for an address operand of a hardware
 //                              intrinsic node.
 //
@@ -8708,6 +8764,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
+                    case NI_AVX512F_BroadcastVector128ToVector512:
+                    {
+                        if(node->OperIsMemoryLoad())
+                        {
+                            ContainCheckHWIntrinsicAddr(node, op1);
+                            return;
+                        }
+
+                        assert(op1->OperIs(GT_CNS_VEC));
+                        break;
+                    }
+
                     case NI_AVX512F_ConvertToVector256Int32:
                     case NI_AVX512F_ConvertToVector256UInt32:
                     case NI_AVX512F_VL_ConvertToVector128UInt32:
@@ -8768,7 +8836,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 assert(!node->OperIsMemoryLoad());
                 bool supportsRegOptional = false;
-
                 if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                 {
                     MakeSrcContained(node, op1);
