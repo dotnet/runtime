@@ -22,7 +22,12 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class ActivatorUtilities
     {
+#if NETCOREAPP
+        // This has less overhead than s_collectibleConstructorInfos so we use it for the common cases.
         private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
+#endif
+
+        private static Lazy<ConditionalWeakTable<Type, ConstructorInfoEx[]>> s_collectibleConstructorInfos = new();
 
 #if NET8_0_OR_GREATER
         // Maximum number of fixed arguments for ConstructorInvoker.Invoke(arg1, etc).
@@ -54,16 +59,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException(SR.CannotCreateAbstractClasses);
             }
 
+#if NETCOREAPP
             if (!s_constructorInfos.TryGetValue(instanceType, out ConstructorInfoEx[]? constructors))
+#else
+            if (!s_collectibleConstructorInfos.Value.TryGetValue(instanceType, out ConstructorInfoEx[]? constructors))
+#endif
             {
-                ConstructorInfo[] ctors = instanceType.GetConstructors();
-                ConstructorInfoEx[] temp = new ConstructorInfoEx[ctors.Length];
-                for (int i = 0; i < ctors.Length; i++)
-                {
-                    temp[i] = new ConstructorInfoEx(ctors[i]);
-                }
-
-                constructors = s_constructorInfos.GetOrAdd(instanceType, temp);
+                constructors = AddConstructors(instanceType);
             }
 
             ConstructorInfoEx? constructor;
@@ -158,6 +160,44 @@ namespace Microsoft.Extensions.DependencyInjection
             var constructorMatcher = new ConstructorMatcher(constructor);
             constructorMatcher.MapParameters(parameterMap, parameters);
             return constructorMatcher.CreateInstance(provider);
+        }
+
+        private static ConstructorInfoEx[] AddConstructors(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+        {
+            ConstructorInfo[] ctors = type.GetConstructors();
+            ConstructorInfoEx[]? value = new ConstructorInfoEx[ctors.Length];
+            for (int i = 0; i < ctors.Length; i++)
+            {
+                value[i] = new ConstructorInfoEx(ctors[i]);
+            }
+
+#if NETCOREAPP
+            // We are able to check type.Assembly.IsCollectible only under NETCOREAPP.
+            if (!type.Assembly.IsCollectible)
+            {
+                return s_constructorInfos.GetOrAdd(type, value);
+            }
+#endif
+
+#if NET7_0_OR_GREATER
+            if (s_collectibleConstructorInfos.Value.TryAdd(type, value))
+            {
+                return value;
+            }
+#else
+            try
+            {
+                s_collectibleConstructorInfos.Value.Add(type, value);
+                return value;
+            }
+            catch (ArgumentException) { }
+#endif
+
+            // Use the instance from another thread.
+            bool success = s_collectibleConstructorInfos.Value.TryGetValue(type, out value);
+            Debug.Assert(success);
+            return value!;
         }
 
         /// <summary>
@@ -1059,6 +1099,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 // Ignore the types in Type[]; just clear out the cache.
                 // This avoids searching for references to these types in constructor arguments.
                 s_constructorInfos.Clear();
+                if (s_collectibleConstructorInfos.IsValueCreated)
+                {
+                    s_collectibleConstructorInfos.Value.Clear();
+                }
             }
         }
 #endif
