@@ -125,7 +125,6 @@ export function http_wasm_fetch_stream(url: string, header_names: string[], head
 
     const body = new ReadableStream({
         type: "bytes",
-        autoAllocateChunkSize: 65536,
         pull,
         cancel
     });

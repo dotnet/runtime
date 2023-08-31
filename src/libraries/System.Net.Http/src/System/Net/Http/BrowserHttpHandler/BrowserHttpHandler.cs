@@ -343,7 +343,7 @@ namespace System.Net.Http
     {
         private readonly Stream _stream;
         private readonly CancellationToken _cancellationToken;
-        private byte[]? _buffer;
+        private readonly byte[] _buffer;
 
         public ReadableStreamPullState(Stream stream, CancellationToken cancellationToken)
         {
@@ -362,7 +362,7 @@ namespace System.Net.Http
                 int length = await _stream.ReadAsync(view, _cancellationToken).ConfigureAwait(true);
                 using (Buffers.MemoryHandle handle = view.Pin())
                 {
-                    ReadableStreamControllerEnqueueUnsafe(this, handle, view.Length);
+                    ReadableStreamControllerEnqueueUnsafe(this, handle, length);
                 }
             }
             catch (Exception ex)
