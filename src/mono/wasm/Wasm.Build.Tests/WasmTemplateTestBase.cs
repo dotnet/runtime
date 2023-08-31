@@ -3,7 +3,9 @@
 
 #nullable enable
 
+using System;
 using System.IO;
+using System.Text.Json.Nodes;
 using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
@@ -48,16 +50,36 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
 
-        // TODO: Can be removed after updated templates propagate in.
-        string extraItems = string.Empty;
-        if (template == "wasmbrowser")
-            extraItems += "<WasmExtraFilesToDeploy Include=\"main.js\" />";
-        else
-            extraItems += "<WasmExtraFilesToDeploy Include=\"main.mjs\" />";
+        if (template == "wasmconsole")
+        {
+            UpdateRuntimeconfigTemplateForNode(_projectDir);
+        }
 
-        AddItemsPropertiesToProject(projectfile, extraProperties, extraItems);
+        AddItemsPropertiesToProject(projectfile, extraProperties);
 
         return projectfile;
+    }
+
+    private static void UpdateRuntimeconfigTemplateForNode(string projectDir)
+    {
+        // TODO: Can be removed once Node >= 20
+
+        string runtimeconfigTemplatePath = Path.Combine(projectDir, "runtimeconfig.template.json");
+        string runtimeconfigTemplateContent = File.ReadAllText(runtimeconfigTemplatePath);
+        var runtimeconfigTemplate = JsonObject.Parse(runtimeconfigTemplateContent);
+        if (runtimeconfigTemplate == null)
+            throw new Exception($"Unable to parse runtimeconfigtemplate at '{runtimeconfigTemplatePath}'");
+
+        var perHostConfigs = runtimeconfigTemplate?["wasmHostProperties"]?["perHostConfig"]?.AsArray();
+        if (perHostConfigs == null || perHostConfigs.Count == 0 || perHostConfigs[0] == null)
+            throw new Exception($"Unable to find perHostConfig in runtimeconfigtemplate at '{runtimeconfigTemplatePath}'");
+
+        perHostConfigs[0]!["host-args"] = new JsonArray(
+            "--experimental-wasm-simd",
+            "--experimental-wasm-eh"
+        );
+
+        File.WriteAllText(runtimeconfigTemplatePath, runtimeconfigTemplate!.ToString());
     }
 
     public (string projectDir, string buildOutput) BuildTemplateProject(BuildArgs buildArgs,
