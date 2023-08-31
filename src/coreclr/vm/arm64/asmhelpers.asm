@@ -293,36 +293,36 @@ ThePreStubPatchLabel
         ldr      x1, [x12, g_card_bundle_table]
 #endif
 
-#ifdef WRITE_BARRIER_CHECK
-        adrp     x12, $g_GCShadow
-        ldr      x2, [x12, $g_GCShadow]
-
-        adrp     x12, $g_GCShadowEnd
-        ldr      x3, [x12, $g_GCShadowEnd]
-#endif
-
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         adrp     x12, g_sw_ww_table
-        ldr      x4, [x12, g_sw_ww_table]
+        ldr      x2, [x12, g_sw_ww_table]
 #endif
 
         adrp     x12, g_ephemeral_low
-        ldr      x5, [x12, g_ephemeral_low]
+        ldr      x3, [x12, g_ephemeral_low]
 
         adrp     x12, g_ephemeral_high
-        ldr      x6, [x12, g_ephemeral_high]
+        ldr      x4, [x12, g_ephemeral_high]
 
         ; Check skipEphemeralCheck
         cbz      x8, EphemeralCheckEnabled
-        movz     x5, #0
-        movn     x6, #0
+        movz     x3, #0
+        movn     x4, #0
 
 EphemeralCheckEnabled
         adrp     x12, g_lowest_address
-        ldr      x7, [x12, g_lowest_address]
+        ldr      x5, [x12, g_lowest_address]
 
         adrp     x12, g_highest_address
-        ldr      x10, [x12, g_highest_address]
+        ldr      x6, [x12, g_highest_address]
+
+#ifdef WRITE_BARRIER_CHECK
+        adrp     x12, g_GCShadow
+        ldr      x7, [x12]
+
+        adrp     x12, g_GCShadowEnd
+        ldr      x10, [x12]
+#endif
 
         ; Update wbs state
         adrp     x12, JIT_WriteBarrier_Table_Loc
@@ -331,8 +331,10 @@ EphemeralCheckEnabled
         stp      x0, x1, [x12], 16
         stp      x2, x3, [x12], 16
         stp      x4, x5, [x12], 16
-        stp      x6, x7, [x12], 16
-        str      x10, [x12], 8
+        str      x6, [x12], 8
+#ifdef WRITE_BARRIER_CHECK
+        stp     x7, x10, [x12], 16
+#endif
 
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
@@ -347,10 +349,6 @@ wbs_card_table
         DCQ 0
 wbs_card_bundle_table
         DCQ 0
-wbs_GCShadow
-        DCQ 0
-wbs_GCShadowEnd
-        DCQ 0
 wbs_sw_ww_table
         DCQ 0
 wbs_ephemeral_low
@@ -361,6 +359,12 @@ wbs_lowest_address
         DCQ 0
 wbs_highest_address
         DCQ 0
+#ifdef WRITE_BARRIER_CHECK
+wbs_GCShadow
+        DCQ 0
+wbs_GCShadowEnd
+        DCQ 0
+#endif
     WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 ; void JIT_ByRefWriteBarrier
