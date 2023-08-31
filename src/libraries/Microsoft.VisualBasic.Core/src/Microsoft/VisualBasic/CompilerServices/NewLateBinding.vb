@@ -269,21 +269,21 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
         Private Shared Function InternalLateIndexGet(
-                ByVal Instance As Object,
-                ByVal Arguments() As Object,
-                ByVal ArgumentNames() As String,
-                ByVal ReportErrors As Boolean,
-                ByRef Failure As ResolutionFailure,
-                ByVal CopyBack As Boolean()) As Object
+                ByVal instance As Object,
+                ByVal arguments() As Object,
+                ByVal argumentNames() As String,
+                ByVal reportErrors As Boolean,
+                ByRef failure As ResolutionFailure,
+                ByVal copyBack As Boolean()) As Object
 
-            Failure = ResolutionFailure.None
+            failure = ResolutionFailure.None
 
-            If Arguments Is Nothing Then Arguments = NoArguments
-            If ArgumentNames Is Nothing Then ArgumentNames = NoArgumentNames
+            If arguments Is Nothing Then arguments = NoArguments
+            If argumentNames Is Nothing Then argumentNames = NoArgumentNames
 
-            Dim baseReference As Container = New Container(Instance)
+            Dim baseReference As Container = New Container(instance)
             If baseReference.IsCOMObject And Not baseReference.IsWindowsRuntimeObject Then
-                Return LateBinding.LateIndexGet(Instance, Arguments, ArgumentNames)
+                Return LateBinding.LateIndexGet(instance, arguments, argumentNames)
             End If
 
             'An r-value expression o(a) has two possible forms:
@@ -293,10 +293,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If baseReference.IsArray Then
                 'This is an array lookup o(a).
 
-                If ArgumentNames.Length > 0 Then
-                    Failure = ResolutionFailure.InvalidArgument
+                If argumentNames.Length > 0 Then
+                    failure = ResolutionFailure.InvalidArgument
 
-                    If ReportErrors Then
+                    If reportErrors Then
                         Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                     End If
 
@@ -304,21 +304,21 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End If
 
                 ' Initialize the copy back array to all ByVal
-                ResetCopyback(CopyBack)
-                Return baseReference.GetArrayValue(Arguments)
+                ResetCopyback(copyBack)
+                Return baseReference.GetArrayValue(arguments)
             End If
 
             'This is a default member access o.d(a), which is a call to method "".
             Return CallMethod(
                        baseReference,
                        "",
-                       Arguments,
-                       ArgumentNames,
+                       arguments,
+                       argumentNames,
                        NoTypeArguments,
-                       CopyBack,
+                       copyBack,
                        BindingFlagsInvokeMethod Or BindingFlagsGetProperty,
-                       ReportErrors,
-                       Failure)
+                       reportErrors,
+                       failure)
         End Function
 
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -628,16 +628,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
         Friend Shared Sub ObjectLateIndexSetComplex(
-                ByVal Instance As Object,
-                ByVal Arguments As Object(),
-                ByVal ArgumentNames As String(),
-                ByVal OptimisticSet As Boolean,
-                ByVal RValueBase As Boolean)
+                ByVal instance As Object,
+                ByVal arguments As Object(),
+                ByVal argumentNames As String(),
+                ByVal optimisticSet As Boolean,
+                ByVal rValueBase As Boolean)
 
-            If Arguments Is Nothing Then Arguments = NoArguments
-            If ArgumentNames Is Nothing Then ArgumentNames = NoArgumentNames
+            If arguments Is Nothing Then arguments = NoArguments
+            If argumentNames Is Nothing Then argumentNames = NoArgumentNames
 
-            Dim baseReference As Container = New Container(Instance)
+            Dim baseReference As Container = New Container(instance)
 
             'An l-value expression o(a) has two possible forms:
             '    1: o(a) = v    array lookup--where o is an array object and a is a set of indices
@@ -646,26 +646,26 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If baseReference.IsArray Then
                 'This is an array lookup and assignment o(a) = v.
 
-                If ArgumentNames.Length > 0 Then
+                If argumentNames.Length > 0 Then
                     Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                 End If
 
-                baseReference.SetArrayValue(Arguments)
+                baseReference.SetArrayValue(arguments)
                 Return
             End If
 
-            If ArgumentNames.Length > Arguments.Length Then
+            If argumentNames.Length > arguments.Length Then
                 Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
-            If Arguments.Length < 1 Then
+            If arguments.Length < 1 Then
                 'We're binding to a Set, we must have at least the Value argument.
                 Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             Dim methodName As String = ""
             If baseReference.IsCOMObject And Not baseReference.IsWindowsRuntimeObject Then
-                LateBinding.LateIndexSetComplex(Instance, Arguments, ArgumentNames, OptimisticSet, RValueBase)
+                LateBinding.LateIndexSetComplex(instance, arguments, argumentNames, optimisticSet, rValueBase)
                 Return
             End If
 
@@ -679,8 +679,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     baseReference,
                     methodName,
                     members,
-                    Arguments,
-                    ArgumentNames,
+                    arguments,
+                    argumentNames,
                     NoTypeArguments,
                     invocationFlags,
                     False,
@@ -688,7 +688,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             If failure = OverloadResolution.ResolutionFailure.None Then
 
-                If RValueBase AndAlso baseReference.IsValueType Then
+                If rValueBase AndAlso baseReference.IsValueType Then
                     Throw New Exception(
                             SR.Format(
                                 SR.RValueBaseForValueType,
@@ -696,10 +696,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
                                 baseReference.VBFriendlyName))
                 End If
 
-                baseReference.InvokeMethod(targetProcedure, Arguments, Nothing, invocationFlags)
+                baseReference.InvokeMethod(targetProcedure, arguments, Nothing, invocationFlags)
                 Return
 
-            ElseIf OptimisticSet Then
+            ElseIf optimisticSet Then
                 Return
 
             Else
@@ -708,8 +708,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     baseReference,
                     methodName,
                     members,
-                    Arguments,
-                    ArgumentNames,
+                    arguments,
+                    argumentNames,
                     NoTypeArguments,
                     invocationFlags,
                     True,
@@ -945,8 +945,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If baseReference.IsCOMObject And Not baseReference.IsWindowsRuntimeObject Then
                 Try
                     LateBinding.InternalLateSet(Instance, Type, MemberName, Arguments, ArgumentNames, OptimisticSet, CallType)
-                    If (RValueBase And Type.IsValueType) Then
-                        Throw New Exception(Utils.GetResourceString(SR.RValueBaseForValueType, Utils.VBFriendlyName(Type, Instance), Utils.VBFriendlyName(Type, Instance)))
+                    If RValueBase And Type.IsValueType Then
+                        Throw New Exception(Utils.GetResourceString(SR.RValueBaseForValueType, baseReference.VBFriendlyName, baseReference.VBFriendlyName))
                     End If
                     Return
                 Catch ex As MissingMemberException When OptimisticSet
