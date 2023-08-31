@@ -80,8 +80,7 @@ public class EmitterTests
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
-                builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
-                builder.AddResults(validationResults);
+                (builder ??= new()).AddResults(validationResults);
             }
 
             context.MemberName = "Val2";
@@ -91,8 +90,7 @@ public class EmitterTests
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2, context, validationResults, validationAttributes))
             {
-                builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
-                builder.AddResults(validationResults);
+                (builder ??= new()).AddResults(validationResults);
             }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();

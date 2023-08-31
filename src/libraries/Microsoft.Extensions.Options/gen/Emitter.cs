@@ -190,8 +190,7 @@ namespace Microsoft.Extensions.Options.Generators
         {
             if (modelToValidate.SelfValidates)
             {
-                OutLn($"builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
-                OutLn($"builder.AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
+                OutLn($"(builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
                 OutLn();
             }
         }
@@ -270,8 +269,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{vm.Name}{_TryGetValueNullableAnnotation}, context, validationResults, validationAttributes))");
             OutOpenBrace();
-            OutLn($"builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
-            OutLn($"builder.AddResults(validationResults);");
+            OutLn($"(builder ??= new()).AddResults(validationResults);");
             OutCloseBrace();
         }
 
@@ -357,14 +355,12 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 OutLn($"if (options.{vm.Name} is not null)");
                 OutOpenBrace();
-                OutLn($"builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
-                OutLn($"builder.AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
                 OutCloseBrace();
             }
             else
             {
-                OutLn($"builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
-                OutLn($"builder.AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
             }
         }
 
@@ -400,8 +396,7 @@ namespace Microsoft.Extensions.Options.Generators
                 OutLn($"if (o is not null)");
                 OutOpenBrace();
                 var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}]\" : $\"{{name}}.{vm.Name}[{{count}}]\"";
-                OutLn($"builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
-                OutLn($"builder.AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
                 OutCloseBrace();
 
                 if (!vm.EnumeratedMayBeNull)
@@ -409,8 +404,7 @@ namespace Microsoft.Extensions.Options.Generators
                     OutLn($"else");
                     OutOpenBrace();
                     var error = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}] is null\" : $\"{{name}}.{vm.Name}[{{count}}] is null\"";
-                    OutLn($"builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
-                    OutLn($"builder.AddError({error});");
+                    OutLn($"(builder ??= new()).AddError({error});");
                     OutCloseBrace();
                 }
 
@@ -419,8 +413,7 @@ namespace Microsoft.Extensions.Options.Generators
             else
             {
                 var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count++}}] is null\" : $\"{{name}}.{vm.Name}[{{count++}}] is null\"";
-                OutLn($"builder ??= new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
-                OutLn($"builder.AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
             }
 
             OutCloseBrace();
