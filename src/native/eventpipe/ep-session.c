@@ -164,6 +164,7 @@ ep_session_alloc (
 	instance->session_type = session_type;
 	instance->format = format;
 	instance->rundown_requested = rundown_requested;
+	instance->rundown_thread_id = 0;
 	instance->synchronous_callback = sync_callback;
 	instance->callback_additional_data = callback_additional_data;
 
