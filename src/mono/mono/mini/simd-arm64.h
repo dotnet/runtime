@@ -31,6 +31,7 @@ SIMD_OP  (64,  OP_XBINOP,      OP_IADD,              WTDSS,              arm_neo
 SIMD_OP  (64,  OP_XBINOP,      OP_FADD,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fadd,    _UNDEF)
 SIMD_OP  (64,  OP_XBINOP,      OP_FMAX,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fmax,    _UNDEF)
 SIMD_OP  (64,  OP_XBINOP,      OP_FMIN,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fmin,    _UNDEF)
+SIMD_OP  (64,  OP_XBINOP,      OP_FDIV,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fdiv,    _UNDEF)
 SIMD_OP  (64,  OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS,   WTDS,    _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fabs,    _UNDEF)
 
 /* 128-bit vectors */
