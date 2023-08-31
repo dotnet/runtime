@@ -1184,9 +1184,11 @@ MINI_OP3(OP_MULX_HL64, "mulxhl64", LREG, LREG, LREG, LREG)
 
 #endif
 
-#ifdef defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP3(OP_X86_LDIVREM, "long_divrem", LREG, LREG, LREG, LREG)
 MINI_OP3(OP_X86_LDIVREMU, "long_divrem_un", LREG, LREG, LREG, LREG)
+MINI_OP3(OP_X86_IDIVREM, "int_divrem", IREG, IREG, IREG, IREG)
+MINI_OP3(OP_X86_IDIVREMU, "int_divrem_un", IREG, IREG, IREG, IREG)
 #endif
 
 MINI_OP(OP_CREATE_SCALAR_UNSAFE, "create_scalar_unsafe", XREG, XREG, NONE)

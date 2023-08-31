@@ -413,6 +413,8 @@ int_div: dest:a src1:a src2:i clob:d len:32
 int_div_un: dest:a src1:a src2:i clob:d len:32
 int_rem: dest:d src1:a src2:i clob:a len:32
 int_rem_un: dest:d src1:a src2:i clob:a len:32
+int_divrem: dest:a src1:a src2:d src3:i len:32 clob:d
+int_divrem_un: dest:a src1:a src2:d src3:i len:32 clob:d
 int_and: dest:i src1:i src2:i clob:1 len:4
 int_or: dest:i src1:i src2:i clob:1 len:4
 int_xor: dest:i src1:i src2:i clob:1 len:4
