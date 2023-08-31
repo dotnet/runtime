@@ -4088,7 +4088,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					arm_neon_faddp (code, VREG_FULL, TYPE_F64, dreg, sreg1, sreg1);
 				} else if (ins->inst_c1 == MONO_TYPE_R4) {
 					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, sreg1, sreg1);
-					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, dreg, dreg);
+					if (mono_class_value_size (ins->klass, NULL) == 16 )
+						arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, dreg, dreg);
 				} else {
 					g_assert_not_reached ();
 				} 
