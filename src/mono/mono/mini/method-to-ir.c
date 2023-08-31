@@ -2306,12 +2306,8 @@ emit_not_supported_failure (MonoCompile *cfg)
 static void
 emit_type_load_failure (MonoCompile* cfg, MonoClass* klass)
 {
-	MonoClass* failed_class = klass;
-	if (G_UNLIKELY (!failed_class)) 
-		failed_class = mono_defaults.object_class;
-
 	MonoInst* iargs[1];
-	EMIT_NEW_CLASSCONST (cfg, iargs [0], failed_class);
+	EMIT_NEW_CLASSCONST (cfg, iargs [0], klass);
 	mono_emit_jit_icall (cfg, mono_throw_type_load, iargs);
 }
 
@@ -5461,7 +5457,6 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, guchar *ip, guchar *end, int local)
 		klass = mini_get_class (cfg->current_method, token, cfg->generic_context);
 		IF_TYPELOAD_ERROR (klass) {
 			HANDLE_TYPELOAD_ERROR (cfg, klass);
-			return ip;
 		}
 		type = mini_get_underlying_type (m_class_get_byval_arg (klass));
 		emit_init_local (cfg, local, type, TRUE);
@@ -11986,6 +11981,8 @@ mono_ldptr:
 				klass = mini_get_class (method, token, generic_context);
 				IF_TYPELOAD_ERROR (klass) {
 					HANDLE_TYPELOAD_ERROR (cfg, klass);
+					EMIT_NEW_ICONST(cfg, ins, val, 0);
+					*sp++ = ins;
 					break;
 				}
 

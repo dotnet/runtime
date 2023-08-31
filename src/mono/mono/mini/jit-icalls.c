@@ -1692,11 +1692,16 @@ void
 mono_throw_type_load (MonoClass* klass)
 {
 	ERROR_DECL (error);
-	char* klass_name = mono_type_get_full_name (klass);
-	mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
-	mono_error_set_pending_exception (error);
 
-	g_free (klass_name);
+	if (G_UNLIKELY(!klass)) {
+		mono_error_set_type_load_class (error, klass, "Attempting to load an invalid type.");
+	} else {
+		char* klass_name = mono_type_get_full_name (klass);
+		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
+		g_free (klass_name);
+	}
+	
+	mono_error_set_pending_exception (error);
 }
 
 void
