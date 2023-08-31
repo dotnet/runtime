@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Parser
         {
-            private void RegisterMethodInvocation_ServiceCollectionExt(BinderInvocation invocation)
+            private void ParseInvocation_ServiceCollectionExt(BinderInvocation invocation)
             {
                 IInvocationOperation operation = invocation.Operation!;
                 IMethodSymbol targetMethod = operation.TargetMethod;
@@ -72,25 +72,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ITypeSymbol? typeSymbol = targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
                 // This would violate generic type constraint; any such invocation could not have been included in the initial parser.
                 Debug.Assert(typeSymbol?.IsValueType is not true);
-                TypeSpec typeSpec = GetTargetTypeForRootInvocation(typeSymbol, invocation.Location);
 
-                if (typeSpec is null)
+                if (GetTargetTypeForRootInvocation(typeSymbol, invocation.Location) is ComplexTypeSpec typeSpec &&
+                    TryRegisterTypeForMethodGen(overload, typeSpec))
                 {
-                    return;
+                    RegisterInterceptor(overload, operation);
                 }
-
-                RegisterTypeForMethodGen(overload, typeSpec);
-                RegisterAsInterceptor(overload, operation);
             }
 
-            private void RegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection overload, TypeSpec typeSpec)
+            private bool TryRegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection overload, ComplexTypeSpec typeSpec)
             {
-                RegisterTypeForBindCoreMainGen(typeSpec);
+                if (TryRegisterTypeForBindCoreMainGen(typeSpec))
+                {
+                    _sourceGenSpec.MethodsToGen_ServiceCollectionExt |= overload;
+                    _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                    // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource, IConfigureOptions<>, ConfigureNamedOptions<>.
+                    _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.Options");
+                    return true;
+                }
 
-                _sourceGenSpec.MethodsToGen_ServiceCollectionExt |= overload;
-                _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
-                // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource, IConfigureOptions<>, ConfigureNamedOptions<>.
-                _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.Options");
+                return false;
             }
         }
     }

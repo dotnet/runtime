@@ -64,18 +64,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _context.AddSource($"{Identifier.BindingExtensions}.g.cs", _writer.ToSourceText());
             }
 
-            private void EmitBindCoreCall(
-                TypeSpec type,
+            private void EmitBindingLogic(
+                ComplexTypeSpec type,
                 string memberAccessExpr,
                 string configArgExpr,
                 InitializationKind initKind,
                 Action<string>? writeOnSuccess = null)
             {
-                Debug.Assert(type.CanInitialize);
-
-                if (!type.NeedsMemberBinding)
+                if (!type.HasBindableMembers)
                 {
-                    EmitObjectInit(memberAccessExpr, initKind);
+                    if (initKind is not InitializationKind.None)
+                    {
+                        if (type.CanInstantiate)
+                        {
+                            EmitObjectInit(type, memberAccessExpr, initKind, configArgExpr);
+                        }
+                        else if (type is ObjectSpec { InitExceptionMessage: string exMsg })
+                        {
+                            _writer.WriteLine($@"throw new {Identifier.InvalidOperationException}(""{exMsg}"");");
+                        }
+                    }
+
                     return;
                 }
 
@@ -84,36 +93,56 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     Debug.Assert(!type.IsValueType);
                     _writer.WriteLine($"{type.DisplayString}? {tempIdentifier} = {memberAccessExpr};");
-                    EmitBindCoreCall(tempIdentifier, InitializationKind.AssignmentWithNullCheck);
+                    EmitBindingLogic(tempIdentifier, InitializationKind.AssignmentWithNullCheck);
                 }
                 else if (initKind is InitializationKind.None && type.IsValueType)
                 {
-                    EmitBindCoreCall(tempIdentifier, InitializationKind.Declaration);
+                    EmitBindingLogic(tempIdentifier, InitializationKind.Declaration);
                     _writer.WriteLine($"{memberAccessExpr} = {tempIdentifier};");
                 }
                 else
                 {
-                    EmitBindCoreCall(memberAccessExpr, initKind);
+                    EmitBindingLogic(memberAccessExpr, initKind);
                 }
 
-                void EmitBindCoreCall(string instanceExpr, InitializationKind initKind)
+                void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind)
                 {
-                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceExpr}, {Identifier.binderOptions});";
-                    EmitObjectInit(instanceExpr, initKind);
-                    _writer.WriteLine(bindCoreCall);
-                    writeOnSuccess?.Invoke(instanceExpr);
-                }
+                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, {Identifier.binderOptions});";
 
-                void EmitObjectInit(string instanceExpr, InitializationKind initKind)
-                {
-                    if (initKind is not InitializationKind.None)
+                    if (type.CanInstantiate)
                     {
-                        this.EmitObjectInit(type, instanceExpr, initKind, configArgExpr);
+                        if (initKind is not InitializationKind.None)
+                        {
+                            EmitObjectInit(type, instanceToBindExpr, initKind, configArgExpr);
+                        }
+
+                        EmitBindCoreCall();
+                    }
+                    else
+                    {
+                        Debug.Assert(!type.IsValueType);
+
+                        if (type is ObjectSpec { InitExceptionMessage: string exMsg })
+                        {
+                            _writer.WriteLine($@"throw new {Identifier.InvalidOperationException}(""{exMsg}"");");
+                        }
+                        else
+                        {
+                            EmitStartBlock($"if ({instanceToBindExpr} is not null)");
+                            EmitBindCoreCall();
+                            EmitEndBlock();
+                        }
+                    }
+
+                    void EmitBindCoreCall()
+                    {
+                        _writer.WriteLine(bindCoreCall);
+                        writeOnSuccess?.Invoke(instanceToBindExpr);
                     }
                 }
             }
 
-            private void EmitBindLogicFromString(
+            private void EmitBindingLogic(
                 ParsableFromStringSpec type,
                 string sectionValueExpr,
                 string sectionPathExpr,
@@ -126,20 +155,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 string nonNull_StringValue_Identifier = useIncrementalStringValueIdentifier ? GetIncrementalIdentifier(Identifier.value) : Identifier.value;
                 string stringValueToParse_Expr = checkForNullSectionValue ? nonNull_StringValue_Identifier : sectionValueExpr;
-
-                string parsedValueExpr;
-                if (typeKind is StringParsableTypeKind.AssignFromSectionValue)
+                string parsedValueExpr = typeKind switch
                 {
-                    parsedValueExpr = stringValueToParse_Expr;
-                }
-                else if (typeKind is StringParsableTypeKind.Enum)
-                {
-                    parsedValueExpr = $"ParseEnum<{type.DisplayString}>({stringValueToParse_Expr}, () => {sectionPathExpr})";
-                }
-                else
-                {
-                    parsedValueExpr = $"{type.ParseMethodName}({stringValueToParse_Expr}, () => {sectionPathExpr})";
-                }
+                    StringParsableTypeKind.AssignFromSectionValue => stringValueToParse_Expr,
+                    StringParsableTypeKind.Enum => $"ParseEnum<{type.DisplayString}>({stringValueToParse_Expr}, () => {sectionPathExpr})",
+                    _ => $"{type.ParseMethodName}({stringValueToParse_Expr}, () => {sectionPathExpr})",
+                };
 
                 if (!checkForNullSectionValue)
                 {
@@ -155,67 +176,77 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 void InvokeWriteOnSuccess() => writeOnSuccess?.Invoke(parsedValueExpr);
             }
 
-            private bool EmitObjectInit(TypeSpec type, string memberAccessExpr, InitializationKind initKind, string configArgExpr)
+            private bool EmitObjectInit(ComplexTypeSpec type, string memberAccessExpr, InitializationKind initKind, string configArgExpr)
             {
-                Debug.Assert(type.CanInitialize && initKind is not InitializationKind.None);
-
-                string initExpr;
                 CollectionSpec? collectionType = type as CollectionSpec;
+                string initExpr;
 
                 string effectiveDisplayString = type.DisplayString;
                 if (collectionType is not null)
                 {
-                    if (collectionType is EnumerableSpec { InitializationStrategy: InitializationStrategy.Array })
+                    if (collectionType is EnumerableSpec { InstantiationStrategy: InstantiationStrategy.Array })
                     {
                         initExpr = $"new {s_arrayBracketsRegex.Replace(effectiveDisplayString, "[0]", 1)}";
                     }
                     else
                     {
-                        effectiveDisplayString = (collectionType.ConcreteType ?? collectionType).DisplayString;
+                        effectiveDisplayString = (collectionType.TypeToInstantiate ?? collectionType).DisplayString;
                         initExpr = $"new {effectiveDisplayString}()";
                     }
                 }
-                else if (type.InitializationStrategy is InitializationStrategy.ParameterlessConstructor)
+                else if (type.InstantiationStrategy is InstantiationStrategy.ParameterlessConstructor)
                 {
                     initExpr = $"new {effectiveDisplayString}()";
                 }
                 else
                 {
-                    Debug.Assert(type.InitializationStrategy is InitializationStrategy.ParameterizedConstructor);
+                    Debug.Assert(type.InstantiationStrategy is InstantiationStrategy.ParameterizedConstructor);
                     string initMethodIdentifier = GetInitalizeMethodDisplayString(((ObjectSpec)type));
                     initExpr = $"{initMethodIdentifier}({configArgExpr}, {Identifier.binderOptions})";
                 }
 
-                if (initKind == InitializationKind.Declaration)
+                switch (initKind)
                 {
-                    Debug.Assert(!memberAccessExpr.Contains("."));
-                    _writer.WriteLine($"var {memberAccessExpr} = {initExpr};");
-                }
-                else if (initKind == InitializationKind.AssignmentWithNullCheck)
-                {
-                    if (collectionType is CollectionSpec
+                    case InitializationKind.Declaration:
                         {
-                            InitializationStrategy: InitializationStrategy.ParameterizedConstructor or InitializationStrategy.ToEnumerableMethod
-                        })
-                    {
-                        if (collectionType.InitializationStrategy is InitializationStrategy.ParameterizedConstructor)
-                        {
-                            _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr} is null ? {initExpr} : new {effectiveDisplayString}({memberAccessExpr});");
+                            Debug.Assert(!memberAccessExpr.Contains("."));
+                            _writer.WriteLine($"var {memberAccessExpr} = {initExpr};");
                         }
-                        else
+                        break;
+                    case InitializationKind.AssignmentWithNullCheck:
                         {
-                            _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr} is null ? {initExpr} : {memberAccessExpr}.{collectionType.ToEnumerableMethodCall!};");
+                            if (collectionType is CollectionSpec
+                                {
+                                    InstantiationStrategy: InstantiationStrategy.ParameterizedConstructor or InstantiationStrategy.ToEnumerableMethod
+                                })
+                            {
+                                if (collectionType.InstantiationStrategy is InstantiationStrategy.ParameterizedConstructor)
+                                {
+                                    _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr} is null ? {initExpr} : new {effectiveDisplayString}({memberAccessExpr});");
+                                }
+                                else
+                                {
+                                    Debug.Assert(collectionType is DictionarySpec);
+                                    _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr} is null ? {initExpr} : {memberAccessExpr}.ToDictionary(pair => pair.Key, pair => pair.Value);");
+                                }
+                            }
+                            else
+                            {
+                                _writer.WriteLine($"{memberAccessExpr} ??= {initExpr};");
+                            }
                         }
-                    }
-                    else
-                    {
-                        _writer.WriteLine($"{memberAccessExpr} ??= {initExpr};");
-                    }
-                }
-                else
-                {
-                    Debug.Assert(initKind is InitializationKind.SimpleAssignment);
-                    _writer.WriteLine($"{memberAccessExpr} = {initExpr};");
+                        break;
+                    case InitializationKind.SimpleAssignment:
+                        {
+                            _writer.WriteLine($"{memberAccessExpr} = {initExpr};");
+                        }
+                        break;
+                    default:
+                        {
+                            Debug.Fail($"Invaild initialization kind: {initKind}");
+                        }
+                        break;
+
                 }
 
                 return true;

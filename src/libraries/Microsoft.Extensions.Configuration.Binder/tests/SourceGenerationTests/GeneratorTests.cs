@@ -337,8 +337,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             var (d, r) = await RunGenerator(source, references: GetAssemblyRefsWithAdditional(typeof(ImmutableArray<>), typeof(Encoding), typeof(JsonSerializer)));
             Assert.Single(r);
-            Assert.Equal(12, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
-            Assert.Equal(10, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
+            Assert.Equal(47, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+            Assert.Equal(44, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
         }
     }
 }
