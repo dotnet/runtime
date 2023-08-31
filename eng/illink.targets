@@ -1,8 +1,8 @@
 <Project>
 
   <PropertyGroup>
-    <_ILLinkTasksSourceDir>$(ToolsProjectRoot)illink/src/ILLink.Tasks/</_ILLinkTasksSourceDir>
-    <ILLinkAnalyzersPropsPath>$(ToolsProjectRoot)illink/src/ILLink.RoslynAnalyzer/build/Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>
+    <_ILLinkTasksSourceDir>$(ToolsProjectRoot)illink\src\ILLink.Tasks\</_ILLinkTasksSourceDir>
+    <ILLinkAnalyzersPropsPath>$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\build\Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +19,7 @@
     </ProjectReference>
   </ItemGroup>
 
-  <Import Project="$(_ILLinkTasksSourceDir)build/Microsoft.NET.ILLink.Tasks.props" />
+  <Import Project="$(_ILLinkTasksSourceDir)build\Microsoft.NET.ILLink.Tasks.props" />
 
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
