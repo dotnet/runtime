@@ -12,6 +12,7 @@
 #include "mclist.h"
 #include "methodcontext.h"
 #include "logging.h"
+#include "spmiutil.h"
 
 // NOTE: this is parsed by parallelsuperpmi.cpp::ProcessChildStdOut() to determine if an incorrect
 // argument usage error has occurred.
@@ -21,8 +22,8 @@ void CommandLine::DumpHelp(const char* program)
 {
     printf("%s\n", g_SuperPMIUsageFirstLine);
     printf("\n");
-    printf("Usage: %s [options] jitname [jitname2] filename.mc\n", program);
-    printf(" jitname" PLATFORM_SHARED_LIB_SUFFIX_A " - path of jit to be tested\n");
+    printf("Usage: %s [options] [jitname] [jitname2] filename.mc\n", program);
+    printf(" jitname" PLATFORM_SHARED_LIB_SUFFIX_A " - optional path of jit to be tested (default is JIT in same directory as %s)\n", program);
     printf(" jitname2" PLATFORM_SHARED_LIB_SUFFIX_A " - optional path of second jit to be tested\n");
     printf(" filename.mc - load method contexts from filename.mc\n");
     printf(" -j[it] Name - optionally -jit can be used to specify jits\n");
@@ -289,6 +290,13 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 }
                 else
                 {
+                    if (o->nameOfJit2 != nullptr)
+                    {
+                        LogError("Too many JITs specified.");
+                        DumpHelp(argv[0]);
+                        return false;
+                    }
+
                     o->nameOfJit2 = tempStr;
                 }
             }
@@ -637,24 +645,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
     // Do some argument validation.
 
-    if (o->nameOfJit == nullptr)
-    {
-        LogError("Missing name of a Jit.");
-        DumpHelp(argv[0]);
-        return false;
-    }
-    if (o->nameOfInputMethodContextFile == nullptr)
-    {
-        LogError("Missing name of an input file.");
-        DumpHelp(argv[0]);
-        return false;
-    }
-    if (o->diffsInfo != nullptr && !o->applyDiff)
-    {
-        LogError("-diffsInfo specified without -applyDiff.");
-        DumpHelp(argv[0]);
-        return false;
-    }
     if (o->targetArchitecture != nullptr)
     {
         if ((0 != _stricmp(o->targetArchitecture, "amd64")) &&
@@ -669,12 +659,164 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             return false;
         }
     }
+
+    SPMI_TARGET_ARCHITECTURE DefaultSpmiTargetArchitecture = GetSpmiTargetArchitecture();
+    SetSuperPmiTargetArchitecture(o->targetArchitecture);
+
+    if (o->nameOfInputMethodContextFile == nullptr)
+    {
+        LogError("Missing name of an input file.");
+        DumpHelp(argv[0]);
+        return false;
+    }
+
+    if (o->nameOfJit == nullptr)
+    {
+        // Try to find a JIT in the same directory as superpmi.exe. If found (based on targetArchitecture), use it.
+
+        bool allowDefaultJIT = true;
+
+        const char* host_os_tag = "";
+        const char* jit_host_os_prefix = "";
+        const char* jit_host_os_extension = "";
+
+#if defined(HOST_UNIX)
+        host_os_tag = "unix";
+        jit_host_os_prefix = "lib";
+        jit_host_os_extension = ".so";
+#elif defined(HOST_WINDOWS)
+        host_os_tag = "win";
+        jit_host_os_extension = ".dll";
+#else
+        // TODO: handle Mac
+        allowDefaultJIT = false;
+#endif
+
+        const char* host_arch = "";
+
+#if defined(HOST_AMD64)
+        host_arch = "x64";
+#elif defined(HOST_X86)
+        host_arch = "x86";
+#elif defined(HOST_ARM)
+        host_arch = "arm";
+#elif defined(HOST_ARM64)
+        host_arch = "arm64";
+#else
+        allowDefaultJIT = false;
+#endif
+
+        const char* target_arch = "";
+
+        switch (GetSpmiTargetArchitecture())
+        {
+            case SPMI_TARGET_ARCHITECTURE_AMD64:
+                target_arch = "x64";
+                break;
+            case SPMI_TARGET_ARCHITECTURE_X86:
+                target_arch = "x86";
+                break;
+            case SPMI_TARGET_ARCHITECTURE_ARM:
+                target_arch = "arm";
+                break;
+            case SPMI_TARGET_ARCHITECTURE_ARM64:
+                target_arch = "arm64";
+                break;
+            default:
+                allowDefaultJIT = false;
+                break;
+        }
+
+        size_t programPathLen = 0;
+        char* programPath = nullptr;
+        const char* lastSlash = strrchr(argv[0], DIRECTORY_SEPARATOR_CHAR_A);
+        if (lastSlash == nullptr)
+        {
+            allowDefaultJIT = false;
+        }
+        else
+        {
+            programPathLen = lastSlash - argv[0] + 1;
+            programPath = new char[programPathLen];
+            strncpy_s(programPath, programPathLen, argv[0], programPathLen - 1);
+        }
+
+        if (allowDefaultJIT)
+        {
+            const char* jit_os_name = nullptr;
+
+            if (DefaultSpmiTargetArchitecture != GetSpmiTargetArchitecture())
+            {
+                // SuperPMI doesn't know about "target OS" so always assume host OS.
+
+                switch (GetSpmiTargetArchitecture())
+                {
+                    case SPMI_TARGET_ARCHITECTURE_AMD64:
+                    case SPMI_TARGET_ARCHITECTURE_X86:
+                        jit_os_name = host_os_tag;
+                        break;
+                    case SPMI_TARGET_ARCHITECTURE_ARM:
+                    case SPMI_TARGET_ARCHITECTURE_ARM64:
+                        jit_os_name = "universal";
+                        break;
+                }
+            }
+
+            const char* jit_base_name = "clrjit";
+            size_t len = programPathLen + strlen(jit_host_os_prefix) + strlen(jit_base_name) + strlen(jit_host_os_extension) + 1;
+            if (jit_os_name != nullptr)
+            {
+                len += 3 /* underscores */ + strlen(jit_os_name) + strlen(target_arch) + strlen(host_arch);
+            }
+            char* tempStr = new char[len];
+            if (jit_os_name == nullptr)
+            {
+                sprintf_s(tempStr, len, "%s%c%s%s%s",
+                    programPath,
+                    DIRECTORY_SEPARATOR_CHAR_A,
+                    jit_host_os_prefix,
+                    jit_base_name,
+                    jit_host_os_extension);
+            }
+            else
+            {
+                sprintf_s(tempStr, len, "%s%c%s%s_%s_%s_%s%s",
+                    programPath,
+                    DIRECTORY_SEPARATOR_CHAR_A,
+                    jit_host_os_prefix,
+                    jit_base_name,
+                    jit_os_name,
+                    target_arch,
+                    host_arch,
+                    jit_host_os_extension);
+            }
+
+            o->nameOfJit = tempStr;
+
+            LogInfo("Using default JIT: %s", o->nameOfJit);
+        }
+        else
+        {
+            LogError("Missing name of a Jit.");
+            DumpHelp(argv[0]);
+            return false;
+        }
+    }
+
+    if (o->diffsInfo != nullptr && !o->applyDiff)
+    {
+        LogError("-diffsInfo specified without -applyDiff.");
+        DumpHelp(argv[0]);
+        return false;
+    }
+
     if (o->skipCleanup && !o->parallel)
     {
         LogError("-skipCleanup requires -parallel.");
         DumpHelp(argv[0]);
         return false;
     }
+
     return true;
 }
 
