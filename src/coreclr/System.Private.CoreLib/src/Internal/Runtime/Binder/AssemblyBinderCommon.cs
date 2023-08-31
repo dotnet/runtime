@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
+using System.Text;
 
 namespace Internal.Runtime.Binder
 {
@@ -21,8 +21,21 @@ namespace Internal.Runtime.Binder
         pe32BitPreferred = 0x00000010  // flags 32BITREQUIRED and 32BITPREFERRED are set in COR header
     }
 
-    internal static class AssemblyBinderCommon
+    internal struct BundleFileLocation
     {
+        public long Size;
+        public long Offset;
+        public long UncompressedSize;
+    }
+
+    internal static partial class AssemblyBinderCommon
+    {
+        [LibraryImport("Foo", StringMarshalling = StringMarshalling.Utf8)]
+        private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void ReleasePEImage(IntPtr pPEImage);
+
         public static bool IsCompatibleAssemblyVersion(AssemblyName requestedName, AssemblyName foundName)
         {
             AssemblyVersion pRequestedVersion = requestedName.Version;
@@ -146,7 +159,28 @@ namespace Internal.Runtime.Binder
             }
         }
 
+        // HResult
+        private const int RO_E_METADATA_NAME_NOT_FOUND = unchecked((int)0x8000000F);
+        private const int E_PATHNOTFOUND = unchecked((int)0x80070003);
+        private const int E_NOTREADY = unchecked((int)0x80070015);
+        private const int E_BADNETPATH = unchecked((int)0x80070035);
+        private const int E_BADNETNAME = unchecked((int)0x80070043);
+        private const int E_INVALID_NAME = unchecked((int)0x8007007B);
+        private const int E_MODNOTFOUND = unchecked((int)0x8007007E);
+        private const int E_DLLNOTFOUND = unchecked((int)0x80070485);
+        private const int E_WRONG_TARGET_NAME = unchecked((int)0x80070574);
+        private const int INET_E_CANNOT_CONNECT = unchecked((int)0x800C0004);
+        private const int INET_E_RESOURCE_NOT_FOUND = unchecked((int)0x800C0005);
+        private const int INET_E_OBJECT_NOT_FOUND = unchecked((int)0x800C0006);
+        private const int INET_E_DATA_NOT_AVAILABLE = unchecked((int)0x800C0007);
+        private const int INET_E_DOWNLOAD_FAILURE = unchecked((int)0x800C0008);
+        private const int INET_E_CONNECTION_TIMEOUT = unchecked((int)0x800C000B);
+        private const int INET_E_UNKNOWN_PROTOCOL = unchecked((int)0x800C000D);
         private const int FUSION_E_APP_DOMAIN_LOCKED = unchecked((int)0x80131053);
+        private const int CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW = unchecked((int)0x80132000);
+        private const int CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH = unchecked((int)0x80132001);
+        private const int CLR_E_BIND_ASSEMBLY_NOT_FOUND = unchecked((int)0x80132004);
+        private const int CLR_E_BIND_TYPE_NOT_FOUND = unchecked((int)0x80132005);
 
         public static int BindAssembly(AssemblyBinder binder, AssemblyName assemblyName, bool excludeAppPaths, out Assembly? result)
         {
@@ -555,11 +589,60 @@ namespace Internal.Runtime.Binder
             return HResults.S_FALSE;
         }
 
-        // static Assembly GetAssembly(string assemblyPath, bool isInTPA, BundleFileLocation);
-
-        static int GetAssembly(string assemblyPath, bool isInTPA, out Assembly? assembly)
+        private static int GetAssembly(string assemblyPath, bool isInTPA, out Assembly? assembly, BundleFileLocation bundleFileLocation = default)
         {
-            throw null;
+            int hr = BinderAcquirePEImage(assemblyPath, out IntPtr pPEImage, bundleFileLocation);
+
+            try
+            {
+                if (hr < 0)
+                {
+                    // Normalize file not found
+
+                    // ported from Assembly::FileNotFound in coreclr\vm\assembly.cpp
+                    if (hr is HResults.E_FILENOTFOUND
+                        or E_MODNOTFOUND
+                        or E_INVALID_NAME
+                        or HResults.CTL_E_FILENOTFOUND
+                        or E_PATHNOTFOUND
+                        or E_BADNETNAME
+                        or E_BADNETPATH
+                        or E_NOTREADY
+                        or E_WRONG_TARGET_NAME
+                        or INET_E_UNKNOWN_PROTOCOL
+                        or INET_E_CONNECTION_TIMEOUT
+                        or INET_E_CANNOT_CONNECT
+                        or INET_E_RESOURCE_NOT_FOUND
+                        or INET_E_OBJECT_NOT_FOUND
+                        or INET_E_DOWNLOAD_FAILURE
+                        or INET_E_DATA_NOT_AVAILABLE
+                        or E_DLLNOTFOUND
+                        or CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW
+                        or CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH
+                        or CLR_E_BIND_ASSEMBLY_NOT_FOUND
+                        or RO_E_METADATA_NAME_NOT_FOUND
+                        or CLR_E_BIND_TYPE_NOT_FOUND)
+                    {
+                        hr = HResults.E_FILENOTFOUND;
+                    }
+
+                    assembly = null;
+                    return hr;
+                }
+
+                assembly = new Assembly(pPEImage, isInTPA);
+                return HResults.S_OK;
+            }
+            catch (Exception e)
+            {
+                assembly = null;
+                return e.HResult;
+            }
+            finally
+            {
+                // SAFE_RELEASE(pPEImage);
+                ReleasePEImage(pPEImage);
+            }
         }
 
         public static int Register(ApplicationContext applicationContext, ref BindResult bindResult)
