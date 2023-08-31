@@ -4,11 +4,6 @@
 "use strict";
 
 class FrameApp {
-    async init({ getAssemblyExports }) {
-        const exports = await getAssemblyExports("blazor.dll");
-        exports.BrowserBench.FrameApp.ReachedManaged();
-    }
-
     reachedCallback() {
         if (window.parent != window) {
             window.parent.resolveAppStartEvent("reached");
@@ -27,10 +22,6 @@ try {
     window.muteErrors = () => {
         mute = true;
     }
-
-    await Blazor.start();
-
-    await frameApp.init(Blazor.runtime);
 }
 catch (err) {
     if (!mute) {
