@@ -5247,7 +5247,7 @@ emit_x86_intrinsics (
 			ins->type = is_64bit ? STACK_I8 : STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
-		case SN_DivRemInternal: {
+		case SN_DivRem: {
 			g_assert (!(TARGET_SIZEOF_VOID_P == 4 && is_64bit)); // x86(no -64) cannot do divisions with 64-bit regs
 
 			const int divtype = is_64bit ? STACK_I8 : STACK_I4;
