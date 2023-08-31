@@ -370,6 +370,48 @@ namespace Internal.Runtime.Binder
 
         // TODO: BindSatelliteResource
 
+        private static Assembly BindAssemblyByProbingPaths(List<string> bindingPaths, AssemblyName requestedAssemblyName)
+        {
+            // Loop through the binding paths looking for a matching assembly
+            foreach (string bindingPath in bindingPaths)
+            {
+                string fileNameWithoutExtension = Path.Combine(bindingPath, requestedAssemblyName.SimpleName);
+
+                // Look for a matching dll first
+                string fileName = fileNameWithoutExtension + ".dll";
+
+                try
+                {
+                    Assembly assembly = GetAssembly(fileName, false);
+
+                    // BinderTracing::PathProbed(fileName, pathSource, hr);
+
+                    // We found a candidate.
+                    //
+                    // Below this point, we either establish that the ref-def matches, or
+                    // we fail the bind.
+
+                    // Compare requested AssemblyName with that from the candidate assembly
+                    if (!TestCandidateRefMatchesDef(requestedAssemblyName, assembly.AssemblyName, false))
+                        throw new Exception("FUSION_E_REF_DEF_MISMATCH");
+
+                    return assembly; // S_OK
+                }
+                catch (Exception ex)
+                {
+                    if (ex is FileNotFoundException)
+                    {
+                        // Since we're probing, file not founds are ok and we should just try another
+                        // probing path
+                        continue;
+                    }
+
+                }
+            }
+
+            throw new FileNotFoundException();
+        }
+
         /*
          * BindByTpaList is the entry-point for the custom binding algorithm in CoreCLR.
          *
@@ -590,11 +632,6 @@ namespace Internal.Runtime.Binder
 
             // Some other bind interfered
             return true; // S_FALSE == return true
-        }
-
-        static Assembly BindAssemblyByProbingPaths(List<string> appPaths, AssemblyName requestedAssemblyName)
-        {
-            throw null;
         }
 
         static Assembly GetAssembly(string assemblyPath, bool isInTPA)
