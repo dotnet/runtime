@@ -167,15 +167,13 @@
       <!-- Build+relink+config=debug -->
       <WasmNativeDebugSymbols Condition="'$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">true</WasmNativeDebugSymbols>
 
-      <!-- since WasmNativeStrip='', set the default value based on WasmNativeDebugSymbols -->
-      <WasmNativeStrip Condition="'$(WasmNativeDebugSymbols)' == 'true'">false</WasmNativeStrip>
-      <WasmNativeStrip Condition="'$(WasmNativeDebugSymbols)' == 'false'">true</WasmNativeStrip>
+      <WasmNativeStrip>false</WasmNativeStrip>
     </PropertyGroup>
 
     <PropertyGroup>
       <!-- the two properties do not influence each other -->
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">false</WasmNativeDebugSymbols>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
     </PropertyGroup>
   </Target>
 
