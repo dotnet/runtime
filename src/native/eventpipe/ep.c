@@ -1088,7 +1088,7 @@ ep_on_error:
 EventPipeSessionID
 ep_enable_3 (const EventPipeSessionOptions *options)
 {
-	ep_return_zero_if_nok(check_options_valid(options));
+	ep_return_zero_if_nok (check_options_valid (options));
 
 	ep_requires_lock_not_held ();
 

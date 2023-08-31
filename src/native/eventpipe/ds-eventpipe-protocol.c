@@ -532,7 +532,7 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 	bool result = false;
 	EventPipeCollectTracingCommandPayload* payload = NULL;
 
-	switch ((EventPipeCommandId) ds_ipc_header_get_commandid (ds_ipc_message_get_header_cref (message))) {
+	switch ((EventPipeCommandId)ds_ipc_header_get_commandid (ds_ipc_message_get_header_cref (message))) {
 	case EP_COMMANDID_COLLECT_TRACING:
 		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing_command_try_parse_payload);
 		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
