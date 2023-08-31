@@ -3,14 +3,7 @@
 
 "use strict";
 
-import { dotnet, exit } from './_framework/dotnet.js'
-
 class FrameApp {
-    async init({ getAssemblyExports }) {
-        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
-        exports.Sample.AppStartTask.FrameApp.ReachedManaged();
-    }
-
     reachedCallback() {
         if (window.parent != window) {
             window.parent.resolveAppStartEvent("reached");
@@ -29,19 +22,6 @@ try {
     window.muteErrors = () => {
         mute = true;
     }
-
-    const runtime = await dotnet
-        .withConfig({
-            maxParallelDownloads: 10000,
-            // diagnosticTracing:true,
-        })
-        .withModuleConfig({
-            printErr: () => undefined,
-            print: () => undefined
-        })
-        .create();
-
-    await frameApp.init(runtime);
 }
 catch (err) {
     if (!mute) {
