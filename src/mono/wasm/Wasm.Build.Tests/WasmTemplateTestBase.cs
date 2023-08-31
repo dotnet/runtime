@@ -47,7 +47,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
 
-        if (template != "wasmbrowser")
+        if (template == "wasmconsole")
         {
             UpdateRuntimeconfigTemplateForNode(_projectDir);
         }
