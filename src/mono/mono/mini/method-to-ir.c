@@ -11981,7 +11981,7 @@ mono_ldptr:
 				klass = mini_get_class (method, token, generic_context);
 				IF_TYPELOAD_ERROR (klass) {
 					HANDLE_TYPELOAD_ERROR (cfg, klass);
-					EMIT_NEW_ICONST(cfg, ins, val, 0);
+					EMIT_NEW_ICONST(cfg, ins, 0);
 					*sp++ = ins;
 					break;
 				}
