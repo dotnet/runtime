@@ -5083,6 +5083,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_LDIV:
 		case OP_LREM:
+		case OP_X86_LDIVREM:
 			/* Regalloc magic makes the div/rem cases the same */
 			if (ins->sreg2 == AMD64_RDX) {
 				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
@@ -5095,6 +5096,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LDIV_UN:
 		case OP_LREM_UN:
+		case OP_X86_LDIVREMU:
 			if (ins->sreg2 == AMD64_RDX) {
 				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
 				amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);

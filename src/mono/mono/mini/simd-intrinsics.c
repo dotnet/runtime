@@ -4599,6 +4599,7 @@ static SimdIntrinsic bmi2_methods [] = {
 static SimdIntrinsic x86base_methods [] = {
 	{SN_BitScanForward},
 	{SN_BitScanReverse},
+	{SN_DivRemInternal},
 	{SN_Pause, OP_XOP, INTRINS_SSE_PAUSE},
 	{SN_get_IsSupported}
 };
@@ -5245,6 +5246,21 @@ emit_x86_intrinsics (
 			ins->sreg1 = args [0]->dreg;
 			ins->type = is_64bit ? STACK_I8 : STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		case SN_DivRemInternal:
+			if (type_enum_is_unsigned (arg0_type)) {
+				MONO_INST_NEW (cfg, ins, is_64bit ? OP_X86_LDIVREMU : 0);
+			} else {
+				MONO_INST_NEW (cfg, ins, is_64bit ? OP_X86_LDIVREM : 0);
+			}
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->sreg2 = args [1]->dreg;
+			ins->sreg3 = args [2]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+
+			// TODO: copy to args[3], args[4]
 			return ins;
 		default:
 			g_assert_not_reached ();

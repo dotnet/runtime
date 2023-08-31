@@ -98,6 +98,8 @@ long_div: dest:a src1:a src2:i len:16 clob:d
 long_div_un: dest:a src1:a src2:i len:16 clob:d
 long_rem: dest:d src1:a src2:i len:16 clob:a
 long_rem_un: dest:d src1:a src2:i len:16 clob:a
+long_divrem: dest:a src1:a src2:d src3:i len:16 clob:d
+long_divrem_un: dest:a src1:a src2:d src3:i len:16 clob:d
 long_and: dest:i src1:i src2:i len:3 clob:1
 long_or: dest:i src1:i src2:i len:3 clob:1
 long_xor: dest:i src1:i src2:i len:3 clob:1
