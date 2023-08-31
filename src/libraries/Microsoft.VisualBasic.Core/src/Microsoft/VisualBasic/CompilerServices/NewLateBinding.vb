@@ -47,7 +47,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 baseReference = New Container(Instance)
             End If
 
-            If baseReference.IsCOMObject And Not baseReference.IsWindowsRuntimeObject Then
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
                 Return LateBinding.InternalLateCall(Instance, Type, MemberName, Arguments, ArgumentNames, CopyBack, IgnoreReturn)
             End If
 
@@ -282,7 +282,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If argumentNames Is Nothing Then argumentNames = NoArgumentNames
 
             Dim baseReference As Container = New Container(instance)
-            If baseReference.IsCOMObject And Not baseReference.IsWindowsRuntimeObject Then
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
                 Return LateBinding.LateIndexGet(instance, arguments, argumentNames)
             End If
 
@@ -379,7 +379,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 baseReference = New Container(Instance)
             End If
 
-            If baseReference.IsCOMObject And Not baseReference.IsWindowsRuntimeObject Then
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
                 Return LateBinding.LateGet(Instance, Type, MemberName, Arguments, ArgumentNames, CopyBack)
             End If
 
@@ -664,7 +664,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
 
             Dim methodName As String = ""
-            If baseReference.IsCOMObject And Not baseReference.IsWindowsRuntimeObject Then
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
                 LateBinding.LateIndexSetComplex(instance, arguments, argumentNames, optimisticSet, rValueBase)
                 Return
             End If
@@ -942,7 +942,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 baseReference = New Container(Instance)
             End If
 
-            If baseReference.IsCOMObject And Not baseReference.IsWindowsRuntimeObject Then
+            If baseReference.IsCOMObject AndAlso Not baseReference.IsWindowsRuntimeObject Then
                 Try
                     LateBinding.InternalLateSet(Instance, Type, MemberName, Arguments, ArgumentNames, OptimisticSet, CallType)
                     If RValueBase And Type.IsValueType Then
