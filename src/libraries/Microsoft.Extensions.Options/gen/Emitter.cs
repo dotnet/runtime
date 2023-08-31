@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Options.Generators
         }
 
         /// <summary>
-        /// Returns the nullable annotation string to use in the code generation according to the first first parameter of
+        /// Returns the nullable annotation string to use in the code generation according to the first parameter of
         /// <see cref="System.ComponentModel.DataAnnotations.Validator.TryValidateValue(object, ValidationContext, ICollection{ValidationResult}, IEnumerable{ValidationAttribute})"/> is nullable annotated.
         /// </summary>
         /// <param name="compilation">The <see cref="Compilation"/> to consider for analysis.</param>
