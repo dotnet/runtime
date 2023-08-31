@@ -17,7 +17,6 @@
 #endif
 #endif // __cplusplus
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -828,8 +827,10 @@ gpointer g_convert_error_quark(void);
 #define g_assert(x) (G_LIKELY((x)) ? 1 : (mono_assertion_message (__FILE__, __LINE__, #x), 0))
 #endif
 
-#if defined(__cplusplus) || (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+#if defined(__cplusplus) || (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
 #define g_static_assert(x) static_assert (x, "")
+#elif (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+#define g_static_assert(x) _Static_assert (x, "")
 #else
 #error Mono requires static_assert (C11 or newer)
 /* #define g_static_assert(x) g_assert (x)*/
