@@ -30,13 +30,13 @@ namespace System.Net.Http
 
         [JSImport("INTERNAL.http_wasm_readable_stream_controller_enqueue")]
         public static partial void ReadableStreamControllerEnqueue(
-            JSObject controller,
+            [JSMarshalAs<JSType.Any>] object pullState,
             IntPtr bufferPtr,
             int bufferLength);
 
         [JSImport("INTERNAL.http_wasm_readable_stream_controller_error")]
         public static partial void ReadableStreamControllerError(
-            JSObject controller,
+            [JSMarshalAs<JSType.Any>] object pullState,
             Exception error);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
@@ -80,7 +80,7 @@ namespace System.Net.Http
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
             JSObject abortControler,
-            [JSMarshalAs<JSType.Function<JSType.Object, JSType.Number, JSType.Any>>] Action<JSObject, int, object> pull,
+            [JSMarshalAs<JSType.Function<JSType.Any>>] Action<object> pull,
             [JSMarshalAs<JSType.Any>] object pullState);
 
         [JSImport("INTERNAL.http_wasm_fetch_bytes")]

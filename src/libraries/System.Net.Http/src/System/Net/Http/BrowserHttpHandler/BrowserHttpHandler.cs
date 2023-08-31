@@ -267,28 +267,12 @@ namespace System.Net.Http
             }
         }
 
-        private static async void ReadableStreamPull(JSObject controller, int desiredSize, object state)
+        private static void ReadableStreamPull(object state)
         {
-            try
-            {
-                ReadableStreamPullState pullState = (ReadableStreamPullState)state;
-                Memory<byte> buffer = await pullState.ReadAsync(desiredSize).ConfigureAwait(true);
-                using (Buffers.MemoryHandle handle = buffer.Pin())
-                {
-                    ReadableStreamControllerEnqueueUnsafe(controller, handle, buffer.Length);
-                }
-            }
-            catch (Exception ex)
-            {
-                BrowserHttpInterop.ReadableStreamControllerError(controller, ex);
-            }
-            finally
-            {
-                controller.Dispose();
-            }
-
-            unsafe static void ReadableStreamControllerEnqueueUnsafe(JSObject controller, Buffers.MemoryHandle handle, int length) =>
-                BrowserHttpInterop.ReadableStreamControllerEnqueue(controller, (IntPtr)handle.Pointer, length);
+            ReadableStreamPullState pullState = (ReadableStreamPullState)state;
+#pragma warning disable CS4014 // intentionally not awaited
+            pullState.Pull();
+#pragma warning restore CS4014
         }
 
         private static HttpResponseMessage ConvertResponse(HttpRequestMessage request, WasmFetchResponse fetchResponse)
@@ -367,30 +351,27 @@ namespace System.Net.Http
 
             _stream = stream;
             _cancellationToken = cancellationToken;
+            _buffer = new byte[65536];
         }
 
-        public async Task<Memory<byte>> ReadAsync(int desiredSize)
+        public async Task Pull()
         {
-            Memory<byte> view;
-            if (desiredSize > 0)
+            try
             {
-                if (_buffer is null || _buffer.Length < desiredSize)
+                Memory<byte> view = _buffer;
+                int length = await _stream.ReadAsync(view, _cancellationToken).ConfigureAwait(true);
+                using (Buffers.MemoryHandle handle = view.Pin())
                 {
-                    view = _buffer = new byte[desiredSize];
-                }
-                else
-                {
-                    view = _buffer.AsMemory(0, desiredSize);
+                    ReadableStreamControllerEnqueueUnsafe(this, handle, view.Length);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                view = _buffer ??= new byte[65536];
+                BrowserHttpInterop.ReadableStreamControllerError(this, ex);
             }
-
-            int length = await _stream.ReadAsync(view, _cancellationToken).ConfigureAwait(true);
-            return view.Slice(0, length);
         }
+        private static unsafe void ReadableStreamControllerEnqueueUnsafe(object pullState, Buffers.MemoryHandle handle, int length) =>
+            BrowserHttpInterop.ReadableStreamControllerEnqueue(pullState, (IntPtr)handle.Pointer, length);
     }
 
     internal sealed class WasmFetchResponse : IDisposable
