@@ -48475,10 +48475,6 @@ HRESULT GCHeap::Initialize()
                 gc_heap::dynamic_heap_count_data.idle_thread_count = 0;
                 gc_heap::dynamic_heap_count_data.init_only_p = true;
 
-                // At this point we are guaranteed to be able to change the heap count to the new one.
-                // Change the heap count for joins here because we will need to join new_n_heaps threads together.
-                // TODO - fill in the detail of the race condition when we don't do that.
-                //dprintf (9999, ("changing join hp %d->%d", n_heaps, new_n_heaps));
                 int max_threads_to_wake = max (gc_heap::n_heaps, initial_n_heaps);
                 gc_t_join.update_n_threads (max_threads_to_wake);
                 gc_heap::gc_start_event.Set ();
@@ -50088,7 +50084,7 @@ void gc_heap::do_post_gc()
         current_memory_load));
 
 #if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
-    //flush_gc_log (false);
+    flush_gc_log (false);
 #endif //TRACE_GC && SIMPLE_DPRINTF
 
     // Now record the gc info.
