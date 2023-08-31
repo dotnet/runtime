@@ -359,6 +359,7 @@ namespace System.Net.Http
             try
             {
                 int length = await _stream.ReadAsync(_buffer, _cancellationToken).ConfigureAwait(true);
+                ReadableStreamControllerEnqueueUnsafe(this, _buffer, length);
             }
             catch (Exception ex)
             {
@@ -366,11 +367,11 @@ namespace System.Net.Http
             }
         }
 
-        private unsafe void ReadableStreamControllerEnqueueUnsafe(object pullState, int length)
+        private static unsafe void ReadableStreamControllerEnqueueUnsafe(object pullState, byte[] buffer, int length)
         {
-            fixed (byte* ptr = _buffer)
+            fixed (byte* ptr = buffer)
             {
-                BrowserHttpInterop.ReadableStreamControllerEnqueue(this, (nint)ptr, length);
+                BrowserHttpInterop.ReadableStreamControllerEnqueue(pullState, (nint)ptr, length);
             }
         }
     }
