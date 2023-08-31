@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- RequiresDynamicCode attributes removed during .NET 8: https://github.com/dotnet/runtime/commit/f424c0f7ce8b1453d7124a3def8cf44a4ff42ead. -->
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder:[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
