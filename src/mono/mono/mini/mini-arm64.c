@@ -3924,7 +3924,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_neon_not_16b (code, dreg, dreg);
 			break;
 		case OP_XEXTRACT: 
-			code = emit_xextract (code, VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
+			code = emit_xextract (code, (ins->inst_c1 == 8) ? VREG_LOW : VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
 			break;
 		case OP_STOREX_MEMBASE:
 			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
