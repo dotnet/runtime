@@ -10,7 +10,7 @@ namespace Internal.Runtime.Binder
         public struct AttemptResult
         {
             public Assembly? Assembly;
-            public Exception? Exception;
+            public int HResult;
             public bool Attempted;
         }
 
@@ -20,11 +20,11 @@ namespace Internal.Runtime.Binder
         private AttemptResult _inContextAttempt;
         private AttemptResult _applicationAssembliesResult;
 
-        public void SetAttemptResult(Assembly? assembly, Exception? exception, bool isInContext = false)
+        public void SetAttemptResult(int hResult, Assembly? assembly, bool isInContext = false)
         {
             ref AttemptResult result = ref (isInContext ? ref _inContextAttempt : ref _applicationAssembliesResult);
+            result.HResult = hResult;
             result.Assembly = assembly;
-            result.Exception = exception;
             result.Attempted = true;
         }
 

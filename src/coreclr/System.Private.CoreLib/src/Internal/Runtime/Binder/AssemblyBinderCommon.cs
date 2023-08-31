@@ -146,10 +146,14 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        public static Assembly? BindAssembly(AssemblyBinder binder, AssemblyName assemblyName, bool excludeAppPaths)
+        private const int FUSION_E_APP_DOMAIN_LOCKED = unchecked((int)0x80131053);
+
+        public static int BindAssembly(AssemblyBinder binder, AssemblyName assemblyName, bool excludeAppPaths, out Assembly? result)
         {
             int kContextVersion = 0;
-            BindResult bindResult;
+            BindResult bindResult = default;
+            int hr;
+            result = null;
             ApplicationContext applicationContext = binder.AppContext;
 
         // Tracing happens outside the binder lock to avoid calling into managed code within the lock
@@ -158,7 +162,9 @@ namespace Internal.Runtime.Binder
         Retry:
             lock (applicationContext.ContextCriticalSection)
             {
-                bindResult = BindByName(applicationContext, assemblyName, false, false, excludeAppPaths);
+                hr = BindByName(applicationContext, assemblyName, false, false, excludeAppPaths, ref bindResult);
+
+                if (hr < 0) return hr;
 
                 // Remember the post-bind version
                 kContextVersion = applicationContext.Version;
@@ -168,12 +174,9 @@ namespace Internal.Runtime.Binder
 
             if (bindResult.Assembly != null)
             {
-                if (RegisterAndGetHostChosen(applicationContext, kContextVersion, bindResult, out BindResult hostBindResult))
-                {
-                    Debug.Assert(hostBindResult.Assembly != null);
-                    return hostBindResult.Assembly;
-                }
-                else
+                hr = RegisterAndGetHostChosen(applicationContext, kContextVersion, bindResult, out BindResult hostBindResult);
+
+                if (hr == HResults.S_FALSE)
                 {
                     // Another bind interfered. We need to retry the entire bind.
                     // This by design loops as long as needed because by construction we eventually
@@ -181,99 +184,105 @@ namespace Internal.Runtime.Binder
                     bindResult = default;
                     goto Retry;
                 }
+                else if (hr == HResults.S_OK)
+                {
+                    Debug.Assert(hostBindResult.Assembly != null);
+                    result = hostBindResult.Assembly;
+                }
             }
 
-            return null;
+            return hr;
         }
 
         // Skipped - the managed binder can't bootstrap CoreLib
         // static Assembly? BindToSystem(string systemDirectory);
         // static Assembly? BindToSystemSatellite(string systemDirectory, string simpleName, string cultureName);
 
-        private static BindResult BindByName(ApplicationContext applicationContext, AssemblyName assemblyName, bool skipFailureChecking, bool skipVersionCompatibilityCheck, bool excludeAppPaths)
+        private static int BindByName(
+            ApplicationContext applicationContext,
+            AssemblyName assemblyName,
+            bool skipFailureChecking,
+            bool skipVersionCompatibilityCheck,
+            bool excludeAppPaths,
+            ref BindResult bindResult)
         {
             // Look for already cached binding failure (ignore PA, every PA will lock the context)
 
-            if (applicationContext.FailureCache.TryGetValue(new FailureCacheKey(assemblyName), out Exception? failure))
+            if (applicationContext.FailureCache.TryGetValue(new FailureCacheKey(assemblyName), out int hr))
             {
-                if (failure != null) // FAILED(hr)
+                if (hr < 0) // FAILED(hr)
                 {
-                    if (failure is FileNotFoundException && skipFailureChecking)
+                    if (hr == HResults.E_FILENOTFOUND && skipFailureChecking)
                     {
                         // Ignore pre-existing transient bind error (re-bind will succeed)
                         applicationContext.FailureCache.Remove(new FailureCacheKey(assemblyName));
                     }
 
-                    return default;
+                    return hr; // goto LogExit
                 }
-                else // hr == HResults.S_FALSE
+                else if (hr == HResults.S_FALSE)
                 {
                     // workaround: Special case for byte arrays. Rerun the bind to create binding log.
                     assemblyName.IsDefinition = true;
                 }
             }
 
-            BindResult bindResult = default;
-
-            try
+            if (!IsValidArchitecture(assemblyName.Architecture))
             {
-                if (!IsValidArchitecture(assemblyName.Architecture))
-                {
-                    // Assembly reference contains wrong architecture
-                    throw new Exception("FUSION_E_INVALID_NAME");
-                }
-
-                BindLocked(applicationContext, assemblyName, skipVersionCompatibilityCheck, excludeAppPaths, ref bindResult);
-
-                if (bindResult.Assembly == null)
-                {
-                    // Behavior rules are clueless now
-                    throw new FileNotFoundException();
-                }
-
-                return bindResult;
+                // Assembly reference contains wrong architecture
+                hr = HResults.FUSION_E_INVALID_NAME;
+                goto Exit;
             }
-            catch (Exception ex)
+
+            hr = BindLocked(applicationContext, assemblyName, skipVersionCompatibilityCheck, excludeAppPaths, ref bindResult);
+
+            if (hr < 0) return hr;
+
+            if (bindResult.Assembly == null)
+            {
+                // Behavior rules are clueless now
+                hr = HResults.E_FILENOTFOUND;
+                goto Exit;
+            }
+
+        Exit:
+            if (hr < 0)
             {
                 if (skipFailureChecking)
                 {
-                    if (ex is not FileNotFoundException)
+                    if (hr != HResults.E_FILENOTFOUND)
                     {
                         // Cache non-transient bind error for byte-array
-                        ex = null!;
+                        hr = HResults.S_FALSE;
                     }
                     else
                     {
                         // Ignore transient bind error (re-bind will succeed)
-                        return bindResult;
+                        return hr; // goto LogExit;
                     }
                 }
 
-                applicationContext.AddToFailureCache(assemblyName, ex);
-
-                throw;
+                applicationContext.AddToFailureCache(assemblyName, hr);
             }
+
+            return hr;
         }
 
-        private static void BindLocked(ApplicationContext applicationContext, AssemblyName assemblyName, bool skipVersionCompatibilityCheck, bool excludeAppPaths, ref BindResult bindResult)
+        private static int BindLocked(
+            ApplicationContext applicationContext,
+            AssemblyName assemblyName,
+            bool skipVersionCompatibilityCheck,
+            bool excludeAppPaths,
+            ref BindResult bindResult)
         {
             bool isTpaListProvided = applicationContext.TrustedPlatformAssemblyMap != null;
-            Assembly? assembly = null;
+            int hr = FindInExecutionContext(applicationContext, assemblyName, out Assembly? assembly);
 
-            try
-            {
-                assembly = FindInExecutionContext(applicationContext, assemblyName);
-            }
-            catch (Exception ex)
-            {
-                bindResult.SetAttemptResult(assembly, ex, isInContext: true);
-                throw;
-            }
+            // Add the attempt to the bind result on failure / not found. On success, it will be added after the version check.
+            if (hr < 0 || assembly == null)
+                bindResult.SetAttemptResult(hr, assembly, isInContext: true);
 
-            if (assembly == null) // if (FAILED(hr) || pAssembly == NULL)
-            {
-                bindResult.SetAttemptResult(null, null, isInContext: true);
-            }
+            if (hr < 0) return hr;
 
             if (assembly != null)
             {
@@ -281,66 +290,63 @@ namespace Internal.Runtime.Binder
                 {
                     // Can't give higher version than already bound
                     bool isCompatible = IsCompatibleAssemblyVersion(assemblyName, assembly.AssemblyName);
-                    Exception? exception = isCompatible ? null : new Exception("FUSION_E_APP_DOMAIN_LOCKED");
-                    bindResult.SetAttemptResult(assembly, exception, isInContext: true);
+                    hr = isCompatible ? HResults.S_OK : FUSION_E_APP_DOMAIN_LOCKED;
+                    bindResult.SetAttemptResult(hr, assembly, isInContext: true);
 
                     // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
-                    if (exception != null && isTpaListProvided) // hr == FUSION_E_APP_DOMAIN_LOCKED
-                        exception = new Exception("FUSION_E_REF_DEF_MISMATCH");
-
-                    if (exception != null)
-                        throw exception;
+                    if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided) // hr == FUSION_E_APP_DOMAIN_LOCKED
+                        hr = HResults.FUSION_E_REF_DEF_MISMATCH;
                 }
                 else
                 {
-                    bindResult.SetAttemptResult(assembly, null, isInContext: true);
+                    bindResult.SetAttemptResult(hr, assembly, isInContext: true);
                 }
+
+                if (hr < 0) return hr;
 
                 bindResult.SetResult(assembly, isInContext: true);
             }
             else if (isTpaListProvided)
             {
                 // BindByTpaList handles setting attempt results on the bind result
-                try
+                hr = BindByTpaList(applicationContext, assemblyName, excludeAppPaths, ref bindResult);
+
+                if (hr >= 0 && bindResult.Assembly != null) // SUCCEEDED(hr) && pBindResult->HaveResult()
                 {
-                    BindByTpaList(applicationContext, assemblyName, excludeAppPaths, ref bindResult);
+                    bool isCompatible = IsCompatibleAssemblyVersion(assemblyName, bindResult.Assembly.AssemblyName);
+                    hr = isCompatible ? HResults.S_OK : FUSION_E_APP_DOMAIN_LOCKED;
+                    bindResult.SetAttemptResult(hr, assembly, isInContext: false);
 
-                    if (bindResult.Assembly != null) // SUCCEEDED(hr) && pBindResult->HaveResult()
-                    {
-                        bool isCompatible = IsCompatibleAssemblyVersion(assemblyName, bindResult.Assembly.AssemblyName);
-                        Exception? exception = isCompatible ? null : new Exception("FUSION_E_APP_DOMAIN_LOCKED");
-                        bindResult.SetAttemptResult(bindResult.Assembly, exception, isInContext: false);
-
-                        // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
-                        if (exception != null && isTpaListProvided) // hr == FUSION_E_APP_DOMAIN_LOCKED
-                            exception = new Exception("FUSION_E_REF_DEF_MISMATCH");
-
-                        if (exception != null)
-                            throw exception;
-                    }
+                    // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                    if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided) // hr == FUSION_E_APP_DOMAIN_LOCKED
+                        hr = HResults.FUSION_E_REF_DEF_MISMATCH;
                 }
-                catch
+
+                if (hr < 0)
                 {
                     bindResult.SetNoResult();
-                    throw;
                 }
             }
+
+            return hr;
         }
 
-        private static Assembly? FindInExecutionContext(ApplicationContext applicationContext, AssemblyName assemblyName)
+        private static int FindInExecutionContext(ApplicationContext applicationContext, AssemblyName assemblyName, out Assembly? assembly)
         {
-            applicationContext.ExecutionContext.TryGetValue(assemblyName, out Assembly? assembly);
+            applicationContext.ExecutionContext.TryGetValue(assemblyName, out assembly);
 
             // Set any found context entry. It is up to the caller to check the returned HRESULT
             // for errors due to validation
+            if (assembly == null)
+                return HResults.S_FALSE;
 
             if (assembly != null && assemblyName.IsDefinition
                 && (assembly.AssemblyName.Architecture != assemblyName.Architecture))
             {
-                throw new Exception("FUSION_E_APP_DOMAIN_LOCKED");
+                return FUSION_E_APP_DOMAIN_LOCKED;
             }
 
-            return assembly;
+            return HResults.S_OK;
         }
 
         //
@@ -370,7 +376,7 @@ namespace Internal.Runtime.Binder
 
         // TODO: BindSatelliteResource
 
-        private static Assembly BindAssemblyByProbingPaths(List<string> bindingPaths, AssemblyName requestedAssemblyName)
+        private static int BindAssemblyByProbingPaths(List<string> bindingPaths, AssemblyName requestedAssemblyName, out Assembly? result)
         {
             // Loop through the binding paths looking for a matching assembly
             foreach (string bindingPath in bindingPaths)
@@ -380,36 +386,44 @@ namespace Internal.Runtime.Binder
                 // Look for a matching dll first
                 string fileName = fileNameWithoutExtension + ".dll";
 
-                try
-                {
-                    Assembly assembly = GetAssembly(fileName, false);
+                int hr = GetAssembly(fileName, isInTPA: false, out Assembly? assembly);
+                // BinderTracing::PathProbed(fileName, pathSource, hr);
 
+                if (hr < 0)
+                {
+                    fileName = fileNameWithoutExtension + ".exe";
+                    hr = GetAssembly(fileName, isInTPA: false, out assembly);
                     // BinderTracing::PathProbed(fileName, pathSource, hr);
-
-                    // We found a candidate.
-                    //
-                    // Below this point, we either establish that the ref-def matches, or
-                    // we fail the bind.
-
-                    // Compare requested AssemblyName with that from the candidate assembly
-                    if (!TestCandidateRefMatchesDef(requestedAssemblyName, assembly.AssemblyName, false))
-                        throw new Exception("FUSION_E_REF_DEF_MISMATCH");
-
-                    return assembly; // S_OK
                 }
-                catch (Exception ex)
+
+                // Since we're probing, file not founds are ok and we should just try another
+                // probing path
+                if (hr == HResults.COR_E_FILENOTFOUND)
                 {
-                    if (ex is FileNotFoundException)
-                    {
-                        // Since we're probing, file not founds are ok and we should just try another
-                        // probing path
-                        continue;
-                    }
-
+                    continue;
                 }
+
+                // Set any found assembly. It is up to the caller to check the returned HRESULT for errors due to validation
+                result = assembly;
+                if (hr < 0)
+                    return hr;
+
+                // We found a candidate.
+                //
+                // Below this point, we either establish that the ref-def matches, or
+                // we fail the bind.
+
+                Debug.Assert(assembly != null);
+
+                // Compare requested AssemblyName with that from the candidate assembly
+                if (!TestCandidateRefMatchesDef(requestedAssemblyName, assembly.AssemblyName, tpaListAssembly: false))
+                    return HResults.FUSION_E_REF_DEF_MISMATCH;
+
+                return HResults.S_OK;
             }
 
-            throw new FileNotFoundException();
+            result = null;
+            return HResults.COR_E_FILENOTFOUND;
         }
 
         /*
@@ -433,7 +447,7 @@ namespace Internal.Runtime.Binder
          *
          */
 
-        public static void BindByTpaList(ApplicationContext applicationContext, AssemblyName requestedAssemblyName, bool excludeAppPaths, ref BindResult bindResult)
+        public static int BindByTpaList(ApplicationContext applicationContext, AssemblyName requestedAssemblyName, bool excludeAppPaths, ref BindResult bindResult)
         {
             bool fPartialMatchOnTpa = false;
 
@@ -460,37 +474,31 @@ namespace Internal.Runtime.Binder
                     string? tpaFileName = tpaEntry.NIFileName ?? tpaEntry.ILFileName;
                     Debug.Assert(tpaFileName != null);
 
-                    try
+                    int hr = GetAssembly(tpaFileName, isInTPA: true, out tpaAssembly);
+                    // BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
+
+                    bindResult.SetAttemptResult(hr, tpaAssembly);
+
+                    // On file not found, simply fall back to app path probing
+                    if (hr != HResults.E_FILENOTFOUND)
                     {
-                        tpaAssembly = GetAssembly(tpaFileName, isInTPA: true);
-                        // BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
+                        // Any other error is fatal
+                        if (hr < 0) return hr;
 
-                        bindResult.SetAttemptResult(tpaAssembly, null);
-
-                        if (TestCandidateRefMatchesDef(requestedAssemblyName, tpaAssembly.AssemblyName, true))
+                        Debug.Assert(tpaAssembly != null);
+                        if (TestCandidateRefMatchesDef(requestedAssemblyName, tpaAssembly.AssemblyName, tpaListAssembly: true))
                         {
                             // We have found the requested assembly match on TPA with validation of the full-qualified name. Bind to it.
                             bindResult.SetResult(tpaAssembly);
-                            bindResult.SetAttemptResult(tpaAssembly, null);
-                            return;
+                            bindResult.SetAttemptResult(HResults.S_OK, tpaAssembly);
+                            return HResults.S_OK;
                         }
                         else
                         {
                             // We found the assembly on TPA but it didn't match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
                             // assembly in the App paths.
-                            bindResult.SetAttemptResult(tpaAssembly, new Exception("FUSION_E_REF_DEF_MISMATCH"));
+                            bindResult.SetAttemptResult(HResults.FUSION_E_REF_DEF_MISMATCH, tpaAssembly);
                             fPartialMatchOnTpa = true;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        bindResult.SetAttemptResult(null, ex);
-
-                        // On file not found, simply fall back to app path probing
-                        if (ex is not FileNotFoundException)
-                        {
-                            // Any other error is fatal
-                            throw;
                         }
                     }
 
@@ -501,10 +509,13 @@ namespace Internal.Runtime.Binder
                 {
                     // Probe AppPaths
 
-                    try
+                    int hr = BindAssemblyByProbingPaths(applicationContext.AppPaths, requestedAssemblyName, out Assembly? assembly);
+                    bindResult.SetAttemptResult(hr, assembly);
+
+                    if (hr != HResults.E_FILENOTFOUND)
                     {
-                        Assembly assembly = BindAssemblyByProbingPaths(applicationContext.AppPaths, requestedAssemblyName);
-                        bindResult.SetAttemptResult(assembly, null);
+                        if (hr < 0) return hr;
+                        Debug.Assert(assembly != null);
 
                         // At this point, we have found an assembly with the expected name in the App paths. If this was also found on TPA,
                         // make sure that the app assembly has the same fullname (excluding version) as the TPA version. If it does, then
@@ -518,24 +529,21 @@ namespace Internal.Runtime.Binder
                             {
                                 // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
                                 bindResult.SetResult(tpaAssembly);
-                                bindResult.SetAttemptResult(tpaAssembly, null);
-                                return;
+                                bindResult.SetAttemptResult(hr, tpaAssembly);
+                                return HResults.S_OK;
                             }
                             else
                             {
                                 // Fullname (SimpleName+Culture+PKT) did not match for TPA and app assembly - so bind to app instance.
                                 bindResult.SetResult(assembly);
-                                return;
+                                return HResults.S_OK;
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        bindResult.SetAttemptResult(null, ex);
-
-                        if (ex is not FileNotFoundException)
+                        else
                         {
-                            throw;
+                            // We didn't see this assembly on TPA - so simply bind to the app instance.
+                            bindResult.SetResult(assembly);
+                            return HResults.S_OK;
                         }
                     }
                 }
@@ -544,12 +552,17 @@ namespace Internal.Runtime.Binder
             // Couldn't find a matching assembly in any of the probing paths
             // Return S_FALSE here. BindByName will interpret a successful HRESULT
             // and lack of BindResult as a failure to find a matching assembly.
-            return;
+            return HResults.S_FALSE;
         }
 
         // static Assembly GetAssembly(string assemblyPath, bool isInTPA, BundleFileLocation);
 
-        public static void Register(ApplicationContext applicationContext, ref BindResult bindResult)
+        static int GetAssembly(string assemblyPath, bool isInTPA, out Assembly? assembly)
+        {
+            throw null;
+        }
+
+        public static int Register(ApplicationContext applicationContext, ref BindResult bindResult)
         {
             Debug.Assert(bindResult.IsContextBound);
             Debug.Assert(bindResult.Assembly != null);
@@ -558,7 +571,9 @@ namespace Internal.Runtime.Binder
 
             // Register the bindResult in the ExecutionContext only if we dont have it already.
             // This method is invoked under a lock (by its caller), so we are thread safe.
-            Assembly? assembly = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName);
+            int hr = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName, out Assembly? assembly);
+            if (hr < 0)
+                return hr;
 
             if (assembly == null)
             {
@@ -569,12 +584,15 @@ namespace Internal.Runtime.Binder
                 // Update the BindResult with the assembly we found
                 bindResult.SetResult(assembly, isInContext: true);
             }
+
+            return HResults.S_OK;
         }
 
-        public static bool RegisterAndGetHostChosen(ApplicationContext applicationContext, int kContextVersion, BindResult bindResult, out BindResult hostBindResult)
+        public static int RegisterAndGetHostChosen(ApplicationContext applicationContext, int kContextVersion, in BindResult bindResult, out BindResult hostBindResult)
         {
             Debug.Assert(bindResult.Assembly != null);
             hostBindResult = default;
+            int hr = HResults.S_OK;
 
             if (!bindResult.IsContextBound)
             {
@@ -586,15 +604,19 @@ namespace Internal.Runtime.Binder
                     // Only perform costly validation if other binds succeeded before us
                     if (kContextVersion != applicationContext.Version)
                     {
-                        if (OtherBindInterferred(applicationContext, bindResult)) // S_FALSE == return true
+                        hr = OtherBindInterferred(applicationContext, bindResult);
+                        if (hr < 0) return hr;
+
+                        if (hr == HResults.S_FALSE)
                         {
                             // Another bind interfered
-                            return false; // S_FALSE == return false
+                            return hr;
                         }
                     }
 
                     // No bind interfered, we can now register
-                    Register(applicationContext, ref hostBindResult);
+                    hr = Register(applicationContext, ref hostBindResult);
+                    if (hr < 0) return hr;
                 }
             }
             else
@@ -603,40 +625,27 @@ namespace Internal.Runtime.Binder
                 hostBindResult = bindResult;
             }
 
-            return true;
+            return hr;
         }
 
-        private static bool OtherBindInterferred(ApplicationContext applicationContext, BindResult bindResult)
+        private static int OtherBindInterferred(ApplicationContext applicationContext, BindResult bindResult)
         {
             Debug.Assert(bindResult.Assembly != null);
+            Debug.Assert(bindResult.Assembly.AssemblyName != null);
 
             // Look for already cached binding failure (ignore PA, every PA will lock the context)
-            if (!applicationContext.FailureCache.ContainsKey(new FailureCacheKey(bindResult.Assembly.AssemblyName)))
+            if (!applicationContext.FailureCache.ContainsKey(new FailureCacheKey(bindResult.Assembly.AssemblyName))) // hr == S_OK
             {
-                // hr == S_OK
-                try
+                int hr = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName, out Assembly? assembly);
+                if (hr >= 0 && assembly != null)
                 {
-                    Assembly? assembly = FindInExecutionContext(applicationContext, bindResult.Assembly.AssemblyName);
-                    if (assembly != null) // SUCCEEDED(hr)
-                    {
-                        // We can accept this bind in the domain
-                        return false; // S_OK == return false
-                    }
+                    // We can accept this bind in the domain
+                    return HResults.S_OK;
                 }
-                catch
-                {
-                    // No throwing
-                }
-
             }
 
             // Some other bind interfered
-            return true; // S_FALSE == return true
-        }
-
-        static Assembly GetAssembly(string assemblyPath, bool isInTPA)
-        {
-            throw null;
+            return HResults.S_FALSE;
         }
 
         public static bool IsValidArchitecture(PEKind architecture)

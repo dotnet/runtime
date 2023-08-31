@@ -28,7 +28,7 @@ namespace Internal.Runtime.Binder
 
         public Dictionary<AssemblyName, Assembly> ExecutionContext { get; } = new Dictionary<AssemblyName, Assembly>();
 
-        public Dictionary<FailureCacheKey, Exception?> FailureCache { get; } = new Dictionary<FailureCacheKey, Exception?>();
+        public Dictionary<FailureCacheKey, int> FailureCache { get; } = new Dictionary<FailureCacheKey, int>();
 
         public object ContextCriticalSection { get; } = new object();
 
@@ -300,9 +300,9 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        public void AddToFailureCache(AssemblyName assemblyName, Exception? failure)
+        public void AddToFailureCache(AssemblyName assemblyName, int hresult)
         {
-            FailureCache.Add(new FailureCacheKey(assemblyName), failure);
+            FailureCache.Add(new FailureCacheKey(assemblyName), hresult);
             IncrementVersion();
         }
     }
