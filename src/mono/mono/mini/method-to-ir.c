@@ -2306,14 +2306,12 @@ emit_not_supported_failure (MonoCompile *cfg)
 static void
 emit_type_load_failure (MonoCompile* cfg, MonoClass* klass)
 {
-	char* class_name;
-	if (G_UNLIKELY (!klass)) 
-		class_name = mono_mem_manager_strdup (cfg->mem_manager, "Unknown class" );
-	else
-		class_name = mono_mem_manager_strdup (cfg->mem_manager, mono_class_full_name (klass));
+	MonoClass* failed_class = klass;
+	if (G_UNLIKELY (!failed_class)) 
+		failed_class = mono_defaults.object_class;
 
 	MonoInst* iargs[1];
-	EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], class_name);
+	EMIT_NEW_CLASSCONST (cfg, iargs [0], failed_class);
 	mono_emit_jit_icall (cfg, mono_throw_type_load, iargs);
 }
 
@@ -4979,8 +4977,12 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 #define CLEAR_TYPELOAD_EXCEPTION(cfg) if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD) { clear_cfg_error (cfg); cfg->exception_type = MONO_EXCEPTION_NONE; }
 #define IF_TYPELOAD_ERROR(klass) if (!(klass) || mono_class_has_failure (klass))
-#define HANDLE_TYPELOAD_ERROR(cfg,klass) if (!cfg->compile_aot) TYPE_LOAD_ERROR ((klass)); emit_type_load_failure (cfg, klass); CLEAR_TYPELOAD_EXCEPTION (cfg);
-
+#define HANDLE_TYPELOAD_ERROR(cfg,klass) do { \
+		if (!cfg->compile_aot) \
+			TYPE_LOAD_ERROR ((klass)); \
+		emit_type_load_failure (cfg, klass); \
+		CLEAR_TYPELOAD_EXCEPTION (cfg); \
+	} while (0)
 
 /* offset from br.s -> br like opcodes */
 #define BIG_BRANCH_OFFSET 13
@@ -9405,10 +9407,7 @@ calli_end:
 		case MONO_CEE_ISINST: {
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (klass) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
-				break; // reached only in AOT
-			}
+			CHECK_TYPELOAD (klass);
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
@@ -9430,10 +9429,7 @@ calli_end:
 
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (klass) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
-				break; // reached in AOT only
-			}
+			CHECK_TYPELOAD (klass);
 
 			mono_save_token_info (cfg, image, token, klass);
 
@@ -9865,10 +9861,7 @@ calli_end:
 		case MONO_CEE_UNBOX: {
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (klass) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
-				break; // reached in AOT only
-			}
+			CHECK_TYPELOAD (klass);
 
 			mono_save_token_info (cfg, image, token, klass);
 
@@ -10420,10 +10413,7 @@ field_access_end:
 		case MONO_CEE_STOBJ:
 			sp -= 2;
 			klass = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (klass) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
-				break;
-			}
+			CHECK_TYPELOAD (klass);
 
 			/* FIXME: should check item at sp [1] is compatible with the type of the store. */
 			mini_emit_memory_store (cfg, m_class_get_byval_arg (klass), sp [0], sp [1], ins_flag);
@@ -10443,10 +10433,7 @@ field_access_end:
 			--sp;
 
 			klass = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (klass) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
-				break;
-			}
+			CHECK_TYPELOAD (klass);
 			if (m_class_get_byval_arg (klass)->type == MONO_TYPE_VOID)
 				UNVERIFIED;
 
@@ -10572,10 +10559,7 @@ field_access_end:
 			cfg->flags |= MONO_CFG_HAS_LDELEMA;
 
 			klass = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (klass) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
-				break; // reached only in AOT
-			}
+			CHECK_TYPELOAD (klass);
 			/* we need to make sure that this array is exactly the type it needs
 			 * to be for correctness. the wrappers are lax with their usage
 			 * so we need to ignore them here
@@ -10608,10 +10592,7 @@ field_access_end:
 
 			if (il_op == MONO_CEE_LDELEM) {
 				klass = mini_get_class (method, token, generic_context);
-				IF_TYPELOAD_ERROR (klass) {
-					HANDLE_TYPELOAD_ERROR (cfg, klass);
-					break; // reached only in AOT
-				}
+				CHECK_TYPELOAD (klass);
 				mono_class_init_internal (klass);
 			}
 			else
@@ -10659,10 +10640,7 @@ field_access_end:
 
 			if (il_op == MONO_CEE_STELEM) {
 				klass = mini_get_class (method, token, generic_context);
-				IF_TYPELOAD_ERROR (klass) {
-					HANDLE_TYPELOAD_ERROR (cfg, klass);
-					break; // reached only in AOT
-				}
+				CHECK_TYPELOAD (klass);
 				mono_class_init_internal (klass);
 			}
 			else
@@ -10709,10 +10687,7 @@ field_access_end:
 			MONO_INST_NEW (cfg, ins, il_op);
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (klass) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
-				break; // reached only in AOT
-			}
+			CHECK_TYPELOAD (klass);
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
@@ -10749,10 +10724,7 @@ field_access_end:
 			MONO_INST_NEW (cfg, ins, il_op);
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (klass) {
-				HANDLE_TYPELOAD_ERROR (cfg, klass);
-				break; // reached only in AOT
-			}
+			CHECK_TYPELOAD (klass);
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
@@ -11927,9 +11899,7 @@ mono_ldptr:
 			break;
 		case MONO_CEE_CONSTRAINED_:
 			constrained_class = mini_get_class (method, token, generic_context);
-			IF_TYPELOAD_ERROR (constrained_class) {
-				HANDLE_TYPELOAD_ERROR (cfg, constrained_class);
-			}
+			CHECK_TYPELOAD (klass);
 			ins_has_side_effect = FALSE;
 			break;
 		case MONO_CEE_CPBLK:
