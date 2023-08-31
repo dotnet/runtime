@@ -525,7 +525,7 @@ if(GCC)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
   else()
     # We require C99 with some GNU extensions, e.g. `linux` macro
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
   endif()
 
   # Turn off floating point expression contraction because it is considered a value changing
