@@ -7,6 +7,7 @@ parameters:
   testGroup: ''
   crossBuild: false
   readyToRun: false
+  hotColdSplitting: false
   liveLibrariesBuildConfig: ''
   compositeBuildMode: false
   useCodeFlowEnforcement: ''
@@ -119,6 +120,9 @@ jobs:
           value: 'composite'
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_Composite
+      - ${{ if eq(parameters.hotColdSplitting, true) }}:
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_HotColdSplitting
 
     - name: testTreeFilterArg
       value: ''
@@ -349,6 +353,7 @@ jobs:
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
         tieringTest: ${{ parameters.tieringTest }}
+        hotColdSplitting: ${{ parameters.hotColdSplitting }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
