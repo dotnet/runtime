@@ -271,7 +271,7 @@ namespace System.Net.Http
         {
             ReadableStreamPullState pullState = (ReadableStreamPullState)state;
 #pragma warning disable CS4014 // intentionally not awaited
-            pullState.Pull();
+            pullState.PullAsync();
 #pragma warning restore CS4014
         }
 
@@ -354,24 +354,25 @@ namespace System.Net.Http
             _buffer = new byte[65536];
         }
 
-        public async Task Pull()
+        public async Task PullAsync()
         {
             try
             {
-                Memory<byte> view = _buffer;
-                int length = await _stream.ReadAsync(view, _cancellationToken).ConfigureAwait(true);
-                using (Buffers.MemoryHandle handle = view.Pin())
-                {
-                    ReadableStreamControllerEnqueueUnsafe(this, handle, length);
-                }
+                int length = await _stream.ReadAsync(_buffer, _cancellationToken).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
                 BrowserHttpInterop.ReadableStreamControllerError(this, ex);
             }
         }
-        private static unsafe void ReadableStreamControllerEnqueueUnsafe(object pullState, Buffers.MemoryHandle handle, int length) =>
-            BrowserHttpInterop.ReadableStreamControllerEnqueue(pullState, (IntPtr)handle.Pointer, length);
+
+        private unsafe void ReadableStreamControllerEnqueueUnsafe(object pullState, int length)
+        {
+            fixed (byte* ptr = _buffer)
+            {
+                BrowserHttpInterop.ReadableStreamControllerEnqueue(this, (nint)ptr, length);
+            }
+        }
     }
 
     internal sealed class WasmFetchResponse : IDisposable

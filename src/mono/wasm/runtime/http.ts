@@ -101,7 +101,7 @@ export function http_wasm_readable_stream_controller_error(pull_state: PullState
 export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController,
     pull_delegate: (pull_state: PullStateExtension) => void,
     pull_state: PullStateExtension): Promise<ResponseExtension> {
-    function pull(controller: ReadableByteStreamController): Promise<void> {
+    function pull(controller: ReadableStreamDefaultController<Uint8Array>): Promise<void> {
         const { promise, promise_control } = createPromiseController<void>();
         try {
             mono_assert(!pull_state.__pull_promise_control, "expected pull_promise_control to be null");
@@ -123,8 +123,7 @@ export function http_wasm_fetch_stream(url: string, header_names: string[], head
         pull_state.__fetch_promise_control?.reject(error);
     }
 
-    const body = new ReadableStream({
-        type: "bytes",
+    const body = new ReadableStream<Uint8Array>({
         pull,
         cancel
     });
@@ -248,7 +247,7 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
 interface PullStateExtension extends ManagedObject {
     __pull_promise_control: PromiseController<void> | null
     __fetch_promise_control: PromiseController<ResponseExtension> | null
-    __controller: ReadableByteStreamController | null
+    __controller: ReadableStreamDefaultController<Uint8Array> | null
 }
 
 interface ResponseExtension extends Response {
