@@ -137,6 +137,7 @@
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
     <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
     <TasksConfiguration Condition="'$(TasksConfiguration)' == ''">$(Configuration)</TasksConfiguration>
+    <ToolsConfiguration Condition="'$(ToolsConfiguration)' == ''">$(Configuration)</ToolsConfiguration>
   </PropertyGroup>
 
   <PropertyGroup>
