@@ -230,7 +230,6 @@ namespace System.Net.Http.Functional.Tests
 
 #if NETCOREAPP
 
-        [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public async Task BrowserHttpHandler_Streaming()
         {
