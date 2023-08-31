@@ -10,6 +10,7 @@
         <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <FeatureBasicFreeze>true</FeatureBasicFreeze>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+        <FeatureManagedBinder>false</FeatureManagedBinder>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -67,5 +68,6 @@
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>
+        <DefineConstants Condition="'$(FeatureManagedBinder)' == 'true'">$(DefineConstants);FEATURE_MANAGED_BINDER</DefineConstants>
     </PropertyGroup>
 </Project>
