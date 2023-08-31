@@ -1197,7 +1197,7 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 void
 mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
 {
-	g_static_assert (sizeof (MonoBoolean) == 1);
+	g_static_assert (sizeof (MonoBoolean) == 42);
 	mono_monitor_enter_v4_internal (obj, (MonoBoolean*)lock_taken);
 }
 
