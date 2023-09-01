@@ -293,10 +293,10 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		return NULL;
 	}
 
-	bool raw_fields_to_read[MONO_MEMBERREF_SIZE] = { 0 };
-	raw_fields_to_read[MONO_MEMBERREF_SIGNATURE] = true;
-	guint32 raw_fields[MONO_MEMBERREF_SIZE];
-	if (!md_get_column_values_raw (c, MONO_MEMBERREF_SIZE, raw_fields_to_read, raw_fields))
+	bool raw_fields_to_read[mdtMemberRef_ColCount] = { 0 };
+	raw_fields_to_read[mdtMemberRef_Signature] = true;
+	guint32 raw_fields[mdtMemberRef_ColCount];
+	if (!md_get_column_values_raw (c, mdtMemberRef_ColCount, raw_fields_to_read, raw_fields))
 		return NULL;
 
 	/* FIXME: This needs a cache, especially for generic instances, since
@@ -304,7 +304,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	 * FIXME part2, mono_metadata_parse_type_checked actually allows for a transient type instead.
 	 * FIXME part3, transient types are not 100% transient, so we need to take care of that first.
 	 */
-	sig_type = (MonoType *)find_cached_memberref_sig (image, raw_fields[MONO_MEMBERREF_SIGNATURE]);
+	sig_type = (MonoType *)find_cached_memberref_sig (image, raw_fields[mdtMemberRef_Signature]);
 	if (!sig_type) {
 		ERROR_DECL (inner_error);
 		sig_type = mono_metadata_parse_type_checked (image, NULL, 0, FALSE, ptr, &ptr, inner_error);
@@ -313,7 +313,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 			mono_error_cleanup (inner_error);
 			return NULL;
 		}
-		sig_type = (MonoType *)cache_memberref_sig (image, raw_fields[MONO_MEMBERREF_SIGNATURE], sig_type);
+		sig_type = (MonoType *)cache_memberref_sig (image, raw_fields[mdtMemberRef_Signature], sig_type);
 	}
 
 	mono_class_init_internal (klass); /*FIXME is this really necessary?*/
@@ -739,11 +739,7 @@ MonoMethodSignature*
 mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error)
 {
 	int table = mono_metadata_token_table (token);
-	int idx = mono_metadata_token_index (token);
-	int sig_idx;
-	guint32 cols [MONO_MEMBERREF_SIZE];
 	MonoMethodSignature *sig;
-	const char *ptr;
 
 	error_init (error);
 
@@ -769,19 +765,27 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 		if (!sig)
 			return NULL;
 	} else {
-		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
-		sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
+		mdcursor_t mr;
+		if (!md_token_to_cursor (image->metadata_handle, token, &mr))
+			return NULL;
 
-		sig = (MonoMethodSignature *)find_cached_memberref_sig (image, sig_idx);
+		bool raw_fields_to_read[mdtMemberRef_ColCount] = { 0 };
+		raw_fields_to_read[mdtMemberRef_Class] = true;
+		guint32 raw_fields[mdtMemberRef_ColCount];
+		if (!md_get_column_values_raw (mr, mdtMemberRef_ColCount, raw_fields_to_read, raw_fields))
+			return NULL;
+
+		sig = (MonoMethodSignature *)find_cached_memberref_sig (image, raw_fields[mdtMemberRef_Signature]);
 		if (!sig) {
-			ptr = mono_metadata_blob_heap (image, sig_idx);
-			mono_metadata_decode_blob_size (ptr, &ptr);
-
-			sig = mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, error);
-			if (!sig)
+			uint8_t const *ptr;
+			uint32_t sig_len;
+			if (1 != md_get_column_value_as_blob (mr, mdtMemberRef_Signature, 1, &ptr, &sig_len))
+				return NULL;
+			sig = mono_metadata_parse_method_signature_full (image, NULL, 0, (const char*)ptr, NULL, error);
+			if (sig == NULL)
 				return NULL;
 
-			sig = (MonoMethodSignature *)cache_memberref_sig (image, sig_idx, sig);
+			sig = (MonoMethodSignature *)cache_memberref_sig (image, raw_fields[mdtMemberRef_Signature], sig);
 		}
 	}
 
@@ -912,19 +916,19 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	if (1 != md_get_column_value_as_blob (mr, mdtMemberRef_Signature, 1, &ptr, &sig_len))
 		goto fail;
 
-	bool raw_fields_to_read[MONO_MEMBERREF_SIZE] = { 0 };
-	raw_fields_to_read[MONO_MEMBERREF_SIGNATURE] = true;
-	guint32 raw_fields[MONO_MEMBERREF_SIZE];
-	if (!md_get_column_values_raw (mr, MONO_MEMBERREF_SIZE, raw_fields_to_read, raw_fields))
+	bool raw_fields_to_read[mdtMemberRef_ColCount] = { 0 };
+	raw_fields_to_read[mdtMemberRef_Class] = true;
+	guint32 raw_fields[mdtMemberRef_ColCount];
+	if (!md_get_column_values_raw (mr, mdtMemberRef_ColCount, raw_fields_to_read, raw_fields))
 		return NULL;
 
-	sig = (MonoMethodSignature *)find_cached_memberref_sig (image, raw_fields[MONO_MEMBERREF_SIGNATURE]);
+	sig = (MonoMethodSignature *)find_cached_memberref_sig (image, raw_fields[mdtMemberRef_Signature]);
 	if (!sig) {
 		sig = mono_metadata_parse_method_signature_full (image, NULL, 0, (const char*)ptr, NULL, error);
 		if (sig == NULL)
 			goto fail;
 
-		sig = (MonoMethodSignature *)cache_memberref_sig (image, raw_fields[MONO_MEMBERREF_SIGNATURE], sig);
+		sig = (MonoMethodSignature *)cache_memberref_sig (image, raw_fields[mdtMemberRef_Signature], sig);
 	}
 
 	switch (mono_metadata_token_table(class_token)) {
@@ -1860,7 +1864,6 @@ mono_method_signature_checked_slow (MonoMethod *m, MonoError *error)
 	gboolean can_cache_signature;
 	MonoGenericContainer *container;
 	MonoMethodSignature *signature = NULL, *sig2;
-	guint32 sig_offset;
 
 	/* We need memory barriers below because of the double-checked locking pattern */
 
@@ -1893,9 +1896,16 @@ mono_method_signature_checked_slow (MonoMethod *m, MonoError *error)
 	}
 
 	g_assert (mono_metadata_token_table (m->token) == MONO_TABLE_METHOD);
+	mdcursor_t cursor;
+	if (!md_token_to_cursor (img->metadata_handle, m->token, &cursor)) {
+		return NULL;
+	}
 	idx = mono_metadata_token_index (m->token);
 
-	sig = mono_metadata_blob_heap (img, sig_offset = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
+	uint32_t sig_len;
+	if (1 != md_get_column_value_as_blob (cursor, mdtMethodDef_Signature, 1, (uint8_t const**)&sig, &sig_len)) {
+		return NULL;
+	}
 
 	g_assert (!mono_class_is_ginst (m->klass));
 	container = mono_method_get_generic_container (m);
@@ -1917,11 +1927,7 @@ mono_method_signature_checked_slow (MonoMethod *m, MonoError *error)
 	}
 
 	if (!signature) {
-		const char *sig_body;
-
-		/* size = */ mono_metadata_decode_blob_size (sig, &sig_body);
-
-		signature = mono_metadata_parse_method_signature_full (img, container, idx, sig_body, NULL, error);
+		signature = mono_metadata_parse_method_signature_full (img, container, idx, sig, NULL, error);
 		if (!signature)
 			return NULL;
 
@@ -2129,7 +2135,12 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 		loc = mono_metadata_update_get_updated_method_rva (img, idx);
 
 	if (!loc) {
-		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+		mdcursor_t cursor;
+		if (!md_token_to_cursor (img->metadata_handle, method->token, &cursor))
+			g_assert_not_reached();
+
+		if (1 != md_get_column_value_as_constant (cursor, mdtMethodDef_Rva, 1, &rva))
+			g_assert_not_reached();
 
 		loc = mono_image_rva_map (img, rva);
 	}
@@ -2180,7 +2191,14 @@ mono_method_metadata_has_header (MonoMethod *method)
 		loc = mono_metadata_update_get_updated_method_rva (img, idx);
 
 	if (!loc) {
-		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+		
+		mdcursor_t cursor;
+		if (!md_token_to_cursor (img->metadata_handle, method->token, &cursor))
+			g_assert_not_reached();
+
+		if (1 != md_get_column_value_as_constant (cursor, mdtMethodDef_Rva, 1, &rva))
+			g_assert_not_reached();
+
 		loc = mono_image_rva_map (img, rva);
 	}
 
