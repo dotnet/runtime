@@ -4,8 +4,8 @@
 #include "common.h"
 
 #ifdef PROFILING_SUPPORTED
-#include "proftoeeinterfaceimpl.h"
 #include "asmconstants.h"
+#include "proftoeeinterfaceimpl.h"
 
 UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void* pPlatformSpecificHandle)
 {
@@ -120,9 +120,9 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters(const ArgLocDesc* sir)
     int fieldCount = (sir->m_structFields & STRUCT_FLOAT_FIELD_ONLY_ONE) ? 1 : 2;
     UINT64 bufferPosBegin = m_bufferPos;
     const double *fRegBegin = &pData->floatArgumentRegisters.f[sir->m_idxFloatReg], *fReg = fRegBegin;
-    const double *fRegEnd = fReg + sizeof(pData->floatArgumentRegisters.f)/sizeof(pData->floatArgumentRegisters.f[0]);
+    const double *fRegEnd = &pData->floatArgumentRegisters.f[0] + NUM_FLOAT_ARGUMENT_REGISTERS;
     const INT64 *aRegBegin = &pData->argumentRegisters.a[sir->m_idxGenReg], *aReg = aRegBegin;
-    const INT64 *aRegEnd = aReg + sizeof(pData->argumentRegisters.a)/sizeof(pData->argumentRegisters.a[0]);
+    const INT64 *aRegEnd = &pData->argumentRegisters.a[0] + NUM_ARGUMENT_REGISTERS;
     const BYTE *stackBegin = (BYTE*)pData->profiledSp + sir->m_byteStackIndex, *stack = stackBegin;
 
     for (int i = 0; i < fieldCount; ++i)
@@ -133,7 +133,7 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters(const ArgLocDesc* sir)
         if (fields[i].is8)
         {
             UINT64 alignedTo8 = ALIGN_UP(m_bufferPos, 8);
-            _ASSERTE(alignedTo8 + 8 < sizeof(pData->buffer));
+            _ASSERTE(alignedTo8 + 8 <= sizeof(pData->buffer));
             m_bufferPos = alignedTo8;
             const INT64* src =
                 inFloatReg ? (const INT64*)fReg++ :
@@ -143,7 +143,7 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters(const ArgLocDesc* sir)
         }
         else
         {
-            _ASSERTE(m_bufferPos + 4 < sizeof(pData->buffer));
+            _ASSERTE(m_bufferPos + 4 <= sizeof(pData->buffer));
             const INT32* src =
                 inFloatReg ? (const INT32*)fReg++ :
                 inGenReg   ? (const INT32*)aReg++ : (const INT32*)Func::postIncrement(stack, 4);
@@ -281,12 +281,18 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
     {
         // On RISC-V the method is not required to preserve the return buffer address passed in a0.
         // However, JIT does that anyway if leave hook needs to be generated.
+        _ASSERTE((pData->flags & PROFILE_LEAVE) != 0);
         return (LPVOID)pData->argumentRegisters.a[0];
     }
 
-    UINT returnFlags = m_argIterator.GetFPReturnSize();
-    if (returnFlags)
+    UINT fpReturnSize = m_argIterator.GetFPReturnSize();
+    if (fpReturnSize)
     {
+        if ((fpReturnSize & STRUCT_HAS_8BYTES_FIELDS_MASK) == STRUCT_HAS_8BYTES_FIELDS_MASK ||
+            (fpReturnSize & STRUCT_FLOAT_FIELD_ONLY_ONE))
+        {
+            return &pData->floatArgumentRegisters.f[0];
+        }
         ArgLocDesc sir;
         sir.m_idxFloatReg = 0;
         sir.m_cFloatReg = -1;
@@ -294,7 +300,7 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         sir.m_cGenReg = -1;
         sir.m_byteStackIndex = 0;
         sir.m_byteStackSize = -1;
-        sir.m_structFields = returnFlags;
+        sir.m_structFields = fpReturnSize;
         return CopyStructFromRegisters(&sir);
     }
 
