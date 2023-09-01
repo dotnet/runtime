@@ -14,7 +14,8 @@ namespace Microsoft.Extensions.Options.Generators
         INamedTypeSymbol DataTypeAttributeSymbol,
         INamedTypeSymbol ValidateOptionsSymbol,
         INamedTypeSymbol IValidatableObjectSymbol,
+        INamedTypeSymbol GenericIEnumerableSymbol,
         INamedTypeSymbol TypeSymbol,
-        INamedTypeSymbol? ValidateObjectMembersAttributeSymbol,
-        INamedTypeSymbol? ValidateEnumeratedItemsAttributeSymbol);
+        INamedTypeSymbol ValidateObjectMembersAttributeSymbol,
+        INamedTypeSymbol ValidateEnumeratedItemsAttributeSymbol);
 }
