@@ -2307,7 +2307,11 @@ static void
 emit_type_load_failure (MonoCompile* cfg, MonoClass* klass)
 {
 	MonoInst* iargs[1];
-	EMIT_NEW_CLASSCONST (cfg, iargs [0], klass);
+	if (G_LIKELY (klass)) {
+		EMIT_NEW_CLASSCONST (cfg, iargs [0], klass);
+	} else {
+		EMIT_NEW_PCONST (cfg, iargs [0], NULL);
+	}
 	mono_emit_jit_icall (cfg, mono_throw_type_load, iargs);
 }
 
