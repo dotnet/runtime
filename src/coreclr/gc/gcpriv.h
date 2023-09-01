@@ -2102,7 +2102,7 @@ private:
         short* old_brick_table,
         uint8_t* start, uint8_t* end);
     PER_HEAP_METHOD void copy_brick_card_table ();
-    PER_HEAP_ISOLATED_METHOD void copy_brick_card_table_global ();
+    PER_HEAP_ISOLATED_METHOD void copy_brick_card_table_on_growth ();
 #endif //USE_REGIONS
 
     PER_HEAP_ISOLATED_METHOD BOOL is_mark_set (uint8_t* o);

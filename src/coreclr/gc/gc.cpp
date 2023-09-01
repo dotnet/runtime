@@ -9974,7 +9974,7 @@ void gc_heap::copy_brick_card_table()
     release_card_table (&old_card_table[card_word (card_of(la))]);
 }
 
-void gc_heap::copy_brick_card_table_global ()
+void gc_heap::copy_brick_card_table_on_growth ()
 {
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -9984,7 +9984,11 @@ void gc_heap::copy_brick_card_table_global ()
     {
         gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-        hp->copy_brick_card_table ();
+
+        if (g_gc_card_table != hp->card_table)
+        {
+            hp->copy_brick_card_table ();
+        }
     }
 }
 #endif //!USE_REGIONS
@@ -23874,7 +23878,7 @@ void gc_heap::garbage_collect (int n)
 #endif //FEATURE_BASICFREEZE
 
 #ifndef USE_REGIONS
-        copy_brick_card_table_global ();
+        copy_brick_card_table_on_growth ();
 #endif //!USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
@@ -47403,7 +47407,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
 #endif //MULTIPLE_HEAPS
     {
         // in concurrent GC, new segment could be allocated when GC is working so the card brick table might not be updated at this point
-        copy_brick_card_table_global ();
+        copy_brick_card_table_on_growth ();
 
 #ifdef MULTIPLE_HEAPS
         current_join->restart();
