@@ -7,6 +7,12 @@
 
   <Import Project="$(_ILLinkTasksSourceDir)build\Microsoft.NET.ILLink.Tasks.props" />
 
+  <PropertyGroup>
+    <!-- Don't use SDK's trimming functionality. -->
+    <_RequiresILLinkPack>false</_RequiresILLinkPack>
+    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>     
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
@@ -18,9 +24,6 @@
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>
     </ProjectReference>
-    <!-- Don't use SDK's trimming functionality. -->
-    <_RequiresILLinkPack>false</_RequiresILLinkPack>
-    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>     
   </ItemGroup>
 
 </Project>
