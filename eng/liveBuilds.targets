@@ -29,7 +29,7 @@
     <CoreCLRAotSdkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'aotsdk'))</CoreCLRAotSdkDir>
     <CoreCLRBuildIntegrationDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'build'))</CoreCLRBuildIntegrationDir>
 
-    <ToolsILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(Configuration)'))</ToolsILLinkDir>
+    <ToolsILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(ToolsConfiguration)'))</ToolsILLinkDir>
 
     <MonoAotCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross', $(TargetOS)-$(TargetArchitecture.ToLowerInvariant())))</MonoAotCrossDir>
     <GrpcServerDockerImageDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'obj', 'grpcserver', 'docker'))</GrpcServerDockerImageDir>
@@ -260,10 +260,4 @@
           DependsOnTargets="
             ResolveLibrariesRefAssembliesFromLocalBuild;
             ResolveLibrariesRuntimeFilesFromLocalBuild" />
-
-  <PropertyGroup>
-    <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
-    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Microsoft.NETCore.Platforms', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
-    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
-  </PropertyGroup>
 </Project>

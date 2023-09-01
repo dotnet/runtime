@@ -28,10 +28,9 @@ namespace Test
             return 0;
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new BB().Method1();
-            return 100;
         }
     }
 }

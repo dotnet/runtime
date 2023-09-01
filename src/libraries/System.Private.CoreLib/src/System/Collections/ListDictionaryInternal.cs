@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections
@@ -8,6 +9,7 @@ namespace System.Collections
     /// Implements <see cref="IDictionary"/> using a singly linked list.
     /// Recommended for collections that typically include fewer than 10 items.
     /// </summary>
+    [DebuggerDisplay("Count = {count}")]
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility

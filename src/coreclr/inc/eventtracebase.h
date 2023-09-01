@@ -905,7 +905,7 @@ namespace ETW
             BOOL fSendRichDebugInfoEvent,
             BOOL fGetCodeIds);
         static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
-        static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
+        static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
         static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId);
         static VOID SendMethodRichDebugInfo(MethodDesc * pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId, MethodDescSet* sentMethodDetailsSet);
         static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, PCODE pNativeCodeStartAddress = 0, PrepareCodeConfig *pConfig = NULL, MethodDescSet* sentMethodDetailsSet = NULL);
@@ -938,7 +938,7 @@ namespace ETW
 
         static VOID GetR2RGetEntryPointStart(MethodDesc *pMethodDesc);
         static VOID GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPoint);
-        static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
+        static VOID MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID SendMethodDetailsEvent(MethodDesc *pMethodDesc);
         static VOID SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set);
@@ -952,7 +952,7 @@ namespace ETW
     public:
         static VOID GetR2RGetEntryPointStart(MethodDesc *pMethodDesc) {};
         static VOID GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPoint) {};
-        static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
+        static VOID MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
         static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers) {};

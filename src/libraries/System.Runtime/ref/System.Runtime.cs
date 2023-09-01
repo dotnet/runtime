@@ -7392,6 +7392,7 @@ namespace System.Buffers
     {
         public static System.Buffers.SearchValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
         public static System.Buffers.SearchValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+        public static System.Buffers.SearchValues<string> Create(System.ReadOnlySpan<string> values, System.StringComparison comparisonType) { throw null; }
     }
     public partial interface IPinnable
     {
@@ -9605,7 +9606,6 @@ namespace System.IO
         public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
         public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
         public void MoveTo(string destDirName) { }
-        public override string ToString() { throw null; }
     }
     public partial class DirectoryNotFoundException : System.IO.IOException
     {

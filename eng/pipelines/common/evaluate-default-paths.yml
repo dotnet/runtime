@@ -6,7 +6,8 @@ parameters:
   # do not set them when using the template
   _const_paths:
     _wasm_specific_only: [
-        eng/testing/ProvisioningVersions.props
+        eng/testing/bump-chrome-version.proj
+        eng/testing/ChromeVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
@@ -45,6 +46,10 @@ parameters:
         src/native/libs/System.Globalization.Native/*
         src/native/libs/System.IO.Compression.Native/*
         src/native/libs/System.Native/*
+    ]
+    _wasm_chrome: [
+        eng/testing/bump-chrome-version.proj
+        eng/testing/ChromeVersions.props
     ]
 
     # src/workloads is only used in runtime-official builds
@@ -182,7 +187,6 @@ jobs:
       include:
       - eng/Version.Details.xml
       - eng/Versions.props
-        eng/testing/ProvisioningVersions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*
@@ -206,6 +210,7 @@ jobs:
       - src/mono/wasm/runtime/*
       - src/mono/wasm/templates/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
       - ${{ parameters._const_paths._wasm_pipelines }}
@@ -215,7 +220,7 @@ jobs:
     - subset: wasmdebuggertests
       combined: true
       include:
-      - eng/testing/ProvisioningVersions.props
+      - ${{ parameters._const_paths._wasm_chrome }}
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*

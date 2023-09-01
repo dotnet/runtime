@@ -7,7 +7,10 @@ using Xunit;
 public class AA
 {
     [Fact]
-    public static int TestEntryPoint() { Main1(); return 100; }
+    public static void TestEntryPoint()
+    {
+        Main1();
+    }
 
     internal static void Main1()
     {

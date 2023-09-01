@@ -238,6 +238,13 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'android'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/tests/**/*.Tests.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/**/*.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/mono/sample/Android/AndroidSampleApp.csproj" />
+    <ProjectExclusions Remove="$(RepoRoot)/src/tests/FunctionalTests/Android/Device_Emulator/AOT_PROFILED/Android.Device_Emulator.Aot_Profiled.Test.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
   </ItemGroup>
@@ -266,6 +273,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
 
     <!--
       Test apps that are too large and take too long to build
@@ -629,6 +637,11 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'android'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT_PROFILED\**\*.Test.csproj"
+                    Exclude="@(ProjectExclusions)" />
+  </ItemGroup>
+
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos') and '$(UseNativeAOTRuntime)' == 'true'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj"
@@ -640,6 +653,7 @@
     <!-- These crash on tvOS, but do not on iOS. Run these only on the rolling builds -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator'">

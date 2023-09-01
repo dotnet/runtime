@@ -70,31 +70,30 @@ public class EmitterTests
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::HelloWorld.MyOptions options)
         {
-            var baseName = (string.IsNullOrEmpty(name) ? "MyOptions" : name) + ".";
-            var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val1";
-            context.DisplayName = baseName + "Val1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.Val1" : $"{name}.Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
-                builder.AddResults(validationResults);
+                (builder ??= new()).AddResults(validationResults);
             }
 
             context.MemberName = "Val2";
-            context.DisplayName = baseName + "Val2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.Val2" : $"{name}.Val2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
-            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2!, context, validationResults, validationAttributes))
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val2, context, validationResults, validationAttributes))
             {
-                builder.AddResults(validationResults);
+                (builder ??= new()).AddResults(validationResults);
             }
 
-            return builder.Build();
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
         }
     }
 }
@@ -1580,6 +1579,63 @@ namespace __OptionValidationStaticInstances
 
         Assert.Equal(1, diagnostics.Count);
         Assert.Equal(DiagDescriptors.NotEnumerableType.Id, diagnostics[0].Id);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public async Task LanguageVersionTest()
+    {
+        string source = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            public class FirstModel
+            {
+                [Required]
+                public string? P1 { get; set; }
+            }
+
+            [OptionsValidator]
+            public partial class FirstModelValidator : IValidateOptions<FirstModel>
+            {
+            }
+        """;
+
+        Assembly [] refAssemblies = new []
+        {
+            Assembly.GetAssembly(typeof(RequiredAttribute)),
+            Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
+            Assembly.GetAssembly(typeof(IValidateOptions<object>)),
+        };
+
+        // Run the generator with C# 7.0 and verify that it fails.
+        var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+                new Generator(), refAssemblies.ToArray(), new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp7).ConfigureAwait(false);
+
+        Assert.NotEmpty(diagnostics);
+        Assert.Equal("SYSLIB1216", diagnostics[0].Id);
+        Assert.Empty(generatedSources);
+
+        // Run the generator with C# 8.0 and verify that it succeeds.
+        (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+            new Generator(), refAssemblies.ToArray(), new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp8).ConfigureAwait(false);
+
+        Assert.Empty(diagnostics);
+        Assert.Single(generatedSources);
+
+        // Compile the generated code with C# 7.0 and verify that it fails.
+        CSharpParseOptions parseOptions = new CSharpParseOptions(LanguageVersion.CSharp7);
+        SyntaxTree syntaxTree = SyntaxFactory.ParseSyntaxTree(generatedSources[0].SourceText.ToString(), parseOptions);
+        var diags = syntaxTree.GetDiagnostics().ToArray();
+        Assert.Equal(1, diags.Length);
+        // error CS8107: Feature 'nullable reference types' is not available in C# 7.0. Please use language version 8.0 or greater.
+        Assert.Equal("CS8107", diags[0].Id);
+
+        // Compile the generated code with C# 8.0 and verify that it succeeds.
+        parseOptions = new CSharpParseOptions(LanguageVersion.CSharp8);
+        syntaxTree = SyntaxFactory.ParseSyntaxTree(generatedSources[0].SourceText.ToString(), parseOptions);
+        diags = syntaxTree.GetDiagnostics().ToArray();
+        Assert.Equal(0, diags.Length);
     }
 
     private static CSharpCompilation CreateCompilationForOptionsSource(string assemblyName, string source, string? refAssemblyPath = null)
