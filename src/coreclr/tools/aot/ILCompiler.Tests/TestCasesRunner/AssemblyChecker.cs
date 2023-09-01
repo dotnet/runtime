@@ -39,6 +39,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private readonly BaseAssemblyResolver originalsResolver;
 		private readonly ReaderParameters originalReaderParameters;
+		private readonly AssemblyDefinition originalAssembly;
 		private readonly TrimmedTestCaseResult testResult;
 
 		private readonly Dictionary<AssemblyQualifiedToken, LinkedEntity> linkedMembers;

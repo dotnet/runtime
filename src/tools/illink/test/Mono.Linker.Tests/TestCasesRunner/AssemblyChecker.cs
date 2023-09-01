@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	partial class AssemblyChecker
 	{
-		readonly AssemblyDefinition linkedAssembly;
+		readonly AssemblyDefinition originalAssembly, linkedAssembly;
 		readonly TrimmedTestCaseResult linkedTestCase;
 
 		HashSet<string> linkedMembers;

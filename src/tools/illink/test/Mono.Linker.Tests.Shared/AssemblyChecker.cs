@@ -7,8 +7,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public partial class AssemblyChecker
 	{
-		private readonly AssemblyDefinition originalAssembly;
-
 		static bool IsCompilerGeneratedMemberName (string memberName)
 		{
 			return memberName.Length > 0 && memberName[0] == '<';
