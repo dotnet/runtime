@@ -49,12 +49,16 @@ public static class Program
 
         string stackTrace = new StackTrace(true).ToString().Trim();
 
-        // Remove the last line of the stack trace, which would correspond with Main()
-        int lastNewLineIndex = stackTrace.LastIndexOf('\n');
-        if (lastNewLineIndex == -1)
+        // Remove everything past the test entrypoint line
+        int entrypointIndex = stackTrace.IndexOf("TestEntryPoint");
+        if (entrypointIndex == -1)
         {
             return null;
         }
-        return stackTrace.Substring(0, lastNewLineIndex).Trim();
+        while (entrypointIndex > 0 && stackTrace[entrypointIndex - 1] != '\n')
+        {
+            entrypointIndex--;
+        }
+        return stackTrace.Substring(0, entrypointIndex);
     }
 }
