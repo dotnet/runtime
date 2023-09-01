@@ -472,7 +472,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             static object CreateWithActivator(Assembly asm)
             {
-                Type t = asm.GetType("UnloadableAssembly.ClassToCreate");
+                Type t = asm.GetType("CollectibleAssembly.ClassToCreate");
                 MethodInfo mi = t.GetMethod("Create", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(ServiceProvider) });
 
                 object instance;
@@ -493,7 +493,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 Assembly asm = assemblies[i];
                 string asmName = Path.GetFileName(asm.Location);
-                if (asmName == "UnloadableAssembly.dll")
+                if (asmName == "CollectibleAssembly.dll")
                 {
                     return true;
                 }
@@ -726,7 +726,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         private static string GetPath()
         {
-            return Path.Combine(Directory.GetCurrentDirectory(), "UnloadableAssembly.dll");
+            return Path.Combine(Directory.GetCurrentDirectory(), "CollectibleAssembly.dll");
         }
     }
 #endif
