@@ -9,7 +9,7 @@ namespace System
     {
         private static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, bool allocate, out string? windowsId)
         {
-#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
+#if TARGET_IOS || TARGET_TVOS
                 windowsId = null;
                 return false;
 #else
@@ -37,7 +37,7 @@ namespace System
 
         private static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, bool allocate,  out string? ianaId)
         {
-#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
+#if TARGET_IOS || TARGET_TVOS
             ianaId = null;
             return false;
 #else

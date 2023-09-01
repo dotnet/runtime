@@ -27,8 +27,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Nls.Tests", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Tests", "tests\System.Runtime.Tests.csproj", "{4EE36055-AD7C-4779-B3F6-08687960DCC3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.IOS.Tests", "tests\Hybrid\System.Runtime.IOS.Tests.csproj", "{4EE36055-AD7C-4779-B3F6-08687960DCC3}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.ReflectionInvokeEmit.Tests", "tests\System\Reflection\InvokeEmit\System.Runtime.ReflectionInvokeEmit.Tests.csproj", "{C3F25EEF-04B4-407A-960B-0C1CE9C04430}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.ReflectionInvokeInterpreted.Tests", "tests\System\Reflection\InvokeInterpreted\System.Runtime.ReflectionInvokeInterpreted.Tests.csproj", "{47E26787-7C27-4572-AD8B-868DE44E2C48}"
