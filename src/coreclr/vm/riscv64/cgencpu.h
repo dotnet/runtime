@@ -425,7 +425,7 @@ struct HijackArgs
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
-    static const int Type = 0x2;
+    static const int Type = 0x93;
 
     UINT32  m_rgCode[6];
     TADDR   m_pTarget;
