@@ -133,7 +133,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private TrimmedTestCaseResult Link (TestCase testCase, TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TestCaseMetadataProvider metadataProvider)
 		{
 			var trimmer = _factory.CreateTrimmer ();
-			var trimmingCustomizations = CustomizeLinker (trimmer, metadataProvider);
+			var trimmingCustomizations = CustomizeTrimming (trimmer, metadataProvider);
 
 			var builder = _factory.CreateTrimmingArgumentBuilder (metadataProvider);
 
@@ -180,7 +180,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
 
-		protected partial TrimmingCustomizations? CustomizeLinker (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider);
+		protected partial TrimmingCustomizations? CustomizeTrimming (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider);
 
 		static partial void AddOutputDirectory (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder);
 
