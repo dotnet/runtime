@@ -3917,7 +3917,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_XZERO:
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
+				arm_neon_eor_8b (code, dreg, dreg, dreg);
+			else
+				arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
 		case OP_XONES:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
