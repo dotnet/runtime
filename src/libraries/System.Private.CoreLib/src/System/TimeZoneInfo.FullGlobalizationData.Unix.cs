@@ -122,11 +122,11 @@ namespace System
 #endif
                         return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
                     }
-                    },
-                    uiCulture,
-                    timeZoneId,
-                    nameType,
-                    out timeZoneDisplayName);
+                },
+                uiCulture,
+                timeZoneId,
+                nameType,
+                out timeZoneDisplayName);
 
             if (!result && uiCulture != FallbackCultureName)
             {
