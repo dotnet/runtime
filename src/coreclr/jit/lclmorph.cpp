@@ -1144,13 +1144,6 @@ private:
                 return IndirTransform::LclVar;
             }
 
-            // Bool and ubyte are the same type.
-            if ((indir->TypeIs(TYP_BOOL) && (varDsc->TypeGet() == TYP_UBYTE)) ||
-                (indir->TypeIs(TYP_UBYTE) && (varDsc->TypeGet() == TYP_BOOL)))
-            {
-                return IndirTransform::LclVar;
-            }
-
             // For small stores we can ignore the signed/unsigned diff.
             if (isDef && (varTypeToSigned(indir) == varTypeToSigned(varDsc)))
             {

@@ -1398,11 +1398,11 @@ public:
 
     bool                     m_jitComplete;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // If this is true, then we've plastered the method with DebuggerEncBreakpoints
     // and the method has been EnC'd
     bool                     m_encBreakpointsApplied;
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
 
     PTR_DebuggerMethodInfo   m_methodInfo;
 
@@ -1440,9 +1440,9 @@ public:
     {
 #ifdef LOGGING
         const char* encState = "not enabled";
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
         encState = m_encBreakpointsApplied ? "true" : "false";
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
         LOG((LF_CORDB, LL_INFO10000, "  DJI: %p\n"
             "                m_jitComplete: %s\n"
             "      m_encBreakpointsApplied: %s\n"
@@ -1963,7 +1963,7 @@ public:
 
     HRESULT RequestFavor(FAVORCALLBACK fp, void * pData);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     HRESULT UpdateFunction(MethodDesc* pFD, SIZE_T encVersion);
     HRESULT AddFunction(MethodDesc* md, SIZE_T enCVersion);
     HRESULT UpdateNotYetLoadedFunction(mdMethodDef token, Module * pModule, SIZE_T enCVersion);
@@ -1975,7 +1975,7 @@ public:
                                      SIZE_T ilOffset,
                                      TADDR nativeFnxStart,
                                      SIZE_T *nativeOffset);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     void GetVarInfo(MethodDesc *       fd,         // [IN] method of interest
                     CORDB_ADDRESS nativeCodeAddress,    // [IN] which edit version
@@ -2743,14 +2743,14 @@ public:
     HRESULT ReleaseRemoteBuffer(void *pBuffer, bool removeFromBlobList);
 
 private:
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Apply an EnC edit and send the result event to the RS
     HRESULT ApplyChangesAndSendResult(DebuggerModule * pDebuggerModule,
                                       DWORD cbMetadata,
                                       BYTE *pMetadata,
                                       DWORD cbIL,
                                       BYTE *pIL);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     bool GetCompleteDebuggerLaunchString(SString * pStrArgsBuf);
 

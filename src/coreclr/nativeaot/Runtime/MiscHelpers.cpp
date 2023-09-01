@@ -340,18 +340,6 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
     return pCodeOrg;
 }
 
-extern CrstStatic g_ThunkPoolLock;
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
-{
-    g_ThunkPoolLock.Enter();
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
-{
-    g_ThunkPoolLock.Leave();
-}
-
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()
 {
     return PalGetTickCount64();

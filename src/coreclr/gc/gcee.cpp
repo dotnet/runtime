@@ -510,9 +510,12 @@ bool GCHeap::IsInFrozenSegment(Object *object)
 void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
 {
 #ifdef FEATURE_BASICFREEZE
-    heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
-    heap_segment_committed(heap_seg) = committed;
-    heap_segment_allocated(heap_seg) = allocated;
+#ifdef MULTIPLE_HEAPS
+    gc_heap* heap = gc_heap::g_heaps[0];
+#else
+    gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+    heap->update_ro_segment (reinterpret_cast<heap_segment*>(seg), allocated, committed);
 #endif // FEATURE_BASICFREEZE
 }
 
