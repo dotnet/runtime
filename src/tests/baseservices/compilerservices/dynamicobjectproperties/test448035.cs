@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class Test_test448035 
 {
@@ -28,7 +29,8 @@ class Test_test448035
 
     static ConditionalWeakTable<Object,Object> table = new ConditionalWeakTable<Object,Object>();
 
-    public static void Main() 
+    [Fact]
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 10; i++)
         {
