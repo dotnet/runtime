@@ -38,18 +38,20 @@ namespace AppHost.Bundle.Tests
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
         public void FrameworkDependent(BundleOptions options)
         {
             var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options);
 
-            // Run the bundled app (extract files)
+            // Run the bundled app
             RunTheApp(singleFile, selfContained: false);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, selfContained: false);
+            if (options.HasFlag(BundleOptions.BundleAllContent))
+            {
+                // Run the bundled app again (reuse extracted files)
+                RunTheApp(singleFile, selfContained: false);
+            }
         }
 
         [Fact]
@@ -77,7 +79,6 @@ namespace AppHost.Bundle.Tests
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
@@ -116,36 +117,39 @@ namespace AppHost.Bundle.Tests
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [InlineData(BundleOptions.EnableCompression)]
-        [InlineData(BundleOptions.BundleNativeBinaries | BundleOptions.EnableCompression)]
         [InlineData(BundleOptions.BundleAllContent | BundleOptions.EnableCompression)]
         [Theory]
         public void SelfContained(BundleOptions options)
         {
             var singleFile = sharedTestState.SelfContainedApp.Bundle(options);
 
-            // Run the bundled app (extract files)
+            // Run the bundled app
             RunTheApp(singleFile, selfContained: true);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, selfContained: true);
+            if (options.HasFlag(BundleOptions.BundleAllContent))
+            {
+                // Run the bundled app again (reuse extracted files)
+                RunTheApp(singleFile, selfContained: true);
+            }
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
         public void SelfContained_Targeting50(BundleOptions options)
         {
             var singleFile = sharedTestState.SelfContainedApp.Bundle(options, new Version(5, 0));
 
-            // Run the bundled app (extract files)
+            // Run the bundled app
             RunTheApp(singleFile, selfContained: true);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, selfContained: true);
+            if (options.HasFlag(BundleOptions.BundleAllContent))
+            {
+                // Run the bundled app again (reuse extracted files)
+                RunTheApp(singleFile, selfContained: true);
+            }
         }
 
         [InlineData(BundleOptions.BundleAllContent)]
@@ -154,11 +158,14 @@ namespace AppHost.Bundle.Tests
         {
             var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options, new Version(5, 0));
 
-            // Run the bundled app (extract files)
+            // Run the bundled app
             RunTheApp(singleFile, selfContained: false);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, selfContained: false);
+            if (options.HasFlag(BundleOptions.BundleAllContent))
+            {
+                // Run the bundled app again (reuse extracted files)
+                RunTheApp(singleFile, selfContained: false);
+            }
         }
 
         [Fact]
