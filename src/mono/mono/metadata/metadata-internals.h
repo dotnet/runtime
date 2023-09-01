@@ -220,21 +220,10 @@ typedef struct {
 
 struct _MonoTableInfo {
 	const char *base;
-	guint       rows_     : 24;	/* don't access directly, use table_info_get_rows */
-
-	guint       row_size : 8;
-
-	/*
-	 * Tables contain up to 9 columns and the possible sizes of the
-	 * fields in the documentation are 1, 2 and 4 bytes.  So we
-	 * can encode in 2 bits the size.
-	 *
-	 * A 32 bit value can encode the resulting size
-	 *
-	 * The top eight bits encode the number of columns in the table.
-	 * we only need 4, but 8 is aligned no shift required.
-	 */
-	guint32   size_bitfield;
+	guint row_size;
+	
+	mdcursor_t cursor;
+	uint32_t num_rows;
 };
 
 #define REFERENCE_MISSING ((gpointer) -1)
@@ -712,7 +701,7 @@ assembly_is_dynamic (MonoAssembly *assembly)
 static inline uint32_t
 table_info_get_rows (const MonoTableInfo *table)
 {
-	return table->rows_;
+	return table->num_rows;
 }
 
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */

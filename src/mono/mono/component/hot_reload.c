@@ -924,17 +924,15 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		g_assert (prev_table != NULL);
 
 		MonoTableInfo *tbl = &delta->mutants [i];
-		if (prev_table->rows_ == 0) {
+		if (table_info_get_rows(prev_table) == 0) {
 			/* table was empty in the baseline and it was empty in the prior generation, but now we have some rows. Use the format of the mutant table. */
 			g_assert (prev_table->row_size == 0);
 			tbl->row_size = delta->delta_image->tables [i].row_size;
-			tbl->size_bitfield = delta->delta_image->tables [i].size_bitfield;
 		} else {
 			tbl->row_size = prev_table->row_size;
-			tbl->size_bitfield = prev_table->size_bitfield;
 		}
-		tbl->rows_ = rows;
-		g_assert (tbl->rows_ > 0 && tbl->row_size != 0);
+		tbl->num_rows = rows;
+		g_assert (tbl->num_rows > 0 && tbl->row_size != 0);
 
 		tbl->base = mono_mempool_alloc (delta->pool, tbl->row_size * rows);
 		g_assert (table_info_get_rows (prev_table) == count->prev_gen_rows);
@@ -1367,100 +1365,6 @@ funccode_to_str (int func_code)
 		default: g_assert_not_reached ();
 	}
 	return NULL;
-}
-
-/*
- * Apply the row from the delta image given by log_token to the cur_delta mutated table.
- *
- */
-static void
-delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log_token)
-{
-	int token_table = mono_metadata_token_table (log_token);
-	guint32 token_index = mono_metadata_token_index (log_token); /* 1-based */
-
-	gboolean modified = token_index <= cur_delta->count [token_table].prev_gen_rows;
-
-	int delta_index = hot_reload_relative_delta_index (image_dmeta, cur_delta, log_token);
-
-	/* The complication here is that we want the mutant table to look like the table in
-	 * the baseline image with respect to column widths, but the delta tables are generally coming in
-	 * uncompressed (4-byte columns).  So we have to copy one column at a time and adjust the
-	 * widths as we go.
-	 */
-
-	guint32 dst_bitfield = cur_delta->mutants [token_table].size_bitfield;
-	guint32 src_bitfield = image_dmeta->tables [token_table].size_bitfield;
-
-	const char *src_base = image_dmeta->tables [token_table].base + (delta_index - 1) * image_dmeta->tables [token_table].row_size;
-	char *dst_base = (char*)cur_delta->mutants [token_table].base + (token_index - 1) * cur_delta->mutants [token_table].row_size;
-
-	guint32 src_offset = 0, dst_offset = 0;
-	for (guint col = 0; col < mono_metadata_table_count (dst_bitfield); ++col) {
-		guint32 dst_col_size = mono_metadata_table_size (dst_bitfield, col);
-		guint32 src_col_size = mono_metadata_table_size (src_bitfield, col);
-		if ((m_SuppressedDeltaColumns [token_table] & (1 << col)) == 0) {
-			const char *src = src_base + src_offset;
-			char *dst = dst_base + dst_offset;
-
-			/* copy src to dst, via a temporary to adjust for size differences */
-			/* FIXME: unaligned access, endianness */
-			guint32 tmp;
-
-			switch (src_col_size) {
-			case 1:
-				tmp = *(guint8*)src;
-				break;
-			case 2:
-				tmp = *(guint16*)src;
-				break;
-			case 4:
-				tmp = *(guint32*)src;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
-
-			/* FIXME: unaligned access, endianness */
-			switch (dst_col_size) {
-			case 1:
-				*(guint8*)dst = (guint8)tmp;
-				break;
-			case 2:
-				*(guint16*)dst = (guint16)tmp;
-				break;
-			case 4:
-				*(guint32*)dst = tmp;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
-		}
-		src_offset += src_col_size;
-		dst_offset += dst_col_size;
-	}
-	g_assert (dst_offset == cur_delta->mutants [token_table].row_size);
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "mutate: table=0x%02x row=0x%04x delta row=0x%04x %s", token_table, token_index, delta_index, modified ? "Mod" : "Add");
-}
-
-static void
-prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info)
-{
-	guint32 rows = table_info_get_rows (table_enclog);
-	/* Prepare the mutated metadata tables */
-	for (guint32 i = 0; i < rows ; ++i) {
-		guint32 cols [MONO_ENCLOG_SIZE];
-		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
-
-		int log_token = cols [MONO_ENCLOG_TOKEN];
-		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
-
-		if (func_code != ENC_FUNC_DEFAULT)
-			continue;
-
-		delta_info_mutate_row (image_dmeta, delta_info, log_token);
-	}
 }
 
 /* Run some sanity checks first. If we detect unsupported scenarios, this
@@ -2668,7 +2572,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 
 	delta_info_initialize_mutants (image_base, base_info, prev_delta_info, delta_info);
 
-	prepare_mutated_rows (table_enclog, image_base, image_dmeta, delta_info);
+	// TODO-DNMD: Convert to using md_apply_delta with post-processing for the type system data structures.
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Populated mutated tables for delta image %p", image_dmeta);
 

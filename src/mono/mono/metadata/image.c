@@ -478,6 +478,12 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		return FALSE;
 	}
 
+	for (mdtable_id_t table_id = mdtid_First; table_id < mdtid_End; ++table_id)
+	{
+		if (!md_create_cursor(image->metadata_handle, (mdtable_id_t)table_id, &image->tables[table_id].cursor, &image->tables[table_id].num_rows))
+			image->tables[table_id].num_rows = 0;
+	}
+
 	/* 24.2.1: Metadata root starts here */
 	ptr = image->raw_metadata;
 
@@ -622,15 +628,13 @@ load_tables (MonoImage *image)
 
 	for (table = 0; table < 64; table++){
 		if ((valid_mask & ((guint64) 1 << table)) == 0){
-			if (table > MONO_TABLE_LAST)
-				continue;
-			image->tables [table].rows_ = 0;
 			continue;
 		}
 		if (table > MONO_TABLE_LAST) {
 			g_warning("bits in valid must be zero above 0x37 (II - 23.1.6)");
 		} else {
-			image->tables [table].rows_ = read32 (rows);
+			uint32_t num_rows = read32 (rows);
+			g_assert (num_rows == table_info_get_rows(&image->tables [table]));
 		}
 		rows++;
 		valid++;

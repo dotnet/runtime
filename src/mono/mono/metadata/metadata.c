@@ -1022,7 +1022,8 @@ mono_metadata_compute_table_bases (MonoImage *meta)
 		if (table_info_get_rows (table) == 0)
 			continue;
 
-		table->row_size = mono_metadata_compute_size (meta, i, &table->size_bitfield);
+		guint32 size_bitfield;
+		table->row_size = mono_metadata_compute_size (meta, i, &size_bitfield);
 		table->base = base;
 		base += table_info_get_rows (table) * table->row_size;
 	}
@@ -1319,31 +1320,17 @@ mono_metadata_decode_row_slow (const MonoTableInfo *t, int idx, guint32 *res, in
 void
 mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
-	guint32 bitfield = t->size_bitfield;
-	int i, count = mono_metadata_table_count (bitfield);
-	const char *data;
+	// No table has more than 9 columns
+	g_assert(res_size <= 9);
+	bool raw_columns_to_read[9] = { 0 };
+	memset(raw_columns_to_read, 1, res_size);
 
-	g_assert (GINT_TO_UINT32(idx) < table_info_get_rows (t));
-	g_assert (idx >= 0);
-	data = t->base + idx * t->row_size;
-
-	g_assert (res_size == count);
-
-	for (i = 0; i < count; i++) {
-		int n = mono_metadata_table_size (bitfield, i);
-
-		switch (n){
-		case 1:
-			res [i] = *data; break;
-		case 2:
-			res [i] = read16 (data); break;
-		case 4:
-			res [i] = read32 (data); break;
-		default:
-			g_assert_not_reached ();
-		}
-		data += n;
-	}
+	mdcursor_t row_cursor = t->cursor;
+	if (!md_cursor_move (&row_cursor, idx))
+		g_assert_not_reached ();
+	
+	if (!md_get_column_values_raw (row_cursor, res_size, raw_columns_to_read, res))
+		g_assert_not_reached ();
 }
 
 /**
@@ -1368,35 +1355,20 @@ mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t
 	g_assert (idx >= 0);
 	mono_image_effective_table (&t, idx);
 
-	guint32 bitfield = t->size_bitfield;
-	int i, count = mono_metadata_table_count (bitfield);
-
-	if (G_UNLIKELY (! (GINT_TO_UINT32(idx) < table_info_get_rows (t) && idx >= 0))) {
+	
+	g_assert(res_size <= 9);
+	bool raw_columns_to_read[9] = { 0 };
+	memset(raw_columns_to_read, 1, res_size);
+	
+	mdcursor_t row_cursor = t->cursor;
+	if (!md_cursor_move (&row_cursor, idx)) {
 		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows: %s", idx, table_info_get_rows (t), image_name);
 		return FALSE;
 	}
-	const char *data = t->base + idx * t->row_size;
-
-	if (G_UNLIKELY (res_size != count)) {
-		mono_error_set_bad_image_by_name (error, image_name, "res_size %d != count %d: %s", res_size, count, image_name);
+	
+	if (!md_get_column_values_raw (row_cursor, res_size, raw_columns_to_read, res)) {
+		mono_error_set_bad_image_by_name (error, image_name, "Failed to read raw row data");
 		return FALSE;
-	}
-
-	for (i = 0; i < count; i++) {
-		int n = mono_metadata_table_size (bitfield, i);
-
-		switch (n) {
-		case 1:
-			res [i] = *data; break;
-		case 2:
-			res [i] = read16 (data); break;
-		case 4:
-			res [i] = read32 (data); break;
-		default:
-			mono_error_set_bad_image_by_name (error, image_name, "unexpected table [%d] size %d: %s", i, n, image_name);
-			return FALSE;
-		}
-		data += n;
 	}
 
 	return TRUE;
@@ -1469,31 +1441,19 @@ mono_metadata_decode_row_col_slow (const MonoTableInfo *t, int idx, guint col)
 guint32
 mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 {
-	const char *data;
-	int n;
+	g_assert (col < 9);
+	bool raw_columns_to_read [9] = { 0 };
+	raw_columns_to_read [col] = true;
+	uint32_t raw_values [9];
 
-	guint32 bitfield = t->size_bitfield;
-
-	g_assert (GINT_TO_UINT32(idx) < table_info_get_rows (t));
-	g_assert (col < mono_metadata_table_count (bitfield));
-	data = t->base + idx * t->row_size;
-
-	n = mono_metadata_table_size (bitfield, 0);
-	for (guint i = 0; i < col; ++i) {
-		data += n;
-		n = mono_metadata_table_size (bitfield, i + 1);
-	}
-	switch (n) {
-	case 1:
-		return *data;
-	case 2:
-		return read16 (data);
-	case 4:
-		return read32 (data);
-	default:
+	mdcursor_t row_cursor = t->cursor;
+	if (!md_cursor_move (&row_cursor, idx))
 		g_assert_not_reached ();
-	}
-	return 0;
+	
+	if (!md_get_column_values_raw (row_cursor, col, raw_columns_to_read, raw_values))
+		g_assert_not_reached ();
+	
+	return raw_values[col];
 }
 
 /**
