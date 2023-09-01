@@ -317,11 +317,11 @@ EphemeralCheckEnabled
         ldr      x6, [x12, g_highest_address]
 
 #ifdef WRITE_BARRIER_CHECK
-        adrp     x12, g_GCShadow
-        ldr      x7, [x12, g_GCShadow]
+        adrp     x12, $g_GCShadow
+        ldr      x7, [x12, $g_GCShadow]
 
-        adrp     x12, g_GCShadowEnd
-        ldr      x10, [x12, g_GCShadowEnd]
+        adrp     x12, $g_GCShadowEnd
+        ldr      x10, [x12, $g_GCShadowEnd]
 #endif
 
         ; Update wbs state
