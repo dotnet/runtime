@@ -2275,7 +2275,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 		addr = amodule->mem_begin;
 		g_assert (addr);
-		len = amodule->mem_end - amodule->mem_begin;
+		len = (int)(amodule->mem_end - amodule->mem_begin);
 
 		/* Round down in both directions to avoid modifying data which is not ours */
 		page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
@@ -3736,7 +3736,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		/* Unused */
 		int len = mono_jit_info_size (0, 0, 0);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
-		mono_jit_info_init (jinfo, method, code, code_len, 0, 0, 0);
+		mono_jit_info_init (jinfo, method, code, GPTRDIFF_TO_INT (code_len), 0, 0, 0);
 	} else {
 		jinfo = decode_exception_debug_info (amodule, method, ex_info, code, GPTRDIFF_TO_UINT32 (code_len));
 	}

@@ -11400,7 +11400,7 @@ encode_uint_len (guint32 val, int len, guint8 *buf, guint8 **endbuf)
 {
 	if (len == 2) {
 		g_assert (val < 65536);
-		encode_int16 (val, buf, endbuf);
+		encode_int16 (GUINT32_TO_UINT16 (val), buf, endbuf);
 	} else {
 		encode_int ((gint32)val, buf, endbuf);
 	}
@@ -11454,7 +11454,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	 * Construct a chained hash table for mapping indexes in extra_method_info to
 	 * method indexes.
 	 */
-	guint table_size = g_spaced_primes_closest ((guint)(nmethods * 1.5));
+	guint table_size = g_spaced_primes_closest (GFLOAT_TO_UINT (nmethods * 1.5));
 	table = g_ptr_array_sized_new (table_size);
 	for (guint i = 0; i < table_size; ++i)
 		g_ptr_array_add (table, NULL);
@@ -11732,7 +11732,7 @@ emit_class_name_table (MonoAotCompile *acfg)
 	 * Construct a chained hash table for mapping class names to typedef tokens.
 	 */
 	guint32 rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
-	guint table_size = g_spaced_primes_closest (rows * 1.5);
+	guint table_size = g_spaced_primes_closest (GFLOAT_TO_UINT (rows * 1.5));
 	table = g_ptr_array_sized_new (table_size);
 	for (guint i = 0; i < table_size; ++i)
 		g_ptr_array_add (table, NULL);
@@ -12091,7 +12091,7 @@ emit_globals (MonoAotCompile *acfg)
 	 * Construct a chained hash table for mapping global names to their index in
 	 * the globals table.
 	 */
-	guint table_size = g_spaced_primes_closest (acfg->globals->len * 1.5);
+	guint table_size = g_spaced_primes_closest (GFLOAT_TO_UINT (acfg->globals->len * 1.5));
 	table = g_ptr_array_sized_new (table_size);
 	for (guint i = 0; i < table_size; ++i)
 		g_ptr_array_add (table, NULL);
