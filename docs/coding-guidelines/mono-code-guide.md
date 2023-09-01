@@ -80,6 +80,11 @@ If you need them, use `mono_mutex_t`, `mono_cond_t`, etc for cases where GC tran
 prohibitively costly and you can guarantee that the lock will never be taken by a GC initiator or by
 a mix of threads in GC cooperative and GC preemptive mode.
 
+Using standard C threads and `call_once` in native library PInvokes outside the runtime is okay.
+
+Using standard C mutexes and condition variables in native library PInvokes outside the runtime is
+okay if the locks are not shared with the runtime internals.
+
 ### Thread locals
 
 FIXME: no guidance yet
@@ -91,6 +96,9 @@ The C standard atomics are not guaranteed to be lock-free.  Use the mono `mono_a
 general want locking because it would not be GC aware and may deadlock the cooperative GC.
 
 Uses of `_Atomic` are a code smell in Mono.
+
+Using standard C atomics in native library PInvokes outside the runtime is okay provided the atomics
+aren't also accessed inside the runtime internals.
 
 ### Generic operations
 
