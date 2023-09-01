@@ -29,7 +29,7 @@
 #undef EP_UNLIKELY
 #define EP_UNLIKELY(expr) G_UNLIKELY(expr)
 
-#define EP_FAILFAST(msg) 
+#define EP_FAILFAST(msg) g_error(msg)
 
 struct _rt_mono_event_internal_t {
 	gpointer event;
