@@ -1,0 +1,26 @@
+<Project>
+
+  <PropertyGroup>
+    <_ILLinkTasksSourceDir>$(ToolsProjectRoot)illink\src\ILLink.Tasks\</_ILLinkTasksSourceDir>
+    <ILLinkAnalyzersPropsPath>$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\build\Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>
+  </PropertyGroup>
+
+  <Import Project="$(_ILLinkTasksSourceDir)build\Microsoft.NET.ILLink.Tasks.props" />
+
+  <ItemGroup>
+    <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
+    <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      Private="false"
+                      SetConfiguration="Configuration=$(ToolsConfiguration)">
+        <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
+        <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
+        <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>
+    </ProjectReference>
+    <!-- Don't use SDK's trimming functionality. -->
+    <_RequiresILLinkPack>false</_RequiresILLinkPack>
+    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>     
+  </ItemGroup>
+
+</Project>
