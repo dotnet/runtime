@@ -19,6 +19,7 @@
 #include <mono/utils/mono-error.h>
 #include "mono/utils/mono-conc-hashtable.h"
 #include "mono/utils/refcount.h"
+#include <dnmd.h>
 
 struct _MonoType {
 	union {
@@ -290,8 +291,6 @@ typedef struct {
 #endif
 } MonoImageStorage;
 
-typedef void* dnmd_md_handle_t;
-
 struct _MonoImage {
 	/*
 	 * This count is incremented during these situations:
@@ -353,7 +352,7 @@ struct _MonoImage {
 	MonoMemPool         *mempool; /*protected by the image lock*/
 
 	char                *raw_metadata;
-	dnmd_md_handle_t     metadata_handle;
+	mdhandle_t           metadata_handle;
 
 	MonoStreamHeader     heap_strings;
 	MonoStreamHeader     heap_us;

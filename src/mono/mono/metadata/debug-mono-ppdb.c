@@ -38,7 +38,6 @@
 #endif
 
 #include "debug-mono-ppdb.h"
-#include <dnmd.h>
 #include <dnmd_pdb.h>
 
 typedef struct {

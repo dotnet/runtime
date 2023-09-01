@@ -100,8 +100,6 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-signal-handler.h"
 
-#include <dnmd.h>
-
 #if _MSC_VER
 #pragma warning(disable:4047) // FIXME differs in levels of indirection
 #endif

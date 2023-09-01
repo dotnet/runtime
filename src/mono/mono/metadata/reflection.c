@@ -52,7 +52,6 @@
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
 #include "icall-decl.h"
-#include <dnmd.h>
 
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, gboolean *type_resolve, MonoError *error);

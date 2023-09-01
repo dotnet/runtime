@@ -66,8 +66,6 @@
 #include "interp/jiterpreter.h"
 #endif
 
-#include <dnmd.h>
-
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>

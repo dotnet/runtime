@@ -34,7 +34,6 @@
 #include <mono/metadata/class-private-definition.h>
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
-#include <dnmd.h>
 
 #define FEATURE_COVARIANT_RETURNS
 

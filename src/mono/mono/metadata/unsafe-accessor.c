@@ -14,7 +14,6 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/metadata/unsafe-accessor.h"
-#include <dnmd.h>
 
 
 

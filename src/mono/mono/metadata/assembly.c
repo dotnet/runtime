@@ -57,8 +57,6 @@
 #include <mach-o/dyld.h>
 #endif
 
-#include <dnmd.h>
-
 /* Contains the list of directories to be searched for assemblies (MONO_PATH) */
 static char **assemblies_path = NULL;
 

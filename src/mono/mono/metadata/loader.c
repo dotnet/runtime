@@ -51,7 +51,6 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-path.h>
-#include <dnmd.h>
 
 /*
  * This lock protects the hash tables inside MonoImage used by the metadata

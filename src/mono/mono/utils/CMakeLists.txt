@@ -260,7 +260,7 @@ endif()
 
 if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
     add_library(utils_objects_shared OBJECT ${utils_sources})
-    target_link_libraries(utils_objects_shared PRIVATE monoapi eglib_api)
+    target_link_libraries(utils_objects_shared PRIVATE monoapi eglib_api dnmd::pdb)
     target_compile_definitions(utils_objects_shared PRIVATE -DMONO_DLL_EXPORT)
     target_include_directories(utils_objects_shared PRIVATE ${PROJECT_BINARY_DIR}/../..
         ${PROJECT_SOURCE_DIR}/../..
@@ -268,7 +268,7 @@ if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
 endif()
 
 add_library(utils_objects OBJECT ${utils_sources})
-target_link_libraries(utils_objects PRIVATE monoapi eglib_api)
+target_link_libraries(utils_objects PRIVATE monoapi eglib_api dnmd::pdb)
 if(NOT HOST_WIN32)
     target_compile_definitions(utils_objects PRIVATE -DMONO_DLL_EXPORT)
 endif()

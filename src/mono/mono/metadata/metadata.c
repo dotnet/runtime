@@ -39,7 +39,6 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <dnmd.h>
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {

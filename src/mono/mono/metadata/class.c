@@ -49,7 +49,6 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
-#include <dnmd.h>
 
 MonoStats mono_stats;
 

@@ -34,8 +34,6 @@
 
 #include <mono/utils/mono-compiler.h>
 
-#include <dnmd.h>
-
 typedef struct _BaselineInfo BaselineInfo;
 typedef struct _DeltaInfo DeltaInfo;
 

@@ -13,8 +13,6 @@
 #include "mono/metadata/native-library.h"
 #include "mono/metadata/custom-attrs-internals.h"
 
-#include <dnmd.h>
-
 static int pinvoke_search_directories_count;
 static char **pinvoke_search_directories;
 

@@ -74,7 +74,6 @@
 #include "llvmonly-runtime.h"
 
 #include <mono/metadata/components.h>
-#include <dnmd.h>
 
 #ifndef DISABLE_AOT
 

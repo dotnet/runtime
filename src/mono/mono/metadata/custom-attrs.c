@@ -28,8 +28,6 @@
 #include "mono/metadata/metadata-update.h"
 #include "mono/utils/checked-build.h"
 
-#include <dnmd.h>
-
 #define CHECK_ADD4_OVERFLOW_UN(a, b) ((guint32)(0xFFFFFFFFU) - (guint32)(b) < (guint32)(a))
 #define CHECK_ADD8_OVERFLOW_UN(a, b) ((guint64)(0xFFFFFFFFFFFFFFFFUL) - (guint64)(b) < (guint64)(a))
 

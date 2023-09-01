@@ -102,8 +102,6 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-tls-inline.h"
 
-#include <dnmd.h>
-
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 MonoMethodDesc *mono_stats_method_desc;

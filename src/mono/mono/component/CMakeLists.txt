@@ -142,7 +142,7 @@ add_library(component_base INTERFACE)
 target_sources(component_base INTERFACE
   ${MONO_COMPONENT_PATH}/component.h
 )
-target_link_libraries(component_base INTERFACE monoapi)
+target_link_libraries(component_base INTERFACE monoapi dnmd::pdb)
 
 if(NOT AOT_COMPONENTS AND (DISABLE_COMPONENTS OR DISABLE_LIBS))
   set(DISABLE_COMPONENT_OBJECTS 1)
@@ -210,8 +210,6 @@ elseif(AOT_COMPONENTS OR (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS))
   endforeach()
 
 endif()
-
-target_link_libraries(${MONO_HOT_RELOAD_COMPONENT_NAME}-objects PRIVATE dnmd::pdb)
 
 # define a list of mono-components-stubs objects that will be linked into
 # the runtime to be used as fallbacks if the dynamic components are not

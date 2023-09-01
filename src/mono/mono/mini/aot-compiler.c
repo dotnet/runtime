@@ -73,8 +73,6 @@
 #include "mini-runtime.h"
 #include "interp/interp.h"
 
-#include <dnmd.h>
-
 static MonoMethod*
 try_get_method_nofail (MonoClass *klass, const char *method_name, int param_count, int flags)
 {
