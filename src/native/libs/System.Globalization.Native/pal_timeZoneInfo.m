@@ -2,22 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 #include "pal_errors_internal.h"
 #include "pal_locale_internal.h"
 #include "pal_timeZoneInfo.h"
-
 #import <Foundation/Foundation.h>
+
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 /*
 Gets the localized display name that is currently in effect for the specified time zone.
 */
 int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* timeZoneId, int32_t timeZoneIdLength,
-                                                      TimeZoneDisplayNameType type, uint16_t* result, int32_t resultLength)
+                                                         TimeZoneDisplayNameType type, uint16_t* result, int32_t resultLength)
 {
     @autoreleasepool
     {

@@ -28,7 +28,6 @@ namespace System
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
         {
-            System.Diagnostics.Debug.Write("TimeZoneInfo.GetUtcStandardDisplayName is called.\n");
 #if TARGET_IOS || TARGET_TVOS
             if (!GlobalizationMode.Hybrid)
             {
