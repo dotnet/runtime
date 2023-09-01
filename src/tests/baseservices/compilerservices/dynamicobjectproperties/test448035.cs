@@ -28,7 +28,7 @@ class Test_test448035
 
     static ConditionalWeakTable<Object,Object> table = new ConditionalWeakTable<Object,Object>();
 
-    public static int Main() 
+    public static void Main() 
     {
         for (int i = 0; i < 10; i++)
         {
@@ -37,8 +37,6 @@ class Test_test448035
 
         new Test_test448035(5).ToString();
 
-	Console.WriteLine("PASS: Test did not assert");
-	return 100;
+        Console.WriteLine("PASS: Test did not assert");
     }
 }
-    
