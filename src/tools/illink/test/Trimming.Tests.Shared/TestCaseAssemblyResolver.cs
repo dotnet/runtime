@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using Mono.Cecil;
@@ -9,14 +10,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class TestCaseAssemblyResolver : DefaultAssemblyResolver
 	{
-		readonly HashSet<IDisposable> itemsToDispose;
+		private readonly HashSet<IDisposable> itemsToDispose;
 
 		public TestCaseAssemblyResolver ()
 		{
 			itemsToDispose = new HashSet<IDisposable> ();
 		}
 
-		public override AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters)
+		public override AssemblyDefinition? Resolve (AssemblyNameReference name, ReaderParameters parameters)
 		{
 			var assembly = base.Resolve (name, parameters);
 

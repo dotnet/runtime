@@ -49,6 +49,6 @@
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 
-  <Import Project="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests.Shared\Mono.Linker.Tests.Shared.projitems" Label="Shared" />
+  <Import Project="$(ToolsProjectRoot)illink\test\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems" Label="Shared" />
 
 </Project>

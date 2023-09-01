@@ -8,16 +8,9 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TrimmedTestCaseResult
+	partial class TrimmedTestCaseResult
 	{
-		public readonly TestCase TestCase;
-		public readonly NPath InputAssemblyPath;
 		public readonly NPath OutputAssemblyPath;
-		public readonly NPath ExpectationsAssemblyPath;
-		public readonly TestCaseSandbox Sandbox;
-		public readonly TestCaseMetadataProvider MetadataProvider;
-		public readonly ManagedCompilationResult CompilationResult;
-		public readonly TrimmingTestLogger Logger;
 		public readonly TrimmingCustomizations Customizations;
 		public readonly int ExitCode;
 
