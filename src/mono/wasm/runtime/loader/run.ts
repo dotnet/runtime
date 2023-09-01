@@ -495,9 +495,14 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
         mono_exit(1, err);
     });
 
-    setTimeout(() => {
-        init_globalization();
-        mono_download_assets(); // intentionally not awaited
+    setTimeout(async () => {
+        try {
+            init_globalization();
+            await mono_download_assets();
+        }
+        catch (err) {
+            mono_exit(1, err);
+        }
     }, 0);
 
     const es6Modules = await Promise.all(promises);

@@ -2103,6 +2103,12 @@
 	<Comment>Returned by binders that bind based on type identity.</Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80132006">
+	<SymbolicName>CLR_E_BIND_ARCHITECTURE_MISMATCH</SymbolicName>
+	<Message>"The assembly architecture is not compatible with the current process architecture."</Message>
+	<Comment>Indicates the assembly cannot be loaded because its architecture is not compatible with that of the current process.</Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80132009">
 	<SymbolicName>CLR_E_GC_OOM</SymbolicName>
 	<Message>"Failfast due to an OOM during a GC"</Message>
