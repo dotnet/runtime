@@ -2,8 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Runtime.CompilerServices;
+
+#if NETCOREAPP
+using System.Runtime.Loader;
+#endif
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
@@ -386,6 +393,116 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }, options);
         }
 
+#if NETCOREAPP
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CreateInstance_CollectibleAssembly(bool useDynamicCode)
+        {
+            if (PlatformDetection.IsAssemblyLoadingSupported)
+            {
+                var options = new RemoteInvokeOptions();
+                if (!useDynamicCode)
+                {
+                    DisableDynamicCode(options);
+                }
+
+                RemoteExecutor.Invoke(static () =>
+                {
+                    Assert.False(Collectible_IsAssemblyLoaded());
+                    Collectible_LoadAndCreate(useCollectibleAssembly : true, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
+
+                    for (int i = 0; (typeWeakRef.IsAlive || asmWeakRef.IsAlive) && (i < 10); i++)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                    }
+
+                    // These should be GC'd.
+                    Assert.False(asmWeakRef.IsAlive, "asmWeakRef.IsAlive");
+                    Assert.False(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
+                    Assert.False(Collectible_IsAssemblyLoaded());
+                }).Dispose();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CreateInstance_NormalAssembly()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(Collectible_IsAssemblyLoaded());
+                Collectible_LoadAndCreate(useCollectibleAssembly: false, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
+
+                for (int i = 0; (typeWeakRef.IsAlive || asmWeakRef.IsAlive) && (i < 10); i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+
+                // These will not be GC'd.
+                Assert.True(asmWeakRef.IsAlive, "alcWeakRef.IsAlive");
+                Assert.True(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
+                Assert.True(Collectible_IsAssemblyLoaded());
+            }).Dispose();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Collectible_LoadAndCreate(bool useCollectibleAssembly, out WeakReference asmWeakRef, out WeakReference typeWeakRef)
+        {
+            Assembly asm;
+            object obj;
+
+            if (useCollectibleAssembly)
+            {
+                asm = MyLoadContext.LoadAsCollectable();
+                obj = CreateWithActivator(asm);
+                Assert.True(obj.GetType().IsCollectible);
+            }
+            else
+            {
+                asm = MyLoadContext.LoadNormal();
+                obj = CreateWithActivator(asm);
+                Assert.False(obj.GetType().IsCollectible);
+            }
+
+            Assert.True(Collectible_IsAssemblyLoaded());
+            asmWeakRef = new(asm);
+            typeWeakRef = new(obj.GetType());
+
+            static object CreateWithActivator(Assembly asm)
+            {
+                Type t = asm.GetType("UnloadableAssembly.ClassToCreate");
+                MethodInfo mi = t.GetMethod("Create", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(ServiceProvider) });
+
+                object instance;
+                ServiceCollection services = new();
+                using (ServiceProvider provider = services.BuildServiceProvider())
+                {
+                    instance = mi.Invoke(null, new object[] { provider });
+                }
+
+                return instance;
+            }
+        }
+
+        static bool Collectible_IsAssemblyLoaded()
+        {
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                Assembly asm = assemblies[i];
+                string asmName = Path.GetFileName(asm.Location);
+                if (asmName == "UnloadableAssembly.dll")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+#endif
+
         private static void DisableDynamicCode(RemoteInvokeOptions options)
         {
             // We probably only need to set 'IsDynamicCodeCompiled' since only that is checked,
@@ -581,5 +698,36 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Text = text;
         }
     }
-}
 
+#if NETCOREAPP
+    internal class MyLoadContext : AssemblyLoadContext
+    {
+        private MyLoadContext() : base(isCollectible: true)
+        {
+        }
+
+        public Assembly LoadAssembly()
+        {
+            Assembly asm = LoadFromAssemblyPath(GetPath());
+            Assert.Equal(GetLoadContext(asm), this);
+            return asm;
+        }
+
+        public static Assembly LoadAsCollectable()
+        {
+            MyLoadContext alc = new MyLoadContext();
+            return alc.LoadAssembly();
+        }
+
+        public static Assembly LoadNormal()
+        {
+            return Assembly.LoadFrom(GetPath());
+        }
+
+        private static string GetPath()
+        {
+            return Path.Combine(Directory.GetCurrentDirectory(), "UnloadableAssembly.dll");
+        }
+    }
+#endif
+}

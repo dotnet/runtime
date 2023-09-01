@@ -27,7 +27,8 @@ namespace Microsoft.Extensions.DependencyInjection
         private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
 #endif
 
-        private static Lazy<ConditionalWeakTable<Type, ConstructorInfoEx[]>> s_collectibleConstructorInfos = new();
+        // Support collectible assemblies.
+        private static readonly Lazy<ConditionalWeakTable<Type, ConstructorInfoEx[]>> s_collectibleConstructorInfos = new();
 
 #if NET8_0_OR_GREATER
         // Maximum number of fixed arguments for ConstructorInvoker.Invoke(arg1, etc).
@@ -173,8 +174,8 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
 #if NETCOREAPP
-            // We are able to check type.Assembly.IsCollectible only under NETCOREAPP.
-            if (!type.Assembly.IsCollectible)
+            // Type.IsCollectible is only available under NETCOREAPP.
+            if (!type.IsCollectible)
             {
                 return s_constructorInfos.GetOrAdd(type, value);
             }
@@ -194,7 +195,7 @@ namespace Microsoft.Extensions.DependencyInjection
             catch (ArgumentException) { }
 #endif
 
-            // Use the instance from another thread.
+            // Use the instance from another thread that just added the same type.
             bool success = s_collectibleConstructorInfos.Value.TryGetValue(type, out value);
             Debug.Assert(success);
             return value!;
