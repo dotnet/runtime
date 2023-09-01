@@ -72,13 +72,6 @@
                       Condition="'@(KnownAppHostPack)' == '' or !@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
   </ItemGroup>
 
-  <!-- Add known packs from the downlevel TFM until we are building with an SDK that supports the new TFM all-up. -->
-  <ItemGroup Condition="'$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
-    <KnownILLinkPack Include="@(KnownILLinkPack->WithMetadataValue('Identity', 'Microsoft.NET.ILLink.Tasks')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))">
-      <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    </KnownILLinkPack>
-  </ItemGroup>
-
   <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to the output. -->
   <ItemGroup>
     <Reference Update="@(Reference)">
