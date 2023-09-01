@@ -24,7 +24,7 @@ namespace System.Numerics.Tensors.Tests
 
         private static float[] CreateAndFillTensor(int size)
         {
-            var tensor = CreateTensor(size);
+            float[] tensor = CreateTensor(size);
             FillTensor(tensor);
             return tensor;
         }
@@ -49,9 +49,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensors()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Add(x, y, destination);
 
@@ -64,9 +64,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensors_ThrowsForMismatchedLengths()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(MismatchedTensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
         }
@@ -74,9 +74,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensors_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
         }
@@ -84,9 +84,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTensorAndScalar()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Add(x, y, destination);
 
@@ -99,9 +99,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTensorAndScalar_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
         }
@@ -109,9 +109,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void SubtractTwoTensors()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Subtract(x, y, destination);
 
@@ -124,9 +124,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void SubtractTwoTensors_ThrowsForMismatchedLengths()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(MismatchedTensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
         }
@@ -134,9 +134,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void SubtractTwoTensors_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
         }
@@ -144,9 +144,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void SubtractTensorAndScalar()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Subtract(x, y, destination);
 
@@ -159,9 +159,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void SubtractTensorAndScalar_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
         }
@@ -169,9 +169,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensors()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Multiply(x, y, destination);
 
@@ -184,9 +184,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensors_ThrowsForMismatchedLengths()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(MismatchedTensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
         }
@@ -194,9 +194,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensors_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
         }
@@ -204,9 +204,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTensorAndScalar()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Multiply(x, y, destination);
 
@@ -219,9 +219,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTensorAndScalar_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
         }
@@ -229,9 +229,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void DivideTwoTensors()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Divide(x, y, destination);
 
@@ -244,9 +244,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void DivideTwoTensors_ThrowsForMismatchedLengths()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(MismatchedTensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
         }
@@ -254,9 +254,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void DivideTwoTensors_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
         }
@@ -264,9 +264,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void DivideTensorAndScalar()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Divide(x, y, destination);
 
@@ -279,9 +279,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void DivideTensorAndScalar_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
         }
@@ -289,8 +289,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void NegateTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Negate(x, destination);
 
@@ -303,8 +303,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void NegateTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Negate(x, destination));
         }
@@ -312,10 +312,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensorsAndMultiplyWithThirdTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var multiplier = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] multiplier = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.AddMultiply(x, y, multiplier, destination);
 
@@ -328,10 +328,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForMismatchedLengths_x_y()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(MismatchedTensorSize);
-            var multiplier = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(MismatchedTensorSize);
+            float[] multiplier = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
@@ -339,10 +339,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForMismatchedLengths_x_multiplier()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var multiplier = CreateAndFillTensor(MismatchedTensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] multiplier = CreateAndFillTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
@@ -350,10 +350,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var multiplier = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] multiplier = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
@@ -361,10 +361,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensorsAndMultiplyWithScalar()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var multiplier = NextSingle();
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float multiplier = NextSingle();
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.AddMultiply(x, y, multiplier, destination);
 
@@ -377,10 +377,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTwoTensorsAndMultiplyWithScalar_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var multiplier = NextSingle();
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float multiplier = NextSingle();
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
@@ -388,10 +388,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTensorAndScalarAndMultiplyWithTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var multiplier = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] multiplier = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.AddMultiply(x, y, multiplier, destination);
 
@@ -404,10 +404,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void AddTensorAndScalarAndMultiplyWithTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var multiplier = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] multiplier = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
@@ -415,10 +415,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensorsAndAddWithThirdTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var addend = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] addend = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.MultiplyAdd(x, y, addend, destination);
 
@@ -431,10 +431,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForMismatchedLengths_x_y()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(MismatchedTensorSize);
-            var addend = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(MismatchedTensorSize);
+            float[] addend = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
@@ -442,10 +442,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForMismatchedLengths_x_multiplier()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var addend = CreateAndFillTensor(MismatchedTensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] addend = CreateAndFillTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
@@ -453,10 +453,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var addend = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float[] addend = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
@@ -464,10 +464,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensorsAndAddWithScalar()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var addend = NextSingle();
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float addend = NextSingle();
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.MultiplyAdd(x, y, addend, destination);
 
@@ -480,10 +480,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTwoTensorsAndAddWithScalar_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = CreateAndFillTensor(TensorSize);
-            var addend = NextSingle();
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] y = CreateAndFillTensor(TensorSize);
+            float addend = NextSingle();
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
@@ -491,10 +491,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTensorAndScalarAndAddWithTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var addend = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] addend = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.MultiplyAdd(x, y, addend, destination);
 
@@ -507,10 +507,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MultiplyTensorAndScalarAndAddWithTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var y = NextSingle();
-            var addend = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float y = NextSingle();
+            float[] addend = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
@@ -518,8 +518,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void ExpTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Exp(x, destination);
 
@@ -532,8 +532,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void ExpTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Exp(x, destination));
         }
@@ -541,8 +541,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void LogTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Log(x, destination);
 
@@ -555,8 +555,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void LogTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Log(x, destination));
         }
@@ -564,8 +564,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void CoshTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Cosh(x, destination);
 
@@ -578,8 +578,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void CoshTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Cosh(x, destination));
         }
@@ -587,8 +587,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void SinhTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Sinh(x, destination);
 
@@ -601,8 +601,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void SinhTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Sinh(x, destination));
         }
@@ -610,8 +610,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TanhTensor()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(TensorSize);
 
             TensorPrimitives.Tanh(x, destination);
 
@@ -624,8 +624,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TanhTensor_ThrowsForTooShortDestination()
         {
-            var x = CreateAndFillTensor(TensorSize);
-            var destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(TensorSize);
+            float[] destination = CreateTensor(MismatchedTensorSize);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Tanh(x, destination));
         }
