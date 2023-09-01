@@ -66,7 +66,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.Build(this);
         }
 
-        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true)
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool enableMacOSCodeSign = true)
         {
             // Use the live-built apphost and HostModel to create the apphost to run
             HostWriter.CreateAppHost(
@@ -74,7 +74,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 AppExe,
                 Path.GetFileName(AppDll),
                 windowsGraphicalUserInterface: isWindowsGui,
-                assemblyToCopyResourcesFrom: copyResources ? AppDll : null);
+                assemblyToCopyResourcesFrom: copyResources ? AppDll : null,
+                enableMacOSCodeSign);
         }
 
         public enum MockedComponent
