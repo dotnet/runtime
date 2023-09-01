@@ -72,6 +72,7 @@ namespace HostActivation.Tests
                 .And.NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Fact]
         public void EnvironmentVariable_DotNetRootIsUsedOverInstallLocationIfSet()
         {
@@ -97,6 +98,7 @@ namespace HostActivation.Tests
             }
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Fact]
         public void EnvironmentVariable_DotnetRootPathDoesNotExist()
         {
@@ -122,6 +124,7 @@ namespace HostActivation.Tests
             }
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Fact]
         public void EnvironmentVariable_DotnetRootPathExistsButHasNoHost()
         {
@@ -185,6 +188,7 @@ namespace HostActivation.Tests
             }
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Fact]
         public void RegisteredInstallLocation_ArchSpecificLocationIsPickedFirst()
         {
@@ -223,6 +227,7 @@ namespace HostActivation.Tests
             }
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Fact]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_ReallyLongInstallPathIsParsedCorrectly()
@@ -280,6 +285,7 @@ namespace HostActivation.Tests
             }
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Fact]
         public void RegisteredInstallLocation_DotNetInfo_ListOtherArchitectures()
         {

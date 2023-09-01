@@ -30,6 +30,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             _dotnetDirArtifact.Dispose();
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Fact]
         public void Muxer_ListRuntimes()
         {

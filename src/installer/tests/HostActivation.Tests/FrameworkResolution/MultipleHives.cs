@@ -22,6 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             SharedState = sharedState;
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         // MLL (where global hive has better match) with various TFMs
         [InlineData("5.0.0", "netcoreapp3.1", true, "5.1.2")]
@@ -69,6 +70,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2");
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         [InlineData("6.1.2", "net6.0", true, "6.1.2", false)] // No roll forward if --fx-version is used
         [InlineData("6.1.2", "net6.0", null, "6.1.2", false)]
@@ -137,6 +139,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             return expectedList;
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         [InlineData(true)]
         [InlineData(null)]
@@ -162,6 +165,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         [InlineData(true)]
         [InlineData(null)]
@@ -186,6 +190,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         [InlineData("net6.0", true, true)]
         [InlineData("net6.0", null, true)]
