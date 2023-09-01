@@ -11,6 +11,7 @@
 // <Code> 
 
 using System;
+using Xunit;
 
 public class GenException<T> : Exception {}
 
@@ -51,7 +52,8 @@ public class Test_typeparameter012
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		new Gen<GenException<int>,int>().ExceptionTest(new GenExceptionSub<int>());
 		new Gen<GenException<string>,string>().ExceptionTest(new GenExceptionSub<string>());
