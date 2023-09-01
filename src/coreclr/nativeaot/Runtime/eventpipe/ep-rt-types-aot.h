@@ -27,6 +27,8 @@
 #define EP_ASSERT(expr)
 #endif
 
+#define EP_FAILFAST(msg) 
+
 #undef EP_UNREACHABLE
 #define EP_UNREACHABLE(msg) do { UNREACHABLE_MSG(msg); } while (0)
 
