@@ -22,8 +22,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public List<ParameterSpec> ConstructorParameters { get; } = new();
 
-        public override bool NeedsMemberBinding => CanInitialize &&
-            Properties.Values.Count > 0 &&
-            Properties.Values.Any(p => p.ShouldBind());
+        public override bool NeedsMemberBinding => Properties.Values.Any(p => p.ShouldBind());
     }
 }
