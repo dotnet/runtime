@@ -517,7 +517,7 @@ namespace System.Numerics
 
         private static ParsingStatus BinNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
         {
-            if (number.digits is null || number.digits.Length < 2)
+            if (number.digits is null || number.digits.Length == 0)
             {
                 result = default;
                 return ParsingStatus.Failed;
@@ -526,74 +526,92 @@ namespace System.Numerics
             const int DigitsPerBlock = 32;
 
             int totalDigitCount = number.digits.Length - 1;   // Ignore trailing '\0'
+            int partialDigitCount;
 
-            int blockCount = Math.DivRem(totalDigitCount, DigitsPerBlock, out int remainingDigitsInBlock);
-            if (remainingDigitsInBlock == 0)
+            (int blockCount, int remainder) = int.DivRem(totalDigitCount, DigitsPerBlock);
+            if (remainder == 0)
             {
-                remainingDigitsInBlock = DigitsPerBlock;
+                partialDigitCount = 0;
             }
             else
             {
                 blockCount++;
+                partialDigitCount = DigitsPerBlock - remainder;
             }
 
             Debug.Assert(number.digits[0] is '0' or '1');
             bool isNegative = number.digits[0] == '1';
+            uint currentBlock = isNegative ? 0xFF_FF_FF_FFu : 0x0;
 
             uint[]? arrayFromPool = null;
-            Span<uint> bufferSpan = blockCount <= BigIntegerCalculator.StackAllocThreshold ?
-                stackalloc uint[blockCount] : (arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).AsSpan(0, blockCount);
+            Span<uint> buffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
+                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
+
+            int bufferPos = blockCount - 1;
 
             try
             {
-                uint currentBlock = isNegative ? 0xFF_FF_FF_FF : 0x0;
-                int bufferPos = blockCount;
-                foreach (ReadOnlyMemory<char> chunkMem in number.digits.GetChunks())
+                foreach (ReadOnlyMemory<char> digitsChunkMem in number.digits.GetChunks())
                 {
-                    ReadOnlySpan<char> chunk = chunkMem.Span;
-                    foreach (char c in chunk)
+                    ReadOnlySpan<char> chunkDigits = digitsChunkMem.Span;
+                    for (int i = 0; i < chunkDigits.Length; i++)
                     {
-                        if (c == '\0')
+                        char digitChar = chunkDigits[i];
+                        if (digitChar == '\0')
                         {
                             break;
                         }
 
-                        Debug.Assert(c is '0' or '1');
-                        currentBlock = (currentBlock << 1) | (uint)(c - '0');
+                        Debug.Assert(digitChar is '0' or '1');
+                        currentBlock = (currentBlock << 1) | (uint)(digitChar - '0');
+                        partialDigitCount++;
 
-                        if (--remainingDigitsInBlock == 0)
+                        if (partialDigitCount == DigitsPerBlock)
                         {
-                            bufferSpan[--bufferPos] = currentBlock;
-                            remainingDigitsInBlock = DigitsPerBlock;
+                            buffer[bufferPos--] = currentBlock;
+                            partialDigitCount = 0;
 
                             // we do not need to reset currentBlock now, because it should always set all its bits by left shift in subsequent iterations
                         }
                     }
-
-                    Debug.Assert(bufferPos > 0 || remainingDigitsInBlock == DigitsPerBlock);
                 }
 
-                Debug.Assert(bufferPos == 0 && remainingDigitsInBlock == DigitsPerBlock);
+                Debug.Assert(partialDigitCount == 0 && bufferPos == -1);
 
-                if (isNegative)
-                {
-                    NumericsHelpers.DangerousMakeTwosComplement(bufferSpan);
-                }
+                buffer = buffer.TrimEnd(0u);
 
-                bufferSpan = bufferSpan.TrimEnd(0u);
-                if (bufferSpan.IsEmpty)
+                int sign;
+                uint[]? bits;
+
+                if (buffer.IsEmpty)
                 {
-                    result = BigInteger.Zero;
+                    sign = 0;
+                    bits = null;
                 }
-                else if (bufferSpan.Length == 1 && bufferSpan[0] <= int.MaxValue)
+                else if (buffer.Length == 1)
                 {
-                    result = new BigInteger((int)(isNegative ? -bufferSpan[0] : bufferSpan[0]), (uint[]?)null);
+                    sign = (int)buffer[0];
+                    bits = null;
+
+                    if ((!isNegative && sign < 0) || sign == int.MinValue)
+                    {
+                        bits = new[] { (uint)sign };
+                        sign = isNegative ? -1 : 1;
+                    }
                 }
                 else
                 {
-                    result = new BigInteger(isNegative ? -1 : 1, bufferSpan.ToArray());
+                    sign = isNegative ? -1 : 1;
+                    bits = buffer.ToArray();
+
+                    if (isNegative)
+                    {
+                        NumericsHelpers.DangerousMakeTwosComplement(bits);
+                    }
                 }
 
+                result = new BigInteger(sign, bits);
                 return ParsingStatus.OK;
             }
             finally
@@ -1148,7 +1166,9 @@ namespace System.Numerics
                 else
                 {
                     // each byte is typically eight chars
-                    sb = charsIncludeDigits > 512 ? new ValueStringBuilder(charsIncludeDigits) : new ValueStringBuilder(stackalloc char[charsIncludeDigits]);
+                    sb = charsIncludeDigits > 512
+                        ? new ValueStringBuilder(charsIncludeDigits)
+                        : new ValueStringBuilder(stackalloc char[512].Slice(0, charsIncludeDigits));
                 }
 
                 if (digits > charsForBits)

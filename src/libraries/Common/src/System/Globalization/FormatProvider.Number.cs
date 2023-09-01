@@ -356,34 +356,34 @@ namespace System.Globalization
                 return ret;
             }
 
-            private interface IDigitValidator
+            private interface IDigitParser
             {
                 static abstract bool IsValidChar(char c);
-                static abstract bool IsHexBinary();
+                static abstract bool IsHexOrBinaryParser();
             }
 
-            private readonly struct IntegerDigitValidator : IDigitValidator
+            private readonly struct IntegerDigitParser : IDigitParser
             {
                 public static bool IsValidChar(char c) => char.IsAsciiDigit(c);
 
-                public static bool IsHexBinary() => false;
+                public static bool IsHexOrBinaryParser() => false;
             }
 
-            private readonly struct HexDigitValidator : IDigitValidator
+            private readonly struct HexDigitParser : IDigitParser
             {
-                public static bool IsValidChar(char c) => char.IsAsciiHexDigit(c);
+                public static bool IsValidChar(char c) => HexConverter.IsHexChar((int)c);
 
-                public static bool IsHexBinary() => true;
+                public static bool IsHexOrBinaryParser() => true;
             }
 
-            private readonly struct BinaryDigitValidator : IDigitValidator
+            private readonly struct BinaryDigitParser : IDigitParser
             {
                 public static bool IsValidChar(char c)
                 {
-                    return c is '0' or '1';
+                    return (uint)c - '0' <= 1;
                 }
 
-                public static bool IsHexBinary() => true;
+                public static bool IsHexOrBinaryParser() => true;
             }
 
 
@@ -391,19 +391,19 @@ namespace System.Globalization
             {
                 if ((options & NumberStyles.AllowHexSpecifier) != 0)
                 {
-                    return ParseNumberStyle<HexDigitValidator>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+                    return ParseNumberStyle<HexDigitParser>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
                 }
 
                 if ((options & NumberStyles.AllowBinarySpecifier) != 0)
                 {
-                    return ParseNumberStyle<BinaryDigitValidator>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+                    return ParseNumberStyle<BinaryDigitParser>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
                 }
 
-                return ParseNumberStyle<IntegerDigitValidator>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+                return ParseNumberStyle<IntegerDigitParser>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
             }
 
-            private static unsafe bool ParseNumberStyle<TDigitValidator>(ref char* str, char* strEnd, NumberStyles options, scoped ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
-                where TDigitValidator : struct, IDigitValidator
+            private static unsafe bool ParseNumberStyle<TDigitParser>(ref char* str, char* strEnd, NumberStyles options, scoped ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
+                where TDigitParser : struct, IDigitParser
             {
                 Debug.Assert(str != null);
                 Debug.Assert(strEnd != null);
@@ -487,11 +487,11 @@ namespace System.Globalization
                 int digEnd = 0;
                 while (true)
                 {
-                    if (TDigitValidator.IsValidChar(ch))
+                    if (TDigitParser.IsValidChar(ch))
                     {
                         state |= StateDigits;
 
-                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && TDigitValidator.IsHexBinary()))
+                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && TDigitParser.IsHexOrBinaryParser()))
                         {
                             if (digCount < maxParseDigits)
                             {
