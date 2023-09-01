@@ -203,7 +203,7 @@ namespace System.Collections
             count--;
         }
 
-        internal KeyValuePairs[] ToKeyValuePairsArray()
+        private KeyValuePairs[] ToKeyValuePairsArray()
         {
             var array = new KeyValuePairs[count];
             int index = 0;
@@ -418,18 +418,18 @@ namespace System.Collections
             public DictionaryNode? next;
         }
 
-        internal sealed class ListDictionaryInternalDebugView
+        private sealed class ListDictionaryInternalDebugView
         {
-            private readonly ListDictionaryInternal list;
+            private readonly ListDictionaryInternal _list;
 
             public ListDictionaryInternalDebugView(ListDictionaryInternal list)
             {
                 ArgumentNullException.ThrowIfNull(list);
-                this.list = list;
+                _list = list;
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePairs[] Items => list.ToKeyValuePairsArray();
+            public KeyValuePairs[] Items => _list.ToKeyValuePairsArray();
         }
     }
 }
