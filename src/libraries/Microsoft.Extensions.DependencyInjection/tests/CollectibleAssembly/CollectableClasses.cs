@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace UnloadableAssembly
+namespace CollectibleAssembly
 {
     public class ClassToCreate
     {
@@ -13,7 +13,7 @@ namespace UnloadableAssembly
 
         public static object Create(ServiceProvider provider)
         {
-            // Both the type to create (ClassToCreate) and the ctor arg's type (ClassAsCtorArgument) are
+            // Both the type to create (ClassToCreate) and the ctor's arg type (ClassAsCtorArgument) are
             // located in this assembly, so both types need to be GC'd for this assembly to be collected.
             return ActivatorUtilities.CreateInstance<ClassToCreate>(provider, new ClassAsCtorArgument());
         }
