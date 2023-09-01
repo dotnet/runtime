@@ -203,17 +203,6 @@ namespace System.Collections
             count--;
         }
 
-        private KeyValuePairs[] ToKeyValuePairsArray()
-        {
-            var array = new KeyValuePairs[count];
-            int index = 0;
-            for (DictionaryNode? node = head; node != null; node = node.next)
-            {
-                array[index++] = new KeyValuePairs(node.key, node.value);
-            }
-            return array;
-        }
-
         private sealed class NodeEnumerator : IDictionaryEnumerator
         {
             private readonly ListDictionaryInternal list;
@@ -429,7 +418,19 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePairs[] Items => _list.ToKeyValuePairsArray();
+            public KeyValuePairs[] Items
+            {
+                get
+                {
+                    var array = new KeyValuePairs[_list.count];
+                    int index = 0;
+                    for (DictionaryNode? node = _list.head; node != null; node = node.next)
+                    {
+                        array[index++] = new KeyValuePairs(node.key, node.value);
+                    }
+                    return array;
+                }
+            }
         }
     }
 }
