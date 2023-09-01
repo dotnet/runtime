@@ -36,7 +36,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected partial TrimmingCustomizations? CustomizeLinker (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
+		protected partial TrimmingCustomizations? CustomizeTrimming (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
 			=> null;
 
 		static partial void AddOutputDirectory (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder)
