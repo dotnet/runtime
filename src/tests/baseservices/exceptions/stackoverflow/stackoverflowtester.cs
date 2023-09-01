@@ -5,14 +5,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Xunit;
 
 namespace TestStackOverflow
 {
-    class Program
+    public class Program
     {
-        static string s_corerunPath;
-        static string s_currentPath;
-
         static bool TestStackOverflow(string testName, string testArgs, out List<string> stderrLines)
         {
             Console.WriteLine($"Running {testName} test({testArgs})");
@@ -20,8 +18,8 @@ namespace TestStackOverflow
 
             Process testProcess = new Process();
 
-            testProcess.StartInfo.FileName = s_corerunPath;
-            testProcess.StartInfo.Arguments = $"{Path.Combine(s_currentPath, "..", testName, $"{testName}.dll")} {testArgs}";
+            testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
+            testProcess.StartInfo.Arguments = $"{Path.Combine(Directory.GetCurrentDirectory(), "..", testName, $"{testName}.dll")} {testArgs}";
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
             testProcess.ErrorDataReceived += (sender, line) => 
@@ -71,12 +69,13 @@ namespace TestStackOverflow
             return true;
         }
 
-        static bool TestStackOverflowSmallFrameMainThread()
+        [Fact]
+        public static bool TestStackOverflowSmallFrameMainThread()
         {
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "smallframe main", out lines))
             {
-                if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow.Program.Main(System.String[])"))
+                if (!lines[lines.Count - 1].EndsWith(".Main()"))
                 {
                     Console.WriteLine("Missing \"Main\" method frame at the last line");
                     return false;
@@ -112,7 +111,8 @@ namespace TestStackOverflow
             return false;
         }
 
-        static bool TestStackOverflowLargeFrameMainThread()
+        [Fact]
+        public static bool TestStackOverflowLargeFrameMainThread()
         {
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "largeframe main", out lines))
@@ -153,7 +153,8 @@ namespace TestStackOverflow
             return false;
         }
 
-        static bool TestStackOverflowSmallFrameSecondaryThread()
+        [Fact]
+        public static bool TestStackOverflowSmallFrameSecondaryThread()
         {
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "smallframe secondary", out lines))
@@ -188,7 +189,8 @@ namespace TestStackOverflow
             return false;
         }
 
-        static bool TestStackOverflowLargeFrameSecondaryThread()
+        [Fact]
+        public static bool TestStackOverflowLargeFrameSecondaryThread()
         {
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "largeframe secondary", out lines))
@@ -223,7 +225,8 @@ namespace TestStackOverflow
             return false;
         }
 
-        static bool TestStackOverflow3()
+        [Fact]
+        public static bool TestStackOverflow3()
         {
             List<string> lines;
             if (TestStackOverflow("stackoverflow3", "", out lines))
@@ -244,39 +247,6 @@ namespace TestStackOverflow
             }
 
             return false;
-        }
-
-        static int Main()
-        {
-            s_currentPath = Directory.GetCurrentDirectory();
-            s_corerunPath = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-
-            if (!TestStackOverflowSmallFrameMainThread())
-            {
-                return 101;
-            }
-
-            if (!TestStackOverflowLargeFrameMainThread())
-            {
-                return 102;
-            }
-
-            if (!TestStackOverflowSmallFrameSecondaryThread())
-            {
-                return 103;
-            }
-
-            if (!TestStackOverflowLargeFrameSecondaryThread())
-            {
-                return 104;
-            }
-
-            if (!TestStackOverflow3())
-            {
-                return 105;
-            }
-
-            return 100;
         }
     }
 }
