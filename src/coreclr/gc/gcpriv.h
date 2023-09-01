@@ -295,7 +295,7 @@ void GCLogConfig (const char *fmt, ... );
 
 #ifdef USE_REGIONS
 // We constrain this as many bookkeeping fields use an int
-#define MAX_REGION_SIZE (1 << ((sizeof (int32_t) * 8) - 1))
+#define MAX_REGION_SIZE ((size_t)1 << ((sizeof (int32_t) * 8) - 1))
 #endif // USE_REGIONS
 
 #define MAX_NUM_FREE_SPACES 200
