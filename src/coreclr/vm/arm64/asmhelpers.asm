@@ -318,10 +318,10 @@ EphemeralCheckEnabled
 
 #ifdef WRITE_BARRIER_CHECK
         adrp     x12, g_GCShadow
-        ldr      x7, [x12]
+        ldr      x7, [x12, g_GCShadow]
 
         adrp     x12, g_GCShadowEnd
-        ldr      x10, [x12]
+        ldr      x10, [x12, g_GCShadowEnd]
 #endif
 
         ; Update wbs state
