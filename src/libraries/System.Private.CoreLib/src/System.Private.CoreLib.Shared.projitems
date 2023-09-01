@@ -20,7 +20,7 @@
     <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>
     <IsBigEndian Condition="'$(Platform)' == 's390x'">true</IsBigEndian>
     <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le' or '$(Platform)' == 'riscv64'">true</Is64Bit>
-    <UseMinimalGlobalizationData Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</UseMinimalGlobalizationData>
+    <UseMinimalGlobalizationData Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</UseMinimalGlobalizationData>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(IsBigEndian)' == 'true'">$(DefineConstants);BIGENDIAN</DefineConstants>
@@ -1272,7 +1272,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZone.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.AdjustmentRule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.cs" Condition="'$(UseMinimalGlobalizationData)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.StringSerializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.TransitionTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneNotFoundException.cs" />
@@ -1357,10 +1357,10 @@
     <Compile Include="$(CommonPath)Interop\Interop.ResultCode.cs">
       <Link>Common\Interop\Interop.ResultCode.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneDisplayNameType.cs">
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneDisplayNameType.cs" Condition="'$(UseMinimalGlobalizationData)' != 'true'">
       <Link>Common\Interop\Interop.TimeZoneDisplayNameType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs">
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs" Condition="'$(UseMinimalGlobalizationData)' != 'true'">
       <Link>Common\Interop\Interop.TimeZoneInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
@@ -2476,7 +2476,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.Android.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.NonAndroid.cs" Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsLinuxBionic)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.Unix.cs" />
+    
   </ItemGroup>
   <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(IsOSXLike)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetTimes.OtherUnix.cs" />
@@ -2504,6 +2504,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SunOS.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.Unix.cs" Condition="'$(UseMinimalGlobalizationData)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
   </ItemGroup>
@@ -2518,6 +2519,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Browser.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseMinimalGlobalizationData)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.MinimalGlobalizationData.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libobjc.cs">

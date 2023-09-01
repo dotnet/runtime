@@ -29,10 +29,7 @@ namespace System
         private static string GetUtcStandardDisplayName()
         {
             System.Diagnostics.Debug.Write("TimeZoneInfo.GetUtcStandardDisplayName is called.\n");
-#if TARGET_BROWSER || TARGET_WASI
-            // For this target, be consistent with other time zone display names that use an abbreviation.
-            return "UTC";
-#elif TARGET_IOS || TARGET_TVOS
+#if TARGET_IOS || TARGET_TVOS
             if (!GlobalizationMode.Hybrid)
             {
                 // For this target, be consistent with other time zone display names that use an abbreviation.
@@ -59,10 +56,7 @@ namespace System
         // Helper function to get the full display name for the UTC static time zone instance
         private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
         {
-#if TARGET_BROWSER || TARGET_WASI
-            // For this target, be consistent with other time zone display names that use the ID.
-            return $"(UTC) {timeZoneId}";
-#elif TARGET_IOS || TARGET_TVOS
+#if TARGET_IOS || TARGET_TVOS
             if (!GlobalizationMode.Hybrid)
             {
                 // For this target, be consistent with other time zone display names that use the ID.
@@ -116,7 +110,7 @@ namespace System
                 {
                     fixed (char* bufferPtr = buffer)
                     {
-#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
+#if TARGET_IOS || TARGET_TVOS
                         if (GlobalizationMode.Hybrid)
                             return Interop.Globalization.GetTimeZoneDisplayNameNative(locale, locale.Length, id, id.Length, type, bufferPtr, buffer.Length);
 #endif
@@ -136,7 +130,7 @@ namespace System
                     {
                         fixed (char* bufferPtr = buffer)
                         {
-#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
+#if TARGET_IOS || TARGET_TVOS
                             if (GlobalizationMode.Hybrid)
                                 return Interop.Globalization.GetTimeZoneDisplayNameNative(locale, locale.Length, id, id.Length, type, bufferPtr, buffer.Length);
 #endif
@@ -285,7 +279,7 @@ namespace System
         // Helper function that returns an alternative ID using ICU data. Used primarily for converting from Windows IDs.
         private static unsafe string? GetAlternativeId(string id, out bool idIsIana)
         {
-#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
+#if TARGET_IOS || TARGET_TVOS
             // No alternative IDs in this target.
             idIsIana = false;
             return null;
