@@ -38,6 +38,8 @@
 #endif
 
 #include "debug-mono-ppdb.h"
+#include <dnmd.h>
+#include <dnmd_pdb.h>
 
 typedef struct {
 	gint32 signature;
@@ -293,14 +295,6 @@ mono_ppdb_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 static MonoDebugSourceInfo*
 get_docinfo (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
 {
-	MonoTableInfo *tables = image->tables;
-	guint32 cols [MONO_DOCUMENT_SIZE];
-	const char *ptr;
-	const char *start;
-	const char *part_ptr;
-	int size, part_size, partidx, nparts;
-	char sep;
-	GString *s;
 	MonoDebugSourceInfo *res, *cached = NULL;
 
 	mono_debugger_lock ();
@@ -310,37 +304,37 @@ get_docinfo (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
 	if (cached)
 		return cached;
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_DOCUMENT], docidx-1, cols, MONO_DOCUMENT_SIZE);
+	guint32 tok = mono_metadata_make_token(MONO_TABLE_DOCUMENT, docidx);
+	mdcursor_t c;
+	if (!md_token_to_cursor (image->metadata_handle, tok, &c))
+		return NULL;
+	
+	uint8_t const* name_blob;
+	uint32_t name_blob_len;
+	if (1 != md_get_column_value_as_blob (c, mdtDocument_Name, 1, &name_blob, &name_blob_len))
+		return NULL;
+	
+	char* name = NULL;
+	size_t name_len = 0;
 
-	ptr = mono_metadata_blob_heap (image, cols [MONO_DOCUMENT_NAME]);
-	size = mono_metadata_decode_blob_size (ptr, &ptr);
-	start = ptr;
+	md_blob_parse_result_t document_name_parse_result = md_parse_document_name(image->metadata_handle, name_blob, name_blob_len, name, &name_len);
+	// TODO: Handle malformed DocumentName blobs.
+	g_assert(document_name_parse_result == mdbpr_InsufficientBuffer);
+	name = g_malloc(name_len);
+	document_name_parse_result = md_parse_document_name(image->metadata_handle, name_blob, name_blob_len, name, &name_len);
+	g_assert(document_name_parse_result == mdbpr_Success);
 
-	// FIXME: UTF8
-	sep = ptr [0];
-	ptr ++;
-
-	s = g_string_new ("");
-
-	nparts = 0;
-	while (ptr < start + size) {
-		partidx = mono_metadata_decode_value (ptr, &ptr);
-		if (nparts)
-			g_string_append_c (s, sep);
-		if (partidx) {
-			part_ptr = mono_metadata_blob_heap (image, partidx);
-			part_size = mono_metadata_decode_blob_size (part_ptr, &part_ptr);
-
-			// FIXME: UTF8
-			g_string_append_len (s, part_ptr, part_size);
-		}
-		nparts ++;
-	}
+	uint8_t const* hash;
+	uint32_t hash_len;
+	if (1 != md_get_column_value_as_blob (c, mdtDocument_Hash, 1, &hash, &hash_len))
+		return NULL;
+	
+	g_assert(hash_len == 16);
 
 	res = g_new0 (MonoDebugSourceInfo, 1);
-	res->source_file = g_string_free (s, FALSE);
+	res->source_file = name;
 	res->guid = NULL;
-	res->hash = (guint8*)mono_metadata_blob_heap (image, cols [MONO_DOCUMENT_HASH]);
+	res->hash = (guint8*)hash;
 
 	mono_debugger_lock ();
 	cached = (MonoDebugSourceInfo *)g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
@@ -375,73 +369,76 @@ get_docname (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
 static MonoDebugSourceLocation *
 mono_ppdb_lookup_location_internal (MonoImage *image, int idx, uint32_t offset, MonoPPDBFile *ppdb)
 {
-	MonoTableInfo *tables = image->tables;
-	guint32 cols [MONO_METHODBODY_SIZE];
-	const char *ptr;
-	const char *end;
 	char *docname = NULL;
-	int size, docidx, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
-	guint32 iloffset;
-	gboolean first = TRUE, first_non_hidden = TRUE;
+	guint64 start_line = 0, start_col = 0;
+	guint32 iloffset = 0;
 	MonoDebugSourceLocation *location;
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_METHODBODY], idx-1, cols, MONO_METHODBODY_SIZE);
-
-	docidx = cols [MONO_METHODBODY_DOCUMENT];
-
-	if (!cols [MONO_METHODBODY_SEQ_POINTS])
+	guint32 tok = mono_metadata_make_token(MONO_TABLE_METHODBODY, idx);
+	mdcursor_t c;
+	if (!md_token_to_cursor (image->metadata_handle, tok, &c))
 		return NULL;
-	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
-	size = mono_metadata_decode_blob_size (ptr, &ptr);
-	end = ptr + size;
+	
+	uint8_t const* sequence_points_blob;
+	uint32_t sequence_points_blob_len;
+	if (1 != md_get_column_value_as_blob (c, mdtMethodDebugInformation_SequencePoints, 1, &sequence_points_blob, &sequence_points_blob_len))
+		return NULL;
+	
+	if (sequence_points_blob_len == 0)
+		return NULL;
 
-	/* Header */
-	/* LocalSignature */
-	mono_metadata_decode_value (ptr, &ptr);
-	if (docidx == 0)
-		docidx = mono_metadata_decode_value (ptr, &ptr);
-	docname = get_docname (ppdb, image, docidx);
-	iloffset = 0;
-	start_line = 0;
-	start_col = 0;
-	while (ptr < end) {
-		guint32 delta_il = mono_metadata_decode_value (ptr, &ptr);
-		if (!first && delta_il == 0) {
-			/* document-record */
-			docidx = mono_metadata_decode_value (ptr, &ptr);
-			docname = get_docname (ppdb, image, docidx);
+	md_sequence_points_t* sequence_points = NULL;
+	size_t sequence_points_buffer_len = 0;
+	md_blob_parse_result_t parse_result = md_parse_sequence_points (c, sequence_points_blob, sequence_points_blob_len, sequence_points, &sequence_points_buffer_len);
+	g_assert(parse_result == mdbpr_InsufficientBuffer);
+	sequence_points = g_malloc(sequence_points_buffer_len);
+	parse_result = md_parse_sequence_points (c, sequence_points_blob, sequence_points_blob_len, sequence_points, &sequence_points_buffer_len);
+	g_assert(parse_result == mdbpr_Success);
+
+	guint32 doc_tok;
+	if (1 != md_get_column_value_as_token (c, mdtMethodDebugInformation_Document, 1, &doc_tok))
+		return NULL;
+
+	if (mono_metadata_token_index(doc_tok) == 0
+		&& !md_cursor_to_token (sequence_points->document, &doc_tok))
+		return NULL;
+	
+	docname = get_docname (ppdb, image, mono_metadata_token_index(doc_tok));
+
+	for (uint32_t i = 0; i < sequence_points->record_count; ++i) {
+		if (sequence_points->records[i].kind == mdsp_DocumentRecord) {
+			if (!md_cursor_to_token (sequence_points->records[i].document.document, &doc_tok))
+				return NULL;
+			docname = get_docname (ppdb, image, mono_metadata_token_index(doc_tok));
 			continue;
 		}
-		if (!first && iloffset + delta_il > offset)
-			break;
-		iloffset += delta_il;
-		first = FALSE;
 
-		delta_lines = mono_metadata_decode_value (ptr, &ptr);
-		if (delta_lines == 0)
-			delta_cols = mono_metadata_decode_value (ptr, &ptr);
-		else
-			delta_cols = mono_metadata_decode_signed_value (ptr, &ptr);
-		if (delta_lines == 0 && delta_cols == 0)
-			/* hidden-sequence-point-record */
-			continue;
-		if (first_non_hidden) {
-			start_line = mono_metadata_decode_value (ptr, &ptr);
-			start_col = mono_metadata_decode_value (ptr, &ptr);
+		guint32 il_delta;
+		if (sequence_points->records[i].kind == mdsp_HiddenSequencePointRecord) {
+			il_delta = sequence_points->records[i].hidden_sequence_point.il_offset;
 		} else {
-			adv_line = mono_metadata_decode_signed_value (ptr, &ptr);
-			adv_col = mono_metadata_decode_signed_value (ptr, &ptr);
-			start_line += adv_line;
-			start_col += adv_col;
+			il_delta = sequence_points->records[i].sequence_point.il_offset;
 		}
-		first_non_hidden = FALSE;
+
+		// The next sequence point is the first one after our target location.
+		// Return before we account for it.
+		// We will process at least one sequence point so we have at least one to return.
+		if (i != 0 && iloffset + il_delta > offset)
+			break;
+		
+		iloffset += il_delta;
+	
+		if (sequence_points->records[i].kind == mdsp_SequencePointRecord) {
+			start_line += sequence_points->records[i].sequence_point.start_line;
+			start_col += sequence_points->records[i].sequence_point.start_column;
+		}
 	}
 
 	location = g_new0 (MonoDebugSourceLocation, 1);
 	if (docname && docname [0])
 		location->source_file = docname;
-	location->row = start_line;
-	location->column = start_col;
+	location->row = (int)start_line;
+	location->column = (int)start_col;
 	location->il_offset = iloffset;
 
 	return location;
@@ -481,17 +478,7 @@ mono_ppdb_is_embedded (MonoPPDBFile *ppdb)
 static int
 mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMethod* method, int method_idx, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
-	MonoTableInfo *tables = image->tables;
-	guint32 cols [MONO_METHODBODY_SIZE];
-	const char *ptr;
-	const char *end;
 	MonoDebugSourceInfo *docinfo;
-	int i, size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
-	gboolean first = TRUE, first_non_hidden = TRUE;
-	GArray *sps;
-	MonoSymSeqPoint sp;
-	GPtrArray *sfiles = NULL;
-	GPtrArray *sindexes = NULL;
 	if (source_file)
 		*source_file = NULL;
 	if (source_file_list)
@@ -503,98 +490,75 @@ mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMet
 	if (n_seq_points)
 		*n_seq_points = 0;
 
+	GPtrArray* sfiles = NULL;
+	GPtrArray* sindexes = NULL;
 	if (source_file_list)
 		*source_file_list = sfiles = g_ptr_array_new ();
 	if (source_files)
 		sindexes = g_ptr_array_new ();
 
-	if (!method->token || table_info_get_rows (&tables [MONO_TABLE_METHODBODY]) == 0)
-		return -1;
-
-	MonoTableInfo *methodbody_table = &tables [MONO_TABLE_METHODBODY];
-	if (G_UNLIKELY (GINT_TO_UINT32(method_idx) - 1 >= table_info_get_rows (methodbody_table))) {
-		char *method_name = mono_method_full_name (method, FALSE);
-		g_error ("Method idx %d is greater than number of rows (%d) in PPDB MethodDebugInformation table, for method %s in '%s'. Likely a malformed PDB file.",
-		 method_idx - 1, table_info_get_rows (methodbody_table), method_name, image->name);
-		g_free (method_name);
-	}
-
-	mono_metadata_decode_row (methodbody_table, method_idx - 1, cols, MONO_METHODBODY_SIZE);
-
-	docidx = cols [MONO_METHODBODY_DOCUMENT];
-
-	if (!cols [MONO_METHODBODY_SEQ_POINTS])
+	if (!method->token)
 		return 0;
 
-	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
-	size = mono_metadata_decode_blob_size (ptr, &ptr);
-	end = ptr + size;
+	guint32 tok = mono_metadata_make_token(MONO_TABLE_METHODBODY, mono_metadata_token_index(method->token));
+	mdcursor_t c;
+	if (!md_token_to_cursor (image->metadata_handle, tok, &c))
+		return 0;
+	
+	uint8_t const* sequence_points_blob;
+	uint32_t sequence_points_blob_len;
+	if (1 != md_get_column_value_as_blob (c, mdtMethodDebugInformation_SequencePoints, 1, &sequence_points_blob, &sequence_points_blob_len))
+		return 0;
+	
+	if (sequence_points_blob_len == 0)
+		return 0;
 
-	sps = g_array_new (FALSE, TRUE, sizeof (MonoSymSeqPoint));
+	md_sequence_points_t* sequence_points = NULL;
+	size_t sequence_points_buffer_len = 0;
+	md_blob_parse_result_t parse_result = md_parse_sequence_points (c, sequence_points_blob, sequence_points_blob_len, sequence_points, &sequence_points_buffer_len);
+	g_assert(parse_result == mdbpr_InsufficientBuffer);
+	sequence_points = g_malloc(sequence_points_buffer_len);
+	parse_result = md_parse_sequence_points (c, sequence_points_blob, sequence_points_blob_len, sequence_points, &sequence_points_buffer_len);
+	g_assert(parse_result == mdbpr_Success);
 
-	/* Header */
-	/* LocalSignature */
-	mono_metadata_decode_value (ptr, &ptr);
-	if (docidx == 0)
-		docidx = mono_metadata_decode_value (ptr, &ptr);
-	docinfo = get_docinfo (ppdb, image, docidx);
+	guint32 doc_tok;
+	if (1 != md_get_column_value_as_token (c, mdtMethodDebugInformation_Document, 1, &doc_tok))
+		return 0;
 
-	if (sfiles)
-		g_ptr_array_add (sfiles, docinfo);
+	if (mono_metadata_token_index(doc_tok) == 0
+		&& !md_cursor_to_token (sequence_points->document, &doc_tok))
+		return 0;
+	
+	docinfo = get_docinfo (ppdb, image, mono_metadata_token_index(doc_tok));
 
-	if (source_file)
-		*source_file = g_strdup (docinfo->source_file);
+	guint64 start_line = 0, start_col = 0;
+	guint32 iloffset = 0;
 
-	iloffset = 0;
-	start_line = 0;
-	start_col = 0;
-	while (ptr < end) {
-		delta_il = mono_metadata_decode_value (ptr, &ptr);
-		if (!first && delta_il == 0) {
-			/* subsequent-document-record */
-			docidx = mono_metadata_decode_value (ptr, &ptr);
-			docinfo = get_docinfo (ppdb, image, docidx);
+	GArray *sps = g_array_new (FALSE, TRUE, sizeof (MonoSymSeqPoint));
+	for (uint32_t i = 0; i < sequence_points->record_count; ++i) {
+		MonoSymSeqPoint sp = { 0 };
+		if (sequence_points->records[i].kind == mdsp_DocumentRecord) {
+			if (!md_cursor_to_token (sequence_points->records[i].document.document, &doc_tok))
+				return 0;
+			docinfo = get_docinfo (ppdb, image, mono_metadata_token_index(doc_tok));
 			if (sfiles)
 				g_ptr_array_add (sfiles, docinfo);
 			continue;
-		}
-		iloffset += delta_il;
-		first = FALSE;
-
-		delta_lines = mono_metadata_decode_value (ptr, &ptr);
-		if (delta_lines == 0)
-			delta_cols = mono_metadata_decode_value (ptr, &ptr);
-		else
-			delta_cols = mono_metadata_decode_signed_value (ptr, &ptr);
-
-		if (delta_lines == 0 && delta_cols == 0) {
-			/* Hidden sequence point */
-			continue;
-		}
-
-		if (first_non_hidden) {
-			start_line = mono_metadata_decode_value (ptr, &ptr);
-			start_col = mono_metadata_decode_value (ptr, &ptr);
+		} else if (sequence_points->records[i].kind == mdsp_HiddenSequencePointRecord) {
+			sp.il_offset = iloffset += sequence_points->records[i].hidden_sequence_point.il_offset;
 		} else {
-			adv_line = mono_metadata_decode_signed_value (ptr, &ptr);
-			adv_col = mono_metadata_decode_signed_value (ptr, &ptr);
-			start_line += adv_line;
-			start_col += adv_col;
+			sp.il_offset = iloffset += sequence_points->records[i].sequence_point.il_offset;
+			sp.line = start_line += sequence_points->records[i].sequence_point.start_line;
+			sp.column = start_col += sequence_points->records[i].sequence_point.start_column;
+			sp.end_line = start_line += sequence_points->records[i].sequence_point.num_lines;
+			sp.end_column = start_col += sequence_points->records[i].sequence_point.delta_columns;
 		}
-		first_non_hidden = FALSE;
-
-		memset (&sp, 0, sizeof (sp));
-		sp.il_offset = iloffset;
-		sp.line = start_line;
-		sp.column = start_col;
-		sp.end_line = start_line + delta_lines;
-		sp.end_column = start_col + delta_cols;
 
 		g_array_append_val (sps, sp);
 		if (source_files)
 			g_ptr_array_add (sindexes, GUINT_TO_POINTER (sfiles->len - 1));
 	}
-
+	
 	if (n_seq_points) {
 		*n_seq_points = sps->len;
 		g_assert (seq_points);
@@ -604,7 +568,7 @@ mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMet
 
 	if (source_files) {
 		*source_files = g_new (int, sps->len);
-		for (i = 0; i < sps->len; ++i)
+		for (gint i = 0; i < sps->len; ++i)
 			(*source_files)[i] = GPOINTER_TO_INT (g_ptr_array_index (sindexes, i));
 		g_ptr_array_free (sindexes, TRUE);
 	}
@@ -639,91 +603,68 @@ static MonoDebugLocalsInfo*
 mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx)
 {
 	MonoDebugLocalsInfo *res;
-	MonoTableInfo *tables = image->tables;
 
-	guint32 cols [MONO_LOCALSCOPE_SIZE];
-	guint32 locals_cols [MONO_LOCALVARIABLE_SIZE];
+	mdcursor_t locals;
+	uint32_t num_scopes;
 
-	guint32 lindex, locals_idx, locals_end_idx, nscopes, start_scope_idx, scope_idx;
-
-	start_scope_idx = mono_metadata_localscope_from_methoddef (image, method_idx);
-
-	if (!start_scope_idx)
+	if (!md_create_cursor(image->metadata_handle, mdtid_LocalScope, &locals, &num_scopes))
 		return NULL;
 
-	/* Compute number of locals and scopes */
-	scope_idx = start_scope_idx;
-	mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
-	locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
+	md_range_result_t scopes_range_result = md_find_range_from_cursor(locals, mdtLocalScope_Method, method_idx, &locals, &num_scopes);
+	// No tools generate unsorted tables in a Portable PDB, so we can assume this doesn't happen.
+	g_assert(scopes_range_result != MD_RANGE_NOT_SUPPORTED);
+	if (scopes_range_result != MD_RANGE_FOUND)
+		return NULL;
 
-	// https://github.com/dotnet/roslyn/blob/2ae8d5fed96ab3f1164031f9b4ac827f53289159/docs/specs/PortablePdb-Metadata.md#LocalScopeTable
-	//
-	// The variableList attribute in the pdb metadata table is a contiguous array that starts at a
-	// given offset (locals_idx) above and
-	//
-	// """
-	// continues to the smaller of:
-	//
-	// the last row of the LocalVariable table
-	// the next run of LocalVariables, found by inspecting the VariableList of the next row in this LocalScope table.
-	// """
-	// this endpoint becomes locals_end_idx below
-
-	// March to the last scope that is in this method
-	guint32 rows = table_info_get_rows (&tables [MONO_TABLE_LOCALSCOPE]);
-	while (scope_idx <= rows) {
-		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
-		if (cols [MONO_LOCALSCOPE_METHOD] != method_idx)
-			break;
-		scope_idx ++;
-	}
-	// The number of scopes is the difference in the indices
-	// for the first and last scopes
-	nscopes = scope_idx - start_scope_idx;
-
-	// Ends with "the last row of the LocalVariable table"
-	// this happens if the above loop marched one past the end
-	// of the rows
-	if (scope_idx > table_info_get_rows (&tables [MONO_TABLE_LOCALSCOPE])) {
-		locals_end_idx = table_info_get_rows (&tables [MONO_TABLE_LOCALVARIABLE]) + 1;
-	} else {
-		// Ends with "the next run of LocalVariables,
-		// found by inspecting the VariableList of the next row in this LocalScope table."
-		locals_end_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
+	uint32_t num_locals = 0;
+	mdcursor_t local_scope = locals;
+	for (uint32_t i = 0; i < num_scopes; ++i, md_cursor_next (&local_scope)) {
+		mdcursor_t variables;
+		uint32_t num_variables;
+		if (!md_get_column_value_as_range (local_scope, mdtLocalScope_VariableList, &variables, &num_variables))
+			return NULL;
+		
+		num_locals += num_variables;
 	}
 
 	res = g_new0 (MonoDebugLocalsInfo, 1);
-	res->num_blocks = nscopes;
-	res->code_blocks = g_new0 (MonoDebugCodeBlock, res->num_blocks);
-	res->num_locals = locals_end_idx - locals_idx;
-	res->locals = g_new0 (MonoDebugLocalVar, res->num_locals);
+	res->num_blocks = num_scopes;
+	res->code_blocks = g_new0 (MonoDebugCodeBlock, num_scopes);
+	res->num_locals = num_locals;
+	res->locals = g_new0 (MonoDebugLocalVar, num_locals);
 
-	lindex = 0;
-	for (guint32 sindex = 0; sindex < nscopes; ++sindex) {
-		scope_idx = start_scope_idx + sindex;
-		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
+	// Now we can iterate over the ranges, get the variables,
+	// and fill in our data structure.
+	uint32_t next_var = 0;
+	local_scope = locals;
+	for (uint32_t i = 0; i < num_scopes; ++i, md_cursor_next (&local_scope)) {
+		uint32_t start_offset, length;
+		if (1 != md_get_column_value_as_constant (local_scope, mdtLocalScope_StartOffset, 1, &start_offset))
+			return NULL;
+		
+		if (1 != md_get_column_value_as_constant (local_scope, mdtLocalScope_Length, 1, &length))
+			return NULL;
+		
+		res->code_blocks [i].start_offset = (int)start_offset;
+		res->code_blocks [i].end_offset = (int)(start_offset + length);
 
-		locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
-		if (scope_idx == table_info_get_rows (&tables [MONO_TABLE_LOCALSCOPE])) {
-			locals_end_idx = table_info_get_rows (&tables [MONO_TABLE_LOCALVARIABLE]) + 1;
-		} else {
-			locals_end_idx = mono_metadata_decode_row_col (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1 + 1, MONO_LOCALSCOPE_VARIABLELIST);
-		}
-
-		res->code_blocks [sindex].start_offset = cols [MONO_LOCALSCOPE_STARTOFFSET];
-		res->code_blocks [sindex].end_offset = cols [MONO_LOCALSCOPE_STARTOFFSET] + cols [MONO_LOCALSCOPE_LENGTH];
-
-		//printf ("Scope: %s %d %d %d-%d\n", mono_method_full_name (method, 1), cols [MONO_LOCALSCOPE_STARTOFFSET], cols [MONO_LOCALSCOPE_LENGTH], locals_idx, locals_end_idx);
-
-		for (guint32 i = locals_idx; i < locals_end_idx; ++i) {
-			mono_metadata_decode_row (&tables [MONO_TABLE_LOCALVARIABLE], i - 1, locals_cols, MONO_LOCALVARIABLE_SIZE);
-
-			res->locals [lindex].name = g_strdup (mono_metadata_string_heap (image, locals_cols [MONO_LOCALVARIABLE_NAME]));
-			res->locals [lindex].index = locals_cols [MONO_LOCALVARIABLE_INDEX];
-			res->locals [lindex].block = &res->code_blocks [sindex];
-			lindex ++;
-
-			//printf ("\t %s %d\n", mono_metadata_string_heap (image, locals_cols [MONO_LOCALVARIABLE_NAME]), locals_cols [MONO_LOCALVARIABLE_INDEX]);
+		mdcursor_t variable;
+		uint32_t num_variables;
+		if (!md_get_column_value_as_range (local_scope, mdtLocalScope_VariableList, &variable, &num_variables))
+			return NULL;
+		
+		for (uint32_t j = 0; j < num_variables; ++j, ++next_var, md_cursor_next(&variable)) {
+			char const* name;
+			if (1 != md_get_column_value_as_utf8 (variable, mdtLocalVariable_Name, 1, &name))
+				return NULL;
+			
+			uint32_t index;
+			if (1 != md_get_column_value_as_constant (variable, mdtLocalVariable_Index, 1, &index))
+				return NULL;
+			
+			res->locals [next_var].name = g_strdup (name);
+			res->locals [next_var].index = (int)index;
+			res->locals [next_var].block = &res->code_blocks [i];
 		}
 	}
 
@@ -758,36 +699,6 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	return mono_ppdb_lookup_locals_internal (image, method_idx);
 }
 
-/*
-* We use this to pass context information to the row locator
-*/
-typedef struct {
-	guint32 idx;			/* The index that we are trying to locate */
-	guint32 col_idx;		/* The index in the row where idx may be stored */
-	MonoTableInfo *t;	/* pointer to the table */
-	guint32 result;
-} locator_t;
-
-static int
-table_locator (const void *a, const void *b)
-{
-	locator_t *loc = (locator_t *)a;
-	const char *bb = (const char *)b;
-	guint32 table_index = GPTRDIFF_TO_UINT32 ((bb - loc->t->base) / loc->t->row_size);
-	guint32 col;
-
-	col = mono_metadata_decode_row_col(loc->t, table_index, loc->col_idx);
-
-	if (loc->idx == col) {
-		loc->result = table_index;
-		return 0;
-	}
-	if (loc->idx < col)
-		return -1;
-	else
-		return 1;
-}
-
 static gboolean
 compare_guid (guint8* guid1, guint8* guid2)
 {
@@ -798,46 +709,32 @@ compare_guid (guint8* guid1, guint8* guid2)
 	return TRUE;
 }
 
-// for parent_type see HasCustomDebugInformation table at
-// https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
 static const char*
-lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent_type, guint8* guid)
+lookup_custom_debug_information (MonoImage* image, guint32 token, guint8* guid, guint32* debug_info_size)
 {
-	MonoTableInfo *tables = image->tables;
-	MonoTableInfo *table = &tables[MONO_TABLE_CUSTOMDEBUGINFORMATION];
-	locator_t loc;
-
-	if (!table->base)
-		return 0;
-
-	loc.idx = (mono_metadata_token_index (token) << MONO_HAS_CUSTOM_DEBUG_BITS) | parent_type;
-	loc.col_idx = MONO_CUSTOMDEBUGINFORMATION_PARENT;
-	loc.t = table;
-
-	if (!mono_binary_search (&loc, table->base, table_info_get_rows (table), table->row_size, table_locator))
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_CustomDebugInformation, &c, &count))
 		return NULL;
-	// Great we found one of possibly many CustomDebugInformations of this entity they are distinguished by KIND guid
-	// First try on this index found by binary search...(it's most likeley to be only one and binary search found the one we want)
-	if (compare_guid (guid, (guint8*)mono_metadata_guid_heap (image, mono_metadata_decode_row_col (table, loc.result, MONO_CUSTOMDEBUGINFORMATION_KIND))))
-		return mono_metadata_blob_heap (image, mono_metadata_decode_row_col (table, loc.result, MONO_CUSTOMDEBUGINFORMATION_VALUE));
-
-	// Move forward from binary found index, until parent token differs
-	int rows = table_info_get_rows (table);
-	for (int i = loc.result + 1; i < rows; i++)
-	{
-		if (mono_metadata_decode_row_col (table, i, MONO_CUSTOMDEBUGINFORMATION_PARENT) != loc.idx)
-			break;
-		if (compare_guid (guid, (guint8*)mono_metadata_guid_heap (image, mono_metadata_decode_row_col (table, i, MONO_CUSTOMDEBUGINFORMATION_KIND))))
-			return mono_metadata_blob_heap (image, mono_metadata_decode_row_col (table, i, MONO_CUSTOMDEBUGINFORMATION_VALUE));
+	
+	// CustomDebugInformation will always be sorted by every Portable PDB producer, so asseume that it's sorted.
+	if (md_find_range_from_cursor (c, mdtCustomDebugInformation_Parent, token, &c, &count) != MD_RANGE_FOUND)
+		return NULL;
+	
+	for (uint32_t i = 0; i < count; i++) {
+		mdguid_t debug_info_guid;
+		if (1 != md_get_column_value_as_guid (c, mdtCustomDebugInformation_Kind, 1, &debug_info_guid))
+			continue;
+		
+		if (compare_guid (guid, (guint8*)&debug_info_guid)) {
+			guint8 const* debug_info;
+			if (1 != md_get_column_value_as_blob (c, mdtCustomDebugInformation_Value, 1, &debug_info, debug_info_size))
+				continue;
+			
+			return (const char*)debug_info;
+		}
 	}
 
-	// Move backward from binary found index, until parent token differs
-	for (int i = loc.result - 1; i >= 0; i--) {
-		if (mono_metadata_decode_row_col (table, i, MONO_CUSTOMDEBUGINFORMATION_PARENT) != loc.idx)
-			break;
-		if (compare_guid (guid, (guint8*)mono_metadata_guid_heap (image, mono_metadata_decode_row_col (table, i, MONO_CUSTOMDEBUGINFORMATION_KIND))))
-			return mono_metadata_blob_heap (image, mono_metadata_decode_row_col (table, i, MONO_CUSTOMDEBUGINFORMATION_VALUE));
-	}
 	return NULL;
 }
 
@@ -850,11 +747,11 @@ mono_ppdb_lookup_method_async_debug_info (MonoDebugMethodInfo *minfo)
 
 	// Guid is taken from Roslyn source code:
 	// https://github.com/dotnet/roslyn/blob/1ad4b58/src/Dependencies/CodeAnalysis.Metadata/PortableCustomDebugInfoKinds.cs#L9
+	guint32 blob_len;
 	guint8 async_method_stepping_information_guid [16] = { 0xC5, 0x2A, 0xFD, 0x54, 0x25, 0xE9, 0x1A, 0x40, 0x9C, 0x2A, 0xF9, 0x4F, 0x17, 0x10, 0x72, 0xF8 };
-	char const *blob = lookup_custom_debug_information (image, method->token, MONO_HAS_CUSTOM_DEBUG_METHODDEF, async_method_stepping_information_guid);
+	char const *blob = lookup_custom_debug_information (image, method->token, async_method_stepping_information_guid, &blob_len);
 	if (!blob)
 		return NULL;
-	int blob_len = mono_metadata_decode_blob_size (blob, &blob);
 	MonoDebugMethodAsyncInfo* res = g_new0 (MonoDebugMethodAsyncInfo, 1);
 	char const *pointer = blob;
 
@@ -890,12 +787,12 @@ mono_ppdb_get_sourcelink (MonoDebugHandle *handle)
 	MonoImage *image = ppdb->image;
 	char *res;
 
+	guint32 blob_len;
 	guint8 sourcelink_guid [16] = { 0x56, 0x05, 0x11, 0xCC, 0x91, 0xA0, 0x38, 0x4D, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A };
 	/* The module table only has 1 row */
-	char const *blob = lookup_custom_debug_information (image, 1, MONO_HAS_CUSTOM_DEBUG_MODULE, sourcelink_guid);
+	char const *blob = lookup_custom_debug_information (image, 1, sourcelink_guid, &blob_len);
 	if (!blob)
 		return NULL;
-	int blob_len = mono_metadata_decode_blob_size (blob, &blob);
 	res = g_malloc (blob_len + 1);
 	memcpy (res, blob, blob_len);
 	res [blob_len] = '\0';
