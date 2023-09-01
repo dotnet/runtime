@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- THe assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
+    <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
