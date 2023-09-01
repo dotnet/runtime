@@ -39,7 +39,7 @@
 
     <ItemGroup>
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
-      <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersionNet8)" Condition="'$(PackageVersionNet7)' != ''" />
+      <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersionNet8)" Condition="'$(PackageVersionNet8)' != ''" />
       <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersion)" Condition="'$(PackageVersionNet8)' == ''" />
       <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
       <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
