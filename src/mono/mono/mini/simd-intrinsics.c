@@ -1825,7 +1825,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		}
 		
-		// FIXME: Add support for Vector64 on arm64
+		// FIXME: Add support for Vector64 on arm64 https://github.com/dotnet/runtime/issues/90402
 		int size = mono_class_value_size (arg_class, NULL);
 		if (size != 16)
 			return NULL;
@@ -2948,7 +2948,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #endif
 	}
 	case SN_CopyTo:
-		// FIXME:
+		// FIXME: https://github.com/dotnet/runtime/issues/91394
 		return NULL;
 	case SN_Clamp: {
 		if (!(!fsig->hasthis && fsig->param_count == 3 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type) && mono_metadata_type_equal (fsig->params [2], type)))
@@ -2971,7 +2971,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_LengthSquared:
 	case SN_Lerp:
 	case SN_Normalize: {
-		// FIXME:
+		// FIXME: https://github.com/dotnet/runtime/issues/91394
 		return NULL;
 	}
 	default:
@@ -5832,7 +5832,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	}
 
 	if (!strcmp (class_ns, "System.Numerics")) {
-		// FIXME: Support Vector2/Vector3
+		// FIXME: Support Vector2 https://github.com/dotnet/runtime/issues/81501
 		if (!strcmp (class_name, "Vector2") || !strcmp (class_name, "Vector4") || 
 			!strcmp (class_name, "Quaternion") || !strcmp (class_name, "Plane"))
 			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
