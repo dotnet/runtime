@@ -164,7 +164,7 @@ unsafe class Program
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         try
         {
