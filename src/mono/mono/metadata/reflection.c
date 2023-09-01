@@ -1474,6 +1474,8 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 			continue;
 		}
 
+		// Callers rely on the fact that this function returns a pointer to a size-prefixed blob.
+		// As a result, we need to read the raw offset and index into the blob heap manually.
 		mono_metadata_decode_row (constt, crow - 1, const_cols, MONO_CONSTANT_SIZE);
 		blobs [paramseq - 1] = (char *)mono_metadata_blob_heap (image, const_cols [MONO_CONSTANT_VALUE]);
 		types [paramseq - 1] = const_cols [MONO_CONSTANT_TYPE];

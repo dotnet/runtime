@@ -2638,6 +2638,8 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 
 		g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA));
 
+		// Callers rely on the fact that this function returns a pointer to a size-prefixed blob.
+		// As a result, we need to read the raw offset and index into the blob heap manually.
 		mono_metadata_decode_row (&field_parent_image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
 		def_values [field_index].def_type = (MonoTypeEnum)constant_cols [MONO_CONSTANT_TYPE];
 		mono_memory_barrier ();
@@ -2695,6 +2697,8 @@ mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def
 	if (!cindex)
 		return NULL;
 
+	// Callers rely on the fact that this function returns a pointer to a size-prefixed blob.
+	// As a result, we need to read the raw offset and index into the blob heap manually.
 	mono_metadata_decode_row (&klass_image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
 	*def_type = (MonoTypeEnum)constant_cols [MONO_CONSTANT_TYPE];
 	return (const char *)mono_metadata_blob_heap (klass_image, constant_cols [MONO_CONSTANT_VALUE]);
