@@ -3969,8 +3969,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_EXPAND_R4:
 		case OP_EXPAND_R8: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			const int width = get_vector_size_macro (ins);
-			arm_neon_fdup_e (code, width, t, dreg, sreg1, 0);
+			arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_EXTRACT_I1:
@@ -3990,11 +3989,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_EXTRACT_R8:
 			if (ins->dreg != ins->sreg1 || ins->inst_c0 != 0) {
 				const int t = get_type_size_macro (ins->inst_c1);
-				const int width = get_vector_size_macro (ins);
 				// Technically, this broadcasts element #inst_c0 to all dest XREG elements; whereas it should
 				// set the FREG to the said element. Since FREG and XREG pool is the same on arm64 and the rest
 				// of the F/XREG is ignored in FREG mode, this operation remains valid.
-				arm_neon_fdup_e (code, width, t, dreg, sreg1, 0);
+				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, ins->inst_c0);
 			}
 			break;
 		
@@ -4093,7 +4091,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					arm_neon_faddp (code, VREG_FULL, TYPE_F64, dreg, sreg1, sreg1);
 				} else if (ins->inst_c1 == MONO_TYPE_R4) {
 					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, sreg1, sreg1);
-					if (mono_class_value_size (ins->klass, NULL) == 16)
+					if (mono_class_value_size (ins->klass, NULL) == 16 )
 						arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, dreg, dreg);
 				} else {
 					g_assert_not_reached ();
