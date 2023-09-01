@@ -111,32 +111,6 @@ namespace Internal.Runtime.Binder
             return true;
         }
 
-        private static bool IsRelativePath(ReadOnlySpan<char> path)
-        {
-            // ported from coreclr/inc/clr/fs/path.h
-
-#if TARGET_WINDOWS
-            // Check for a paths like "C:\..." or "\\...". Additional notes:
-            // - "\\?\..." - long format paths are considered as absolute paths due to the "\\" prefix
-            // - "\..." - these paths are relative, as they depend on the current drive
-            // - "C:..." and not "C:\..." - these paths are relative, as they depend on the current directory for drive C
-            if (path is [(>= 'A' and <= 'Z') or (>= 'a' and <= 'z'), PathInternal.VolumeSeparatorChar, PathInternal.DirectorySeparatorChar, ..])
-            {
-                return false;
-            }
-            if (path is [PathInternal.DirectorySeparatorChar, PathInternal.DirectorySeparatorChar, ..])
-            {
-                return false;
-            }
-#else
-            if (path is [PathInternal.DirectorySeparatorChar, ..])
-            {
-                return false;
-            }
-#endif
-            return true;
-        }
-
         private static bool GetNextTPAPath(string paths, ref int startPos, bool dllOnly, out string outPath, out string simpleName, out bool isNativeImage)
         {
             isNativeImage = false;
@@ -149,7 +123,7 @@ namespace Internal.Runtime.Binder
                     return false;
                 }
 
-                if (IsRelativePath(outPath))
+                if (!Path.IsPathFullyQualified(outPath))
                 {
                     throw new ArgumentException(nameof(paths));
                 }
@@ -270,7 +244,7 @@ namespace Internal.Runtime.Binder
                         break;
                     }
 
-                    if (IsRelativePath(pathName))
+                    if (!Path.IsPathFullyQualified(pathName))
                     {
                         throw new ArgumentException(nameof(pathName));
                     }
@@ -290,7 +264,7 @@ namespace Internal.Runtime.Binder
                     }
 
 
-                    if (IsRelativePath(pathName))
+                    if (!Path.IsPathFullyQualified(pathName))
                     {
                         throw new ArgumentException(nameof(pathName));
                     }
