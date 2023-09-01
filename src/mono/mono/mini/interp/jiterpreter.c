@@ -928,8 +928,8 @@ mono_interp_tier_prepare_jiterpreter_fast (
 #ifdef DISABLE_THREADS
 	gint64 count = trace_info->hit_count++;
 #else
-	static_assert (sizeof(atomic_long) == sizeof(trace_info->hit_count) && ATOMIC_LONG_LOCK_FREE == 2, "");
-	gint64 count = atomic_fetch_add ((atomic_long *)&trace_info->hit_count, 1);
+	static_assert (sizeof(atomic_llong) == sizeof(trace_info->hit_count) && ATOMIC_LLONG_LOCK_FREE == 2, "");
+	gint64 count = atomic_fetch_add ((atomic_llong *)&trace_info->hit_count, 1);
 #endif
 
 	if (count == mono_opt_jiterpreter_minimum_trace_hit_count) {
@@ -1373,8 +1373,8 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 	gint64 hit_count = info->hit_count - mono_opt_jiterpreter_minimum_trace_hit_count;
 	info->hit_count += 1;
 #else
-	static_assert (sizeof(atomic_long) == sizeof(info->hit_count) && ATOMIC_LONG_LOCK_FREE == 2, "");
-	gint64 hit_count = atomic_fetch_add ((atomic_long *)&info->hit_count, 1) - mono_opt_jiterpreter_minimum_trace_hit_count;
+	static_assert (sizeof(atomic_llong) == sizeof(info->hit_count) && ATOMIC_LLONG_LOCK_FREE == 2, "");
+	gint64 hit_count = atomic_fetch_add ((atomic_llong *)&info->hit_count, 1) - mono_opt_jiterpreter_minimum_trace_hit_count;
 #endif
 
 	if (hit_count == mono_opt_jiterpreter_trace_monitoring_period) {
