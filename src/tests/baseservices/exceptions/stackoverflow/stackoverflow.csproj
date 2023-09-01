@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <Optimize>false</Optimize>
     <CLRTestKind>BuildOnly</CLRTestKind>
+    <NoWarn>$(NoWarn);XUW1001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="stackoverflow.cs" />

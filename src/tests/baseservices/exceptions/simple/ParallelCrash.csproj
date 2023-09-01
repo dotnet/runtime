@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestExitCode>134</CLRTestExitCode>
-    <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146232797</CLRTestExitCode>
-    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/80356 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <NoWarn>$(NoWarn);XUW1001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ParallelCrash.cs" />
