@@ -9,7 +9,7 @@ namespace System
     {
         private static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, bool allocate, out string? windowsId)
         {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
                 windowsId = null;
                 return false;
 #else
@@ -37,9 +37,9 @@ namespace System
 
         private static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, bool allocate,  out string? ianaId)
         {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
-                ianaId = null;
-                return false;
+#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
+            ianaId = null;
+            return false;
 #else
             // This functionality is not enabled in the browser for the sake of size reduction.
             if (GlobalizationMode.Invariant || GlobalizationMode.UseNls || windowsId is null)

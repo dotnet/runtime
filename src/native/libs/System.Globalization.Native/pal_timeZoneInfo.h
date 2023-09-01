@@ -26,5 +26,5 @@ PALEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* loc
 
 #ifdef __APPLE__
 PALEXPORT int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* timeZoneId, int32_t timeZoneIdLength,
-                                                                TimeZoneDisplayNameType type, uint16_t* result, int32_t resultLength);
+                                                                   TimeZoneDisplayNameType type, uint16_t* result, int32_t resultLength);
 #endif

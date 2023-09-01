@@ -231,10 +231,8 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return displayName;
 
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER  || TARGET_WASI
             return displayName;
-            // if (GlobalizationMode.Hybrid)
-            //     GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
 #else
             GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
             return displayName;
@@ -250,11 +248,12 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return standardDisplayName;
 
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
             if (!GlobalizationMode.Hybrid)
                 return standardDisplayName;
 #endif
             GetStandardDisplayName(Id, ref standardDisplayName);
+
             return standardDisplayName;
         }
 
@@ -267,7 +266,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return daylightDisplayName;
 
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
             if (!GlobalizationMode.Hybrid)
                 return daylightDisplayName;
 #endif

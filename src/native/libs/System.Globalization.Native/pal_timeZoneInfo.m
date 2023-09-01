@@ -31,7 +31,6 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
             NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
             currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
         }
-         //NSTimeZone* timeZone = [NSTimeZone localTimeZone];
         NSString* tzName = [NSString stringWithCharacters: timeZoneId length: timeZoneIdLength];
         NSTimeZone* timeZone = [NSTimeZone timeZoneWithName:tzName];
         NSTimeZoneNameStyle style;
