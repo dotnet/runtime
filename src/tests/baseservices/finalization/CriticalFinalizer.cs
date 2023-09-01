@@ -45,7 +45,7 @@ static class CriticalFinalizerTest
         GC.KeepAlive(arr);
     }
 
-    static int Main()
+    public static int Main()
     {
         const int Count = 100;
 
