@@ -26,7 +26,9 @@
 
 #include <winwrap.h>
 
+#ifdef HOST_WINDOWS
 #include <dbghelp.h>
+#endif
 
 #include <wchar.h>
 #include <stdio.h>

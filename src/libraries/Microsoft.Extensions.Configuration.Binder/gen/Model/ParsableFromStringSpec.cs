@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _parseMethodName ??= StringParsableTypeKind is StringParsableTypeKind.ByteArray
                     ? "ParseByteArray"
                     // MinimalDisplayString.Length is certainly > 2.
-                    : $"Parse{(char.ToUpper(MinimalDisplayString[0]) + MinimalDisplayString.Substring(1)).Replace(".", "")}";
+                    : $"Parse{(char.ToUpper(DisplayString[0]) + DisplayString.Substring(1)).Replace(".", "")}";
 
                 return _parseMethodName;
             }

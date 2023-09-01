@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
@@ -17,7 +18,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly SourceGenerationSpec _sourceGenSpec;
 
             private bool _emitBlankLineBeforeNextStatement;
-            private bool _useFullyQualifiedNames;
             private int _valueSuffixIndex;
 
             private static readonly Regex s_arrayBracketsRegex = new(Regex.Escape("[]"));
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public void Emit()
             {
-                if (!ShouldEmitBinders())
+                if (!ShouldEmitBindingExtensions())
                 {
                     return;
                 }
@@ -42,17 +42,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     #nullable enable
                     #pragma warning disable CS0612, CS0618 // Suppress warnings about [Obsolete] member usage in generated code.
                     """);
+
+                EmitInterceptsLocationAttrDecl();
+
+                EmitStartBlock($"namespace {ProjectName}");
+                EmitUsingStatements();
+
                 _writer.WriteLine();
+                EmitStartBlock($$"""
+                    {{Expression.GeneratedCodeAnnotation}}
+                    file static class {{Identifier.BindingExtensions}}
+                    """);
+                EmitBindingExtensions_IConfiguration();
+                EmitBindingExtensions_OptionsBuilder();
+                EmitBindingExtensions_IServiceCollection();
+                EmitCoreBindingHelpers();
+                EmitEndBlock(); // BindingExtensions class
 
-                _useFullyQualifiedNames = true;
-                EmitBinder_Extensions_IConfiguration();
-                EmitBinder_Extensions_OptionsBuilder();
-                EmitBinder_Extensions_IServiceCollection();
+                EmitEndBlock(); // Binding namespace.
 
-                _useFullyQualifiedNames = false;
-                Emit_CoreBindingHelper();
-
-                _context.AddSource($"{Identifier.GeneratedConfigurationBinder}.g.cs", _writer.ToSourceText());
+                _context.AddSource($"{Identifier.BindingExtensions}.g.cs", _writer.ToSourceText());
             }
 
             private void EmitBindCoreCall(
@@ -74,7 +83,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (initKind is InitializationKind.AssignmentWithNullCheck)
                 {
                     Debug.Assert(!type.IsValueType);
-                    _writer.WriteLine($"{type.MinimalDisplayString}? {tempIdentifier} = {memberAccessExpr};");
+                    _writer.WriteLine($"{type.DisplayString}? {tempIdentifier} = {memberAccessExpr};");
                     EmitBindCoreCall(tempIdentifier, InitializationKind.AssignmentWithNullCheck);
                 }
                 else if (initKind is InitializationKind.None && type.IsValueType)
@@ -87,21 +96,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitBindCoreCall(memberAccessExpr, initKind);
                 }
 
-                void EmitBindCoreCall(string objExpression, InitializationKind initKind)
+                void EmitBindCoreCall(string instanceExpr, InitializationKind initKind)
                 {
-                    string methodDisplayString = GetHelperMethodDisplayString(nameof(MethodsToGen_CoreBindingHelper.BindCore));
-                    string bindCoreCall = $@"{methodDisplayString}({configArgExpr}, ref {objExpression}, {Identifier.binderOptions});";
-
-                    EmitObjectInit(objExpression, initKind);
+                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceExpr}, {Identifier.binderOptions});";
+                    EmitObjectInit(instanceExpr, initKind);
                     _writer.WriteLine(bindCoreCall);
-                    writeOnSuccess?.Invoke(objExpression);
+                    writeOnSuccess?.Invoke(instanceExpr);
                 }
 
-                void EmitObjectInit(string objExpression, InitializationKind initKind)
+                void EmitObjectInit(string instanceExpr, InitializationKind initKind)
                 {
                     if (initKind is not InitializationKind.None)
                     {
-                        this.EmitObjectInit(type, objExpression, initKind, configArgExpr);
+                        this.EmitObjectInit(type, instanceExpr, initKind, configArgExpr);
                     }
                 }
             }
@@ -127,12 +134,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (typeKind is StringParsableTypeKind.Enum)
                 {
-                    parsedValueExpr = $"ParseEnum<{type.MinimalDisplayString}>({stringValueToParse_Expr}, () => {sectionPathExpr})";
+                    parsedValueExpr = $"ParseEnum<{type.DisplayString}>({stringValueToParse_Expr}, () => {sectionPathExpr})";
                 }
                 else
                 {
-                    string helperMethodDisplayString = GetHelperMethodDisplayString(type.ParseMethodName);
-                    parsedValueExpr = $"{helperMethodDisplayString}({stringValueToParse_Expr}, () => {sectionPathExpr})";
+                    parsedValueExpr = $"{type.ParseMethodName}({stringValueToParse_Expr}, () => {sectionPathExpr})";
                 }
 
                 if (!checkForNullSectionValue)
@@ -156,7 +162,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string initExpr;
                 CollectionSpec? collectionType = type as CollectionSpec;
 
-                string effectiveDisplayString = GetTypeDisplayString(type);
+                string effectiveDisplayString = type.DisplayString;
                 if (collectionType is not null)
                 {
                     if (collectionType is EnumerableSpec { InitializationStrategy: InitializationStrategy.Array })
@@ -165,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                     else
                     {
-                        effectiveDisplayString = GetTypeDisplayString(collectionType.ConcreteType ?? collectionType);
+                        effectiveDisplayString = (collectionType.ConcreteType ?? collectionType).DisplayString;
                         initExpr = $"new {effectiveDisplayString}()";
                     }
                 }
@@ -215,36 +221,41 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return true;
             }
 
-            private void EmitCastToIConfigurationSection()
+            private void EmitInterceptsLocationAttrDecl()
             {
-                string sectionTypeDisplayString;
-                string exceptionTypeDisplayString;
-                if (_useFullyQualifiedNames)
-                {
-                    sectionTypeDisplayString = "global::Microsoft.Extensions.Configuration.IConfigurationSection";
-                    exceptionTypeDisplayString = FullyQualifiedDisplayString.InvalidOperationException;
-                }
-                else
-                {
-                    sectionTypeDisplayString = Identifier.IConfigurationSection;
-                    exceptionTypeDisplayString = nameof(InvalidOperationException);
-                }
-
+                _writer.WriteLine();
                 _writer.WriteLine($$"""
-                    if ({{Identifier.configuration}} is not {{sectionTypeDisplayString}} {{Identifier.section}})
+                    namespace System.Runtime.CompilerServices
                     {
-                        throw new {{exceptionTypeDisplayString}}();
+                        using System;
+                        using System.CodeDom.Compiler;
+
+                        {{Expression.GeneratedCodeAnnotation}}
+                        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+                        file sealed class InterceptsLocationAttribute : Attribute
+                        {
+                            public InterceptsLocationAttribute(string filePath, int line, int column)
+                            {
+                            }
+                        }
                     }
                     """);
+                _writer.WriteLine();
+            }
+
+            private void EmitUsingStatements()
+            {
+                foreach (string @namespace in _sourceGenSpec.Namespaces.ToImmutableSortedSet())
+                {
+                    _writer.WriteLine($"using {@namespace};");
+                }
             }
 
             private void EmitIConfigurationHasValueOrChildrenCheck(bool voidReturn)
             {
                 string returnPostfix = voidReturn ? string.Empty : " null";
-                string methodDisplayString = GetHelperMethodDisplayString(Identifier.HasValueOrChildren);
-
                 _writer.WriteLine($$"""
-                    if (!{{methodDisplayString}}({{Identifier.configuration}}))
+                    if (!{{Identifier.HasValueOrChildren}}({{Identifier.configuration}}))
                     {
                         return{{returnPostfix}};
                     }

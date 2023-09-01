@@ -4863,22 +4863,51 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 			/* FP */
+		case OP_R4CONST:
 		case OP_R8CONST: {
-			guint64 r8_imm = *(guint64*)ins->inst_p0;
+			gboolean is_double = (ins->opcode == OP_R8CONST);
+			guint64 r_imm = is_double ? *(guint64*)ins->inst_p0 : *(guint32*)ins->inst_p0;
 
-			if (r8_imm == 0) {
+			if (r_imm == 0) {
 				arm_fmov_rx_to_double (code, dreg, ARMREG_RZR);
 			} else {
-				code = emit_imm64 (code, ARMREG_LR, r8_imm);
-				arm_fmov_rx_to_double (code, ins->dreg, ARMREG_LR);
-			}
-			break;
-		}
-		case OP_R4CONST: {
-			guint64 r4_imm = *(guint32*)ins->inst_p0;
+				guint64 mask_constant = is_double ? 0x0000FFFFFFFFFFFF : 0x0007FFFF;
+				
+				// Arm64 floating-point modified immediate constant check (2 * 128 combinations)
+				// Float:  aBbbbbbc defgh000 00000000 00000000
+				// Double: aBbbbbbb bbcdefgh 00000000 00000000 00000000 00000000 00000000 00000000
+				
+				// Trailing zeros check
+				if ((r_imm & mask_constant) == 0) {
+					// Mask for b
+					guint8 mask_b;
+					int idx_last_b;
+					if (is_double) {
+						mask_b = 0xFF;
+						idx_last_b = 54;
+					} else {
+						mask_b = 0x1F;
+						idx_last_b = 25;
+					}
+					guint8 masked_b = (r_imm & ((guint64)mask_b << idx_last_b)) >> idx_last_b;
 
-			code = emit_imm64 (code, ARMREG_LR, r4_imm);
-			arm_fmov_rx_to_double (code, dreg, ARMREG_LR);
+					int size = is_double ? 64 : 32;
+					// NOT(B) == b check
+					if (((r_imm & ((guint64)1 << (size - 2))) && masked_b == 0)
+					|| (!(r_imm & ((guint64)1 << (size - 2))) && masked_b == mask_b)) {						
+						//imm8 = abcdefgh
+						guint8 imm8 = ((r_imm & ((guint64)1 << (size - 1))) >> (size - 8))
+									| ((r_imm & ((guint64)1 << idx_last_b)) >> (idx_last_b - 6))
+									| ((r_imm & ((guint64)0x3F << (idx_last_b - 6))) >> (idx_last_b - 6));
+						
+						arm_fmov_imm(code, (is_double ? 0x01 : 0x00), imm8, dreg);
+						break;
+					} 
+				} 
+				// Regular floating-point constant
+				code = emit_imm64 (code, ARMREG_LR, r_imm);
+				arm_fmov_rx_to_double (code, dreg, ARMREG_LR);
+			}
 			break;
 		}
 		case OP_LOADR8_MEMBASE:

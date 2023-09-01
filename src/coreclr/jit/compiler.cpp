@@ -1078,7 +1078,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-                // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
 
@@ -2434,12 +2434,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         opts.compFlags = CLFLG_MINOPT;
     }
-    // Don't optimize .cctors (except prejit) or if we're an inlinee
-    else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
-             !compIsForInlining())
-    {
-        opts.compFlags = CLFLG_MINOPT;
-    }
 
     // Default value is to generate a blend of size and speed optimizations
     //
@@ -2579,7 +2573,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         pfAltJit = &JitConfig.AltJit();
     }
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         if (pfAltJit->contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
@@ -2605,7 +2599,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         altJitVal = JitConfig.AltJit().list();
     }
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore
         // it. You don't get to give a regular expression of methods to match.
@@ -4718,7 +4712,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         // Tail merge
         //
-        DoPhase(this, PHASE_TAIL_MERGE, &Compiler::fgTailMerge);
+        DoPhase(this, PHASE_HEAD_TAIL_MERGE, [this]() { return fgHeadTailMerge(true); });
 
         // Merge common throw blocks
         //
@@ -4835,7 +4829,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Second pass of tail merge
         //
-        DoPhase(this, PHASE_TAIL_MERGE2, &Compiler::fgTailMerge);
+        DoPhase(this, PHASE_HEAD_TAIL_MERGE2, [this]() { return fgHeadTailMerge(false); });
 
         // Compute reachability sets and dominators.
         //

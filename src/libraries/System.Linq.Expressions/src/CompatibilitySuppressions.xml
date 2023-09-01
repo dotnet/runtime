@@ -4,103 +4,145 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Linq.Expressions.Interpreter.LightLambda</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.CallSiteOps</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.Closure</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.ElementInit.get_ArgumentCount</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.ElementInit.GetArgument(System.Int32)</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.IndexExpression.get_ArgumentCount</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.IndexExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.InvocationExpression.get_ArgumentCount</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.InvocationExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.LambdaExpression.get_CanCompileToIL</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.LambdaExpression.get_CanInterpret</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.MethodCallExpression.get_ArgumentCount</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.MethodCallExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.NewExpression.get_ArgumentCount</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.NewExpression.GetArgument(System.Int32)</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Linq.Expressions.Expression.Call(System.Linq.Expressions.Expression,System.String,System.Type[],System.Linq.Expressions.Expression[]):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Linq.Expressions.Expression.Call(System.Type,System.String,System.Type[],System.Linq.Expressions.Expression[]):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Linq.Expressions.Expression.ListInit(System.Linq.Expressions.NewExpression,System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression}):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Linq.Expressions.Expression.ListInit(System.Linq.Expressions.NewExpression,System.Linq.Expressions.Expression[]):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Linq.Expressions.Expression.ListInit(System.Linq.Expressions.NewExpression,System.Reflection.MethodInfo,System.Collections.Generic.IEnumerable{System.Linq.Expressions.Expression}):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Linq.Expressions.Expression.ListInit(System.Linq.Expressions.NewExpression,System.Reflection.MethodInfo,System.Linq.Expressions.Expression[]):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.CallSite`1.Create(System.Runtime.CompilerServices.CallSiteBinder):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0020</DiagnosticId>
     <Target>M:System.Linq.Expressions.DynamicExpressionVisitor.#ctor</Target>
-    <Left>ref/net8.0/System.Linq.Expressions.dll</Left>
-    <Right>lib/net8.0/System.Linq.Expressions.dll</Right>
+    <Left>ref/net9.0/System.Linq.Expressions.dll</Left>
+    <Right>lib/net9.0/System.Linq.Expressions.dll</Right>
   </Suppression>
 </Suppressions>

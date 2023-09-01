@@ -57,6 +57,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="short" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 2 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="short" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt16LittleEndian(Span<byte> destination, short value)
         {
@@ -74,6 +80,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="int" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 4 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="int" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt32LittleEndian(Span<byte> destination, int value)
         {
@@ -91,6 +103,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="long" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 8 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="long" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt64LittleEndian(Span<byte> destination, long value)
         {
@@ -108,6 +126,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="Int128" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 16 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="Int128" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt128LittleEndian(Span<byte> destination, Int128 value)
         {
@@ -125,6 +149,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="nint" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 4 bytes on 32-bit platforms -or- 8 bytes on 64-bit platforms to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="nint" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteIntPtrLittleEndian(Span<byte> destination, nint value)
         {
@@ -165,6 +195,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a <see cref="ushort" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 2 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="ushort" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt16LittleEndian(Span<byte> destination, ushort value)
@@ -183,6 +219,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a <see cref="uint" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 4 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="uint" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt32LittleEndian(Span<byte> destination, uint value)
@@ -201,6 +243,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a <see cref="ulong" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 8 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="ulong" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt64LittleEndian(Span<byte> destination, ulong value)
@@ -219,6 +267,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="UInt128" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 16 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="UInt128" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt128LittleEndian(Span<byte> destination, UInt128 value)
@@ -237,6 +291,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="nuint" /> into a span of bytes, as little endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 4 bytes on 32-bit platforms -or- 8 bytes on 64-bit platforms to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="nuint" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUIntPtrLittleEndian(Span<byte> destination, nuint value)
@@ -297,7 +357,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="short" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="short" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 2 bytes to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteInt16LittleEndian(Span<byte> destination, short value)
         {
@@ -313,7 +378,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="int" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="int" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 4 bytes to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteInt32LittleEndian(Span<byte> destination, int value)
         {
@@ -329,7 +399,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="long" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="long" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 8 bytes to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteInt64LittleEndian(Span<byte> destination, long value)
         {
@@ -345,7 +420,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="Int128" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="Int128" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 16 bytes to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteInt128LittleEndian(Span<byte> destination, Int128 value)
         {
@@ -361,7 +441,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="nint" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="nint" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 4 bytes on 32-bit platforms -or- 8 bytes on 64-bit platforms to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteIntPtrLittleEndian(Span<byte> destination, nint value)
         {
@@ -398,7 +483,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a <see cref="ushort" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="ushort" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 2 bytes to the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt16LittleEndian(Span<byte> destination, ushort value)
@@ -415,7 +505,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a <see cref="uint" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="uint" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 4 bytes to the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt32LittleEndian(Span<byte> destination, uint value)
@@ -432,7 +527,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Write a <see cref="ulong" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="ulong" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 8 bytes to the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt64LittleEndian(Span<byte> destination, ulong value)
@@ -449,7 +549,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="UInt128" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="UInt128" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 16 bytes to the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt128LittleEndian(Span<byte> destination, UInt128 value)
@@ -466,7 +571,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Writes a <see cref="nuint" /> into a span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="nuint" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 4 bytes on 32-bit platforms -or- 8 bytes on 64-bit platforms to the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUIntPtrLittleEndian(Span<byte> destination, nuint value)

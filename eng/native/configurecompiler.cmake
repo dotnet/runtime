@@ -23,12 +23,13 @@ include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 #-----------------------------------------------------
 
 if (CLR_CMAKE_HOST_UNIX)
-    add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-conversion)
+        add_compile_options(-glldb)
     else()
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=conversion-null>)
+        add_compile_options(-g)
     endif()
 endif()
 
@@ -54,6 +55,9 @@ add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEB
 
 if (MSVC)
   add_linker_flag(/guard:cf)
+
+  # Load all imported DLLs from the System32 directory.
+  add_linker_flag(/DEPENDENTLOADFLAG:0x800)
 
   # Linker flags
   #

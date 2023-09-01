@@ -143,6 +143,13 @@ namespace Microsoft.Extensions.Options.Generators
             results.AddRange(_synthesizedValidators.Values);
             _synthesizedValidators.Clear();
 
+            if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
+            {
+                // we only support C# 8.0 and above
+                Diag(DiagDescriptors.OptionsUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
+                return new List<ValidatorType>();
+            }
+
             return results;
         }
 
@@ -233,6 +240,13 @@ namespace Microsoft.Extensions.Options.Generators
                 type = ((INamedTypeSymbol)type).TypeArguments[0];
             }
 
+            // Check first if the type is IEnumerable<T> interface
+            if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _symbolHolder.GenericIEnumerableSymbol))
+            {
+                return ((INamedTypeSymbol)type).TypeArguments[0];
+            }
+
+            // Check first if the type implement IEnumerable<T> interface
             foreach (var implementingInterface in type.AllInterfaces)
             {
                 if (SymbolEqualityComparer.Default.Equals(implementingInterface.OriginalDefinition, _compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T)))

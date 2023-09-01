@@ -558,7 +558,6 @@ public:
     unsigned char lvIsSplit : 1;   // Set if the argument is splited.
 #endif                             // defined(TARGET_RISCV64)
 
-    unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
 
@@ -4908,7 +4907,7 @@ public:
     void fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic);
 #endif // FEATURE_HW_INTRINSICS
 
-    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars);
+    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
     void fgLiveVarAnalysis(bool updateInternalOnly = false);
 
@@ -5519,7 +5518,11 @@ public:
 
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
-    PhaseStatus fgTailMerge();
+    PhaseStatus fgHeadTailMerge(bool early);
+    bool fgHeadMerge(BasicBlock* block, bool early);
+    bool fgTryOneHeadMerge(BasicBlock* block, bool early);
+    bool gtTreeContainsTailCall(GenTree* tree);
+    bool fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred);
 
     enum FG_RELOCATE_TYPE
     {

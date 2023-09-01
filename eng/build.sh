@@ -67,8 +67,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net8.0 or net48."
-  echo "                             [Default: net8.0]"
+  echo "  --framework (-f)           Build framework: net9.0 or net48."
+  echo "                             [Default: net9.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -133,19 +133,18 @@ usage()
 
 initDistroRid()
 {
-    source "$scriptroot"/native/init-distro-rid.sh
+    source "$scriptroot"/common/native/init-distro-rid.sh
 
     local passedRootfsDir=""
     local targetOs="$1"
     local targetArch="$2"
     local isCrossBuild="$3"
-    local isPortableBuild="$4"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
     if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
-    initDistroRidGlobal "${targetOs}" "${targetArch}" "${isPortableBuild}" "${passedRootfsDir}"
+    initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
 }
 
 showSubsetHelp()
@@ -549,7 +548,7 @@ if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError 0"
 fi
 
-initDistroRid "$os" "$arch" "$crossBuild" "$portableBuild"
+initDistroRid "$os" "$arch" "$crossBuild"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.

@@ -26,12 +26,14 @@
     <Compile Include="ConfigurationBindingGenerator.cs" />
     <Compile Include="ConfigurationBindingGenerator.Emitter.cs" />
     <Compile Include="ConfigurationBindingGenerator.Parser.cs" />
+    <Compile Include="ConfigurationBindingGenerator.Suppressor.cs" />
     <Compile Include="Helpers\Emitter\ConfigurationBinder.cs" />
-    <Compile Include="Helpers\Emitter\CoreBindingHelper.cs" />
+    <Compile Include="Helpers\Emitter\CoreBindingHelpers.cs" />
     <Compile Include="Helpers\Emitter\ExceptionMessages.cs" />
     <Compile Include="Helpers\Emitter\Helpers.cs" />
     <Compile Include="Helpers\Emitter\OptionsBuilderConfigurationExtensions.cs" />
     <Compile Include="Helpers\Emitter\OptionsConfigurationServiceCollectionExtensions.cs" />
+    <Compile Include="Helpers\InterceptorLocationInfo.cs" />
     <Compile Include="Helpers\MethodsToGen.cs" />
     <Compile Include="Helpers\Parser\BinderInvocation.cs" />
     <Compile Include="Helpers\Parser\ConfigurationBinder.cs" />

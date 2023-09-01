@@ -7,7 +7,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
- 	[SetupLinkerArgument ("--skip-unresolved", "false")]
+	[SetupLinkerTrimMode ("link")]
+	[IgnoreDescriptors (false)]
 	public class NullableOnConstraints
 	{
 		public static void Main ()

@@ -19,7 +19,7 @@ public class test1
         return retval;
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         VT vt = new VT();
         vt.a1 = 23840;
@@ -29,7 +29,6 @@ public class test1
         double val = Func(vt, a4, a6);
         Console.WriteLine("The expected result is -0.000136159794114324");
         Console.WriteLine("The actual result is {0}", val);
-        return 100;
     }
 }
 

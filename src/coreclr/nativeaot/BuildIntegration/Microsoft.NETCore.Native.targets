@@ -248,7 +248,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(RuntimeHostConfigurationOption->'--runtimeknob:%(Identity)=%(Value)')" />
       <IlcArg Include="--runtimeknob:RUNTIME_IDENTIFIER=$(RuntimeIdentifier)" />
       <IlcArg Condition="$(ServerGarbageCollection) == 'true'" Include="--runtimeopt:gcServer=1" />
-      <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true' and $(IlcDisableReflection) != 'true'" Include="--completetypemetadata" />
+      <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(StackTraceSupport) != 'false'" Include="--stacktracedata" />
       <IlcArg Condition="$(IlcScanReflection) != 'false' and $(IlcDisableReflection) != 'true'" Include="--scanreflection" />
       <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
@@ -279,9 +279,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
 
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
-
-      <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
-      <IlcArg Condition="'$(_linuxLibcFlavor)' == 'bionic'" Include="--feature:System.Net.Security.UseManagedNtlm=true" />
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(IlcKeepManagedDebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />

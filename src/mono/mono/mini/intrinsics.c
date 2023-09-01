@@ -2079,7 +2079,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoType *t = method_context->method_inst->type_argv [0];
 			MonoClass *arg0 = mono_class_from_mono_type_internal (t);
 			if (m_class_is_valuetype (arg0) && !mono_class_has_default_constructor (arg0, FALSE)) {
-				if (m_class_is_primitive (arg0)) {
+				if (m_class_is_primitive (arg0) || m_class_is_enumtype (arg0)) {
+					if (m_class_is_enumtype (arg0))
+						t = mono_class_enum_basetype_internal (arg0);
 					int dreg = alloc_dreg (cfg, mini_type_to_stack_type (cfg, t));
 					mini_emit_init_rvar (cfg, dreg, t);
 					ins = cfg->cbb->last_ins;
@@ -2141,58 +2143,20 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		!strcmp ("System", cmethod_klass_name_space) &&
 		!strcmp ("ThrowHelper", cmethod_klass_name)) {
 
-		if (!strcmp ("ThrowForUnsupportedNumericsVectorBaseType", cmethod->name)) {
+		if (!strcmp ("ThrowForUnsupportedNumericsVectorBaseType", cmethod->name) ||
+			!strcmp ("ThrowForUnsupportedIntrinsicsVector64BaseType", cmethod->name) ||
+			!strcmp ("ThrowForUnsupportedIntrinsicsVector128BaseType", cmethod->name) ||
+			!strcmp ("ThrowForUnsupportedIntrinsicsVector256BaseType", cmethod->name)) {
 			/* The mono JIT can't optimize the body of this method away */
 			MonoGenericContext *ctx = mono_method_get_context (cmethod);
 			g_assert (ctx);
 			g_assert (ctx->method_inst);
 
 			MonoType *t = ctx->method_inst->type_argv [0];
-			switch (t->type) {
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-			case MONO_TYPE_I:
-			case MONO_TYPE_U:
+			if (MONO_TYPE_IS_VECTOR_PRIMITIVE (t)) {
 				MONO_INST_NEW (cfg, ins, OP_NOP);
 				MONO_ADD_INS (cfg->cbb, ins);
 				return ins;
-			default:
-				break;
-			}
-		}
-		else if (!strcmp ("ThrowForUnsupportedIntrinsicsVector64BaseType", cmethod->name) ||
-			 !strcmp ("ThrowForUnsupportedIntrinsicsVector128BaseType", cmethod->name) ||
-			 !strcmp ("ThrowForUnsupportedIntrinsicsVector256BaseType", cmethod->name)) {
-			/* The mono JIT can't optimize the body of this method away */
-			MonoGenericContext *ctx = mono_method_get_context (cmethod);
-			g_assert (ctx);
-			g_assert (ctx->method_inst);
-
-			MonoType *t = ctx->method_inst->type_argv [0];
-			switch (t->type) {
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-				MONO_INST_NEW (cfg, ins, OP_NOP);
-				MONO_ADD_INS (cfg->cbb, ins);
-				return ins;
-			default:
-				break;
 			}
 		}
 	}

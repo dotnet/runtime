@@ -15,6 +15,9 @@ if (MSVC)
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
     add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
+
+  # FIXME: Remove the line below when https://github.com/dotnet/runtime/issues/91249 is fixed.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>) # conversion from 'type1' to 'type2', possible loss of data
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -242,14 +245,6 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
   add_compile_options(-Wno-strict-prototypes)
   add_compile_options(-Wno-unused-but-set-variable)
   add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
-  # Allow using WASM simd intrinsics in the interpreter
-  add_compile_options(-msimd128)
-  # Disable autovectorization (it is automatically turned on by msimd128)
-  add_compile_options(-disable-loop-vectorization)
-  add_compile_options(-disable-vectorization)
-  add_compile_options(-fno-vectorize)
-  add_compile_options(-fno-tree-vectorize)
-  add_compile_options(-fno-slp-vectorize)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)

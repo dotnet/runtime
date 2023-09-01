@@ -6452,8 +6452,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		generic_context = &generic_container->context;
 	cfg->generic_context = generic_context;
 
-	if (!cfg->gshared)
-		g_assert (!sig->has_type_parameters);
+	if (!cfg->gshared) {
+		gboolean check_type_parameter = TRUE;
+		if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+			g_assert (info);
+			if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR)
+				check_type_parameter = FALSE;
+		}
+
+		if (check_type_parameter)
+			g_assert (!sig->has_type_parameters);
+	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
 		g_assert (method->is_inflated);
@@ -10840,12 +10850,15 @@ field_access_end:
 					EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, ins->dreg);
 					EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
-					ins->opcode = OP_LDTOKEN_FIELD;
-					ins->inst_c0 = n;
-					ins->inst_p1 = handle;
+					if (handle_class == mono_defaults.fieldhandle_class) {
+						ins->opcode = OP_LDTOKEN_FIELD;
+						ins->inst_c0 = n;
+						ins->inst_p1 = handle;
 
-					cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
-					cfg->cbb->needs_decompose = TRUE;
+						cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+						cfg->cbb->needs_decompose = TRUE;
+					}
+
 				}
 			}
 
