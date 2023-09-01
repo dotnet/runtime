@@ -15,7 +15,7 @@ public static class TieredVtableMethodTests
     private static StringBuilder s_expectedCallSequence = new StringBuilder();
     private static StringBuilder s_actualCallSequence = new StringBuilder();
 
-    private static int Main()
+    public static int Main()
     {
         const int Pass = 100, Fail = 101;
 
