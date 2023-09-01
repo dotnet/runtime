@@ -2879,48 +2879,65 @@ static MonoBoolean
 fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityActions* actions,
 	guint32 id_std, guint32 id_noncas, guint32 id_choice)
 {
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_DeclSecurity, &c, &count))
+		return FALSE;
+	
+	md_range_result_t search_result = md_find_range_from_cursor (c, mdtDeclSecurity_Parent, token, &c, &count);
+	if (search_result == MD_RANGE_NOT_FOUND)
+		return FALSE;
+	
 	MonoBoolean result = FALSE;
-	MonoTableInfo *t;
-	guint32 cols [MONO_DECL_SECURITY_SIZE];
-	guint32 index = mono_metadata_declsec_from_index (image, token);
-
-	t  = &image->tables [MONO_TABLE_DECLSECURITY];
-	guint32 rows = table_info_get_rows (t);
-	for (guint32 i = index; i < rows; i++) {
-		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
-
-		if (cols [MONO_DECL_SECURITY_PARENT] != token)
-			return result;
+	for (uint32_t i = 0; i < count; ++i, md_cursor_next (&c))
+	{
+		uint32_t parent;
+		if (1 != md_get_column_value_as_token (c, mdtDeclSecurity_Parent, 1, &parent))
+			continue;
+		
+		if (G_UNLIKELY(parent != token)) // This will only occur when the table is unsorted.
+			continue;
+		
+		uint32_t action;
+		if (1 != md_get_column_value_as_constant (c, mdtDeclSecurity_Action, 1, &action))
+			continue;
+			
+		uint8_t const* permission_set;
+		uint32_t permission_set_len;
+		if (1 != md_get_column_value_as_blob (c, mdtDeclSecurity_PermissionSet, 1, &permission_set, &permission_set_len))
+			return FALSE;
+		
+		bool raw_values_to_read[mdtDeclSecurity_ColCount] = { 0 };
+		raw_values_to_read[mdtDeclSecurity_PermissionSet] = true;
+		uint32_t raw_values[mdtDeclSecurity_ColCount];
+		if (!md_get_column_values_raw (c, mdtDeclSecurity_ColCount, raw_values_to_read, raw_values))
+			g_assert_not_reached ();
 
 		/* if present only replace (class) permissions with method permissions */
 		/* if empty accept either class or method permissions */
-		if (cols [MONO_DECL_SECURITY_ACTION] == id_std) {
+		if (action == id_std) {
 			if (!actions->demand.blob) {
-				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
-				actions->demand.index = cols [MONO_DECL_SECURITY_PERMISSIONSET];
-				actions->demand.blob = (char*) (blob + 2);
-				actions->demand.size = mono_metadata_decode_blob_size (blob, &blob);
+				actions->demand.index = raw_values [mdtDeclSecurity_PermissionSet];
+				actions->demand.blob = (char*)(permission_set + 1);
+				actions->demand.size = permission_set_len;
 				result = TRUE;
 			}
-		} else if (cols [MONO_DECL_SECURITY_ACTION] == id_noncas) {
+		} else if (action == id_noncas) {
 			if (!actions->noncasdemand.blob) {
-				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
-				actions->noncasdemand.index = cols [MONO_DECL_SECURITY_PERMISSIONSET];
-				actions->noncasdemand.blob = (char*) (blob + 2);
-				actions->noncasdemand.size = mono_metadata_decode_blob_size (blob, &blob);
+				actions->noncasdemand.index = raw_values [mdtDeclSecurity_PermissionSet];
+				actions->noncasdemand.blob = (char*)(permission_set + 1);
+				actions->noncasdemand.size = permission_set_len;
 				result = TRUE;
 			}
-		} else if (cols [MONO_DECL_SECURITY_ACTION] == id_choice) {
+		} else if (action == id_choice) {
 			if (!actions->demandchoice.blob) {
-				const char *blob = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
-				actions->demandchoice.index = cols [MONO_DECL_SECURITY_PERMISSIONSET];
-				actions->demandchoice.blob = (char*) (blob + 2);
-				actions->demandchoice.size = mono_metadata_decode_blob_size (blob, &blob);
+				actions->demandchoice.index = raw_values [mdtDeclSecurity_PermissionSet];
+				actions->demandchoice.blob = (char*)(permission_set + 1);
+				actions->demandchoice.size = permission_set_len;
 				result = TRUE;
 			}
 		}
 	}
-
 	return result;
 }
 
@@ -2929,9 +2946,7 @@ mono_declsec_get_class_demands_params (MonoClass *klass, MonoDeclSecurityActions
 	guint32 id_std, guint32 id_noncas, guint32 id_choice)
 {
 	guint32 idx = mono_metadata_token_index (m_class_get_type_token (klass));
-	idx <<= MONO_HAS_DECL_SECURITY_BITS;
-	idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
-	return fill_actions_from_index (m_class_get_image (klass), idx, demands, id_std, id_noncas, id_choice);
+	return fill_actions_from_index (m_class_get_image (klass), MONO_TOKEN_TYPE_DEF | idx, demands, id_std, id_noncas, id_choice);
 }
 
 static MonoBoolean
@@ -2939,9 +2954,7 @@ mono_declsec_get_method_demands_params (MonoMethod *method, MonoDeclSecurityActi
 	guint32 id_std, guint32 id_noncas, guint32 id_choice)
 {
 	guint32 idx = mono_method_get_index (method);
-	idx <<= MONO_HAS_DECL_SECURITY_BITS;
-	idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
-	return fill_actions_from_index (m_class_get_image (method->klass), idx, demands, id_std, id_noncas, id_choice);
+	return fill_actions_from_index (m_class_get_image (method->klass), MONO_TOKEN_METHOD_DEF | idx, demands, id_std, id_noncas, id_choice);
 }
 
 /**
@@ -3101,32 +3114,46 @@ mono_declsec_get_inheritdemands_method (MonoMethod *method, MonoDeclSecurityActi
 	return FALSE;
 }
 
-
 static MonoBoolean
 get_declsec_action (MonoImage *image, guint32 token, guint32 action, MonoDeclSecurityEntry *entry)
 {
-	guint32 cols [MONO_DECL_SECURITY_SIZE];
-	guint32 index = mono_metadata_declsec_from_index (image, token);
-	if (index == -1)
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_DeclSecurity, &c, &count))
 		return FALSE;
-
-	MonoTableInfo *t =  &image->tables [MONO_TABLE_DECLSECURITY];
-	guint32 rows = table_info_get_rows (t);
-	for (guint32 i = index; i < rows; i++) {
-		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
-
-		/* shortcut - index are ordered */
-		if (token != cols [MONO_DECL_SECURITY_PARENT])
+	
+	md_range_result_t result = md_find_range_from_cursor (c, mdtDeclSecurity_Parent, token, &c, &count);
+	if (result == MD_RANGE_NOT_FOUND)
+		return FALSE;
+	
+	for (uint32_t i = 0; i < count; ++i, md_cursor_next (&c))
+	{
+		uint32_t parent;
+		if (1 != md_get_column_value_as_token (c, mdtDeclSecurity_Parent, 1, &parent))
 			return FALSE;
+		
+		if (G_UNLIKELY(parent != token)) // This will only occur when the table is unsorted.
+			continue;
 
-		if (cols [MONO_DECL_SECURITY_ACTION] == action) {
-			const char *metadata = mono_metadata_blob_heap (image, cols [MONO_DECL_SECURITY_PERMISSIONSET]);
-			entry->blob = (char*) (metadata + 2);
-			entry->size = mono_metadata_decode_blob_size (metadata, &metadata);
-			return TRUE;
-		}
+		uint32_t entry_action;
+		if (1 != md_get_column_value_as_constant (c, mdtDeclSecurity_Action, 1, &entry_action))
+			return FALSE;
+		if (entry_action != action)
+			continue;
+
+		uint8_t const* permission_set;
+		uint32_t permission_set_len;
+		if (1 != md_get_column_value_as_blob (c, mdtDeclSecurity_PermissionSet, 1, &permission_set, &permission_set_len))
+			return FALSE;
+		
+		// ECMA-225 II.22.11
+		// The PermissionSet blob always starts with a literal '.' byte.
+		// We don't want to include that in the blob we return, so skip it here.
+		// We still want the size of the blob to be the full size, though.
+		entry->blob = (char*)(permission_set + 1);
+		entry->size = permission_set_len;
+		return TRUE;
 	}
-
 	return FALSE;
 }
 
@@ -3135,9 +3162,7 @@ mono_declsec_get_method_action (MonoMethod *method, guint32 action, MonoDeclSecu
 {
 	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
 		guint32 idx = mono_method_get_index (method);
-		idx <<= MONO_HAS_DECL_SECURITY_BITS;
-		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
-		return get_declsec_action (m_class_get_image (method->klass), idx, action, entry);
+		return get_declsec_action (m_class_get_image (method->klass), MONO_TOKEN_METHOD_DEF | idx, action, entry);
 	}
 	return FALSE;
 }
@@ -3152,9 +3177,7 @@ mono_declsec_get_class_action (MonoClass *klass, guint32 action, MonoDeclSecurit
 	guint32 flags = mono_declsec_flags_from_class (klass);
 	if (declsec_flags_map [action] & flags) {
 		guint32 idx = mono_metadata_token_index (m_class_get_type_token (klass));
-		idx <<= MONO_HAS_DECL_SECURITY_BITS;
-		idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
-		return get_declsec_action (m_class_get_image (klass), idx, action, entry);
+		return get_declsec_action (m_class_get_image (klass), MONO_TOKEN_TYPE_DEF | idx, action, entry);
 	}
 	return FALSE;
 }
@@ -3166,10 +3189,8 @@ MonoBoolean
 mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDeclSecurityEntry *entry)
 {
 	guint32 idx = 1; /* there is only one assembly */
-	idx <<= MONO_HAS_DECL_SECURITY_BITS;
-	idx |= MONO_HAS_DECL_SECURITY_ASSEMBLY;
 
-	return get_declsec_action (assembly->image, idx, action, entry);
+	return get_declsec_action (assembly->image, MONO_TOKEN_ASSEMBLY | idx, action, entry);
 }
 
 gboolean
