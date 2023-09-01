@@ -532,7 +532,7 @@ ep_session_write_event (
 			EventPipeProvider *provider = ep_event_get_provider (ep_event);
 			const ep_char8_t *provider_name = ep_provider_get_provider_name(provider);
 			if (ep_rt_utf8_string_compare_ignore_case (provider_name, "Microsoft-Windows-DotNETRuntimeRundown") != 0) {
-				EP_FAILFAST(L"Saw non rundown provider");
+				EP_FAILFAST("Saw non rundown provider");
 			}
 		}
 
