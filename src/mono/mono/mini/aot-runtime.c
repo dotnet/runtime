@@ -2269,17 +2269,15 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	if (make_unreadable) {
 #ifndef TARGET_WIN32
-		guint8 *addr;
 		guint8 *page_start, *page_end;
-		int err, len;
+		int err;
 
-		addr = amodule->mem_begin;
-		g_assert (addr);
-		len = (int)(amodule->mem_end - amodule->mem_begin);
+		g_assert (amodule->mem_begin);
+		g_assert (amodule->mem_end);
 
 		/* Round down in both directions to avoid modifying data which is not ours */
-		page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
-		page_end = (guint8 *) (((gssize) (addr + len)) & ~ (mono_pagesize () - 1));
+		page_start = (guint8 *) (((gssize) (amodule->mem_begin)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
+		page_end = (guint8 *) (((gssize) (amodule->mem_end)) & ~ (mono_pagesize () - 1));
 		if (page_end > page_start) {
 			err = mono_mprotect (page_start, (page_end - page_start), MONO_MMAP_NONE);
 			g_assert (err == 0);

@@ -4032,7 +4032,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			get_bb (td, target, make_list);
 			ip += 2;
 			get_bb (td, ip, make_list);
-			mono_bitset_set (il_targets, (guint32)(target - start));
+			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			break;
 		case MonoInlineBrTarget:
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
@@ -4041,7 +4041,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			get_bb (td, target, make_list);
 			ip += 5;
 			get_bb (td, ip, make_list);
-			mono_bitset_set (il_targets, (guint32)(target - start));
+			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			break;
 		case MonoInlineSwitch: {
 			guint32 n = read32 (ip + 1);
@@ -4052,14 +4052,14 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			if (target > end)
 				return FALSE;
 			get_bb (td, target, make_list);
-			mono_bitset_set (il_targets, (guint32)(target - start));
+			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
 				if (target > end)
 					return FALSE;
 				get_bb (td, target, make_list);
 				ip += 4;
-				mono_bitset_set (il_targets, (guint32)(target - start));
+				mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			}
 			get_bb (td, ip, make_list);
 			break;
