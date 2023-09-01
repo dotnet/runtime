@@ -38,42 +38,36 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
         switch (type)
         {
             case TimeZoneDisplayName_Standard:
-                style = NSTimeZoneNameStyleStandard;//;NSTimeZoneNameStyleShortStandard
+                style = NSTimeZoneNameStyleStandard;
                 break;
             case TimeZoneDisplayName_DaylightSavings:
-                style = NSTimeZoneNameStyleDaylightSaving;//;NSTimeZoneNameStyleShortDaylightSaving
+                style = NSTimeZoneNameStyleDaylightSaving;
                 break;
             case TimeZoneDisplayName_Generic:
-                style = NSTimeZoneNameStyleGeneric;//;NSTimeZoneNameStyleShortGeneric
+                style = NSTimeZoneNameStyleGeneric;
                 break;
-            // case TimeZoneDisplayName_GenericLocation:
-            //     style = NSTimeZoneNameStyleStandard;//???
-            //     break;
-            // case TimeZoneDisplayName_ExemplarCity:
-            //     style = NSTimeZoneNameStyleStandard;//??
-            //     break;
             default:
-                return UnknownError;//-1;
+                return UnknownError;
         }
 
         NSString* timeZoneName = [timeZone localizedName:style locale:currentLocale];
         if (timeZoneName == NULL || timeZoneName.length == 0)
         {
-            return UnknownError;//0
+            return UnknownError;
         }
 
-        int32_t index = 0, dstIdx = 0, isError = 0;
+        int32_t index = 0, dstIdx = 0, resultCode = Success;
         uint16_t dstCodepoint;
         while (index < timeZoneName.length)
         {
             dstCodepoint = [timeZoneName characterAtIndex: index];
-            Append(result, dstIdx, resultLength, dstCodepoint, isError);
+            Append(result, dstIdx, resultLength, dstCodepoint, resultCode);
             index++;
         }
         dstCodepoint = '\0';
-        Append(result, dstIdx, resultLength, dstCodepoint, isError);
+        Append(result, dstIdx, resultLength, dstCodepoint, resultCode);
 
-        return isError ? UnknownError : Success;//timeZoneName.length;//;
+        return resultCode;
     }
 }
 #endif

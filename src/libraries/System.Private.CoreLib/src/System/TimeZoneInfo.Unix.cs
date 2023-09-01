@@ -235,6 +235,7 @@ namespace System
             return displayName;
 #else
             GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
+
             return displayName;
 #endif
         }
@@ -271,6 +272,7 @@ namespace System
                 return daylightDisplayName;
 #endif
             GetDaylightDisplayName(Id, ref daylightDisplayName);
+
             return daylightDisplayName;
         }
 
