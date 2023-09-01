@@ -9,6 +9,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using TestLibrary;
+
 using Xunit;
 
 // This test shares its logic with the managed type system test suite, and seeks to ensure the runtime agrees with it
