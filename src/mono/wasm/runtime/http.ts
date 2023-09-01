@@ -18,6 +18,13 @@ function verifyEnvironment() {
 }
 
 export function http_wasm_supports_streaming_request(): boolean {
+    // Detecting streaming request support works like this:
+    // If the browser doesn't support a particular body type, it calls toString() on the object and uses the result as the body.
+    // So, if the browser doesn't support request streams, the request body becomes the string "[object ReadableStream]".
+    // When a string is used as a body, it conveniently sets the Content-Type header to text/plain;charset=UTF-8.
+    // So, if that header is set, then we know the browser doesn't support streams in request objects, and we can exit early.
+    // Safari does support streams in request objects, but doesn't allow them to be used with fetch, so the duplex option is tested, which Safari doesn't currently support.
+    // See https://developer.chrome.com/articles/fetch-streaming-requests/
     if (typeof Request !== "undefined" && "body" in Request.prototype && typeof ReadableStream === "function") {
         let duplexAccessed = false;
         const hasContentType = new Request("", {
