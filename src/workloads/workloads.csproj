@@ -12,7 +12,6 @@
     <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
     <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
     <PackageSource Condition="'$(workloadPackagesPath)' != ''">$(workloadPackagesPath)/</PackageSource>
-    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <!-- Arcade -->
