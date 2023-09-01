@@ -20,7 +20,12 @@
 #define EP_ASSERT(expr)
 #endif
 
-#define EP_FAILFAST(msg) EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, msg)
+#define EP_FAILFAST(msg) \
+	do \
+	{ \
+        SString converter(SString::Literal, msg); \
+		EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, converter.GetUnicode()); \
+	} while(FALSE)
 
 #undef EP_UNREACHABLE
 #define EP_UNREACHABLE(msg) do { UNREACHABLE_MSG(msg); } while (0)
