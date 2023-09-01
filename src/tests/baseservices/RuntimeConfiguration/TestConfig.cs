@@ -62,21 +62,6 @@ public class TestConfig
             : Success;
     }
 
-    static int Main(string[] args)
-    {
-        if (args.Length == 0)
-        {
-            return RunTests();
-        }
-
-        MethodInfo infos = typeof(TestConfig).GetMethod(args[0], BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-        if (infos is null)
-        {
-            return Fail;
-        }
-        return (int)infos.Invoke(null, new object[] { args[1..] });
-    }
-
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
     class EnvVarAttribute : Attribute
     {
@@ -93,7 +78,8 @@ public class TestConfig
         public string Value { get; init; }
     }
 
-    static int RunTests()
+    [Fact]
+    public static void RunTests()
     {
         // clear some environment variables that we will set during the test run
         Environment.SetEnvironmentVariable("DOTNET_gcServer", null);
@@ -142,12 +128,9 @@ public class TestConfig
             process.WaitForExit();
             if (process.ExitCode != Success)
             {
-                Console.WriteLine($"Failed: {mi.Name}");
-                return process.ExitCode;
+                throw new Exception($"Failed: {mi.Name}: exit code = {process.ExitCode}");
             }
         }
-
-        return Success;
     }
 
     static string GetCorerunPath()
