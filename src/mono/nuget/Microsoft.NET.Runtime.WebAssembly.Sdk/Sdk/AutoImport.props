@@ -1,8 +1,8 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
   <PropertyGroup>
-    <WasmNativeWorkload Condition="'$(WasmNativeWorkload)' == ''">net8.0</WasmNativeWorkload>
-    <WasmNativeWorkload8>true</WasmNativeWorkload8>
+    <WasmNativeWorkload Condition="'$(WasmNativeWorkload)' == ''">net9.0</WasmNativeWorkload>
+    <WasmNativeWorkload9>true</WasmNativeWorkload9>
     <!--<WasmNativeWorkloadAvailableList>$(WasmNativeWorkloadAvailableList)+net8.0+</WasmNativeWorkloadAvailableList>-->
   </PropertyGroup>
 </Project>
