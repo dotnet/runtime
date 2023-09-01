@@ -11,14 +11,14 @@ using System.Runtime;
 
 using Xunit;
 
-class TestConfig
+public class TestConfig
 {
     const int Success = 100;
     const int Fail = 101;
 
     [Fact]
     [EnvVar("DOTNET_gcServer", "1")]
-    static int Verify_ServerGC_Env_Enable(string[] _)
+    public static int Verify_ServerGC_Env_Enable()
     {
         return GCSettings.IsServerGC
             ? Success
@@ -27,7 +27,7 @@ class TestConfig
 
     [Fact]
     [EnvVar("DOTNET_gcServer", "0")]
-    static int Verify_ServerGC_Env_Disable(string[] _)
+    public static int Verify_ServerGC_Env_Disable()
     {
         return GCSettings.IsServerGC
             ? Fail
@@ -36,7 +36,7 @@ class TestConfig
 
     [Fact]
     [ConfigProperty("System.GC.Server", "true")]
-    static int Verify_ServerGC_Prop_Enable(string[] _)
+    public static int Verify_ServerGC_Prop_Enable()
     {
         return GCSettings.IsServerGC
             ? Success
@@ -45,7 +45,7 @@ class TestConfig
 
     [Fact]
     [ConfigProperty("System.GC.Server", "false")]
-    static int Verify_ServerGC_Prop_Disable(string[] _)
+    public static int Verify_ServerGC_Prop_Disable()
     {
         return GCSettings.IsServerGC
             ? Fail
@@ -55,7 +55,7 @@ class TestConfig
     [Fact]
     [EnvVar("DOTNET_gcServer", "0")]
     [ConfigProperty("System.GC.Server", "true")]
-    static int Verify_ServerGC_Env_Override_Prop(string[] _)
+    public static int Verify_ServerGC_Env_Override_Prop()
     {
         return GCSettings.IsServerGC
             ? Fail
