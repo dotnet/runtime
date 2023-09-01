@@ -4,10 +4,10 @@
 using System;
 using Xunit;
 
-class RuntimeHelpersTests
+public class RuntimeHelpersTests
 {
     [Fact]
-    static void TestEntryPoint()
+    public static void TestEntryPoint()
     {
         ExecuteCodeWithGuaranteedCleanupTest.Run();
     }
