@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -158,12 +159,10 @@ namespace Internal.Runtime.Binder
             {
                 if ((dwRefOrDefFlags & CorAssemblyFlags.afPublicKey) != 0)
                 {
-                    byte* pByteToken;
-                    uint dwTokenLen;
-                    StrongNameTokenFromPublicKey(pvPublicKeyToken, dwPublicKeyToken, &pByteToken, &dwTokenLen);
+                    byte[]? publicKeyToken = System.Reflection.AssemblyNameHelpers.ComputePublicKeyToken(new ReadOnlySpan<byte>(pvPublicKeyToken, (int)dwPublicKeyToken));
+                    Debug.Assert(publicKeyToken != null);
 
-                    PublicKeyOrTokenBLOB = new ReadOnlySpan<byte>(pByteToken, (int)dwTokenLen).ToArray();
-                    StrongNameFreeBuffer(pByteToken);
+                    PublicKeyOrTokenBLOB = publicKeyToken;
                 }
                 else
                 {
@@ -180,16 +179,6 @@ namespace Internal.Runtime.Binder
         public bool IsNeutralCulture => string.EqualsOrdinalIgnoreCase(CultureOrLanguage, NeutralCulture);
 
         // Foo internal calls
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void StrongNameTokenFromPublicKey(
-            byte* pbPublicKeyBlob,        // [in] public key blob
-            uint cbPublicKeyBlob,
-            byte** ppbStrongNameToken,     // [out] strong name token
-            uint* pcbStrongNameToken);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void StrongNameFreeBuffer(byte* buffer);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IMdInternalImport BinderAcquireImport(IntPtr pPEImage, int* dwPAFlags);

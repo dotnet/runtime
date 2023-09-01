@@ -8,9 +8,9 @@ namespace System.Reflection
 {
     internal static partial class AssemblyNameHelpers
     {
-        public static byte[]? ComputePublicKeyToken(byte[]? publicKey)
+        public static byte[]? ComputePublicKeyToken(ReadOnlySpan<byte> publicKey)
         {
-            if (publicKey == null)
+            if (publicKey == default)
                 return null;
 
             if (publicKey.Length == 0)
@@ -35,16 +35,14 @@ namespace System.Reflection
         //
         // This validation logic is a port of StrongNameIsValidPublicKey() from src\coreclr\md\runtime\strongnameinternal.cpp
         //
-        private static bool IsValidPublicKey(byte[] publicKey)
+        private static bool IsValidPublicKey(ReadOnlySpan<byte> publicKeyBlob)
         {
-            uint publicKeyLength = (uint)(publicKey.Length);
+            uint publicKeyLength = (uint)(publicKeyBlob.Length);
 
             // The buffer must be at least as large as the public key structure (for compat with desktop, we actually compare with the size of the header + 4).
             if (publicKeyLength < SizeOfPublicKeyBlob + 4)
                 return false;
 
-            // Poor man's reinterpret_cast into the PublicKeyBlob structure.
-            ReadOnlySpan<byte> publicKeyBlob = new ReadOnlySpan<byte>(publicKey);
             uint sigAlgID = BinaryPrimitives.ReadUInt32LittleEndian(publicKeyBlob);
             uint hashAlgID = BinaryPrimitives.ReadUInt32LittleEndian(publicKeyBlob.Slice(4));
             uint cbPublicKey = BinaryPrimitives.ReadUInt32LittleEndian(publicKeyBlob.Slice(8));
@@ -71,7 +69,7 @@ namespace System.Reflection
                 return false;
 
             // The key blob must indicate that it is a PUBLICKEYBLOB
-            if (publicKey[SizeOfPublicKeyBlob] != PUBLICKEYBLOB)
+            if (publicKeyBlob[SizeOfPublicKeyBlob] != PUBLICKEYBLOB)
                 return false;
 
             return true;
@@ -94,7 +92,7 @@ namespace System.Reflection
         private const uint ALG_CLASS_SIGNATURE = (1 << 13);
         private const uint PUBLICKEYBLOB = 0x6;
 
-        private const uint SizeOfPublicKeyBlob = 12;
+        private const int SizeOfPublicKeyBlob = 12;
 
         private const int PublicKeyTokenLength = 8;
 
