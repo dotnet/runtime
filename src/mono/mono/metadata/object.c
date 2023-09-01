@@ -59,6 +59,7 @@
 #include "monitor.h"
 #include "icall-decl.h"
 #include "icall-signatures.h"
+#include <dnmd.h>
 
 #if _MSC_VER
 #pragma warning(disable:4312) // FIXME pointer cast to different size
@@ -77,7 +78,7 @@ static void
 get_default_field_value (MonoClassField *field, void *value, MonoStringHandleOut string_handle, MonoError *error);
 
 static void
-mono_ldstr_metadata_sig (const char* sig, MonoStringHandleOut string_handle, MonoError *error);
+mono_ldstr_metadata_sig (const char* sig, gsize len, MonoStringHandleOut string_handle, MonoError *error);
 
 static void
 free_main_args (void);
@@ -3403,7 +3404,9 @@ mono_get_constant_value_from_blob (MonoTypeEnum type, const char *blob, void *va
 		goto exit;
 
 	if (type == MONO_TYPE_STRING) {
-		mono_ldstr_metadata_sig (*(const char**)value, string_handle, error);
+		const char* str = *(const char**)value;
+		gsize len = mono_metadata_decode_blob_size(str, &str);
+		mono_ldstr_metadata_sig (str, len, string_handle, error);
 		*(gpointer*)value = MONO_HANDLE_RAW (string_handle);
 	}
 	result = TRUE;
@@ -7095,7 +7098,15 @@ mono_ldstr_checked (MonoImage *image, guint32 idx, MonoError *error)
 		MONO_HANDLE_ASSIGN_RAW (str, (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL, error));
 		goto exit;
 	}
-	mono_ldstr_metadata_sig (mono_metadata_user_string (image, idx), str, error);
+	
+	mduserstringcursor_t user_string_index = idx;
+	mduserstring_t user_string;
+	uint32_t ignored;
+	if (!md_walk_user_string_heap(image->metadata_handle, &user_string_index, &user_string, &ignored)) {
+		mono_error_set_bad_image (error, image, "Invalid user string index %d", idx);
+		goto exit;
+	}
+	mono_ldstr_metadata_sig ((const char*)user_string.str, user_string.str_bytes, str, error);
 exit:
 	HANDLE_FUNCTION_RETURN_OBJ (str);
 }
@@ -7128,13 +7139,14 @@ mono_string_from_blob (const char *str, MonoError *error)
 }
 /**
  * mono_ldstr_metadata_sig
- * \param sig the signature of a metadata string
+ * \param sig the string from metadata (in UTF-16LE encoding)
+ * \param len the length of the string in bytes
  * \param error set on error
  * \returns a \c MonoString for a string stored in the metadata. On
  * failure returns NULL and sets \p error.
  */
 static void
-mono_ldstr_metadata_sig (const char* sig, MonoStringHandleOut string_handle, MonoError *error)
+mono_ldstr_metadata_sig (const char* sig, gsize len, MonoStringHandleOut string_handle, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -7142,7 +7154,7 @@ mono_ldstr_metadata_sig (const char* sig, MonoStringHandleOut string_handle, Mon
 
 	MONO_HANDLE_ASSIGN_RAW (string_handle, NULL);
 
-	const gsize len = mono_metadata_decode_blob_size (sig, &sig) / sizeof (gunichar2);
+	len = len / sizeof (gunichar2);
 
 	// FIXMEcoop excess handle, use mono_string_new_utf16_checked and string_handle parameter
 
@@ -7168,7 +7180,6 @@ mono_ldstr_metadata_sig (const char* sig, MonoStringHandleOut string_handle, Mon
 char*
 mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 {
-	const char *str;
 	size_t len2;
 	long written = 0;
 	char *as;
@@ -7176,12 +7187,18 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 
 	error_init (error);
 
-	str = mono_metadata_user_string (image, idx);
+	mduserstringcursor_t user_string_index = idx;
+	mduserstring_t user_string;
+	uint32_t ignored;
+	if (!md_walk_user_string_heap(image->metadata_handle, &user_string_index, &user_string, &ignored)) {
+		mono_error_set_bad_image (error, image, "Invalid user string index %d", idx);
+		g_error_free (gerror);
+		return NULL;
+	}
 
-	len2 = mono_metadata_decode_blob_size (str, &str);
-	len2 >>= 1;
+	len2 = user_string.str_bytes >> 1;
 
-	as = g_utf16_to_utf8 ((gunichar2*)str, (glong)len2, NULL, &written, &gerror);
+	as = g_utf16_to_utf8 ((gunichar2*)user_string.str, (glong)len2, NULL, &written, &gerror);
 	if (gerror) {
 		mono_error_set_argument (error, "string", gerror->message);
 		g_error_free (gerror);

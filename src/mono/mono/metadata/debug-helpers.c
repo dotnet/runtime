@@ -698,10 +698,14 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 
 		if (!image_is_dynamic (method->klass->image) && !method_is_dynamic (method)) {
 			token = read32 (ip);
-			blob = mono_metadata_user_string (method->klass->image, mono_metadata_token_index (token));
-
-			len2 = mono_metadata_decode_blob_size (blob, &blob);
-			len2 >>= 1;
+			mduserstringcursor_t index = mono_metadata_token_index (token);
+			mduserstring_t user_string;
+			guint32 heap_offset;
+			if (!md_walk_user_string_heap (method->klass->image->metadata_handle, &index, &user_string, &heap_offset))
+				g_assert_not_reached();
+			
+			blob = (char*)user_string.str;
+			len2 = user_string.str_bytes >> 1;
 
 #ifdef NO_UNALIGNED_ACCESS
 			/* The blob might not be 2 byte aligned */
