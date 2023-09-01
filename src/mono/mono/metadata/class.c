@@ -49,6 +49,7 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
+#include <dnmd.h>
 
 MonoStats mono_stats;
 
@@ -114,8 +115,6 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 MonoClass *
 mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError *error)
 {
-	guint32 cols [MONO_TYPEREF_SIZE];
-	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 	guint32 idx;
 	const char *name, *nspace;
 	MonoClass *res = NULL;
@@ -123,14 +122,22 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 
 	error_init (error);
 
-	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+	mdcursor_t c;
+	if (!md_token_to_cursor (image->metadata_handle, type_token, &c))
+		return NULL;
+	
+	if (1 != md_get_column_value_as_utf8(c, mdtTypeRef_TypeName, 1, &name))
+		return NULL;
 
-	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
-	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+	if (1 != md_get_column_value_as_utf8(c, mdtTypeRef_TypeNamespace, 1, &nspace))
+		return NULL;
 
-	idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLUTION_SCOPE_BITS;
-	switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLUTION_SCOPE_MASK) {
-	case MONO_RESOLUTION_SCOPE_MODULE:
+	guint32 resolution_scope_token;
+	if (1 != md_get_column_value_as_token(c, mdtTypeRef_ResolutionScope, 1, &resolution_scope_token))
+		return NULL;
+
+	switch (mono_metadata_token_table(resolution_scope_token)) {
+	case MONO_TABLE_MODULE:
 		/*
 		LAMESPEC The spec says that a null module resolution scope should go through the exported type table.
 		This is not the observed behavior of existing implementations.
@@ -140,22 +147,22 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		res = mono_class_from_name_checked (image, nspace, name, error);
 		goto done;
 
-	case MONO_RESOLUTION_SCOPE_MODULEREF:
-		module = mono_image_load_module_checked (image, idx, error);
+	case MONO_TABLE_MODULEREF:
+		module = mono_image_load_module_checked (image, mono_metadata_token_index(resolution_scope_token), error);
 		if (module)
 			res = mono_class_from_name_checked (module, nspace, name, error);
 		goto done;
 
-	case MONO_RESOLUTION_SCOPE_TYPEREF: {
+	case MONO_TABLE_TYPEREF: {
 		MonoClass *enclosing;
 		GList *tmp;
 
-		if (idx == mono_metadata_token_index (type_token)) {
+		if (resolution_scope_token == type_token) {
 			mono_error_set_bad_image (error, image, "Image with self-referencing typeref token %08x.", type_token);
 			return NULL;
 		}
 
-		enclosing = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | idx, error);
+		enclosing = mono_class_from_typeref_checked (image, resolution_scope_token, error);
 		return_val_if_nok (error, NULL);
 
 		GList *nested_classes = mono_class_get_nested_classes_property (enclosing);
@@ -172,27 +179,42 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 			/* Don't call mono_class_init_internal as we might've been called by it recursively */
 			int i = mono_metadata_nesting_typedef (enclosing_image, enclosing_type_token, 1);
 			while (i) {
-				guint32 class_nested = mono_metadata_decode_row_col (&enclosing_image->tables [MONO_TABLE_NESTEDCLASS], i - 1, MONO_NESTED_CLASS_NESTED);
-				guint32 string_offset = mono_metadata_decode_row_col (&enclosing_image->tables [MONO_TABLE_TYPEDEF], class_nested - 1, MONO_TYPEDEF_NAME);
-				const char *nname = mono_metadata_string_heap (enclosing_image, string_offset);
+				mdcursor_t nested_class;
+				if (!md_token_to_cursor (enclosing_image->metadata_handle, MONO_TOKEN_TYPE_DEF | i, &nested_class))
+					break;
+				
+				mdcursor_t class_nested;
+				if (1 != md_get_column_value_as_cursor (nested_class, mdtNestedClass_NestedClass, 1, &class_nested))
+					break;
+				
+				const char *nname;
+				if (1 != md_get_column_value_as_utf8 (nested_class, mdtTypeDef_TypeName, 1, &nname))
+					break;
 
 				if (strcmp (nname, name) == 0)
-					return mono_class_create_from_typedef (enclosing_image, MONO_TOKEN_TYPE_DEF | class_nested, error);
+				{
+					uint32_t class_nested_def_token;
+					if (!md_cursor_to_token (class_nested, &class_nested_def_token))
+						g_assert_not_reached();
+					return mono_class_create_from_typedef (enclosing_image, class_nested_def_token, error);
+				}
 
 				i = mono_metadata_nesting_typedef (enclosing_image, enclosing_type_token, i + 1);
 			}
 		}
-		g_warning ("TypeRef ResolutionScope not yet handled (%d) for %s.%s in image %s", idx, nspace, name, image->name);
+		g_warning ("TypeRef ResolutionScope not yet handled (%d) for %s.%s in image %s", resolution_scope_token, nspace, name, image->name);
 		goto done;
 	}
-	case MONO_RESOLUTION_SCOPE_ASSEMBLYREF:
+	case MONO_TABLE_ASSEMBLYREF:
 		break;
 	}
 
-	if (mono_metadata_table_bounds_check (image, MONO_TABLE_ASSEMBLYREF, idx)) {
-		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_ASSEMBLYREF, mono_metadata_token_index(resolution_scope_token))) {
+		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", resolution_scope_token);
 		return NULL;
 	}
+
+	idx = mono_metadata_token_index (resolution_scope_token);
 
 	if (!image->references || !image->references [idx - 1])
 		mono_assembly_load_reference (image, idx - 1);
@@ -1584,27 +1606,34 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 	 * metadata-update: adding new enum fields isn't supported, so when this code runs, all the
 	 * fields are contiguous in metadata.
 	 */
-	for (i = 0; i < top; i++){
-		const char *sig;
-		guint32 cols [MONO_FIELD_SIZE];
-		int idx = first_field_idx + i;
-		MonoType *ftype;
-
-		/* first_field_idx and idx points into the fieldptr table */
-		mono_metadata_decode_table_row (image, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
-
-		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC) //no need to decode static fields
+	for (i = 0; i < top; i++) {
+		mdcursor_t c;
+		if (!md_token_to_cursor (image->metadata_handle, MONO_TOKEN_FIELD_DEF | (first_field_idx + i), &c)) {
+			mono_error_set_bad_image (error, image, "Could not find field %d", first_field_idx + i);
+			goto fail;
+		}
+		if (!md_resolve_indirect_cursor (c, &c))
+			g_assert_not_reached ();
+		
+		uint32_t flags;
+		if (1 != md_get_column_value_as_constant (c, mdtField_Flags, 1, &flags))
+			g_assert_not_reached ();
+		
+		if (flags & FIELD_ATTRIBUTE_STATIC) //no need to decode static fields
 			continue;
 
-		sig = mono_metadata_blob_heap (image, cols [MONO_FIELD_SIGNATURE]);
-		mono_metadata_decode_value (sig, &sig);
+		uint8_t const* sig;
+		uint32_t sig_len;
+		if (1 != md_get_column_value_as_blob (c, mdtField_Signature, 1, &sig, &sig_len))
+			g_assert_not_reached ();
+
 		/* FIELD signature == 0x06 */
 		if (*sig != 0x06) {
-			mono_error_set_bad_image (error, image, "Invalid field signature %x, expected 0x6 but got %x", cols [MONO_FIELD_SIGNATURE], *sig);
+			mono_error_set_bad_image (error, image, "Invalid field signature for fields %d, expected 0x6 but got %x", first_field_idx + i, *sig);
 			goto fail;
 		}
 
-		ftype = mono_metadata_parse_type_checked (image, container, cols [MONO_FIELD_FLAGS], FALSE, sig + 1, &sig, error);
+		MonoType* ftype = mono_metadata_parse_type_checked (image, container, flags, FALSE, (const char*)(sig + 1), (const char**)&sig, error);
 		if (!ftype)
 			goto fail;
 
@@ -1613,7 +1642,7 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 			ftype = mono_class_inflate_generic_type_checked (ftype, mono_class_get_context (klass), error);
 			if (!is_ok (error))
 				goto fail;
-			ftype->attrs = cols [MONO_FIELD_FLAGS];
+			ftype->attrs = flags;
 		}
 
 		return ftype;
@@ -2401,14 +2430,20 @@ mono_class_get_field_idx (MonoClass *klass, int idx)
 		MonoImage *klass_image = m_class_get_image (klass);
 		MonoClassField *klass_fields = m_class_get_fields (klass);
 		if (klass_image->uncompressed_metadata) {
+			mdcursor_t c;
+			if (!md_token_to_cursor (klass_image, mono_metadata_make_token(MONO_TABLE_FIELD, idx + 1), &c))
+				g_assert_not_reached ();
+			
 			/*
 			 * first_field_idx points to the FieldPtr table, while idx points into the
 			 * Field table, so we have to do a search.
 			 */
 			/*FIXME this is broken for types with multiple fields with the same name.*/
-			const char *name = mono_metadata_string_heap (klass_image, mono_metadata_decode_row_col (&klass_image->tables [MONO_TABLE_FIELD], idx, MONO_FIELD_NAME));
-			int i;
+			const char *name;
+			if (1 != md_get_column_value_as_utf8 (c, mdtField_Name, 1, &name))
+				g_assert_not_reached ();
 
+			int i;
 			for (i = 0; i < fcount; ++i)
 				if (mono_field_get_name (&klass_fields [i]) == name)
 					return &klass_fields [i];
@@ -2760,19 +2795,17 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 	if (image_is_dynamic (image))
 		return g_strdup_printf ("DynamicType 0x%08x", type_token);
 
-	switch (type_token & 0xff000000){
-	case MONO_TOKEN_TYPE_DEF: {
-		guint tidx = mono_metadata_token_index (type_token);
+	mdcursor_t c;
+	if (!md_token_to_cursor (image, type_token, &c))
+		return g_strdup_printf ("Invalid type token 0x%08x", type_token);
 
-		if (mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEDEF, tidx))
-			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
+	switch (mono_metadata_token_table (type_token)){
+	case MONO_TABLE_TYPEDEF: {
+		if (1 != md_get_column_value_as_utf8 (c, mdtTypeDef_TypeName, 1, &name))
+			g_assert_not_reached ();
+		if (1 != md_get_column_value_as_utf8 (c, mdtTypeDef_TypeNamespace, 1, &nspace))
+			g_assert_not_reached ();
 
-		guint32 cols [MONO_TYPEDEF_SIZE];
-		MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
-
-		mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
-		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
-		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 		if (strlen (nspace) == 0)
 			return g_strdup_printf ("%s", name);
 		else
@@ -2780,17 +2813,11 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 	}
 
 	case MONO_TOKEN_TYPE_REF: {
-		guint tidx = mono_metadata_token_index (type_token);
+		if (1 != md_get_column_value_as_utf8 (c, mdtTypeRef_TypeName, 1, &name))
+			g_assert_not_reached ();
+		if (1 != md_get_column_value_as_utf8 (c, mdtTypeRef_TypeNamespace, 1, &nspace))
+			g_assert_not_reached ();
 
-		if (mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEREF, tidx))
-			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
-
-		guint32 cols [MONO_TYPEREF_SIZE];
-		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
-
-		mono_metadata_decode_row (t, tidx-1, cols, MONO_TYPEREF_SIZE);
-		name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
-		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
 		if (strlen (nspace) == 0)
 			return g_strdup_printf ("%s", name);
 		else
@@ -3035,8 +3062,6 @@ mono_class_get (MonoImage *image, guint32 type_token)
 void
 mono_image_init_name_cache (MonoImage *image)
 {
-	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
-	guint32 cols [MONO_TYPEDEF_SIZE];
 	const char *name;
 	const char *nspace;
 	guint32 visib, nspace_index;
@@ -3063,20 +3088,37 @@ mono_image_init_name_cache (MonoImage *image)
 	name_cache2 = g_hash_table_new (NULL, NULL);
 
 	/* FIXME: metadata-update */
-	int rows = table_info_get_rows (t);
-	for (int i = 1; i <= rows; ++i) {
-		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
-		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+	mdcursor_t type;
+	uint32_t type_count;
+	if (!md_create_cursor (image->metadata_handle, mdtid_TypeDef, &type, &type_count))
+		type_count = 0;
+
+	for (int i = 1; i <= type_count; ++i, md_cursor_next(&type)) {		
+		uint32_t flags;
+		if (1 != md_get_column_value_as_constant (type, mdtTypeDef_Flags, 1, &flags))
+			g_assert_not_reached ();
+		
+		visib = flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		/*
 		 * Nested types are accessed from the nesting name.  We use the fact that nested types use different visibility flags
 		 * than toplevel types, thus avoiding the need to grovel through the NESTED_TYPE table
 		 */
 		if (visib >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM)
 			continue;
-		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
-		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
-		nspace_index = cols [MONO_TYPEDEF_NAMESPACE];
+		if (1 != md_get_column_value_as_utf8 (type, mdtTypeDef_TypeName, 1, &name))
+			g_assert_not_reached ();
+		
+		if (1 != md_get_column_value_as_utf8 (type, mdtTypeDef_TypeNamespace, 1, &nspace))
+			g_assert_not_reached ();
+		
+		bool raw_values_to_read[mdtTypeDef_ColCount] = { 0 };
+		raw_values_to_read[mdtTypeDef_TypeNamespace] = true;
+		uint32_t raw_values[mdtTypeDef_ColCount];
+		if (!md_get_column_values_raw (type, mdtTypeDef_ColCount, raw_values_to_read, raw_values))
+			g_assert_not_reached ();
+
+		nspace_index = raw_values_to_read[mdtTypeDef_TypeNamespace];
 		nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
 		if (!nspace_table) {
 			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
@@ -3089,22 +3131,33 @@ mono_image_init_name_cache (MonoImage *image)
 
 	/* Load type names from EXPORTEDTYPES table */
 	{
-		MonoTableInfo *exptype_tbl = &image->tables [MONO_TABLE_EXPORTEDTYPE];
-		guint32 exptype_cols [MONO_EXP_TYPE_SIZE];
+		mdcursor_t exptype;
+		uint32_t exptype_count;
+		if (!md_create_cursor (image->metadata_handle, mdtid_ExportedType, &exptype, &exptype_count))
+			exptype_count = 0;
 
-		rows = table_info_get_rows (exptype_tbl);
-		for (int i = 0; i < rows; ++i) {
-			mono_metadata_decode_row (exptype_tbl, i, exptype_cols, MONO_EXP_TYPE_SIZE);
-
-			guint32 impl = exptype_cols [MONO_EXP_TYPE_IMPLEMENTATION];
+		for (uint32_t i = 0; i < exptype_count; ++i, md_cursor_next(&exptype)) {
+			guint32 impl;
+			if (1 != md_get_column_value_as_constant (exptype, mdtExportedType_Implementation, 1, &impl))
+				g_assert_not_reached ();
+			
 			if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_EXP_TYPE)
 				/* Nested type */
 				continue;
-
-			name = mono_metadata_string_heap (image, exptype_cols [MONO_EXP_TYPE_NAME]);
-			nspace = mono_metadata_string_heap (image, exptype_cols [MONO_EXP_TYPE_NAMESPACE]);
-
-			nspace_index = exptype_cols [MONO_EXP_TYPE_NAMESPACE];
+			
+			if (1 != md_get_column_value_as_utf8 (exptype, mdtExportedType_TypeName, 1, &name))
+				g_assert_not_reached ();
+			
+			if (1 != md_get_column_value_as_utf8 (exptype, mdtExportedType_TypeNamespace, 1, &nspace))
+				g_assert_not_reached ();
+			
+			bool raw_values_to_read[mdtExportedType_ColCount] = { 0 };
+			raw_values_to_read[mdtExportedType_TypeNamespace] = true;
+			uint32_t raw_values[mdtExportedType_ColCount];
+			if (!md_get_column_values_raw (exptype, mdtExportedType_ColCount, raw_values_to_read, raw_values))
+				g_assert_not_reached ();
+			
+			nspace_index = raw_values_to_read[mdtExportedType_TypeNamespace];
 			nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
 			if (!nspace_table) {
 				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
@@ -4775,11 +4828,14 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 		return meth;
 	}
 	case MONO_TOKEN_MEMBER_REF: {
-		guint32 cols [MONO_MEMBERREF_SIZE];
-		const char *sig;
-		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], mono_metadata_token_index (token) - 1, cols, MONO_MEMBERREF_SIZE);
-		sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
-		mono_metadata_decode_blob_size (sig, &sig);
+		mdcursor_t c;
+		if (!md_token_to_cursor (image->metadata_handle, token, &c))
+			g_assert_not_reached ();
+		
+		uint8_t const* sig;
+		uint32_t sig_len;
+		if (1 != md_get_column_value_as_blob (c, mdtMemberRef_Signature, 1, &sig, &sig_len))
+			g_assert_not_reached ();
 		if (*sig == 0x6) { /* it's a field */
 			MonoClass *klass;
 			MonoClassField *field;
@@ -5831,15 +5887,28 @@ mono_find_method_in_metadata (MonoClass *klass, const char *name, int param_coun
 	int mcount = mono_class_get_method_count (klass);
 	for (i = 0; i < mcount; ++i) {
 		ERROR_DECL (error);
-		guint32 cols [MONO_METHOD_SIZE];
 		MonoMethod *method;
 		MonoMethodSignature *sig;
+		mdcursor_t c;
 
-		/* first_idx points into the methodptr table */
-		mono_metadata_decode_table_row (klass_image, MONO_TABLE_METHOD, first_idx + i, cols, MONO_METHOD_SIZE);
+		/* first_idx may point into the methodptr table */
+		if (!md_token_to_cursor (klass_image->metadata_handle, mono_metadata_make_token(MONO_TABLE_METHOD_POINTER, first_idx + i + 1), &c)
+			&& !md_token_to_cursor (klass_image->metadata_handle, mono_metadata_make_token(MONO_TABLE_METHOD, first_idx + i + 1), &c))
+			g_assert_not_reached ();
+		
+		if (!md_resolve_indirect_cursor (c, &c))
+			g_assert_not_reached();
 
-		if (!strcmp (mono_metadata_string_heap (klass_image, cols [MONO_METHOD_NAME]), name)) {
-			method = mono_get_method_checked (klass_image, MONO_TOKEN_METHOD_DEF | (first_idx + i + 1), klass, NULL, error);
+		const char* method_name;
+		if (1 != md_get_column_value_as_utf8 (c, mdtMethodDef_Name, 1, &method_name))
+			g_assert_not_reached ();
+
+		if (!strcmp (method_name, name)) {
+			uint32_t tok;
+			if (!md_cursor_to_token (c, &tok))
+				g_assert_not_reached ();
+
+			method = mono_get_method_checked (klass_image, tok, klass, NULL, error);
 			if (!method) {
 				mono_error_cleanup (error); /* FIXME don't swallow the error */
 				continue;
@@ -6575,8 +6644,6 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 			g_free (full_name);
 		}
 	} else {
-		const char *sig;
-		guint32 cols [MONO_FIELD_SIZE];
 		MonoGenericContainer *container = NULL;
 		int idx;
 
@@ -6597,15 +6664,24 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		}
 
 		/* first_field_idx and idx points into the fieldptr table */
-		mono_metadata_decode_table_row (image, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
+		mdcursor_t c;
+		if (!md_token_to_cursor (image->metadata_handle, mono_metadata_make_token(MONO_TABLE_FIELD_POINTER, idx + 1), &c)
+			&& !md_token_to_cursor (image->metadata_handle, mono_metadata_make_token(MONO_TABLE_FIELD, idx + 1), &c))
+			g_assert_not_reached ();
+		
+		uint8_t const* sig;
+		uint32_t sig_len;
+		if (1 != md_get_column_value_as_blob (c, mdtField_Signature, 1, &sig, &sig_len))
+			g_assert_not_reached ();
 
-		sig = mono_metadata_blob_heap (image, cols [MONO_FIELD_SIGNATURE]);
-
-		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
 
-		ftype = mono_metadata_parse_type_checked (image, container, cols [MONO_FIELD_FLAGS], FALSE, sig + 1, &sig, error);
+		uint32_t flags;
+		if (1 != md_get_column_value_as_constant (c, mdtField_Flags, 1, &flags))
+			g_assert_not_reached ();
+
+		ftype = mono_metadata_parse_type_checked (image, container, flags, FALSE, (const char*)(sig + 1), (const char**)&sig, error);
 		if (!ftype) {
 			char *full_name = mono_type_get_full_name (klass);
 			mono_class_set_type_load_failure (klass, "Could not load type of field '%s:%s' (%d) due to: %s", full_name, field->name, field_idx, mono_error_get_message (error));

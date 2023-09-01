@@ -39,6 +39,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <dnmd.h>
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {
@@ -2373,12 +2374,7 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
 MonoMethodSignature*
 mono_metadata_parse_signature_checked (MonoImage *image, guint32 token, MonoError *error)
 {
-
 	error_init (error);
-	MonoTableInfo *tables = image->tables;
-	guint32 idx = mono_metadata_token_index (token);
-	guint32 sig;
-	const char *ptr;
 
 	if (image_is_dynamic (image)) {
 		return (MonoMethodSignature *)mono_lookup_dynamic_token (image, token, NULL, error);
@@ -2386,12 +2382,16 @@ mono_metadata_parse_signature_checked (MonoImage *image, guint32 token, MonoErro
 
 	g_assert (mono_metadata_token_table(token) == MONO_TABLE_STANDALONESIG);
 
-	sig = mono_metadata_decode_row_col (&tables [MONO_TABLE_STANDALONESIG], idx - 1, 0);
-
-	ptr = mono_metadata_blob_heap (image, sig);
-	mono_metadata_decode_blob_size (ptr, &ptr);
-
-	return mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, error);
+	mdcursor_t c;
+	if (!md_token_to_cursor (image->metadata_handle, token, &c))
+		return NULL;
+	
+	uint8_t const* sig;
+	uint32_t sig_len;
+	if (1 != md_get_column_value_as_blob (c, mdtStandAloneSig_Signature, 1, &sig, &sig_len))
+		return NULL;
+	
+	return mono_metadata_parse_method_signature_full (image, NULL, 0, (const char*)sig, NULL, error);
 }
 
 /**
@@ -4355,11 +4355,10 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	guint16 fat_flags;
 	guint16 max_stack;
 	guint32 local_var_sig_tok, code_size, init_locals;
+	mdcursor_t local_var_sig_cursor;
 	const unsigned char *code;
 	MonoExceptionClause* clauses = NULL;
 	int num_clauses = 0;
-	MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
-	guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 
 	error_init (error);
 
@@ -4408,14 +4407,10 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		return NULL;
 	}
 
-	if (local_var_sig_tok) {
-		int idx = mono_metadata_token_index (local_var_sig_tok) - 1;
-		if (mono_metadata_table_bounds_check (m, MONO_TABLE_STANDALONESIG, idx + 1)) {
-			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%08x", idx);
-			goto fail;
-		}
-		mono_metadata_decode_row (t, idx, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
-
+	if (local_var_sig_tok
+		&& !md_token_to_cursor(m->metadata_handle, local_var_sig_tok, &local_var_sig_cursor)) {
+		mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%08x", local_var_sig_tok);
+		goto fail;
 	}
 	if (fat_flags & METHOD_HEADER_MORE_SECTS) {
 		clauses = parse_section_data (m, &num_clauses, (const unsigned char*)ptr, error);
@@ -4423,10 +4418,14 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	}
 	if (local_var_sig_tok) {
 		const char *locals_ptr;
+		guint32 sig_blob_len;
 		guint16 len=0, i;
 
-		locals_ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
-		mono_metadata_decode_blob_size (locals_ptr, &locals_ptr);
+		if (1 != md_get_column_value_as_blob (local_var_sig_cursor, mdtStandAloneSig_Signature, 1, (uint8_t const**)&locals_ptr, &sig_blob_len)) {
+			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%08x", local_var_sig_tok);
+			goto fail;
+		}
+
 		if (*locals_ptr != 0x07)
 			g_warning ("wrong signature for locals blob");
 		locals_ptr++;
@@ -6691,11 +6690,7 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 
 MonoType *
 mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error)
-
 {
-	guint32 idx = mono_metadata_token_index (type_spec);
-	MonoTableInfo *t;
-	guint32 cols [MONO_TYPESPEC_SIZE];
 	const char *ptr;
 	MonoType *type, *type2;
 
@@ -6705,12 +6700,17 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 	if (type)
 		return type;
 
-	t = &image->tables [MONO_TABLE_TYPESPEC];
-
-	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
-	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
-
-	mono_metadata_decode_value (ptr, &ptr);
+	mdcursor_t c;
+	if (!md_token_to_cursor (image->metadata_handle, type_spec, &c)) {
+		mono_error_set_bad_image (error, image, "Invalid TypeSpec token 0x%08x", type_spec);
+		return NULL;
+	}
+	
+	guint32 sig_blob_len;
+	if (1 != md_get_column_value_as_blob (c, mdtTypeSpec_Signature, 1, (uint8_t const**)&ptr, &sig_blob_len)) {
+		mono_error_set_bad_image (error, image, "Invalid TypeSpec token 0x%08x", type_spec);
+		return NULL;
+	}
 
 	type = mono_metadata_parse_type_checked (image, NULL, 0, TRUE, ptr, &ptr, error);
 	if (!type)
@@ -7080,23 +7080,24 @@ handle_enum:
 const char*
 mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 {
-	locator_t loc = {0,};
-	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_FIELDMARSHAL];
+	guint32 tok = mono_metadata_make_token((is_field ? MONO_TABLE_FIELD: MONO_TABLE_PARAM), idx);
+	mdcursor_t marshal_info;
+	uint32_t count;
+	if (!md_create_cursor (meta->metadata_handle, mdtid_FieldMarshal, &marshal_info, &count))
+		return NULL;
+	
+	if (!md_find_row_from_cursor (marshal_info, mdtFieldMarshal_Parent, tok, &marshal_info))
+		return NULL;
 
-	loc.t = tdef;
-	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
-	loc.idx = ((idx + 1) << MONO_HAS_FIELD_MARSHAL_BITS) | (is_field? MONO_HAS_FIELD_MARSHAL_FIELDSREF: MONO_HAS_FIELD_MARSHAL_PARAMDEF);
-
-	/* FIXME: Index translation */
-
-	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
-
-        if (G_UNLIKELY (meta->has_updates)) {
-                if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
-                        return NULL;
-        }
-
-	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
+	// TODO-DNMD: Hot Reload.
+	// If we go with DNMD's metadata update mechanism, then we don't need to do anything special here.
+	// If we keep Mono's layered mechanism and don't use DNMD's md_apply_delta API, then we'll need to do something here.
+	uint8_t const* blob;
+	uint32_t len;
+	if (1 != md_get_column_value_as_blob (marshal_info, mdtFieldMarshal_NativeType, 1, &blob, &len))
+		return NULL;
+	
+	return (const char*)blob;
 }
 
 MonoMethod*
