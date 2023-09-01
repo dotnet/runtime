@@ -211,6 +211,8 @@ elseif(AOT_COMPONENTS OR (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS))
 
 endif()
 
+target_link_libraries(${MONO_HOT_RELOAD_COMPONENT_NAME}-objects PRIVATE dnmd::pdb)
+
 # define a list of mono-components-stubs objects that will be linked into
 # the runtime to be used as fallbacks if the dynamic components are not
 # available or when only static component stubs are requested.

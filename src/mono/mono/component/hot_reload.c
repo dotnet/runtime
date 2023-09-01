@@ -34,6 +34,8 @@
 
 #include <mono/utils/mono-compiler.h>
 
+#include <dnmd.h>
+
 typedef struct _BaselineInfo BaselineInfo;
 typedef struct _DeltaInfo DeltaInfo;
 
@@ -1727,12 +1729,16 @@ hot_reload_get_method_debug_information (MonoPPDBFile *ppdb_file, int idx)
 		return NULL;
 
 	MonoImage *image_dppdb = ppdb_file->image;
-	MonoTableInfo *table_encmap = &image_dppdb->tables [MONO_TABLE_ENCMAP];
-	guint32 rows = table_info_get_rows (table_encmap);
-	for (guint32 i = 0; i < rows ; ++i) {
-		guint32 cols [MONO_ENCMAP_SIZE];
-		mono_metadata_decode_row (table_encmap, i, cols, MONO_ENCMAP_SIZE);
-		int map_token = cols [MONO_ENCMAP_TOKEN];
+	mdcursor_t c;
+	uint32_t count;
+	if (!md_create_cursor (image_dppdb->metadata_handle, mdtid_ENCMap, &c, &count))
+		return NULL;
+
+	for (uint32_t i = 0; i < count; ++i, md_cursor_next(&c)) {
+		guint32 map_token;
+		if (1 != md_get_column_value_as_constant(c, mdtENCMap_Token, 1, &map_token))
+			continue;
+
 		int token_table = mono_metadata_token_table (map_token);
 		if (token_table == MONO_TABLE_METHODBODY) {
 			guint32 token_index = mono_metadata_token_index (map_token);
@@ -1744,6 +1750,7 @@ hot_reload_get_method_debug_information (MonoPPDBFile *ppdb_file, int idx)
 			}
 		}
 	}
+
 	return NULL;
 }
 
@@ -2554,14 +2561,7 @@ dump_methodbody (MonoImage *image)
 {
 	if (!mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 		return;
-	MonoTableInfo *t = &image->tables [MONO_TABLE_METHODBODY];
-	uint32_t rows = table_info_get_rows (t);
-	for (uint32_t i = 0; i < rows; ++i)
-	{
-		uint32_t cols[MONO_METHODBODY_SIZE];
-		mono_metadata_decode_row (t, i, cols, MONO_METHODBODY_SIZE);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, " row[%02d] = doc: 0x%08x seq: 0x%08x", i + 1, cols [MONO_METHODBODY_DOCUMENT], cols [MONO_METHODBODY_SEQ_POINTS]);
-	}
+	md_dump_tables(image->metadata_handle, mdtid_MethodDebugInformation);
 }
 
 /**

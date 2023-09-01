@@ -721,7 +721,7 @@ lookup_custom_debug_information (MonoImage* image, guint32 token, guint8* guid, 
 	if (md_find_range_from_cursor (c, mdtCustomDebugInformation_Parent, token, &c, &count) != MD_RANGE_FOUND)
 		return NULL;
 	
-	for (uint32_t i = 0; i < count; i++) {
+	for (uint32_t i = 0; i < count; i++, md_cursor_next (&c)) {
 		mdguid_t debug_info_guid;
 		if (1 != md_get_column_value_as_guid (c, mdtCustomDebugInformation_Kind, 1, &debug_info_guid))
 			continue;
