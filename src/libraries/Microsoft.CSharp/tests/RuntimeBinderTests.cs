@@ -414,7 +414,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             {
                 var alc = new AssemblyLoadContext(nameof(UnloadabilityTest), true);
                 alc.LoadFromAssemblyPath(typeof(RuntimeBinderTests).Assembly.Location)
-                   .GetType(nameof(RuntimeBinderTests), true)!
+                   .GetType(typeof(RuntimeBinderTests).FullName, true)!
                    .GetMethod(nameof(TestMethod), BindingFlags.Static | BindingFlags.NonPublic)!
                    .Invoke(null, null);
                 return new WeakReference(alc, true);

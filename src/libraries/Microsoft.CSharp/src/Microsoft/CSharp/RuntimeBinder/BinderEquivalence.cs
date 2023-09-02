@@ -32,12 +32,12 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static readonly ConcurrentDictionary<ICSharpBinder, ICSharpBinder> binderEquivalenceCache =
             new ConcurrentDictionary<ICSharpBinder, ICSharpBinder>(concurrencyLevel: 2, capacity: 32, new BinderEqualityComparer());
 
-        internal static T TryGetExisting<T>(this T binder, Type context)
+        internal static T TryGetExisting<T>(this T binder, Type? context)
             where T : ICSharpBinder
         {
             // We cannot cache binders with collectible contexts
             // because the cache will root them and inhibit unloadability.
-            if (context.IsCollectible)
+            if (context is null || context.IsCollectible)
             {
                 return binder;
             }
