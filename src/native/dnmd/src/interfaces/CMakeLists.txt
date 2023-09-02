@@ -12,6 +12,7 @@ set(HEADERS
   ./controllingiunknown.hpp
   ./tearoffbase.hpp
   ./pal.hpp
+  ./dnmdowner.hpp
 )
 
 if(NOT MSVC)

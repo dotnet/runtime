@@ -17,9 +17,12 @@ public:
     ControllingIUnknown() = default;
 
     template<typename T, typename... Ts>
-    void CreateAndAddTearOff(Ts&&... args)
+    T* CreateAndAddTearOff(Ts&&... args)
     {
-        _tearOffs.push_back(std::make_unique<T>(this, std::forward<Ts>(args)...));
+        auto tear_off = std::make_unique<T>(this, std::forward<Ts>(args)...);
+        T* tear_off_ptr = tear_off.get();
+        _tearOffs.push_back(std::move(tear_off));
+        return tear_off_ptr;
     }
 
 public: // IUnknown

@@ -4,18 +4,16 @@
 #include "internal/dnmd_platform.hpp"
 #include "tearoffbase.hpp"
 #include "controllingiunknown.hpp"
+#include "dnmdowner.hpp"
 
 #include <external/cor.h>
 #include <external/corhdr.h>
 
 #include <cstdint>
-#include <atomic>
 
 class MetadataImportRO final : public TearOffBase<IMetaDataImport2, IMetaDataAssemblyImport>
 {
-    mdhandle_ptr _md_ptr;
-    malloc_ptr<void> _malloc_to_free;
-    dncp::cotaskmem_ptr<void> _cotaskmem_to_free;
+    mdhandle_view _md_ptr;
 
 protected:
     virtual bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
@@ -35,16 +33,14 @@ protected:
     }
 
 public:
-    MetadataImportRO(IUnknown* controllingUnknown, mdhandle_ptr md_ptr, malloc_ptr<void> mallocMem, dncp::cotaskmem_ptr<void> cotaskmemMem)
+    MetadataImportRO(IUnknown* controllingUnknown, mdhandle_view md_ptr)
         : TearOffBase(controllingUnknown)
-        , _md_ptr{ std::move(md_ptr) }
-        , _malloc_to_free{ std::move(mallocMem) }
-        , _cotaskmem_to_free{ std::move(cotaskmemMem) }
+        , _md_ptr{ md_ptr }
     { }
 
     virtual ~MetadataImportRO() = default;
 
-    mdhandle_t MetaData() const;
+    mdhandle_t MetaData();
 
 public: // IMetaDataImport
     STDMETHOD_(void, CloseEnum)(HCORENUM hEnum) override;
