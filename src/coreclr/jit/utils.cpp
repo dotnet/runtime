@@ -3855,7 +3855,6 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 {
     switch (toType)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -3879,7 +3878,6 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 {
     switch (toType)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -3994,7 +3992,6 @@ bool CastFromFloatOverflows(float fromValue, var_types toType)
     {
         case TYP_BYTE:
             return !(-129.0f < fromValue && fromValue < 128.0f);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return !(-1.0f < fromValue && fromValue < 256.0f);
         case TYP_SHORT:
@@ -4023,7 +4020,6 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
     {
         case TYP_BYTE:
             return !(-129.0 < fromValue && fromValue < 128.0);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return !(-1.0 < fromValue && fromValue < 256.0);
         case TYP_SHORT:

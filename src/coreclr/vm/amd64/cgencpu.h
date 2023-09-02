@@ -342,7 +342,7 @@ inline void SetSP(CONTEXT *context, TADDR rsp)
     context->Rsp = rsp;
 }
 
-#if defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 inline DWORD64 GetSSP(const CONTEXT * context)
 {
     CONTRACTL
@@ -353,13 +353,15 @@ inline DWORD64 GetSSP(const CONTEXT * context)
         PRECONDITION(CheckPointer(context));
     }
     CONTRACTL_END;
-
+#ifdef TARGET_WINDOWS
     XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(const_cast<PCONTEXT>(context), XSTATE_CET_U, NULL);
     if ((pCET != NULL) && (pCET->Ia32CetUMsr != 0))
     {
         return pCET->Ia32Pl3SspMsr;
     }
-
+#else
+    // TODO: implement when we enable Intel CET on Unix
+#endif
     return 0;
 }
 
@@ -374,14 +376,18 @@ inline void SetSSP(CONTEXT *context, DWORD64 ssp)
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WINDOWS
     XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(context, XSTATE_CET_U, NULL);
     if (pCET != NULL)
     {
         pCET->Ia32Pl3SspMsr = ssp;
         pCET->Ia32CetUMsr = 1;
     }
+#else
+    // TODO: implement when we enable Intel CET on Unix
+#endif
 }
-#endif // TARGET_WINDOWS && !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 #define SetFP(context, ebp)
 inline TADDR GetFP(const CONTEXT * context)

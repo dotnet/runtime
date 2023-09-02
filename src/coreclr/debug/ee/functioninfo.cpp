@@ -249,9 +249,9 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     m_nativeCodeVersion(nativeCodeVersion),
     m_pLoaderModule(nativeCodeVersion.GetMethodDesc()->GetLoaderModule()),
     m_jitComplete(false),
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     m_encBreakpointsApplied(false),
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
     m_methodInfo(minfo),
     m_addrOfCode(NULL),
     m_sizeOfCode(0), m_prevJitInfo(NULL), m_nextJitInfo(NULL),
