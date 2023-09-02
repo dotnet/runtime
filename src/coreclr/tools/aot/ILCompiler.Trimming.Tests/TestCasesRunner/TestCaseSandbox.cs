@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 
@@ -11,15 +12,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	partial class TestCaseSandbox
 	{
-
-		static readonly string _linkerAssemblyPath = typeof (Driver).Assembly.Location;
+		private const string _linkerAssemblyPath = "";//typeof (Trimmer).Assembly.Location;
 
 		private static partial NPath GetArtifactsTestPath ()
 		{
-			// Converts paths like /root-folder/linker/artifacts/bin/Mono.Linker.Tests/Debug/<tfm>/illink.dll
-			// to /root-folder/linker/artifacts/testcases/
-			string artifacts = Path.GetFullPath (Path.Combine (Path.GetDirectoryName (_linkerAssemblyPath), "..", "..", "..", ".."));
-			string tests = Path.Combine (artifacts, "testcases");
+			// Converts paths like /root-folder/runtime/artifacts/bin/Mono.Linker.Tests/x64/Debug/Mono.Linker.Tests.dll
+			// to /root-folder/runtime/artifacts/bin/ILLink.testcases/
+			string artifacts = (string) AppContext.GetData ("Mono.Linker.Tests.ArtifactsDir")!;
+			string tests = Path.Combine (artifacts, "ILLink.testcases");
 			return new NPath (tests);
 		}
 	}

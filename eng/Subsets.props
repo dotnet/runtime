@@ -352,7 +352,7 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Compiler.Tests\ILCompiler.Compiler.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Tests\ILCompiler.Tests.csproj"
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
   </ItemGroup>
 

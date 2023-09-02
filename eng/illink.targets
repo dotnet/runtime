@@ -6,12 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- SkipGetTargetFrameworkProperties builds ILLink.Tasks without any TargetFramework settings
-         based on the referencing project, preventing errors when illink.targets is imported by a
-         project with TargetFrameworks that are incompatible with those of ILLink.Tasks. -->
+    <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
+                      Private="false"
                       SetConfiguration="Configuration=$(ToolsConfiguration)">
         <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>

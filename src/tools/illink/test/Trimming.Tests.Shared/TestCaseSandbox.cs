@@ -10,20 +10,12 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestCaseSandbox
+	public partial class TestCaseSandbox
 	{
 		protected readonly TestCase _testCase;
 		protected readonly NPath _directory;
-		private const string _linkerAssemblyPath = "";//typeof (Trimmer).Assembly.Location;
 
-		private static NPath GetArtifactsTestPath ()
-		{
-			// Converts paths like /root-folder/runtime/artifacts/bin/Mono.Linker.Tests/x64/Debug/Mono.Linker.Tests.dll
-			// to /root-folder/runtime/artifacts/bin/ILLink.testcases/
-			string artifacts = (string) AppContext.GetData ("Mono.Linker.Tests.ArtifactsDir")!;
-			string tests = Path.Combine (artifacts, "ILLink.testcases");
-			return new NPath (tests);
-		}
+		private static partial NPath GetArtifactsTestPath ();
 
 		public TestCaseSandbox (TestCase testCase)
 			: this (testCase, GetArtifactsTestPath (), Path.GetFileNameWithoutExtension (_linkerAssemblyPath))
@@ -65,6 +57,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public NPath ExpectationsDirectory { get; }
 
 		public NPath ResourcesDirectory { get; }
+
 
 		public IEnumerable<NPath> SourceFiles {
 			get { return _directory.Files ("*.cs"); }
@@ -158,6 +151,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var res in metadataProvider.GetLinkAttributesFiles ()) {
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
+
+			foreach (var delete in metadataProvider.GetDeleteBefore ())
+				InputDirectory.Combine (delete).FileMustExist ().Delete ();
 		}
 
 		private static NPath GetExpectationsAssemblyPath ()
