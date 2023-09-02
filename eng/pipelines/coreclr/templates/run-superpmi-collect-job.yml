@@ -100,9 +100,12 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
-    - ${{ if eq(parameters.collectionName, 'smoke_tests') }}:
+    - ${{ if and(eq(parameters.collectionName, 'smoke_tests'), eq(parameters.osGroup, 'windows')) }}:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\obj\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Managed\nativeaot\SmokeTests'
+    - ${{ if and(eq(parameters.collectionName, 'smoke_tests'), ne(parameters.osGroup, 'windows')) }}:
+      - name: InputDirectory
+        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}/Managed/nativeaot/SmokeTests'
 
     workspace:
       clean: all

@@ -1159,19 +1159,22 @@ class SuperPMICollect:
                     # The corresponding input assemblies are in the folder above 'native', ex: 'ComWrappers/'
                     input_filepath = os.path.abspath(os.path.join(original_rsp_filepath, "..", "..", input_filename))
 
-                    # Blow away references, input assembly and directpinvokelist as we are going to use new ones.
+                    # Blow away references, output, input assembly and directpinvokelist as we are going to use new ones.
                     rsp_file = open(rsp_filepath, "w")
-                    def filter_reference(line):
+                    def filter_rsp_argument(line):
                         if line.startswith("-r:") or line.startswith("-o:") or not line.startswith("-") or line.startswith("--directpinvokelist:"):
                             return False
                         else:
                             return True
-                    rsp_contents = list(filter(filter_reference, rsp_contents))
+                    rsp_contents = list(filter(filter_rsp_argument, rsp_contents))
                     rsp_file.writelines(rsp_contents)
                     rsp_file.close()
 
                     nativeaot_output_filename = os.path.splitext(input_filename)[0]
-                    root_nativeaot_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename) + ".out.obj" # TODO: For non-windows, '.obj' is wrong.
+                    if self.coreclr_args.host_os.lower() == "windows":
+                        root_nativeaot_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename) + ".out.obj"
+                    else:
+                        root_nativeaot_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename) + ".out.a"
                     nativeaot_output_assembly_filename = os.path.join(self.temp_location, root_nativeaot_output_filename)
                     try:
                         if os.path.exists(nativeaot_output_assembly_filename):
