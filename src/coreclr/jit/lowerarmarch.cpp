@@ -1188,6 +1188,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
     assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
+           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalar) ||
+           (node->GetHWIntrinsicId() == NI_Vector128_CreateScalar) ||
            (node->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe) ||
            (node->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe) ||
            (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector64) ||
