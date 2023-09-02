@@ -165,13 +165,16 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="key">The key of the entry to look for or create.</param>
         /// <param name="factory">The factory that creates the value associated with this key if the key does not exist in the cache.</param>
         /// <returns>The value associated with this key.</returns>
-        public static TItem? GetOrCreate<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, TItem> factory)
+        public static TItem? GetOrCreate<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, TItem> factory, MemoryCacheEntryOptions? options)
         {
             if (!cache.TryGetValue(key, out object? result))
             {
                 using ICacheEntry entry = cache.CreateEntry(key);
 
                 result = factory(entry);
+                if (options != null) {
+                    entry.SetOptions(options);
+                }
                 entry.Value = result;
             }
 
