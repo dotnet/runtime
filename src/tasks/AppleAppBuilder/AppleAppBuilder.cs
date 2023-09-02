@@ -204,7 +204,7 @@ public class AppleAppBuilderTask : Task
             if (!string.IsNullOrEmpty(MonoRuntimeHeaders))
                 throw new ArgumentException($"Property \"{nameof(MonoRuntimeHeaders)}\" is not supported with {Runtime} runtime and will be ignored.");
 
-            if (!string.IsNullOrEmpty(MainLibraryFileName) && Runtime == "NativeAOT")
+            if (!string.IsNullOrEmpty(MainLibraryFileName) && targetRuntime == TargetRuntime.NativeAOT)
                 throw new ArgumentException($"Property \"{nameof(MainLibraryFileName)}\" is not supported with {Runtime} runtime and will be ignored.");
 
             if (ForceInterpreter)
@@ -213,7 +213,7 @@ public class AppleAppBuilderTask : Task
             if (ForceAOT)
                 throw new ArgumentException($"Property \"{nameof(ForceAOT)}\" is not supported with {Runtime} runtime and will be ignored.");
 
-            if (RuntimeComponents.Length > 0 && Runtime == "NativeAOT")
+            if (RuntimeComponents.Length > 0 && targetRuntime == TargetRuntime.NativeAOT)
                 throw new ArgumentException($"Item \"{nameof(RuntimeComponents)}\" is not supported with NativeAOT runtime and will be ignored.");
 
             if (!string.IsNullOrEmpty(DiagnosticPorts))
