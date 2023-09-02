@@ -96,7 +96,7 @@ class OffsetsTool:
 				require_emscipten_path (args)
 				clang_path = os.path.dirname(args.libclang)
 				self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten", args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic",
-									 clang_path + "/clang/16/include"]
+									 clang_path + "../lib/clang/16/include"]
 				self.target = Target ("TARGET_WASM", None, [])
 				self.target_args += ["-target", args.abi]
 
