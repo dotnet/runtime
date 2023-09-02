@@ -29,31 +29,12 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #include<stdatomic.h>
 
-/* we can't have nice things.  InterlockedCompareExchange and __sync_val_compare_and_swap both
- * return the previous value of dest.  On the other hand C11 atomics return a boolean success/failure value.
- *
- * Emulate the value-returning atomic in terms of the bool one.
- *
- * 
- */
-#define mono_atomic_cas_kernel(VALTYPE,dest,exch,comp) do {	\
-	while (1) {							\
-		/* note arg order! */					\
-		if (atomic_compare_exchange_weak (dest,comp,exch))	\
-			return *comp;					\
-		VALTYPE prev = atomic_load (dest);			\
-		atomic_thread_fence (memory_order_seq_cst);		\
-		if (prev != *comp)					\
-			return prev;					\
-	};								\
-	} while (0)
-	
-
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
 	g_static_assert (sizeof(atomic_int) == sizeof(*dest) && ATOMIC_INT_LOCK_FREE == 2);
-	mono_atomic_cas_kernel (gint32,(atomic_int*)dest, exch, &comp);
+	(void)atomic_compare_exchange_strong ((atomic_int*)dest, &comp, exch);
+	return comp;
 }
 
 static inline gint64
@@ -61,10 +42,12 @@ mono_atomic_cas_i64 (volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 #if SIZEOF_LONG == 8
 	g_static_assert (sizeof (atomic_long) == sizeof (*dest) && ATOMIC_LONG_LOCK_FREE == 2);
-	mono_atomic_cas_kernel (gint64, (atomic_long*)dest, exch, (long*)&comp);
+	(void)atomic_compare_exchange_strong ((atomic_long*)dest, (long*)&comp, exch);
+	return comp;
 #elif SIZEOF_LONG_LONG == 8
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dest) && ATOMIC_LLONG_LOCK_FREE == 2);
-	mono_atomic_cas_kernel (gint64, (atomic_llong*)dest, exch, (long long *)&comp);
+	(void)atomic_compare_exchange_strong ((atomic_llong*)dest, (long long*)&comp, exch);
+	return comp;
 #else
 #error gint64 not same size atomic_llong or atomic_long, define MONO_IGNORE_STDATOMIC
 #endif
@@ -74,7 +57,8 @@ static inline gpointer
 mono_atomic_cas_ptr (volatile gpointer *dest, gpointer exch, gpointer comp)
 {
 	g_static_assert(ATOMIC_POINTER_LOCK_FREE == 2);
-	mono_atomic_cas_kernel (gpointer, (_Atomic gpointer *)dest, exch, &comp);
+	(void)atomic_compare_exchange_strong ((_Atomic gpointer *)dest, &comp, exch);
+	return comp;
 }
 
 static inline gint32
@@ -88,7 +72,6 @@ mono_atomic_add_i32 (volatile gint32 *dest, gint32 add)
 	// mono_atomic_add_ is supposed to return the value that is stored.
 	// the atomic_add intrinsic returns the previous value instead.
 	// so we return prev+add which should be the new value
-	// FIXME: is this okay?
 	return mono_atomic_fetch_add_i32 (dest, add) + add;
 }
 
