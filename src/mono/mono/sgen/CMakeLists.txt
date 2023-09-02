@@ -69,7 +69,7 @@ if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
 endif()
 
 add_library(sgen_objects ${sgen_sources})
-target_link_libraries(sgen_objects PRIVATE monoapi eglib_api utils_objects  dnmd::pdb)
+target_link_libraries(sgen_objects PRIVATE monoapi eglib_api utils_objects dnmd::pdb)
 target_compile_definitions(sgen_objects PRIVATE -DHAVE_SGEN_GC)
 if(NOT HOST_WIN32)
     target_compile_definitions(sgen_objects PRIVATE -DMONO_DLL_EXPORT)

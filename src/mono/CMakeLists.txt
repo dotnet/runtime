@@ -948,6 +948,19 @@ endif()
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
 
+include(FetchContent)
+
+FetchContent_Declare(
+  dnmd
+  GIT_REPOSITORY https://github.com/AaronRobinsonMSFT/DNMD
+  GIT_TAG cda810e54a4209f27773d28dfa194f89f0a56a1b 
+)
+
+FetchContent_MakeAvailable(dnmd)
+# The install interface with CMake modules sets up the include directories nicely for find_package usage
+# which vcpkg will recognize. However, FetchContent uses build includes, so we need to do this until I fix DNMD to expose the include directory through the build interface.
+include_directories(${dnmd_SOURCE_DIR}/src/inc)
+
 if(NOT DISABLE_LIBS)
   set(INSTALL_MONO_API 1)
 endif()
