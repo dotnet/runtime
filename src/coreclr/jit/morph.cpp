@@ -10971,7 +10971,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (hwOper == GT_NOT)
                 {
                     lhs = op2;
-                    rhs = op1;
+                    rhs = hw->Op(1);
                 }
                 else if (hwOper == GT_XOR)
                 {
@@ -11000,7 +11000,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (hwOper == GT_NOT)
                 {
                     lhs = op1;
-                    rhs = op2;
+                    rhs = hw->Op(1);
                 }
                 else if (hwOper == GT_XOR)
                 {
