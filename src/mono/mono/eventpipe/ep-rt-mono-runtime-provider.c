@@ -2372,7 +2372,7 @@ write_event_exception_thrown (MonoObject *obj)
 			if (exception->inner_ex)
 				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
 			if (exception->message)
-				exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
+				exception_message = ep_rt_utf16_to_utf8_string_n (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
 			hresult = exception->hresult;
 		}
 

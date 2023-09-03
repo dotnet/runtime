@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -101,13 +100,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                string objParamExpr = $"object? {Identifier.obj}";
+                string instanceParamExpr = $"object? {Identifier.instance}";
 
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind_instance))
                 {
                     EmitMethods(
                         MethodsToGen_ConfigurationBinder.Bind_instance,
-                        additionalParams: objParamExpr,
+                        additionalParams: instanceParamExpr,
                         configExpression: Identifier.configuration,
                         configureOptions: false);
                 }
@@ -116,7 +115,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitMethods(
                         MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions,
-                        additionalParams: $"{objParamExpr}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}",
+                        additionalParams: $"{instanceParamExpr}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}",
                         configExpression: Identifier.configuration,
                         configureOptions: true);
                 }
@@ -125,7 +124,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitMethods(
                         MethodsToGen_ConfigurationBinder.Bind_key_instance,
-                        additionalParams: $"string {Identifier.key}, {objParamExpr}",
+                        additionalParams: $"string {Identifier.key}, {instanceParamExpr}",
                         configExpression: $"{Expression.configurationGetSection}({Identifier.key})",
                         configureOptions: false);
                 }
@@ -141,17 +140,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         EmitInterceptsLocationAnnotations(interceptorInfoList);
                         EmitStartBlock($"public static void {Identifier.Bind}_{type.DisplayString.ToIdentifierSubstring()}(this {Identifier.IConfiguration} {Identifier.configuration}, {additionalParams})");
 
-                        if (!EmitInitException(type) && type.NeedsMemberBinding)
+                        if (type.NeedsMemberBinding)
                         {
                             string binderOptionsArg = configureOptions ? $"{Identifier.GetBinderOptions}({Identifier.configureOptions})" : $"{Identifier.binderOptions}: null";
 
                             EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
                             if (!type.IsValueType)
                             {
-                                EmitCheckForNullArgument_WithBlankLine(Identifier.obj);
+                                EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
                             }
                             _writer.WriteLine($$"""
-                                var {{Identifier.typedObj}} = ({{type.EffectiveType.DisplayString}}){{Identifier.obj}};
+                                var {{Identifier.typedObj}} = ({{type.EffectiveType.DisplayString}}){{Identifier.instance}};
                                 {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, {{binderOptionsArg}});
                                 """);
                         }

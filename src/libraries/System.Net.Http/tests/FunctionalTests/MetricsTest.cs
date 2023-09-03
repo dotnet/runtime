@@ -292,17 +292,8 @@ namespace System.Net.Http.Functional.Tests
                 GetUnderlyingSocketsHttpHandler(Handler).ConnectCallback = async (ctx, cancellationToken) =>
                 {
                     connectionStarted.SetResult();
-                    Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-                    try
-                    {
-                        await socket.ConnectAsync(ctx.DnsEndPoint, cancellationToken);
-                        return new NetworkStream(socket, ownsSocket: true);
-                    }
-                    catch
-                    {
-                        socket.Dispose();
-                        throw;
-                    }
+
+                    return await DefaultConnectCallback(ctx.DnsEndPoint, cancellationToken);
                 };
 
                 // Enable recording request-duration to test the path with metrics enabled.

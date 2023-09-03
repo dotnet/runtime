@@ -1310,8 +1310,8 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
         repro_files = []
         for item in mc_files:
             repro_files.append(os.path.join(repro_location, os.path.basename(item)))
-            logging.debug("Copying %s -> %s", item, repro_location)
-            shutil.copy2(item, repro_location)
+            logging.debug("Moving %s -> %s", item, repro_location)
+            shutil.move(item, repro_location)
 
         logging.info("")
         logging.info("Repro {} .mc file(s) created for failures:".format(len(repro_files)))
@@ -1376,7 +1376,7 @@ class SuperPMIReplay:
 
             common_flags = [
                 "-v", "ewi",  # display errors, warnings, missing, jit info
-                "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
+                "-r", os.path.join(temp_location, "repro") # Repro name prefix, create .mc repro files
             ]
 
             if self.coreclr_args.altjit:
@@ -1724,7 +1724,7 @@ class SuperPMIReplayAsmDiffs:
                     "-v", "ewi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
                     "-diffsInfo", diffs_info,  # Information about diffs
-                    "-r", os.path.join(temp_location, "repro"),  # Repro name, create .mc repro files
+                    "-r", os.path.join(temp_location, "repro"),  # Repro name prefix, create .mc repro files
                     "-baseMetricsSummary", base_metrics_summary_file, # Create summary of metrics we can use to get total code size impact
                     "-diffMetricsSummary", diff_metrics_summary_file,
                 ]

@@ -11,7 +11,7 @@
 
 #define PRECODE_ALIGNMENT sizeof(void*)
 
-#if defined(HOST_AMD64)
+#if defined(TARGET_AMD64)
 
 #define OFFSETOF_PRECODE_TYPE              0
 #define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5
@@ -19,7 +19,7 @@
 
 #define SIZEOF_PRECODE_BASE               16
 
-#elif defined(HOST_X86)
+#elif defined(TARGET_X86)
 
 EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
@@ -29,27 +29,27 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #define SIZEOF_PRECODE_BASE                8
 
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
 
-#elif defined(HOST_ARM)
+#elif defined(TARGET_ARM)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       3
 
-#elif defined(HOST_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
 
-#elif defined(HOST_RISCV64)
+#elif defined(TARGET_RISCV64)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
 
-#endif // HOST_AMD64
+#endif // TARGET_AMD64
 
 #ifndef DACCESS_COMPILE
 // Given an address in a slot, figure out if the prestub will be called
@@ -61,14 +61,14 @@ BOOL DoesSlotCallPrestub(PCODE pCode);
 // Invalid precode type
 struct InvalidPrecode
 {
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
     // int3
     static const int Type = 0xCC;
-#elif defined(HOST_ARM64) || defined(HOST_ARM)
+#elif defined(TARGET_ARM64) || defined(TARGET_ARM)
     static const int Type = 0;
-#elif defined(HOST_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
     static const int Type = 0xff;
-#elif defined(HOST_RISCV64)
+#elif defined(TARGET_RISCV64)
     static const int Type = 0xff;
 #endif
 };
@@ -90,25 +90,25 @@ extern "C" void StubPrecodeCode_End();
 // Regular precode
 struct StubPrecode
 {
-#if defined(HOST_AMD64)
+#if defined(TARGET_AMD64)
     static const BYTE Type = 0x4C;
     static const SIZE_T CodeSize = 24;
-#elif defined(HOST_X86)
+#elif defined(TARGET_X86)
     static const BYTE Type = 0xA1;
     static const SIZE_T CodeSize = 24;
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
     static const int Type = 0x4A;
     static const SIZE_T CodeSize = 24;
-#elif defined(HOST_ARM)
+#elif defined(TARGET_ARM)
     static const int Type = 0xCF;
     static const SIZE_T CodeSize = 12;
-#elif defined(HOST_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
     static const int Type = 0x4;
     static const SIZE_T CodeSize = 24;
-#elif defined(HOST_RISCV64)
+#elif defined(TARGET_RISCV64)
     static const int Type = 0x17;
     static const SIZE_T CodeSize = 24;
-#endif // HOST_AMD64
+#endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
 
@@ -224,31 +224,31 @@ extern "C" void FixupPrecodeCode_End();
 // The fixup precode is simple jump once patched. It does not have the two instruction overhead of regular precode.
 struct FixupPrecode
 {
-#if defined(HOST_AMD64)
+#if defined(TARGET_AMD64)
     static const int Type = 0xFF;
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 6;
-#elif defined(HOST_X86)
+#elif defined(TARGET_X86)
     static const int Type = 0xFF;
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 6;
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
     static const int Type = 0x0B;
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 8;
-#elif defined(HOST_ARM)
+#elif defined(TARGET_ARM)
     static const int Type = 0xFF;
     static const SIZE_T CodeSize = 12;
     static const int FixupCodeOffset = 4 + THUMB_CODE;
-#elif defined(HOST_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
     static const int Type = 0x3;
     static const SIZE_T CodeSize = 32;
     static const int FixupCodeOffset = 12;
-#elif defined(HOST_RISCV64)
+#elif defined(TARGET_RISCV64)
     static const int Type = 0x97;
     static const SIZE_T CodeSize = 32;
     static const int FixupCodeOffset = 10;
-#endif // HOST_AMD64
+#endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
 

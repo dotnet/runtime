@@ -101,8 +101,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                     else if (!EmitInitException(effectiveType))
                     {
-                        EmitBindCoreCall(effectiveType, Identifier.obj, Identifier.configuration, InitializationKind.Declaration);
-                        _writer.WriteLine($"return {Identifier.obj};");
+                        EmitBindCoreCall(effectiveType, Identifier.instance, Identifier.configuration, InitializationKind.Declaration);
+                        _writer.WriteLine($"return {Identifier.instance};");
                     }
 
                     EmitEndBlock();
@@ -168,9 +168,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 EmitBlankLineIfRequired();
-                EmitStartBlock($"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}({Identifier.IConfiguration} {Identifier.configuration}, object {Identifier.obj}, Type {Identifier.type}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions})");
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
-                EmitCheckForNullArgument_WithBlankLine(Identifier.obj);
+                EmitStartBlock($"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}({Identifier.IConfiguration} {Identifier.configuration}, object {Identifier.instance}, Type {Identifier.type}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions})");
+                EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
                 EmitIConfigurationHasValueOrChildrenCheck(voidReturn: true);
                 _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureOptions});");
                 _writer.WriteLine();
@@ -184,7 +183,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.DisplayString}))");
                     if (!EmitInitException(effectiveType))
                     {
-                        _writer.WriteLine($"var {Identifier.temp} = ({effectiveType.DisplayString}){Identifier.obj};");
+                        _writer.WriteLine($"var {Identifier.temp} = ({effectiveType.DisplayString}){Identifier.instance};");
                         EmitBindCoreCall(type, Identifier.temp, Identifier.configuration, InitializationKind.None);
                         _writer.WriteLine($"return;");
                     }
@@ -213,9 +212,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreMethod(TypeSpec type)
             {
-                Debug.Assert(type.CanInitialize);
-
-                string objParameterExpression = $"ref {type.DisplayString} {Identifier.obj}";
+                string objParameterExpression = $"ref {type.DisplayString} {Identifier.instance}";
                 EmitStartBlock(@$"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCore)}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
 
                 TypeSpec effectiveType = type.EffectiveType;
@@ -618,15 +615,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 // Resize array and add binded elements.
                 _writer.WriteLine($$"""
-                    {{Identifier.Int32}} {{Identifier.originalCount}} = {{Identifier.obj}}.{{Identifier.Length}};
-                    {{Identifier.Array}}.{{Identifier.Resize}}(ref {{Identifier.obj}}, {{Identifier.originalCount}} + {{tempIdentifier}}.{{Identifier.Count}});
-                    {{tempIdentifier}}.{{Identifier.CopyTo}}({{Identifier.obj}}, {{Identifier.originalCount}});
+                    {{Identifier.Int32}} {{Identifier.originalCount}} = {{Identifier.instance}}.{{Identifier.Length}};
+                    {{Identifier.Array}}.{{Identifier.Resize}}(ref {{Identifier.instance}}, {{Identifier.originalCount}} + {{tempIdentifier}}.{{Identifier.Count}});
+                    {{tempIdentifier}}.{{Identifier.CopyTo}}({{Identifier.instance}}, {{Identifier.originalCount}});
                     """);
             }
 
             private void EmitPopulationImplForEnumerableWithAdd(EnumerableSpec type)
             {
-                EmitCollectionCastIfRequired(type, out string objIdentifier);
+                EmitCollectionCastIfRequired(type, out string instanceIdentifier);
 
                 Emit_Foreach_Section_In_ConfigChildren_StartBlock();
 
@@ -638,14 +635,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         stringParsableType,
                         Expression.sectionValue,
                         Expression.sectionPath,
-                        (parsedValueExpr) => _writer.WriteLine($"{objIdentifier}.{Identifier.Add}({parsedValueExpr});"),
+                        (parsedValueExpr) => _writer.WriteLine($"{instanceIdentifier}.{Identifier.Add}({parsedValueExpr});"),
                         checkForNullSectionValue: true,
                         useIncrementalStringValueIdentifier: false);
                 }
                 else
                 {
                     EmitBindCoreCall(elementType, Identifier.value, Identifier.section, InitializationKind.Declaration);
-                    _writer.WriteLine($"{objIdentifier}.{Identifier.Add}({Identifier.value});");
+                    _writer.WriteLine($"{instanceIdentifier}.{Identifier.Add}({Identifier.value});");
                 }
 
                 EmitEndBlock();
@@ -653,7 +650,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreImplForDictionary(DictionarySpec type)
             {
-                EmitCollectionCastIfRequired(type, out string objIdentifier);
+                EmitCollectionCastIfRequired(type, out string instanceIdentifier);
 
                 Emit_Foreach_Section_In_ConfigChildren_StartBlock();
 
@@ -677,7 +674,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             stringParsableElementType,
                             Expression.sectionValue,
                             Expression.sectionPath,
-                            writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{objIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"),
+                            writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"),
                             checkForNullSectionValue: true,
                             useIncrementalStringValueIdentifier: false);
                     }
@@ -696,7 +693,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         string expressionForElementIsNotNull = $"{Identifier.element} is not null";
                         string elementTypeDisplayString = elementType.DisplayString + (elementType.IsValueType ? string.Empty : "?");
 
-                        string expressionForElementExists = $"{objIdentifier}.{Identifier.TryGetValue}({parsedKeyExpr}, out {elementTypeDisplayString} {Identifier.element})";
+                        string expressionForElementExists = $"{instanceIdentifier}.{Identifier.TryGetValue}({parsedKeyExpr}, out {elementTypeDisplayString} {Identifier.element})";
                         string conditionToUseExistingElement = expressionForElementExists;
 
                         // If key already exists, bind to existing element instance if not null (for ref types).
@@ -727,7 +724,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
 
                         EmitBindCoreCall(elementType, Identifier.element, Identifier.section, InitializationKind.None);
-                        _writer.WriteLine($"{objIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
+                        _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
                     }
                 }
 
@@ -747,7 +744,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     bool noSetter_And_IsReadonly = !property.CanSet && property.Type is CollectionSpec { InitializationStrategy: InitializationStrategy.ParameterizedConstructor };
                     if (property.ShouldBind() && !noSetter_And_IsReadonly)
                     {
-                        string containingTypeRef = property.IsStatic ? type.DisplayString : Identifier.obj;
+                        string containingTypeRef = property.IsStatic ? type.DisplayString : Identifier.instance;
                         EmitBindImplForMember(
                             property,
                             memberAccessExpr: $"{containingTypeRef}.{property.Name}",
@@ -883,14 +880,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     writeOnSuccess);
             }
 
-            private void EmitCollectionCastIfRequired(CollectionSpec type, out string objIdentifier)
+            private void EmitCollectionCastIfRequired(CollectionSpec type, out string instanceIdentifier)
             {
-                objIdentifier = Identifier.obj;
+                instanceIdentifier = Identifier.instance;
                 if (type.PopulationStrategy is CollectionPopulationStrategy.Cast_Then_Add)
                 {
-                    objIdentifier = Identifier.temp;
+                    instanceIdentifier = Identifier.temp;
                     _writer.WriteLine($$"""
-                        if ({{Identifier.obj}} is not {{type.PopulationCastType!.DisplayString}} {{objIdentifier}})
+                        if ({{Identifier.instance}} is not {{type.PopulationCastType!.DisplayString}} {{instanceIdentifier}})
                         {
                             return;
                         }

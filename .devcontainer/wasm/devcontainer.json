@@ -1,6 +1,6 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "C# (.NET)",
+	"name": "WASM development (prebuilt)",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {

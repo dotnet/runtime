@@ -285,7 +285,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     mono_set_crash_chaining (true);
 
     if (wait_for_debugger) {
-        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
+        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556" };
         mono_jit_parse_options (1, options);
     }
 

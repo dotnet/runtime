@@ -1,6 +1,26 @@
 <Project>
 
   <PropertyGroup>
+    <_ILLinkTasksSourceDir>$(ToolsProjectRoot)illink\src\ILLink.Tasks\</_ILLinkTasksSourceDir>
+    <ILLinkAnalyzersPropsPath>$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\build\Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
+    <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      Private="false"
+                      SetConfiguration="Configuration=$(ToolsConfiguration)">
+        <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
+        <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
+        <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Import Project="$(_ILLinkTasksSourceDir)build\Microsoft.NET.ILLink.Tasks.props" />
+
+  <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
     <!-- Don't use SDK's trimming functionality.
          Once we have an SDK with
@@ -10,6 +30,7 @@
          we might be able to use built-in functionality instead of a packagereference.
          -->
     <_RequiresILLinkPack>false</_RequiresILLinkPack>
+    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
 
@@ -42,14 +63,6 @@
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
     <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
   </PropertyGroup>
-
-  <!-- Use ILLink.Tasks version matching the SDK used to build. See comment about _RequiresILLinkPack. -->
-  <PropertyGroup>
-    <SuppressILLinkExplicitPackageReferenceWarning>true</SuppressILLinkExplicitPackageReferenceWarning>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="$(BundledNETCoreAppPackageVersion)" PrivateAssets="all" />
-  </ItemGroup>
 
   <ItemGroup>
     <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsXmlFile)"

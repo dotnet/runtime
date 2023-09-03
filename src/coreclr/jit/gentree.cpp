@@ -7696,7 +7696,6 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
             READ_VALUE(int8_t);
             return gtNewIconNode(val);
         }
-        case TYP_BOOL:
         case TYP_UBYTE:
         {
             READ_VALUE(uint8_t);
@@ -7790,7 +7789,6 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
 {
     switch (type)
     {
-        case TYP_BOOL:
         case TYP_UBYTE:
             return gtNewIconNode(pattern);
         case TYP_BYTE:
@@ -14279,7 +14277,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
 
     static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     GenTree* srcAddr      = call->gtArgs.GetArgByIndex(1)->GetNode();
-    GenTree* hasValueNode = gtNewIndir(TYP_BOOL, srcAddr);
+    GenTree* hasValueNode = gtNewIndir(TYP_UBYTE, srcAddr);
 
     if (op == op1)
     {
@@ -14849,7 +14847,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 i1 = INT32(UINT16(i1));
                                 goto CNS_INT;
 
-                            case TYP_BOOL:
                             case TYP_UBYTE:
                                 i1 = INT32(UINT8(i1));
                                 goto CNS_INT;
@@ -21333,7 +21330,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(type == TYP_BOOL);
+    assert(type == TYP_UBYTE);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
@@ -21472,7 +21469,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(type == TYP_BOOL);
+    assert(type == TYP_UBYTE);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
