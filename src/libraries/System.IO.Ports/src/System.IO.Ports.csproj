@@ -38,9 +38,6 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Compile Include="System\IO\Ports\SerialPort.cs" />
     <Compile Include="System\IO\Ports\SerialStream.cs" />
     <Compile Include="System\IO\Ports\StopBits.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
@@ -143,7 +140,7 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs" Link="Common\System\Threading\Tasks\TaskToAsyncResult.cs" />
   </ItemGroup>
 

@@ -394,7 +394,7 @@ namespace System.ComponentModel.DataAnnotations
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, bool validateAllProperties) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static void ValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }
-        public static void ValidateValue(object value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { }
+        public static void ValidateValue(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { }
     }
 }
 namespace System.ComponentModel.DataAnnotations.Schema

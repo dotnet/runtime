@@ -22,6 +22,7 @@ parameters:
   helixProjectArguments: ''
   runInUnloadableContext: ''
   tieringTest: ''
+  hotColdSplitting: ''
   nativeAotTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
@@ -55,6 +56,7 @@ steps:
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _TieringTest: ${{ parameters.tieringTest }}
+      _HotColdSplitting: ${{ parameters.hotColdSplitting }}
       _NativeAotTest: ${{ parameters.nativeAotTest }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
