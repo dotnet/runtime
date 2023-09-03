@@ -1077,12 +1077,6 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalGetHashCode (Mo
 	return mono_object_hash_internal (MONO_HANDLE_RAW (obj));
 }
 
-int
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalTryGetHashCode (MonoObjectHandle obj, MonoError* error)
-{
-	return mono_object_try_get_hash_internal (MONO_HANDLE_RAW (obj));
-}
-
 MonoObjectHandle
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue (MonoObjectHandle obj, MonoError *error)
 {

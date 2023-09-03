@@ -2316,7 +2316,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			return TRUE;
 		} else if (!strcmp (tm, "GetHashCode") || !strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
-		} else if (!strcmp (tm, "TryGetHashCode") || !strcmp (tm, "InternalTryGetHashCode")) {
+		} else if (!strcmp (tm, "TryGetHashCode")) {
 			*op = MINT_INTRINS_TRY_GET_HASHCODE;
 		} else if (!strcmp (tm, "GetRawData")) {
 			interp_add_ins (td, MINT_LDFLDA_UNSAFE);
