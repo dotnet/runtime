@@ -119,6 +119,15 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\ApplicationContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\Assembly.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyBinder.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyBinderCommon.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyIdentity.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyName.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyVersion.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\BindResult.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\TextualIdentityParser.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
@@ -298,17 +307,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureManagedBinder)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\ApplicationContext.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\Assembly.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyBinder.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyBinderCommon.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyIdentity.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyName.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyVersion.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\BindResult.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\TextualIdentityParser.cs" />
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
