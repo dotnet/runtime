@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- Move JsonConverterAttribute argument from internal to a public converter type in a new namespace -->
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.BinaryData:[T:System.Text.Json.Serialization.JsonConverterAttribute]</Target>

@@ -11,6 +11,7 @@ namespace Mono.Linker.Tests.Cases.References;
 [NoLinkedOutput]
 [SetupCompileBefore ("missing.dll", new[] { "Dependencies/MissingAssembly.cs" })]
 [DeleteBefore ("missing.dll")]
+[SetupLinkerArgument ("--skip-unresolved", "false")]
 public class MissingReferenceInUsedCodePath
 {
 	public static void Main ()
