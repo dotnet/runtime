@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Net.Http.Metrics;
@@ -796,6 +797,8 @@ namespace System.Net.Http
             _socketHandler!.SslOptions = _socketHandler!.SslOptions;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:GetMethod",
+            Justification = "The DynamicDependency declarations will ensure the methods will be preserved.")]
         private object InvokeNativeHandlerMethod(string name, params object?[] parameters)
         {
             MethodInfo? method;
