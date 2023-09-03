@@ -10970,8 +10970,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (hwOper == GT_NOT)
                 {
-                    lhs = op1;
-                    rhs = op2;
+                    lhs = op2;
+                    rhs = op1;
                 }
                 else if (hwOper == GT_XOR)
                 {
@@ -10980,13 +10980,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (hwOp1->IsVectorAllBitsSet())
                     {
-                        lhs = hwOp2;
-                        rhs = op2;
+                        lhs = op2;
+                        rhs = hwOp2;
                     }
                     else if (hwOp2->IsVectorAllBitsSet())
                     {
-                        lhs = hwOp1;
-                        rhs = op2;
+                        lhs = op2;
+                        rhs = hwOp1;
                     }
                 }
             }
