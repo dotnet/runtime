@@ -431,39 +431,7 @@ GlobalMemoryStatusEx(
     // We do this only when we have the total physical memory available.
     if (lpBuffer->ullTotalPhys > 0)
     {
-#if defined (__APPLE__)
-        vm_size_t page_size;
-        mach_port_t mach_port;
-        mach_msg_type_number_t count;
-        vm_statistics_data_t vm_stats;
-        mach_port = mach_host_self();
-        count = sizeof(vm_stats) / sizeof(natural_t);
-        if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
-        {
-            if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-            {
-                lpBuffer->ullAvailPhys = (int64_t)vm_stats.free_count * (int64_t)page_size;
-                INT64 used_memory = ((INT64)vm_stats.active_count + (INT64)vm_stats.inactive_count + (INT64)vm_stats.wire_count) *  (INT64)page_size;
-                lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
-            }
-        }
-        mach_port_deallocate(mach_task_self(), mach_port);
-#elif defined (__FreeBSD__)
-        size_t inactive_count = 0, laundry_count = 0, free_count = 0;
-        size_t sz = sizeof(inactive_count);
-        sysctlbyname("vm.stats.vm.v_inactive_count", &inactive_count, &sz, NULL, 0); 
-
-        sz = sizeof(laundry_count);
-        sysctlbyname("vm.stats.vm.v_laundry_count", &laundry_count, &sz, NULL, 0); 
-
-        sz = sizeof(free_count);
-        sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);
-
-        lpBuffer->ullAvailPhys = (inactive_count + laundry_count + free_count) * sysconf(_SC_PAGE_SIZE);
-
-        INT64 used_memory = lpBuffer->ullTotalPhys - lpBuffer->ullAvailPhys;
-        lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
-#else //Linux 
+#ifndef __APPLE__
         static volatile bool tryReadMemInfo = true;
 
         if (tryReadMemInfo)
@@ -482,7 +450,24 @@ GlobalMemoryStatusEx(
 
         INT64 used_memory = lpBuffer->ullTotalPhys - lpBuffer->ullAvailPhys;
         lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
-#endif
+#else
+        vm_size_t page_size;
+        mach_port_t mach_port;
+        mach_msg_type_number_t count;
+        vm_statistics_data_t vm_stats;
+        mach_port = mach_host_self();
+        count = sizeof(vm_stats) / sizeof(natural_t);
+        if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
+        {
+            if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
+            {
+                lpBuffer->ullAvailPhys = (int64_t)vm_stats.free_count * (int64_t)page_size;
+                INT64 used_memory = ((INT64)vm_stats.active_count + (INT64)vm_stats.inactive_count + (INT64)vm_stats.wire_count) *  (INT64)page_size;
+                lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
+            }
+        }
+        mach_port_deallocate(mach_task_self(), mach_port);
+#endif // __APPLE__
     }
 
 #ifndef TARGET_RISCV64
