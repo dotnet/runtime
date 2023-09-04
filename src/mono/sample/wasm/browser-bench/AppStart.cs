@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
@@ -23,6 +24,9 @@ namespace Sample
                 new PageShow(),
                 new ReachManaged(),
                 new ReachManagedCold(),
+                new BlazorPageShow(),
+                new BlazorReachManaged(),
+                new BlazorReachManagedCold(),
             };
         }
 
@@ -37,7 +41,7 @@ namespace Sample
 
             public override async Task RunStepAsync()
             {
-                await MainApp.PageShow(null);
+                await MainApp.PageShow(null, null);
             }
         }
 
@@ -49,7 +53,7 @@ namespace Sample
 
             public override async Task RunStepAsync()
             {
-                await MainApp.FrameReachedManaged(null);
+                await MainApp.FrameReachedManaged(null, null);
             }
         }
 
@@ -62,16 +66,86 @@ namespace Sample
 
             public override async Task RunStepAsync()
             {
-                await MainApp.FrameReachedManaged(Guid.NewGuid().ToString());
+                await MainApp.FrameReachedManaged(Guid.NewGuid().ToString(), null);
+            }
+        }
+
+        abstract class BlazorAppStartMeasurement : BenchTask.Measurement
+        {
+            protected readonly string urlBase = "blazor-template/";
+            protected readonly string framePage = "index.html";
+
+            public override async Task<bool> IsEnabled()
+            {
+                using var client = new HttpClient();
+                try
+                {
+                    var url = $"{MainApp.Origin()}/{urlBase}{framePage}";
+                    await client.GetStringAsync(url);
+                }
+                catch
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            public override Task BeforeBatch()
+            {
+                MainApp.SetFramePage(framePage);
+
+                return Task.CompletedTask;
+            }
+        }
+
+        class BlazorPageShow : BlazorAppStartMeasurement
+        {
+            public override string Name => "Blazor Page show";
+            public override int InitialSamples => 3;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.PageShow(null, urlBase);
+            }
+        }
+
+        class BlazorReachManaged : BlazorAppStartMeasurement
+        {
+            public override string Name => "Blazor Reach managed";
+            public override int InitialSamples => 3;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.FrameReachedManaged(null, urlBase);
+            }
+        }
+
+        class BlazorReachManagedCold : BlazorAppStartMeasurement
+        {
+            public override string Name => "Blazor Reach managed cold";
+            public override int InitialSamples => 1;
+            public override int RunLength => 20000;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.FrameReachedManaged(Guid.NewGuid().ToString(), urlBase);
             }
         }
 
         public partial class MainApp
         {
             [JSImport("globalThis.mainApp.PageShow")]
-            public static partial Task PageShow(string guid);
+            public static partial Task PageShow(string guid, string urlBase);
             [JSImport("globalThis.mainApp.FrameReachedManaged")]
-            public static partial Task FrameReachedManaged(string guid);
+            public static partial Task FrameReachedManaged(string guid, string urlBase);
+            [JSImport("globalThis.mainApp.SetFramePage")]
+            public static partial Task SetFramePage(string page);
+            [JSImport("globalThis.mainApp.Origin")]
+            public static partial string Origin();
         }
 
         public partial class FrameApp
