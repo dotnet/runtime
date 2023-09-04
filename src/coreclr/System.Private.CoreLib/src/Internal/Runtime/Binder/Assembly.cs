@@ -8,7 +8,7 @@ namespace Internal.Runtime.Binder
     // BINDER_SPACE::Assembly represents a result of binding to an actual assembly (PEImage)
     // It is basically a tuple of 1) physical assembly and 2) binder which created/owns this binding
     // We also store whether it was bound using TPA list
-    internal class Assembly
+    internal sealed class Assembly
     {
         public IntPtr PEImage;
 

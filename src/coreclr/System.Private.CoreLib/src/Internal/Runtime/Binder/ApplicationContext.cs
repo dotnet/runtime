@@ -20,7 +20,7 @@ namespace Internal.Runtime.Binder
         public FailureCacheKey(AssemblyName assemblyName) : this(assemblyName.SimpleName, assemblyName.Version) { }
     }
 
-    internal class ApplicationContext
+    internal sealed class ApplicationContext
     {
         private volatile int _version;
 

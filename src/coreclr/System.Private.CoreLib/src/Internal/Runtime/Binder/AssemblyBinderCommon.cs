@@ -833,6 +833,7 @@ namespace Internal.Runtime.Binder
             }
 
             // tracer.TraceBindResult(bindResult, mvidMismatch);
+            Debug.Assert(mvidMismatch);
             return hr;
         }
 
