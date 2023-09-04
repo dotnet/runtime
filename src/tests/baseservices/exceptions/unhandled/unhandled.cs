@@ -40,7 +40,11 @@ namespace TestUnhandledException
             testProcess.CancelErrorRead();
 
             int expectedExitCode;
-            if (!OperatingSystem.IsWindows())
+            if (TestLibrary.Utilities.IsMonoRuntime)
+            {
+                expectedExitCode = 1;
+            }
+            else if (!OperatingSystem.IsWindows())
             {
                 expectedExitCode = 128 + 6;
             }
@@ -59,13 +63,33 @@ namespace TestUnhandledException
                 return 101;
             }
 
-            if (lines[0] != "Unhandled exception. System.Exception: Test")
+            int exceptionStackFrameLine = 1;
+            if (TestLibrary.Utilities.IsMonoRuntime)
             {
-                Console.WriteLine("Missing Unhandled exception header");
-                return 102;
+                if (lines[0] != "Unhandled Exception:")
+                {
+                    Console.WriteLine("Missing Unhandled exception header");
+                    return 102;
+                }
+                if (lines[1] != "System.Exception: Test")
+                {
+                    Console.WriteLine("Missing exception type and message");
+                    return 103;
+                }
+
+                exceptionStackFrameLine = 2;
+            }
+            else
+            {
+                if (lines[0] != "Unhandled exception. System.Exception: Test")
+                {
+                    Console.WriteLine("Missing Unhandled exception header");
+                    return 102;
+                }
+
             }
 
-            if (!lines[1].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
+            if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
             {
                 Console.WriteLine("Missing exception source frame");
                 return 103;

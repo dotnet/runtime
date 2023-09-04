@@ -3230,6 +3230,9 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
+            <Issue>System.Diagnostics.Process is not supported</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
