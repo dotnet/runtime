@@ -4,7 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class Test_test448035 
+public class Test_test448035 
 {
     int countdown;
 

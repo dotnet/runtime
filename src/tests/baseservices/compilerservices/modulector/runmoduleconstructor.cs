@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Globalization;
 using Xunit;
 
-class RuntimeHelperTest 
+public class RuntimeHelperTest 
 {
     [Fact]
     public static void TestEntryPoint()
