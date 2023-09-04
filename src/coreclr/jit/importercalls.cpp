@@ -9200,7 +9200,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 if (strcmp(className, "Interlocked") == 0)
                 {
-#ifndef TARGET_ARM64
+#ifdef TARGET_ARM64
                     // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
                     if (strcmp(methodName, "And") == 0)
                     {
