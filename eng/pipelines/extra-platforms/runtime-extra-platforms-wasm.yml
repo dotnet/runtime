@@ -105,15 +105,14 @@ jobs:
         - WasmTestOnBrowser
         - WasmTestOnNodeJS
 
-  # Smoke tests only with full threading
+  # Library tests - full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
         - browser_wasm
         #- browser_wasm_win
-      nameSuffix: _Threading_Smoke
+      nameSuffix: _Threading
       extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      shouldRunSmokeOnly: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       # Always run for runtime-wasm because browser testing is not on runtime
