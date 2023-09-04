@@ -4209,26 +4209,55 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         {
             bool addrIsInReg   = addr->isUsedFromReg();
             bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
+            bool handledByRcpc = false;
 
-            if ((ins == INS_strb) && addrIsInReg)
+            // On arm64-v8.4+ we can use stlur* instructions with acquire/release semantics to
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && addrIsAligned)
             {
-                ins = INS_stlrb;
+                // Address has to be either in a register already or be a GT_LEA with just imm offset (unscaled)
+                if (addrIsInReg || (tree->Addr()->OperIs(GT_LEA) && !tree->HasIndex() && (tree->Scale() == 1) &&
+                                    emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset())))
+                {
+                    if ((ins == INS_strb))
+                    {
+                        ins           = INS_stlurb;
+                        handledByRcpc = true;
+                    }
+                    else if ((ins == INS_strh))
+                    {
+                        ins           = INS_stlurh;
+                        handledByRcpc = true;
+                    }
+                    else if ((ins == INS_str) && genIsValidIntReg(dataReg))
+                    {
+                        ins           = INS_stlur;
+                        handledByRcpc = true;
+                    }
+                }
             }
-            else if ((ins == INS_strh) && addrIsInReg && addrIsAligned)
+
+            if (!handledByRcpc)
             {
-                ins = INS_stlrh;
-            }
-            else if ((ins == INS_str) && genIsValidIntReg(dataReg) && addrIsInReg && addrIsAligned)
-            {
-                ins = INS_stlr;
-            }
-            else
-            {
-                // issue a full memory barrier before a volatile StInd
-                // Note: We cannot issue store barrier ishst because it is a weaker barrier.
-                // The loads can get rearranged around the barrier causing to read wrong
-                // value.
-                instGen_MemoryBarrier();
+                if ((ins == INS_strb) && addrIsInReg)
+                {
+                    ins = INS_stlrb;
+                }
+                else if ((ins == INS_strh) && addrIsInReg && addrIsAligned)
+                {
+                    ins = INS_stlrh;
+                }
+                else if ((ins == INS_str) && genIsValidIntReg(dataReg) && addrIsInReg && addrIsAligned)
+                {
+                    ins = INS_stlr;
+                }
+                else
+                {
+                    // issue a full memory barrier before a volatile StInd
+                    // Note: We cannot issue store barrier ishst because it is a weaker barrier.
+                    // The loads can get rearranged around the barrier causing to read wrong
+                    // value.
+                    instGen_MemoryBarrier();
+                }
             }
         }
 
