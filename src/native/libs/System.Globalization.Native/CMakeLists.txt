@@ -165,8 +165,8 @@ if(CLR_CMAKE_TARGET_WIN32)
             STATIC
             ${NATIVEGLOBALIZATION_SOURCES}
         )
-        target_compile_options(System.Globalization.Native.Aot PRIVATE /guard:cf-)
-        target_compile_options(System.Globalization.Native.Aot PRIVATE /GL-)
+        set_target_properties(System.Globalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
+        set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
         add_library(System.Globalization.Native.Aot.GuardCF
             STATIC

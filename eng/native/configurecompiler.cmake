@@ -54,7 +54,19 @@ add_compile_definitions("$<$<CONFIG:CHECKED>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDL
 add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEBUG;URTBLDENV_FRIENDLY=Retail>")
 
 if (MSVC)
-  add_linker_flag(/guard:cf)
+
+  define_property(TARGET PROPERTY CLR_CONTROL_FLOW_GUARD INHERITED BRIEF_DOCS "/guard:cf flag" FULL_DOCS "/guard:cf flag blablabla")
+  define_property(TARGET PROPERTY CLR_EH_CONTINUATION INHERITED BRIEF_DOCS "/guard:ehcont flag" FULL_DOCS "/guard:ehcont flag blablabla")
+  define_property(TARGET PROPERTY CLR_EH_OPTION INHERITED BRIEF_DOCS "/EH option" FULL_DOCS "/EH option blablabla")
+
+  set_property(GLOBAL PROPERTY CLR_CONTROL_FLOW_GUARD ON)
+
+  # Remove the /EHsc from the CXX flags so that the compile options are the only source of truth for that
+  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set_property(GLOBAL PROPERTY CLR_EH_OPTION /EHsc)
+
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
+  add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
   # Linker flags
   #
@@ -841,7 +853,7 @@ if (MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
-  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>>:/GL>)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION $<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>>)
 
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     # The generator expression in the following command means that the /homeparams option is added only for debug builds for C and C++ source files
@@ -850,16 +862,15 @@ if (MSVC)
 
   # enable control-flow-guard support for native components for non-Arm64 builds
   # Added using variables instead of add_compile_options to let individual projects override it
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:cf")
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>>:/guard:cf>)
 
   # Enable EH-continuation table and CET-compatibility for native components for amd64 builds except for components of the Mono
   # runtime. Added some switches using variables instead of add_compile_options to let individual projects override it.
   if (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:ehcont")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
-    set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /guard:ehcont")
-    add_linker_flag(/guard:ehcont)
+    set_property(GLOBAL PROPERTY CLR_EH_CONTINUATION ON)
+
+    add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>>:/guard:ehcont>)
+    add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:/guard:ehcont>)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
   endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
 
@@ -888,7 +899,9 @@ if (MSVC)
   endif (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
 
   # Don't display the output header when building RC files.
-  add_compile_options($<$<COMPILE_LANGUAGE:RC>:/nologo>)
+  set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} /nologo")
+  # Don't display the output header when building asm files.
+  set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /nologo")
 endif (MSVC)
 
 # Configure non-MSVC compiler flags that apply to all platforms (unix-like or otherwise)
