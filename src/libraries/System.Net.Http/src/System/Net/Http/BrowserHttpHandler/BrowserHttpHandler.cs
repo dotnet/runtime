@@ -15,6 +15,7 @@ namespace System.Net.Http
     // the JavaScript objects have thread affinity, it is necessary that the continuations run the same thread as the start of the async method.
     internal sealed class BrowserHttpHandler : HttpMessageHandler
     {
+        private static readonly HttpRequestOptionsKey<bool> EnableStreamingRequest = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
         private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
@@ -220,10 +221,28 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
-                        cancellationToken.ThrowIfCancellationRequested();
+                        bool streamingEnabled = false;
+                        if (BrowserHttpInterop.SupportsStreamingRequest())
+                        {
+                            request.Options.TryGetValue(EnableStreamingRequest, out streamingEnabled);
+                        }
 
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
+                        if (streamingEnabled)
+                        {
+                            Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            ReadableStreamPullState pullState = new ReadableStreamPullState(stream, cancellationToken);
+
+                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, ReadableStreamPull, pullState);
+                        }
+                        else
+                        {
+                            byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
+                        }
                     }
                 }
                 else
@@ -233,14 +252,27 @@ namespace System.Net.Http
 
                 cancellationToken.ThrowIfCancellationRequested();
                 JSObject fetchResponse = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController, null).ConfigureAwait(true);
-                return new WasmFetchResponse(fetchResponse, abortRegistration.Value);
+                return new WasmFetchResponse(fetchResponse, abortController, abortRegistration.Value);
+            }
+            catch (JSException jse)
+            {
+                throw new HttpRequestException(jse.Message, jse);
             }
             catch (Exception)
             {
                 // this would also trigger abort
                 abortRegistration?.Dispose();
+                abortController?.Dispose();
                 throw;
             }
+        }
+
+        private static void ReadableStreamPull(object state)
+        {
+            ReadableStreamPullState pullState = (ReadableStreamPullState)state;
+#pragma warning disable CS4014 // intentionally not awaited
+            pullState.PullAsync();
+#pragma warning restore CS4014
         }
 
         private static HttpResponseMessage ConvertResponse(HttpRequestMessage request, WasmFetchResponse fetchResponse)
@@ -307,21 +339,61 @@ namespace System.Net.Http
         }
     }
 
+    internal sealed class ReadableStreamPullState
+    {
+        private readonly Stream _stream;
+        private readonly CancellationToken _cancellationToken;
+        private readonly byte[] _buffer;
+
+        public ReadableStreamPullState(Stream stream, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            _stream = stream;
+            _cancellationToken = cancellationToken;
+            _buffer = new byte[65536];
+        }
+
+        public async Task PullAsync()
+        {
+            try
+            {
+                int length = await _stream.ReadAsync(_buffer, _cancellationToken).ConfigureAwait(true);
+                ReadableStreamControllerEnqueueUnsafe(this, _buffer, length);
+            }
+            catch (Exception ex)
+            {
+                BrowserHttpInterop.ReadableStreamControllerError(this, ex);
+            }
+        }
+
+        private static unsafe void ReadableStreamControllerEnqueueUnsafe(object pullState, byte[] buffer, int length)
+        {
+            fixed (byte* ptr = buffer)
+            {
+                BrowserHttpInterop.ReadableStreamControllerEnqueue(pullState, (nint)ptr, length);
+            }
+        }
+    }
+
     internal sealed class WasmFetchResponse : IDisposable
     {
 #if FEATURE_WASM_THREADS
         public readonly object ThisLock = new object();
 #endif
         public JSObject? FetchResponse;
+        private readonly JSObject _abortController;
         private readonly CancellationTokenRegistration _abortRegistration;
         private bool _isDisposed;
 
-        public WasmFetchResponse(JSObject fetchResponse, CancellationTokenRegistration abortRegistration)
+        public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenRegistration abortRegistration)
         {
             ArgumentNullException.ThrowIfNull(fetchResponse);
+            ArgumentNullException.ThrowIfNull(abortController);
 
             FetchResponse = fetchResponse;
             _abortRegistration = abortRegistration;
+            _abortController = abortController;
         }
 
         public void ThrowIfDisposed()
@@ -350,6 +422,7 @@ namespace System.Net.Http
                         return;
                     self._isDisposed = true;
                     self._abortRegistration.Dispose();
+                    self._abortController.Dispose();
                     if (!self.FetchResponse!.IsDisposed)
                     {
                         BrowserHttpInterop.AbortResponse(self.FetchResponse);
@@ -362,6 +435,7 @@ namespace System.Net.Http
 #else
             _isDisposed = true;
             _abortRegistration.Dispose();
+            _abortController.Dispose();
             if (FetchResponse != null)
             {
                 if (!FetchResponse.IsDisposed)

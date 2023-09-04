@@ -724,12 +724,6 @@ namespace ILCompiler
                         if (t.ConvertToCanonForm(CanonicalFormKind.Specific) != t)
                             continue;
 
-#if DEBUG
-                        // do not inline storage for some types in debug - for test coverage
-                        if (i % 8 == 0)
-                            continue;
-#endif
-
                         types.Add(t);
 
                         // N.B. for ARM32, we would need to deal with > PointerSize alignments.

@@ -291,12 +291,16 @@ namespace System.Reflection
         internal static extern int get_metadata_token(RuntimeFieldInfo monoField);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Type[] GetTypeModifiers(bool optional);
+        private extern Type[] GetTypeModifiers(bool optional, int genericArgumentPosition = -1);
 
         public override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(true);
 
         public override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(false);
 
         private Type[] GetCustomModifiers(bool optional) => GetTypeModifiers(optional) ?? Type.EmptyTypes;
+
+        internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(optional, genericArgumentPosition) ?? Type.EmptyTypes;
+
+        public override Type GetModifiedFieldType() => ModifiedType.Create(FieldType, this);
     }
 }

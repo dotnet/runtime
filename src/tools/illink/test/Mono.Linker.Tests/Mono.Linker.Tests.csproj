@@ -24,7 +24,7 @@
     <PackageReference Include="System.Threading.AccessControl" Version="$(SystemThreadingAccessControlVersion)" />
 
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" SkipUseReferenceAssembly="true" />
-    <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases\**\*.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
 
@@ -60,5 +60,7 @@
       <Value>$(LinkerTestDir)</Value>
     </RuntimeHostConfigurationOption>
   </ItemGroup>
+
+  <Import Project="..\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems" Label="Shared" />
 
 </Project>

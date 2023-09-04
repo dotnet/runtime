@@ -130,9 +130,9 @@ DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_INTERNAL,       -1,                   TYPE_GC
 
 unsigned GetSizeForCorElementType(CorElementType etyp)
 {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
-        return gElementTypeInfo[etyp].m_cbSize;
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
+    return gElementTypeInfo[etyp].m_cbSize;
 }
 
 #ifndef DACCESS_COMPILE
@@ -2603,7 +2603,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
     if ((UINT)etype >= ARRAY_SIZE(gElementTypeInfo))
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_COMPLUS_SIG);
 
-    int cbsize = gElementTypeInfo[(UINT)etype].m_cbSize;
+    int cbsize = GetSizeForCorElementType(etype);
     if (cbsize != -1)
         return(cbsize);
 
@@ -4312,35 +4312,6 @@ MetaSig::CompareMethodSigs(
 
 //---------------------------------------------------------------------------------------
 //
-//static
-HRESULT
-MetaSig::CompareMethodSigsNT(
-    PCCOR_SIGNATURE      pSignature1,
-    DWORD                cSig1,
-    Module *             pModule1,
-    const Substitution * pSubst1,
-    PCCOR_SIGNATURE      pSignature2,
-    DWORD                cSig2,
-    Module *             pModule2,
-    const Substitution * pSubst2,
-    TokenPairList *      pVisited) //= NULL
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, FALSE, pVisited))
-            hr = S_OK;
-        else
-            hr = S_FALSE;
-    }
-    EX_CATCH_HRESULT_NO_ERRORINFO(hr);
-    return hr;
-}
-
-//---------------------------------------------------------------------------------------
-//
 // Compare two method sigs and return whether they are the same.
 // @GENERICS: instantiation of the type variables in the second signature
 //
@@ -4990,11 +4961,6 @@ void PromoteCarefully(promote_func   fn,
     assert(flags & GC_CALL_INTERIOR);
 
 #if !defined(DACCESS_COMPILE)
-
-    //
-    // Sanity check the stack scan limit
-    //
-    assert(sc->stack_limit != 0);
 
     // Note that the base is at a higher address than the limit, since the stack
     // grows downwards.

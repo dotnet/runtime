@@ -17,92 +17,16 @@
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-buffer-manager.h>
 
-#include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "holder.h"
-#include "SpinLock.h"
+#include "CommonTypes.h"
 
 class EventPipeAdapter final
 {
 public:
-    static inline void Initialize()
+    static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
     {
-        CONTRACTL
-        {
-            NOTHROW;
-        }
-        CONTRACTL_END;
-
-        ep_init();
-    }
-
-    static inline EventPipeProvider * CreateProvider(LPCWSTR providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
-    {
-        ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
+        ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
         EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
         ep_rt_utf8_string_free (providerNameUTF8);
-        return provider;
-    }
-
-    static inline void DeleteProvider (EventPipeProvider * provider)
-    {
-        ep_delete_provider (provider);
-    }
-
-
-    static inline void FinishInitialize()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-        }
-        CONTRACTL_END;
-
-        ep_finish_init();
-    }
-
-    static inline void Shutdown()
-    {
-        ep_shutdown();
-    }
-
-    static inline bool Enabled()
-    {
-        STATIC_CONTRACT_NOTHROW;
-        return ep_enabled();
-    }
-
-    static inline void Disable(EventPipeSessionID id)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        ep_disable(id);
-    }
-
-    static inline EventPipeProvider * GetProvider (LPCWSTR providerName)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        if (!providerName)
-            return NULL;
-
-        ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
-        EventPipeProvider * provider = ep_get_provider (providerNameUTF8);
-        ep_rt_utf8_string_free(providerNameUTF8);
         return provider;
     }
 

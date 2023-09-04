@@ -1906,14 +1906,30 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     result.flags |= ParseFlags.HaveDate;
                     return true; // MD + Year
                 }
-            }
-            else
-            {
-                if (SetDateYMD(ref result, raw.year, n2, n1))
+#if TARGET_BROWSER
+                // if we are parsing the datetime string with custom format then the CultureInfo format `order`
+                // does not matter and DM + Year is also possible for NNY
+                if (GlobalizationMode.Hybrid && SetDateYDM(ref result, raw.year, n1, n2))
                 {
                     result.flags |= ParseFlags.HaveDate;
                     return true; // DM + Year
                 }
+#endif
+            }
+            else
+            {
+                if (SetDateYDM(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // DM + Year
+                }
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid && SetDateYMD(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // MD + Year
+                }
+#endif
             }
             result.SetBadDateTimeFailure();
             return false;

@@ -836,9 +836,7 @@ gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-
-	return (gpointer)UCONTEXT_REG_RIP (ctx);
+	return (gpointer)UCONTEXT_REG_RIP ((ucontext_t*)sigctx);
 #elif defined(HOST_WIN32)
 	return (gpointer)(((CONTEXT*)sigctx)->Rip);
 #else

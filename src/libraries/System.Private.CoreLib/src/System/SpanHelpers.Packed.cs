@@ -132,9 +132,8 @@ namespace System
                             Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
                             Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
                             Vector512<byte> packedSource = PackSources(source0, source1);
-                            Vector512<byte> result = Vector512.Equals(packedValue, packedSource);
 
-                            if (result != Vector512<byte>.Zero)
+                            if (Vector512.EqualsAny(packedValue, packedSource))
                             {
                                 return true;
                             }
@@ -156,9 +155,8 @@ namespace System
                         Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
                         Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
                         Vector512<byte> packedSource = PackSources(source0, source1);
-                        Vector512<byte> result = Vector512.Equals(packedValue, packedSource);
 
-                        if (result != Vector512<byte>.Zero)
+                        if (Vector512.EqualsAny(packedValue, packedSource))
                         {
                             return true;
                         }
@@ -332,12 +330,10 @@ namespace System
                             Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
                             Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
                             Vector512<byte> packedSource = PackSources(source0, source1);
-                            Vector512<byte> result = Vector512.Equals(packedValue, packedSource);
-                            result = NegateIfNeeded<TNegator>(result);
 
-                            if (result != Vector512<byte>.Zero)
+                            if (HasMatch<TNegator>(packedValue, packedSource))
                             {
-                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, GetMatchMask<TNegator>(packedValue, packedSource));
                             }
 
                             currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
@@ -357,12 +353,10 @@ namespace System
                         Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
                         Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
                         Vector512<byte> packedSource = PackSources(source0, source1);
-                        Vector512<byte> result = Vector512.Equals(packedValue, packedSource);
-                        result = NegateIfNeeded<TNegator>(result);
 
-                        if (result != Vector512<byte>.Zero)
+                        if (HasMatch<TNegator>(packedValue, packedSource))
                         {
-                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, GetMatchMask<TNegator>(packedValue, packedSource));
                         }
                     }
                 }
@@ -545,8 +539,7 @@ namespace System
                             Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
                             Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
                             Vector512<byte> packedSource = PackSources(source0, source1);
-                            Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource);
-                            result = NegateIfNeeded<TNegator>(result);
+                            Vector512<byte> result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource));
 
                             if (result != Vector512<byte>.Zero)
                             {
@@ -570,8 +563,7 @@ namespace System
                         Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
                         Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
                         Vector512<byte> packedSource = PackSources(source0, source1);
-                        Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource);
-                        result = NegateIfNeeded<TNegator>(result);
+                        Vector512<byte> result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource));
 
                         if (result != Vector512<byte>.Zero)
                         {
@@ -763,8 +755,7 @@ namespace System
                             Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
                             Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
                             Vector512<byte> packedSource = PackSources(source0, source1);
-                            Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource) | Vector512.Equals(packedValue2, packedSource);
-                            result = NegateIfNeeded<TNegator>(result);
+                            Vector512<byte> result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource) | Vector512.Equals(packedValue2, packedSource));
 
                             if (result != Vector512<byte>.Zero)
                             {
@@ -788,8 +779,7 @@ namespace System
                         Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
                         Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
                         Vector512<byte> packedSource = PackSources(source0, source1);
-                        Vector512<byte> result = Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource) | Vector512.Equals(packedValue2, packedSource);
-                        result = NegateIfNeeded<TNegator>(result);
+                        Vector512<byte> result = NegateIfNeeded<TNegator>(Vector512.Equals(packedValue0, packedSource) | Vector512.Equals(packedValue1, packedSource) | Vector512.Equals(packedValue2, packedSource));
 
                         if (result != Vector512<byte>.Zero)
                         {
@@ -963,13 +953,11 @@ namespace System
                         {
                             Vector512<short> source0 = Vector512.LoadUnsafe(ref currentSearchSpace);
                             Vector512<short> source1 = Vector512.LoadUnsafe(ref currentSearchSpace, (nuint)Vector512<short>.Count);
-                            Vector512<byte> packedSource = PackSources(source0, source1);
-                            Vector512<byte> result = Vector512.LessThanOrEqual(packedSource - lowVector, rangeVector);
-                            result = NegateIfNeeded<TNegator>(result);
+                            Vector512<byte> packedSource = PackSources(source0, source1) - lowVector;
 
-                            if (result != Vector512<byte>.Zero)
+                            if (HasMatchInRange<TNegator>(packedSource, rangeVector))
                             {
-                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, result);
+                                return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, GetMatchInRangeMask<TNegator>(packedSource, rangeVector));
                             }
 
                             currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector512<short>.Count);
@@ -988,13 +976,11 @@ namespace System
 
                         Vector512<short> source0 = Vector512.LoadUnsafe(ref firstVector);
                         Vector512<short> source1 = Vector512.LoadUnsafe(ref oneVectorAwayFromEnd);
-                        Vector512<byte> packedSource = PackSources(source0, source1);
-                        Vector512<byte> result = Vector512.LessThanOrEqual(packedSource - lowVector, rangeVector);
-                        result = NegateIfNeeded<TNegator>(result);
+                        Vector512<byte> packedSource = PackSources(source0, source1) - lowVector;
 
-                        if (result != Vector512<byte>.Zero)
+                        if (HasMatchInRange<TNegator>(packedSource, rangeVector))
                         {
-                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                            return ComputeFirstIndexOverlapped(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, GetMatchInRangeMask<TNegator>(packedSource, rangeVector));
                         }
                     }
                 }
@@ -1155,6 +1141,11 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool NegateIfNeeded<TNegator>(bool result)
+            where TNegator : struct, SpanHelpers.INegator<short> =>
+            typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>) ? result : !result;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> NegateIfNeeded<TNegator>(Vector128<byte> result)
             where TNegator : struct, SpanHelpers.INegator<short> =>
             typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>) ? result : ~result;
@@ -1168,6 +1159,38 @@ namespace System
         private static Vector512<byte> NegateIfNeeded<TNegator>(Vector512<byte> result)
             where TNegator : struct, SpanHelpers.INegator<short> =>
             typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>) ? result : ~result;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HasMatch<TNegator>(Vector512<byte> left, Vector512<byte> right)
+            where TNegator : struct, SpanHelpers.INegator<short>
+        {
+            return (typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>))
+                 ? Vector512.EqualsAny(left, right) : !Vector512.EqualsAll(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<byte> GetMatchMask<TNegator>(Vector512<byte> left, Vector512<byte> right)
+             where TNegator : struct, SpanHelpers.INegator<short>
+        {
+            return (typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>))
+                 ? Vector512.Equals(left, right) : ~Vector512.Equals(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HasMatchInRange<TNegator>(Vector512<byte> left, Vector512<byte> right)
+        where TNegator : struct, SpanHelpers.INegator<short>
+        {
+            return (typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>))
+                 ? Vector512.LessThanOrEqualAny(left, right) : !Vector512.LessThanOrEqualAll(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<byte> GetMatchInRangeMask<TNegator>(Vector512<byte> left, Vector512<byte> right)
+            where TNegator : struct, SpanHelpers.INegator<short>
+        {
+            return (typeof(TNegator) == typeof(SpanHelpers.DontNegate<short>))
+                 ? Vector512.LessThanOrEqual(left, right) : ~Vector512.LessThanOrEqual(left, right);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector128<byte> equals)
@@ -1241,7 +1264,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
-        private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
+        internal static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);
             // Avx2.PackUnsignedSaturate(Vector256.Create((short)1), Vector256.Create((short)2)) will result in
@@ -1253,14 +1276,12 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512F))]
-        private static Vector512<byte> FixUpPackedVector512Result(Vector512<byte> result)
+        internal static Vector512<byte> FixUpPackedVector512Result(Vector512<byte> result)
         {
             Debug.Assert(Avx512F.IsSupported);
-            // Avx512BW.PackUnsignedSaturate(Vector512.Create((short)1), Vector512.Create((short)2)) will result in
-            // 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2
-            // We want to swap the X and Y bits
-            // 1, 1, 1, 1, 1, 1, 1, 1, X, X, X, X, X, X, X, X, Y, Y, Y, Y, Y, Y, Y, Y, 2, 2, 2, 2, 2, 2, 2, 2
-            return Avx512F.PermuteVar8x64(result.AsInt64(), Vector512.Create((long)0, 2, 4, 6, 1, 3, 5, 7)).AsByte();
+            // Avx512BW.PackUnsignedSaturate will interleave the inputs in 8-byte blocks.
+            // We want to preserve the order of the two input vectors, so we deinterleave the packed value.
+            return Avx512F.PermuteVar8x64(result.AsInt64(), Vector512.Create(0, 2, 4, 6, 1, 3, 5, 7)).AsByte();
         }
     }
 }

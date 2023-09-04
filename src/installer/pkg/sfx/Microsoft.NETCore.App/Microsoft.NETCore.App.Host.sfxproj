@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />

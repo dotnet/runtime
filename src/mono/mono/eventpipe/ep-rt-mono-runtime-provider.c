@@ -386,6 +386,9 @@ static const uint32_t BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE =
 #define GC_TYPE_NGC 0
 #define GC_ROOT_FLAGS_NONE 0
 #define GC_ROOT_FLAGS_PINNING 1
+#define GC_ROOT_FLAGS_WEAKREF 2
+#define GC_ROOT_FLAGS_INTERIOR 4
+#define GC_ROOT_FLAGS_REFCOUNTED 8
 #define GC_ROOT_KIND_STACK 0
 #define GC_ROOT_KIND_FINALIZER 1
 #define GC_ROOT_KIND_HANDLE 2
@@ -2369,7 +2372,7 @@ write_event_exception_thrown (MonoObject *obj)
 			if (exception->inner_ex)
 				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
 			if (exception->message)
-				exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
+				exception_message = ep_rt_utf16_to_utf8_string_n (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
 			hresult = exception->hresult;
 		}
 
@@ -3983,6 +3986,11 @@ fire_gc_event_bulk_root_edge (
 			root_kind = GC_ROOT_KIND_HANDLE;
 			root_id = address;
 			break;
+		case MONO_ROOT_SOURCE_TOGGLEREF :
+			root_kind = GC_ROOT_KIND_HANDLE;
+			root_flags = GC_ROOT_FLAGS_REFCOUNTED;
+			root_id = address;
+			break;
 		default :
 			break;
 		}
@@ -4165,6 +4173,9 @@ calculate_live_keywords (
 	ep_requires_lock_held ();
 }
 
+// TODO: If/when we can unload vtables, we would need to temporary
+// root the vtable pointers currently stored in buffered gc events.
+// Once all events are fired, we can remove root from GC.
 static
 void
 gc_event_callback (
@@ -4199,7 +4210,6 @@ gc_event_callback (
 		if (is_gc_heap_dump_enabled (context)) {
 			EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 			gc_heap_dump_context_build_roots (context);
-			fire_buffered_gc_events (context);
 		}
 		break;
 	}
@@ -4289,6 +4299,7 @@ gc_heap_dump_trigger_callback (MonoProfiler *prof)
 				mono_profiler_set_gc_event_callback (_ep_rt_mono_default_profiler_provider, gc_event_callback);
 				mono_gc_collect (mono_gc_max_generation ());
 				mono_profiler_set_gc_event_callback (_ep_rt_mono_default_profiler_provider, NULL);
+				fire_buffered_gc_events (heap_dump_context);
 			}
 
 			heap_dump_context->state = GC_HEAP_DUMP_CONTEXT_STATE_END;
@@ -4336,6 +4347,7 @@ ep_on_error:
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntime (
 	const uint8_t *source_id,
 	unsigned long is_enabled,

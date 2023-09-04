@@ -23,6 +23,10 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly CancellationTokenSource _stoppedSource = new CancellationTokenSource();
         private readonly ILogger<ApplicationLifetime> _logger;
 
+        /// <summary>
+        /// Initializes an <see cref="ApplicationLifetime"/> instance using the specified logger.
+        /// </summary>
+        /// <param name="logger">The logger to initialize this instance with.</param>
         public ApplicationLifetime(ILogger<ApplicationLifetime> logger)
         {
             _logger = logger;

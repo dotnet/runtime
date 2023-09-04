@@ -55,7 +55,8 @@ namespace Mono.Linker.Tests.Tests
 		/// <returns></returns>
 		protected virtual IEnumerable<NPath> ExpectationAssemblies ()
 		{
-			yield return PathUtilities.GetTestAssemblyPath ("Mono.Linker.Tests.Cases.Expectations").ToNPath ();
+			const string expectations = "Mono.Linker.Tests.Cases.Expectations";
+			yield return PathUtilities.GetTestAssemblyRoot (expectations).ToNPath ().Combine ($"{expectations}.dll");
 		}
 
 		static bool IsAcceptableExpectationsAssemblyType (TypeDefinition type)

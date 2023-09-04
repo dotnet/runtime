@@ -27,10 +27,10 @@ namespace System.Text.Json.SourceGeneration
 
         public static string GetFullyQualifiedName(this ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-        public static Location? GetDiagnosticLocation(this ISymbol typeSymbol)
+        public static Location? GetLocation(this ISymbol typeSymbol)
             => typeSymbol.Locations.Length > 0 ? typeSymbol.Locations[0] : null;
 
-        public static Location? GetDiagnosticLocation(this AttributeData attributeData)
+        public static Location? GetLocation(this AttributeData attributeData)
         {
             SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
             return reference?.SyntaxTree.GetLocation(reference.Span);
@@ -39,9 +39,14 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// Creates a copy of the Location instance that does not capture a reference to Compilation.
         /// </summary>
-        [return: NotNullIfNotNull(nameof(location))]
-        public static Location? GetTrimmedLocation(this Location? location)
-            => location is null ? null : Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+        public static Location GetTrimmedLocation(this Location location)
+            => Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+
+        /// <summary>
+        /// Returns true if the specified location is contained in one of the syntax trees in the compilation.
+        /// </summary>
+        public static bool ContainsLocation(this Compilation compilation, Location location)
+            => location.SourceTree != null && compilation.ContainsSyntaxTree(location.SourceTree);
 
         /// <summary>
         /// Removes any type metadata that is erased at compile time, such as NRT annotations and tuple labels.

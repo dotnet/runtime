@@ -234,7 +234,7 @@ bool Xstate_IsAvx512Supported();
 #define FPREG_MxCsr(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr)
 #define FPREG_MxCsr_Mask(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr_mask)
 
-#endif // HOST_LOONGARCH64
+#endif // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #else // HOST_64BIT
 

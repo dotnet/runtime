@@ -21,6 +21,7 @@
 #include "threadstore.inl"
 
 #include "eventtrace_etw.h"
+#include "eventtracebase.h"
 #include "eventtracepriv.h"
 #include "profheapwalkhelper.h"
 
@@ -34,18 +35,16 @@
 
 BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw()
 {
-    LIMITED_METHOD_CONTRACT;
-    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
-        TRACE_LEVEL_INFORMATION,
-        CLR_GCHEAPDUMP_KEYWORD);
+    // @TODO: until the below issue is fixed correctly
+    // https://github.com/dotnet/runtime/issues/88491
+    return FALSE;
 }
 
 BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw()
 {
-    LIMITED_METHOD_CONTRACT;
-    return RUNTIME_PROVIDER_CATEGORY_ENABLED(
-        TRACE_LEVEL_INFORMATION,
-        CLR_GCHEAPDUMP_KEYWORD);
+    // @TODO: until the below issue is fixed correctly
+    // https://github.com/dotnet/runtime/issues/88491
+    return FALSE;
 }
 
 BOOL ETW::GCLog::ShouldTrackMovementForEtw()

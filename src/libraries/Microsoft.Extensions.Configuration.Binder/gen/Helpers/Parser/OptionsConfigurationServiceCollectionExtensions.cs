@@ -69,9 +69,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                TypeSpec typeSpec = GetBindingConfigType(
-                    type: targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None),
-                    invocation.Location);
+                ITypeSymbol? typeSymbol = targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
+                // This would violate generic type constraint; any such invocation could not have been included in the initial parser.
+                Debug.Assert(typeSymbol?.IsValueType is not true);
+                TypeSpec typeSpec = GetTargetTypeForRootInvocation(typeSymbol, invocation.Location);
 
                 if (typeSpec is null)
                 {
@@ -79,12 +80,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 RegisterTypeForMethodGen(overload, typeSpec);
+                RegisterAsInterceptor(overload, operation);
             }
 
             private void RegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection overload, TypeSpec typeSpec)
             {
                 _sourceGenSpec.MethodsToGen_ServiceCollectionExt |= overload;
-                RegisterTypeForBindCoreUntypedGen(typeSpec);
+                _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                RegisterTypeForBindCoreMainGen(typeSpec);
             }
         }
     }

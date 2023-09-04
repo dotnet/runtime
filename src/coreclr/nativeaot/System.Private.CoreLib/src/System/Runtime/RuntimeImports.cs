@@ -30,6 +30,12 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
         internal static extern unsafe byte* RhGetCrashInfoBuffer(out int cbMaxSize);
 
+#if TARGET_UNIX
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhCreateCrashDumpIfEnabled")]
+        internal static extern void RhCreateCrashDumpIfEnabled(IntPtr pExceptionRecord, IntPtr pContextRecord);
+#endif
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeVersion")]
         internal static extern unsafe byte* RhGetRuntimeVersion(out int cbLength);
@@ -59,7 +65,7 @@ namespace System.Runtime
         // Force a garbage collection.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCollect")]
-        internal static extern void RhCollect(int generation, InternalGCCollectionMode mode);
+        internal static extern void RhCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false);
 
         // Mark an object instance as already finalized.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -122,6 +128,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetGcLatencyMode")]
         internal static extern int RhSetGcLatencyMode(GCLatencyMode newLatencyMode);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhIsPromoted")]
+        internal static extern bool RhIsPromoted(object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhIsServerGc")]
@@ -232,6 +242,10 @@ namespace System.Runtime
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial long RhGetGenerationBudget(int generation);
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial long RhGetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -239,7 +253,7 @@ namespace System.Runtime
         internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
 
         [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void RhAllocateNewArray(IntPtr pArrayEEType, uint numElements, uint flags, void* pResult);
+        internal static unsafe partial void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
 
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
@@ -283,7 +297,7 @@ namespace System.Runtime
         // Allocate handle for dependent handle case where a secondary can be set at the same time.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAllocDependent")]
-        private static extern IntPtr RhpHandleAllocDependent(object primary, object secondary);
+        internal static extern IntPtr RhpHandleAllocDependent(object primary, object secondary);
 
         internal static IntPtr RhHandleAllocDependent(object primary, object secondary)
         {
@@ -329,6 +343,38 @@ namespace System.Runtime
         internal static extern void RhHandleSetDependentSecondary(IntPtr handle, object secondary);
 
         //
+        // calls to runtime for thunk pool
+        //
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetNumThunkBlocksPerMapping();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunksPerBlock")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetNumThunksPerBlock();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkSize")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetThunkSize();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkDataBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress);
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkStubsBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkBlockSize")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetThunkBlockSize();
+
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial IntPtr RhAllocateThunksMapping();
+
+        //
         // calls to runtime for type equality checks
         //
 
@@ -344,11 +390,11 @@ namespace System.Runtime
         internal static extern void RhCheckArrayStore(object array, object? obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
-        private static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
+        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfAny")]
+        private static extern unsafe object IsInstanceOfAny(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
-            => IsInstanceOf(pTargetType.ToPointer(), obj);
+            => IsInstanceOfAny(pTargetType.ToPointer(), obj);
 
         //
         // calls to runtime for allocation
@@ -454,30 +500,6 @@ namespace System.Runtime
         internal static extern IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCreateThunksHeap")]
-        internal static extern object RhCreateThunksHeap(IntPtr commonStubAddress);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhAllocateThunk")]
-        internal static extern IntPtr RhAllocateThunk(object thunksHeap);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhFreeThunk")]
-        internal static extern void RhFreeThunk(object thunksHeap, IntPtr thunkAddress);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhSetThunkData")]
-        internal static extern void RhSetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTryGetThunkData")]
-        internal static extern bool RhTryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThunkSize")]
-        internal static extern int RhGetThunkSize();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
         internal static extern unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot, EETypePtr* pGenericContext);
 
@@ -571,7 +593,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterInlinedThreadStaticRoot")]
-        internal static extern void RhRegisterInlinedThreadStaticRoot(ref object? root);
+        internal static extern void RhRegisterInlinedThreadStaticRoot(ref object? root, TypeManagerHandle module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]

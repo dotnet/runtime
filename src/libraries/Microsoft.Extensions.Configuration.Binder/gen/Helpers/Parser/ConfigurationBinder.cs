@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                int objectIndex = overload switch
+                int instanceIndex = overload switch
                 {
                     MethodsToGen_ConfigurationBinder.Bind_instance => 1,
                     MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions => 1,
@@ -80,13 +80,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _ => throw new InvalidOperationException()
                 };
 
-                IArgumentOperation objectArg = operation.Arguments[objectIndex];
-                if (objectArg.Parameter.Type.SpecialType != SpecialType.System_Object)
+                IArgumentOperation instanceArg = operation.Arguments[instanceIndex];
+                if (instanceArg.Parameter.Type.SpecialType != SpecialType.System_Object)
                 {
                     return;
                 }
 
-                ITypeSymbol? type = ResolveType(objectArg.Value)?.WithNullableAnnotation(NullableAnnotation.None);
+                ITypeSymbol? type = ResolveType(instanceArg.Value)?.WithNullableAnnotation(NullableAnnotation.None);
 
                 if (!IsValidRootConfigType(type))
                 {
@@ -100,17 +100,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                if (GetOrCreateTypeSpec(type, invocation.Location) is TypeSpec typeSpec)
+                if (GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    Dictionary<MethodsToGen_ConfigurationBinder, HashSet<TypeSpec>> types = _sourceGenSpec.TypesForGen_ConfigurationBinder_BindMethods;
-
-                    if (!types.TryGetValue(overload, out HashSet<TypeSpec>? typeSpecs))
-                    {
-                        types[overload] = typeSpecs = new HashSet<TypeSpec>();
-                    }
-
-                    _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
-                    typeSpecs.Add(typeSpec);
+                    RegisterAsInterceptor_ConfigBinder_BindMethod(overload, typeSpec, invocation.Operation);
                 }
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
@@ -120,10 +112,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         IInstanceReferenceOperation i => i.Type,
                         ILocalReferenceOperation l => l.Local.Type,
                         IFieldReferenceOperation f => f.Field.Type,
+                        IPropertyReferenceOperation o => o.Type,
                         IMethodReferenceOperation m when m.Method.MethodKind == MethodKind.Constructor => m.Method.ContainingType,
                         IMethodReferenceOperation m => m.Method.ReturnType,
                         IAnonymousFunctionOperation f => f.Symbol.ReturnType,
                         IParameterReferenceOperation p => p.Parameter.Type,
+                        IObjectCreationOperation o => o.Type,
                         _ => null
                     };
             }
@@ -180,11 +174,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                if (GetBindingConfigType(type, invocation.Location) is TypeSpec typeSpec)
+                if (GetTargetTypeForRootInvocation(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
-                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetCore, typeSpec);
+                    RegisterAsInterceptor_ConfigBinder(overload, invocation.Operation);
+                    RegisterTypeForGetCoreGen(typeSpec);
                 }
+
             }
 
             private void RegisterGetValueInvocation(BinderInvocation invocation)
@@ -248,11 +243,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 if (IsParsableFromString(effectiveType, out _) &&
-                    GetOrCreateTypeSpec(type, invocation.Location) is TypeSpec typeSpec)
+                    GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
+                    RegisterAsInterceptor_ConfigBinder(overload, invocation.Operation);
                     RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetValueCore, typeSpec);
                 }
+            }
+
+            private void RegisterAsInterceptor_ConfigBinder(MethodsToGen_ConfigurationBinder overload, IInvocationOperation operation)
+            {
+                _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
+                RegisterAsInterceptor(overload, operation);
+            }
+
+            /// <summary>
+            /// Registers generated Bind methods as interceptors. This is done differently from other root
+            /// methods <see cref="RegisterAsInterceptor(Enum, IInvocationOperation)"/> because we need to
+            /// explicitly account for the type to bind, to avoid type-check issues for polymorphic objects.
+            /// </summary>
+            private void RegisterAsInterceptor_ConfigBinder_BindMethod(MethodsToGen_ConfigurationBinder overload, TypeSpec typeSpec, IInvocationOperation operation)
+            {
+                _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
+                _sourceGenSpec.InterceptionInfo_ConfigBinder.RegisterOverloadInfo(overload, typeSpec, operation);
             }
         }
     }

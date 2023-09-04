@@ -182,7 +182,6 @@ If there is a use case for specifying trimmable assemblies on the command-line, 
 We will use `AssemblyMetadataAttribute` to specify `IsTrimmable` on an assembly, instead of introducing a new attribute. The existing attribute seems well-suited for this use case, as it is already similarly used to control servicing for framework assemblies, for example via:
 
 ```csharp
-[assembly: AssemblyMetadata(".NETFrameworkAssembly", "")]
 [assembly: AssemblyMetadata("Serviceable", "True")]
 [assembly: AssemblyMetadata("PreferInbox", "True")]
 ```

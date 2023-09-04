@@ -339,6 +339,12 @@ void Compiler::lvaInitTypeRef()
             {
                 JITDUMP("-- V%02u is OSR exposed\n", lclNum);
                 varDsc->lvIsOSRExposedLocal = true;
+
+                // Ensure that ref counts for exposed OSR locals take into account
+                // that some of the refs might be in the Tier0 parts of the method
+                // that get trimmed away.
+                //
+                varDsc->lvImplicitlyReferenced = 1;
             }
         }
     }
@@ -665,6 +671,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             varDsc->SetHfaType(hfaType);
             cSlots = varDsc->lvHfaSlots();
         }
+
         // The number of slots that must be enregistered if we are to consider this argument enregistered.
         // This is normally the same as cSlots, since we normally either enregister the entire object,
         // or none of it. For structs on ARM, however, we only need to enregister a single slot to consider
@@ -676,11 +683,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         if (compFeatureArgSplit())
         {
             // On arm64 Windows we will need to properly handle the case where a >8byte <=16byte
-            // struct is split between register r7 and virtual stack slot s[0]
-            // We will only do this for calls to vararg methods on Windows Arm64
+            // struct (or vector) is split between register r7 and virtual stack slot s[0].
+            // We will only do this for calls to vararg methods on Windows Arm64.
+            // SIMD types (for which `varTypeIsStruct()` returns `true`) are also passed in general-purpose
+            // registers and can be split between registers and stack with Windows arm64 native varargs.
             //
             // !!This does not affect the normal arm64 calling convention or Unix Arm64!!
-            if (this->info.compIsVarArgs && argType == TYP_STRUCT)
+            if (info.compIsVarArgs && (cSlots > 1))
             {
                 if (varDscInfo->canEnreg(TYP_INT, 1) &&     // The beginning of the struct can go in a register
                     !varDscInfo->canEnreg(TYP_INT, cSlots)) // The end of the struct can't fit in a register
@@ -769,7 +778,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 codeGen->regSet.rsMaskPreSpillRegArg |= regMask;
             }
         }
-#else // !TARGET_ARM
+#endif // TARGET_ARM
 
 #if defined(UNIX_AMD64_ABI)
         SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -811,7 +820,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
         }
 #endif // UNIX_AMD64_ABI
-#endif // !TARGET_ARM
 
         // The final home for this incoming register might be our local stack frame.
         // For System V platforms the final home will always be on the local stack frame.
@@ -915,8 +923,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
-            // argument,
-            // integer registers (if any) are used instead.
+            // argument, integer registers (if any) are used instead.
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
             {
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, cSlotsToEnregister);
@@ -973,7 +980,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
             if (isHfaArg)
             {
-                // We need to save the fact that this HFA is enregistered
+                // We need to save the fact that this HFA is enregistered.
                 // Note that we can have HVAs of SIMD types even if we are not recognizing intrinsics.
                 // In that case, we won't have normalized the vector types on the varDsc, so if we have a single vector
                 // register, we need to set the type now. Otherwise, later we'll assume this is passed by reference.
@@ -1492,11 +1499,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     else
     {
         varDsc->lvType = type;
-    }
-
-    if (type == TYP_BOOL)
-    {
-        varDsc->lvIsBoolean = true;
     }
 
 #ifdef DEBUG
@@ -4071,7 +4073,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     {
         if (varDsc->IsAddressExposed())
         {
-            varDsc->lvIsBoolean      = false;
             varDsc->lvAllDefsAreNoGc = false;
         }
 
@@ -4092,34 +4093,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc && !value->IsNotGcDef())
             {
                 varDsc->lvAllDefsAreNoGc = false;
-            }
-
-            if (value->gtType != TYP_BOOL)
-            {
-                // Is the value clearly a boolean one?
-                switch (value->gtOper)
-                {
-                    case GT_CNS_INT:
-                        if (value->AsIntCon()->gtIconVal == 0)
-                        {
-                            break;
-                        }
-                        if (value->AsIntCon()->gtIconVal == 1)
-                        {
-                            break;
-                        }
-
-                        // Not 0 or 1, fall through ....
-                        FALLTHROUGH;
-                    default:
-                        if (value->OperIsCompare())
-                        {
-                            break;
-                        }
-
-                        varDsc->lvIsBoolean = false;
-                        break;
-                }
             }
 
             if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
@@ -7394,7 +7367,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    printf("[%2s%1s%02XH]  ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
 }
 
 /*****************************************************************************

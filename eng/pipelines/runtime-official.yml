@@ -26,6 +26,9 @@ variables:
 - template: /eng/pipelines/common/internal-variables.yml
   parameters:
     teamName: dotnet-core-acquisition
+# disable CodeQL here, we have a separate pipeline for it
+- name: Codeql.Enabled
+  value: False
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -38,10 +41,11 @@ extends:
       # Localization build
       #
 
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/8.0') }}:
         - template: /eng/common/templates/job/onelocbuild.yml
           parameters:
             MirrorRepo: runtime
+            MirrorBranch: release/8.0
             LclSource: lclFilesfromPackage
             LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 

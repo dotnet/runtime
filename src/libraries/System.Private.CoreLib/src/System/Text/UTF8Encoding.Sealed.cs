@@ -155,6 +155,7 @@ namespace System.Text
                 return base.TryGetBytes(chars, bytes, out bytesWritten);
             }
 
+            /// <summary>Same as Encoding.UTF8.TryGetBytes, except with refs, returning the number of bytes written (or -1 if the operation fails), and optimized for a constant input.</summary>
             [MethodImpl(MethodImplOptions.NoInlining)]
             [Intrinsic] // Can be unrolled by JIT
             internal static unsafe int ReadUtf8(ref char input, int inputLength, ref byte output, int outputLength)

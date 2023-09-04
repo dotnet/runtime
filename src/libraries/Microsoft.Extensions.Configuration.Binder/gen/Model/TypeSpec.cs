@@ -17,17 +17,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             IsValueType = type.IsValueType;
             Namespace = type.ContainingNamespace?.ToDisplayString();
-            FullyQualifiedDisplayString = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            MinimalDisplayString = type.ToDisplayString(s_minimalDisplayFormat);
-            Name = Namespace + "." + MinimalDisplayString.Replace(".", "+");
+            DisplayString = type.ToDisplayString(s_minimalDisplayFormat);
+            Name = Namespace + "." + DisplayString.Replace(".", "+");
             IsInterface = type.TypeKind is TypeKind.Interface;
         }
 
         public string Name { get; }
 
-        public string FullyQualifiedDisplayString { get; }
-
-        public string MinimalDisplayString { get; }
+        public string DisplayString { get; }
 
         public string? Namespace { get; }
 

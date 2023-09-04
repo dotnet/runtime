@@ -28,6 +28,7 @@
 #include <mono/utils/mono-hwcap.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/marshal-shared.h>
 #include "llvm-intrinsics-types.h"
 
 #include "interp/interp.h"
@@ -1483,7 +1484,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 	gpointer iter;
 	MonoClassField *field;
 	MonoType *ftype, *prev_ftype = NULL;
-	int i, nfields = 0;
+	int nfields = 0;
 
 	klass = mono_class_from_mono_type_internal (t);
 	iter = NULL;
@@ -1497,8 +1498,22 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 			int nested_nfields, nested_esize;
 			int nested_field_offsets [16];
 
-			if (!is_hfa (ftype, &nested_nfields, &nested_esize, nested_field_offsets))
-				return FALSE;
+			MonoType *fixed_etype;
+			int fixed_len;
+			if (mono_marshal_shared_get_fixed_buffer_attr (field, &fixed_etype, &fixed_len)) {
+				if (fixed_etype->type != MONO_TYPE_R4 && fixed_etype->type != MONO_TYPE_R8)
+					return FALSE;
+				if (fixed_len > 16)
+					return FALSE;
+				nested_nfields = fixed_len;
+				nested_esize = fixed_etype->type == MONO_TYPE_R4 ? 4 : 8;
+				for (int i = 0; i < nested_nfields; ++i)
+					nested_field_offsets [i] = i * nested_esize;
+			} else {
+				if (!is_hfa (ftype, &nested_nfields, &nested_esize, nested_field_offsets))
+					return FALSE;
+			}
+
 			if (nested_esize == 4)
 				ftype = m_class_get_byval_arg (mono_defaults.single_class);
 			else
@@ -1506,7 +1521,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 			if (prev_ftype && prev_ftype->type != ftype->type)
 				return FALSE;
 			prev_ftype = ftype;
-			for (i = 0; i < nested_nfields; ++i) {
+			for (int i = 0; i < nested_nfields; ++i) {
 				if (nfields + i < 4)
 					field_offsets [nfields + i] = field->offset - MONO_ABI_SIZEOF (MonoObject) + nested_field_offsets [i];
 			}
@@ -3870,6 +3885,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case INTRINS_AARCH64_ADV_SIMD_TBL1:
 				arm_neon_tbl1_16b (code, dreg, sreg1, sreg2);
 				break;
+			case INTRINS_AARCH64_ADV_SIMD_USHL:
+				arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
 			default:
 				g_assert_not_reached ();
 				break;
@@ -4137,17 +4155,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, 1, 0); 
 		 	break;
-		}
-		case OP_ARM64_USHL: {
-			arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
-			break;
-		}
-		case OP_ARM64_EXT_IMM: {
-			if (get_vector_size_macro (ins) == VREG_LOW)
-				arm_neon_ext_8b (code, dreg, sreg1, sreg2, ins->inst_c0);
-			else
-				arm_neon_ext_16b (code, dreg, sreg1, sreg2, ins->inst_c0);
-			break;
 		}
 		case OP_XLOWER: {
 			if (dreg == sreg1) {
@@ -4856,22 +4863,51 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 			/* FP */
+		case OP_R4CONST:
 		case OP_R8CONST: {
-			guint64 r8_imm = *(guint64*)ins->inst_p0;
+			gboolean is_double = (ins->opcode == OP_R8CONST);
+			guint64 r_imm = is_double ? *(guint64*)ins->inst_p0 : *(guint32*)ins->inst_p0;
 
-			if (r8_imm == 0) {
+			if (r_imm == 0) {
 				arm_fmov_rx_to_double (code, dreg, ARMREG_RZR);
 			} else {
-				code = emit_imm64 (code, ARMREG_LR, r8_imm);
-				arm_fmov_rx_to_double (code, ins->dreg, ARMREG_LR);
-			}
-			break;
-		}
-		case OP_R4CONST: {
-			guint64 r4_imm = *(guint32*)ins->inst_p0;
+				guint64 mask_constant = is_double ? 0x0000FFFFFFFFFFFF : 0x0007FFFF;
+				
+				// Arm64 floating-point modified immediate constant check (2 * 128 combinations)
+				// Float:  aBbbbbbc defgh000 00000000 00000000
+				// Double: aBbbbbbb bbcdefgh 00000000 00000000 00000000 00000000 00000000 00000000
+				
+				// Trailing zeros check
+				if ((r_imm & mask_constant) == 0) {
+					// Mask for b
+					guint8 mask_b;
+					int idx_last_b;
+					if (is_double) {
+						mask_b = 0xFF;
+						idx_last_b = 54;
+					} else {
+						mask_b = 0x1F;
+						idx_last_b = 25;
+					}
+					guint8 masked_b = (r_imm & ((guint64)mask_b << idx_last_b)) >> idx_last_b;
 
-			code = emit_imm64 (code, ARMREG_LR, r4_imm);
-			arm_fmov_rx_to_double (code, dreg, ARMREG_LR);
+					int size = is_double ? 64 : 32;
+					// NOT(B) == b check
+					if (((r_imm & ((guint64)1 << (size - 2))) && masked_b == 0)
+					|| (!(r_imm & ((guint64)1 << (size - 2))) && masked_b == mask_b)) {						
+						//imm8 = abcdefgh
+						guint8 imm8 = ((r_imm & ((guint64)1 << (size - 1))) >> (size - 8))
+									| ((r_imm & ((guint64)1 << idx_last_b)) >> (idx_last_b - 6))
+									| ((r_imm & ((guint64)0x3F << (idx_last_b - 6))) >> (idx_last_b - 6));
+						
+						arm_fmov_imm(code, (is_double ? 0x01 : 0x00), imm8, dreg);
+						break;
+					} 
+				} 
+				// Regular floating-point constant
+				code = emit_imm64 (code, ARMREG_LR, r_imm);
+				arm_fmov_rx_to_double (code, dreg, ARMREG_LR);
+			}
 			break;
 		}
 		case OP_LOADR8_MEMBASE:

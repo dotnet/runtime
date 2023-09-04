@@ -67,13 +67,13 @@ namespace System.Reflection
                         break;
                 }
 
-                if (parameterType.IsPointer)
+                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
                 {
-                    il.Emit(OpCodes.Unbox_Any, typeof(IntPtr));
+                    Unbox(il, typeof(IntPtr));
                 }
                 else if (parameterType.IsValueType)
                 {
-                    il.Emit(OpCodes.Unbox_Any, parameterType);
+                    Unbox(il, parameterType);
                 }
             }
 
@@ -124,13 +124,13 @@ namespace System.Reflection
                 il.Emit(OpCodes.Call, Methods.Span_get_Item());
                 il.Emit(OpCodes.Ldind_Ref);
 
-                if (parameterType.IsPointer)
+                if (parameterType.IsPointer || parameterType.IsFunctionPointer)
                 {
-                    il.Emit(OpCodes.Unbox_Any, typeof(IntPtr));
+                    Unbox(il, typeof(IntPtr));
                 }
                 else if (parameterType.IsValueType)
                 {
-                    il.Emit(OpCodes.Unbox_Any, parameterType);
+                    Unbox(il, parameterType);
                 }
             }
 
@@ -186,7 +186,7 @@ namespace System.Reflection
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (!parameterType.IsByRef)
                 {
-                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer ? typeof(IntPtr) : parameterType);
+                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer || parameterType.IsFunctionPointer ? typeof(IntPtr) : parameterType);
                 }
             }
 
@@ -194,6 +194,15 @@ namespace System.Reflection
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
+        }
+
+        private static void Unbox(ILGenerator il, Type parameterType)
+        {
+            // Unbox without using OpCodes.Unbox\UnboxAny to avoid a type check since that was already done by reflection.
+            // Also required for unboxing true nullables created by reflection since that is not necessarily a valid CLI operation.
+            Debug.Assert(parameterType.IsValueType);
+            il.Emit(OpCodes.Call, Methods.Object_GetRawData());
+            il.Emit(OpCodes.Ldobj, parameterType);
         }
 
         private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
@@ -260,10 +269,14 @@ namespace System.Reflection
                     il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                     il.Emit(OpCodes.Call, Methods.Pointer_Box());
                 }
+                else if (returnType.IsFunctionPointer)
+                {
+                    il.Emit(OpCodes.Box, typeof(IntPtr));
+                }
                 else if (returnType.IsByRef)
                 {
                     // Check for null ref return.
-                    Type elementType = returnType.GetElementType()!;
+                    RuntimeType elementType = (RuntimeType)returnType.GetElementType()!;
                     Label retValueOk = il.DefineLabel();
                     il.Emit(OpCodes.Dup);
                     il.Emit(OpCodes.Brtrue_S, retValueOk);
@@ -283,6 +296,10 @@ namespace System.Reflection
                         il.Emit(OpCodes.Ldtoken, elementType);
                         il.Emit(OpCodes.Call, Methods.Type_GetTypeFromHandle());
                         il.Emit(OpCodes.Call, Methods.Pointer_Box());
+                    }
+                    else if (elementType.IsFunctionPointer)
+                    {
+                        il.Emit(OpCodes.Box, typeof(IntPtr));
                     }
                     else
                     {
@@ -315,6 +332,10 @@ namespace System.Reflection
             private static MethodInfo? s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned;
             public static MethodInfo ThrowHelper_Throw_NullReference_InvokeNullRefReturned() =>
                 s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned ??= typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.Throw_NullReference_InvokeNullRefReturned))!;
+
+            private static MethodInfo? s_Object_GetRawData;
+            public static MethodInfo Object_GetRawData() =>
+                s_Object_GetRawData ??= typeof(RuntimeHelpers).GetMethod(nameof(RuntimeHelpers.GetRawData), BindingFlags.NonPublic | BindingFlags.Static)!;
 
             private static MethodInfo? s_Pointer_Box;
             public static MethodInfo Pointer_Box() =>

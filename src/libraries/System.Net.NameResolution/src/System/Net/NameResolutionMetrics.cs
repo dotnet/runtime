@@ -12,42 +12,16 @@ namespace System.Net
     {
         private static readonly Meter s_meter = new("System.Net.NameResolution");
 
-        private static readonly Counter<long> s_lookupsRequestedCounter = s_meter.CreateCounter<long>(
-            name: "dns-lookups-requested",
-            description: "Number of DNS lookups requested.");
+        private static readonly Histogram<double> s_lookupDuration = s_meter.CreateHistogram<double>(
+            name: "dns.lookups.duration",
+            unit: "s",
+            description: "Measures the time taken to perform a DNS lookup.");
 
-        public static bool IsEnabled() => s_lookupsRequestedCounter.Enabled;
+        public static bool IsEnabled() => s_lookupDuration.Enabled;
 
-        public static void BeforeResolution(object hostNameOrAddress, out string? host)
+        public static void AfterResolution(TimeSpan duration, string hostName)
         {
-            if (s_lookupsRequestedCounter.Enabled)
-            {
-                host = GetHostnameFromStateObject(hostNameOrAddress);
-
-                s_lookupsRequestedCounter.Add(1, KeyValuePair.Create("hostname", (object?)host));
-            }
-            else
-            {
-                host = null;
-            }
-        }
-
-        public static string GetHostnameFromStateObject(object hostNameOrAddress)
-        {
-            Debug.Assert(hostNameOrAddress is not null);
-
-            string host = hostNameOrAddress switch
-            {
-                string h => h,
-                KeyValuePair<string, AddressFamily> t => t.Key,
-                IPAddress a => a.ToString(),
-                KeyValuePair<IPAddress, AddressFamily> t => t.Key.ToString(),
-                _ => null!
-            };
-
-            Debug.Assert(host is not null, $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
-
-            return host;
+            s_lookupDuration.Record(duration.TotalSeconds, KeyValuePair.Create("dns.question.name", (object?)hostName));
         }
     }
 }

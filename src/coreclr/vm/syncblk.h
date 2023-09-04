@@ -71,10 +71,10 @@ class AwareLock;
 class Thread;
 class AppDomain;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 class EnCSyncBlockInfo;
 typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 #include "eventstore.hpp"
 #include "synch.h"
@@ -990,10 +990,10 @@ class SyncBlock
     PTR_InteropSyncBlockInfo    m_pInteropInfo;
 
   protected:
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // And if the object has new fields added via EnC, this is a list of them
     PTR_EnCSyncBlockInfo m_pEnCInfo;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     // We thread two different lists through this link.  When the SyncBlock is
     // active, we create a list of waiting threads here.  When the SyncBlock is
@@ -1025,9 +1025,9 @@ class SyncBlock
   public:
     SyncBlock(DWORD indx)
         : m_Monitor(indx)
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
         , m_dwHashCode(0)
         , m_BSTRTrailByte(0)
     {
@@ -1125,7 +1125,7 @@ class SyncBlock
     // True if the InteropInfo block was successfully set with the passed in value.
     bool SetInteropInfo(InteropSyncBlockInfo* pInteropInfo);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Get information about fields added to this object by the Debugger's Edit and Continue support
     PTR_EnCSyncBlockInfo GetEnCInfo()
     {
@@ -1135,7 +1135,7 @@ class SyncBlock
 
     // Store information about fields added to this object by the Debugger's Edit and Continue support
     void SetEnCInfo(EnCSyncBlockInfo *pEnCInfo);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     DWORD GetHashCode()
     {

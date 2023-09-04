@@ -35,7 +35,7 @@ namespace Microsoft.Interop
             {
                 return node.WithInitializer(
                     EqualsValueClause(
-                        CastExpression(MarshallerHelpers.SystemIntPtrType, node.Initializer.Value)));
+                        CastExpression(TypeSyntaxes.System_IntPtr, node.Initializer.Value)));
             }
             if (node.Initializer.Value.ToString() == _nativeIdentifier)
             {
@@ -52,7 +52,7 @@ namespace Microsoft.Interop
             if (node.Left.ToString() == _nativeIdentifier)
             {
                 return node.WithRight(
-                    CastExpression(MarshallerHelpers.SystemIntPtrType, node.Right));
+                    CastExpression(TypeSyntaxes.System_IntPtr, node.Right));
             }
             if (node.Right.ToString() == _nativeIdentifier)
             {

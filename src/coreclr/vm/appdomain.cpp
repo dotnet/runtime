@@ -1380,6 +1380,8 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pWeakReferenceClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
         g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
 
+        g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
@@ -1396,6 +1398,10 @@ void SystemDomain::LoadBaseSystemClasses()
     #ifdef FEATURE_ICASTABLE
         g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
     #endif // FEATURE_ICASTABLE
+
+#ifdef FEATURE_EH_FUNCLETS
+        g_pEHClass = CoreLibBinder::GetClass(CLASS__EH);
+#endif
 
         // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
         // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".

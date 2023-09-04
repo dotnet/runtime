@@ -1924,7 +1924,6 @@ void
 mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
-	MonoMethodHeader *header;
 	MonoType *sig_ret;
 	int offset, size, align, curinst;
 	CallInfo *cinfo;
@@ -1950,8 +1949,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
 		cfg->param_area = MAX (cfg->param_area, sizeof (target_mgreg_t)*8);
-
-	header = cfg->header;
 
 	/* See mono_arch_get_global_int_regs () */
 	if (cfg->flags & MONO_CFG_HAS_CALLS)
@@ -2864,21 +2861,14 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 
 	for (i = 0; i < cinfo->nargs; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
-		int last_slot;
 
 		switch (ainfo->storage) {
 		case RegTypeGeneral:
 		case RegTypeIRegPair:
 		case RegTypeBaseGen:
 		case RegTypeFP:
-			break;
 		case RegTypeBase:
-			break;
 		case RegTypeStructByVal:
-			if (ainfo->size == 0)
-				last_slot = PARAM_REGS + (ainfo->offset / 4) + ainfo->vtsize;
-			else
-				last_slot = ainfo->reg + ainfo->size + ainfo->vtsize;
 			break;
 		default:
 			return FALSE;
@@ -4230,16 +4220,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins;
 	MonoCallInst *call;
 	guint8 *code = cfg->native_code + cfg->code_len;
-	MonoInst *last_ins = NULL;
-	int max_len, cpos;
+	int max_len;
 	int imm8, rot_amount;
 
 	/* we don't align basic blocks of loops on arm */
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
-
-	cpos = bb->max_offset;
 
     if (mono_break_at_bb_method && mono_method_desc_full_match (mono_break_at_bb_method, cfg->method) && bb->block_num == mono_break_at_bb_bb_num) {
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
@@ -5978,10 +5965,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}
-
-		cpos += max_len;
-
-		last_ins = ins;
 	}
 
 	set_code_cursor (cfg, code);
@@ -6451,10 +6434,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 			case RegTypeStructByVal: {
 				int doffset = inst->inst_offset;
-				int soffset = 0;
+				//int soffset = 0;
 				int cur_reg;
-				int size = 0;
-				size = mini_type_stack_size_full (inst->inst_vtype, NULL, sig->pinvoke && !sig->marshalling_disabled);
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
 					if (arm_is_imm12 (doffset)) {
 						ARM_STR_IMM (code, ainfo->reg + cur_reg, inst->inst_basereg, doffset);
@@ -6462,7 +6443,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						code = mono_arm_emit_load_imm (code, ARMREG_IP, doffset);
 						ARM_STR_REG_REG (code, ainfo->reg + cur_reg, inst->inst_basereg, ARMREG_IP);
 					}
-					soffset += sizeof (target_mgreg_t);
+					//soffset += sizeof (target_mgreg_t);
 					doffset += sizeof (target_mgreg_t);
 				}
 				if (ainfo->vtsize) {
