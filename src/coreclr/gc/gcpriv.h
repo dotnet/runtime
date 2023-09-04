@@ -147,7 +147,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
+#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -157,7 +157,7 @@ inline void FATAL_GC_ERROR()
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 // can only change heap count with regions
 #define DYNAMIC_HEAP_COUNT
-//#define STRESS_DYNAMIC_HEAP_COUNT
+#define STRESS_DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS && MULTIPLE_HEAPS
 
 #ifdef USE_REGIONS
@@ -363,7 +363,8 @@ const int policy_expand  = 2;
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
-#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
+//#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
+#define dprintf(l,x) {if ((l == 1) || (l == 6666)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 #ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
@@ -4283,12 +4284,25 @@ private:
             uint64_t    gc_elapsed_time;        // time the gc took
             uint64_t    soh_msl_wait_time;      // time the allocator spent waiting for the soh msl lock
             uint64_t    uoh_msl_wait_time;      // time the allocator spent waiting for the uoh msl lock
+            uint64_t    overhead_time;          // sum of the above 3 overhead values
             size_t      allocating_thread_count;// number of allocating threads
             size_t      heap_size;
         };
 
         unsigned        sample_index;
         sample          samples[sample_size];
+        uint64_t        sample_time;
+        size_t          prev_gc_index;
+
+        struct gen2_sample
+        {
+            uint64_t    elapsed_between_gcs;    // time between gcs in microseconds
+            uint64_t    gc_elapsed_time;        // time the gc took
+        };
+
+        size_t          gen2_gc_clock;
+        unsigned        gen2_sample_index;
+        gen2_sample     gen2_samples[sample_size];
 
         float median_percent_overhead;          // estimated overhead of allocator + gc
         float smoothed_median_percent_overhead; // exponentially smoothed version
