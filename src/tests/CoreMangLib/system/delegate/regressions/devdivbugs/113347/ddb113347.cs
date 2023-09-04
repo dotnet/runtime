@@ -3,10 +3,12 @@
 using System;
 using System.Reflection;
 using System.Security;
+using Xunit;
 
 [SecuritySafeCritical]
 public class Program {
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         Console.WriteLine("Attempting delegate construction with null method pointer.");
         Console.WriteLine("Expecting: ArgumentNullException wrapped in TargetInvocationException.");
         try {

@@ -5,10 +5,12 @@ using System;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public static class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool allPassed = true;
         bool passed;
