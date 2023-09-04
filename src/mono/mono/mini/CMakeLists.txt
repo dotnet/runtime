@@ -352,7 +352,10 @@ else()
 set(profiler_sources "")
 endif()
 
-set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources}")
+include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
+set(minipal_sources "${CLR_SRC_NATIVE_DIR}/minipal/random.c")
+
+set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources};${minipal_sources}")
 
 if(LLVM_INCLUDEDIR)
   include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")
