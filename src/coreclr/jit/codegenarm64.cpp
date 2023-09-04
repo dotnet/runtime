@@ -4211,19 +4211,19 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
             bool handledByRcpc = false;
 
-            // On arm64-v8.4+ we can use stlur* instructions with acquire/release semantics to
+            // On arm64-v8.4+ we can use stlur* instructions with acquire/release semantics
             if (compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && addrIsAligned)
             {
                 // Address has to be either in a register already or be a GT_LEA with just imm offset (unscaled)
                 if (addrIsInReg || (tree->Addr()->OperIs(GT_LEA) && !tree->HasIndex() && (tree->Scale() == 1) &&
                                     emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset())))
                 {
-                    if ((ins == INS_strb))
+                    if (ins == INS_strb)
                     {
                         ins           = INS_stlurb;
                         handledByRcpc = true;
                     }
-                    else if ((ins == INS_strh))
+                    else if (ins == INS_strh)
                     {
                         ins           = INS_stlurh;
                         handledByRcpc = true;
