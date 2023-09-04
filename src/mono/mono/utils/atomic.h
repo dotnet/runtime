@@ -25,6 +25,11 @@ F/MonoDroid( 1568): shared runtime initialization error: Cannot load library: re
 Apple targets have historically being problematic, xcode 4.6 would miscompile the intrinsic.
 */
 
+#if defined(_MSC_VER)
+
+#define MONO_IGNORE_STDATOMIC 1
+#endif
+
 #if defined(HOST_ANDROID) && (defined(HOST_X86) || defined(HOST_AMD64))
 /* on Android-x86 ATOMIC_LONG_LONG_LOCK_FREE == 1, not 2 like we want. */
 /* on Andriod-x64 ATOMIC_LONG_LOCK_FREE == 1, not 2 */
