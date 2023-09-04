@@ -24,7 +24,6 @@ namespace TestUnhandledException
 
             testProcess.StartInfo.FileName = Environment.ProcessPath;
             testProcess.StartInfo.Arguments = Environment.CommandLine + " throw";
-            testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
             testProcess.ErrorDataReceived += (sender, line) => 
             {
@@ -41,7 +40,7 @@ namespace TestUnhandledException
             testProcess.CancelErrorRead();
 
             int expectedExitCode;
-            if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
+            if (!OperatingSystem.IsWindows())
             {
                 expectedExitCode = 128 + 6;
             }
@@ -60,7 +59,7 @@ namespace TestUnhandledException
                 return 101;
             }
 
-            if (Regex.Match(lines[0], @"Unhandled exception[.:] System\.Exception\: Test", RegexOptions.IgnoreCase) == Match.Empty)
+            if (lines[0] != "Unhandled exception. System.Exception: Test")
             {
                 Console.WriteLine("Missing Unhandled exception header");
                 return 102;
