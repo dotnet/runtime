@@ -4212,30 +4212,30 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             bool handledByRcpc = false;
 
             // On arm64-v8.4+ we can use stlur* instructions with acquire/release semantics
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && addrIsAligned)
+            // if the address is LEA with just imm offset (unscaled)
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && addrIsAligned &&
+                (tree->Addr()->OperIs(GT_LEA) && !tree->HasIndex() && (tree->Scale() == 1) &&
+                 emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset())))
             {
-                // Address has to be either in a register already or be a GT_LEA with just imm offset (unscaled)
-                if (addrIsInReg || (tree->Addr()->OperIs(GT_LEA) && !tree->HasIndex() && (tree->Scale() == 1) &&
-                                    emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset())))
+                if (ins == INS_strb)
                 {
-                    if (ins == INS_strb)
-                    {
-                        ins           = INS_stlurb;
-                        handledByRcpc = true;
-                    }
-                    else if (ins == INS_strh)
-                    {
-                        ins           = INS_stlurh;
-                        handledByRcpc = true;
-                    }
-                    else if ((ins == INS_str) && genIsValidIntReg(dataReg))
-                    {
-                        ins           = INS_stlur;
-                        handledByRcpc = true;
-                    }
+                    ins           = INS_stlurb;
+                    handledByRcpc = true;
+                }
+                else if (ins == INS_strh)
+                {
+                    ins           = INS_stlurh;
+                    handledByRcpc = true;
+                }
+                else if ((ins == INS_str) && genIsValidIntReg(dataReg))
+                {
+                    ins           = INS_stlur;
+                    handledByRcpc = true;
                 }
             }
 
+            // If the address is in a register we can use the baseline stlr*
+            // Otherwise, a full memory barrier.
             if (!handledByRcpc)
             {
                 if ((ins == INS_strb) && addrIsInReg)
