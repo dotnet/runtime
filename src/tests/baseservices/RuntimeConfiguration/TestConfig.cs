@@ -13,10 +13,9 @@ using Xunit;
 
 public class TestConfig
 {
-    const int Success = 100;
-    const int Fail = 101;
+    public const int Success = 100;
+    public const int Fail = 101;
 
-    [Fact]
     [EnvVar("DOTNET_gcServer", "1")]
     public static int Verify_ServerGC_Env_Enable()
     {
@@ -25,7 +24,6 @@ public class TestConfig
             : Fail;
     }
 
-    [Fact]
     [EnvVar("DOTNET_gcServer", "0")]
     public static int Verify_ServerGC_Env_Disable()
     {
@@ -34,7 +32,6 @@ public class TestConfig
             : Success;
     }
 
-    [Fact]
     [ConfigProperty("System.GC.Server", "true")]
     public static int Verify_ServerGC_Prop_Enable()
     {
@@ -43,7 +40,6 @@ public class TestConfig
             : Fail;
     }
 
-    [Fact]
     [ConfigProperty("System.GC.Server", "false")]
     public static int Verify_ServerGC_Prop_Disable()
     {
@@ -52,7 +48,6 @@ public class TestConfig
             : Success;
     }
 
-    [Fact]
     [EnvVar("DOTNET_gcServer", "0")]
     [ConfigProperty("System.GC.Server", "true")]
     public static int Verify_ServerGC_Env_Override_Prop()
@@ -62,6 +57,7 @@ public class TestConfig
             : Success;
     }
 
+#if !IS_TESTER_APP
     static int Main(string[] args)
     {
         MethodInfo infos = typeof(TestConfig).GetMethod(args[0], BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
@@ -69,11 +65,12 @@ public class TestConfig
         {
             return Fail;
         }
-        return (int)infos.Invoke(null, new object[] { args[1..] });
+        return (int)infos.Invoke(null, Array.Empty<object>());
     }
+#endif
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-    class EnvVarAttribute : Attribute
+    public class EnvVarAttribute : Attribute
     {
         public EnvVarAttribute(string name, string value) { Name = name; Value = value; }
         public string Name { get; init; }
@@ -81,7 +78,7 @@ public class TestConfig
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-    class ConfigPropertyAttribute : Attribute
+    public class ConfigPropertyAttribute : Attribute
     {
         public ConfigPropertyAttribute(string name, string value) { Name = name; Value = value; }
         public string Name { get; init; }

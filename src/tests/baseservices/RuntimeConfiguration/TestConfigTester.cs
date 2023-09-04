@@ -21,14 +21,15 @@ public class TestConfigTester
 
         string testConfigApp = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "TestConfig.dll");
 
-        Assembly testConfigAssembly = Assembly.Load(testConfigApp);
-        MethodInfo[] infos = testConfigAssembly.GetType("TestConfig").GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+        MethodInfo[] infos = typeof(TestConfig).GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
 
         string corerunPath = GetCorerunPath();
         foreach (var mi in infos)
         {
-            var factMaybe = mi.GetCustomAttributes(typeof(FactAttribute));
-            if (!factMaybe.Any())
+            var configProperties = mi.GetCustomAttributes(typeof(TestConfig.ConfigPropertyAttribute));
+            var envVariables = mi.GetCustomAttributes(typeof(TestConfig.EnvVarAttribute));
+
+            if (configProperties.Count() == 0 && envVariables.Count() == 0)
             {
                 continue;
             }
@@ -36,11 +37,10 @@ public class TestConfigTester
             using Process process = new();
 
             StringBuilder arguments = new();
-            var configProperties = mi.GetCustomAttributes(testConfigAssembly.GetType("ConfigPropertyAttribute"));
 
             foreach (Attribute cp in configProperties)
             {
-                ConfigPropertyAttribute configProp = (ConfigPropertyAttribute)cp;
+                TestConfig.ConfigPropertyAttribute configProp = (TestConfig.ConfigPropertyAttribute)cp;
                 arguments.Append($"-p {configProp.Name}={configProp.Value} ");
             }
 
@@ -49,7 +49,6 @@ public class TestConfigTester
             process.StartInfo.FileName = corerunPath;
             process.StartInfo.Arguments = arguments.ToString();
 
-            var envVariables = mi.GetCustomAttributes(typeof(EnvVarAttribute));
             foreach (string key in Environment.GetEnvironmentVariables().Keys)
             {
                 process.StartInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
@@ -58,14 +57,14 @@ public class TestConfigTester
             Console.WriteLine($"Running: {process.StartInfo.Arguments}");
             foreach (Attribute ev in envVariables)
             {
-                EnvVarAttribute envVar = (EnvVarAttribute)ev;
+                TestConfig.EnvVarAttribute envVar = (TestConfig.EnvVarAttribute)ev;
                 process.StartInfo.EnvironmentVariables[envVar.Name] = envVar.Value;
                 Console.WriteLine($"    set {envVar.Name}={envVar.Value}");
             }
 
             process.Start();
             process.WaitForExit();
-            if (process.ExitCode != Success)
+            if (process.ExitCode != TestConfig.Success)
             {
                 throw new Exception($"Failed: {mi.Name}: exit code = {process.ExitCode}");
             }
