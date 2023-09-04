@@ -545,7 +545,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_movkw(p, rd, imm, shift) do { g_assert ((shift) % 16 == 0); arm_format_mov ((p), 0x0, 0x3, (shift) / 16, (rd), (imm)); } while (0)
 
 /* PC-relative address calculation */
-#define arm_format_adrp(p, op, rd, target) do { guint64 imm1 = (guint64)(target); guint64 imm2 = (guint64)(p); int _imm = imm1 - imm2; arm_emit ((p), ((op) << 31) | (((_imm) & 0x3) << 29) | (0x10 << 24) | (((_imm >> 2) & 0x7ffff) << 5) | ((rd) << 0)); } while (0)
+#define arm_format_adrp(p, op, rd, target) do { guint64 imm1 = (guint64)(target); guint64 imm2 = (guint64)(p); int _imm = GUINT64_TO_INT (imm1 - imm2); arm_emit ((p), ((op) << 31) | (((_imm) & 0x3) << 29) | (0x10 << 24) | (((_imm >> 2) & 0x7ffff) << 5) | ((rd) << 0)); } while (0)
 
 #define arm_adrpx(p, rd, target) arm_format_adrp ((p), 0x1, (rd), (target))
 #define arm_adrx(p, rd, target) arm_format_adrp ((p), 0x0, (rd), (target))
