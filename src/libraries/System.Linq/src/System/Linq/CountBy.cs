@@ -19,22 +19,35 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            Dictionary<TKey, int> countsBy = new(comparer);
+            return Core(source, keySelector, comparer);
 
-            using IEnumerator<TSource> e = source.GetEnumerator();
-
-            while (e.MoveNext())
+            static IEnumerable<KeyValuePair<TKey, int>> Core(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
             {
-                TKey currentKey = keySelector(e.Current);
+                Dictionary<TKey, int> countsBy = BuildCountDictionary(source, keySelector, comparer);
 
-                ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, currentKey, out _);
-                checked
+                foreach (KeyValuePair<TKey, int> countBy in countsBy)
                 {
-                    currentCount++;
+                    yield return countBy;
                 }
             }
 
-            return countsBy;
+            static Dictionary<TKey, int> BuildCountDictionary(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+            {
+                Dictionary<TKey, int> countsBy = new(comparer);
+
+                foreach (TSource element in source)
+                {
+                    TKey currentKey = keySelector(element);
+
+                    ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, currentKey, out _);
+                    checked
+                    {
+                        currentCount++;
+                    }
+                }
+
+                return countsBy;
+            }
         }
     }
 }
