@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 
-class Test_ng_standard{
-	public static int Main(){
+public class Test_ng_standard{
+	public static void Main(){
 		Console.WriteLine("Test creation/invocation of non-generic closed instance or open static delegates over various generic methods");
 
 		GenericClass<EQStruct<long>> refr = new GenericClass<EQStruct<long>>();
@@ -102,8 +102,5 @@ class Test_ng_standard{
 		d9(50,new EQClass<long>(50));
 		d9 = new dc7(GenericStruct<EQStruct<long>>.SM9<EQClass<long>>);
 		d9(50,new EQClass<long>(50));		
-
-		Console.WriteLine("Done - Passed");
-		return 100;
 	}
 }

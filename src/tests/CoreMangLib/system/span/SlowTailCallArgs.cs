@@ -6,9 +6,9 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 
-internal static class Program
+public static class Program
 {
-    private static int Main()
+    public static int Main()
     {
         bool allPassed = true;
         bool passed;

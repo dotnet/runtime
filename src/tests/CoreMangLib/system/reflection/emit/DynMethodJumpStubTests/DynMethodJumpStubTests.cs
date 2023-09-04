@@ -9,10 +9,9 @@ using System.Threading;
 
 public static class DynamicMethodJumpStubTests
 {
-    private static int Main()
+    public static void Main()
     {
         DynamicMethodJumpStubTest();
-        return 100;
     }
 
     public static void DynamicMethodJumpStubTest()

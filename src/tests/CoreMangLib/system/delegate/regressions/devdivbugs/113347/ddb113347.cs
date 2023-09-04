@@ -5,8 +5,8 @@ using System.Reflection;
 using System.Security;
 
 [SecuritySafeCritical]
-class Program {
-    static int Main() {
+public class Program {
+    public static int Main() {
         Console.WriteLine("Attempting delegate construction with null method pointer.");
         Console.WriteLine("Expecting: ArgumentNullException wrapped in TargetInvocationException.");
         try {

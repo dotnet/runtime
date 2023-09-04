@@ -68,7 +68,7 @@ class My
 
     public static int[][] g = new int[10000][];
 
-    static int Main()
+    public static int Main()
     {
         int[] empty = new int[] { 1 };
         for (int i = 0; i < g.Length; i++)

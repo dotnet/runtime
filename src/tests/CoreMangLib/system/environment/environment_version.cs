@@ -3,9 +3,9 @@
 
 using System;
 
-class environment_version
+public class environment_version
 {
-    static int Main()
+    public static int Main()
     {
         Version ver = Environment.Version;
         Console.WriteLine($"Environment.Version = {ver}");

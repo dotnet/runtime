@@ -8,9 +8,9 @@ using System;
 
 namespace System
 {
-    class ASURT_99893
+    public class ASURT_99893
     {
-	static int Main()
+	public static int Main()
 	{
 	    Boolean pass=true;
 #pragma warning disable 0436

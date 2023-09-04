@@ -3,7 +3,7 @@
 using System;
 using System.Reflection;
 
-class Program
+public class Program
 {
     public int scale;
 
@@ -15,7 +15,8 @@ class Program
     {
         return new decimal(constituent/prog.scale);
     }
-    static int Main()
+
+    public static int Main()
     {
         int result = -1;
         

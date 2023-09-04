@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 
-class Program
+public class Program
 {
     public virtual void VirtualMethod()
     {
@@ -12,7 +12,7 @@ class Program
     {
     }
 
-    static int Main()
+    public static int Main()
     {
         Program p = new Program();
 
