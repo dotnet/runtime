@@ -9203,7 +9203,8 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        if (!removedExplicitZeroInit && isEntire && (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
+                        if (!removedExplicitZeroInit && isEntire &&
+                            (!canThrow || (lclDsc->lvTracked && !lclDsc->lvLiveInOutOfHndlr)))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
