@@ -3405,7 +3405,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            _ASSERTE(pMethodTable->GetNativeSize() == 8);
+                            _ASSERTE((pMethodTable->GetNativeSize() == 8) || (pMethodTable->GetNativeSize() == 16));
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
@@ -4021,7 +4021,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            _ASSERTE(pMethodTable->GetNativeSize() == 8);
+                            _ASSERTE((pMethodTable->GetNativeSize() == 8) || (pMethodTable->GetNativeSize() == 16));
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
