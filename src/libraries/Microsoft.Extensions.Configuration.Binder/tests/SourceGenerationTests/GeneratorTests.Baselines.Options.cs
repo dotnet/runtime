@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 {
                     ConfigurationBuilder configurationBuilder = new();
                     IConfiguration config = configurationBuilder.Build();
-                    IConfigurationSection section = config.GetSection(""MySection"");
+                    IConfigurationSection section = config.GetSection("MySection");
 
                     ServiceCollection services = new();
                     services.Configure<MyClass>({{paramList}});

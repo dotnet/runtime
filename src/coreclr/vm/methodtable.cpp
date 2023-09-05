@@ -3405,7 +3405,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            _ASSERTE(pMethodTable->GetNativeSize() == 8);
+                            _ASSERTE((pMethodTable->GetNativeSize() == 8) || (pMethodTable->GetNativeSize() == 16));
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
@@ -4021,7 +4021,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            _ASSERTE(pMethodTable->GetNativeSize() == 8);
+                            _ASSERTE((pMethodTable->GetNativeSize() == 8) || (pMethodTable->GetNativeSize() == 16));
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
@@ -4058,6 +4058,12 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     else if (pFieldStart[1].GetSize() == 8)
                     {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                    }
+
+                    // Pass with two integer registers in `struct {int a, int b, float/double c}` cases
+                    if ((size | STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_SECOND) == size)
+                    {
+                        size = STRUCT_NO_FLOAT_FIELD;
                     }
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)

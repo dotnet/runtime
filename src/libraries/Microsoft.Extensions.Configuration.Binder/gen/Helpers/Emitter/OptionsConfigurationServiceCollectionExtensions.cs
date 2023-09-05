@@ -24,12 +24,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitConfigureMethods()
             {
                 const string defaultNameExpr = "string.Empty";
-                string configParam = $"{Identifier.IConfiguration} {Identifier.configuration}";
+                string configParam = $"{Identifier.IConfiguration} {Identifier.config}";
 
                 if (ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Configure_T))
                 {
                     EmitStartMethod(MethodsToGen_Extensions_ServiceCollection.Configure_T, configParam);
-                    _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {defaultNameExpr}, {Identifier.configuration}, {Identifier.configureOptions}: null);");
+                    _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {defaultNameExpr}, {Identifier.config}, {Identifier.configureOptions}: null);");
                     EmitEndBlock();
                 }
 
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitStartMethod(
                         MethodsToGen_Extensions_ServiceCollection.Configure_T_name,
                         paramList: $"string? {Identifier.name}, " + configParam);
-                    _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {Identifier.name}, {Identifier.configuration}, {Identifier.configureOptions}: null);");
+                    _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {Identifier.name}, {Identifier.config}, {Identifier.configureOptions}: null);");
                     EmitEndBlock();
                 }
 
@@ -47,22 +47,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitStartMethod(
                         MethodsToGen_Extensions_ServiceCollection.Configure_T_BinderOptions,
                         paramList: configParam + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}");
-                    _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {defaultNameExpr}, {Identifier.configuration}, {Identifier.configureOptions});");
+                    _writer.WriteLine($"return {Identifier.Configure}<{Identifier.TOptions}>({Identifier.services}, {defaultNameExpr}, {Identifier.config}, {Identifier.configureOptions});");
                     EmitEndBlock();
                 }
 
                 // Core Configure method that the other overloads call.
                 // Like the others, it is public API that could be called directly by users.
                 // So, it is always generated whenever a Configure overload is called.
-                string optionsNamespaceName = "Microsoft.Extensions.Options";
-
                 EmitStartMethod(MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions, paramList: $"string? {Identifier.name}, " + configParam + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}");
                 EmitCheckForNullArgument_WithBlankLine(Identifier.services);
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.config);
                 _writer.WriteLine($$"""
                     OptionsServiceCollectionExtensions.AddOptions({{Identifier.services}});
-                    {{Identifier.services}}.{{Identifier.AddSingleton}}<{{Identifier.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>>(new {{Identifier.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.configuration}}));
-                    return {{Identifier.services}}.{{Identifier.AddSingleton}}<{{optionsNamespaceName}}.IConfigureOptions<{{Identifier.TOptions}}>>(new {{optionsNamespaceName}}.ConfigureNamedOptions<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.obj}} => {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.configuration}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}){{Identifier.configureOptions}})));
+                    {{Identifier.services}}.{{Identifier.AddSingleton}}<{{Identifier.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>>(new {{Identifier.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.config}}));
+                    return {{Identifier.services}}.{{Identifier.AddSingleton}}<IConfigureOptions<{{Identifier.TOptions}}>>(new ConfigureNamedOptions<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.instance}} => {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.config}}, {{Identifier.instance}}, typeof({{Identifier.TOptions}}), {{Identifier.configureOptions}})));
                     """);
                 EmitEndBlock();
             }

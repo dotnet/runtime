@@ -197,8 +197,8 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	MonoJumpInfo *ji = NULL;
 	guint8 *br_out, *br [16], *br_ret [16];
 	int i, offset, arg_reg, npushed, info_offset, mrgctx_offset;
-	int caller_reg_area_offset, caller_freg_area_offset, callee_reg_area_offset, callee_freg_area_offset;
-	int lr_offset, fp, br_ret_index, args_size;
+	int caller_reg_area_offset, caller_freg_area_offset, /* callee_reg_area_offset, */ callee_freg_area_offset;
+	int /* lr_offset, */ fp, br_ret_index, args_size;
 
 	buf_len = 784;
 	buf = code = mono_global_codeman_reserve (buf_len);
@@ -229,14 +229,14 @@ MONO_RESTORE_WARNING
 	offset += 4;
 	mrgctx_offset = -offset;
 	offset += 4 * 4;
-	callee_reg_area_offset = -offset;
+	//callee_reg_area_offset = -offset;
 	offset += 8 * 8;
 	caller_freg_area_offset = -offset;
 	offset += 8 * 8;
 	callee_freg_area_offset = -offset;
 
 	caller_reg_area_offset = cfa_offset - (npushed * TARGET_SIZEOF_VOID_P);
-	lr_offset = 4;
+	//lr_offset = 4;
 	/* Save info struct which is in r0 */
 	ARM_STR_IMM (code, arg_reg, fp, info_offset);
 	/* Save rgctx reg */

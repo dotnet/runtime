@@ -160,7 +160,6 @@ public:
     void    ValidateObjectMember (Object *obj);
 
     PER_HEAP    size_t  ApproxTotalBytesInUse(BOOL small_heap_only = FALSE);
-    PER_HEAP    size_t  ApproxFreeBytes();
 
     unsigned GetCondemnedGeneration();
 
@@ -210,8 +209,6 @@ public:
 
     Object* GetNextFinalizable() { return GetNextFinalizableObject(); };
     size_t GetNumberOfFinalizable() { return GetNumberFinalizableObjects(); }
-
-    PER_HEAP_ISOLATED HRESULT GetGcCounters(int gen, gc_counters* counters);
 
     size_t GetValidSegmentSize(bool large_seg = false);
 

@@ -6,19 +6,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using SourceGenerators.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
@@ -26,39 +22,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        private static class Diagnostics
-        {
-            public static (string Id, string Title) TypeNotSupported = ("SYSLIB1100", "Did not generate binding logic for a type");
-            public static (string Id, string Title) PropertyNotSupported = ("SYSLIB1101", "Did not generate binding logic for a property on a type");
-            public static (string Id, string Title) ValueTypesInvalidForBind = ("SYSLIB1103", "Value types are invalid inputs to configuration 'Bind' methods");
-            public static (string Id, string Title) CouldNotDetermineTypeInfo = ("SYSLIB1104", "The target type for a binder call could not be determined");
-        }
-
-        private static readonly Assembly[] s_compilationAssemblyRefs = new[] {
-            typeof(ConfigurationBinder).Assembly,
-            typeof(CultureInfo).Assembly,
-            typeof(IConfiguration).Assembly,
-            typeof(IServiceCollection).Assembly,
-            typeof(IDictionary).Assembly,
-            typeof(OptionsBuilder<>).Assembly,
-            typeof(OptionsConfigurationServiceCollectionExtensions).Assembly,
-            typeof(Uri).Assembly,
-        };
-
-        private enum ExtensionClassType
-        {
-            None,
-            ConfigurationBinder,
-            OptionsBuilder,
-            ServiceCollection,
-        }
-
         [Theory]
         [InlineData(LanguageVersion.CSharp11)]
         [InlineData(LanguageVersion.CSharp10)]
         public async Task LangVersionMustBeCharp12OrHigher(LanguageVersion langVersion)
         {
-            var (d, r) = await RunGenerator(BindCallSampleCode, langVersion);
+            var (d, r) = await RunGenerator(BindCallSampleCode, langVersion: langVersion);
             Assert.Empty(r);
 
             Diagnostic diagnostic = Assert.Single(d);
@@ -253,9 +222,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Single(r);
 
             string generatedSource = string.Join('\n', r[0].SourceText.Lines.Select(x => x.ToString()));
-            Assert.Contains("public static void Bind_ProgramMyClass0(this IConfiguration configuration, object? obj)", generatedSource);
-            Assert.Contains("public static void Bind_ProgramMyClass1(this IConfiguration configuration, object? obj, Action<BinderOptions>? configureOptions)", generatedSource);
-            Assert.Contains("public static void Bind_ProgramMyClass2(this IConfiguration configuration, string key, object? obj)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass0(this IConfiguration configuration, object? instance)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass1(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)", generatedSource);
+            Assert.Contains("public static void Bind_ProgramMyClass2(this IConfiguration configuration, string key, object? instance)", generatedSource);
 
             Assert.Empty(d);
         }
@@ -370,70 +339,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Single(r);
             Assert.Equal(12, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
             Assert.Equal(10, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
-        }
-
-        private static async Task VerifyAgainstBaselineUsingFile(
-            string filename,
-            string testSourceCode,
-            LanguageVersion languageVersion = LanguageVersion.Preview,
-            Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null,
-            ExtensionClassType extType = ExtensionClassType.None)
-        {
-            string path = extType is ExtensionClassType.None
-                ? Path.Combine("Baselines", filename)
-                : Path.Combine("Baselines", extType.ToString(), filename);
-            string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(path).ConfigureAwait(false));
-            string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
-                                             .Split(Environment.NewLine);
-
-            var (d, r) = await RunGenerator(testSourceCode, languageVersion);
-            bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out string errorMessage);
-
-#if UPDATE_BASELINES
-            if (!success)
-            {
-                string? repoRootDir = Environment.GetEnvironmentVariable("RepoRootDir");
-                Assert.True(repoRootDir is not null, "To update baselines, specifiy the root runtime repo dir");
-
-                IEnumerable<string> lines = r[0].SourceText.Lines.Select(l => l.ToString());
-                string source = string.Join(Environment.NewLine, lines).TrimEnd(Environment.NewLine.ToCharArray()) + Environment.NewLine;
-                path = Path.Combine($"{repoRootDir}\\src\\libraries\\Microsoft.Extensions.Configuration.Binder\\tests\\SourceGenerationTests\\", path);
-
-                await File.WriteAllTextAsync(path, source).ConfigureAwait(false);
-                success = true;
-            }
-#endif
-
-            Assert.Single(r);
-            (assessDiagnostics ?? ((d) => Assert.Empty(d))).Invoke(d);
-            Assert.True(success, errorMessage);
-        }
-
-        private static async Task<(ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGenerator(
-            string testSourceCode,
-            LanguageVersion langVersion = LanguageVersion.Preview,
-            IEnumerable<Assembly>? references = null) =>
-            await RoslynTestUtils.RunGenerator(
-                new ConfigurationBindingGenerator(),
-                references ?? s_compilationAssemblyRefs,
-                new[] { testSourceCode },
-                langVersion: langVersion).ConfigureAwait(false);
-
-        public static List<Assembly> GetAssemblyRefsWithAdditional(params Type[] additional)
-        {
-            List<Assembly> assemblies = new(s_compilationAssemblyRefs);
-            assemblies.AddRange(additional.Select(t => t.Assembly));
-            return assemblies;
-        }
-
-        public static HashSet<Assembly> GetFilteredAssemblyRefs(IEnumerable<Type> exclusions)
-        {
-            HashSet<Assembly> assemblies = new(s_compilationAssemblyRefs);
-            foreach (Type exclusion in exclusions)
-            {
-                assemblies.Remove(exclusion.Assembly);
-            }
-            return assemblies;
         }
     }
 }
