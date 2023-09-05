@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.Threading;
+using Internal;
 
 namespace System.Diagnostics.Metrics
 {
@@ -26,6 +27,7 @@ namespace System.Diagnostics.Metrics
         {
             // Get the deltas array.
             PaddedDouble[] deltas = _deltas;
+            Debug.Assert(deltas.Length == Environment.ProcessorCount);
 
             // Get the delta best associated with the current thread, preferring to use core ID rather than
             // thread ID to reduce contention.
@@ -35,7 +37,7 @@ namespace System.Diagnostics.Metrics
 #else
                 Environment.CurrentManagedThreadId
 #endif
-                % deltas.Length];
+                % Environment.ProcessorCount];
 
             // We're not guaranteed uncontented access, so we still need to add the value
             // to the delta with synchronization. Contention could come from other threads
@@ -69,7 +71,7 @@ namespace System.Diagnostics.Metrics
             return new CounterStatistics(delta, _isMonotonic, aggregatedValue);
         }
 
-        [StructLayout(LayoutKind.Explicit, Size = 128)] // common cache-line size
+        [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE)]
         private struct PaddedDouble
         {
             [FieldOffset(0)]
