@@ -231,7 +231,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return displayName;
 
-#if TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return displayName;
 #else
             GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
@@ -249,7 +249,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return standardDisplayName;
 
-#if TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (!GlobalizationMode.Hybrid)
                 return standardDisplayName;
 #endif
@@ -267,7 +267,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return daylightDisplayName;
 
-#if TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (!GlobalizationMode.Hybrid)
                 return daylightDisplayName;
 #endif

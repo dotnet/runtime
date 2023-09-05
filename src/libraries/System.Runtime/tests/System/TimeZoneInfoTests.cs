@@ -89,7 +89,7 @@ namespace System.Tests
         //  Name abbreviations, if available, are used instead
         public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
         {
-            if (PlatformDetection.IsBrowser || (!PlatformDetection.IsHybridGlobalizationOnOSX  && (PlatformDetection.IsiOS || PlatformDetection.IstvOS)))
+            if (PlatformDetection.IsBrowser || (!PlatformDetection.IsHybridGlobalizationOnOSX  && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS)))
                 return new TheoryData<TimeZoneInfo, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "PST", "PDT" },
@@ -100,7 +100,7 @@ namespace System.Tests
                     { s_NewfoundlandTz, "(UTC-03:30) America/St_Johns", null, "NST", "NDT" },
                     { s_catamarcaTz, "(UTC-03:00) America/Argentina/Catamarca", null, "-03", "-02" }
                 };
-            else if(PlatformDetection.IsHybridGlobalizationOnOSX && (PlatformDetection.IsiOS || PlatformDetection.IstvOS))
+            else if (PlatformDetection.IsHybridGlobalizationOnOSX && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS))
                 return new TheoryData<TimeZoneInfo, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "Pacific Standard Time", "Pacific Daylight Time" },
