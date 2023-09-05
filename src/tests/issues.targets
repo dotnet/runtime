@@ -443,6 +443,12 @@
 
     <!-- OSX arm64 on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr' ">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/Box_Unbox_volatile/*">
+            <Issue>https://github.com/dotnet/runtime/issues/91648</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/oldtests/stfldstatic2_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/91647</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
