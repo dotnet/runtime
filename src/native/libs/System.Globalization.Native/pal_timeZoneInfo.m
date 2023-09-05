@@ -7,6 +7,10 @@
 #include "pal_timeZoneInfo.h"
 #import <Foundation/Foundation.h>
 
+#if !__has_feature(objc_arc)
+#error This file relies on ARC for memory management, but ARC is not enabled.
+#endif
+
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 /*
@@ -17,36 +21,43 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
 {
     @autoreleasepool
     {
-        NSLocale *currentLocale;
-        if(localeName == NULL || lNameLength == 0)
-        {
-            currentLocale = [NSLocale systemLocale];
-        }
-        else
-        {
-            NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
-            currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
-        }
         NSString* tzName = [NSString stringWithCharacters: timeZoneId length: timeZoneIdLength];
         NSTimeZone* timeZone = [NSTimeZone timeZoneWithName:tzName];
-        NSTimeZoneNameStyle style;
+        NSString* timeZoneName;
 
-        switch (type)
+        if (type == TimeZoneDisplayName_TimeZoneName)
+            timeZoneName = timeZone.name;
+        else
         {
-            case TimeZoneDisplayName_Standard:
-                style = NSTimeZoneNameStyleStandard;
-                break;
-            case TimeZoneDisplayName_DaylightSavings:
-                style = NSTimeZoneNameStyleDaylightSaving;
-                break;
-            case TimeZoneDisplayName_Generic:
-                style = NSTimeZoneNameStyleGeneric;
-                break;
-            default:
-                return UnknownError;
-        }
+            NSLocale *currentLocale;
+            if(localeName == NULL || lNameLength == 0)
+            {
+                currentLocale = [NSLocale systemLocale];
+            }
+            else
+            {
+                NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
+                currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
+            }
+            NSTimeZoneNameStyle style;
 
-        NSString* timeZoneName = [timeZone localizedName:style locale:currentLocale];
+            switch (type)
+            {
+                case TimeZoneDisplayName_Standard:
+                    style = NSTimeZoneNameStyleStandard;
+                    break;
+                case TimeZoneDisplayName_DaylightSavings:
+                    style = NSTimeZoneNameStyleDaylightSaving;
+                    break;
+                case TimeZoneDisplayName_Generic:
+                    style = NSTimeZoneNameStyleGeneric;
+                    break;
+                default:
+                    return UnknownError;
+            }
+
+            timeZoneName = [timeZone localizedName:style locale:currentLocale];
+        }
         if (timeZoneName == NULL || timeZoneName.length == 0)
         {
             return UnknownError;

@@ -88,7 +88,7 @@ namespace System.Tests
         //  Due to ICU size limitations, full daylight/standard names are not included for the browser.
         //  Name abbreviations, if available, are used instead
         public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
-        {
+        {//
             if (PlatformDetection.IsBrowser || (!PlatformDetection.IsHybridGlobalizationOnOSX  && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS)))
                 return new TheoryData<TimeZoneInfo, string, string, string, string>
                 {
@@ -147,7 +147,7 @@ namespace System.Tests
                     displayName = displayName.Replace(c.ToString(), "", StringComparison.Ordinal);
                 }
             }
-
+            System.Diagnostics.Debug.WriteLine($"Platform_TimeZoneNames Display Name: '{tzi.DisplayName}'");
             Assert.True(displayName == tzi.DisplayName || alternativeDisplayName == tzi.DisplayName,
                          $"Display Name: Neither '{displayName}' nor '{alternativeDisplayName}' equal to '{tzi.DisplayName}'");
             Assert.Equal(standardName, tzi.StandardName);

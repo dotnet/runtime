@@ -153,23 +153,33 @@ namespace System
         // Helper function that builds the value backing the DisplayName field from globalization data.
         private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, ref string? displayName)
         {
+            CultureInfo uiCulture = UICulture;
+            // Get the base offset to prefix in front of the time zone.
+            // Only UTC and its aliases have "(UTC)", handled earlier.  All other zones include an offset, even if it's zero.
+            string baseOffsetText = string.Create(null, stackalloc char[128], $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})");
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                string? timeZoneName = null;
+                GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.TimeZoneName, uiCulture.Name, ref timeZoneName);
+                // For this target, be consistent with other time zone display names that use the ID.
+                displayName = $"{baseOffsetText} {timeZoneName}";
+                return;
+            }
+#endif
             // There are a few different ways we might show the display name depending on the data.
             // The algorithm used below should avoid duplicating the same words while still achieving the
             // goal of providing a unique, discoverable, and intuitive name.
 
             // Try to get the generic name for this time zone.
             string? genericName = null;
-            CultureInfo uiCulture = UICulture;
             GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture.Name, ref genericName);
             if (genericName == null)
             {
                 // We'll use the fallback display name value already set.
                 return;
             }
-
-            // Get the base offset to prefix in front of the time zone.
-            // Only UTC and its aliases have "(UTC)", handled earlier.  All other zones include an offset, even if it's zero.
-            string baseOffsetText = string.Create(null, stackalloc char[128], $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})");
 
             // Get the generic location name.
             string? genericLocationName = null;

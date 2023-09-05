@@ -232,12 +232,12 @@ namespace System
                 return displayName;
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            return displayName;
-#else
+            if (!GlobalizationMode.Hybrid)
+                return displayName;
+#endif
             GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
 
             return displayName;
-#endif
         }
 
         private string? PopulateStandardDisplayName()
