@@ -961,4 +961,7 @@
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.
 #endif
 
+/* define if the runtime should use C11 atomics */
+#cmakedefine ENABLE_STDATOMIC 1
+
 #endif
