@@ -182,7 +182,7 @@ def includeEvent(inclusionList, providerName, eventName):
     else:
         return False
 
-def getCoreCLRMonoTypeAdaptionDefines():
+def getCoreCLRMonoNativeAotTypeAdaptionDefines():
     return """
 #ifndef W
 #define W(str) L##str
@@ -429,11 +429,10 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
             clrallEvents.append("%s EventEnabled" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"]))
             clrallEvents.append(eventName)
             clrallEvents.append("(void)")
-            if runtimeFlavor.nativeaot and (generatedFileType == "header" or generatedFileType == "source-impl-noop"):
-                if generatedFileType == "header":
-                    clrallEvents.append(";\n")
-                elif generatedFileType == "source-impl-noop":
-                    clrallEvents.append(" { return 0; }\n")
+            if generatedFileType == "header":
+                clrallEvents.append(";\n")
+            elif generatedFileType == "source-impl-noop":
+                clrallEvents.append(" { return 0; }\n")
             else:
                 clrallEvents.append(" {return ")
                 clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
@@ -772,7 +771,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
         Clrallevents.write(stdprolog)
         if generatedFileType=="header-impl":
             if runtimeFlavor.mono:
-                Clrallevents.write(getCoreCLRMonoTypeAdaptionDefines() + "\n")
+                Clrallevents.write(getCoreCLRMonoNativeAotTypeAdaptionDefines() + "\n")
             if runtimeFlavor.coreclr or write_xplatheader:
                 Clrallevents.write('#include "clrxplatevents.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')

@@ -109,14 +109,14 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_Disable(uint64_t session
     ep_disable(sessionID);
 }
 
-EventPipeProvider * create_provider(const WCHAR*, EventPipeCallback, void* pCallbackContext = nullptr);
-
 EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
     const WCHAR* providerName,
     EventPipeCallback pCallbackFunc,
     void* pCallbackContext)
 {
-    EventPipeProvider* pProvider = create_provider(providerName, pCallbackFunc, pCallbackContext);
+    ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
+    EventPipeProvider * pProvider = ep_create_provider (providerNameUTF8, pCallbackFunc, pCallbackContext);
+    ep_rt_utf8_string_free (providerNameUTF8);
     return reinterpret_cast<intptr_t>(pProvider);
 }
 

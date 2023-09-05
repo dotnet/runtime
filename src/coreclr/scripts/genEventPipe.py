@@ -178,12 +178,9 @@ def generateClrEventPipeWriteEventsImpl(
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
-        " = " + createProviderFunc + "(")
-    if not runtimeFlavor.nativeaot: WriteEventImpl.append("SL(")
-    WriteEventImpl.append(providerPrettyName +
-        "Name")
-    if not runtimeFlavor.nativeaot: WriteEventImpl.append(")")
-    WriteEventImpl.append(", " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
+        " = " + createProviderFunc + "(SL(" +
+        providerPrettyName +
+        "Name), " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -732,13 +729,7 @@ def getAotEventPipeHelperFileImplPrefix():
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-buffer-manager.h>
 
-#ifndef ERROR_WRITE_FAULT
-#define ERROR_WRITE_FAULT 29L
-#endif
-
-#ifndef ERROR_SUCCESS
-#define ERROR_SUCCESS   0
-#endif
+%s
 
 bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
 {
@@ -818,7 +809,7 @@ EventPipeProvider * create_provider(const WCHAR* providerName, EventPipeCallback
     return provider;
 }
 
-"""
+""" % (getCoreCLRMonoNativeAotTypeAdaptionDefines())
 
 def getAotEventPipeHelperFileImplSuffix():
     return ""
@@ -1126,7 +1117,7 @@ create_provider (
     g_free (provider_name_utf8);
     return provider;
 }
-""" % (getCoreCLRMonoTypeAdaptionDefines())
+""" % (getCoreCLRMonoNativeAotTypeAdaptionDefines())
 
 def getMonoEventPipeImplFileSuffix():
     return "#endif\n"
@@ -1150,13 +1141,7 @@ def getAotEventPipeImplFilePrefix():
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-buffer-manager.h>
 
-#ifndef ERROR_WRITE_FAULT
-#define ERROR_WRITE_FAULT 29L
-#endif
-
-#ifndef ERROR_SUCCESS
-#define ERROR_SUCCESS   0
-#endif
+%s
 
 bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
 bool WriteToBuffer(const WCHAR* str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
@@ -1178,7 +1163,7 @@ bool WriteToBuffer(const T &value, BYTE *&buffer, size_t& offset, size_t& size, 
     return true;
 }
 
-"""
+""" % (getCoreCLRMonoNativeAotTypeAdaptionDefines())
 
 def getAotEventPipeImplFileSuffix():
     return """
