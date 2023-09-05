@@ -56,6 +56,12 @@ extends:
     - stage: Build
       jobs:
       #
+      # Evaluate paths
+      #
+      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+        - template: /eng/pipelines/common/evaluate-default-paths.yml
+
+      #
       # PAL Tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -73,5 +79,4 @@ extends:
           jobParameters:
             buildArgs: -s clr.paltests+clr.paltestlist
             nameSuffix: PALTests
-            dependOnEvaluatePaths: false
             extraStepsTemplate: /eng/pipelines/coreclr/templates/run-paltests-step.yml
