@@ -65,4 +65,3 @@ set (ENABLE_MINIMAL "" CACHE STRING "Set many DISABLE_ options at once. Comma-se
 set (AOT_TARGET_TRIPLE "" CACHE STRING "Target triple for AOT cross compiler")
 set (AOT_OFFSETS_FILE "" CACHE STRING "Offsets file for AOT cross compiler")
 set (LLVM_PREFIX "" CACHE STRING "Enable LLVM support with LLVM installed at <LLVM_PREFIX>.")
-option (ENABLE_STDATOMIC "Enables using C11 atomics for runtime atomic operations")

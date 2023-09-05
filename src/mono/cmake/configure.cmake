@@ -72,7 +72,6 @@ ac_check_headers (
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h
   android/legacy_signal_inlines.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h alloca.h
-  stdatomic.h
   /usr/include/malloc.h)
 
 ac_check_funcs (

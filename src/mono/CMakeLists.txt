@@ -831,46 +831,6 @@ set(EGLIB_GSSIZE "ptrdiff_t")
 #
 
 ######################################
-# ATOMIC CHECKS
-######################################
-set (ENABLE_STDATOMIC 0)
-if (HAVE_STDATOMIC_H)
-  # Generally, we can enable C11 atomics if the header is available
-  # and if all the primitive types we care about (int, long, void*,
-  # long long) are lock-free.
-
-  # Note that we genrally don't want the compiler's locking
-  # implementation because it may take a global lock, in which case if
-  # the atomic is used by both the GC implementation and runtime
-  # internals we may have deadlocks during GC suspend.
-
-  # It might be possible to use some Mono specific implementation for
-  # specific types (e.g. long long) on some platforms if the standard
-  # atomics for some type are not lock-free (for example: long long).
-  # We might be able to use a GC-aware lock, for example.
-
-  if (MSVC)
-    # we need two things:
-    # 1. MSVC atomics support is not experimental, or we pass /experimental:c11atomics
-    # 2. For our C++ code we build with C++23 or later (otherwise MSVC
-    # errors out when you include stdatomic.h in C++ mode)
-    set (ENABLE_STDATOMIC 0)
-  elseif(HOST_DARWIN)
-    set (ENABLE_STDATOMIC 1)
-  elseif(HOST_ANDROID AND HOST_ARM64)
-    # on Android-x86 ATOMIC_LONG_LONG_LOCK_FREE == 1, not 2 like we want.
-    # on Andriod-x64 ATOMIC_LONG_LOCK_FREE == 1, not 2 */
-    # on Android-armv7 ATOMIC_INT_LOCK_FREE == 1, not 2 */
-    set (ENABLE_STDATOMIC 1)
-  elseif(HOST_LINUX)
-    set (ENABLE_STDATOMIC 1)
-  elseif(HOST_WASI OR HOST_BROWSER)
-    set (ENABLE_STDATOMIC 1)
-  endif()
-endif()  
-
-
-######################################
 # DEBUG BUILD CHECKS
 ######################################
 function(process_checked_build)
