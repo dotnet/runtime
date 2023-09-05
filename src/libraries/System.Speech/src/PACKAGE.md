@@ -1,7 +1,7 @@
 ## About
 
 <!-- A description of the package and where one can find more documentation -->
-Provides APIs for speech recognition and synthesis built on the [Microsoft Speech API](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ms723627(v=vs.85)) in Windows.  Not supported on other non-Windows platforms.  
+Provides APIs for speech recognition and synthesis built on the [Microsoft Speech API](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ms723627(v=vs.85)) in Windows.  Not supported on other non-Windows platforms.
 
 This package is provided primarily for compatibility with code being ported from .NETFramework and is not accepting new features.
 
@@ -18,14 +18,14 @@ This package is provided primarily for compatibility with code being ported from
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
 
 ### Synthesis example
-```C# 
+```C#
 using System.Speech.Synthesis;
 
-// Initialize a new instance of the SpeechSynthesizer. 
-SpeechSynthesizer synth = new SpeechSynthesizer();  
+// Initialize a new instance of the SpeechSynthesizer.
+SpeechSynthesizer synth = new SpeechSynthesizer();
 
-// Configure the audio output.   
-synth.SetOutputToDefaultAudioDevice();  
+// Configure the audio output.
+synth.SetOutputToDefaultAudioDevice();
 
 // Speak a string, synchronously
 synth.Speak("Hello World!");
@@ -64,11 +64,11 @@ recognizer.SpeechRecognized += (s, e) =>
     Console.WriteLine($"Recognized: {e.Result.Text}, Confidence: {e.Result.Confidence}");
     if (e.Result.Text == "exit")
     {
-        exit.Set();        
+        exit.Set();
     }
 };
 
-// Emulate 
+// Emulate
 Console.WriteLine("Emulating \"red\".");
 recognizer.EmulateRecognize("red");
 
