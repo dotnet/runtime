@@ -158,6 +158,7 @@ namespace HostActivation.Tests
                 .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Fact]
         public void Running_Publish_Output_Standalone_EXE_With_Relative_Embedded_Path_Succeeds()
         {

@@ -463,6 +463,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             return expectedList;
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         [InlineData(true)]
         [InlineData(null)]
@@ -483,6 +484,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOut(expectedOutput);
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         [InlineData(true)]
         [InlineData(null)]
@@ -507,6 +509,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining(expectedOutput);
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         [InlineData(true)]
         [InlineData(null)]

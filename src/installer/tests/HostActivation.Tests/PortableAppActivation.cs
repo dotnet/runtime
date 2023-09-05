@@ -133,7 +133,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            fixture.TestProject.BuiltApp.CreateAppHost();
+            fixture.TestProject.BuiltApp.CreateAppHost(enableMacOSCodeSign: true);
 
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
@@ -163,6 +163,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -172,7 +173,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            fixture.TestProject.BuiltApp.CreateAppHost();
+            fixture.TestProject.BuiltApp.CreateAppHost(enableMacOSCodeSign: true);
 
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
@@ -325,7 +326,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            fixture.TestProject.BuiltApp.CreateAppHost();
+            fixture.TestProject.BuiltApp.CreateAppHost(enableMacOSCodeSign: true);
 
             string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "cliErrors"));
             using (new TestArtifact(invalidDotNet))
@@ -553,7 +554,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 MockApp = new TestApp(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "portableAppActivation")), "App");
                 Directory.CreateDirectory(MockApp.Location);
                 File.WriteAllText(MockApp.AppDll, string.Empty);
-                MockApp.CreateAppHost(copyResources: false);
+                MockApp.CreateAppHost(copyResources: false, enableMacOSCodeSign: true);
             }
 
             public void Dispose()

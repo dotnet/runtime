@@ -139,6 +139,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 excludedPath);
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         // RID is computed at run-time
         [InlineData(null, true, true)]
@@ -238,6 +239,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 includedPath, excludedPath);
         }
 
+        [SkipOnPlatform(TestPlatforms.OSX, "https://github.com/dotnet/runtime/issues/91486")]
         [Theory]
         // RID is computed at run-time
         [InlineData(null, true, true)]

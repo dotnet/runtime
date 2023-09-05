@@ -23,7 +23,8 @@ namespace AppHost.Bundle.Tests
             HostWriter.CreateAppHost(Binaries.SingleFileHost.FilePath,
                                      publishedHostPath,
                                      BundleHelper.GetAppName(testFixture),
-                                     assemblyToCopyResourcesFrom: BundleHelper.GetAppPath(testFixture));
+                                     assemblyToCopyResourcesFrom: BundleHelper.GetAppPath(testFixture),
+                                     enableMacOSCodeSign: true);
             return publishedHostPath;
         }
 
