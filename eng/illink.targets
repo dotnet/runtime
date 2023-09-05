@@ -1,5 +1,11 @@
 <Project>
 
+  <PropertyGroup>
+    <!-- Custom trimming logic should always use live ILLink, even when none of the
+         trimming-related SDK properties are set. -->
+    <_RequiresLiveILLink>true</_RequiresLiveILLink>
+  </PropertyGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)liveILLink.targets" />
 
   <PropertyGroup>
