@@ -28,16 +28,16 @@ namespace System.Net.Http
         public static partial void AbortResponse(
             JSObject fetchResponse);
 
-        [JSImport("INTERNAL.http_wasm_readable_stream_controller_enqueue")]
-        public static partial void ReadableStreamControllerEnqueue(
-            [JSMarshalAs<JSType.Any>] object pullState,
+        [JSImport("INTERNAL.http_wasm_request_stream_write")]
+        public static partial Task RequestStreamWrite(
+            JSObject requestStream,
             IntPtr bufferPtr,
             int bufferLength);
 
-        [JSImport("INTERNAL.http_wasm_readable_stream_controller_error")]
-        public static partial void ReadableStreamControllerError(
-            [JSMarshalAs<JSType.Any>] object pullState,
-            Exception error);
+        [JSImport("INTERNAL.http_wasm_request_stream_close")]
+        public static partial Task<JSObject> RequestStreamClose(
+            JSObject requestStream,
+            Exception? error = null);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
         private static partial string[] _GetResponseHeaderNames(
@@ -72,15 +72,13 @@ namespace System.Net.Http
             JSObject abortControler);
 
         [JSImport("INTERNAL.http_wasm_fetch_stream")]
-        public static partial Task<JSObject> Fetch(
+        public static partial JSObject FetchStream(
             string uri,
             string[] headerNames,
             string[] headerValues,
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
-            JSObject abortControler,
-            [JSMarshalAs<JSType.Function<JSType.Any>>] Action<object> pull,
-            [JSMarshalAs<JSType.Any>] object pullState);
+            JSObject abortControler);
 
         [JSImport("INTERNAL.http_wasm_fetch_bytes")]
         private static partial Task<JSObject> FetchBytes(

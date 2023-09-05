@@ -220,12 +220,9 @@ namespace System.Net.Http
 
                     if (streamingEnabled)
                     {
-                        Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
-                        cancellationToken.ThrowIfCancellationRequested();
+                        JSObject requestStream = BrowserHttpInterop.FetchStream(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController);
 
-                        ReadableStreamPullState pullState = new ReadableStreamPullState(stream, cancellationToken);
-
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, ReadableStreamPull, pullState);
+                        promise = WasmHttpWriteStream.CopyToAsync(requestStream, request.Content, cancellationToken);
                     }
                     else
                     {
@@ -255,14 +252,6 @@ namespace System.Net.Http
                 abortController?.Dispose();
                 throw;
             }
-        }
-
-        private static void ReadableStreamPull(object state)
-        {
-            ReadableStreamPullState pullState = (ReadableStreamPullState)state;
-#pragma warning disable CS4014 // intentionally not awaited
-            pullState.PullAsync();
-#pragma warning restore CS4014
         }
 
         private static HttpResponseMessage ConvertResponse(HttpRequestMessage request, WasmFetchResponse fetchResponse)
@@ -329,41 +318,98 @@ namespace System.Net.Http
         }
     }
 
-    internal sealed class ReadableStreamPullState
+    internal sealed class WasmHttpWriteStream : Stream
     {
-        private readonly Stream _stream;
-        private readonly CancellationToken _cancellationToken;
-        private readonly byte[] _buffer;
+        private readonly JSObject _requestStream;
 
-        public ReadableStreamPullState(Stream stream, CancellationToken cancellationToken)
+        public WasmHttpWriteStream(JSObject requestStream)
         {
-            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(requestStream);
 
-            _stream = stream;
-            _cancellationToken = cancellationToken;
-            _buffer = new byte[65536];
+            _requestStream = requestStream;
         }
 
-        public async Task PullAsync()
+        public static async Task<JSObject> CopyToAsync(JSObject requestStream, HttpContent content, CancellationToken cancellationToken)
         {
-            try
+            using (WasmHttpWriteStream stream = new WasmHttpWriteStream(requestStream))
             {
-                int length = await _stream.ReadAsync(_buffer, _cancellationToken).ConfigureAwait(true);
-                ReadableStreamControllerEnqueueUnsafe(this, _buffer, length);
-            }
-            catch (Exception ex)
-            {
-                BrowserHttpInterop.ReadableStreamControllerError(this, ex);
+                try
+                {
+                    await content.CopyToAsync(stream, cancellationToken).ConfigureAwait(true);
+                    return await BrowserHttpInterop.RequestStreamClose(requestStream).ConfigureAwait(true);
+                }
+                catch (Exception ex)
+                {
+                    await BrowserHttpInterop.RequestStreamClose(requestStream, ex).ConfigureAwait(true);
+                    throw;
+                }
             }
         }
 
-        private static unsafe void ReadableStreamControllerEnqueueUnsafe(object pullState, byte[] buffer, int length)
+        private async Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            fixed (byte* ptr = buffer)
+            cancellationToken.ThrowIfCancellationRequested();
+            using (Buffers.MemoryHandle handle = buffer.Pin())
             {
-                BrowserHttpInterop.ReadableStreamControllerEnqueue(pullState, (nint)ptr, length);
+                await RequestStreamWriteUnsafe(_requestStream, buffer, handle).ConfigureAwait(true);
             }
+
+            static unsafe Task RequestStreamWriteUnsafe(JSObject requestStream, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
+                => BrowserHttpInterop.RequestStreamWrite(requestStream, (nint)handle.Pointer, buffer.Length);
         }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        {
+            return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+
+        protected override void Dispose(bool disposing)
+        {
+            _requestStream.Dispose();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        #region PlatformNotSupported
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+        public override long Length => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException(SR.net_http_synchronous_writes_not_supported);
+        }
+        #endregion
     }
 
     internal sealed class WasmFetchResponse : IDisposable

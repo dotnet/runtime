@@ -246,6 +246,7 @@ namespace System.Net.Http.Functional.Tests
 
             int readOffset = 0;
             req.Content = new StreamContent(new DelegateStream(
+                canReadFunc: () => true,
                 readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                 {
                     await Task.Delay(1);
@@ -296,7 +297,9 @@ namespace System.Net.Http.Functional.Tests
 
             int size = 1500 * 1024 * 1024;
             int remaining = size;
-            req.Content = new StreamContent(new DelegateStream(
+            var content = new MultipartFormDataContent();
+            content.Add(new StreamContent(new DelegateStream(
+                canReadFunc: () => true,
                 readAsyncFunc: (buffer, offset, count, cancellationToken) =>
                 {
                     if (remaining > 0)
@@ -307,7 +310,8 @@ namespace System.Net.Http.Functional.Tests
                         return Task.FromResult(send);
                     }
                     return Task.FromResult(0);
-                }));
+                })), "test");
+            req.Content = content;
 
             req.Content.Headers.Add("Content-MD5-Skip", "browser");
 
@@ -315,7 +319,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpResponseMessage response = await client.SendAsync(req))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.Equal(size.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
+                Assert.Equal((size + 129).ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
                 // Streaming requests can't set Content-Length
                 Assert.False(response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
             }
