@@ -8925,6 +8925,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 typ = tree->gtType = TYP_VOID;
             }
 
+            break;
+
         default:
             break;
     }
