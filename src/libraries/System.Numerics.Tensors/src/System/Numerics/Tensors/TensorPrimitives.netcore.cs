@@ -32,60 +32,51 @@ namespace System.Numerics.Tensors
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
-            int remaining = x.Length;
+            int i = 0, oneVectorFromEnd;
 
 #if NET8_0_OR_GREATER
-            if (Vector512.IsHardwareAccelerated && remaining >= Vector512<float>.Count)
+            if (Vector512.IsHardwareAccelerated)
             {
-                do
+                oneVectorFromEnd = x.Length - Vector512<float>.Count;
+                while (i <= oneVectorFromEnd)
                 {
-                    Vector512.StoreUnsafe(Vector512.LoadUnsafe(ref xRef) + Vector512.LoadUnsafe(ref yRef), ref dRef);
+                    Vector512<float> sum = Vector512.LoadUnsafe(ref xRef, (uint)i) + Vector512.LoadUnsafe(ref yRef, (uint)i);
+                    Vector512.StoreUnsafe(sum, ref dRef, (uint)i);
 
-                    xRef = ref Unsafe.Add(ref xRef, Vector512<float>.Count);
-                    yRef = ref Unsafe.Add(ref yRef, Vector512<float>.Count);
-                    dRef = ref Unsafe.Add(ref dRef, Vector512<float>.Count);
-                    remaining -= Vector512<float>.Count;
+                    i += Vector512<float>.Count;
                 }
-                while (remaining >= Vector512<float>.Count);
             }
 #endif
 
-            if (Vector256.IsHardwareAccelerated && remaining >= Vector256<float>.Count)
+            if (Vector256.IsHardwareAccelerated)
             {
-                do
+                oneVectorFromEnd = x.Length - Vector256<float>.Count;
+                while (i <= oneVectorFromEnd)
                 {
-                    Vector256.StoreUnsafe(Vector256.LoadUnsafe(ref xRef) + Vector256.LoadUnsafe(ref yRef), ref dRef);
+                    Vector256<float> sum = Vector256.LoadUnsafe(ref xRef, (uint)i) + Vector256.LoadUnsafe(ref yRef, (uint)i);
+                    Vector256.StoreUnsafe(sum, ref dRef, (uint)i);
 
-                    xRef = ref Unsafe.Add(ref xRef, Vector256<float>.Count);
-                    yRef = ref Unsafe.Add(ref yRef, Vector256<float>.Count);
-                    dRef = ref Unsafe.Add(ref dRef, Vector256<float>.Count);
-                    remaining -= Vector256<float>.Count;
+                    i += Vector256<float>.Count;
                 }
-                while (remaining >= Vector256<float>.Count);
             }
 
-            if (Vector128.IsHardwareAccelerated && remaining >= Vector128<float>.Count)
+            if (Vector128.IsHardwareAccelerated)
             {
-                do
+                oneVectorFromEnd = x.Length - Vector128<float>.Count;
+                while (i <= oneVectorFromEnd)
                 {
-                    Vector128.StoreUnsafe(Vector128.LoadUnsafe(ref xRef) + Vector128.LoadUnsafe(ref yRef), ref dRef);
+                    Vector128<float> sum = Vector128.LoadUnsafe(ref xRef, (uint)i) + Vector128.LoadUnsafe(ref yRef, (uint)i);
+                    Vector128.StoreUnsafe(sum, ref dRef, (uint)i);
 
-                    xRef = ref Unsafe.Add(ref xRef, Vector128<float>.Count);
-                    yRef = ref Unsafe.Add(ref yRef, Vector128<float>.Count);
-                    dRef = ref Unsafe.Add(ref dRef, Vector128<float>.Count);
-                    remaining -= Vector128<float>.Count;
+                    i += Vector128<float>.Count;
                 }
-                while (remaining >= Vector128<float>.Count);
             }
 
-            while (remaining != 0)
+            while (i < x.Length)
             {
-                dRef = xRef + yRef;
+                Unsafe.Add(ref dRef, i) = Unsafe.Add(ref xRef, i) + Unsafe.Add(ref yRef, i);
 
-                xRef = ref Unsafe.Add(ref xRef, 1);
-                yRef = ref Unsafe.Add(ref yRef, 1);
-                dRef = ref Unsafe.Add(ref dRef, 1);
-                remaining--;
+                i++;
             }
         }
 
@@ -104,59 +95,66 @@ namespace System.Numerics.Tensors
 
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
-            int remaining = x.Length;
+            int i = 0, oneVectorFromEnd;
 
 #if NET8_0_OR_GREATER
-            if (Vector512.IsHardwareAccelerated && remaining >= Vector512<float>.Count)
+            if (Vector512.IsHardwareAccelerated)
             {
-                Vector512<float> yVec = Vector512.Create(y);
-                do
+                oneVectorFromEnd = x.Length - Vector512<float>.Count;
+                if (i <= oneVectorFromEnd)
                 {
-                    Vector512.StoreUnsafe(Vector512.LoadUnsafe(ref xRef) + yVec, ref dRef);
+                    Vector512<float> yVec = Vector512.Create(y);
+                    do
+                    {
+                        Vector512<float> sum = Vector512.LoadUnsafe(ref xRef, (uint)i) + yVec;
+                        Vector512.StoreUnsafe(sum, ref dRef, (uint)i);
 
-                    xRef = ref Unsafe.Add(ref xRef, Vector512<float>.Count);
-                    dRef = ref Unsafe.Add(ref dRef, Vector512<float>.Count);
-                    remaining -= Vector512<float>.Count;
+                        i += Vector512<float>.Count;
+                    }
+                    while (i <= oneVectorFromEnd);
                 }
-                while (remaining >= Vector512<float>.Count);
             }
 #endif
 
-            if (Vector256.IsHardwareAccelerated && remaining >= Vector256<float>.Count)
+            if (Vector256.IsHardwareAccelerated)
             {
-                Vector256<float> yVec = Vector256.Create(y);
-                do
+                oneVectorFromEnd = x.Length - Vector256<float>.Count;
+                if (i <= oneVectorFromEnd)
                 {
-                    Vector256.StoreUnsafe(Vector256.LoadUnsafe(ref xRef) + yVec, ref dRef);
+                    Vector256<float> yVec = Vector256.Create(y);
+                    do
+                    {
+                        Vector256<float> sum = Vector256.LoadUnsafe(ref xRef, (uint)i) + yVec;
+                        Vector256.StoreUnsafe(sum, ref dRef, (uint)i);
 
-                    xRef = ref Unsafe.Add(ref xRef, Vector256<float>.Count);
-                    dRef = ref Unsafe.Add(ref dRef, Vector256<float>.Count);
-                    remaining -= Vector256<float>.Count;
+                        i += Vector256<float>.Count;
+                    }
+                    while (i <= oneVectorFromEnd);
                 }
-                while (remaining >= Vector256<float>.Count);
             }
 
-            if (Vector128.IsHardwareAccelerated && remaining >= Vector128<float>.Count)
+            if (Vector128.IsHardwareAccelerated)
             {
-                Vector128<float> yVec = Vector128.Create(y);
-                do
+                oneVectorFromEnd = x.Length - Vector128<float>.Count;
+                if (i <= oneVectorFromEnd)
                 {
-                    Vector128.StoreUnsafe(Vector128.LoadUnsafe(ref xRef) + yVec, ref dRef);
+                    Vector128<float> yVec = Vector128.Create(y);
+                    do
+                    {
+                        Vector128<float> sum = Vector128.LoadUnsafe(ref xRef, (uint)i) + yVec;
+                        Vector128.StoreUnsafe(sum, ref dRef, (uint)i);
 
-                    xRef = ref Unsafe.Add(ref xRef, Vector128<float>.Count);
-                    dRef = ref Unsafe.Add(ref dRef, Vector128<float>.Count);
-                    remaining -= Vector128<float>.Count;
+                        i += Vector128<float>.Count;
+                    }
+                    while (i <= oneVectorFromEnd);
                 }
-                while (remaining >= Vector128<float>.Count);
             }
 
-            while (remaining != 0)
+            while (i < x.Length)
             {
-                dRef = xRef + y;
+                Unsafe.Add(ref dRef, i) = Unsafe.Add(ref xRef, i) + y;
 
-                xRef = ref Unsafe.Add(ref xRef, 1);
-                dRef = ref Unsafe.Add(ref dRef, 1);
-                remaining--;
+                i++;
             }
         }
     }

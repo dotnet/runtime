@@ -30,30 +30,28 @@ namespace System.Numerics.Tensors
             fixed (float* xPtr = &MemoryMarshal.GetReference(x), yPtr = &MemoryMarshal.GetReference(y), destPtr = &MemoryMarshal.GetReference(destination))
             {
                 float* px = xPtr, py = yPtr, pd = destPtr;
-                int remaining = x.Length;
+                int i = 0, oneVectorFromEnd;
 
-                if (Vector.IsHardwareAccelerated && remaining >= Vector<float>.Count)
+                if (Vector.IsHardwareAccelerated)
                 {
-                    do
+                    oneVectorFromEnd = x.Length - Vector<float>.Count;
+                    if (oneVectorFromEnd >= 0)
                     {
-                        *(Vector<float>*)pd = *(Vector<float>*)px + *(Vector<float>*)py;
+                        do
+                        {
+                            *(Vector<float>*)(pd + i) = *(Vector<float>*)(px + i) + *(Vector<float>*)(py + i);
 
-                        px += Vector<float>.Count;
-                        py += Vector<float>.Count;
-                        pd += Vector<float>.Count;
-                        remaining -= Vector<float>.Count;
+                            i += Vector<float>.Count;
+                        }
+                        while (i <= oneVectorFromEnd);
                     }
-                    while (remaining >= Vector<float>.Count);
                 }
 
-                while (remaining != 0)
+                while (i < x.Length)
                 {
-                    *pd = *px + *py;
+                    *(pd + i) = *(px + i) + *(py + i);
 
-                    px++;
-                    py++;
-                    pd++;
-                    remaining--;
+                    i++;
                 }
             }
         }
@@ -74,29 +72,29 @@ namespace System.Numerics.Tensors
             fixed (float* xPtr = &MemoryMarshal.GetReference(x), destPtr = &MemoryMarshal.GetReference(destination))
             {
                 float* px = xPtr, pd = destPtr;
-                int remaining = x.Length;
+                int i = 0, oneVectorFromEnd;
 
-                if (Vector.IsHardwareAccelerated && remaining >= Vector<float>.Count)
+                if (Vector.IsHardwareAccelerated)
                 {
-                    Vector<float> yVec = new Vector<float>(y);
-                    do
+                    oneVectorFromEnd = x.Length - Vector<float>.Count;
+                    if (oneVectorFromEnd >= 0)
                     {
-                        *(Vector<float>*)pd = *(Vector<float>*)px + yVec;
+                        Vector<float> yVec = new Vector<float>(y);
+                        do
+                        {
+                            *(Vector<float>*)(pd + i) = *(Vector<float>*)(px + i) + yVec;
 
-                        px += Vector<float>.Count;
-                        pd += Vector<float>.Count;
-                        remaining -= Vector<float>.Count;
+                            i += Vector<float>.Count;
+                        }
+                        while (i <= oneVectorFromEnd);
                     }
-                    while (remaining >= Vector<float>.Count);
                 }
 
-                while (remaining != 0)
+                while (i < x.Length)
                 {
-                    *pd = *px + y;
+                    *(pd + i) = *(px + i) + y;
 
-                    px++;
-                    pd++;
-                    remaining--;
+                    i++;
                 }
             }
         }
