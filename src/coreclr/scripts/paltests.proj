@@ -6,4 +6,13 @@
       <WorkItemTimeout>0:05</WorkItemTimeout>
     </HelixWorkItem>
   </ItemGroup>
+  <PropertyGroup>
+    <EnableXUnitReporter>true</EnableXUnitReporter>
+    <Creator>$(_Creator)</Creator>
+    <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
+    <HelixBuild>$(_HelixBuild)</HelixBuild>
+    <HelixSource>$(_HelixSource)</HelixSource>
+    <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
+    <HelixType>$(_HelixType)</HelixType>
+  </PropertyGroup>
 </Project>
