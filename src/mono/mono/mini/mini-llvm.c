@@ -14387,7 +14387,7 @@ emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil
 		MonoDebugSourceLocation *loc;
 		LLVMValueRef loc_md;
 
-		loc = mono_debug_method_lookup_location (ctx->minfo, GINT64_TO_INT (cil_code - cfg->header->code));
+		loc = mono_debug_method_lookup_location (ctx->minfo, GPTRDIFF_TO_INT (cil_code - cfg->header->code));
 
 		if (loc) {
 			loc_md = (LLVMValueRef)mono_llvm_di_create_location (ctx->module->di_builder, ctx->dbg_md, loc->row, loc->column);
