@@ -128,6 +128,7 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyVersion.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\BindResult.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\TextualIdentityParser.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\Tracing\ResolutionAttemptedOperation.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />

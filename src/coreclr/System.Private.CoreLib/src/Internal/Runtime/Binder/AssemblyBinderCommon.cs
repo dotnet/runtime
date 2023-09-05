@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Internal.Runtime.Binder.Tracing;
 
 namespace Internal.Runtime.Binder
 {
@@ -163,38 +164,38 @@ namespace Internal.Runtime.Binder
         }
 
         // HResult
-        private const int RO_E_METADATA_NAME_NOT_FOUND = unchecked((int)0x8000000F);
-        private const int E_PATHNOTFOUND = unchecked((int)0x80070003);
-        private const int E_NOTREADY = unchecked((int)0x80070015);
-        private const int E_BADNETPATH = unchecked((int)0x80070035);
-        private const int E_BADNETNAME = unchecked((int)0x80070043);
-        private const int E_INVALID_NAME = unchecked((int)0x8007007B);
-        private const int E_MODNOTFOUND = unchecked((int)0x8007007E);
-        private const int E_DLLNOTFOUND = unchecked((int)0x80070485);
-        private const int E_WRONG_TARGET_NAME = unchecked((int)0x80070574);
-        private const int INET_E_CANNOT_CONNECT = unchecked((int)0x800C0004);
-        private const int INET_E_RESOURCE_NOT_FOUND = unchecked((int)0x800C0005);
-        private const int INET_E_OBJECT_NOT_FOUND = unchecked((int)0x800C0006);
-        private const int INET_E_DATA_NOT_AVAILABLE = unchecked((int)0x800C0007);
-        private const int INET_E_DOWNLOAD_FAILURE = unchecked((int)0x800C0008);
-        private const int INET_E_CONNECTION_TIMEOUT = unchecked((int)0x800C000B);
-        private const int INET_E_UNKNOWN_PROTOCOL = unchecked((int)0x800C000D);
-        private const int FUSION_E_APP_DOMAIN_LOCKED = unchecked((int)0x80131053);
-        private const int CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW = unchecked((int)0x80132000);
-        private const int CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH = unchecked((int)0x80132001);
-        private const int CLR_E_BIND_ASSEMBLY_NOT_FOUND = unchecked((int)0x80132004);
-        private const int CLR_E_BIND_TYPE_NOT_FOUND = unchecked((int)0x80132005);
+        public const int RO_E_METADATA_NAME_NOT_FOUND = unchecked((int)0x8000000F);
+        public const int E_PATHNOTFOUND = unchecked((int)0x80070003);
+        public const int E_NOTREADY = unchecked((int)0x80070015);
+        public const int E_BADNETPATH = unchecked((int)0x80070035);
+        public const int E_BADNETNAME = unchecked((int)0x80070043);
+        public const int E_INVALID_NAME = unchecked((int)0x8007007B);
+        public const int E_MODNOTFOUND = unchecked((int)0x8007007E);
+        public const int E_DLLNOTFOUND = unchecked((int)0x80070485);
+        public const int E_WRONG_TARGET_NAME = unchecked((int)0x80070574);
+        public const int INET_E_CANNOT_CONNECT = unchecked((int)0x800C0004);
+        public const int INET_E_RESOURCE_NOT_FOUND = unchecked((int)0x800C0005);
+        public const int INET_E_OBJECT_NOT_FOUND = unchecked((int)0x800C0006);
+        public const int INET_E_DATA_NOT_AVAILABLE = unchecked((int)0x800C0007);
+        public const int INET_E_DOWNLOAD_FAILURE = unchecked((int)0x800C0008);
+        public const int INET_E_CONNECTION_TIMEOUT = unchecked((int)0x800C000B);
+        public const int INET_E_UNKNOWN_PROTOCOL = unchecked((int)0x800C000D);
+        public const int FUSION_E_APP_DOMAIN_LOCKED = unchecked((int)0x80131053);
+        public const int CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW = unchecked((int)0x80132000);
+        public const int CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH = unchecked((int)0x80132001);
+        public const int CLR_E_BIND_ASSEMBLY_NOT_FOUND = unchecked((int)0x80132004);
+        public const int CLR_E_BIND_TYPE_NOT_FOUND = unchecked((int)0x80132005);
 
         public static int BindAssembly(AssemblyBinder binder, AssemblyName assemblyName, bool excludeAppPaths, out Assembly? result)
         {
             int kContextVersion = 0;
             BindResult bindResult = default;
-            int hr;
+            int hr = HResults.S_OK;
             result = null;
             ApplicationContext applicationContext = binder.AppContext;
 
-        // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-        //BinderTracing::ResolutionAttemptedOperation tracer{ pAssemblyName, pBinder, 0 /*managedALC*/, hr};
+            // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, managedALC: 0, ref hr);
 
         Retry:
             lock (applicationContext.ContextCriticalSection)
@@ -207,7 +208,7 @@ namespace Internal.Runtime.Binder
                 kContextVersion = applicationContext.Version;
             }
 
-            // tracer.TraceBindResult(bindResult);
+            tracer.TraceBindResult(bindResult);
 
             if (bindResult.Assembly != null)
             {
@@ -738,7 +739,7 @@ namespace Internal.Runtime.Binder
 
         public static int BindUsingPEImage(AssemblyBinder binder, AssemblyName assemblyName, IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly)
         {
-            int hr;
+            int hr = HResults.S_OK;
 
             int kContextVersion = 0;
             BindResult bindResult = default;
@@ -748,7 +749,7 @@ namespace Internal.Runtime.Binder
             ApplicationContext applicationContext = binder.AppContext;
 
             // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-            // BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pBinder, 0 /*managedALC*/, hr};
+            using var tracer = new ResolutionAttemptedOperation(assemblyName, binder, managedALC: 0, ref hr);
 
         Retry:
             bool mvidMismatch = false;
@@ -832,8 +833,7 @@ namespace Internal.Runtime.Binder
                 }
             }
 
-            // tracer.TraceBindResult(bindResult, mvidMismatch);
-            Debug.Assert(mvidMismatch);
+            tracer.TraceBindResult(bindResult, mvidMismatch);
             return hr;
         }
 

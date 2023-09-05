@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -376,7 +376,7 @@
   <data name="Arg_FormatException" xml:space="preserve">
     <value>One of the identified items was in an invalid format.</value>
   </data>
-  <data name= "Arg_GenericArgumentsAfterArrayOrPointerType" xml:space="preserve">
+  <data name="Arg_GenericArgumentsAfterArrayOrPointerType" xml:space="preserve">
     <value>Generic arguments after array spec or pointer type.</value>
   </data>
   <data name="Arg_GenericParameter" xml:space="preserve">
@@ -1080,7 +1080,7 @@
   <data name="Argument_FieldDoesNotBelongToConstructorClass" xml:space="preserve">
     <value>Field '{0}' does not belong to the same class as the constructor.</value>
   </data>
-   <data name="Argument_FieldDoesNotHaveAValidType" xml:space="preserve">
+  <data name="Argument_FieldDoesNotHaveAValidType" xml:space="preserve">
     <value>Field '{0}' does not have a valid type.</value>
   </data>
   <data name="Argument_FieldDoesNotHaveAValidValue" xml:space="preserve">
@@ -1502,7 +1502,7 @@
     <value>Path cannot be the empty string or all whitespace.</value>
   </data>
   <data name="Argument_ParameterHasUnmatchedArgumentValue" xml:space="preserve">
-    <value>Value of argument {0} does not match parameter type: {1} -> {2}.</value>
+    <value>Value of argument {0} does not match parameter type: {1} -&gt; {2}.</value>
   </data>
   <data name="Argument_ParameterInvalidType" xml:space="preserve">
     <value>Parameter {0} does not have a valid type.</value>
@@ -3774,7 +3774,7 @@
     <value>"Property '{0}' does not have a setter.</value>
   </data>
   <data name="Argument_PropertyUnmatchingPropertyType" xml:space="preserve">
-    <value>"Value of property '{0}' does not match property type: '{1}' -> '{2}'.</value>
+    <value>"Value of property '{0}' does not match property type: '{1}' -&gt; '{2}'.</value>
   </data>
   <data name="AssemblyDependencyResolver_FailedToLoadHostpolicy" xml:space="preserve">
     <value>Cannot load hostpolicy library. AssemblyDependencyResolver is currently only supported if the runtime is hosted through hostpolicy library.</value>
@@ -4252,5 +4252,11 @@
   </data>
   <data name="Argument_SearchValues_UnsupportedStringComparison" xml:space="preserve">
     <value>SearchValues&lt;string&gt; supports only StringComparison.Ordinal and StringComparison.OrdinalIgnoreCase.</value>
+  </data>
+  <data name="EE_FileLoad_Error_Generic" xml:space="preserve">
+    <value>Could not load file or assembly {0}. {1}</value>
+  </data>
+  <data name="Host_AssemblyResolver_AssemblyAlreadyLoadedInContext" xml:space="preserve">
+    <value>Assembly with same name is already loaded.</value>
   </data>
 </root>
