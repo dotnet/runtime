@@ -561,6 +561,34 @@ void emitter::emitIns_Mov(
     }
 }
 
+void emitter::emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
+{
+    if (!canSkip || dstReg != srcReg)
+    {
+        assert(attr == EA_4BYTE || attr == EA_PTRSIZE);
+        if (isGeneralRegisterOrR0(dstReg) && isGeneralRegisterOrR0(srcReg))
+        {
+            emitIns_R_R_I(attr == EA_4BYTE ? INS_addiw : INS_addi, attr, dstReg, srcReg, 0);
+        }
+        else if (isGeneralRegisterOrR0(dstReg) && genIsValidFloatReg(srcReg))
+        {
+            emitIns_R_R(attr == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d, attr, dstReg, srcReg);
+        }
+        else if (genIsValidFloatReg(dstReg) && isGeneralRegisterOrR0(srcReg))
+        {
+            emitIns_R_R(attr == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, attr, dstReg, srcReg);
+        }
+        else if (genIsValidFloatReg(dstReg) && genIsValidFloatReg(srcReg))
+        {
+            emitIns_R_R_R(attr == EA_4BYTE ? INS_fsgnj_s : INS_fsgnj_d, attr, dstReg, srcReg, srcReg);
+        }
+        else
+        {
+            assert(!"Invalid registers in emitIns_Mov()\n");
+        }
+    }
+}
+
 /*****************************************************************************
  *
  *  Add an instruction referencing two registers
