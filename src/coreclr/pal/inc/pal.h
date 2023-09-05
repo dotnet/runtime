@@ -2838,8 +2838,8 @@ HMODULE
 PALAPI
 LoadLibraryExW(
         IN LPCWSTR lpLibFileName,
-        IN /*Reserved*/ HANDLE hFile,
-        IN DWORD dwFlags);
+        IN /*Reserved*/ HANDLE hFile = NULL,
+        IN DWORD dwFlags = 0);
 
 PALIMPORT
 NATIVE_LIBRARY_HANDLE

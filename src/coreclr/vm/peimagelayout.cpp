@@ -907,9 +907,10 @@ static bool HavePlaceholderAPI()
         return false;
     }
 
+#ifdef TARGET_WINDOWS
     if (pMapViewOfFile3 == NULL)
     {
-        HMODULE hm = LoadLibraryW(_T("kernelbase.dll"));
+        HMODULE hm = WszLoadLibrary(W("kernelbase.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (hm != NULL)
         {
             pVirtualAlloc2 = (VirtualAlloc2Fn)GetProcAddress(hm, "VirtualAlloc2");
@@ -918,14 +919,15 @@ static bool HavePlaceholderAPI()
             FreeLibrary(hm);
         }
 
-        if (pMapViewOfFile3 == NULL || pVirtualAlloc2 == NULL)
+        if (pMapViewOfFile3 != NULL && pVirtualAlloc2 != NULL)
         {
-            pMapViewOfFile3 = INVALID_ADDRESS_SENTINEL;
-            return false;
+            return true;
         }
     }
+#endif // TARGET_WINDOWS
 
-    return true;
+    pMapViewOfFile3 = INVALID_ADDRESS_SENTINEL;
+    return false;
 }
 
 static PVOID AllocPlaceholder(PVOID BaseAddress, SIZE_T Size)
