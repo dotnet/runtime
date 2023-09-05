@@ -55,9 +55,9 @@ add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEB
 
 if (MSVC)
 
-  define_property(TARGET PROPERTY CLR_CONTROL_FLOW_GUARD INHERITED BRIEF_DOCS "/guard:cf flag" FULL_DOCS "/guard:cf flag blablabla")
-  define_property(TARGET PROPERTY CLR_EH_CONTINUATION INHERITED BRIEF_DOCS "/guard:ehcont flag" FULL_DOCS "/guard:ehcont flag blablabla")
-  define_property(TARGET PROPERTY CLR_EH_OPTION INHERITED BRIEF_DOCS "/EH option" FULL_DOCS "/EH option blablabla")
+  define_property(TARGET PROPERTY CLR_CONTROL_FLOW_GUARD INHERITED BRIEF_DOCS "Controls the /guard:cf flag presence" FULL_DOCS "Set this property to ON or OFF to indicate if the /guard:cf compiler and linker flag should be present")
+  define_property(TARGET PROPERTY CLR_EH_CONTINUATION INHERITED BRIEF_DOCS "Controls the /guard:ehcont flag presence" FULL_DOCS "Set this property to ON or OFF to indicate if the /guard:ehcont compiler flag should be present")
+  define_property(TARGET PROPERTY CLR_EH_OPTION INHERITED BRIEF_DOCS "Defines the value of the /EH option" FULL_DOCS "Set this property to one of the valid /EHxx options (/EHa, /EHsc, /EHa-, ...)")
 
   set_property(GLOBAL PROPERTY CLR_CONTROL_FLOW_GUARD ON)
 
