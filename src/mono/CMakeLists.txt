@@ -957,9 +957,12 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(dnmd)
+
 # The install interface with CMake modules sets up the include directories nicely for find_package usage
 # which vcpkg will recognize. However, FetchContent uses build includes, so we need to do this until I fix DNMD to expose the include directory through the build interface.
 include_directories(${dnmd_SOURCE_DIR}/src/inc)
+
+# find_package(dnmd REQUIRED)
 
 if(NOT DISABLE_LIBS)
   set(INSTALL_MONO_API 1)
