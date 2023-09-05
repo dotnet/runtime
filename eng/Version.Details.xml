@@ -85,9 +85,9 @@
       <Sha>02fe27cd6a9b001c8feb7938e6ef4b3799745759b</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23454.2">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23428.2">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>3df9045e69ba7efde01fdd8fd7df9cebf35e815b</Sha>
+      <Sha>fa5acbd2ccba88c9d46ce0dd8f5310f9d3c5c46d</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.23429.3">
@@ -383,9 +383,9 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>bab9b102a3081f446aad625916b2bf6836bdc5a4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23453.19">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23454.3">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>432ce4f6656f3e17ee9e2decebf67e7fe93104eb</Sha>
+      <Sha>815ab300db61c1164e69f132d151c452b9ec1141</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23431.4">
