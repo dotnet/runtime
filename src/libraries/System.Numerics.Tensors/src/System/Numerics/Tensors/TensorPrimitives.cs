@@ -4,52 +4,8 @@
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
-    public static class TensorPrimitives
+    public static partial class TensorPrimitives
     {
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> + <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] + <paramref name="y" />[i]</c>.</remarks>
-        public static void Add(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
-        {
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength(nameof(x), nameof(y));
-            }
-
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] + y[i];
-            }
-        }
-
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> + <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a scalar.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] + <paramref name="y" /></c>.</remarks>
-        public static void Add(ReadOnlySpan<float> x, float y, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] + y;
-            }
-        }
-
         /// <summary>Computes the element-wise result of: <c><paramref name="x" /> - <paramref name="y" /></c>.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a scalar.</param>
