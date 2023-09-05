@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <CLRTestKind>BuildOnly</CLRTestKind>
+    <AlwaysUseCrossgen2>true</AlwaysUseCrossgen2>
   </PropertyGroup>
 
   <ItemGroup>
