@@ -4,7 +4,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <MainEntryPoint>TestConfig.Main</MainEntryPoint>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestConfig.cs" />

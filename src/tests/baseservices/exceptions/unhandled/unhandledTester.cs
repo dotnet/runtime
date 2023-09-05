@@ -1,28 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 
-namespace TestUnhandledException
+using Xunit;
+
+namespace TestUnhandledExceptionTester
 {
     public class Program
     {
-        public static int Main(string[] args)
+        [Fact]
+        public static void TestEntryPoint()
         {
-            if (args.Length != 0)
-            {
-                throw new Exception("Test");
-            }
-
             List<string> lines = new List<string>();
 
             Process testProcess = new Process();
 
-            // We don't need to trigger createdump logic.
-            testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
-
-            testProcess.StartInfo.FileName = Environment.ProcessPath;
-            testProcess.StartInfo.Arguments = Environment.CommandLine + " throw";
+            testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
+            testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll");
             testProcess.StartInfo.RedirectStandardError = true;
             testProcess.ErrorDataReceived += (sender, line) => 
             {
@@ -58,8 +58,7 @@ namespace TestUnhandledException
 
             if (expectedExitCode != testProcess.ExitCode)
             {
-                Console.WriteLine($"Wrong exit code 0x{testProcess.ExitCode:X8}");
-                return 101;
+                throw new Exception($"Wrong exit code 0x{testProcess.ExitCode:X8}, expected 0x{expectedExitCode:X8}");
             }
 
             int exceptionStackFrameLine = 1;
@@ -67,13 +66,11 @@ namespace TestUnhandledException
             {
                 if (lines[0] != "Unhandled Exception:")
                 {
-                    Console.WriteLine("Missing Unhandled exception header");
-                    return 102;
+                    throw new Exception("Missing Unhandled exception header");
                 }
                 if (lines[1] != "System.Exception: Test")
                 {
-                    Console.WriteLine("Missing exception type and message");
-                    return 103;
+                    throw new Exception("Missing exception type and message");
                 }
 
                 exceptionStackFrameLine = 2;
@@ -82,19 +79,15 @@ namespace TestUnhandledException
             {
                 if (lines[0] != "Unhandled exception. System.Exception: Test")
                 {
-                    Console.WriteLine("Missing Unhandled exception header");
-                    return 102;
+                    throw new Exception("Missing Unhandled exception header");
                 }
 
             }
 
             if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
             {
-                Console.WriteLine("Missing exception source frame");
-                return 103;
+                throw new Exception("Missing exception source frame");
             }
-
-            return 100;
         }
     }
 }
