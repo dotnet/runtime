@@ -372,7 +372,7 @@ mono_arm_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs,
 	if (!corlib)
 		exc = (MonoObject*)arg;
 	else {
-		ex_token_index = GUINT64_TO_UINT32 ((guint64)arg);
+		ex_token_index = GPOINTER_TO_UINT32 (arg);
 		ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
 		exc = (MonoObject*)mono_exception_from_token (mono_defaults.corlib, ex_token);
 	}

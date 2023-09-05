@@ -3388,7 +3388,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_LABEL:
-			ins->inst_c0 = GINT64_TO_TMREG (code - cfg->native_code);
+			ins->inst_c0 = GPTRDIFF_TO_TMREG (code - cfg->native_code);
 			break;
 		case OP_BR:
 			if (ins->inst_target_bb->native_offset) {

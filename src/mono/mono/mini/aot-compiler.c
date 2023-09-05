@@ -1426,9 +1426,9 @@ arm64_emit_tramp_page_common_code (MonoAotCompile *acfg, int pagesize, int arg_r
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	/* Emit it */
-	emit_code_bytes (acfg, buf, GINT64_TO_INT (code - buf));
+	emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	*size = GINT64_TO_INT (code - buf);
+	*size = GPTRDIFF_TO_INT (code - buf);
 }
 
 static void
@@ -1450,7 +1450,7 @@ arm64_emit_tramp_page_specific_code (MonoAotCompile *acfg, int pagesize, int com
 		arm_nop (code);
 #endif
 		g_assert (code - buf == specific_tramp_size);
-		emit_code_bytes (acfg, buf, GINT64_TO_INT (code - buf));
+		emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	}
 }
 
@@ -1535,9 +1535,9 @@ arm64_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	/* Emit it */
-	emit_code_bytes (acfg, buf, GINT64_TO_INT (code - buf));
+	emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	common_tramp_size = GINT64_TO_INT (code - buf);
+	common_tramp_size = GPTRDIFF_TO_INT (code - buf);
 	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = common_tramp_size;
 
 	arm64_emit_tramp_page_specific_code (acfg, pagesize, common_tramp_size, specific_tramp_size);
@@ -1587,9 +1587,9 @@ arm64_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP1, TARGET_SIZEOF_VOID_P);
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
-	emit_code_bytes (acfg, buf, GINT64_TO_INT (code - buf));
+	emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	common_tramp_size = GINT64_TO_INT (code - buf);
+	common_tramp_size = GPTRDIFF_TO_INT (code - buf);
 	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_IMT] = common_tramp_size;
 
 	arm64_emit_tramp_page_specific_code (acfg, pagesize, common_tramp_size, specific_tramp_size);
@@ -1673,9 +1673,9 @@ arm64_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP1, TARGET_SIZEOF_VOID_P);
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
-	emit_code_bytes (acfg, buf, GINT64_TO_INT (code - buf));
+	emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	*tramp_size = GINT64_TO_INT (code - buf + (3 * 4));
+	*tramp_size = GPTRDIFF_TO_INT (code - buf + (3 * 4));
 }
 
 static void

@@ -3045,7 +3045,7 @@ emit_seq_point (MonoCompile *cfg, MonoMethod *method, guint8* ip, gboolean intr_
 	MonoInst *ins;
 
 	if (cfg->gen_seq_points && cfg->method == method) {
-		NEW_SEQ_POINT (cfg, ins, GINT64_TO_TMREG (ip - cfg->header->code), intr_loc);
+		NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - cfg->header->code), intr_loc);
 		if (nonempty_stack)
 			ins->flags |= MONO_INST_NONEMPTY_STACK;
 		MONO_ADD_INS (cfg->cbb, ins);
@@ -7014,7 +7014,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Avoid sequence points on empty IL like .volatile */
 			// FIXME: Enable this
 			//if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_SEQ_POINT)) {
-			NEW_SEQ_POINT (cfg, ins, GINT64_TO_TMREG (ip - header->code), intr_loc);
+			NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), intr_loc);
 			if ((sp != stack_start) && !sym_seq_point)
 				ins->flags |= MONO_INST_NONEMPTY_STACK;
 			MONO_ADD_INS (cfg->cbb, ins);
@@ -7101,7 +7101,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * The C# compiler uses these nops to notify the JIT that it should
 				 * insert seq points.
 				 */
-				NEW_SEQ_POINT (cfg, ins, GINT64_TO_TMREG (ip - header->code), FALSE);
+				NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), FALSE);
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 			if (cfg->keep_cil_nops)
@@ -8520,7 +8520,7 @@ calli_end:
 						 * ret
 						 * will work correctly.
 						 */
-						NEW_SEQ_POINT (cfg, ins, GINT64_TO_TMREG (ip - header->code), TRUE);
+						NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), TRUE);
 						MONO_ADD_INS (cfg->cbb, ins);
 					}
 
