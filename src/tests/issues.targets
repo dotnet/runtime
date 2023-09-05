@@ -1294,9 +1294,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/**">
             <Issue>https://github.com/dotnet/runtime/issues/80350</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**">
-            <Issue>Static virtual methods are not yet implemented in the Mono runtime.</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
             <Issue>Static virtual methods are not yet implemented in the Mono runtime.</Issue>
         </ExcludeList>
