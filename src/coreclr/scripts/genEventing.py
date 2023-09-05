@@ -424,7 +424,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
         if includeProvider (providerName, runtimeFlavor):
             if not target_cpp:
                 clrallEvents.append("static ")
-            if not runtimeFlavor.nativeaot:
+            if generatedFileType == "header-impl":
                 clrallEvents.append("inline ")
             clrallEvents.append("%s EventEnabled" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"]))
             clrallEvents.append(eventName)
@@ -513,7 +513,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
 
         #add activity IDs
         fnptypeline.append(lindent)
-        # nativeaot source file can't have the parameter initializer
+        # source file can't have the parameter initializer
         fnptypeline.append("%s ActivityId%s\n" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"], " = nullptr," if (target_cpp and (generatedFileType == "header" or generatedFileType == "header-impl")) else ","))
         fnptypeline.append(lindent)
         fnptypeline.append("%s RelatedActivityId" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"]))
@@ -631,7 +631,7 @@ def generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp
     clrallEvents = []
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol')
-        if runtimeFlavor.nativeaot and not includeEvent(inclusion_list, providerName, eventName):
+        if not includeEvent(inclusion_list, providerName, eventName):
             continue
 
         templateName = eventNode.getAttribute('template')
@@ -822,7 +822,6 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
 
             #vm header:
             Clrallevents.write(generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusion_list, generatedFileType))
-
 
             providerName = providerNode.getAttribute('name')
             providerSymbol = providerNode.getAttribute('symbol')
