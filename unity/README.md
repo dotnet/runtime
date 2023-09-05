@@ -61,22 +61,18 @@ It is possible to provide a space separated list of desired targets to build and
 
 ### Using a debug build of the CoreCLR runtime in Unity
 
-Once the CoreCLR runtime has been built locally you can find the runtime artifacts the Unity player needs in `artifacts\bin\microsoft.netcore.app.runtime.win-x64\Debug\runtimes\win-x64`. Replace `Debug` with `Release` in this path for the Release configuration. It is important to copy all of the runtime and class library files together, as they need to stay in sync in order for the CoreCLR runtime to work properly. On Windows, the recursive directory copy (overwriting files in the destination) looks like this:
+Once the CoreCLR runtime has been built locally you can find the runtime artifacts the Unity player needs in `artifacts\bin\microsoft.netcore.app.runtime.win-x64\Debug\runtimes\win-x64`. 
 
-Windows:
+If you would like to patch a built player with your local build you can use
 ```
-> xcopy /e /y artifacts\bin\microsoft.netcore.app.runtime.win-x64\Debug\runtimes\win-x64 <Unity player build directory>\CoreCLR
-```
-
-macOS:
-```
-> cp -r artifacts/bin/microsoft.netcore.app.runtime.osx-<your arch>/Debug/runtimes/osx-<your arch>/* <Unity player build directory>/Contents/Resources/Data/CoreCLR
+yamato\scripts\build_yamato.cmd --deploy-to-player --config Debug <Unity player build directory>
 ```
 
-Linux:
-```
-> cp -r artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Debug/runtimes/linux-x64/* <Unity player build directory>/CoreCLR 
-```
+Notes
+
+`--deploy-to-player` assumes the same default values as when using `--build`.
+
+You can `--build` in conjuction with `--deploy-to-player` to build and copy in a single command
 
 **Caveat:** It is _not_ possible to enable mixed mode debugging in Visual Studio and also debug the native code in coreclr.dll. Visual Studio blocks this workflow to prevent hangs. To debug in coreclr.dll in a Unity player, Native debugging must be selected in Visual Studio.
 
