@@ -549,6 +549,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Implicit_Operator_LazyTest()
+        {
+            string value  = "Compiler Test";
+            Lazy<string> lazyString = () => value;
+            VerifyLazy(lazyString, value, hasValue: false, isValueCreated: false);
+
+            string result = lazyString;
+            Assert.Equal(result, value);
+        }
+
+        [Fact]
         public static void EnsureInitialized_FuncInitializationWithoutTrackingBool_Uninitialized()
         {
             string template = "foo";

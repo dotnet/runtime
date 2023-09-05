@@ -505,6 +505,17 @@ namespace System
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public T Value => _state == null ? _value! : CreateValue();
+
+        /// <summary>
+        /// Gets the lazily initialized value of the current without using lazystuff.value
+        /// </summary>
+        /// <param name="lazy">The lazily initialized value of the current</param>
+        public static implicit operator T(Lazy<T> lazy) => lazy.Value;
+        /// <summary>
+        /// Gets the lazily instance of the current function without using new Lazy<typeparamref name="T"/>()
+        /// </summary>
+        /// <param name="valueFactory"></param>
+        public static implicit operator Lazy<T>(Func<T>? valueFactory) => new Lazy<T>(valueFactory);
     }
 
     /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and
