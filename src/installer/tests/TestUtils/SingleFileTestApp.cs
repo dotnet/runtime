@@ -29,9 +29,25 @@ namespace Microsoft.DotNet.CoreSetup.Test
             PopulateBuiltAppDirectory();
         }
 
+        /// <summary>
+        /// Create a framework-dependent single-file test app from pre-built output of <paramref name="appName"/>.
+        /// </summary>
+        /// <param name="appName">Name of pre-built app</param>
+        /// <returns>
+        /// The <paramref name="appName"/> is expected to be in <see cref="RepoDirectoriesProvider.TestAssetsFolder"/>
+        /// and have been built as framework-dependent
+        /// </returns>
         public static SingleFileTestApp CreateFrameworkDependent(string appName)
             => Create(appName, selfContained: false);
 
+        /// <summary>
+        /// Create a self-contained single-file test app from pre-built output of <paramref name="appName"/>.
+        /// </summary>
+        /// <param name="appName">Name of pre-built app</param>
+        /// <returns>
+        /// The <paramref name="appName"/> is expected to be in <see cref="RepoDirectoriesProvider.TestAssetsFolder"/>
+        /// and have been built as framework-dependent
+        /// </returns>
         public static SingleFileTestApp CreateSelfContained(string appName)
             => Create(appName, selfContained: true);
 
@@ -56,9 +72,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             // Get all files in the source directory and all sub-directories.
             string[] sources = Directory.GetFiles(builtApp.Location, searchPattern: "*", searchOption: SearchOption.AllDirectories);
-
-            // Sort the file names to keep the bundle construction deterministic.
-            Array.Sort(sources, StringComparer.Ordinal);
             List<FileSpec> fileSpecs = new List<FileSpec>(sources.Length);
             foreach (var file in sources)
             {
@@ -75,6 +88,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 }
             }
 
+            // Sort the file specs to keep the bundle construction deterministic.
+            fileSpecs.Sort((a, b) => string.CompareOrdinal(a.BundleRelativePath, b.BundleRelativePath));
             var singleFile = bundler.GenerateBundle(fileSpecs);
 
             // Copy excluded files to the bundle directory. This mimics the SDK behaviour where
@@ -94,7 +109,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         private void PopulateBuiltAppDirectory()
         {
-            // Copy the compiled app output
+            // Copy the compiled app output - the app is expected to have been built as framework-dependent
             TestArtifact.CopyRecursive(
                 Path.Combine(RepoDirectoriesProvider.Default.TestAssetsOutput, AppName),
                 builtApp.Location);
