@@ -120,57 +120,36 @@ HRESULT SlowPathELTProfiler::Shutdown()
 {
     Profiler::Shutdown();
 
-    if (_testType == TestType::EnterHooks)
+    if (_testType != TestType::EnterHooks && _testType != TestType::LeaveHooks)
     {
-        bool _sawFuncsEnter = true;
-
-        for (auto p: _sawFuncEnter)
-        {
-            _sawFuncsEnter = _sawFuncsEnter && p.second;
-        }
-
-        if ((_failures == 0) && _sawFuncsEnter)
-        {
-            wcout << L"PROFILER TEST PASSES" << endl;
-        }
-        else
-        {
-            wcout << L"TEST FAILED _failures=" << _failures.load() << endl;
-
-            if (!_sawFuncsEnter)
-            {
-                for (auto p: _sawFuncEnter)
-                {
-                    if (!p.second)
-                        wcout << L"_sawFuncEnter[" << p.first << L"]=" << p.second << endl;
-                }
-            }
-        }
+        return S_OK;
     }
-    else if (_testType == TestType::LeaveHooks)
+    
+    bool allPass = true;
+    bool isEnter = (_testType == TestType::EnterHooks);
+    auto& sawFunc = isEnter ? _sawFuncEnter : _sawFuncLeave;
+
+    for (auto p: sawFunc)
     {
-        bool _sawFuncsLeave = true;
+        allPass = allPass && p.second;
+    }
 
-        for (auto p: _sawFuncLeave)
-        {
-            _sawFuncsLeave = _sawFuncsLeave && p.second;
-        }
+    int failures =_failures.load();
+    if (failures == 0 && allPass)
+    {
+        wcout << L"PROFILER TEST PASSES" << endl;
+    }
+    else
+    {
+        wcout << L"TEST FAILED _failures=" << failures << endl;
 
-        if ((_failures == 0) && _sawFuncsLeave)
+        if (!allPass)
         {
-            wcout << L"PROFILER TEST PASSES" << endl;
-        }
-        else
-        {
-            wcout << L"TEST FAILED _failures=" << _failures.load() << endl;
-
-            if (!_sawFuncsLeave)
+            const wchar_t* label = isEnter ? L"Enter" : L"Leave";
+            for (auto p: sawFunc)
             {
-                for (auto p: _sawFuncLeave)
-                {
-                    if (!p.second)
-                        wcout << L"_sawFuncLeave[" << p.first << L"]=" << p.second << endl;
-                }
+                if (!p.second)
+                    wcout << L"_sawFunc" << label << L"[" << p.first << L"]=" << p.second << endl;
             }
         }
     }

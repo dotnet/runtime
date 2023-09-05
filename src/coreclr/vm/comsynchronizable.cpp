@@ -475,17 +475,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, ThreadNative::GetManagedThreadId, ThreadBaseObject* th) {
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
-    if (th == NULL)
-        FCThrow(kNullReferenceException);
-
-    return th->GetManagedThreadId();
-}
-FCIMPLEND
-
 NOINLINE static Object* GetCurrentThreadHelper()
 {
     FCALL_CONTRACT;

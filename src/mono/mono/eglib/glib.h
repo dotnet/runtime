@@ -827,10 +827,13 @@ gpointer g_convert_error_quark(void);
 #define g_assert(x) (G_LIKELY((x)) ? 1 : (mono_assertion_message (__FILE__, __LINE__, #x), 0))
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus) || (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
 #define g_static_assert(x) static_assert (x, "")
+#elif (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+#define g_static_assert(x) _Static_assert (x, "")
 #else
-#define g_static_assert(x) g_assert (x)
+#error Mono requires static_assert (C11 or newer)
+/* #define g_static_assert(x) g_assert (x)*/
 #endif
 
 #define  g_assert_not_reached() G_STMT_START { mono_assertion_message_unreachable (__FILE__, __LINE__); eg_unreachable(); } G_STMT_END
