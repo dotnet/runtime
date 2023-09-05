@@ -30,7 +30,7 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
  * Generally, we can enable C11 atomics if the header is available and if all the primitive types we
  * care about (int, long, void*, long long) are lock-free.
  *
- * Note that we genrally don't want the compiler's locking implementation because it may take a
+ * Note that we generally don't want the compiler's locking implementation because it may take a
  * global lock, in which case if the atomic is used by both the GC implementation and runtime
  * internals we may have deadlocks during GC suspend.
  *
@@ -173,7 +173,7 @@ static inline gpointer
 mono_atomic_xchg_ptr (volatile gpointer *dest, gpointer exch)
 {
 	g_static_assert (ATOMIC_POINTER_LOCK_FREE == 2);
-	return atomic_exchange ((_Atomic gpointer*)dest, exch);
+	return atomic_exchange ((_Atomic(gpointer)*)dest, exch);
 }
 
 static inline gint32
@@ -235,7 +235,7 @@ static inline gpointer
 mono_atomic_load_ptr (volatile gpointer *src)
 {
 	g_static_assert (ATOMIC_POINTER_LOCK_FREE == 2);
-	return atomic_load ((_Atomic gpointer*)src);
+	return atomic_load ((_Atomic(gpointer)*)src);
 }
 
 static inline void
@@ -277,7 +277,7 @@ static inline void
 mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 {
 	g_static_assert (ATOMIC_POINTER_LOCK_FREE == 2);
-	atomic_store ((_Atomic gpointer*)dst, val);
+	atomic_store ((_Atomic(gpointer)*)dst, val);
 }
 
 #elif defined(HOST_WIN32)
