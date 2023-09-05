@@ -26,7 +26,7 @@ namespace System
         public static void ThrowArgument_DestinationTooShort() => throw new ArgumentException(SR.Argument_DestinationTooShort);
 
         [DoesNotReturn]
-        public static void ThrowArgument_SpansMustHaveSameLength(string paramName1, string paramName2)
-            => throw new ArgumentException(SR.Format(SR.Argument_SpansMustHaveSameLength, paramName1, paramName2), paramName1);
+        public static void ThrowArgument_SpansMustHaveSameLength()
+            => throw new ArgumentException(SR.Argument_SpansMustHaveSameLength);
     }
 }
