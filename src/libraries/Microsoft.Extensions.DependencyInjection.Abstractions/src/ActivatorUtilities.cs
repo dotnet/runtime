@@ -22,13 +22,12 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class ActivatorUtilities
     {
-#if NETCOREAPP
-        // This has less overhead than s_collectibleConstructorInfos so we use it for the common cases.
-        private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
-#endif
-
         // Support collectible assemblies.
+        // This has less overhead than s_collectibleConstructorInfos so we use it for the common cases.
+#if NETCOREAPP
+        private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
         private static readonly Lazy<ConditionalWeakTable<Type, ConstructorInfoEx[]>> s_collectibleConstructorInfos = new();
+#endif
 
 #if NET8_0_OR_GREATER
         // Maximum number of fixed arguments for ConstructorInvoker.Invoke(arg1, etc).
@@ -60,14 +59,15 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException(SR.CannotCreateAbstractClasses);
             }
 
+            ConstructorInfoEx[]? constructors;
 #if NETCOREAPP
-            if (!s_constructorInfos.TryGetValue(instanceType, out ConstructorInfoEx[]? constructors))
-#else
-            if (!s_collectibleConstructorInfos.Value.TryGetValue(instanceType, out ConstructorInfoEx[]? constructors))
-#endif
+            if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
             {
-                constructors = AddConstructors(instanceType);
+                constructors = GetOrAddConstructors(instanceType);
             }
+#else
+            constructors = CreateConstructorInfoExs(instanceType);
+#endif
 
             ConstructorInfoEx? constructor;
             IServiceProviderIsService? serviceProviderIsService = provider.GetService<IServiceProviderIsService>();
@@ -163,23 +163,24 @@ namespace Microsoft.Extensions.DependencyInjection
             return constructorMatcher.CreateInstance(provider);
         }
 
-        private static ConstructorInfoEx[] AddConstructors(
+#if NETCOREAPP
+        private static ConstructorInfoEx[] GetOrAddConstructors(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
-            ConstructorInfo[] ctors = type.GetConstructors();
-            ConstructorInfoEx[]? value = new ConstructorInfoEx[ctors.Length];
-            for (int i = 0; i < ctors.Length; i++)
+            // Not found. Do the slower work of checking for the value in the correct cache.
+            // Null and non-collectible load contexts use the default cache.
+            if (!type.Assembly.IsCollectible)
             {
-                value[i] = new ConstructorInfoEx(ctors[i]);
+                return s_constructorInfos.GetOrAdd(type, CreateConstructorInfoExs(type));
             }
 
-#if NETCOREAPP
-            // Type.IsCollectible is only available under NETCOREAPP.
-            if (!type.IsCollectible)
+            // Collectible load contexts should use the ConditionalWeakTable so they can be unloaded.
+            if (s_collectibleConstructorInfos.Value.TryGetValue(type, out ConstructorInfoEx[]? value))
             {
-                return s_constructorInfos.GetOrAdd(type, value);
+                return value;
             }
-#endif
+
+            value = CreateConstructorInfoExs(type);
 
 #if NET7_0_OR_GREATER
             if (s_collectibleConstructorInfos.Value.TryAdd(type, value))
@@ -199,6 +200,20 @@ namespace Microsoft.Extensions.DependencyInjection
             bool success = s_collectibleConstructorInfos.Value.TryGetValue(type, out value);
             Debug.Assert(success);
             return value!;
+        }
+#endif // NETCOREAPP
+
+        private static ConstructorInfoEx[] CreateConstructorInfoExs(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+        {
+            ConstructorInfo[] constructors = type.GetConstructors();
+            ConstructorInfoEx[]? value = new ConstructorInfoEx[constructors.Length];
+            for (int i = 0; i < constructors.Length; i++)
+            {
+                value[i] = new ConstructorInfoEx(constructors[i]);
+            }
+
+            return value;
         }
 
         /// <summary>
@@ -641,19 +656,12 @@ namespace Microsoft.Extensions.DependencyInjection
             public readonly ParameterInfo[] Parameters;
             public readonly bool IsPreferred;
             private readonly object?[]? _parameterKeys;
-#if NET8_0_OR_GREATER
-            public readonly ConstructorInvoker Invoker;
-#endif
 
             public ConstructorInfoEx(ConstructorInfo constructor)
             {
                 Info = constructor;
                 Parameters = constructor.GetParameters();
                 IsPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-
-#if NET8_0_OR_GREATER
-                Invoker = ConstructorInvoker.Create(constructor);
-#endif
 
                 for (int i = 0; i < Parameters.Length; i++)
                 {
@@ -800,8 +808,6 @@ namespace Microsoft.Extensions.DependencyInjection
                     // The above line will always throw, but the compiler requires we throw explicitly.
                     throw;
                 }
-#elif NET8_0_OR_GREATER
-                return _constructor.Invoker.Invoke(_parameterValues.AsSpan());
 #else
                 return _constructor.Info.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: _parameterValues, culture: null);
 #endif

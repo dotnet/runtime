@@ -394,20 +394,21 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
 #if NETCOREAPP
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91641", TestRuntimes.Mono)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void CreateInstance_CollectibleAssembly(bool useDynamicCode)
         {
-            if (PlatformDetection.IsAssemblyLoadingSupported)
+            if (PlatformDetection.IsNonBundledAssemblyLoadingSupported)
             {
-                var options = new RemoteInvokeOptions();
+                RemoteInvokeOptions options = new();
                 if (!useDynamicCode)
                 {
                     DisableDynamicCode(options);
                 }
 
-                RemoteExecutor.Invoke(static () =>
+                using var remoteHandle = RemoteExecutor.Invoke(static () =>
                 {
                     Assert.False(Collectible_IsAssemblyLoaded());
                     Collectible_LoadAndCreate(useCollectibleAssembly : true, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
@@ -422,14 +423,22 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                     Assert.False(asmWeakRef.IsAlive, "asmWeakRef.IsAlive");
                     Assert.False(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
                     Assert.False(Collectible_IsAssemblyLoaded());
-                }).Dispose();
+                }, options);
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void CreateInstance_NormalAssembly()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CreateInstance_NormalAssembly(bool useDynamicCode)
         {
-            RemoteExecutor.Invoke(static () =>
+            RemoteInvokeOptions options = new();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
             {
                 Assert.False(Collectible_IsAssemblyLoaded());
                 Collectible_LoadAndCreate(useCollectibleAssembly: false, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
@@ -444,7 +453,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Assert.True(asmWeakRef.IsAlive, "alcWeakRef.IsAlive");
                 Assert.True(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
                 Assert.True(Collectible_IsAssemblyLoaded());
-            }).Dispose();
+            }, options);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -457,18 +466,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 asm = MyLoadContext.LoadAsCollectable();
                 obj = CreateWithActivator(asm);
-                Assert.True(obj.GetType().IsCollectible);
+                Assert.True(obj.GetType().Assembly.IsCollectible);
             }
             else
             {
                 asm = MyLoadContext.LoadNormal();
                 obj = CreateWithActivator(asm);
-                Assert.False(obj.GetType().IsCollectible);
+                Assert.False(obj.GetType().Assembly.IsCollectible);
             }
 
             Assert.True(Collectible_IsAssemblyLoaded());
-            asmWeakRef = new(asm);
-            typeWeakRef = new(obj.GetType());
+            asmWeakRef = new WeakReference(asm);
+            typeWeakRef = new WeakReference(obj.GetType());
 
             static object CreateWithActivator(Assembly asm)
             {
