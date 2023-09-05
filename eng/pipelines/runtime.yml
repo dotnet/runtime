@@ -70,7 +70,6 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x86
           - linux_x64
           - linux_arm
           - linux_arm64
@@ -79,7 +78,6 @@ extends:
           - linux_musl_arm64
           - linux_musl_x64
           - osx_arm64
-          - tizen_armel
           - windows_x86
           - windows_x64
           - windows_arm64
