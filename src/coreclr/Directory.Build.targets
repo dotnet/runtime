@@ -27,7 +27,6 @@
   </Target>
 
   <!-- Import targets here to have TargetPath and other macros defined. Limit to CoreLib. -->
-  <Import Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib' or '$(IsNativeAotProject)' == 'true'" Project="$(RepositoryEngineeringDir)liveILLink.targets" />
   <Import Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib' or '$(IsNativeAotProject)' == 'true'" Project="$(RepositoryEngineeringDir)illink.targets" />
 
 </Project>

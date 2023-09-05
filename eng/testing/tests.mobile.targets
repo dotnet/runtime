@@ -165,6 +165,5 @@
           DependsOnTargets="InstallWorkloadUsingArtifacts"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'" />
 </Project>
