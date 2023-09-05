@@ -64,6 +64,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildArgs: -s clr.paltests+clr.paltestlist
           buildConfig: debug
+          dependOnEvaluatePaths: false
           platforms:
           - linux_x64
           - linux_musl_x64
