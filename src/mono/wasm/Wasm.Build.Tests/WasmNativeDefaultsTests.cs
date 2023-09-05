@@ -128,9 +128,9 @@ namespace Wasm.Build.Tests
 
         public static TheoryData<string, string, bool, bool> SetWasmNativeStripExplicitlyTestData(bool publish) => new()
         {
-            {"Debug", "<WasmNativeStrip>true</WasmNativeStrip>", false, true },
+            {"Debug", "<WasmNativeStrip>true</WasmNativeStrip>", true, true },
             {"Release", "<WasmNativeStrip>true</WasmNativeStrip>", publish, true },
-            {"Debug", "<WasmNativeStrip>false</WasmNativeStrip>", true, false },
+            {"Debug", "<WasmNativeStrip>false</WasmNativeStrip>", false, false },
             {"Release", "<WasmNativeStrip>false</WasmNativeStrip>", true, false }
         };
 
