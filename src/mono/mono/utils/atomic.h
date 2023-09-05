@@ -25,19 +25,50 @@ F/MonoDroid( 1568): shared runtime initialization error: Cannot load library: re
 Apple targets have historically being problematic, xcode 4.6 would miscompile the intrinsic.
 */
 
+/* Decide if we will use stdatomic.h */
+/*
+ * Generally, we can enable C11 atomics if the header is available and if all the primitive types we
+ * care about (int, long, void*, long long) are lock-free.
+ *
+ * Note that we genrally don't want the compiler's locking implementation because it may take a
+ * global lock, in which case if the atomic is used by both the GC implementation and runtime
+ * internals we may have deadlocks during GC suspend.
+ *
+ * It might be possible to use some Mono specific implementation for specific types (e.g. long long)
+ * on some platforms if the standard atomics for some type are not lock-free (for example: long
+ * long).  We might be able to use a GC-aware lock, for example.
+ *
+ */
 #if defined(_MSC_VER)
-
-#define MONO_IGNORE_STDATOMIC 1
+  /*
+   * we need two things:
+   *
+   * 1. MSVC atomics support is not experimental, or we pass /experimental:c11atomics
+   *
+   * 2. We build our C++ code with C++23 or later (otherwise MSVC will complain about including
+   * stdatomic.h)
+   *
+   */
+#  undef MONO_USE_STDATOMIC
+#elif defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS)
+#  define MONO_USE_STDATOMIC 1
+#elif defined(HOST_ANDROID)
+  /* on Android-x86 ATOMIC_LONG_LONG_LOCK_FREE == 1, not 2 like we want. */
+  /* on Andriod-x64 ATOMIC_LONG_LOCK_FREE == 1, not 2 */
+  /* on Android-armv7 ATOMIC_INT_LOCK_FREE == 1, not 2 */
+#  if defined(HOST_ARM64)
+#    define MONO_USE_STDATOMIC 1
+#  endif
+#elif defined(HOST_LINUX)
+  /* FIXME: probably need arch checks */
+#  define MONO_USE_STDATOMIC 1
+#elif defined(HOST_WASI) || defined(HOST_BROWSER)
+#  define MONO_USE_STDATOMIC 1
+#else
+#  undef MONO_USE_STDATOMIC
 #endif
 
-#if defined(HOST_ANDROID) && (defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM))
-/* on Android-x86 ATOMIC_LONG_LONG_LOCK_FREE == 1, not 2 like we want. */
-/* on Andriod-x64 ATOMIC_LONG_LOCK_FREE == 1, not 2 */
-/* on Android-armv7 ATOMIC_INT_LOCK_FREE == 1, not 2 */
-#define MONO_IGNORE_STDATOMIC 1
-#endif
-
-#if !defined(__STDC_NO_ATOMICS__) && !defined(MONO_IGNORE_STDATOMIC)
+#ifdef MONO_USE_STDATOMIC
 
 #include<stdatomic.h>
 
