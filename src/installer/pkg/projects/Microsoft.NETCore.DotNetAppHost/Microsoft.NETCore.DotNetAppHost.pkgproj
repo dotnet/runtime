@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <VersionProp>AppHostVersion</VersionProp>
+    <VersionProp>ProductVersion</VersionProp>
     <PackageDescription>Provides the .NET app bootstrapper intended for use in the application directory</PackageDescription>
   </PropertyGroup>
 
