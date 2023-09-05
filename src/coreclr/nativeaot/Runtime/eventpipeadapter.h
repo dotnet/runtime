@@ -24,7 +24,7 @@ class EventPipeAdapter final
 public:
     static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
     {
-        ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
+        ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
         EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
         ep_rt_utf8_string_free (providerNameUTF8);
         return provider;

@@ -7672,7 +7672,12 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
         return E_INVALIDARG;
     }
 
-    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManagerNoThrow();
+    if (foh == nullptr)
+    {
+        *pcObjectRanges = 0;
+        return S_OK;
+    }
     CrstHolder ch(&foh->m_Crst);
 
     const unsigned segmentsCount = foh->m_FrozenSegments.GetCount();

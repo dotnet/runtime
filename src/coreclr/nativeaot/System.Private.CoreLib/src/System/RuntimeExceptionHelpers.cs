@@ -221,7 +221,7 @@ namespace System
                     string outputMessage;
                     if (exception != null)
                     {
-                        prefix = "Unhandled Exception: ";
+                        prefix = "Unhandled exception. ";
                         outputMessage = exception.ToString();
                     }
                     else

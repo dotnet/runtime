@@ -197,6 +197,7 @@ namespace System.Memory.Tests.Span
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         public static void IndexOfAny_CanProduceDifferentResultsUnderNls()
         {
             if (CanTestInvariantCulture)
@@ -253,6 +254,7 @@ namespace System.Memory.Tests.Span
         }
 
         [ConditionalFact(nameof(CanTestInvariantCulture))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         public static void TestIndexOfAny_RandomInputs_InvariantCulture()
         {
             RunUsingInvariantCulture(static () =>
@@ -275,6 +277,7 @@ namespace System.Memory.Tests.Span
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [ActiveIssue("Manual execution only. Worth running any time SearchValues<string> logic is modified.")]
         public static void TestIndexOfAny_RandomInputs_Stress()
         {
