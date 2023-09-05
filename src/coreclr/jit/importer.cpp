@@ -116,8 +116,8 @@ void Compiler::impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolv
 {
     pResolvedToken->tokenContext = impTokenLookupContextHandle;
     pResolvedToken->tokenScope   = info.compScopeHnd;
-    pResolvedToken->token        = getU4LittleEndian(addr);
     pResolvedToken->tokenType    = kind;
+    pResolvedToken->token        = getU4LittleEndian(addr);
 
     info.compCompHnd->resolveToken(pResolvedToken);
 }
