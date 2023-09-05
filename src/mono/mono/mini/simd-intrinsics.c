@@ -4621,7 +4621,7 @@ static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Sse41", MONO_CPU_X86_SSE41, sse41_methods, sizeof (sse41_methods) },
 	{ "Sse42", MONO_CPU_X86_SSE42, sse42_methods, sizeof (sse42_methods) },
 	{ "Ssse3", MONO_CPU_X86_SSSE3, ssse3_methods, sizeof (ssse3_methods) },
-	{ "X86Base", 0, x86base_methods, sizeof (x86base_methods) },
+	{ "X86Base", MONO_CPU_INITED, x86base_methods, sizeof (x86base_methods), TRUE },
 	{ "X86Serialize", 0, unsupported, sizeof (unsupported) },
 };
 
@@ -5248,32 +5248,37 @@ emit_x86_intrinsics (
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		case SN_DivRem: {
-			g_assert (!(TARGET_SIZEOF_VOID_P == 4 && is_64bit)); // x86(no -64) cannot do divisions with 64-bit regs
-
+			g_assert (!(TARGET_SIZEOF_VOID_P == 4 && is_64bit)); // x86(no -64) cannot do divisions with 64-bit regs 
 			const int divtype = is_64bit ? STACK_I8 : STACK_I4;
-			const int movtype = is_64bit ? OP_LMOVE : OP_MOVE;
-			const int storetype = is_64bit ? OP_STOREI8_MEMBASE_IMM : OP_STOREI4_MEMBASE_IMM;
+			const int storetype = is_64bit ? OP_STOREI8_MEMBASE_REG : OP_STOREI4_MEMBASE_REG;
+			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
 
-			MonoInst* upper_and_remainder; // the register must be backed up, since it will be overwritten by DIV/IDIV
-			MONO_INST_NEW (cfg, upper_and_remainder, movtype);
-			upper_and_remainder->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
-			upper_and_remainder->sreg1 = args [1]->dreg;
-			upper_and_remainder->type = divtype;
-			MONO_ADD_INS (cfg->cbb, upper_and_remainder);
+			// We must decide by the second argument, the first is always unsigned here	
+			MonoTypeEnum arg1_type = fsig->param_count > 1 ? get_underlying_type (fsig->params [1]) : MONO_TYPE_VOID;
+			MonoInst* div;
+			MonoInst* div2; 
 
-			MonoInst* div; // the division itself upper.remainder:lower / divisor -> quotient, upper.remainder
-			if (type_enum_is_unsigned (arg0_type)) {
+			if (type_enum_is_unsigned (arg1_type)) {
 				MONO_INST_NEW (cfg, div, is_64bit ? OP_X86_LDIVREMU : OP_X86_IDIVREMU);
 			} else {
 				MONO_INST_NEW (cfg, div, is_64bit ? OP_X86_LDIVREM : OP_X86_IDIVREM);
 			}
 			div->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
-			div->sreg1 = args [0]->dreg;
-			div->sreg2 = upper_and_remainder->dreg; // the contents of this will also be destroyed by DIV/IDIV
+			div->sreg1 = args [0]->dreg; // we can use this directly, reg alloc knows that the contents will be destroyed
+			div->sreg2 = args [1]->dreg; // same here as ^
 			div->sreg3 = args [2]->dreg;
 			div->type = divtype;
 			MONO_ADD_INS (cfg->cbb, div);
 
+			// Protect the contents of edx/rdx by assigning it a vreg. The instruction must
+			// immediately follow DIV/IDIV so that edx content is not modified.
+			// In LLVM the remainder is already calculated, just need to capture it in a vreg.
+			MONO_INST_NEW (cfg, div2, is_64bit ? OP_X86_LDIVREM2 : OP_X86_IDIVREM2);
+			div2->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			div2->type = divtype;
+			MONO_ADD_INS (cfg->cbb, div2);
+			
+			// TODO: Can the creation of tuple be elided? (e.g. if deconstruction is used)
 			MonoInst* tuple = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
 			MonoInst* tuple_addr;
 			EMIT_NEW_TEMPLOADA (cfg, tuple_addr, tuple->inst_c0);
@@ -5281,26 +5286,10 @@ emit_x86_intrinsics (
 			MonoClassField* field1 = mono_class_get_field_from_name_full (tuple->klass, "Item1", NULL);
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, tuple_addr->dreg, field1->offset - obj_size, div->dreg);
 			MonoClassField* field2 = mono_class_get_field_from_name_full (tuple->klass, "Item2", NULL);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, tuple_addr->dreg, field2->offset - obj_size, upper_and_remainder->dreg);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, tuple_addr->dreg, field2->offset - obj_size, div2->dreg);
 			EMIT_NEW_TEMPLOAD (cfg, ins, tuple->inst_c0);
 			return ins;
-
-			/*MonoInst* rem; // moving the remainder to the correct reg
-			MONO_INST_NEW (cfg, rem, movtype);
-			rem->dreg = args [4]->dreg;
-			rem->sreg1 = upper_and_remainder->dreg;
-			rem->type = divtype;
-			MONO_ADD_INS (cfg->cbb, rem);
-
-			MonoInst* quo; // moving the quotient to the correct reg
-			MONO_INST_NEW (cfg, quo, movtype);
-			quo->dreg = args [3]->dreg;
-			quo->sreg1 = div->dreg;
-			quo->type = divtype;
-			MONO_ADD_INS (cfg->cbb, quo);
-		
-			return quo;*/
-		}
+			}
 		default:
 			g_assert_not_reached ();
 		}
