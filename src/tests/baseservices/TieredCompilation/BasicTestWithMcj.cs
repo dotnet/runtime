@@ -6,7 +6,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
-using Xunit;
 
 public static class BasicTest
 {
@@ -18,9 +17,10 @@ public static class BasicTest
     {
     }
 
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
+        const int Pass = 100;
+
         ProfileOptimization.SetProfileRoot(Environment.CurrentDirectory);
         ProfileOptimization.StartProfile("profile.mcj");
 
@@ -45,6 +45,8 @@ public static class BasicTest
         FooWithGeneric(RegexOptions.IgnoreCase);
 
         ProfileOptimization.StartProfile(null);
+
+        return Pass;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

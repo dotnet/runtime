@@ -2,8 +2,8 @@
   <PropertyGroup>
     <!-- This is a separate app launched by the actual test in TestConfigTester.csproj -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <NoWarn>$(NoWarn);XUW1001</NoWarn>
     <MainEntryPoint>TestConfig.Main</MainEntryPoint>
   </PropertyGroup>
   <ItemGroup>

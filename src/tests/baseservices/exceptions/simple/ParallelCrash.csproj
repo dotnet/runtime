@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <!-- Uses an explicit Main to trigger different runtime crashing scenarios. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <NoWarn>$(NoWarn);XUW1001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ParallelCrash.cs" />
