@@ -4,7 +4,5 @@
   <Target Name="SetVariables">
     <Exec Command="echo '##vso[task.setvariable variable=productVersion]$(ProductVersion)'"/>
     <Exec Command="echo Writing $(ProductVersion) to productVersion"/>
-    <Exec Command="echo '##vso[task.setvariable variable=majorVersion]$(MajorVersion)'"/>
-    <Exec Command="echo Writing $(MajorVersion) to majorVersion"/>
   </Target>
 </Project>
