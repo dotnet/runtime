@@ -126,6 +126,14 @@ namespace Wasm.Build.Tests
         }
 #pragma warning restore xunit1026
 
+
+        /*
+         * - build+debug -> relink.. nativestrip=false, symbols=false, when unset
+         *
+         * - default in all other cases, false, false
+         *
+         */
+
         public static TheoryData<string, string, bool, bool> SetWasmNativeStripExplicitlyTestData(bool publish) => new()
         {
             {"Debug", "<WasmNativeStrip>true</WasmNativeStrip>", false, true },

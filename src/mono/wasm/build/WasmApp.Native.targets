@@ -118,7 +118,7 @@
       <_BoolPropertiesThatTriggerRelinking Include="WasmEnableExceptionHandling" DefaultValueInRuntimePack="true" />
       <_BoolPropertiesThatTriggerRelinking Include="InvariantTimezone" DefaultValueInRuntimePack="false" />
       <_BoolPropertiesThatTriggerRelinking Include="InvariantGlobalization" DefaultValueInRuntimePack="false" />
-      <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
+      <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="false" />
       <_BoolPropertiesThatTriggerRelinking Include="WasmNativeDebugSymbols" DefaultValueInRuntimePack="false" />
     </ItemGroup>
 
@@ -162,12 +162,16 @@
   </Target>
 
   <Target Name="_SetDebugSymbolsPropertiesDefaults">
-    <!-- Default with nothing set -->
-    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == ''">
-      <!-- Build+relink+config=debug -->
-      <WasmNativeDebugSymbols Condition="'$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">true</WasmNativeDebugSymbols>
+    <Message Text="_SetDebugSymbolsPropertiesDefault WasmNativeStrip: $(WasmNativeStrip), WasmNativeDebugSymbols: $(WasmNativeDebugSymbols)" />
 
-      <WasmNativeStrip>false</WasmNativeStrip>
+    <!-- Default with nothing set -->
+    <!--<PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == ''">-->
+    <PropertyGroup>
+      <!-- Build+relink+config=debug -->
+      <!-- FIXME: move condition to pg -->
+      <WasmNativeDebugSymbols Condition="'$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">true</WasmNativeDebugSymbols>
+      <WasmNativeDebugSymbols Condition="'$(RunAOTCompilation)' == 'true'">true</WasmNativeDebugSymbols>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(WasmNativeDebugSymbols)' == 'true'">false</WasmNativeStrip>
     </PropertyGroup>
 
     <PropertyGroup>
