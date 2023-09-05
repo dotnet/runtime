@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+  <ItemGroup>
+    <HelixWorkItem Include="PALTests">
+      <PayloadDirectory>$(CoreCLRArtifactsPath)/paltests</PayloadDirectory>
+      <Command>./runpaltestshelix.sh</Command>
+      <WorkItemTimeout>0:05</WorkItemTimeout>
+    </HelixWorkItem>
+  </ItemGroup>
+</Project>
