@@ -3930,6 +3930,19 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
             }
         }
 
+        case INS_psrlw:
+        case INS_psrld:
+        case INS_psrlq:
+        case INS_psraw:
+        case INS_psrad:
+        case INS_psllw:
+        case INS_pslld:
+        case INS_psllq:
+        {
+            // These always have 16-byte memory loads
+            return EA_16BYTE;
+        }
+
         case INS_vpmovdb:
         case INS_vpmovdw:
         case INS_vpmovqb:

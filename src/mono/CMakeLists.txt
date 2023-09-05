@@ -8,6 +8,9 @@ include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
@@ -523,13 +526,8 @@ include(configure)
 ######################################
 
 if(GCC)
-  if(HOST_WASI)
-    # WASI SDK only includes some required definitions if the C version is at least this new
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-  else()
-    # We require C99 with some GNU extensions, e.g. `linux` macro
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-  endif()
+  # We require C11 with some GNU extensions, e.g. `linux` macro
+  set(CMAKE_C_EXTENSIONS ON)
 
   # Turn off floating point expression contraction because it is considered a value changing
   # optimization in the IEEE 754 specification and is therefore considered unsafe.
