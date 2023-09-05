@@ -2631,7 +2631,7 @@ static G_GNUC_UNUSED MonoInst*
 emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
-	int id;
+	int id, len;
 	MonoClass *klass;
 	MonoType *type, *etype;
 
@@ -2657,6 +2657,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	klass = cmethod->klass;
 	type = m_class_get_byval_arg (klass);
 	etype = m_class_get_byval_arg (mono_defaults.single_class);
+	len = mono_class_value_size (klass, NULL) / 4;
 
 	// Similar to the cases in emit_sys_numerics_vector_t ()
 	switch (id) {
@@ -2686,7 +2687,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		}
 		// FIXME: These don't work since Vector2/Vector3 are not handled as SIMD
 #if 0
-		int len = mono_class_value_size (klass, NULL) / 4;
 		} else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector3 (Vector2, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
@@ -2719,26 +2719,25 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_get_Item: {
 		// GetElement is marked as Intrinsic, but handling this in get_Item leads to better code
 		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		int elems = 4;
 		MonoTypeEnum ty = etype->type;
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
 			int index = args[1]->inst_c0;
 
-			if (index < 0 || index >= elems) {
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+			if (index < 0 || index >= len) {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 			}
 
 			int opcode = type_to_extract_op (ty);
 			ins = emit_simd_ins (cfg, klass, opcode, src1, -1);
-			ins->inst_c0 = args[1]->inst_c0;
+			ins->inst_c0 = index;
 			ins->inst_c1 = ty;
 			return ins;
 		}
 
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 
 		if (COMPILE_LLVM (cfg)) {
@@ -2806,14 +2805,14 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		g_assert (fsig->hasthis && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_I4 && fsig->params [1]->type == MONO_TYPE_R4);
 
 		gboolean indirect = FALSE;
-		int elems = 4, index = args [1]->inst_c0;
+		int index = args [1]->inst_c0;
 		int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
 			// Bounds check only if the index is out of range
-			if (index < 0 || index >= elems) {
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+			if (index < 0 || index >= len) {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 			}
 
@@ -2830,7 +2829,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return ins;
 		}
 
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 
 		if (COMPILE_LLVM (cfg)) {
