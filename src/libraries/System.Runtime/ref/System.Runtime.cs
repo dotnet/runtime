@@ -9606,7 +9606,6 @@ namespace System.IO
         public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
         public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
         public void MoveTo(string destDirName) { }
-        public override string ToString() { throw null; }
     }
     public partial class DirectoryNotFoundException : System.IO.IOException
     {

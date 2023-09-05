@@ -1112,13 +1112,12 @@ guint8*
 mono_arm_get_thumb_plt_entry (guint8 *code)
 {
 	int s, j1, j2, imm10, imm11, i1, i2, imm32;
-	guint8 *bl, *base;
+	guint8 *bl;
 	guint16 t1, t2;
 	guint8 *target;
 
 	/* code should be right after a BL */
 	code = (guint8*)((gsize)code & ~1);
-	base = (guint8*)((gsize)code & ~3);
 	bl = code - 4;
 	t1 = ((guint16*)bl) [0];
 	t2 = ((guint16*)bl) [1];

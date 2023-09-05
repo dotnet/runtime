@@ -340,6 +340,7 @@ namespace HttpServer
                     Console.WriteLine("  => not found");
 
                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                context.Response.Close();
             }
 
             if (Verbose)

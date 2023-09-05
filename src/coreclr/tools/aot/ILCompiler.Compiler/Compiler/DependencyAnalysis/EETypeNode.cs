@@ -372,16 +372,8 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType defType = _type.GetClosestDefType();
 
-            // Interfaces don't have vtables and we don't need to track their slot use.
-            // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
-            // those have slots and we dispatch on them.
-            bool needsDependenciesForVirtualMethodImpls = !defType.IsInterface
-                || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
-
             // If we're producing a full vtable, none of the dependencies are conditional.
-            needsDependenciesForVirtualMethodImpls &= !factory.VTable(defType).HasFixedSlots;
-
-            if (needsDependenciesForVirtualMethodImpls)
+            if (!factory.VTable(defType).HasFixedSlots)
             {
                 bool isNonInterfaceAbstractType = !defType.IsInterface && ((MetadataType)defType).IsAbstract;
 
@@ -436,6 +428,12 @@ namespace ILCompiler.DependencyAnalysis
                     ((System.Collections.IStructuralEquatable)defType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
                     EqualityComparer<DefType>.Default));
 
+                // Interfaces don't have vtables and we don't need to track their instance method slot use.
+                // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
+                // those have slots and we dispatch on them.
+                bool needsDependenciesForInstanceInterfaceMethodImpls = !defType.IsInterface
+                    || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
+
                 // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
                 // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
                 // possible for any IFoo object to actually be an instance of T.
@@ -455,6 +453,9 @@ namespace ILCompiler.DependencyAnalysis
                             continue;
 
                         bool isStaticInterfaceMethod = interfaceMethod.Signature.IsStatic;
+
+                        if (!isStaticInterfaceMethod && !needsDependenciesForInstanceInterfaceMethodImpls)
+                            continue;
 
                         MethodDesc implMethod = isStaticInterfaceMethod ?
                             defType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :

@@ -27,4 +27,22 @@ public static class Descriptors
             "XUnitWrapperGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor XUWG1003 =
+        new DiagnosticDescriptor(
+            "XUW1003",
+            "Test methods must be public",
+            "Test methods must be public. Add or change the visibility modifier of the test method to public.",
+            "XUnitWrapperGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor XUWG1004 =
+        new DiagnosticDescriptor(
+            "XUW1004",
+            "Test classes must be public",
+            "Test classes must be public. Add or change the visibility modifier of the test class to public.",
+            "XUnitWrapperGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
 }
