@@ -1,6 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <!--
+      When using TestReadyToRun, MSBuild can't find the next .NET version of the
+      Crossgen2 package when in RC stages. Because of this, we have to specify the
+      current version, rather than let it guess it with $(NetCoreAppCurrent).
+
+      TODO: Change this from targeting 'net8.0' to targeting 'net9.0' when we officially
+            begin having .NET 9 versions of the packages.
+    -->
+    <TargetFrameworks Condition="'$(TestReadyToRun)' == 'true'">net8.0-windows;net8.0-unix;net8.0-browser</TargetFrameworks>
+
     <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
