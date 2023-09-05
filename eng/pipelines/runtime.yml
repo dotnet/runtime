@@ -68,7 +68,7 @@ extends:
         parameters:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
+          buildConfig: Debug
           platforms:
           - linux_x64
           - linux_musl_x64
