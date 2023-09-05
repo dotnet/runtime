@@ -566,8 +566,8 @@ LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
         addi  a0, sp, FaultingExceptionFrame_FrameOffset
 
         // Prepare to initialize to NULL
-        sd    zero, a0, 0  // Initialize vtbl (it is not strictly necessary)
-        sd    zero, a0, FaultingExceptionFrame__m_fFilterExecuted  // Initialize BOOL for personality routine
+        sd    zero, 0(a0)  // Initialize vtbl (it is not strictly necessary)
+        sd    zero, FaultingExceptionFrame__m_fFilterExecuted(a0)  // Initialize BOOL for personality routine
 
         call   C_FUNC(\target)
         // Target should not return.
