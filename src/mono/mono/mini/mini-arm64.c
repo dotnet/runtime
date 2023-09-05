@@ -3969,7 +3969,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_EXPAND_R4:
 		case OP_EXPAND_R8: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
+			arm_neon_fdup_e (code, get_vector_size_macro (ins), t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_EXTRACT_I1:
