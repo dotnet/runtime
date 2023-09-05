@@ -329,7 +329,7 @@ namespace Internal.StackTraceMetadata
 
             private struct StackTraceData : IComparable<StackTraceData>
             {
-                private const int IsHiddenFlag = 0x1;
+                private const int IsHiddenFlag = 0x2;
 
                 private readonly int _rvaAndIsHiddenBit;
 
