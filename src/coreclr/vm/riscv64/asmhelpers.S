@@ -539,6 +539,68 @@ LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper):
     call  JIT_GetSharedGCStaticBase_Helper
 LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
+// Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
+#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+
+.macro GenerateRedirectedStubWithFrame stub, target
+
+    //
+    // This is the primary function to which execution will be redirected to.
+    //
+    NESTED_ENTRY \stub, _TEXT, NoHandler
+
+        //
+        // IN: ra: original IP before redirect
+        //
+
+        PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 16
+
+        // alloc stack for FaultingExceptionFrame.
+        addi  sp, sp, -FaultingExceptionFrame_StackAlloc
+
+        // stack must be 16 bytes aligned
+        CHECK_STACK_ALIGNMENT
+
+        // Save pointer to FEF for GetFrameFromRedirectedStubStackFrame
+        addi  a0, sp, FaultingExceptionFrame_FrameOffset
+
+        // Prepare to initialize to NULL
+        sd    zero, a0, 0  // Initialize vtbl (it is not strictly necessary)
+        sd    zero, a0, FaultingExceptionFrame__m_fFilterExecuted  // Initialize BOOL for personality routine
+
+        call   C_FUNC(\target)
+        // Target should not return.
+        EMIT_BREAKPOINT
+
+    NESTED_END \stub, _TEXT
+
+.endm
+
+// ------------------------------------------------------------------
+//
+// Helpers for ThreadAbort exceptions
+//
+        NESTED_ENTRY RedirectForThreadAbort2, _TEXT, NoHandler
+        PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 16
+
+        // stack must be 16 byte aligned
+        CHECK_STACK_ALIGNMENT
+
+        // On entry:
+        //
+        // a0 = address of FaultingExceptionFrame
+        //
+        // Invoke the helper to setup the FaultingExceptionFrame and raise the exception
+        call    C_FUNC(ThrowControlForThread)
+
+        // ThrowControlForThread doesn't return.
+        EMIT_BREAKPOINT
+
+        NESTED_END RedirectForThreadAbort2, _TEXT
+
+GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
+
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
