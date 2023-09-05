@@ -111,6 +111,7 @@ namespace System
 
             CrashReason crashReason = reason switch
             {
+                RhFailFastReason.AssertionFailure or
                 RhFailFastReason.EnvironmentFailFast => CrashReason.EnvironmentFailFast,
                 RhFailFastReason.InternalError => CrashReason.InternalFailFast,
                 RhFailFastReason.UnhandledException or

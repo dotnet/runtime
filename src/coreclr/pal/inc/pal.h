@@ -2678,12 +2678,6 @@ BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val);
 
-PALIMPORT
-size_t
-PALAPI
-PAL_GetLogicalProcessorCacheSizeFromOS();
-#define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
-
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
@@ -3034,24 +3028,6 @@ VirtualProtect(
            IN SIZE_T dwSize,
            IN DWORD flNewProtect,
            OUT PDWORD lpflOldProtect);
-
-typedef struct _MEMORYSTATUSEX {
-  DWORD     dwLength;
-  DWORD     dwMemoryLoad;
-  DWORDLONG ullTotalPhys;
-  DWORDLONG ullAvailPhys;
-  DWORDLONG ullTotalPageFile;
-  DWORDLONG ullAvailPageFile;
-  DWORDLONG ullTotalVirtual;
-  DWORDLONG ullAvailVirtual;
-  DWORDLONG ullAvailExtendedVirtual;
-} MEMORYSTATUSEX, *LPMEMORYSTATUSEX;
-
-PALIMPORT
-BOOL
-PALAPI
-GlobalMemoryStatusEx(
-            IN OUT LPMEMORYSTATUSEX lpBuffer);
 
 typedef struct _MEMORY_BASIC_INFORMATION {
     PVOID BaseAddress;

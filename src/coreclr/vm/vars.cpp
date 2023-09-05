@@ -182,7 +182,7 @@ bool g_fEEInit = false;
 // code:IsAtProcessExit to read this.
 GVAL_IMPL(bool, g_fProcessDetach);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 GVAL_IMPL_INIT(bool, g_metadataUpdatesApplied, false);
 #endif
 

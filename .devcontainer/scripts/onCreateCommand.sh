@@ -19,7 +19,7 @@ case "$opt" in
         ./build.sh mono+libs -os browser -c Release
 
         # install dotnet-serve for running wasm samples
-        ./dotnet.sh tool install dotnet-serve --tool-path ./.dotnet-tools-global
+        ./dotnet.sh tool install dotnet-serve --version 1.10.172 --tool-path ./.dotnet-tools-global
     ;;
 esac
 

@@ -232,7 +232,7 @@ DEFINE_DACVAR(TADDR, dac__g_MiniMetaDataBuffAddress, ::g_MiniMetaDataBuffAddress
 
 DEFINE_DACVAR(SIZE_T, dac__g_clrNotificationArguments, ::g_clrNotificationArguments)
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
 

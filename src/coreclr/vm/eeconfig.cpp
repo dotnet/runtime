@@ -240,6 +240,7 @@ HRESULT EEConfig::Init()
 #if defined(FEATURE_PGO)
     fTieredPGO = false;
     tieredPGO_InstrumentOnlyHotCode = false;
+    tieredPGO_ScalableCountThreshold = 13;
 #endif
 
 #if defined(FEATURE_READYTORUN)
@@ -781,6 +782,13 @@ HRESULT EEConfig::sync()
         // Also, consider DynamicPGO enabled if WritePGOData is set
         fTieredPGO |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) != 0;
         tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
+
+        DWORD scalableCountThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_ScalableCountThreshold);
+
+        if ((scalableCountThreshold > 0) && (scalableCountThreshold < 20))
+        {
+            tieredPGO_ScalableCountThreshold = scalableCountThreshold;
+        }
 
         // We need quick jit for TieredPGO
         if (!fTieredCompilation_QuickJit)

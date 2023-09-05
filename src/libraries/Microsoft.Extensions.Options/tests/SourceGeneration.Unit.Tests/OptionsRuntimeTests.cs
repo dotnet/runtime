@@ -25,10 +25,15 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 {
                     Tall = 10,
                     Id = "1",
-                    Children = new()
+                    Children1 = new()
                     {
-                        new ChildOptions() { Name = "C1" },
-                        new ChildOptions() { Name = "C2" }
+                        new ChildOptions() { Name = "C1-1" },
+                        new ChildOptions() { Name = "C1-2" }
+                    },
+                    Children2 = new List<ChildOptions>()
+                    {
+                        new ChildOptions() { Name = "C2-1" },
+                        new ChildOptions() { Name = "C2-2" }
                     },
                     NestedList = new()
                     {
@@ -126,12 +131,19 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 {
                     Tall = 10,
                     Id = "1",
-                    Children = new()
+                    Children1 = new()
                     {
                         new ChildOptions(),
                         new ChildOptions(),
                         new ChildOptions()
-                    }
+                    },
+                    Children2 = new List<ChildOptions>()
+                    {
+                        new ChildOptions(),
+                        new ChildOptions(),
+                        new ChildOptions()
+                    },
+
                 }
             };
 
@@ -142,9 +154,12 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.True(result1.Failed);
             Assert.Equal(new List<string>
                         {
-                            "Name: The MyOptions.Nested.Children[0].Name field is required.",
-                            "Name: The MyOptions.Nested.Children[1].Name field is required.",
-                            "Name: The MyOptions.Nested.Children[2].Name field is required.",
+                            "Name: The MyOptions.Nested.Children1[0].Name field is required.",
+                            "Name: The MyOptions.Nested.Children1[1].Name field is required.",
+                            "Name: The MyOptions.Nested.Children1[2].Name field is required.",
+                            "Name: The MyOptions.Nested.Children2[0].Name field is required.",
+                            "Name: The MyOptions.Nested.Children2[1].Name field is required.",
+                            "Name: The MyOptions.Nested.Children2[2].Name field is required.",
                         },
                         result1.Failures);
 
@@ -152,9 +167,12 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.True(result2.Failed);
             Assert.Equal(new List<string>
                         {
-                            "DataAnnotation validation failed for 'MyOptions.Nested.Children[0]' members: 'Name' with the error: 'The Name field is required.'.",
-                            "DataAnnotation validation failed for 'MyOptions.Nested.Children[1]' members: 'Name' with the error: 'The Name field is required.'.",
-                            "DataAnnotation validation failed for 'MyOptions.Nested.Children[2]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children1[0]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children1[1]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children1[2]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children2[0]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children2[1]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children2[2]' members: 'Name' with the error: 'The Name field is required.'.",
                         },
                         result2.Failures);
         }
@@ -219,7 +237,10 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
         public string? Id { get; set; }
 
         [ValidateEnumeratedItems]
-        public List<ChildOptions>? Children { get; set; }
+        public List<ChildOptions>? Children1 { get; set; }
+
+        [ValidateEnumeratedItems]
+        public IEnumerable<ChildOptions>? Children2 { get; set; }
 
 #pragma warning disable SYSLIB1211 // Source gen does static analysis for circular reference. We need to disable it for this test.
         [ValidateEnumeratedItems]
