@@ -5640,7 +5640,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	LLVMBuilderRef builder;
 	gboolean has_terminator;
 	LLVMValueRef lhs, rhs, arg3;
-	LLVMValueRef last_divrem;
+	LLVMValueRef last_divrem = NULL;
 	int nins = 0;
 
 	cbb = get_end_bb (ctx, bb);
@@ -12081,6 +12081,8 @@ MONO_RESTORE_WARNING
 #endif
 		}
 	}
+
+	g_assert (last_divrem == NULL);
 
 	if (!ctx_ok (ctx))
 		return;
