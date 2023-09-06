@@ -3,7 +3,6 @@
   <!-- NOTE: these targets should be a no-op, unless _RequiresLiveILLink, computed below, is true. -->
 
   <PropertyGroup>
-    <_ImportedLiveILLinkTargets>true</_ImportedLiveILLinkTargets>
     <!-- Keep these conditions in sync with _RequiresILLinkPack in
          https://github.com/dotnet/sdk/blob/main/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Publish.targets -->
     <_RequiresLiveILLink Condition="'$(_RequiresLiveILLink)' == '' And (

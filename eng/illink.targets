@@ -6,8 +6,6 @@
     <_RequiresLiveILLink>true</_RequiresLiveILLink>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)liveILLink.targets" />
-
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
