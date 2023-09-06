@@ -2919,14 +2919,6 @@ BOOL
 PALAPI
 PAL_LOADMarkSectionAsNotNeeded(void * ptr);
 
-#ifdef UNICODE
-#define LoadLibrary LoadLibraryW
-#define LoadLibraryEx LoadLibraryExW
-#else
-#define LoadLibrary LoadLibraryA
-#define LoadLibraryEx LoadLibraryExA
-#endif
-
 PALIMPORT
 FARPROC
 PALAPI

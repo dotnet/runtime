@@ -71,8 +71,6 @@
 #undef OpenSemaphore
 #undef CreateWaitableTimer
 #undef CreateFileMapping
-#undef LoadLibrary
-#undef LoadLibraryEx
 #undef GetModuleFileName
 #undef GetModuleHandle
 #undef GetModuleHandleEx

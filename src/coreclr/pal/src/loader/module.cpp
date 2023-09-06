@@ -106,34 +106,6 @@ static BOOL LOADCallDllMainSafe(MODSTRUCT *module, DWORD dwReason, LPVOID lpRese
 
 /*++
 Function:
-  LoadLibraryA
-
-See MSDN doc.
---*/
-HMODULE
-PALAPI
-LoadLibraryA(
-    IN LPCSTR lpLibFileName)
-{
-    return LoadLibraryExA(lpLibFileName, nullptr, 0);
-}
-
-/*++
-Function:
-  LoadLibraryW
-
-See MSDN doc.
---*/
-HMODULE
-PALAPI
-LoadLibraryW(
-    IN LPCWSTR lpLibFileName)
-{
-    return LoadLibraryExW(lpLibFileName, nullptr, 0);
-}
-
-/*++
-Function:
 LoadLibraryExA
 
 See MSDN doc.
