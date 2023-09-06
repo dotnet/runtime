@@ -85,9 +85,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection overload, TypeSpec typeSpec)
             {
+                RegisterTypeForBindCoreMainGen(typeSpec);
+
                 _sourceGenSpec.MethodsToGen_ServiceCollectionExt |= overload;
                 _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
-                RegisterTypeForBindCoreMainGen(typeSpec);
+                // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource, IConfigureOptions<>, ConfigureNamedOptions<>.
+                _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.Options");
             }
         }
     }
