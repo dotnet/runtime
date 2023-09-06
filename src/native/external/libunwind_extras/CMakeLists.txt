@@ -169,6 +169,8 @@ if(CLR_CMAKE_HOST_UNIX)
         add_library(libunwind OBJECT ${LIBUNWIND_SOURCES})
     endif(CLR_CMAKE_HOST_OSX)
 else(CLR_CMAKE_HOST_UNIX)
+    set_source_files_properties(${CLR_DIR}/pal/src/exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/inc)
+
     add_library(libunwind_xdac OBJECT
       ${CLR_DIR}/pal/src/exception/remote-unwind.cpp
       ${LIBUNWIND_SOURCES})

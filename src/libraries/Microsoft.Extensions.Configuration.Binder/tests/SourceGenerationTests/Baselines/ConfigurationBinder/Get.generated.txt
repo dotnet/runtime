@@ -31,19 +31,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 12, 38)]
+        [InterceptsLocation(@"src-0.cs", 12, 38)]
         public static T? Get<T>(this IConfiguration configuration) => (T?)(GetCore(configuration, typeof(T), configureOptions: null) ?? default(T));
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 14, 36)]
+        [InterceptsLocation(@"src-0.cs", 14, 36)]
         public static T? Get<T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions) => (T?)(GetCore(configuration, typeof(T), configureOptions) ?? default(T));
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 13, 36)]
+        [InterceptsLocation(@"src-0.cs", 13, 56)]
         public static object? Get(this IConfiguration configuration, Type type) => GetCore(configuration, type, configureOptions: null);
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 15, 36)]
+        [InterceptsLocation(@"src-0.cs", 15, 47)]
         public static object? Get(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions) => GetCore(configuration, type, configureOptions);
         #endregion IConfiguration extensions.
 

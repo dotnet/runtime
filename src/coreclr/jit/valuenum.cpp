@@ -7883,7 +7883,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 #endif
             {
                 // Handle `x ^ x == 0`
-                return arg0VN;
+                return VNZeroForType(type);
             }
 
             default:

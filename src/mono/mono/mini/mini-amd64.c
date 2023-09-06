@@ -7305,7 +7305,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_c0 == 0) {
 				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			} else {
-				int imm = ins->inst_c0;
+				int imm = GTMREG_TO_INT (ins->inst_c0);
 				amd64_sse_movaps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
 				amd64_sse_shufps_reg_reg_imm (code, SIMD_TEMP_REG, ins->sreg1, imm);
 				amd64_sse_pxor_reg_reg (code, ins->dreg, ins->dreg);
@@ -7326,7 +7326,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_pinsrq_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
 		case OP_INSERT_R4: {
-			guint8 imm = (0 << 6) | (ins->inst_c0 << 4);
+			guint8 imm = (0 << 6) | (GTMREG_TO_UINT8 (ins->inst_c0 << 4));
 			amd64_sse_insertps_reg_reg (code, ins->sreg1, ins->sreg2, imm);
 			break;
 		}
