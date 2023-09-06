@@ -5249,7 +5249,7 @@ emit_x86_intrinsics (
 			return ins;
 		case SN_DivRem: {
 			g_assert (!(TARGET_SIZEOF_VOID_P == 4 && is_64bit)); // x86(no -64) cannot do divisions with 64-bit regs 
-			const int divtype = is_64bit ? STACK_I8 : STACK_I4;
+			const MonoStackType divtype = is_64bit ? STACK_I8 : STACK_I4;
 			const int storetype = is_64bit ? OP_STOREI8_MEMBASE_REG : OP_STOREI4_MEMBASE_REG;
 			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
 
