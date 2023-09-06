@@ -61,300 +61,300 @@ extends:
       - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
         - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-      # #
-      # # Build CoreCLR checked
-      # # Only when CoreCLR is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-      #     buildConfig: checked
-      #     platforms:
-      #     - linux_x86
-      #     - linux_x64
-      #     - linux_arm
-      #     - linux_arm64
-      #     - linux_riscv64
-      #     - linux_musl_arm
-      #     - linux_musl_arm64
-      #     - linux_musl_x64
-      #     - osx_arm64
-      #     - tizen_armel
-      #     - windows_x86
-      #     - windows_x64
-      #     - windows_arm64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build CoreCLR checked
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x86
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_riscv64
+          - linux_musl_arm
+          - linux_musl_arm64
+          - linux_musl_x64
+          - osx_arm64
+          - tizen_armel
+          - windows_x86
+          - windows_x64
+          - windows_arm64
+          jobParameters:
+            testGroup: innerloop
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build the whole product using GNU compiler toolchain
-      # # When CoreCLR, Mono, Libraries, Installer and src/tests are changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: checked
-      #     platforms:
-      #     - gcc_linux_x64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: Native_GCC
-      #       buildArgs: -s clr.native+libs.native+mono+host.native -c $(_BuildConfig) -gcc
-      #       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
-      #       extraStepsParameters:
-      #         testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build the whole product using GNU compiler toolchain
+      # When CoreCLR, Mono, Libraries, Installer and src/tests are changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - gcc_linux_x64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: Native_GCC
+            buildArgs: -s clr.native+libs.native+mono+host.native -c $(_BuildConfig) -gcc
+            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+            extraStepsParameters:
+              testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build CoreCLR osx_x64 checked
-      # # Only when CoreCLR or Libraries is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-      #     buildConfig: checked
-      #     platforms:
-      #     - osx_x64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build CoreCLR osx_x64 checked
+      # Only when CoreCLR or Libraries is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_x64
+          jobParameters:
+            testGroup: innerloop
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build CoreCLR release
-      # # Always as they are needed by Installer and we always build and test the Installer.
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-      #     buildConfig: release
-      #     platforms:
-      #     - osx_arm64
-      #     - osx_x64
-      #     - linux_x64
-      #     - linux_arm
-      #     - linux_arm64
-      #     - linux_musl_x64
-      #     - linux_musl_arm
-      #     - linux_musl_arm64
-      #     - windows_x64
-      #     - windows_x86
-      #     - windows_arm64
-      #     - freebsd_x64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       # Mono/runtimetests also need this, but skip for wasm
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build CoreCLR release
+      # Always as they are needed by Installer and we always build and test the Installer.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: release
+          platforms:
+          - osx_arm64
+          - osx_x64
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm
+          - linux_musl_arm64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          - freebsd_x64
+          jobParameters:
+            testGroup: innerloop
+            # Mono/runtimetests also need this, but skip for wasm
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build CoreCLR Formatting Job
-      # # Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
-      # # both Rolling and PR builds).
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
-      #     platforms:
-      #     - linux_x64
-      #     - windows_x64
-      #     jobParameters:
-      #       condition: >-
-      #         and(
-      #           or(
-      #             eq(variables['Build.SourceBranchName'], 'main'),
-      #             eq(variables['System.PullRequest.TargetBranch'], 'main')),
-      #           or(
-      #             eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
-      #             eq(variables['isRollingBuild'], true)))
+      #
+      # Build CoreCLR Formatting Job
+      # Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
+      # both Rolling and PR builds).
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
+          platforms:
+          - linux_x64
+          - windows_x64
+          jobParameters:
+            condition: >-
+              and(
+                or(
+                  eq(variables['Build.SourceBranchName'], 'main'),
+                  eq(variables['System.PullRequest.TargetBranch'], 'main')),
+                or(
+                  eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
+                  eq(variables['isRollingBuild'], true)))
 
-      # #
-      # # CoreCLR NativeAOT debug build and smoke tests
-      # # Only when CoreCLR is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-      #     buildConfig: Debug
-      #     platforms:
-      #     - linux_x64
-      #     - windows_x64
-      #     variables:
-      #     - name: timeoutPerTestInMinutes
-      #       value: 60
-      #     - name: timeoutPerTestCollectionInMinutes
-      #       value: 180
-      #     jobParameters:
-      #       timeoutInMinutes: 120
-      #       nameSuffix: NativeAOT
-      #       buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-      #       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-      #       extraStepsParameters:
-      #         creator: dotnet-bot
-      #         testBuildArgs: nativeaot tree nativeaot
-      #         liveLibrariesBuildConfig: Release
-      #       testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-      #       extraVariablesTemplates:
-      #         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-      #           parameters:
-      #             testGroup: innerloop
-      #             liveLibrariesBuildConfig: Release
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isFullMatrix'], true))
+      #
+      # CoreCLR NativeAOT debug build and smoke tests
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Debug
+          platforms:
+          - linux_x64
+          - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
+          jobParameters:
+            timeoutInMinutes: 120
+            nameSuffix: NativeAOT
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: nativeaot tree nativeaot
+              liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isFullMatrix'], true))
 
-      # #
-      # # CoreCLR NativeAOT checked build and smoke tests
-      # # Only when CoreCLR is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-      #     buildConfig: Checked
-      #     platforms:
-      #     - windows_x64
-      #     variables:
-      #     - name: timeoutPerTestInMinutes
-      #       value: 60
-      #     - name: timeoutPerTestCollectionInMinutes
-      #       value: 180
-      #     jobParameters:
-      #       timeoutInMinutes: 180
-      #       nameSuffix: NativeAOT
-      #       buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-      #       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-      #       extraStepsParameters:
-      #         creator: dotnet-bot
-      #         testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing;" /p:BuildNativeAotFrameworkObjects=true'
-      #         liveLibrariesBuildConfig: Release
-      #       testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-      #       extraVariablesTemplates:
-      #         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-      #           parameters:
-      #             testGroup: innerloop
-      #             liveLibrariesBuildConfig: Release
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isFullMatrix'], true))
+      #
+      # CoreCLR NativeAOT checked build and smoke tests
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Checked
+          platforms:
+          - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
+          jobParameters:
+            timeoutInMinutes: 180
+            nameSuffix: NativeAOT
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing;" /p:BuildNativeAotFrameworkObjects=true'
+              liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isFullMatrix'], true))
 
-      # #
-      # # CoreCLR NativeAOT release build and smoke tests
-      # # Only when CoreCLR is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-      #     buildConfig: Release
-      #     platforms:
-      #     - linux_x64
-      #     - windows_x64
-      #     - osx_x64
-      #     - linux_arm64
-      #     - windows_arm64
-      #     - osx_arm64
-      #     variables:
-      #     - name: timeoutPerTestInMinutes
-      #       value: 60
-      #     - name: timeoutPerTestCollectionInMinutes
-      #       value: 180
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       timeoutInMinutes: 120
-      #       nameSuffix: NativeAOT
-      #       buildArgs: -s clr.aot+host.native+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release -hc Release
-      #       extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-      #       extraStepsParameters:
-      #         creator: dotnet-bot
-      #         testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
-      #         liveLibrariesBuildConfig: Release
-      #       testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-      #       extraVariablesTemplates:
-      #         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-      #           parameters:
-      #             testGroup: innerloop
-      #             liveLibrariesBuildConfig: Release
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isFullMatrix'], true))
+      #
+      # CoreCLR NativeAOT release build and smoke tests
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+          - linux_x64
+          - windows_x64
+          - osx_x64
+          - linux_arm64
+          - windows_arm64
+          - osx_arm64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
+          jobParameters:
+            testGroup: innerloop
+            timeoutInMinutes: 120
+            nameSuffix: NativeAOT
+            buildArgs: -s clr.aot+host.native+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release -hc Release
+            extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
+              liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isFullMatrix'], true))
 
-      # #
-      # # CoreCLR NativeAOT release build and libraries tests
-      # # Only when CoreCLR or library is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-      #     buildConfig: Release
-      #     platforms:
-      #     - windows_arm64
-      #     - linux_arm64
-      #     - osx_arm64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       isSingleFile: true
-      #       nameSuffix: NativeAOT_Libraries
-      #       buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
-      #       timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
-      #       # extra steps, run tests
-      #       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      #       extraStepsParameters:
-      #         creator: dotnet-bot
-      #         testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(variables['isFullMatrix'], true))
+      #
+      # CoreCLR NativeAOT release build and libraries tests
+      # Only when CoreCLR or library is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+          - windows_arm64
+          - linux_arm64
+          - osx_arm64
+          jobParameters:
+            testGroup: innerloop
+            isSingleFile: true
+            nameSuffix: NativeAOT_Libraries
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
+            timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
+            # extra steps, run tests
+            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isFullMatrix'], true))
 
-      # # Build and test clr tools
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: checked
-      #     platforms:
-      #     - linux_x64
-      #     jobParameters:
-      #       timeoutInMinutes: 120
-      #       nameSuffix: CLR_Tools_Tests
-      #       buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests -c $(_BuildConfig) -test
-      #       enablePublishTestResults: true
-      #       testResultsFormat: 'xunit'
-      #       # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      # Build and test clr tools
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          jobParameters:
+            timeoutInMinutes: 120
+            nameSuffix: CLR_Tools_Tests
+            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       # Build Mono AOT offset headers once, for consumption elsewhere
       # Only when mono changed
@@ -441,77 +441,77 @@ extends:
           scenarios:
             - WasmTestOnBrowser
 
-      # # EAT Library tests - only run on linux
-      # - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - browser_wasm
-      #     nameSuffix: _EAT
-      #     runAOT: false
-      #     shouldRunSmokeOnly: false
-      #     alwaysRun: ${{ variables.isRollingBuild }}
-      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # EAT Library tests - only run on linux
+      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          nameSuffix: _EAT
+          runAOT: false
+          shouldRunSmokeOnly: false
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
-      # # AOT Library tests
-      # - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - browser_wasm
-      #     nameSuffix: _AOT
-      #     runAOT: true
-      #     shouldRunSmokeOnly: true
-      #     alwaysRun: ${{ variables.isRollingBuild }}
-      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # AOT Library tests
+      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          nameSuffix: _AOT
+          runAOT: true
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
-      # - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - browser_wasm_win
-      #     nameSuffix: _AOT
-      #     runAOT: true
-      #     shouldRunSmokeOnly: true
-      #     alwaysRun: ${{ variables.isRollingBuild }}
+      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm_win
+          nameSuffix: _AOT
+          runAOT: true
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
 
-      # # For Wasm.Build.Tests - runtime pack builds
-      # - template: /eng/pipelines/common/templates/wasm-build-only.yml
-      #   parameters:
-      #     platforms:
-      #       - browser_wasm
-      #       - browser_wasm_win
-      #     condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
-      #     nameSuffix: SingleThreaded
-      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #     publishArtifactsForWorkload: true
-      #     publishWBT: true
+      # For Wasm.Build.Tests - runtime pack builds
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          nameSuffix: SingleThreaded
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          publishArtifactsForWorkload: true
+          publishWBT: true
 
-      # - template: /eng/pipelines/common/templates/wasm-build-only.yml
-      #   parameters:
-      #     platforms:
-      #       - browser_wasm
-      #       - browser_wasm_win
-      #     condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
-      #     nameSuffix: MultiThreaded
-      #     extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #     publishArtifactsForWorkload: true
-      #     publishWBT: false
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          nameSuffix: MultiThreaded
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          publishArtifactsForWorkload: true
+          publishWBT: false
 
-      # # Browser Wasm.Build.Tests
-      # - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - browser_wasm
-      #       - browser_wasm_win
-      #     alwaysRun: ${{ variables.isRollingBuild }}
-      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # Browser Wasm.Build.Tests
+      - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
-      # # Wasm Debugger tests
-      # - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - browser_wasm
-      #       - browser_wasm_win
-      #     alwaysRun: ${{ variables.isRollingBuild }}
-      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # Wasm Debugger tests
+      - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
@@ -532,238 +532,238 @@ extends:
           scenarios:
             - WasmTestOnBrowser
 
-      # # WASI/WASM
+      # WASI/WASM
 
-      # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - wasi_wasm
-      #       - wasi_wasm_win
-      #     nameSuffix: '_Smoke'
-      #     extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #     shouldContinueOnError: true
-      #     shouldRunSmokeOnly: true
-      #     alwaysRun: ${{ variables.isRollingBuild }}
-      #     scenarios:
-      #       - normal
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+            - wasi_wasm_win
+          nameSuffix: '_Smoke'
+          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          shouldContinueOnError: true
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - normal
 
-      # - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - wasi_wasm
-      #       - wasi_wasm_win
-      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #     alwaysRun: ${{ variables.isRollingBuild }}
+      - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+            - wasi_wasm_win
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          alwaysRun: ${{ variables.isRollingBuild }}
 
-      # #
-      # # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
-      # # Build the whole product using Mono and run libraries tests
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-      #     buildConfig: Release
-      #     runtimeFlavor: mono
-      #     platforms:
-      #       - ios_arm64
-      #       - tvos_arm64
-      #     variables:
-      #       # map dependencies variables to local variables
-      #       - name: librariesContainsChange
-      #         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      #       - name: monoContainsChange
-      #         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: AllSubsets_Mono
-      #       buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
-      #       timeoutInMinutes: 480
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
-      #       # extra steps, run tests
-      #       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      #       extraStepsParameters:
-      #         creator: dotnet-bot
-      #         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-      #         extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-      #         condition: >-
-      #           or(
-      #           eq(variables['librariesContainsChange'], true),
-      #           eq(variables['monoContainsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
+      # Build the whole product using Mono and run libraries tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+            - ios_arm64
+            - tvos_arm64
+          variables:
+            # map dependencies variables to local variables
+            - name: librariesContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+            - name: monoContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
+            timeoutInMinutes: 480
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            # extra steps, run tests
+            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+              condition: >-
+                or(
+                eq(variables['librariesContainsChange'], true),
+                eq(variables['monoContainsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # iOS/tvOS devices
-      # # Build the whole product using Native AOT and run libraries tests
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-      #     buildConfig: Release
-      #     runtimeFlavor: coreclr
-      #     platforms:
-      #       - ios_arm64
-      #       - tvos_arm64
-      #     variables:
-      #       # map dependencies variables to local variables
-      #       - name: librariesContainsChange
-      #         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      #       - name: coreclrContainsChange
-      #         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: AllSubsets_NativeAOT
-      #       buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
-      #       timeoutInMinutes: 180
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
-      #       # extra steps, run tests
-      #       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      #       extraStepsParameters:
-      #         creator: dotnet-bot
-      #         testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-      #         extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-      #         condition: >-
-      #           or(
-      #           eq(variables['librariesContainsChange'], true),
-      #           eq(variables['coreclrContainsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # iOS/tvOS devices
+      # Build the whole product using Native AOT and run libraries tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: coreclr
+          platforms:
+            - ios_arm64
+            - tvos_arm64
+          variables:
+            # map dependencies variables to local variables
+            - name: librariesContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+            - name: coreclrContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_NativeAOT
+            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+            timeoutInMinutes: 180
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            # extra steps, run tests
+            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+              extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+              condition: >-
+                or(
+                eq(variables['librariesContainsChange'], true),
+                eq(variables['coreclrContainsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # MacCatalyst interp - requires AOT Compilation and Interp flags
-      # # Build the whole product using Mono and run libraries tests
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-      #     buildConfig: Release
-      #     runtimeFlavor: mono
-      #     platforms:
-      #     - maccatalyst_x64
-      #     - ${{ if eq(variables['isRollingBuild'], true) }}:
-      #       - maccatalyst_arm64
-      #     variables:
-      #       # map dependencies variables to local variables
-      #       - name: librariesContainsChange
-      #         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      #       - name: monoContainsChange
-      #         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: AllSubsets_Mono
-      #       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
-      #       timeoutInMinutes: 180
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
-      #       # extra steps, run tests
-      #       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      #       extraStepsParameters:
-      #         creator: dotnet-bot
-      #         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-      #         condition: >-
-      #           or(
-      #             eq(variables['librariesContainsChange'], true),
-      #             eq(variables['monoContainsChange'], true),
-      #             eq(variables['isRollingBuild'], true))
+      #
+      # MacCatalyst interp - requires AOT Compilation and Interp flags
+      # Build the whole product using Mono and run libraries tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+          - maccatalyst_x64
+          - ${{ if eq(variables['isRollingBuild'], true) }}:
+            - maccatalyst_arm64
+          variables:
+            # map dependencies variables to local variables
+            - name: librariesContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+            - name: monoContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono
+            buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+            timeoutInMinutes: 180
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            # extra steps, run tests
+            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              condition: >-
+                or(
+                  eq(variables['librariesContainsChange'], true),
+                  eq(variables['monoContainsChange'], true),
+                  eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build Mono and Installer on LLVMJIT mode
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: Release
-      #     runtimeFlavor: mono
-      #     platforms:
-      #     - osx_x64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: AllSubsets_Mono_LLVMJIT
-      #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-      #                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build Mono and Installer on LLVMJIT mode
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+          - osx_x64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono_LLVMJIT
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      #     runtimeFlavor: mono
-      #     platforms:
-      #     - linux_x64
-      #     - linux_arm64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: AllSubsets_Mono_LLVMJIT
-      #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-      #                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          runtimeFlavor: mono
+          platforms:
+          - linux_x64
+          - linux_arm64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono_LLVMJIT
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build Mono and Installer on LLVMAOT mode
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: Release
-      #     runtimeFlavor: mono
-      #     platforms:
-      #     - linux_x64
-      #     - linux_arm64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: AllSubsets_Mono_LLVMAOT
-      #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-      #                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build Mono and Installer on LLVMAOT mode
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+          - linux_x64
+          - linux_arm64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono_LLVMAOT
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      #     runtimeFlavor: mono
-      #     platforms:
-      #     - osx_x64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: AllSubsets_Mono_LLVMAOT
-      #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-      #                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          runtimeFlavor: mono
+          platforms:
+          - osx_x64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono_LLVMAOT
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       #
       # Build Mono debug
@@ -1023,127 +1023,127 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Installer Build and Test
-      # # These are always built since they only take like 15 minutes
-      # # we expect these to be done before we finish libraries or coreclr testing.
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
-      #     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      #     platforms:
-      #       - linux_musl_arm
-      #       - linux_musl_arm64
-      #       - windows_x86
-      #       - windows_arm64
-      #       - linux_arm
-      #     jobParameters:
-      #       liveRuntimeBuildConfig: release
-      #       liveLibrariesBuildConfig: Release
-      #       runOnlyIfDependenciesSucceeded: true
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Installer Build and Test
+      # These are always built since they only take like 15 minutes
+      # we expect these to be done before we finish libraries or coreclr testing.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+            - linux_musl_arm
+            - linux_musl_arm64
+            - windows_x86
+            - windows_arm64
+            - linux_arm
+          jobParameters:
+            liveRuntimeBuildConfig: release
+            liveLibrariesBuildConfig: Release
+            runOnlyIfDependenciesSucceeded: true
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
-      #     buildConfig: Release
-      #     platforms:
-      #       - osx_arm64
-      #       - osx_x64
-      #       - linux_x64
-      #       - linux_arm64
-      #       - linux_musl_x64
-      #       - windows_x64
-      #       - freebsd_x64
-      #     jobParameters:
-      #       liveRuntimeBuildConfig: release
-      #       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      #       runOnlyIfDependenciesSucceeded: true
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+          buildConfig: Release
+          platforms:
+            - osx_arm64
+            - osx_x64
+            - linux_x64
+            - linux_arm64
+            - linux_musl_x64
+            - windows_x64
+            - freebsd_x64
+          jobParameters:
+            liveRuntimeBuildConfig: release
+            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+            runOnlyIfDependenciesSucceeded: true
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # CoreCLR Test builds using live libraries release build
-      # # Only when CoreCLR is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-      #     buildConfig: checked
-      #     platforms:
-      #     - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # CoreCLR Test builds using live libraries release build
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          buildConfig: checked
+          platforms:
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          jobParameters:
+            testGroup: innerloop
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # CoreCLR Test executions using live libraries
-      # # Only when CoreCLR is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-      #     buildConfig: checked
-      #     platforms:
-      #     - linux_arm
-      #     - windows_x86
-      #     - windows_arm64
-      #     helixQueueGroup: pr
-      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       liveLibrariesBuildConfig: Release
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # CoreCLR Test executions using live libraries
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_arm
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: innerloop
+            liveLibrariesBuildConfig: Release
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-      #     buildConfig: checked
-      #     platforms:
-      #     - osx_x64
-      #     - linux_x64
-      #     - linux_arm64
-      #     - windows_x64
-      #     helixQueueGroup: pr
-      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_x64
+          - linux_x64
+          - linux_arm64
+          - windows_x64
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: innerloop
+            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-      #     buildConfig: checked
-      #     platforms:
-      #     - osx_arm64
-      #     helixQueueGroup: pr
-      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      #       condition: >-
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: innerloop
+            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       #
       # Mono Test builds with CoreCLR runtime tests using live libraries debug build
