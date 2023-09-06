@@ -129,7 +129,7 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - powershell: |
           ./eng/disable_vsupdate.ps1
-          ./eng/collect_vsinfo.ps1 -ArchiveName vspre.zip
+          ./eng/collect_vsinfo.ps1 -ArchiveName initialization_log
         name: Collect vslogs on Entry and disable updates
         condition: always()
 
@@ -284,7 +284,7 @@ jobs:
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - powershell: |
-          ./eng/collect_vsinfo.ps1 -ArchiveName vspost.zip
+          ./eng/collect_vsinfo.ps1 -ArchiveName postbuild_log
         name: Collect vslogs on exit
         condition: always()
 

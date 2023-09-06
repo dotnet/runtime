@@ -1,6 +1,6 @@
 <#
-.PARAMETER ArchiveName
-Name of the archive containing vs logs
+.PARAMETER ArchiveRunName
+Name of the run for vs logs
 
 .NOTES
 Returns 0 if succeeds, 1 otherwise
@@ -8,7 +8,7 @@ Returns 0 if succeeds, 1 otherwise
 [CmdletBinding(PositionalBinding=$false)]
 Param (
   [Parameter(Mandatory=$True)]
-  [string] $ArchiveName
+  [string] $ArchiveRunName
 )
 
 . $PSScriptRoot/common/tools.ps1
@@ -30,8 +30,9 @@ if (-not (Test-Path $vscollect)) {
 
 &"$vscollect"
 
+$LogDir = Join-Path $LogDir $ArchiveRunName
 mkdir $LogDir
-Move-Item $env:TEMP\vslogs.zip "$LogDir\$ArchiveName"
+Move-Item $env:TEMP\vslogs.zip "$LogDir"
 
 $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
 if (-not (Test-Path -Path "$vswhere" -PathType Leaf))
