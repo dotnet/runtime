@@ -9,6 +9,7 @@
 #define SWITCH_MAX_DISTANCE (TARGET_POINTER_SIZE * BITS_IN_BYTE - 1)
 #define SWITCH_MIN_TESTS 3
 
+// Does given block represent JTRUE(X ==/!= CNS) construct?
 bool IsConstantTestBlock(const BasicBlock* block,
                          BasicBlock**      blockIfTrue,
                          BasicBlock**      blockIfFalse,
@@ -73,6 +74,21 @@ bool IsConstantTestBlock(const BasicBlock* block,
     return false;
 }
 
+//------------------------------------------------------------------------------
+// optSwitchConvert : Convert a series of conditional blocks into a switch block
+//    conditional blocks are blocks that have a single statement that is a GT_EQ
+//    or GT_NE node. The blocks are expected jump into the same target and test
+//    the same variable against different constants
+//
+// Arguments:
+//    firstBlock - First conditional block in the chain
+//    testsCount - Number of conditional blocks in the chain
+//    testValues - Array of constants that are tested against the variable
+//    nodeToTest - Variable node that is tested against the constants
+//
+// Return Value:
+//    True if the conversion was successful, false otherwise
+//
 bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest)
 {
     assert(firstBlock->KindIs(BBJ_COND));
@@ -105,6 +121,9 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
             break;
         }
 
+        // TODO: currently we mainly focus on creating the shape that is then expanded into a bit test
+        // Ideally we should create jump tables for other cases as well and we need some cost-benefit analysis.
+
         minValue = newMinValue;
         maxValue = newMaxValue;
     }
@@ -116,7 +135,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     }
 
     // Find the last block in the chain
-    BasicBlock* lastBlock = firstBlock;
+    const BasicBlock* lastBlock = firstBlock;
     for (int i = 0; i < testIdx - 1; i++)
     {
         lastBlock = lastBlock->bbNext;
@@ -194,7 +213,18 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     return true;
 }
 
-bool Compiler::optSwitchDetectAndConvert(Compiler* comp, BasicBlock* block)
+//------------------------------------------------------------------------------
+// optSwitchDetectAndConvert : Try to detect a series of conditional blocks which
+//    can be converted into a switch (jump-table) construct. See optSwitchConvert
+//    for more details.
+//
+// Arguments:
+//    firstBlock - A block to start the search from
+//
+// Return Value:
+//    True if the conversion was successful, false otherwise
+//
+bool Compiler::optSwitchDetectAndConvert(BasicBlock* block)
 {
     GenTree*    variableNode = nullptr;
     ssize_t     cns          = 0;
@@ -208,12 +238,6 @@ bool Compiler::optSwitchDetectAndConvert(Compiler* comp, BasicBlock* block)
         {
             // First block uses NE - we don't support this yet. We currently expect all blocks to use EQ
             // and allow NE for the last one (because it's what Roslyn usually emits)
-            return false;
-        }
-
-        if (block->isRunRarely())
-        {
-            // We don't want to convert rarely executed blocks to switch
             return false;
         }
 
@@ -234,12 +258,6 @@ bool Compiler::optSwitchDetectAndConvert(Compiler* comp, BasicBlock* block)
             if (IsConstantTestBlock(currBb, &currBlockIfTrue, &currBlockIfFalse, &isReversed, &currVariableNode,
                                     &currCns))
             {
-                if (currBb->isRunRarely())
-                {
-                    // Target blocks don't match, stop searching and process what we already have
-                    return optSwitchConvert(block, testValueIndex, testValues, variableNode);
-                }
-
                 if (currBlockIfTrue != blockIfTrue)
                 {
                     // Target blocks don't match, stop searching and process what we already have
@@ -252,7 +270,7 @@ bool Compiler::optSwitchDetectAndConvert(Compiler* comp, BasicBlock* block)
                     return optSwitchConvert(block, testValueIndex, testValues, variableNode);
                 }
 
-                if (currBb->GetUniquePred(comp) != prevBlock)
+                if (currBb->GetUniquePred(this) != prevBlock)
                 {
                     // Current block has multiple preds, stop searching and process what we already have
                     return optSwitchConvert(block, testValueIndex, testValues, variableNode);
@@ -311,7 +329,8 @@ PhaseStatus Compiler::optSwitchRecognition()
     bool modified = false;
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        if (optSwitchDetectAndConvert(this, block))
+        // block->KindIs(BBJ_COND) check is for better throughput.
+        if (block->KindIs(BBJ_COND) && optSwitchDetectAndConvert(block))
         {
             JITDUMP("Converted block " FMT_BB " to switch\n", block->bbNum)
             modified = true;
@@ -322,7 +341,7 @@ PhaseStatus Compiler::optSwitchRecognition()
     {
         fgReorderBlocks(/* useProfileData */ false);
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
-        return PhaseStatus::MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
     return PhaseStatus::MODIFIED_NOTHING;
