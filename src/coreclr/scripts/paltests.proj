@@ -1,11 +1,4 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
-  <ItemGroup>
-    <HelixWorkItem Include="PALTests">
-      <PayloadDirectory>$(CoreCLRArtifactsPath)/paltests</PayloadDirectory>
-      <Command>./runpaltestshelix.sh</Command>
-      <WorkItemTimeout>0:05</WorkItemTimeout>
-    </HelixWorkItem>
-  </ItemGroup>
   <PropertyGroup>
     <EnableXUnitReporter>true</EnableXUnitReporter>
     <Creator>$(_Creator)</Creator>
@@ -15,4 +8,36 @@
     <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
     <HelixType>$(_HelixType)</HelixType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PalTest Include="$(CoreClrArtifactsPath)/paltests/**/*" />
+    <PalTestArchive Include="$(OutputPath)paltests.tar.gz" />
+  </ItemGroup>
+
+  <Target
+    Name="PrepareArchive"
+    Inputs="@(PalTest)"
+    Outputs="@(PalTestArchive)">
+    <!--
+      We need to preserve the permission bits on the PAL tests.
+      Helix's default archive of Zip files does not preserve these bits,
+      so we'll manually make a tarball and upload that instead.
+     -->
+    <Exec
+          WorkingDirectory="$(CoreCLRArtifactsPath)/paltests"
+          Command="tar -czvf $(OutputPath)paltests.tar.gz `ls -A`"/>
+  </Target>
+
+  <Target
+    Name="AddWorkItem"
+    BeforeTargets="CoreTest"
+    DependsOnTargets="PrepareArchive">
+    <ItemGroup>
+      <HelixWorkItem Include="PALTests">
+        <PayloadArchive>@(PalTestArchive)</PayloadArchive>
+        <Command>./runpaltestshelix.sh</Command>
+        <WorkItemTimeout>0:05</WorkItemTimeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
 </Project>
