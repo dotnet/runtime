@@ -24,13 +24,13 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class TypeMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MetadataType _type;
-        private readonly bool _isMinimal;
+        private readonly bool _includeCustomAttributes;
 
-        public TypeMetadataNode(MetadataType type, bool isMinimal)
+        public TypeMetadataNode(MetadataType type, bool includeCustomAttributes)
         {
             Debug.Assert(type.IsTypeDefinition);
             _type = type;
-            _isMinimal = isMinimal;
+            _includeCustomAttributes = includeCustomAttributes;
         }
 
         public MetadataType Type => _type;
@@ -39,15 +39,15 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            if (!_isMinimal)
+            if (_includeCustomAttributes)
                 CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
 
             DefType containingType = _type.ContainingType;
             if (containingType != null)
             {
-                TypeMetadataNode metadataNode = _isMinimal
-                    ? factory.TypeMinimalMetadata((MetadataType)containingType)
-                    : factory.TypeMetadata((MetadataType)containingType);
+                TypeMetadataNode metadataNode = _includeCustomAttributes
+                    ? factory.TypeMetadata((MetadataType)containingType)
+                    : factory.TypeMetadataWithoutCustomAttributes((MetadataType)containingType);
                 dependencies.Add(metadataNode, "Containing type of a reflectable type");
             }
             else
@@ -150,7 +150,7 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies ??= new DependencyList();
                         TypeMetadataNode node = isFullType
                             ? nodeFactory.TypeMetadata(typeDefinition)
-                            : nodeFactory.TypeMinimalMetadata(typeDefinition);
+                            : nodeFactory.TypeMetadataWithoutCustomAttributes(typeDefinition);
                         dependencies.Add(node, reason);
                     }
                     break;
@@ -159,7 +159,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return $"Reflectable type: {_type}{(_isMinimal ? " (Minimal)" : "")}";
+            return $"Reflectable type: {_type}{(!_includeCustomAttributes ? " (No custom attributes)" : "")}";
         }
 
         protected override void OnMarked(NodeFactory factory)
