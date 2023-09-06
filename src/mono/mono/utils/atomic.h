@@ -70,13 +70,13 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #ifdef MONO_USE_STDATOMIC
 
-#include <stdatomic.h>
+#include<stdatomic.h>
 
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
 	g_static_assert (sizeof (atomic_int) == sizeof (*dest) && ATOMIC_INT_LOCK_FREE == 2);
-	(void)atomic_compare_exchange_strong ((atomic_int*)dest, &comp, exch);
+	(void)atomic_compare_exchange_strong ((volatile atomic_int *)dest, &comp, exch);
 	return comp;
 }
 
@@ -85,14 +85,14 @@ mono_atomic_cas_i64 (volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 #if SIZEOF_LONG == 8
 	g_static_assert (sizeof (atomic_long) == sizeof (*dest) && ATOMIC_LONG_LOCK_FREE == 2);
-	(void)atomic_compare_exchange_strong ((atomic_long*)dest, (long*)&comp, exch);
+	(void)atomic_compare_exchange_strong ((volatile atomic_long *)dest, (long*)&comp, exch);
 	return comp;
 #elif SIZEOF_LONG_LONG == 8
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dest) && ATOMIC_LLONG_LOCK_FREE == 2);
-	(void)atomic_compare_exchange_strong ((atomic_llong*)dest, (long long*)&comp, exch);
+	(void)atomic_compare_exchange_strong ((volatile atomic_llong *)dest, (long long*)&comp, exch);
 	return comp;
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error gint64 not same size atomic_llong or atomic_long, define MONO_IGNORE_STDATOMIC
 #endif
 }
 
@@ -100,7 +100,7 @@ static inline gpointer
 mono_atomic_cas_ptr (volatile gpointer *dest, gpointer exch, gpointer comp)
 {
 	g_static_assert(ATOMIC_POINTER_LOCK_FREE == 2);
-	(void)atomic_compare_exchange_strong ((_Atomic gpointer *)dest, &comp, exch);
+	(void)atomic_compare_exchange_strong ((volatile _Atomic(gpointer) *)dest, &comp, exch);
 	return comp;
 }
 
@@ -152,7 +152,7 @@ static inline gint32
 mono_atomic_xchg_i32 (volatile gint32 *dest, gint32 exch)
 {
 	g_static_assert (sizeof (atomic_int) == sizeof (*dest) && ATOMIC_INT_LOCK_FREE == 2);
-	return atomic_exchange ((atomic_int*)dest, exch);
+	return atomic_exchange ((volatile atomic_int *)dest, exch);
 }
 
 static inline gint64
@@ -160,12 +160,12 @@ mono_atomic_xchg_i64 (volatile gint64 *dest, gint64 exch)
 {
 #if SIZEOF_LONG == 8
 	g_static_assert (sizeof (atomic_long) == sizeof (*dest) && ATOMIC_LONG_LOCK_FREE == 2);
-	return atomic_exchange ((atomic_long*)dest, exch);
+	return atomic_exchange ((volatile atomic_long *)dest, exch);
 #elif SIZEOF_LONG_LONG == 8
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dest) && ATOMIC_LLONG_LOCK_FREE == 2);
-	return atomic_exchange ((atomic_llong*)dest, exch);
+	return atomic_exchange ((volatile atomic_llong *)dest, exch);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error gint64 not same size atomic_llong or atomic_long, define MONO_IGNORE_STDATOMIC
 #endif
 }
 
@@ -173,14 +173,14 @@ static inline gpointer
 mono_atomic_xchg_ptr (volatile gpointer *dest, gpointer exch)
 {
 	g_static_assert (ATOMIC_POINTER_LOCK_FREE == 2);
-	return atomic_exchange ((_Atomic(gpointer)*)dest, exch);
+	return atomic_exchange ((volatile _Atomic(gpointer) *)dest, exch);
 }
 
 static inline gint32
 mono_atomic_fetch_add_i32 (volatile gint32 *dest, gint32 add)
 {
 	g_static_assert (sizeof (atomic_int) == sizeof (*dest) && ATOMIC_INT_LOCK_FREE == 2);
-	return atomic_fetch_add ((atomic_int*)dest, add);
+	return atomic_fetch_add ((volatile atomic_int *)dest, add);
 }
 
 static inline gint64
@@ -188,12 +188,12 @@ mono_atomic_fetch_add_i64 (volatile gint64 *dest, gint64 add)
 {
 #if SIZEOF_LONG == 8
 	g_static_assert (sizeof (atomic_long) == sizeof (*dest) && ATOMIC_LONG_LOCK_FREE == 2);
-	return atomic_fetch_add ((atomic_long*)dest, add);
+	return atomic_fetch_add ((volatile atomic_long *)dest, add);
 #elif SIZEOF_LONG_LONG == 8
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dest) && ATOMIC_LLONG_LOCK_FREE == 2);
-	return atomic_fetch_add ((atomic_llong*)dest, add);
+	return atomic_fetch_add ((volatile atomic_llong *)dest, add);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error gint64 not same size atomic_llong or atomic_long, define MONO_IGNORE_STDATOMIC
 #endif
 }
 
@@ -201,20 +201,20 @@ static inline gint8
 mono_atomic_load_i8 (volatile gint8 *src)
 {
 	g_static_assert (sizeof (atomic_char) == sizeof (*src) && ATOMIC_CHAR_LOCK_FREE == 2);
-	return atomic_load ((atomic_char *)src);
+	return atomic_load ((volatile atomic_char *)src);
 }
 
 static inline gint16
 mono_atomic_load_i16 (volatile gint16 *src)
 {
 	g_static_assert (sizeof (atomic_short) == sizeof (*src) && ATOMIC_SHORT_LOCK_FREE == 2);
-	return atomic_load ((atomic_short*)src);
+	return atomic_load ((volatile atomic_short *)src);
 }
 
 static inline gint32 mono_atomic_load_i32 (volatile gint32 *src)
 {
 	g_static_assert (sizeof (atomic_int) == sizeof (*src) && ATOMIC_INT_LOCK_FREE == 2);
-	return atomic_load ((atomic_int*)src);
+	return atomic_load ((volatile atomic_int *)src);
 }
 
 static inline gint64
@@ -222,12 +222,12 @@ mono_atomic_load_i64 (volatile gint64 *src)
 {
 #if SIZEOF_LONG == 8
 	g_static_assert (sizeof (atomic_long) == sizeof (*src) && ATOMIC_LONG_LOCK_FREE == 2);
-	return atomic_load ((atomic_long*)src);
+	return atomic_load ((volatile atomic_long *)src);
 #elif SIZEOF_LONG_LONG == 8
 	g_static_assert (sizeof (atomic_llong) == sizeof (*src) && ATOMIC_LLONG_LOCK_FREE == 2);
-	return atomic_load ((atomic_llong*)src);
+	return atomic_load ((volatile atomic_llong *)src);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error gint64 not same size atomic_llong or atomic_long, define MONO_IGNORE_STDATOMIC
 #endif
 }
 
@@ -235,28 +235,28 @@ static inline gpointer
 mono_atomic_load_ptr (volatile gpointer *src)
 {
 	g_static_assert (ATOMIC_POINTER_LOCK_FREE == 2);
-	return atomic_load ((_Atomic(gpointer)*)src);
+	return atomic_load ((volatile _Atomic(gpointer) *)src);
 }
 
 static inline void
 mono_atomic_store_i8 (volatile gint8 *dst, gint8 val)
 {
 	g_static_assert (sizeof (atomic_char) == sizeof (*dst) && ATOMIC_CHAR_LOCK_FREE == 2);
-	atomic_store ((atomic_char*)dst, val);
+	atomic_store ((volatile atomic_char *)dst, val);
 }
 
 static inline void
 mono_atomic_store_i16 (volatile gint16 *dst, gint16 val)
 {
 	g_static_assert (sizeof (atomic_short) == sizeof (*dst) && ATOMIC_SHORT_LOCK_FREE == 2);
-	atomic_store ((atomic_short*)dst, val);
+	atomic_store ((volatile atomic_short *)dst, val);
 }
 
 static inline void
 mono_atomic_store_i32 (volatile gint32 *dst, gint32 val)
 {
 	g_static_assert (sizeof (atomic_int) == sizeof (*dst) && ATOMIC_INT_LOCK_FREE == 2);
-	atomic_store ((atomic_int*)dst, val);
+	atomic_store ((atomic_int *)dst, val);
 }
 
 static inline void
@@ -264,12 +264,12 @@ mono_atomic_store_i64 (volatile gint64 *dst, gint64 val)
 {
 #if SIZEOF_LONG == 8
 	g_static_assert (sizeof (atomic_long) == sizeof (*dst) && ATOMIC_LONG_LOCK_FREE == 2);
-	atomic_store ((atomic_long*)dst, val);
+	atomic_store ((volatile atomic_long *)dst, val);
 #elif SIZEOF_LONG_LONG == 8
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dst) && ATOMIC_LLONG_LOCK_FREE == 2);
-	atomic_store ((atomic_llong*)dst, val);
+	atomic_store ((volatile atomic_llong *)dst, val);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error gint64 not same size atomic_llong or atomic_long, define MONO_IGNORE_STDATOMIC
 #endif
 }
 
@@ -277,7 +277,7 @@ static inline void
 mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 {
 	g_static_assert (ATOMIC_POINTER_LOCK_FREE == 2);
-	atomic_store ((_Atomic(gpointer)*)dst, val);
+	atomic_store ((volatile _Atomic(gpointer) *)dst, val);
 }
 
 #elif defined(HOST_WIN32)
