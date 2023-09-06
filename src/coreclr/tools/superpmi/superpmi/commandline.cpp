@@ -660,7 +660,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         }
     }
 
-    SPMI_TARGET_ARCHITECTURE DefaultSpmiTargetArchitecture = GetSpmiTargetArchitecture();
+    SPMI_TARGET_ARCHITECTURE defaultSpmiTargetArchitecture = GetSpmiTargetArchitecture();
     SetSuperPmiTargetArchitecture(o->targetArchitecture);
 
     if (o->nameOfInputMethodContextFile == nullptr)
@@ -680,7 +680,11 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         const char* jit_host_os_prefix = "";
         const char* jit_host_os_extension = "";
 
-#if defined(HOST_UNIX)
+#if defined(HOST_OSX) // NOTE: HOST_UNIX is also defined for HOST_OSX
+        host_os_tag = "unix";
+        jit_host_os_prefix = "lib";
+        jit_host_os_extension = ".dylib";
+#elif defined(HOST_UNIX)
         host_os_tag = "unix";
         jit_host_os_prefix = "lib";
         jit_host_os_extension = ".so";
@@ -688,7 +692,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         host_os_tag = "win";
         jit_host_os_extension = ".dll";
 #else
-        // TODO: handle Mac
         allowDefaultJIT = false;
 #endif
 
@@ -745,7 +748,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         {
             const char* jit_os_name = nullptr;
 
-            if (DefaultSpmiTargetArchitecture != GetSpmiTargetArchitecture())
+            if (defaultSpmiTargetArchitecture != GetSpmiTargetArchitecture())
             {
                 // SuperPMI doesn't know about "target OS" so always assume host OS.
 
@@ -758,6 +761,9 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     case SPMI_TARGET_ARCHITECTURE_ARM:
                     case SPMI_TARGET_ARCHITECTURE_ARM64:
                         jit_os_name = "universal";
+                        break;
+                    default:
+                        // Can't get here if `allowDefaultJIT` was properly set above.
                         break;
                 }
             }
