@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 13, 16)]
+        [InterceptsLocation(@"src-0.cs", 13, 16)]
         public static void Bind_ProgramMyClass(this IConfiguration configuration, object? instance)
         {
             if (configuration is null)
@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop7", "Prop11", "Prop12", "Prop18", "Prop22" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop7", "Prop11", "Prop12", "Prop18", "Prop22", "Prop28", "Prop29", "Prop30" });
 
         public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, BinderOptions? binderOptions)
         {
@@ -142,12 +142,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop23"] is string value18)
             {
-                instance.Prop23 = ParseInt(value18, () => configuration.GetSection("Prop23").Path);
+                instance.Prop23 = ParseTimeSpan(value18, () => configuration.GetSection("Prop23").Path);
             }
 
             if (configuration["Prop24"] is string value19)
             {
-                instance.Prop24 = ParseDateTime(value19, () => configuration.GetSection("Prop24").Path);
+                instance.Prop24 = ParseGuid(value19, () => configuration.GetSection("Prop24").Path);
             }
 
             if (configuration["Prop25"] is string value20)
@@ -187,7 +187,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop22"] is string value27)
             {
-                instance.Prop22 = ParseByteArray(value27, () => configuration.GetSection("Prop22").Path);
+                instance.Prop22 = ParseTimeOnly(value27, () => configuration.GetSection("Prop22").Path);
+            }
+
+            if (configuration["Prop28"] is string value28)
+            {
+                instance.Prop28 = ParseByteArray(value28, () => configuration.GetSection("Prop28").Path);
+            }
+
+            if (configuration["Prop29"] is string value29)
+            {
+                instance.Prop29 = ParseInt(value29, () => configuration.GetSection("Prop29").Path);
+            }
+
+            if (configuration["Prop30"] is string value30)
+            {
+                instance.Prop30 = ParseDateTime(value30, () => configuration.GetSection("Prop30").Path);
             }
         }
 

@@ -193,6 +193,9 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+            => attributeNamespace == "System.Diagnostics" && attributeName == "StackTraceHiddenAttribute";
+
         /// <summary>
         /// Wraps the main method in a layer of indirection. This is necessary to protect the startup code
         /// infrastructure from situations when the owning type of the main method cannot be loaded, and codegen
@@ -271,6 +274,9 @@ namespace Internal.IL.Stubs.StartupCode
 
                 return emit.Link(this);
             }
+
+            public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+                => attributeNamespace == "System.Diagnostics" && attributeName == "StackTraceHiddenAttribute";
         }
     }
 }

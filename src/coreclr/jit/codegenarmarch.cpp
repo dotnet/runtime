@@ -1778,12 +1778,12 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
                 ins               = INS_ldapurb;
                 handledWithLdapur = true;
             }
-            else if (ins == INS_ldrh)
+            else if ((ins == INS_ldrh) && addrIsAligned)
             {
                 ins               = INS_ldapurh;
                 handledWithLdapur = true;
             }
-            else if (ins == INS_ldr)
+            else if ((ins == INS_ldr) && addrIsAligned && genIsValidIntReg(targetReg))
             {
                 ins               = INS_ldapur;
                 handledWithLdapur = true;

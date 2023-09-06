@@ -212,37 +212,27 @@ namespace System.Net.Http
                 cancellationToken.ThrowIfCancellationRequested();
                 if (request.Content != null)
                 {
-                    if (request.Content is StringContent)
+                    bool streamingEnabled = false;
+                    if (BrowserHttpInterop.SupportsStreamingRequest())
                     {
-                        string body = await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(true);
+                        request.Options.TryGetValue(EnableStreamingRequest, out streamingEnabled);
+                    }
+
+                    if (streamingEnabled)
+                    {
+                        Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, body);
+                        ReadableStreamPullState pullState = new ReadableStreamPullState(stream, cancellationToken);
+
+                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, ReadableStreamPull, pullState);
                     }
                     else
                     {
-                        bool streamingEnabled = false;
-                        if (BrowserHttpInterop.SupportsStreamingRequest())
-                        {
-                            request.Options.TryGetValue(EnableStreamingRequest, out streamingEnabled);
-                        }
+                        byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
+                        cancellationToken.ThrowIfCancellationRequested();
 
-                        if (streamingEnabled)
-                        {
-                            Stream stream = await request.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(true);
-                            cancellationToken.ThrowIfCancellationRequested();
-
-                            ReadableStreamPullState pullState = new ReadableStreamPullState(stream, cancellationToken);
-
-                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, ReadableStreamPull, pullState);
-                        }
-                        else
-                        {
-                            byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
-                            cancellationToken.ThrowIfCancellationRequested();
-
-                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
-                        }
+                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
                     }
                 }
                 else

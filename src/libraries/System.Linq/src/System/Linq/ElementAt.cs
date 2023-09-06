@@ -87,12 +87,11 @@ namespace System.Linq
 
             if (source is IList<TSource> list)
             {
-                return index >= 0 && index < list.Count ? list[index] : default;
+                return (uint)index < (uint)list.Count ? list[index] : default;
             }
 
             TryGetElement(source, index, out TSource? element);
             return element;
-
         }
 
         /// <summary>Returns the element at a specified index in a sequence or a default value if the index is out of range.</summary>
