@@ -18,6 +18,7 @@
     Name="PrepareArchive"
     Inputs="@(PalTest)"
     Outputs="@(PalTestArchive)">
+    <MakeDir Directories="$(OutputPath)" Condition="!Exists('$(OutputPath)')"/>
     <!--
       We need to preserve the permission bits on the PAL tests.
       Helix's default archive of Zip files does not preserve these bits,
