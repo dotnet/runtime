@@ -17,13 +17,13 @@ namespace SourceGenerators
             genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
             miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
-        public static string ToIdentifierCompatibleSubstring(this ITypeSymbol type, bool useUniqueName = false)
+        public static string ToIdentifierCompatibleSubstring(this ITypeSymbol type, bool useUniqueName)
         {
             if (type is IArrayTypeSymbol arrayType)
             {
                 int rank = arrayType.Rank;
                 string suffix = rank == 1 ? "Array" : $"Array{rank}D"; // Array, Array2D, Array3D, ...
-                return ToIdentifierCompatibleSubstring(arrayType.ElementType) + suffix;
+                return ToIdentifierCompatibleSubstring(arrayType.ElementType, useUniqueName) + suffix;
             }
 
             StringBuilder? sb = null;
@@ -62,7 +62,7 @@ namespace SourceGenerators
             {
                 foreach (ITypeSymbol genericArg in typeArgsInScope)
                 {
-                    sb.Append(ToIdentifierCompatibleSubstring(genericArg));
+                    sb.Append(ToIdentifierCompatibleSubstring(genericArg, useUniqueName));
                 }
             }
 
@@ -94,7 +94,7 @@ namespace SourceGenerators
 
                 if (!current.TypeArguments.IsEmpty)
                 {
-                    (args ?? new()).AddRange(current.TypeArguments);
+                    (args ??= new()).AddRange(current.TypeArguments);
                 }
             }
         }

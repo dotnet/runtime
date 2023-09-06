@@ -590,17 +590,19 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 var typeRef = new TypeRef(type);
-                string typeInfoPropertyName = typeToGenerate.TypeInfoPropertyName ?? type.ToIdentifierCompatibleSubstring();
+                string typeInfoPropertyName = typeToGenerate.TypeInfoPropertyName ??
+                    type.ToIdentifierCompatibleSubstring(useUniqueName: false /* We leave identifier name conflicts to users, as codified below. */);
 
                 if (classType is ClassType.TypeUnsupportedBySourceGen)
                 {
                     ReportDiagnostic(DiagnosticDescriptors.TypeNotSupported, typeToGenerate.AttributeLocation ?? typeToGenerate.Location, type.ToDisplayString());
                 }
 
+                // Workaround for https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
                 if (!_generatedContextAndTypeNames.Add((contextType.Name, typeInfoPropertyName)))
                 {
                     // The context name/property name combination will result in a conflict in generated types.
-                    // Workaround for https://github.com/dotnet/roslyn/issues/54185 by keeping track of the file names we've used.
+                    // This is by design; we leave conflict resolution to the user.
                     ReportDiagnostic(DiagnosticDescriptors.DuplicateTypeName, typeToGenerate.AttributeLocation ?? _contextClassLocation, typeInfoPropertyName);
                     classType = ClassType.TypeUnsupportedBySourceGen;
                 }
