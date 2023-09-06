@@ -753,7 +753,7 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, is_a
                         shutil.copy2(item_path, download_path)
 
                 if verbose:
-                    logging.info("Uncompress %s", download_path)
+                    logging.info("Uncompress %s => %s", download_path, target_dir)
 
                 if item_path.lower().endswith(".zip"):
                     with zipfile.ZipFile(download_path, "r") as zip:

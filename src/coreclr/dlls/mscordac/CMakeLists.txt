@@ -144,7 +144,7 @@ if(CLR_CMAKE_HOST_WIN32)
     add_custom_command(
         DEPENDS mscordaccore_def "${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" mscordacobj daccess
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.exp
-        COMMAND lib.exe /OUT:"${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.lib" /DEF:"${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" "$<TARGET_FILE:daccess>" $<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/LTCG> ${STATIC_LIBRARY_FLAGS} $<TARGET_OBJECTS:mscordacobj>
+        COMMAND lib.exe /NOLOGO /OUT:"${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.lib" /DEF:"${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" "$<TARGET_FILE:daccess>" $<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/LTCG> ${STATIC_LIBRARY_FLAGS} $<TARGET_OBJECTS:mscordacobj>
         COMMENT "Generating mscordaccore.exp export file"
     )
 
