@@ -4976,7 +4976,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #define CHECK_TYPELOAD(klass) if (!(klass) || mono_class_has_failure (klass)) TYPE_LOAD_ERROR ((klass))
 
 #define CLEAR_TYPELOAD_EXCEPTION(cfg) if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD) { clear_cfg_error (cfg); cfg->exception_type = MONO_EXCEPTION_NONE; }
-#define IF_TYPELOAD_ERROR(klass) if (!(klass) || mono_class_has_failure (klass))
+#define CLASS_HAS_FAILURE(klass) (!(klass) || mono_class_has_failure (klass))
 #define HANDLE_TYPELOAD_ERROR(cfg,klass) do { \
 		if (!cfg->compile_aot) \
 			TYPE_LOAD_ERROR ((klass)); \
@@ -5459,7 +5459,7 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, guchar *ip, guchar *end, int local)
 	if  ((ip = il_read_initobj (ip, end, &token)) && ip_in_bb (cfg, cfg->cbb, start + 1)) {
 		/* From the INITOBJ case */
 		klass = mini_get_class (cfg->current_method, token, cfg->generic_context);
-		IF_TYPELOAD_ERROR (klass) {
+		if (CLASS_HAS_FAILURE (klass)) {
 			HANDLE_TYPELOAD_ERROR (cfg, klass);
 		}
 		type = mini_get_underlying_type (m_class_get_byval_arg (klass));
@@ -9921,11 +9921,9 @@ calli_end:
 			else {
 				klass = NULL;
 				field = mono_field_from_token_checked (image, token, &klass, generic_context, cfg->error);
-				if (!field) {
-					IF_TYPELOAD_ERROR (klass) {
+				if (!field && CLASS_HAS_FAILURE (klass)) {
 						HANDLE_TYPELOAD_ERROR (cfg, klass);
 						break; // reached only in AOT
-					}
 				}
 				CHECK_CFG_ERROR;
 			}
@@ -11883,7 +11881,7 @@ mono_ldptr:
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
 
-			IF_TYPELOAD_ERROR (klass) {
+			if (CLASS_HAS_FAILURE (klass)) {
 				HANDLE_TYPELOAD_ERROR (cfg, klass);
 				inline_costs += 10;
 				break; // reached only in AOT
@@ -11983,7 +11981,7 @@ mono_ldptr:
 				EMIT_NEW_ICONST (cfg, ins, val);
 			} else {
 				klass = mini_get_class (method, token, generic_context);
-				IF_TYPELOAD_ERROR (klass) {
+				if (CLASS_HAS_FAILURE (klass)) {
 					HANDLE_TYPELOAD_ERROR (cfg, klass);
 					EMIT_NEW_ICONST(cfg, ins, 0);
 					*sp++ = ins;
