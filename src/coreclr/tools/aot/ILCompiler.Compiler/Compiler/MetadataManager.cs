@@ -478,13 +478,13 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated EETypes.
         /// </summary>
-        public virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, bool isFullType)
         {
             MetadataCategory category = GetMetadataCategory(type);
 
             if ((category & MetadataCategory.Description) != 0)
             {
-                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, type);
+                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, type, isFullType);
             }
         }
 
@@ -493,7 +493,7 @@ namespace ILCompiler
             // MetadataManagers can override this to provide additional dependencies caused by using a module
         }
 
-        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, bool isFullType)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
