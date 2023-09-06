@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsRoslynComponent>true</IsRoslynComponent>
-    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
