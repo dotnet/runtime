@@ -523,20 +523,19 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
 
         fnptype.extend(fnptypeline)
         fnptype.append("\n)")
-        if generatedFileType == "header" or generatedFileType == "source-impl-noop":
-            if generatedFileType == "header":
-                fnptype.append(";\n")
-                if providerName=="Microsoft-Windows-DotNETRuntimePrivate":
-                    fnptype.append("#else\n")
-                    fnptype.append(fnptypeAotNotWindowsName)
-                    fnptype.append(fnptypeAotNotWindowsSignature)
-                    fnptype.append(")")
-                    fnptype.append("\n")
-                    fnptype.append("#endif // FEATURE_ETW\n")
-                else:
-                    fnptype.append("\n")
-            elif generatedFileType == "source-impl-noop":
-                fnptype.append("\n{ return ERROR_SUCCESS; }\n\n")
+        if generatedFileType == "header":
+            fnptype.append(";\n")
+            if providerName=="Microsoft-Windows-DotNETRuntimePrivate":
+                fnptype.append("#else\n")
+                fnptype.append(fnptypeAotNotWindowsName)
+                fnptype.append(fnptypeAotNotWindowsSignature)
+                fnptype.append(")")
+                fnptype.append("\n")
+                fnptype.append("#endif // FEATURE_ETW\n")
+            else:
+                fnptype.append("\n")
+        elif generatedFileType == "source-impl-noop":
+            fnptype.append("\n{ return ERROR_SUCCESS; }\n\n")
         else:
             fnptype.append("\n{\n")
             fnbody.append(lindent)
@@ -1006,6 +1005,8 @@ def main(argv):
                                     help='full path to manifest containing the description of events')
     required.add_argument('--inc',  type=str, default=None,
                                     help='full path to directory where the header files will be generated')
+    required.add_argument('--inclist',  type=str,default="",
+                                    help='full path to inclusion list')
     required.add_argument('--dummy',  type=str,default=None,
                                     help='full path to file that will have dummy definitions of FireEtw functions')
     required.add_argument('--runtimeflavor', type=str,default="CoreCLR",
@@ -1014,8 +1015,6 @@ def main(argv):
                                     help='if specified, will not generated extern function stub headers' )
     required.add_argument('--noxplatheader', action='store_true',
                                     help='if specified, will not write a generated cross-platform header' )
-    required.add_argument('--incList',  type=str,default="",
-                                    help='full path to inclusion list')
     args, unknown = parser.parse_known_args(argv)
     if unknown:
         print('Unknown argument(s): ', ', '.join(unknown))
@@ -1027,7 +1026,7 @@ def main(argv):
     runtimeFlavor     = RuntimeFlavor(args.runtimeflavor)
     extern            = not args.nonextern
     write_xplatheader = not args.noxplatheader
-    inclusion_filename = args.incList
+    inclusion_filename = args.inclist
 
     target_cpp = True
     if runtimeFlavor.mono:
