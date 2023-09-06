@@ -251,12 +251,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 2.</returns>
-        public static unsafe byte[] GetBytes(Half value)
-        {
-            byte[] bytes = new byte[sizeof(Half)];
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(bytes), value);
-            return bytes;
-        }
+        public static unsafe byte[] GetBytes(Half value) => GetBytes(HalfToInt16Bits(value));
 
         /// <summary>
         /// Converts a half-precision floating-point value into a span of bytes.
@@ -278,12 +273,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 4.</returns>
-        public static byte[] GetBytes(float value)
-        {
-            byte[] bytes = new byte[sizeof(float)];
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(bytes), value);
-            return bytes;
-        }
+        public static byte[] GetBytes(float value) => GetBytes(SingleToInt32Bits(value));
 
         /// <summary>
         /// Converts a single-precision floating-point value into a span of bytes.
@@ -305,12 +295,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 8.</returns>
-        public static byte[] GetBytes(double value)
-        {
-            byte[] bytes = new byte[sizeof(double)];
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(bytes), value);
-            return bytes;
-        }
+        public static byte[] GetBytes(double value) => GetBytes(DoubleToInt64Bits(value));
 
         /// <summary>
         /// Converts a double-precision floating-point value into a span of bytes.
