@@ -58,9 +58,12 @@ namespace SourceGenerators
 
             Debug.Assert(sb.Length > 0);
 
-            foreach (ITypeSymbol genericArg in namedType.GetAllTypeArgumentsInScope())
+            if (namedType.GetAllTypeArgumentsInScope() is List<ITypeSymbol> typeArgsInScope)
             {
-                sb.Append(ToIdentifierCompatibleSubstring(genericArg));
+                foreach (ITypeSymbol genericArg in typeArgsInScope)
+                {
+                    sb.Append(ToIdentifierCompatibleSubstring(genericArg));
+                }
             }
 
             return sb.ToString();
@@ -69,19 +72,18 @@ namespace SourceGenerators
         /// <summary>
         /// Type name, prefixed with containing type names if it is nested (e.g. ContainingType.NestedType).
         /// </summary>
-        /// <returns></returns>
         public static string ToMinimalDisplayString(this ITypeSymbol type) => type.ToDisplayString(s_minimalDisplayFormat);
 
-        private static ITypeSymbol[] GetAllTypeArgumentsInScope(this INamedTypeSymbol type)
+        private static List<ITypeSymbol>? GetAllTypeArgumentsInScope(this INamedTypeSymbol type)
         {
             if (!type.IsGenericType)
             {
-                return Array.Empty<ITypeSymbol>();
+                return null;
             }
 
-            var args = new List<ITypeSymbol>();
+            List<ITypeSymbol>? args = null;
             TraverseContainingTypes(type);
-            return args.ToArray();
+            return args;
 
             void TraverseContainingTypes(INamedTypeSymbol current)
             {
@@ -90,7 +92,10 @@ namespace SourceGenerators
                     TraverseContainingTypes(parent);
                 }
 
-                args.AddRange(current.TypeArguments);
+                if (!current.TypeArguments.IsEmpty)
+                {
+                    (args ?? new()).AddRange(current.TypeArguments);
+                }
             }
         }
 
