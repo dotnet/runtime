@@ -1211,13 +1211,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // Reset spilled flag, since we are going to load a local variable from its home location.
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
-            GenTreeLclVar* lcl         = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc      = compiler->lvaGetDesc(lcl);
-            var_types      unspillType = varDsc->GetRegisterType(lcl);
-            assert(unspillType != TYP_UNDEF);
-
-// TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            GenTreeLclVar* lcl    = unspillTree->AsLclVar();
+            LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
 
             // Pick type to reload register from stack with. Note that in
             // general, the type of 'lcl' does not have any relation to the
@@ -1241,19 +1236,11 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // relies on the normalization to have happened here as part of
             // unspilling.
             //
-            if (varDsc->lvNormalizeOnLoad())
+            var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
+
+            if (varTypeIsGC(lcl))
             {
-                unspillType = varDsc->TypeGet();
-            }
-            else
-            {
-                // Potentially narrower -- see if we should widen.
-                var_types lclLoadType = varDsc->GetStackSlotHomeType();
-                assert(lclLoadType != TYP_UNDEF);
-                if (genTypeSize(unspillType) < genTypeSize(lclLoadType))
-                {
-                    unspillType = lclLoadType;
-                }
+                unspillType = lcl->TypeGet();
             }
 
 #if defined(TARGET_LOONGARCH64)
@@ -1261,11 +1248,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             {
                 unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
             }
-#endif
-#elif defined(TARGET_ARM)
-// No normalizing for ARM
-#else
-            NYI("Unspilling not implemented for this target architecture.");
 #endif
 
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
