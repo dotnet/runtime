@@ -524,6 +524,8 @@
 
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
+  <!-- Must be imported before liveILLink.targets, so that _RequiresLiveILLink is set early enough. -->
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
   <Import Project="$(RepoRoot)eng/liveILLink.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
   <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
@@ -590,8 +592,6 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
-
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <Content Include="@(SanitizerRuntimeToCopy->'$(CoreCLRArtifactsPath)/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />
