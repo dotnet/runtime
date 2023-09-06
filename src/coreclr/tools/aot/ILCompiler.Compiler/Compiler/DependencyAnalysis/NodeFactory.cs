@@ -458,12 +458,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
             {
-                return new TypeMetadataNode(type, isMinimal: false);
+                return new TypeMetadataNode(type, includeCustomAttributes: true);
             });
 
-            _typesWithMinimalMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
+            _typesWithMetadataWithoutCustomAttributes = new NodeCache<MetadataType, TypeMetadataNode>(type =>
             {
-                return new TypeMetadataNode(type, isMinimal: true);
+                return new TypeMetadataNode(type, includeCustomAttributes: false);
             });
 
             _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
@@ -1161,14 +1161,14 @@ namespace ILCompiler.DependencyAnalysis
             return _typesWithMetadata.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, TypeMetadataNode> _typesWithMinimalMetadata;
+        private NodeCache<MetadataType, TypeMetadataNode> _typesWithMetadataWithoutCustomAttributes;
 
-        internal TypeMetadataNode TypeMinimalMetadata(MetadataType type)
+        internal TypeMetadataNode TypeMetadataWithoutCustomAttributes(MetadataType type)
         {
             // These are only meaningful for UsageBasedMetadataManager. We should not have them
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
-            return _typesWithMinimalMetadata.GetOrAdd(type);
+            return _typesWithMetadataWithoutCustomAttributes.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithMetadata;

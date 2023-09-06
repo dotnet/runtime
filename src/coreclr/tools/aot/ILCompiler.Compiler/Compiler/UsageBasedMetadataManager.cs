@@ -970,7 +970,7 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(MetadataType typeDef)
             {
-                return _factory.TypeMetadata(typeDef).Marked || _factory.TypeMinimalMetadata(typeDef).Marked;
+                return _factory.TypeMetadata(typeDef).Marked || _factory.TypeMetadataWithoutCustomAttributes(typeDef).Marked;
             }
 
             public bool GeneratesMetadata(EcmaModule module, CustomAttributeHandle caHandle)
