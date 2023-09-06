@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace SourceGenerators
 {
-    internal static class TypeModelHelpers
+    internal static class TypeModelHelper
     {
         private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
