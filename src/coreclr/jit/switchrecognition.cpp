@@ -392,8 +392,7 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
         (nextBbAfterSwitch != nextBbAfterSwitch->bbJumpDest))
     {
         JITDUMP("\nSkip converting to Switch block if Switch jumps to an empty block with an unconditional "
-                "jump (" FMT_BB " -> " FMT_BB ")\n",
-                m_optFirstBB->bbNum, nextBbAfterSwitch->bbNum)
+            "jump (" FMT_BB " -> " FMT_BB ")\n", m_optFirstBB->bbNum, nextBbAfterSwitch->bbNum)
 
         return false;
     }
@@ -591,7 +590,6 @@ PhaseStatus Compiler::optSwitchRecognition()
 
     OptRangePatternDsc optRngPattern(this);
 
-    bool         printed           = false;
     int          patternIndex      = 0; // The index of the pattern in the array
     bool         foundPattern      = false;
     unsigned int firstPatternBBNum = 0; // Basic block number of the first pattern found
@@ -602,13 +600,12 @@ PhaseStatus Compiler::optSwitchRecognition()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    for (BasicBlock* currBb = fgFirstBB->bbNext; currBb != nullptr; currBb = currBb->bbNext)
+    for (BasicBlock* const currBb : Blocks())
     {
         if (currBb->KindIs(BBJ_COND) && prevBb != nullptr && prevBb->KindIs(BBJ_COND))
         {
             // Check if prevBb is the predecessor of currBb and currBb has only one predecessor
-            FlowEdge* pred = fgGetPredForBlock(currBb, prevBb);
-            if (pred == nullptr || currBb->bbRefs != 1 || currBb->bbFlags & BBF_DONT_REMOVE)
+            if ((currBb->GetUniquePred(this) != prevBb) || ((currBb->bbFlags & BBF_DONT_REMOVE) != 0))
             {
                 if (foundPattern)
                 {
@@ -618,7 +615,7 @@ PhaseStatus Compiler::optSwitchRecognition()
             }
 
             // Basic block must have only one statement
-            if (currBb->lastStmt() == currBb->firstStmt() && prevBb->lastStmt() == prevBb->firstStmt())
+            if (currBb->hasSingleStmt() && prevBb->hasSingleStmt())
             {
                 // Skip if there is any side effect
                 assert(currBb->lastStmt()->GetRootNode()->OperIs(GT_JTRUE)); // JTRUE node
@@ -632,8 +629,8 @@ PhaseStatus Compiler::optSwitchRecognition()
                     continue;
                 }
 
-                auto currCmpOp = currBb->lastStmt()->GetRootNode()->gtGetOp1(); // GT_EQ or GT_NE node
-                auto prevCmpOp = prevBb->lastStmt()->GetRootNode()->gtGetOp1();
+                GenTree* currCmpOp = currBb->lastStmt()->GetRootNode()->gtGetOp1(); // GT_EQ or GT_NE node
+                GenTree* prevCmpOp = prevBb->lastStmt()->GetRootNode()->gtGetOp1();
                 assert(currCmpOp != nullptr && prevCmpOp != nullptr);
 
                 // Compare operator is GT_EQ. If it is GT_NE, it is the end of the pattern check.
@@ -780,8 +777,8 @@ PhaseStatus Compiler::optSwitchRecognition()
         int     rangePattern = (int)(maxPattern - minPattern + 1);
         if (patternCount > rangePattern || rangePattern < 2 || rangePattern > optRngPattern.m_sizePatterns)
         {
-            JITDUMP("Range of pattern values is too small (< 2) or too big (> %d): %d\n", optRngPattern.m_sizePatterns,
-                    rangePattern);
+            JITDUMP("Range of pattern values is too small (< 2) or too big (> %d): %d\n",
+                       optRngPattern.m_sizePatterns, rangePattern);
 
             return PhaseStatus::MODIFIED_NOTHING;
         }
