@@ -1,44 +1,48 @@
 ## About
 
-<!-- A description of the package and where one can find more documentation -->
-
-
+This package provides an [`HttpMessageHandler`](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpmessagehandler) implementation backed by [Windows HTTP Services (WinHTTP)](https://learn.microsoft.com/en-us/windows/win32/winhttp/winhttp-start-page).
+While the use of the default `HttpClientHandler` is highly recommended for applications targeting modern .NET, `WinHttpHandler` might help migration scenarios by providing an alternative HTTP backend for Windows that works consistently accross .NET Framework and modern .NET.
 
 ## Key Features
 
-<!-- The key features of this package -->
-
-*
-*
-*
+* Enables sending *asynchronous* HTTP requests with `HttpClient` on Windows.
+* Handles authentication and credentials.
+* Exposes a subset of WinHTTP options as C# properties on `WinHttpHandler`.
+* Use custom proxy.
+* Handle cookies.
 
 ## How to Use
 
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+```C#
+using System.Net;
+
+using WinHttpHandler handler = new()
+{
+    ServerCredentials = new NetworkCredential("usr", "pwd")
+};
+
+using HttpClient client = new(handler);
+using HttpRequestMessage request = new(HttpMethod.Get, "https://httpbin.org/basic-auth/usr/pwd");
+using HttpResponseMessage response = await client.SendAsync(request);
+
+Console.WriteLine($"Status: {response.StatusCode}");
+if (response.IsSuccessStatusCode)
+{
+    string content = await response.Content.ReadAsStringAsync();
+    Console.WriteLine(content);
+}
+```
 
 ## Main Types
 
-<!-- The main types provided in this library -->
-
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `System.Net.Http.WinHttpHandler`
 
 ## Additional Documentation
 
-<!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
-
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/**LIBRARYNAME**/overview)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/**LIBRARYNAME**)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
+* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.winhttphandler)
 
 ## Feedback & Contributing
 
-<!-- How to provide feedback on this package and contribute to it -->
-
-**LIBRARY NAME** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+**System.Net.Http.WinHttpHandler** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
