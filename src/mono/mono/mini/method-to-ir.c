@@ -9921,9 +9921,20 @@ calli_end:
 			else {
 				klass = NULL;
 				field = mono_field_from_token_checked (image, token, &klass, generic_context, cfg->error);
-				if (!field && CLASS_HAS_FAILURE (klass)) {
+				if (!field || CLASS_HAS_FAILURE (klass)) {
 						HANDLE_TYPELOAD_ERROR (cfg, klass);
-						break; // reached only in AOT
+
+						// Reached only in AOT. Cannot turn a token into a class. We silence the compilation error
+						// and generate a runtime exception.
+						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE)
+							clear_cfg_error (cfg);
+						
+						// We need to push something to the stack for these opcodes.
+						if (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD || il_op == MONO_CEE_LDFLDA || il_op == MONO_CEE_LDSFLDA) {
+							EMIT_NEW_PCONST (cfg, *sp, NULL);
+							sp++;
+						}
+						break;
 				}
 				CHECK_CFG_ERROR;
 			}
@@ -11878,15 +11889,15 @@ mono_ldptr:
 			inline_costs += 100000;
 			break;
 		case MONO_CEE_INITOBJ:
-			--sp;
 			klass = mini_get_class (method, token, generic_context);
-
 			if (CLASS_HAS_FAILURE (klass)) {
 				HANDLE_TYPELOAD_ERROR (cfg, klass);
 				inline_costs += 10;
 				break; // reached only in AOT
 			}
 			
+			--sp;
+
 			if (mini_class_is_reference (klass))
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, sp [0]->dreg, 0, 0);
 			else
@@ -11983,8 +11994,8 @@ mono_ldptr:
 				klass = mini_get_class (method, token, generic_context);
 				if (CLASS_HAS_FAILURE (klass)) {
 					HANDLE_TYPELOAD_ERROR (cfg, klass);
-					EMIT_NEW_ICONST(cfg, ins, 0);
-					*sp++ = ins;
+					//EMIT_NEW_ICONST(cfg, ins, 0);
+					//*sp++ = ins;
 					break;
 				}
 
