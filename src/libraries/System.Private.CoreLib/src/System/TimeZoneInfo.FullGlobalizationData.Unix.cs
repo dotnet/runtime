@@ -11,7 +11,7 @@ namespace System
     {
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
         private const string FallbackCultureName = "en-US";
-#if !TARGET_MACCATALYST && TARGET_IOS && TARGET_TVOS
+#if !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS
         private const string GmtId = "GMT";
 
         // Some time zones may give better display names using their location names rather than their generic name.
