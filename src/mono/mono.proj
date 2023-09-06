@@ -12,6 +12,7 @@
   -->
 
   <PropertyGroup>
+    <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFSHOST_DIR)' != ''">$(ROOTFSHOST_DIR)</MonoCrossDir>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">false</MonoForceInterpreter>
     <ScriptExt Condition="'$(HostOS)' == 'windows'">.cmd</ScriptExt>

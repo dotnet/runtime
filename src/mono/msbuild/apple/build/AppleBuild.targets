@@ -173,7 +173,7 @@
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'osx'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_UsesRuntimeInitCallback)' == 'true' and $(CustomRuntimeInitCallback) == ''" Include="runtime-init-callback" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_UsesRuntimeInitCallback)' == 'true' and $(CustomRuntimeInitCallback) != ''" Include="runtime-init-callback=$(CustomRuntimeInitCallback)" />
