@@ -676,54 +676,54 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
         bool allowDefaultJIT = true;
 
-        const char* host_os_tag = "";
-        const char* jit_host_os_prefix = "";
-        const char* jit_host_os_extension = "";
+        const char* hostOSTag = "";
+        const char* jitHostOSPrefix = "";
+        const char* jitHostOSExtension = "";
 
 #if defined(HOST_OSX) // NOTE: HOST_UNIX is also defined for HOST_OSX
-        host_os_tag = "unix";
-        jit_host_os_prefix = "lib";
-        jit_host_os_extension = ".dylib";
+        hostOSTag = "unix";
+        jitHostOSPrefix = "lib";
+        jitHostOSExtension = ".dylib";
 #elif defined(HOST_UNIX)
-        host_os_tag = "unix";
-        jit_host_os_prefix = "lib";
-        jit_host_os_extension = ".so";
+        hostOSTag = "unix";
+        jitHostOSPrefix = "lib";
+        jitHostOSExtension = ".so";
 #elif defined(HOST_WINDOWS)
-        host_os_tag = "win";
-        jit_host_os_extension = ".dll";
+        hostOSTag = "win";
+        jitHostOSExtension = ".dll";
 #else
         allowDefaultJIT = false;
 #endif
 
-        const char* host_arch = "";
+        const char* hostArch = "";
 
 #if defined(HOST_AMD64)
-        host_arch = "x64";
+        hostArch = "x64";
 #elif defined(HOST_X86)
-        host_arch = "x86";
+        hostArch = "x86";
 #elif defined(HOST_ARM)
-        host_arch = "arm";
+        hostArch = "arm";
 #elif defined(HOST_ARM64)
-        host_arch = "arm64";
+        hostArch = "arm64";
 #else
         allowDefaultJIT = false;
 #endif
 
-        const char* target_arch = "";
+        const char* targetArch = "";
 
         switch (GetSpmiTargetArchitecture())
         {
             case SPMI_TARGET_ARCHITECTURE_AMD64:
-                target_arch = "x64";
+                targetArch = "x64";
                 break;
             case SPMI_TARGET_ARCHITECTURE_X86:
-                target_arch = "x86";
+                targetArch = "x86";
                 break;
             case SPMI_TARGET_ARCHITECTURE_ARM:
-                target_arch = "arm";
+                targetArch = "arm";
                 break;
             case SPMI_TARGET_ARCHITECTURE_ARM64:
-                target_arch = "arm64";
+                targetArch = "arm64";
                 break;
             default:
                 allowDefaultJIT = false;
@@ -746,7 +746,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
         if (allowDefaultJIT)
         {
-            const char* jit_os_name = nullptr;
+            const char* jitOSName = nullptr;
 
             if (defaultSpmiTargetArchitecture != GetSpmiTargetArchitecture())
             {
@@ -756,11 +756,11 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 {
                     case SPMI_TARGET_ARCHITECTURE_AMD64:
                     case SPMI_TARGET_ARCHITECTURE_X86:
-                        jit_os_name = host_os_tag;
+                        jitOSName = hostOSTag;
                         break;
                     case SPMI_TARGET_ARCHITECTURE_ARM:
                     case SPMI_TARGET_ARCHITECTURE_ARM64:
-                        jit_os_name = "universal";
+                        jitOSName = "universal";
                         break;
                     default:
                         // Can't get here if `allowDefaultJIT` was properly set above.
@@ -768,33 +768,33 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 }
             }
 
-            const char* jit_base_name = "clrjit";
-            size_t len = programPathLen + strlen(jit_host_os_prefix) + strlen(jit_base_name) + strlen(jit_host_os_extension) + 1;
-            if (jit_os_name != nullptr)
+            const char* const jitBaseName = "clrjit";
+            size_t len = programPathLen + strlen(jitHostOSPrefix) + strlen(jitBaseName) + strlen(jitHostOSExtension) + 1;
+            if (jitOSName != nullptr)
             {
-                len += 3 /* underscores */ + strlen(jit_os_name) + strlen(target_arch) + strlen(host_arch);
+                len += 3 /* underscores */ + strlen(jitOSName) + strlen(targetArch) + strlen(hostArch);
             }
             char* tempStr = new char[len];
-            if (jit_os_name == nullptr)
+            if (jitOSName == nullptr)
             {
                 sprintf_s(tempStr, len, "%s%c%s%s%s",
                     programPath,
                     DIRECTORY_SEPARATOR_CHAR_A,
-                    jit_host_os_prefix,
-                    jit_base_name,
-                    jit_host_os_extension);
+                    jitHostOSPrefix,
+                    jitBaseName,
+                    jitHostOSExtension);
             }
             else
             {
                 sprintf_s(tempStr, len, "%s%c%s%s_%s_%s_%s%s",
                     programPath,
                     DIRECTORY_SEPARATOR_CHAR_A,
-                    jit_host_os_prefix,
-                    jit_base_name,
-                    jit_os_name,
-                    target_arch,
-                    host_arch,
-                    jit_host_os_extension);
+                    jitHostOSPrefix,
+                    jitBaseName,
+                    jitOSName,
+                    targetArch,
+                    hostArch,
+                    jitHostOSExtension);
             }
 
             o->nameOfJit = tempStr;
