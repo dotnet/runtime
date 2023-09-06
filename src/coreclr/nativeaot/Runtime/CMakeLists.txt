@@ -58,6 +58,14 @@ set(SERVER_GC_SOURCES
     ${GC_DIR}/gcsvr.cpp
 )
 
+set(HELLO_SOURCES
+    Hello.cpp
+)
+
+set(WORLD_SOURCES
+    World.cpp
+)
+
 set(FULL_RUNTIME_SOURCES
     AsmOffsetsVerify.cpp
     ThunksMapping.cpp
@@ -271,6 +279,8 @@ list(APPEND COMMON_RUNTIME_SOURCES ${GC_HEADERS})
 convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
 convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
 convert_to_absolute_path(SERVER_GC_SOURCES ${SERVER_GC_SOURCES})
+convert_to_absolute_path(HELLO_SOURCES ${HELLO_SOURCES})
+convert_to_absolute_path(WORLD_SOURCES ${WORLD_SOURCES})
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
 convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})
