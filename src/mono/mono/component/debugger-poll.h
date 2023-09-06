@@ -2,8 +2,8 @@
  * \file
  */
 
-#ifndef MONO_POLL_H
-#define MONO_POLL_H
+#ifndef __MONO_DEBUGGER_POLL_H__
+#define __MONO_DEBUGGER_POLL_H__
 
 #include <mono/utils/mono-publib.h>
 
@@ -57,5 +57,5 @@ mono_poll_can_add (mono_pollfd *ufds, unsigned int nfds, int fd);
 
 MONO_API int mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout);
 
-#endif /* MONO_POLL_H */
+#endif /* __MONO_DEBUGGER_POLL_H__ */
 

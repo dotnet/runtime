@@ -33,7 +33,9 @@
 #include "coree-internals.h"
 #include <mono/utils/w32subset.h>
 
-gchar*
+#if HAVE_API_SUPPORT_WIN32_COREE
+
+static gchar*
 mono_get_module_file_name (HMODULE module_handle)
 {
 	gunichar2* file_name;
@@ -68,7 +70,6 @@ mono_get_module_file_name (HMODULE module_handle)
 HMODULE coree_module_handle = NULL;
 static gboolean init_from_coree = FALSE;
 
-#if HAVE_API_SUPPORT_WIN32_COREE
 #include <shellapi.h>
 
 /* Entry point called by LdrLoadDll of ntdll.dll after _CorValidateImage. */

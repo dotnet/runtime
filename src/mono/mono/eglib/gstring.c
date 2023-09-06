@@ -133,20 +133,6 @@ g_string_append_c (GString *string, gchar c)
 	return string;
 }
 
-GString *
-g_string_append_unichar (GString *string, gunichar c)
-{
-	gchar utf8[6];
-	gint len;
-
-	g_return_val_if_fail (string != NULL, NULL);
-
-	if ((len = g_unichar_to_utf8 (c, utf8)) <= 0)
-		return string;
-
-	return g_string_append_len (string, utf8, len);
-}
-
 void
 g_string_append_printf (GString *string, const gchar *format, ...)
 {

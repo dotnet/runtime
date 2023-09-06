@@ -1015,7 +1015,7 @@ create_provider (
 #if WCHAR_MAX == 0xFFFF
     provider_name_utf8 = g_utf16_to_utf8 ((const gunichar2 *)provider_name, -1, NULL, NULL, NULL);
 #else
-    provider_name_utf8 = g_ucs4_to_utf8 ((const gunichar *)provider_name, -1, NULL, NULL, NULL);
+    provider_name_utf8 = g_utf16_to_utf8 (g_ucs4_to_utf16 ((const gunichar *)provider_name, -1, NULL, NULL, NULL), -1, NULL, NULL, NULL);
 #endif
 
     ep_return_null_if_nok (provider_name_utf8 != NULL);

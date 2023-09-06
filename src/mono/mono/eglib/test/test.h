@@ -62,7 +62,7 @@ struct _Group {
 };
 
 gboolean run_group(const Group *group, gint iterations, gboolean quiet,
-	gboolean time, const char *tests);
+	const char *tests);
 #undef FAILED
 RESULT FAILED(const gchar *format, ...);
 gdouble get_timestamp (void);

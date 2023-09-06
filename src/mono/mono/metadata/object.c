@@ -43,7 +43,6 @@
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/metadata-update.h>
-#include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-memory-model.h>
@@ -4115,6 +4114,31 @@ free_main_args (void)
 	main_args = NULL;
 }
 
+ /**
+ * utf8_from_external:
+ * \param in pointer to the string buffer.
+ * Tries to turn a NULL-terminated string into UTF8.
+ *
+ * First, see if it's valid UTF-8, in which case there's nothing more
+ * to be done. If the conversion doesn't succeed, return NULL.
+ *
+ * Callers must free the returned string if not NULL.
+ */
+static gchar *
+utf8_from_external (const gchar *in)
+{
+	if (in == NULL) {
+		return NULL;
+	}
+
+	if (g_utf8_validate (in, -1, NULL)) {
+		return g_strdup (in);
+	}
+
+	return NULL;
+}
+
+
 /**
  * mono_runtime_set_main_args:
  * \param argc number of arguments from the command line
@@ -4135,7 +4159,7 @@ mono_runtime_set_main_args (int argc, char* argv[])
 	for (i = 0; i < argc; ++i) {
 		gchar *utf8_arg;
 
-		utf8_arg = mono_utf8_from_external (argv[i]);
+		utf8_arg = utf8_from_external (argv[i]);
 		if (utf8_arg == NULL) {
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv [i]);
 			exit (-1);
@@ -4178,7 +4202,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 						    basename,
 						    (const char*)NULL);
 
-		utf8_fullpath = mono_utf8_from_external (fullpath);
+		utf8_fullpath = utf8_from_external (fullpath);
 		if(utf8_fullpath == NULL) {
 			/* Printing the arg text will cause glib to
 			 * whinge about "Invalid UTF-8", but at least
@@ -4192,7 +4216,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		g_free (fullpath);
 		g_free (basename);
 	} else {
-		utf8_fullpath = mono_utf8_from_external (argv[0]);
+		utf8_fullpath = utf8_from_external (argv[0]);
 		if(utf8_fullpath == NULL) {
 			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", argv[0]);
 			exit (-1);
@@ -4204,7 +4228,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	for (i = 1; i < argc; ++i) {
 		gchar *utf8_arg;
 
-		utf8_arg=mono_utf8_from_external (argv[i]);
+		utf8_arg=utf8_from_external (argv[i]);
 		if(utf8_arg==NULL) {
 			/* Ditto the comment about Invalid UTF-8 here */
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv[i]);
@@ -4233,7 +4257,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 			 * we've checked all these args for the
 			 * main_args array.
 			 */
-			gchar *str = mono_utf8_from_external (argv [i]);
+			gchar *str = utf8_from_external (argv [i]);
 			MonoString *arg = mono_string_new_checked (str, error);
 			mono_error_assert_ok (error);
 			mono_array_setref_internal (args, i, arg);
@@ -6472,7 +6496,7 @@ mono_string_new_wtf8_len_checked (const char *text, guint length, MonoError *err
 	gunichar2 *ut = NULL;
 	glong items_written;
 
-	ut = eg_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
+	ut = g_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (!eg_error)
 		o = mono_string_new_utf16_checked (ut, items_written, error);

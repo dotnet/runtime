@@ -36,9 +36,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <glib.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 #ifdef G_OS_WIN32
 #include <winsock2.h>
 #endif
@@ -64,11 +61,10 @@ run_test(const Test *test, char **result_out)
 
 gboolean
 run_group(const Group *group, gint iterations, gboolean quiet,
-	gboolean time, const char *tests_to_run_s)
+	const char *tests_to_run_s)
 {
 	Test *tests = group->handler();
 	gint passed = 0, total = 0;
-	gdouble start_time_group, start_time_test;
 	gchar **tests_to_run = NULL;
 
 	if(!quiet) {
@@ -82,8 +78,6 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 	if(tests_to_run_s != NULL) {
 		tests_to_run = eg_strsplit(tests_to_run_s, ",", -1);
 	}
-
-	start_time_group = get_timestamp();
 
 	for(gint i = 0; tests[i].name != NULL; i++) {
 		gchar *result = (char*)"";
@@ -112,8 +106,6 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 			printf("  %s: ", tests[i].name);
 		}
 
-		start_time_test = get_timestamp();
-
 		for(gint j = 0; j < iterations; j++) {
 			iter_pass = run_test(&(tests[i]), &result);
 			if(!iter_pass) {
@@ -124,11 +116,7 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 		if(iter_pass) {
 			passed++;
 			if(!quiet) {
-				if(time) {
-					printf("OK (%g)\n", get_timestamp() - start_time_test);
-				} else {
-					printf("OK\n");
-				}
+				printf("OK\n");
 			}
 		} else  {
 			if(!quiet) {
@@ -147,12 +135,7 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 
 	if(!quiet) {
 		gdouble pass_percentage = ((gdouble)passed / (gdouble)total) * 100.0;
-		if(time) {
-			printf("  %d / %d (%g%%, %g)\n", passed, total,
-				pass_percentage, get_timestamp() - start_time_group);
-		} else {
-			printf("  %d / %d (%g%%)\n", passed, total, pass_percentage);
-		}
+		printf("  %d / %d (%g%%)\n", passed, total, pass_percentage);
 	}
 
 	if(tests_to_run != NULL) {
@@ -186,15 +169,6 @@ FAILED(const gchar *format, ...)
 	last_result = ret;
 	return ret;
 #endif
-}
-
-gdouble
-get_timestamp (void)
-{
-	/* FIXME: We should use g_get_current_time here */
-	GTimeVal res;
-	g_get_current_time (&res);
-	return res.tv_sec + (1.e-6) * res.tv_usec;
 }
 
 /*
