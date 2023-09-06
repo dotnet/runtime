@@ -16,25 +16,25 @@ public class Runtime_91214
         Method0();
     }
 
-    public struct S
+    struct S
     {
         public Vector3 v3;
         public bool b;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static S Method2()
+    static S Method2()
     {
         return default;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Method0()
+    static void Method0()
     {
         S s = Method2();
         Log(null, s.v3);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Log(object a, object b) { }
+    static void Log(object a, object b) { }
 }
