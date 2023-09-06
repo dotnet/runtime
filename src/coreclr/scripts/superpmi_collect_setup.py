@@ -481,6 +481,8 @@ def main(main_args):
     else:
         acceptable_extensions = [".py", ".dll", ".json", ".txt"]
         acceptable_extensions.append(".so" if platform_name == "linux" else ".dylib")
+        if platform_name == "linux":
+            acceptable_extensions.append(".so.1")
         # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
 
