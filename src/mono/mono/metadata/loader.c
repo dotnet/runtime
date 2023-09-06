@@ -916,7 +916,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		goto fail;
 
 	bool raw_fields_to_read[mdtMemberRef_ColCount] = { 0 };
-	raw_fields_to_read[mdtMemberRef_Class] = true;
+	raw_fields_to_read[mdtMemberRef_Signature] = true;
 	guint32 raw_fields[mdtMemberRef_ColCount];
 	if (!md_get_column_values_raw (mr, mdtMemberRef_ColCount, raw_fields_to_read, raw_fields))
 		return NULL;

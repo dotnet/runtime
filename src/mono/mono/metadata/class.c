@@ -179,7 +179,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 			int i = mono_metadata_nesting_typedef (enclosing_image, enclosing_type_token, 1);
 			while (i) {
 				mdcursor_t nested_class;
-				if (!md_token_to_cursor (enclosing_image->metadata_handle, MONO_TOKEN_TYPE_DEF | i, &nested_class))
+				if (!md_token_to_cursor (enclosing_image->metadata_handle, mono_metadata_make_token(MONO_TABLE_NESTEDCLASS, i), &nested_class))
 					break;
 				
 				mdcursor_t class_nested;
@@ -187,7 +187,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 					break;
 				
 				const char *nname;
-				if (1 != md_get_column_value_as_utf8 (nested_class, mdtTypeDef_TypeName, 1, &nname))
+				if (1 != md_get_column_value_as_utf8 (class_nested, mdtTypeDef_TypeName, 1, &nname))
 					break;
 
 				if (strcmp (nname, name) == 0)
@@ -1607,7 +1607,7 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 	 */
 	for (i = 0; i < top; i++) {
 		mdcursor_t c;
-		if (!md_token_to_cursor (image->metadata_handle, MONO_TOKEN_FIELD_DEF | (first_field_idx + i), &c)) {
+		if (!md_token_to_cursor (image->metadata_handle, MONO_TOKEN_FIELD_DEF | (first_field_idx + i + 1), &c)) {
 			mono_error_set_bad_image (error, image, "Could not find field %d", first_field_idx + i);
 			goto fail;
 		}
@@ -3121,7 +3121,7 @@ mono_image_init_name_cache (MonoImage *image)
 		if (!md_get_column_values_raw (type, mdtTypeDef_ColCount, raw_values_to_read, raw_values))
 			g_assert_not_reached ();
 
-		nspace_index = raw_values_to_read[mdtTypeDef_TypeNamespace];
+		nspace_index = raw_values[mdtTypeDef_TypeNamespace];
 		nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
 		if (!nspace_table) {
 			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
@@ -3141,10 +3141,10 @@ mono_image_init_name_cache (MonoImage *image)
 
 		for (uint32_t i = 0; i < exptype_count; ++i, md_cursor_next(&exptype)) {
 			guint32 impl;
-			if (1 != md_get_column_value_as_constant (exptype, mdtExportedType_Implementation, 1, &impl))
+			if (1 != md_get_column_value_as_token (exptype, mdtExportedType_Implementation, 1, &impl))
 				g_assert_not_reached ();
 			
-			if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_EXP_TYPE)
+			if (mono_metadata_token_table(impl) == MONO_TABLE_EXPORTEDTYPE)
 				/* Nested type */
 				continue;
 			
@@ -3160,7 +3160,7 @@ mono_image_init_name_cache (MonoImage *image)
 			if (!md_get_column_values_raw (exptype, mdtExportedType_ColCount, raw_values_to_read, raw_values))
 				g_assert_not_reached ();
 			
-			nspace_index = raw_values_to_read[mdtExportedType_TypeNamespace];
+			nspace_index = raw_values[mdtExportedType_TypeNamespace];
 			nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
 			if (!nspace_table) {
 				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);

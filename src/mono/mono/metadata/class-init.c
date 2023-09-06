@@ -682,7 +682,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	if (!md_get_column_value_as_range (c, mdtTypeDef_FieldList, &field_list, &field_count)) {
 		g_assert_not_reached ();
 	}
-	if (md_get_column_value_as_range (c, mdtTypeDef_MethodList, &method_list, &method_count)) {
+	if (!md_get_column_value_as_range (c, mdtTypeDef_MethodList, &method_list, &method_count)) {
 		g_assert_not_reached ();
 	}
 
@@ -691,11 +691,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	if (G_LIKELY (!image->has_updates)) {
 		uint32_t first_field_token;
 		md_cursor_to_token(field_list, &first_field_token);
-		mono_class_set_first_field_idx (klass, mono_metadata_token_index(first_field_token));
+		mono_class_set_first_field_idx (klass, mono_metadata_token_index(first_field_token) - 1);
 		mono_class_set_field_count (klass, field_count);
 		uint32_t first_method_token;
 		md_cursor_to_token(method_list, &first_method_token);
-		mono_class_set_first_method_idx (klass, mono_metadata_token_index(first_method_token));
+		mono_class_set_first_method_idx (klass, mono_metadata_token_index(first_method_token) - 1);
 		mono_class_set_method_count (klass, method_count);
 	} else {
 		uint32_t first_field_idx, first_method_idx, field_count, method_count;

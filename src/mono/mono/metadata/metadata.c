@@ -1450,7 +1450,7 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 	if (!md_cursor_move (&row_cursor, idx))
 		g_assert_not_reached ();
 	
-	if (!md_get_column_values_raw (row_cursor, col, raw_columns_to_read, raw_values))
+	if (!md_get_column_values_raw (row_cursor, col + 1, raw_columns_to_read, raw_values))
 		g_assert_not_reached ();
 	
 	return raw_values[col];
