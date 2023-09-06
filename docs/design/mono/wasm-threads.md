@@ -176,9 +176,9 @@
 - on the deputy thread
     - to dispatch async calls from UI thread to it
 
-### Blazor - what breaks
+### Blazor - what breaks when MT build
 - as compared to single threaded runtime, the major difference would be no synchronous callbacks.
-    - for example from DOM `onClick`. This is one of the reasons people prefer WASM over Blazor Server.
+    - for example from DOM `onClick`. This is one of the reasons people prefer ST WASM over Blazor Server.
     - but there is really [no way around it](#problem), because you can't have both MT and sync calls from UI.
 - implement Blazor's `WebAssemblyDispatcher` to dispatch [`Component.InvokeAsync`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.components.componentbase.invokeasync) to deputy thread.
     - process feedback from https://github.com/dotnet/aspnetcore/pull/48991 and make more async
