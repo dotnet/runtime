@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace SourceGenerators
 {
@@ -25,16 +26,37 @@ namespace SourceGenerators
                 return ToIdentifierCompatibleSubstring(arrayType.ElementType) + suffix;
             }
 
-            string name = GetName(type);
+            StringBuilder? sb = null;
+            string? symbolName = null;
+
+            if (useUniqueName)
+            {
+                string uniqueDisplayString = type.ToMinimalDisplayString();
+                PopulateIdentifierCompatibleSubstring(sb = new(), uniqueDisplayString);
+            }
+            else
+            {
+                symbolName = type.Name;
+            }
+
+#if DEBUG
+            bool usingUniqueName = (symbolName is null || sb is not null) && useUniqueName;
+            bool usingSymbolName = (symbolName is not null && sb is null) && !useUniqueName;
+            bool configuredNameCorrectly = (usingUniqueName && !usingSymbolName) || (!usingUniqueName && usingSymbolName);
+            Debug.Assert(configuredNameCorrectly);
+#endif
 
             if (type is not INamedTypeSymbol namedType || !namedType.IsGenericType)
             {
-                return name;
+                return symbolName ?? sb!.ToString();
             }
 
-            StringBuilder sb = new();
+            if (sb is null)
+            {
+                (sb = new()).Append(symbolName!);
+            }
 
-            sb.Append(name);
+            Debug.Assert(sb.Length > 0);
 
             foreach (ITypeSymbol genericArg in namedType.GetAllTypeArgumentsInScope())
             {
@@ -42,10 +64,6 @@ namespace SourceGenerators
             }
 
             return sb.ToString();
-
-            string GetName(ITypeSymbol type) => useUniqueName
-                ? ToIdentifierCompatibleSubstring(type.ToMinimalDisplayString())
-                : type.Name;
         }
 
         /// <summary>
@@ -76,27 +94,23 @@ namespace SourceGenerators
             }
         }
 
-        private static string ToIdentifierCompatibleSubstring(string input)
+        private static void PopulateIdentifierCompatibleSubstring(StringBuilder sb, string input)
         {
-            StringBuilder sb = new();
-
             foreach (char c in input)
             {
                 if (c is '[')
                 {
-                    sb.Append("Arr");
+                    sb.Append("Array");
                 }
-                else if (c is ']')
+                else if (c is ',')
                 {
-                    sb.Append("ay");
+                    sb.Append("Comma");
                 }
-                else if (c is not (',' or ' ' or '.' or '<' or '>' or '_'))
+                else if (char.IsLetterOrDigit(c))
                 {
                     sb.Append(c);
                 }
             }
-
-            return sb.ToString();
         }
     }
 }
