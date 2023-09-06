@@ -871,7 +871,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     return base;
 }
 
-#if TARGET_WINDOWS
+#ifdef TARGET_WINDOWS
 
 // VirtualAlloc2
 typedef PVOID(WINAPI* VirtualAlloc2Fn)(
@@ -907,7 +907,6 @@ static bool HavePlaceholderAPI()
         return false;
     }
 
-#ifdef TARGET_WINDOWS
     if (pMapViewOfFile3 == NULL)
     {
         HMODULE hm = WszLoadLibrary(W("kernelbase.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -924,7 +923,6 @@ static bool HavePlaceholderAPI()
             return true;
         }
     }
-#endif // TARGET_WINDOWS
 
     pMapViewOfFile3 = INVALID_ADDRESS_SENTINEL;
     return false;
