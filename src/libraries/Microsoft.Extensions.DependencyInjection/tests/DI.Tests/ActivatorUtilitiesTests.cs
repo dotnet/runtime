@@ -394,7 +394,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
 #if NETCOREAPP
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91641", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
