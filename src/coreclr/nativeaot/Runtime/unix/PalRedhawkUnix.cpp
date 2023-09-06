@@ -58,6 +58,8 @@
 #ifdef TARGET_APPLE
 #include <minipal/getexepath.h>
 #include <mach-o/getsect.h>
+#else
+#include <link.h>
 #endif
 
 using std::nullptr_t;
@@ -760,6 +762,13 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return copy.Extract();
 }
 
+REDHAWK_PALEXPORT TCHAR* PalCopyCharAsTChar(const char* toCopy)
+{
+    NewArrayHolder<TCHAR> copy {new (nothrow) TCHAR[strlen(toCopy) + 1]};
+    strcpy(copy, toCopy);
+    return copy.Extract();
+}
+
 REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
 {
     return dlopen(moduleName, RTLD_LAZY);
@@ -1248,3 +1257,139 @@ extern "C" uint64_t PalGetCurrentOSThreadId()
 #endif
 }
 
+void* PalCreateMemoryMappedFile(const TCHAR* logFilename, size_t maxBytesTotal)
+{
+    int fd = open(logFilename, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (-1 == fd)
+    {
+        return nullptr;
+    }
+    if (-1 == fcntl(fd,F_SETFD, FD_CLOEXEC))
+    {
+        return nullptr;
+    }
+    int dup_fd = fcntl(fd, F_DUPFD_CLOEXEC, 0);
+    if (-1 == dup_fd)
+    {
+        return nullptr;
+    }
+    if (0 != ftruncate(dup_fd, maxBytesTotal))
+    {
+        return nullptr;
+    }
+    return mmap(NULL, maxBytesTotal, PROT_READ|PROT_WRITE, MAP_SHARED, dup_fd, 0);
+}
+
+
+struct CopyModuleDataParam
+{
+    uint8_t* destination_buffer_start;
+    uint8_t* destination_buffer_end;
+    uint8_t* module_base;
+    int result;
+};
+
+void handle_image_range(uint8_t* source_start, size_t size, struct CopyModuleDataParam* param)
+{
+    uint8_t* source_end = source_start + size;
+    if (param->destination_buffer_start != NULL)
+    {
+        assert (source_start >= param->module_base);
+        size_t offset = source_start - param->module_base;
+        uint8_t* destination_start = ((uint8_t*)(param->destination_buffer_start)) + offset;
+        uint8_t* destination_end   = destination_start + size;
+        _ASSERTE(destination_end <= param->destination_buffer_end);
+        if (destination_end <= param->destination_buffer_end)
+        {
+            memcpy(destination_start, source_start, size);
+        }
+    }
+    param->result = max(param->result, (int)(source_end - param->module_base));
+}
+
+#ifdef __APPLE__
+int
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
+{
+    CopyModuleDataParam param;
+    param.module_base = (uint8_t*)moduleBase;
+    param.destination_buffer_start = (uint8_t*)destinationBufferStart;
+    param.destination_buffer_end = (uint8_t*)destinationBufferEnd;
+    uint32_t count = _dyld_image_count();
+    for (uint32_t i = 0; i < count; i++)
+    {
+        const struct mach_header * header = _dyld_get_image_header(i);
+        Dl_info info;
+        PVOID symbolModuleBase = nullptr;
+        if (dladdr((void*)header, &info) != 0)
+        {
+            symbolModuleBase = info.dli_fbase;
+        }
+        if (symbolModuleBase == moduleBase)
+        {
+            intptr_t slide = _dyld_get_image_vmaddr_slide(i);
+
+            struct load_command * cmd = (struct load_command * )((char * ) header + sizeof(struct mach_header));
+            if(header->magic == MH_MAGIC_64)
+            {
+                cmd = (struct load_command*)((char *)header + sizeof(struct mach_header_64));
+            }
+
+            for (uint32_t j = 0; j < header -> ncmds; j++)
+            {
+                if (cmd -> cmd == LC_SEGMENT)
+                {
+                    struct segment_command * seg = (struct segment_command *) cmd;
+                    size_t size = seg->vmsize;
+                    uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
+                    handle_image_range(source_start, size, &param);
+                }
+                else if (cmd -> cmd == LC_SEGMENT_64)
+                {
+                    struct segment_command_64 * seg = (struct segment_command_64 * ) cmd;
+                    // This check is meant to skip the __PAGEZERO segment in OSX.
+                    if (seg->vmsize != 0x100000000)
+                    {
+                        size_t size = seg->vmsize;
+                        uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
+                        handle_image_range(source_start, size, &param);
+                    }
+                }
+                cmd = (struct load_command*)((uint8_t*)cmd + cmd->cmdsize);
+            }
+        }
+    }
+    return param.result;
+}
+#else
+static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
+{
+    CopyModuleDataParam* param = (CopyModuleDataParam*)data;
+    if (info->dlpi_addr == (size_t)param->module_base)
+    {
+        for (int j = 0; j < info->dlpi_phnum; j++)
+        {
+            if (info->dlpi_phdr[j].p_type == PT_LOAD)
+            {
+                Elf32_Word size = info->dlpi_phdr[j].p_memsz;
+                uint8_t* source_start = (uint8_t*)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr);
+                handle_image_range(source_start, size, param);
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
+int
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
+{
+    CopyModuleDataParam param;
+    param.destination_buffer_start = (uint8_t*)destinationBufferStart;
+    param.destination_buffer_end = (uint8_t*)destinationBufferEnd;
+    param.module_base = (uint8_t*)moduleBase;
+    param.result = 0;
+    dl_iterate_phdr(CopyModuleDataCallback, &param);
+    return param.result;
+}
+#endif

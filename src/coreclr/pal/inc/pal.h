@@ -2989,7 +2989,7 @@ PAL_GetSymbolModuleBase(PVOID symbol);
 PALIMPORT
 int
 PALAPI
-PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd);;
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd);
 
 PALIMPORT
 LPCSTR

@@ -7,6 +7,13 @@
 
 // Implementation of Redhawk PAL inline functions
 
+EXTERN_C int64_t __cdecl _InterlockedExchangeAdd64(int64_t volatile *, int64_t);
+#pragma intrinsic(_InterlockedExchangeAdd64)
+FORCEINLINE uint64_t PalInterlockedExchangeAdd64(_Inout_ uint64_t volatile *pDst, uint64_t iValue)
+{
+    return (uint64_t)_InterlockedExchangeAdd64((int64_t volatile *)pDst, (int64_t)iValue);
+}
+
 EXTERN_C long __cdecl _InterlockedIncrement(long volatile *);
 #pragma intrinsic(_InterlockedIncrement)
 FORCEINLINE int32_t PalInterlockedIncrement(_Inout_ int32_t volatile *pDst)

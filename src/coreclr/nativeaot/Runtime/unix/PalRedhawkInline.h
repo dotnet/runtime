@@ -5,6 +5,11 @@
 
 #include <errno.h>
 
+FORCEINLINE uint64_t PalInterlockedExchangeAdd64(_Inout_ uint64_t volatile *pDst, uint64_t iValue)
+{
+    return (uint64_t)__sync_add_and_fetch(pDst, iValue) - iValue;
+}
+
 FORCEINLINE int32_t PalInterlockedIncrement(_Inout_ int32_t volatile *pDst)
 {
     return __sync_add_and_fetch(pDst, 1);

@@ -46566,7 +46566,7 @@ void gc_heap::descr_generations (const char* msg)
 
         size_t idx = VolatileLoadWithoutBarrier (&settings.gc_index);
 
-        dprintf (REGIONS_LOG, ("[%s] GC#%5Id [%s] heap %Idmb (F: %Idmb %d%%) commit size: %Idmb, %0.3f min, %d,%d new in plan, %d in threading",
+        dprintf (REGIONS_LOG, ("[%s] GC#%5Id [%zd] heap %Idmb (F: %Idmb %d%%) commit size: %Idmb, %0.3f min, %d,%d new in plan, %d in threading",
             msg, idx, (settings.promotion ? "PM" : "NPM"), alloc_size, frag_size,
             (int)((double)frag_size * 100.0 / (double)alloc_size),
             commit_size,

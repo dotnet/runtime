@@ -385,6 +385,7 @@ public:
         uint32_t      reserved1;
         uint64_t      reserved2[15];             // for future expansion
         ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
+        // TODO, andrewau, hard coding module size is unfortunate        
         uint8_t       moduleImage[64*1024*1024];// copy of the module images described by modules field
     };
 

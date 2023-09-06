@@ -1128,7 +1128,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
 
             size_t* p = (size_t*)slc->StartPtr();
             size_t* end = (size_t*)slc->EndPtr();
-            if (p <= (size_t*)msg && (size_t*)msg < end)
+            if (p <= (size_t*)msg && (size_t*)msg <= end)
             {
                 ; // fine
             }
@@ -1217,8 +1217,13 @@ static double FindLatestTime(StressLog::StressLogHeader* hdr)
     for (ThreadStressLog* tsl = StressLog::TranslateMemoryMappedPointer(hdr->logs.t); tsl != nullptr; tsl = StressLog::TranslateMemoryMappedPointer(tsl->next))
     {
         StressMsg* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
-        double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
-        latestTime = max(latestTime, deltaTime);
+        StressLogChunk* slc = StressLog::TranslateMemoryMappedPointer(tsl->curWriteChunk);
+        StressMsg* end = (StressMsg*)slc->EndPtr();
+        if (msg < end)
+        {
+            double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
+            latestTime = max(latestTime, deltaTime);
+        }
     }
     return latestTime;
 }

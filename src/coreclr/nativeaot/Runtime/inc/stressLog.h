@@ -19,6 +19,8 @@
 //   log.
 // ---------------------------------------------------------------------------
 
+#define MEMORY_MAPPED_STRESSLOG
+
 #ifndef StressLog_h
 #define StressLog_h  1
 
@@ -46,6 +48,169 @@
 #endif
 
 #if defined(STRESS_LOG)
+
+#define static_assert_no_msg(x) static_assert((x), #x)
+
+struct StressLogMsg
+{
+    int m_cArgs;
+    const char* m_format;
+    void* m_args[16];
+
+    StressLogMsg(const char* format) : m_cArgs(0), m_format(format)
+    {
+    }
+
+    template < typename T1 >
+    StressLogMsg(const char* format, T1 data1) : m_cArgs(1), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+    }
+
+    template < typename T1, typename T2 >
+    StressLogMsg(const char* format, T1 data1, T2 data2) : m_cArgs(2), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+    }
+
+    template < typename T1, typename T2, typename T3 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3) : m_cArgs(3), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4) : m_cArgs(4), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5) : m_cArgs(5), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6) : m_cArgs(6), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7) : m_cArgs(7), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8) : m_cArgs(8), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9) : m_cArgs(9), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+        m_args[8] = (void*)(size_t)data9;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10) : m_cArgs(10), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+        m_args[8] = (void*)(size_t)data9;
+        m_args[9] = (void*)(size_t)data10;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11) : m_cArgs(11), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+        m_args[8] = (void*)(size_t)data9;
+        m_args[9] = (void*)(size_t)data10;
+        m_args[10] = (void*)(size_t)data11;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11, T12 data12) : m_cArgs(12), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*) && sizeof(T12) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+        m_args[8] = (void*)(size_t)data9;
+        m_args[9] = (void*)(size_t)data10;
+        m_args[10] = (void*)(size_t)data11;
+        m_args[11] = (void*)(size_t)data12;
+    }
+};
 
 //
 // Logging levels and facilities
@@ -296,7 +461,7 @@ public:
     unsigned facilitiesToLog;               // Bitvector of facilities to log (see loglf.h)
     unsigned levelToLog;                    // log level
     unsigned MaxSizePerThread;              // maximum number of bytes each thread should have before wrapping
-    unsigned MaxSizeTotal;                  // maximum memory allowed for stress log
+    size_t   MaxSizeTotal;                  // maximum memory allowed for stress log
     int32_t totalChunk;                       // current number of total chunks allocated
     PTR_ThreadStressLog logs;               // the list of logs for every thread.
     int32_t deadCount;                        // count of dead threads in the log
@@ -305,11 +470,19 @@ public:
     unsigned __int64 startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     size_t   moduleOffset;                  // Used to compute format strings.
+    struct ModuleDesc
+    {
+        uint8_t* baseAddress;
+        size_t        size;
+    };
+    static const size_t MAX_MODULES = 5;
+    ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
 
 #ifndef DACCESS_COMPILE
 public:
     static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
                     unsigned maxBytesTotal, HANDLE hMod);
+    static void AddModule(uint8_t* moduleBase);
     // Called at DllMain THREAD_DETACH to recycle thread's logs
     static void ThreadDetach(ThreadStressLog *msgs);
     static long NewChunk ()     { return PalInterlockedIncrement (&theLog.totalChunk); }
@@ -367,6 +540,8 @@ public:
     }
 
     static void LogMsg(unsigned facility, int cArgs, const char* format, ... );
+    
+    static void LogMsg(unsigned level, unsigned facility, const StressLogMsg& msg);
 
     // Support functions for STRESS_LOG_VA
     // We disable the warning "conversion from 'type' to 'type' of greater size" since everything will
@@ -489,6 +664,47 @@ public:
 
 // private: // static variables
     static StressLog theLog;    // We only have one log, and this is it
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+
+    //
+    // Intentionally avoid unmapping the file during destructor to avoid a race
+    // condition between additional logging in other thread and the destructor.
+    //
+    // The operating system will make sure the file get unmapped during process shutdown
+    //
+    void* hMapView;
+    static void* AllocMemoryMapped(size_t n);
+
+    struct StressLogHeader
+    {
+        size_t           headerSize;                // size of this header including size field and moduleImage
+        uint32_t         magic;                     // must be 'STRL'
+        uint32_t         version;                   // must be >=0x00010001.
+                                                    // 0x00010001 is the legacy short-offset format.
+                                                    // 0x00010002 is the large-module-offset format introduced in .NET 8.
+        uint8_t*         memoryBase;                // base address of the memory mapped file
+        uint8_t*         memoryCur;                 // highest address currently used
+        uint8_t*         memoryLimit;               // limit that can be used
+        ThreadStressLog* logs;                      // the list of logs for every thread.
+        uint64_t         tickFrequency;             // number of ticks per second
+        uint64_t         startTimeStamp;            // start time from when tick counter started
+        uint32_t         threadsWithNoLog;          // threads that didn't get a log
+        uint32_t         reserved1;
+        uint64_t         reserved2[15];             // for future expansion
+        ModuleDesc       modules[MAX_MODULES];      // descriptor of the modules images
+        // TODO, andrewau, hard coding module size is unfortunate
+        // For non-trivial app on NativeAOT, the module size can easily exceed 64M.
+        // For a quick workaround, we can simply bump this number everywhere
+        // To properly fix this, we need to introduce a new format version
+        // Have the buffer for module allocated dynamically using the bump pointer allocator
+        // and have ModuleDesc remember where they are, and have the stress log analyzer do 
+        // the proper math to find out the format string
+        uint8_t          moduleImage[64*1024*1024]; // copy of the module images described by modules field
+    };
+
+    StressLogHeader* stressLogHeader;       // header to find things in the memory mapped file
+#endif // MEMORY_MAPPED_STRESSLOG
 };
 
 
@@ -572,11 +788,11 @@ public:
 
 static_assert(sizeof(StressMsg) == sizeof(uint64_t) * 2, "StressMsg bitfields aren't aligned correctly");
 
-#ifdef _WIN64
+#ifdef HOST_64BIT
 #define STRESSLOG_CHUNK_SIZE (32 * 1024)
-#else //_WIN64
+#else //HOST_64BIT
 #define STRESSLOG_CHUNK_SIZE (16 * 1024)
-#endif //_WIN64
+#endif //HOST_64BIT
 #define GC_STRESSLOG_MULTIPLY (5)
 
 //==========================================================================================
@@ -591,6 +807,10 @@ struct StressLogChunk
     char buf[STRESSLOG_CHUNK_SIZE];
     uint32_t dwSig1;
     uint32_t dwSig2;
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    static bool s_memoryMapped;
+#endif //MEMORY_MAPPED_STRESSLOG
 
 #ifndef DACCESS_COMPILE
 
@@ -614,6 +834,11 @@ struct StressLogChunk
     {
         return dwSig1 == 0xCFCFCFCF && dwSig2 == 0xCFCFCFCF;
     }
+
+#if defined(MEMORY_MAPPED_STRESSLOG)
+    void* operator new (size_t count, const std::nothrow_t& tag);
+    void  operator delete (void * chunk);
+#endif
 };
 
 //==========================================================================================
@@ -634,9 +859,9 @@ struct StressLogChunk
 class ThreadStressLog {
     PTR_ThreadStressLog next;   // we keep a linked list of these
     uint64_t   threadId;        // the id for the thread using this buffer
-    bool       isDead;          // Is this thread dead
-    bool       readHasWrapped;      // set when read ptr has passed chunListTail
-    bool       writeHasWrapped;     // set when write ptr has passed chunListHead
+    uint8_t    isDead;          // Is this thread dead
+    uint8_t    readHasWrapped;      // set when read ptr has passed chunkListTail
+    uint8_t    writeHasWrapped;     // set when write ptr has passed chunkListHead
     StressMsg* curPtr;          // where packets are being put on the queue
     StressMsg* readPtr;         // where we are reading off the queue (used during dumping)
     PTR_StressLogChunk chunkListHead; //head of a list of stress log chunks
@@ -689,6 +914,11 @@ public:
     {
         return chunkListHead != NULL && (!curWriteChunk || curWriteChunk->IsValid ());
     }
+
+#if defined(MEMORY_MAPPED_STRESSLOG)
+    void* operator new (size_t count, const std::nothrow_t& tag);
+    void  operator delete (void * chunk);
+#endif
 
     #define STATIC_CONTRACT_LEAF
     #include "../../../inc/gcmsg.inl"

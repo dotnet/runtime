@@ -110,6 +110,8 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
         return E_FAIL;
     }
 
+    StressLog::AddModule((uint8_t*)PalGetModuleHandleFromPointer((void*)versionInfo));
+
     g_gc_load_status = GC_LOAD_STATUS_GET_VERSIONINFO;
     g_gc_version_info.MajorVersion = EE_INTERFACE_MAJOR_VERSION;
     g_gc_version_info.MinorVersion = 0;

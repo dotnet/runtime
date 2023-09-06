@@ -608,7 +608,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
         theLog.logs = msgs;
 #ifdef MEMORY_MAPPED_STRESSLOG
         if (theLog.stressLogHeader != nullptr)
-        theLog.stressLogHeader->logs = msgs;
+            theLog.stressLogHeader->logs = msgs;
 #endif // MEMORY_MAPPED_STRESSLOG
     }
 

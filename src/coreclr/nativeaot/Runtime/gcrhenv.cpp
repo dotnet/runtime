@@ -1127,7 +1127,7 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
 
 void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg)
 {
-    // TODO: Implementation
+    StressLog::LogMsg(level, facility, msg);
 }
 
 uint32_t GCToEEInterface::GetCurrentProcessCpuCount()

@@ -666,6 +666,18 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return converted;
 }
 
+REDHAWK_PALEXPORT TCHAR* PalCopyCharAsTChar(const char* toCopy)
+{
+    int len = ::MultiByteToWideChar(CP_UTF8, 0, toCopy, -1, nullptr, 0);
+    if (len == 0)
+        return nullptr;
+
+    TCHAR* converted = new (nothrow) TCHAR[len];
+    int written = ::MultiByteToWideChar(CP_UTF8, 0, toCopy, -1, converted, len);
+    assert(len == written);
+    return converted;
+}
+
 REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
 {
     assert(moduleName);
@@ -714,3 +726,52 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
     FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
+#define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS (void*)0x400000000000
+
+void* PalCreateMemoryMappedFile(const TCHAR* logFilename, size_t maxBytesTotal)
+{
+    HANDLE hFile = CreateFileW(logFilename,
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ,
+        NULL,                 // default security descriptor
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        return nullptr;
+    }
+
+    size_t fileSize = maxBytesTotal;
+    HANDLE hMap = CreateFileMappingW(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
+    if (hMap == NULL)
+    {
+        CloseHandle(hFile);
+        return nullptr;
+    }
+
+    return MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
+}
+
+int PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
+{
+    uint8_t* addr = (uint8_t*)moduleBase;
+    size_t moduleSize = 0;
+    while (true)
+    {
+        MEMORY_BASIC_INFORMATION mbi;
+        size_t size = VirtualQuery(addr, &mbi, sizeof(mbi));
+        if (size == 0)
+            break;
+        if (mbi.AllocationBase != moduleBase)
+            break;
+        moduleSize += mbi.RegionSize;
+        addr += mbi.RegionSize;
+    }
+    if (destinationBufferStart != nullptr)
+    {
+        memcpy(destinationBufferStart, moduleBase, moduleSize);
+    }
+    return (int)moduleSize;
+}
