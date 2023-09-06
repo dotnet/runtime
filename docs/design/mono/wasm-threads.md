@@ -188,6 +188,10 @@
 - throw PNSE from Blazor's any call to [`IJSUnmarshalledRuntime `](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsunmarshalledruntime)
 
 ## Current state 2023 Sep
+ - we already ship MT version of the runtime in the wasm-tools workload.
+ - It's enabled by `<WasmEnableThreads>true</WasmEnableThreads>` and it requires COOP HTTP headers.
+ - It will serve extra file `dotnet.native.worker.js`.
+ - This will also start in Blazor project, but UI rendering would not work.
  - we have pre-allocated pool of browser Web Workers which are mapped to pthread dynamically.
  - we can configure pthread to keep running after synchronous thread_main finished. That's necessary to run any async tasks involving JavaScript interop.
  - GC is running on UI thread/worker.
