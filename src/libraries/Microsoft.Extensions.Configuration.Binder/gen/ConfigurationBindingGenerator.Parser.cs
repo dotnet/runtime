@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -85,6 +86,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (type is IArrayTypeSymbol array)
                     {
                         return IsAccessibleFromGenBinders(array.ElementType);
+                    }
+
+                    if (type is INamedTypeSymbol namedType && namedType.GetAllTypeArgumentsInScope() is List<ITypeSymbol> typeArgsInScope)
+                    {
+                        foreach (ITypeSymbol genericArg in typeArgsInScope)
+                        {
+                            if (!IsAccessibleFromGenBinders(genericArg))
+                            {
+                                return false;
+                            }
+                        }
                     }
 
                     return type.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.Friend;

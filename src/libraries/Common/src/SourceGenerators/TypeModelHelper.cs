@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
@@ -74,7 +73,7 @@ namespace SourceGenerators
         /// </summary>
         public static string ToMinimalDisplayString(this ITypeSymbol type) => type.ToDisplayString(s_minimalDisplayFormat);
 
-        private static List<ITypeSymbol>? GetAllTypeArgumentsInScope(this INamedTypeSymbol type)
+        public static List<ITypeSymbol>? GetAllTypeArgumentsInScope(this INamedTypeSymbol type)
         {
             if (!type.IsGenericType)
             {

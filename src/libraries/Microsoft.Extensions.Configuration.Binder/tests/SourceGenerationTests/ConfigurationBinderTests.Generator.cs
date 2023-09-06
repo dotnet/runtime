@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -336,17 +338,51 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var c2 = configuration.Get<InaccessibleClass_2>();
             var c3 = configuration.Get<InaccessibleClass_3>();
 
+            // Generic collections.
+
             configuration = TestHelpers
                 .GetConfigurationFromJsonString(@"{""Array"": [{""Value"":1}]}")
                 .GetSection("Array");
             var c4 = configuration.Get<InaccessibleClass_1[]>();
+            var c5 = configuration.Get<List<InaccessibleClass_1>>();
+
+            // Generic types.
+
+            Action<BinderOptions>? configureOptions = options => options.BindNonPublicProperties = true;
+            string GetNestedObjectPayload(string propName) => $$"""
+                {
+                    "{{propName}}": {
+                        "Value": 1
+                    }
+                }
+                """;
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(GetNestedObjectPayload("item1"));
+            var c6 = configuration.Get<Dictionary<string, InaccessibleClass_1>>(configureOptions);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(GetNestedObjectPayload("protectedMember"));
+            var c7 = configuration.Get<AccessibleGenericClass<InaccessibleClass_1>>(configureOptions);
+            var c8 = configuration.Get<AccessibleGenericClass<InaccessibleClass_1>>(configureOptions);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(GetNestedObjectPayload("publicMember"));
+            var c9 = configuration.Get<InaccessibleGenericClass<AccessibleClass>>(configureOptions);
+            var c10 = configuration.Get<InaccessibleGenericClass<InaccessibleClass_1>>(configureOptions);
 #pragma warning disable SYSLIB1104
 
-            // Instead, there is a reflection fallback.
+            // Reflection fallback.
+
             Assert.Equal(1, c1.Value);
             Assert.Equal(1, c2.Value);
             Assert.Equal(1, c3.Value);
+            
             Assert.Equal(1, c4[0].Value);
+            Assert.Equal(1, c5[0].Value);
+            Assert.Equal(1, c6["item1"].Value);
+
+            Assert.Equal(1, c7.GetProtectedMember.Value);
+            Assert.Equal(1, c8.GetProtectedMember.Value);
+            Assert.Equal(1, c9.PublicMember.Value);
+            Assert.Equal(1, c10.PublicMember.Value);
         }
 
         private class InaccessibleClass_1()
@@ -361,6 +397,23 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             public InaccessibleClass_3(int value) => Value = value;
 
             public int Value { get; }
+        }
+
+        internal class AccessibleGenericClass<T>
+        {
+            protected T ProtectedMember { get; set; }
+
+            public T GetProtectedMember => ProtectedMember;
+        }
+
+        private class InaccessibleGenericClass<T>
+        {
+            public T PublicMember { get; set; }
+        }
+
+        public class AccessibleClass()
+        {
+            public int Value { get; set; }
         }
     }
 }
