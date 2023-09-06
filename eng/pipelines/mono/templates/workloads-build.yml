@@ -96,7 +96,7 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'WorkloadLogs'
+        artifactName: 'WorkloadLogs_Attempt$(System.JobAttempt)'
       continueOnError: true
       condition: always()
 

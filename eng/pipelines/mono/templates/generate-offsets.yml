@@ -87,6 +87,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_Mono_Offsets_$(osGroup)$(osSubGroup)'
+        artifactName: 'BuildLogs_Mono_Offsets_$(osGroup)$(osSubGroup)_Attempt$(System.JobAttempt)'
       continueOnError: true
       condition: always()

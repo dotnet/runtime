@@ -71,6 +71,6 @@ steps:
   displayName: Publish BuildLogs
   inputs:
     targetPath: '$(Build.StagingDirectory)/BuildLogs'
-    artifactName: Installer-Logs-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
+    artifactName: Installer-Logs-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)_Attempt$(System.JobAttempt)
   continueOnError: true
   condition: always()
