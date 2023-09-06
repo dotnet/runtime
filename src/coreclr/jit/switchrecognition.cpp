@@ -155,7 +155,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     // The root node is now SUB(nodeToTest, minValue)
     firstBlock->lastStmt()->GetRootNode()->AsOp()->gtOp1 =
         gtNewOperNode(GT_SUB, nodeToTest->TypeGet(), gtCloneExpr(nodeToTest),
-                      gtNewIconNode(maxValue - minValue, nodeToTest->TypeGet()));
+                      gtNewIconNode(minValue, nodeToTest->TypeGet()));
     gtSetStmtInfo(firstBlock->lastStmt());
     fgSetStmtSeq(firstBlock->lastStmt());
     gtUpdateStmtSideEffects(firstBlock->lastStmt());
