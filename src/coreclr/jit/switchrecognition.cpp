@@ -28,7 +28,7 @@ private:
     BBswtDesc*  swtDsc         = nullptr; // The switch descriptor
     GenTree*    m_minOp        = nullptr; // The CNS_INT node with the minimum pattern
     BasicBlock* m_defaultJmpBB = nullptr; // The Switch default jump target
-    BasicBlock* optGetJumpTargetBB(BasicBlock* block);
+    BasicBlock* optGetJumpTargetBB(BasicBlock* block, bool reversed = false);
     bool optMakeSwitchDesc();
 
 public:
@@ -69,25 +69,18 @@ public:
 //   If compare operator is GT_EQ, the switch jump target (true case) is bbJumpDest.
 //   If compare operator is GT_NE,it is bbNext.
 //
-BasicBlock* OptRangePatternDsc::optGetJumpTargetBB(BasicBlock* block)
+BasicBlock* OptRangePatternDsc::optGetJumpTargetBB(BasicBlock* block, bool reversed)
 {
-    assert(block != nullptr && (block->bbJumpKind == BBJ_SWITCH || block->bbJumpKind == BBJ_COND));
+    assert(block != nullptr && (block->KindIs(BBJ_SWITCH, BBJ_COND)));
     assert(block->lastStmt()->GetRootNode()->gtGetOp1() != nullptr);
 
-    GenTree* op1  = block->lastStmt()->GetRootNode()->gtGetOp1();
-    auto     oper = op1->OperGet();
-    assert(oper == GT_EQ || oper == GT_NE);
-
-    if (oper == GT_EQ)
+    const GenTree* rootNode = block->lastStmt()->GetRootNode()->gtGetOp1();
+    assert(rootNode->OperIs(GT_EQ, GT_NE));
+    if (reversed)
     {
-        return block->bbJumpDest;
+        return rootNode->OperIs(GT_EQ) ? block->bbNext : block->bbJumpDest;
     }
-    else if (oper == GT_NE)
-    {
-        return block->bbNext;
-    }
-
-    return nullptr;
+    return rootNode->OperIs(GT_EQ) ? block->bbJumpDest : block->bbNext;
 }
 
 //-----------------------------------------------------------------------------
@@ -105,13 +98,7 @@ bool OptRangePatternDsc::optSetPattern(int idxPattern, ssize_t patternVal, Basic
 {
     if (idxPattern < 0 || idxPattern >= m_sizePatterns)
     {
-#ifdef DEBUG
-        if (m_comp->verbose)
-        {
-            printf("idxPattern out of range");
-        }
-#endif // DEBUG
-
+        JITDUMP("idxPattern out of range")
         return false;
     }
 
@@ -140,24 +127,15 @@ bool OptRangePatternDsc::optSetPattern(int idxPattern, ssize_t patternVal, Basic
     }
 
     // Set default jump target of the Switch basic block:
-    //   For GT_EQ, Swithc Default jump target (for false case) is set to bbNext.
-    //   For GT_NE, Swithc Default jump target (for false case) is set to bbJumpDest.
-    assert(block != nullptr && block->bbJumpKind == BBJ_COND);
+    //   For GT_EQ, Switch Default jump target (for false case) is set to bbNext.
+    //   For GT_NE, Switch Default jump target (for false case) is set to bbJumpDest.
+    assert((block != nullptr) && block->KindIs(BBJ_COND));
     assert(block->lastStmt()->GetRootNode()->gtGetOp1() != nullptr);
 
-    auto oper = block->lastStmt()->GetRootNode()->gtGetOp1()->OperGet();
-    assert(oper == GT_EQ || oper == GT_NE);
-    if (oper == GT_EQ)
-    {
-        m_defaultJmpBB = block->bbNext;
-    }
-    else if (oper == GT_NE)
-    {
-        m_defaultJmpBB = block->bbJumpDest;
-    }
+    m_defaultJmpBB = optGetJumpTargetBB(block, true);
 
     // Update the code offset end range
-    assert(block->bbCodeOffsEnd >= 0 && block->bbCodeOffsEnd <= UINT_MAX);
+    assert(block->bbCodeOffsEnd <= UINT_MAX);
     m_bbCodeOffsEnd = block->bbCodeOffsEnd;
 
     // Set the last basic block of the range pattern
@@ -413,14 +391,10 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
     if (nextBbAfterSwitch->isEmpty() && (nextBbAfterSwitch->bbJumpKind == BBJ_ALWAYS) &&
         (nextBbAfterSwitch != nextBbAfterSwitch->bbJumpDest))
     {
-#ifdef DEBUG
-        if (m_comp->verbose)
-        {
-            printf("\nSkip converting to Switch block if Switch jumps to an empty block with an unconditional "
-                   "jump (" FMT_BB " -> " FMT_BB ")\n",
-                   m_optFirstBB->bbNum, nextBbAfterSwitch->bbNum);
-        }
-#endif // DEBUG
+        JITDUMP("\nSkip converting to Switch block if Switch jumps to an empty block with an unconditional "
+                "jump (" FMT_BB " -> " FMT_BB ")\n",
+                m_optFirstBB->bbNum, nextBbAfterSwitch->bbNum)
+
         return false;
     }
 
@@ -486,12 +460,7 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
 //     ```
 bool OptRangePatternDsc::optChangeToSwitch()
 {
-#ifdef DEBUG
-    if (m_comp->verbose)
-    {
-        printf("\n*************** In optChangeToSwitch()\n");
-    }
-#endif // DEBUG
+    JITDUMP("\n*************** In optChangeToSwitch()\n")
 
     assert(m_optFirstBB != nullptr && m_optFirstBB->KindIs(BBJ_COND) && m_optFirstBB->bbNext != nullptr);
     assert(optGetPatternCount() <= m_rangePattern && m_rangePattern >= 2 && optGetPatternCount() <= m_rangePattern &&
@@ -618,12 +587,7 @@ bool OptRangePatternDsc::optChangeToSwitch()
 //
 PhaseStatus Compiler::optSwitchRecognition()
 {
-#ifdef DEBUG
-    if (this->verbose)
-    {
-        printf("\n*************** In optSwitchRecognition()\n");
-    }
-#endif // DEBUG
+    JITDUMP("\n*************** In optSwitchRecognition()\n");
 
     OptRangePatternDsc optRngPattern(this);
 
@@ -642,25 +606,15 @@ PhaseStatus Compiler::optSwitchRecognition()
     {
         if (currBb->KindIs(BBJ_COND) && prevBb != nullptr && prevBb->KindIs(BBJ_COND))
         {
-#ifdef DEBUG
-            if (this->verbose)
-            {
-                if (!printed)
-                {
-                    fgDispBasicBlocks(true);
-                    printed = true;
-                }
-            }
-#endif // DEBUG
-
             // Check if prevBb is the predecessor of currBb and currBb has only one predecessor
             FlowEdge* pred = fgGetPredForBlock(currBb, prevBb);
             if (pred == nullptr || currBb->bbRefs != 1 || currBb->bbFlags & BBF_DONT_REMOVE)
             {
                 if (foundPattern)
+                {
                     break; // Stop searching if patterns are not from consecutive basic blocks
-                else
-                    continue;
+                }
+                continue;
             }
 
             // Basic block must have only one statement
@@ -672,9 +626,10 @@ PhaseStatus Compiler::optSwitchRecognition()
                 {
                     // Stop searching if patterns are not from consecutive basic blocks
                     if (foundPattern)
+                    {
                         break;
-                    else
-                        continue;
+                    }
+                    continue;
                 }
 
                 auto currCmpOp = currBb->lastStmt()->GetRootNode()->gtGetOp1(); // GT_EQ or GT_NE node
@@ -688,9 +643,10 @@ PhaseStatus Compiler::optSwitchRecognition()
                     if (prevBb->bbJumpDest == currBb)
                     {
                         if (foundPattern)
+                        {
                             break;
-                        else
-                            continue;
+                        }
+                        continue;
                     }
 
                     // Check both conditions to have constant on the right side (optimize GT_CNS_INT only)
@@ -715,12 +671,7 @@ PhaseStatus Compiler::optSwitchRecognition()
                             // No optimization if the number of patterns is greater than 64.
                             if (patternIndex >= optRngPattern.m_sizePatterns)
                             {
-#ifdef DEBUG
-                                if (this->verbose)
-                                {
-                                    printf("Too many patterns found (> 64), no optimization done.\n");
-                                }
-#endif // DEBUG
+                                JITDUMP("Too many patterns found (> 64), no optimization done.\n")
                                 return PhaseStatus::MODIFIED_NOTHING;
                             }
 
@@ -731,12 +682,7 @@ PhaseStatus Compiler::optSwitchRecognition()
                                 // If the first pattern block is rarely run, skip it.
                                 if (prevBb->isRunRarely())
                                 {
-#ifdef DEBUG
-                                    if (this->verbose)
-                                    {
-                                        printf(FMT_BB " is run rarely. Skip optimizing this block.\n", prevBb->bbNum);
-                                    }
-#endif // DEBUG
+                                    JITDUMP(FMT_BB " is run rarely. Skip optimizing this block.\n", prevBb->bbNum)
                                     prevBb = currBb;
                                     continue;
                                 }
@@ -824,13 +770,7 @@ PhaseStatus Compiler::optSwitchRecognition()
         // Check if blocks jump to any of the pattern block
         if (optRngPattern.optJumpsToPatternBlock())
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("A pattern block jumps to another pattern block, no optimization done.\n");
-            }
-#endif // DEBUG
-
+            JITDUMP("A pattern block jumps to another pattern block, no optimization done.\n");
             return PhaseStatus::MODIFIED_NOTHING;
         }
 
@@ -840,40 +780,19 @@ PhaseStatus Compiler::optSwitchRecognition()
         int     rangePattern = (int)(maxPattern - minPattern + 1);
         if (patternCount > rangePattern || rangePattern < 2 || rangePattern > optRngPattern.m_sizePatterns)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Range of pattern values is too small (< 2) or too big (> %d): %d\n",
-                       optRngPattern.m_sizePatterns, rangePattern);
-            }
-#endif // DEBUG
+            JITDUMP("Range of pattern values is too small (< 2) or too big (> %d): %d\n", optRngPattern.m_sizePatterns,
+                    rangePattern);
 
             return PhaseStatus::MODIFIED_NOTHING;
         }
         assert(rangePattern >= 0 && rangePattern <= optRngPattern.m_sizePatterns);
         optRngPattern.m_rangePattern = rangePattern;
 
-#ifdef DEBUG
-        if (verbose)
-        {
-#ifdef TARGET_64BIT
-            printf("Min Max Range: %lld, %lld, %d\n", minPattern, maxPattern, rangePattern);
-#else  // !TARGET_64BIT
-            printf("Min Max Range Bitmap: %d, %d, %d\n", minPattern, maxPattern, rangePattern);
-#endif // !TARGET_64BIT
-        }
-#endif // DEBUG
+        JITDUMP("Min Max Range: %lld, %lld, %d\n", (int64_t)minPattern, (int64_t)maxPattern, rangePattern);
 
         // Replace "JTRUE" block with a "Switch" block and remove other pattern blocks
         if (optRngPattern.optChangeToSwitch())
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                fgDispBasicBlocks(true);
-            }
-#endif // DEBUG
-
             return PhaseStatus::MODIFIED_EVERYTHING;
         }
     }
