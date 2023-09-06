@@ -1501,11 +1501,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         varDsc->lvType = type;
     }
 
-    if (type == TYP_BOOL)
-    {
-        varDsc->lvIsBoolean = true;
-    }
-
 #ifdef DEBUG
     varDsc->SetStackOffset(BAD_STK_OFFS);
 #endif
@@ -4078,7 +4073,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     {
         if (varDsc->IsAddressExposed())
         {
-            varDsc->lvIsBoolean      = false;
             varDsc->lvAllDefsAreNoGc = false;
         }
 
@@ -4099,34 +4093,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc && !value->IsNotGcDef())
             {
                 varDsc->lvAllDefsAreNoGc = false;
-            }
-
-            if (value->gtType != TYP_BOOL)
-            {
-                // Is the value clearly a boolean one?
-                switch (value->gtOper)
-                {
-                    case GT_CNS_INT:
-                        if (value->AsIntCon()->gtIconVal == 0)
-                        {
-                            break;
-                        }
-                        if (value->AsIntCon()->gtIconVal == 1)
-                        {
-                            break;
-                        }
-
-                        // Not 0 or 1, fall through ....
-                        FALLTHROUGH;
-                    default:
-                        if (value->OperIsCompare())
-                        {
-                            break;
-                        }
-
-                        varDsc->lvIsBoolean = false;
-                        break;
-                }
             }
 
             if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this

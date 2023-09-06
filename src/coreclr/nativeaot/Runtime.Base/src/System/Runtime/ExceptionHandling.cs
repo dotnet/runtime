@@ -28,6 +28,7 @@ namespace System.Runtime
         UnhandledException = 2,                              // "unhandled exception"
         UnhandledExceptionFromPInvoke = 3,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
         EnvironmentFailFast = 4,
+        AssertionFailure = 5,
     }
 
     internal static unsafe partial class EH
@@ -708,13 +709,13 @@ namespace System.Runtime
             uint startIdx = MaxTryRegionIdx;
             for (; isValid; isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke))
             {
-                prevControlPC = frameIter.ControlPC;
-                prevOriginalPC = frameIter.OriginalControlPC;
-
                 // For GC stackwalking, we'll happily walk across native code blocks, but for EH dispatch, we
                 // disallow dispatching exceptions across native code.
                 if (unwoundReversePInvoke)
                     break;
+
+                prevControlPC = frameIter.ControlPC;
+                prevOriginalPC = frameIter.OriginalControlPC;
 
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
 

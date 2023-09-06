@@ -2372,7 +2372,7 @@ write_event_exception_thrown (MonoObject *obj)
 			if (exception->inner_ex)
 				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
 			if (exception->message)
-				exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
+				exception_message = ep_rt_utf16_to_utf8_string_n (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
 			hresult = exception->hresult;
 		}
 
@@ -3729,7 +3729,7 @@ buffer_gc_event_object_reference_callback (
 		sizeof (object_size) +
 		sizeof (object_type) +
 		sizeof (edge_count) +
-		(edge_count * sizeof (uintptr_t));
+		GUINT64_TO_UINT32 (edge_count * sizeof (uintptr_t));
 
 	EP_ASSERT (context->buffer);
 	EP_ASSERT (context->buffer->context);
@@ -3775,7 +3775,7 @@ flush_gc_event_bulk_root_static_vars (GCHeapDumpContext *context)
 		context->bulk_root_static_vars.count,
 		(uint64_t)mono_get_root_domain (),
 		clr_instance_get_id (),
-		context->bulk_root_static_vars.data_current - context->bulk_root_static_vars.data_start,
+		GPTRDIFF_TO_INT (context->bulk_root_static_vars.data_current - context->bulk_root_static_vars.data_start),
 		context->bulk_root_static_vars.data_start,
 		NULL,
 		NULL);

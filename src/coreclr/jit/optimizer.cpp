@@ -5734,7 +5734,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     case TYP_BYTE:
                         lmask = 0x0000007F;
                         break;
-                    case TYP_BOOL:
                     case TYP_UBYTE:
                         lmask = 0x000000FF;
                         break;
@@ -5782,7 +5781,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     case TYP_BYTE:
                         imask = 0x0000007F;
                         break;
-                    case TYP_BOOL:
                     case TYP_UBYTE:
                         imask = 0x000000FF;
                         break;

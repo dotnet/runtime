@@ -34,14 +34,8 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة", "" } };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "ጃንዩ", "ፌብሩ", "ማርች", "ኤፕሪ", "ሜይ", "ጁን", "ጁላይ", "ኦገስ", "ሴፕቴ", "ኦክቶ", "ኖቬም", "ዲሴም", "" } };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, new string[] { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "" } }; // "яну", "фев", "март", "апр", "май", "юни", "юли", "авг", "сеп", "окт", "ное", "дек", ""
-            yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 
-                PlatformDetection.IsNodeJS ?
-                    new string[] { "জানুয়ারী", "ফেব্রুয়ারী", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", "" } :
-                    new string[] { "জানু", "ফেব", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", "" } }; // NodeJS responds like dotnet
-            yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 
-                PlatformDetection.IsNodeJS ?
-                    new string[] { "জানুয়ারী", "ফেব্রুয়ারী", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", "" } :
-                    new string[] { "জানু", "ফেব", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেঃ", "অক্টোঃ", "নভেঃ", "ডিসেঃ", "" } }; // BUG. JS returns Genitive even though we expect Nominative; NodeJS responds like dotnet
+            yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, new string[] { "জানু", "ফেব", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", "" } }; //  "জানুয়ারী", "ফেব্রুয়ারী", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", ""
+            yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, new string[] { "জানু", "ফেব", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেঃ", "অক্টোঃ", "নভেঃ", "ডিসেঃ", "" } }; // BUG. JS returns Genitive even though we expect Nominative; "জানু", "ফেব", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", ""
             yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, new string[] { "gen.", "febr.", "març", "abr.", "maig", "juny", "jul.", "ag.", "set.", "oct.", "nov.", "des.", "" } };
             yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, new string[] { "gen.", "febr.", "març", "abr.", "maig", "juny", "jul.", "ag.", "set.", "oct.", "nov.", "des.", "" } };
             yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, new string[] { "led", "úno", "bře", "dub", "kvě", "čvn", "čvc", "srp", "zář", "říj", "lis", "pro", "" } };
@@ -60,7 +54,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-AI").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-AS").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" } };
             yield return new object[] { new CultureInfo("en-AT").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
-            yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", PlatformDetection.IsNodeJS ? "Sep" : "Sept", "Oct", "Nov", "Dec", "" } }; // v8/Browser responds like dotnet
+            yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } };
             yield return new object[] { new CultureInfo("en-BB").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-BE").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-BI").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" } };
@@ -68,7 +62,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-BS").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-BW").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-BZ").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
-            yield return new object[] { new CultureInfo("en-CA").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", PlatformDetection.IsNodeJS ? "Sept" : "Sep", "Oct", "Nov", "Dec", "" } }; // "Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.", "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec.", ""
+            yield return new object[] { new CultureInfo("en-CA").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" } }; // "Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.", "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec.", ""
             yield return new object[] { new CultureInfo("en-CC").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-CH").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-CK").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
@@ -190,12 +184,9 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, new string[] { "jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des", "" } };
             yield return new object[] { new CultureInfo("no").DateTimeFormat, new string[] { "jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des", "" } };
             yield return new object[] { new CultureInfo("no-NO").DateTimeFormat, new string[] { "jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des", "" } };
-            string [] dutchMonths = PlatformDetection.IsNodeJS ?
-                new string [] { "jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec.", ""} :
-                new string [] { "jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec", "" };
-            yield return new object[] { new CultureInfo("nl-AW").DateTimeFormat, dutchMonths };
-            yield return new object[] { new CultureInfo("nl-BE").DateTimeFormat, dutchMonths };
-            yield return new object[] { new CultureInfo("nl-NL").DateTimeFormat, dutchMonths };
+            yield return new object[] { new CultureInfo("nl-AW").DateTimeFormat, new string[] { "jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec", "" } }; // "jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec.", ""
+            yield return new object[] { new CultureInfo("nl-BE").DateTimeFormat, new string[] { "jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec", "" } }; // "jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec.", ""
+            yield return new object[] { new CultureInfo("nl-NL").DateTimeFormat, new string[] { "jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec", "" } }; // "jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec.", ""
             yield return new object[] { new CultureInfo("pl-PL").DateTimeFormat, new string[] { "sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paź", "lis", "gru", "" } };
             yield return new object[] { new CultureInfo("pt-BR").DateTimeFormat, new string[] { "jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez.", "" } };
             yield return new object[] { new CultureInfo("pt-PT").DateTimeFormat, new string[] { "jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez.", "" } };
