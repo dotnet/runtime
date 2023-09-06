@@ -70,6 +70,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (type is null ||
                     type.SpecialType is SpecialType.System_Object or SpecialType.System_Void ||
+                    !IsAccessibleFromGenBinders(type) ||
                     type.TypeKind is TypeKind.TypeParameter or TypeKind.Pointer or TypeKind.Error ||
                     type.IsRefLikeType ||
                     ContainsGenericParameters(type))
@@ -78,6 +79,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 return true;
+
+                static bool IsAccessibleFromGenBinders(ITypeSymbol type)
+                {
+                    if (type is IArrayTypeSymbol array)
+                    {
+                        return IsAccessibleFromGenBinders(array.ElementType);
+                    }
+
+                    return type.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.Friend;
+                }
             }
 
             private TypeSpec? GetTargetTypeForRootInvocation(ITypeSymbol? type, Location? invocationLocation)

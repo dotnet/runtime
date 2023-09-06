@@ -11,6 +11,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -589,7 +590,7 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 var typeRef = new TypeRef(type);
-                string typeInfoPropertyName = typeToGenerate.TypeInfoPropertyName ?? GetTypeInfoPropertyName(type);
+                string typeInfoPropertyName = typeToGenerate.TypeInfoPropertyName ?? type.ToIdentifierCompatibleSubstring();
 
                 if (classType is ClassType.TypeUnsupportedBySourceGen)
                 {
@@ -1587,34 +1588,6 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return null;
-            }
-
-            private static string GetTypeInfoPropertyName(ITypeSymbol type)
-            {
-                if (type is IArrayTypeSymbol arrayType)
-                {
-                    int rank = arrayType.Rank;
-                    string suffix = rank == 1 ? "Array" : $"Array{rank}D"; // Array, Array2D, Array3D, ...
-                    return GetTypeInfoPropertyName(arrayType.ElementType) + suffix;
-                }
-
-                if (type is not INamedTypeSymbol namedType || !namedType.IsGenericType)
-                {
-                    return type.Name;
-                }
-
-                StringBuilder sb = new();
-
-                string name = namedType.Name;
-
-                sb.Append(name);
-
-                foreach (ITypeSymbol genericArg in namedType.GetAllTypeArgumentsInScope())
-                {
-                    sb.Append(GetTypeInfoPropertyName(genericArg));
-                }
-
-                return sb.ToString();
             }
 
             private bool TryGetDeserializationConstructor(
