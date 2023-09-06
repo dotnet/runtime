@@ -3,7 +3,7 @@
 //
 
 #include "pal_errors_internal.h"
-#include "pal_locale_internal.h"
+#include "pal_icushim_internal.h"
 #include "pal_timeZoneInfo.h"
 #import <Foundation/Foundation.h>
 
@@ -30,7 +30,7 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
         else
         {
             NSLocale *currentLocale;
-            if(localeName == NULL || lNameLength == 0)
+            if (localeName == NULL || lNameLength == 0)
             {
                 currentLocale = [NSLocale systemLocale];
             }
@@ -69,6 +69,8 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
         {
             dstCodepoint = [timeZoneName characterAtIndex: index];
             Append(result, dstIdx, resultLength, dstCodepoint, resultCode);
+            if (resultCode != Success)
+                return resultCode;
             index++;
         }
         dstCodepoint = '\0';

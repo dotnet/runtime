@@ -11,6 +11,7 @@ namespace System
     {
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
         private const string FallbackCultureName = "en-US";
+#if !TARGET_MACCATALYST && TARGET_IOS && TARGET_TVOS
         private const string GmtId = "GMT";
 
         // Some time zones may give better display names using their location names rather than their generic name.
@@ -22,6 +23,7 @@ namespace System
             "Pacific/Apia",       // Prefer "Samoa Time" over "Apia Time"
             "Pacific/Pitcairn"    // Prefer "Pitcairn Islands Time" over "Pitcairn Time"
         };
+#endif
 
         private static CultureInfo? _uiCulture;
 
@@ -159,15 +161,13 @@ namespace System
             string baseOffsetText = string.Create(null, stackalloc char[128], $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})");
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            if (GlobalizationMode.Hybrid)
-            {
-                string? timeZoneName = null;
-                GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.TimeZoneName, uiCulture.Name, ref timeZoneName);
-                // For this target, be consistent with other time zone display names that use the ID.
-                displayName = $"{baseOffsetText} {timeZoneName}";
-                return;
-            }
-#endif
+            Debug.Assert(GlobalizationMode.Hybrid);
+            string? timeZoneName = null;
+            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.TimeZoneName, uiCulture.Name, ref timeZoneName);
+            // For this target, be consistent with other time zone display names that use the ID.
+            displayName = $"{baseOffsetText} {timeZoneName}";
+            return;
+#else
             // There are a few different ways we might show the display name depending on the data.
             // The algorithm used below should avoid duplicating the same words while still achieving the
             // goal of providing a unique, discoverable, and intuitive name.
@@ -267,6 +267,7 @@ namespace System
 
                 displayName = $"{baseOffsetText} {genericName} ({exemplarCityName})";
             }
+#endif
         }
 
         // Helper function that gets an exmplar city name either from ICU or from the IANA time zone ID itself
