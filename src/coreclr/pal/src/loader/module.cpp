@@ -126,7 +126,7 @@ LoadLibraryExA(
 
     HMODULE hModule = nullptr;
 
-    PERF_ENTRY(LoadLibraryA);
+    PERF_ENTRY(LoadLibraryExA);
     ENTRY("LoadLibraryExA (lpLibFileName=%p (%s)) \n",
           (lpLibFileName) ? lpLibFileName : "NULL",
           (lpLibFileName) ? lpLibFileName : "NULL");

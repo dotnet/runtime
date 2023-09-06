@@ -6,8 +6,8 @@
 ** Source: test2.c (filemapping_memmgt\getprocaddress\test2)
 **
 ** Purpose: This test tries to call GetProcAddress with
-**          a NULL handle, with a NULL function name, with an empty 
-**          function name, with an invalid name and with an 
+**          a NULL handle, with a NULL function name, with an empty
+**          function name, with an invalid name and with an
 **          invalid ordinal value.
 **
 **
@@ -39,7 +39,7 @@ PALTEST(filemapping_memmgt_GetProcAddress_test2_paltest_getprocaddress_test2, "f
     }
 
     /* load a module */
-    hModule = LoadLibrary(lpModuleName);
+    hModule = LoadLibraryExA(lpModuleName, NULL, 0);
     if(!hModule)
     {
         Fail("Unexpected error: "
@@ -63,7 +63,7 @@ PALTEST(filemapping_memmgt_GetProcAddress_test2_paltest_getprocaddress_test2, "f
         err = FreeLibrary(hModule);
         if(0 == err)
 	    {
-            Fail("Unexpected error: Failed to FreeLibrary %s\n", 
+            Fail("Unexpected error: Failed to FreeLibrary %s\n",
                  lpModuleName);
 	    }
         Fail("");
@@ -86,7 +86,7 @@ PALTEST(filemapping_memmgt_GetProcAddress_test2_paltest_getprocaddress_test2, "f
         err = FreeLibrary(hModule);
         if(0 == err)
 	    {
-            Fail("Unexpected error: Failed to FreeLibrary %s\n", 
+            Fail("Unexpected error: Failed to FreeLibrary %s\n",
                  lpModuleName);
 	    }
         Fail("");
@@ -109,7 +109,7 @@ PALTEST(filemapping_memmgt_GetProcAddress_test2_paltest_getprocaddress_test2, "f
         err = FreeLibrary(hModule);
         if(0 == err)
 	    {
-            Fail("Unexpected error: Failed to FreeLibrary %s\n", 
+            Fail("Unexpected error: Failed to FreeLibrary %s\n",
                  lpModuleName);
 	    }
         Fail("");
@@ -132,7 +132,7 @@ PALTEST(filemapping_memmgt_GetProcAddress_test2_paltest_getprocaddress_test2, "f
         err = FreeLibrary(hModule);
         if(0 == err)
 	    {
-            Fail("Unexpected error: Failed to FreeLibrary %s\n", 
+            Fail("Unexpected error: Failed to FreeLibrary %s\n",
                  lpModuleName);
 	    }
         Fail("");
@@ -142,7 +142,7 @@ PALTEST(filemapping_memmgt_GetProcAddress_test2_paltest_getprocaddress_test2, "f
     err = FreeLibrary(hModule);
     if(0 == err)
 	{
-        Fail("Unexpected error: Failed to FreeLibrary %s\n", 
+        Fail("Unexpected error: Failed to FreeLibrary %s\n",
               lpModuleName);
 	}
 

@@ -1263,7 +1263,6 @@ kernel32!LCMapStringEx
 kernel32!LCMapStringW
 kernel32!LeaveCriticalSection
 kernel32!LeaveCriticalSectionWhenCallbackReturns
-kernel32!LoadLibraryA
 kernel32!LoadLibraryExA
 kernel32!LoadLibraryExW
 kernel32!LoadLibraryW
