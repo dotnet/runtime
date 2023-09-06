@@ -918,14 +918,14 @@ static bool HavePlaceholderAPI()
             FreeLibrary(hm);
         }
 
-        if (pMapViewOfFile3 != NULL && pVirtualAlloc2 != NULL)
+        if (pMapViewOfFile3 == NULL || pVirtualAlloc2 == NULL)
         {
-            return true;
+            pMapViewOfFile3 = INVALID_ADDRESS_SENTINEL;
+            return false;
         }
     }
 
-    pMapViewOfFile3 = INVALID_ADDRESS_SENTINEL;
-    return false;
+    return true;
 }
 
 static PVOID AllocPlaceholder(PVOID BaseAddress, SIZE_T Size)
