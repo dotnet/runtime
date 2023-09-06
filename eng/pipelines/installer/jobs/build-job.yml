@@ -309,7 +309,7 @@ jobs:
         - powershell: |
             ./eng/disable_vsupdate.ps1
             ./eng/collect_vsinfo.ps1 -ArchiveName initialization_log
-          name: Collect vslogs on Entry and disable updates
+          displayName: Collect vslogs on Entry and disable updates
           condition: always()
 
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
@@ -386,7 +386,7 @@ jobs:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - powershell: |
             ./eng/collect_vsinfo.ps1 -ArchiveName postbuild_log
-          name: Collect vslogs on exit
+          displayName: Collect vslogs on exit
           condition: always()
 
 
