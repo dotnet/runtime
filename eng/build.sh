@@ -298,10 +298,6 @@ while [[ $# > 0 ]]; do
           ;;
         haiku)
           os="haiku" ;;
-        tizen)
-          os="tizen"
-          __PortableTargetOS=linux
-          ;;
         *)
           echo "Unsupported target OS '$2'."
           echo "Try 'build.sh --help' for values supported by '--os'."
