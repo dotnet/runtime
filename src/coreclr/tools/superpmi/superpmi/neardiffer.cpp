@@ -1269,6 +1269,28 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
 
         hotCodeSize_1 = nativeSizeOfCode_1;
         hotCodeSize_2 = nativeSizeOfCode_2;
+
+        auto rewriteUnsupportedInstrs = [](unsigned char* bytes, size_t numBytes) {
+            for (size_t i = 0; i < numBytes; i += 4)
+            {
+                uint32_t inst;
+                memcpy(&inst, &bytes[i], 4);
+
+                const uint32_t ldapurMask = 0b00111111111000000000110000000000;
+                const uint32_t ldapurBits = 0b00011001010000000000000000000000;
+                const uint32_t ldurBits   = 0b00111000010000000000000000000000;
+                if ((inst & ldapurMask) == ldapurBits)
+                {
+                    inst ^= (ldapurBits ^ ldurBits);
+                    memcpy(&bytes[i], &inst, 4);
+                }
+            }
+            };
+
+        rewriteUnsupportedInstrs(hotCodeBlock_1, hotCodeSize_1);
+        rewriteUnsupportedInstrs(coldCodeBlock_1, coldCodeSize_1);
+        rewriteUnsupportedInstrs(hotCodeBlock_2, hotCodeSize_2);
+        rewriteUnsupportedInstrs(coldCodeBlock_2, coldCodeSize_2);
     }
 
     LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d flag1 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,
