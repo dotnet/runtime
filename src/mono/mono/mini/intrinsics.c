@@ -906,7 +906,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			int sizes_reg = alloc_ireg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, class_reg, vt_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, sizes_reg, class_reg, m_class_offsetof_sizes ());
+			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, sizes_reg, class_reg, GINTPTR_TO_TMREG (m_class_offsetof_sizes ()));
 			return ins;
 		}
 
@@ -1044,7 +1044,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			MonoInst* ptr_inst;
 			if (cfg->compile_aot) {
-				NEW_RVACONST (cfg, ptr_inst, mono_class_get_image (mono_field_get_parent (field)), args [0]->inst_c0);
+				NEW_RVACONST (cfg, ptr_inst, mono_class_get_image (mono_field_get_parent (field)), GTMREG_TO_UINT32 (args [0]->inst_c0));
 				MONO_ADD_INS (cfg->cbb, ptr_inst);
 			} else {
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
@@ -2079,7 +2079,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoType *t = method_context->method_inst->type_argv [0];
 			MonoClass *arg0 = mono_class_from_mono_type_internal (t);
 			if (m_class_is_valuetype (arg0) && !mono_class_has_default_constructor (arg0, FALSE)) {
-				if (m_class_is_primitive (arg0)) {
+				if (m_class_is_primitive (arg0) || m_class_is_enumtype (arg0)) {
+					if (m_class_is_enumtype (arg0))
+						t = mono_class_enum_basetype_internal (arg0);
 					int dreg = alloc_dreg (cfg, mini_type_to_stack_type (cfg, t));
 					mini_emit_init_rvar (cfg, dreg, t);
 					ins = cfg->cbb->last_ins;

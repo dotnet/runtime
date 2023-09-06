@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 11, 20)]
+        [InterceptsLocation(@"src-0.cs", 11, 20)]
         public static object? Get(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions) => GetCore(configuration, type, configureOptions);
         #endregion IConfiguration extensions.
 
@@ -54,21 +54,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (type == typeof(Program.MyClass2))
             {
-                var obj = new Program.MyClass2();
-                BindCore(configuration, ref obj, binderOptions);
-                return obj;
+                var instance = new Program.MyClass2();
+                BindCore(configuration, ref instance, binderOptions);
+                return instance;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass2 obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass2 instance, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
             if (configuration["MyInt"] is string value1)
             {
-                obj.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
         }
 

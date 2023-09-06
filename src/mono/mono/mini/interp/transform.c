@@ -728,7 +728,7 @@ get_mov_for_type (int mt, gboolean needs_sext)
 	g_assert_not_reached ();
 }
 
-static int
+static guint16
 get_mint_type_size (int mt)
 {
 	switch (mt) {
@@ -3323,9 +3323,9 @@ interp_realign_simd_params (TransformData *td, StackInfo *sp_params, int num_arg
 
 			interp_add_ins (td, MINT_MOV_STACK_UNOPT);
 			// After previous alignment, this arg will be offset by MINT_STACK_SLOT_SIZE
-			td->last_ins->data [0] = sp_params [i].offset + prev_offset;
+			td->last_ins->data [0] = GINT_TO_UINT16 (sp_params [i].offset + prev_offset);
 			td->last_ins->data [1] = offset_amount;
-			td->last_ins->data [2] = get_stack_size (td, sp_params + i, num_args - i);
+			td->last_ins->data [2] = GINT_TO_UINT16 (get_stack_size (td, sp_params + i, num_args - i));
 		}
 	}
 }
@@ -3711,9 +3711,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 			// Mov all params to the new_param_offset
 			interp_add_ins (td, MINT_MOV_STACK_UNOPT);
-			td->last_ins->data [0] = param_offset;
+			td->last_ins->data [0] = GINT_TO_UINT16 (param_offset);
 			td->last_ins->data [1] = MINT_STACK_SLOT_SIZE;
-			td->last_ins->data [2] = param_end_offset - param_offset;
+			td->last_ins->data [2] = GINT_TO_UINT16 (param_end_offset - param_offset);
 
 			// If we have any simd arguments, we broke their alignment. We need to find the first simd arg and realign it
 			// together with the following params. First argument can't be simd type otherwise we would have been aligned
@@ -4032,7 +4032,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			get_bb (td, target, make_list);
 			ip += 2;
 			get_bb (td, ip, make_list);
-			mono_bitset_set (il_targets, target - start);
+			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			break;
 		case MonoInlineBrTarget:
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
@@ -4041,7 +4041,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			get_bb (td, target, make_list);
 			ip += 5;
 			get_bb (td, ip, make_list);
-			mono_bitset_set (il_targets, target - start);
+			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			break;
 		case MonoInlineSwitch: {
 			guint32 n = read32 (ip + 1);
@@ -4052,14 +4052,14 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			if (target > end)
 				return FALSE;
 			get_bb (td, target, make_list);
-			mono_bitset_set (il_targets, target - start);
+			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
 				if (target > end)
 					return FALSE;
 				get_bb (td, target, make_list);
 				ip += 4;
-				mono_bitset_set (il_targets, target - start);
+				mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			}
 			get_bb (td, ip, make_list);
 			break;
@@ -6212,7 +6212,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->cbb->contains_call_instruction = TRUE;
 					interp_add_ins (td, MINT_NEWOBJ_STRING_UNOPT);
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m));
-					td->last_ins->data [1] = params_stack_size;
+					td->last_ins->data [1] = GUINT32_TO_UINT16 (params_stack_size);
 					push_type (td, stack_type [ret_mt], klass);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				} else {
@@ -6293,16 +6293,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (td->locals [sp_params [0].local].flags & INTERP_LOCAL_FLAG_SIMD) {
 						// if first arg is simd, move all args at next aligned offset after this ptr
 						interp_add_ins (td, MINT_MOV_STACK_UNOPT);
-						td->last_ins->data [0] = param_offset;
-						td->last_ins->data [1] = call_offset + MINT_SIMD_ALIGNMENT - param_offset;
-						td->last_ins->data [2] = param_size;
+						td->last_ins->data [0] = GINT_TO_UINT16 (param_offset);
+						td->last_ins->data [1] = GINT_TO_UINT16 (call_offset + MINT_SIMD_ALIGNMENT - param_offset);
+						td->last_ins->data [2] = GINT_TO_UINT16 (param_size);
 					} else {
 						int realign_offset = call_offset + MINT_STACK_SLOT_SIZE - param_offset;
 						// otherwise we move all args immediately after this ptr
 						interp_add_ins (td, MINT_MOV_STACK_UNOPT);
-						td->last_ins->data [0] = param_offset;
-						td->last_ins->data [1] = realign_offset;
-						td->last_ins->data [2] = param_size;
+						td->last_ins->data [0] = GINT_TO_UINT16 (param_offset);
+						td->last_ins->data [1] = GINT_TO_UINT16 (realign_offset);
+						td->last_ins->data [2] = GINT_TO_UINT16 (param_size);
 
 						if ((realign_offset % MINT_SIMD_ALIGNMENT) != 0) {
 							// the argument move broke the alignment of any potential simd arguments, realign
@@ -9811,8 +9811,8 @@ retry:
 						ins = interp_insert_ins (td, ins, MINT_MOV_SRC_OFF);
 						interp_ins_set_dreg (ins, ins->prev->dreg);
 						interp_ins_set_sreg (ins, local);
-						ins->data [0] = foffset;
-						ins->data [1] = mt;
+						ins->data [0] = GINT_TO_UINT16 (foffset);
+						ins->data [1] = GINT_TO_UINT16 (mt);
 						if (mt == MINT_TYPE_VT)
 							ins->data [2] = ldsize;
 
@@ -9945,8 +9945,8 @@ retry:
 						ins = interp_insert_ins (td, ins, MINT_MOV_DST_OFF);
 						interp_ins_set_dreg (ins, local);
 						interp_ins_set_sreg (ins, sregs [1]);
-						ins->data [0] = foffset;
-						ins->data [1] = mt;
+						ins->data [0] = GINT_TO_UINT16 (foffset);
+						ins->data [1] = GINT_TO_UINT16 (mt);
 						ins->data [2] = vtsize;
 
 						interp_clear_ins (ins->prev);
@@ -10301,7 +10301,7 @@ interp_super_instructions (TransformData *td)
 							new_inst = interp_insert_ins (td, ins, MINT_SHR_UN_I8_IMM);
 						new_inst->dreg = ins->dreg;
 						new_inst->sregs [0] = ins->sregs [0];
-						new_inst->data [0] = power2;
+						new_inst->data [0] = GINT_TO_UINT16 (power2);
 
 						interp_clear_ins (def);
 						interp_clear_ins (ins);
@@ -10495,7 +10495,7 @@ interp_super_instructions (TransformData *td)
 								break;
 						}
 						if (replace_opcode != -1) {
-							ins->opcode = replace_opcode;
+							ins->opcode = GINT_TO_UINT16 (replace_opcode);
 							ins->sregs [0] = def->sregs [0];
 							if (def->opcode != MINT_CEQ0_I4)
 								ins->sregs [1] = def->sregs [1];

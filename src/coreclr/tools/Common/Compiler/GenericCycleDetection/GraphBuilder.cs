@@ -126,8 +126,10 @@ namespace ILCompiler
                                 || interfaceMethod.Signature.IsStatic != method.Signature.IsStatic)
                                 continue;
 
-                            MethodDesc impl = methodOwningType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod)?.GetMethodDefinition();
-                            if (impl == method)
+                            MethodDesc impl = interfaceMethod.Signature.IsStatic ?
+                                methodOwningType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :
+                                methodOwningType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                            if (impl?.GetMethodDefinition() == method)
                             {
                                 RecordBinding(this, interfaceMethod.Instantiation, method.Instantiation);
                                 // Continue the loop in case this method implements multiple interfaces

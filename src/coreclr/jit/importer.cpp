@@ -685,9 +685,9 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
         return true;
     }
 
-    if (TypeIs(sigType, TYP_BOOL, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT))
+    if (TypeIs(sigType, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT))
     {
-        if (TypeIs(nodeType, TYP_BOOL, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT, TYP_I_IMPL))
+        if (TypeIs(nodeType, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT, TYP_I_IMPL))
         {
             return true;
         }
@@ -2990,7 +2990,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
 
                                     static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                    impPushOnStack(gtNewIndir(TYP_BOOL, objToBox), typeInfo(TYP_INT));
+                                    impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
 
                                     JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                     return 1 + sizeof(mdToken);

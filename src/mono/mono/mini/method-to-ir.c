@@ -3045,7 +3045,7 @@ emit_seq_point (MonoCompile *cfg, MonoMethod *method, guint8* ip, gboolean intr_
 	MonoInst *ins;
 
 	if (cfg->gen_seq_points && cfg->method == method) {
-		NEW_SEQ_POINT (cfg, ins, ip - cfg->header->code, intr_loc);
+		NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - cfg->header->code), intr_loc);
 		if (nonempty_stack)
 			ins->flags |= MONO_INST_NONEMPTY_STACK;
 		MONO_ADD_INS (cfg->cbb, ins);
@@ -3212,7 +3212,7 @@ mini_handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst *val, int contex
 	MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, m_class_offsetof_element_class ());
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_element_class ()));
 
 	if (context_used) {
 		MonoInst *element_class;
@@ -6452,8 +6452,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		generic_context = &generic_container->context;
 	cfg->generic_context = generic_context;
 
-	if (!cfg->gshared)
-		g_assert (!sig->has_type_parameters);
+	if (!cfg->gshared) {
+		gboolean check_type_parameter = TRUE;
+		if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+			g_assert (info);
+			if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR)
+				check_type_parameter = FALSE;
+		}
+
+		if (check_type_parameter)
+			g_assert (!sig->has_type_parameters);
+	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
 		g_assert (method->is_inflated);
@@ -7004,7 +7014,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Avoid sequence points on empty IL like .volatile */
 			// FIXME: Enable this
 			//if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_SEQ_POINT)) {
-			NEW_SEQ_POINT (cfg, ins, ip - header->code, intr_loc);
+			NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), intr_loc);
 			if ((sp != stack_start) && !sym_seq_point)
 				ins->flags |= MONO_INST_NONEMPTY_STACK;
 			MONO_ADD_INS (cfg->cbb, ins);
@@ -7091,7 +7101,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * The C# compiler uses these nops to notify the JIT that it should
 				 * insert seq points.
 				 */
-				NEW_SEQ_POINT (cfg, ins, ip - header->code, FALSE);
+				NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), FALSE);
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 			if (cfg->keep_cil_nops)
@@ -8510,7 +8520,7 @@ calli_end:
 						 * ret
 						 * will work correctly.
 						 */
-						NEW_SEQ_POINT (cfg, ins, ip - header->code, TRUE);
+						NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), TRUE);
 						MONO_ADD_INS (cfg->cbb, ins);
 					}
 

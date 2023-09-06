@@ -350,3 +350,12 @@ npm update --lockfile-version=1
 | Multi-thread      | linux: build only          | none                                 |
 
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
+
+
+# Perf pipeline
+
+TBD
+
+## Updates needed
+
+- when the base OS is upgraded, check if the version of node installed in the `eng/pipelines/coreclr/templates/run-performance-job.yml` needs an upgrade too.

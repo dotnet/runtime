@@ -16,8 +16,8 @@ import { hasDebuggingEnabled } from "./config";
 import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
-export const ENVIRONMENT_IS_WEB = typeof window == "object";
 export const ENVIRONMENT_IS_WORKER = typeof importScripts == "function";
+export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WORKER && !ENVIRONMENT_IS_NODE);
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
 
 export let runtimeHelpers: RuntimeHelpers = {} as any;
@@ -87,6 +87,7 @@ export function setLoaderGlobals(
         allDownloadsQueued: createPromiseController<void>(),
         wasmDownloadPromise: createPromiseController<AssetEntryInternal>(),
         runtimeModuleLoaded: createPromiseController<void>(),
+        memorySnapshotSkippedOrDone: createPromiseController<void>(),
 
         is_exited,
         is_runtime_running,

@@ -667,12 +667,6 @@ namespace Microsoft.Extensions
             public int MyInt { get; }
         }
 
-        public interface IGeolocation
-        {
-            public double Latitude { get; set; }
-            public double Longitude { get; set; }
-        }
-
         [TypeConverter(typeof(GeolocationTypeConverter))]
         public struct Geolocation : IGeolocation
         {
@@ -699,12 +693,6 @@ namespace Microsoft.Extensions
         }
 
         public sealed class GeolocationClass : IGeolocation
-        {
-            public double Latitude { get; set; }
-            public double Longitude { get; set; }
-        }
-
-        public sealed record GeolocationRecord : IGeolocation
         {
             public double Latitude { get; set; }
             public double Longitude { get; set; }

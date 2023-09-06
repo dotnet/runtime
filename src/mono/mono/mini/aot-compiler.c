@@ -1426,9 +1426,9 @@ arm64_emit_tramp_page_common_code (MonoAotCompile *acfg, int pagesize, int arg_r
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	/* Emit it */
-	emit_code_bytes (acfg, buf, code - buf);
+	emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	*size = code - buf;
+	*size = GPTRDIFF_TO_INT (code - buf);
 }
 
 static void
@@ -1450,7 +1450,7 @@ arm64_emit_tramp_page_specific_code (MonoAotCompile *acfg, int pagesize, int com
 		arm_nop (code);
 #endif
 		g_assert (code - buf == specific_tramp_size);
-		emit_code_bytes (acfg, buf, code - buf);
+		emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	}
 }
 
@@ -1535,9 +1535,9 @@ arm64_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	/* Emit it */
-	emit_code_bytes (acfg, buf, code - buf);
+	emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	common_tramp_size = code - buf;
+	common_tramp_size = GPTRDIFF_TO_INT (code - buf);
 	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = common_tramp_size;
 
 	arm64_emit_tramp_page_specific_code (acfg, pagesize, common_tramp_size, specific_tramp_size);
@@ -1587,9 +1587,9 @@ arm64_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP1, TARGET_SIZEOF_VOID_P);
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
-	emit_code_bytes (acfg, buf, code - buf);
+	emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	common_tramp_size = code - buf;
+	common_tramp_size = GPTRDIFF_TO_INT (code - buf);
 	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_IMT] = common_tramp_size;
 
 	arm64_emit_tramp_page_specific_code (acfg, pagesize, common_tramp_size, specific_tramp_size);
@@ -1673,9 +1673,9 @@ arm64_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP1, TARGET_SIZEOF_VOID_P);
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
-	emit_code_bytes (acfg, buf, code - buf);
+	emit_code_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	*tramp_size = code - buf + (3 * 4);
+	*tramp_size = GPTRDIFF_TO_INT (code - buf + (3 * 4));
 }
 
 static void
@@ -1986,7 +1986,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, guint32 plt_i
 		code = buf;
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_IP);
-		emit_bytes (acfg, buf, code - buf);
+		emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 		emit_symbol_diff (acfg, got_symbol, ".", offset - 4);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, info_offset);
@@ -2111,7 +2111,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	g_assert (code - buf == COMMON_TRAMP_SIZE);
 
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	for (i = 0; i < count; ++i) {
 		code = buf;
@@ -2119,7 +2119,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 		ARM_BL (code, 0);
 		arm_patch (code - 4, code - COMMON_TRAMP_SIZE - 8 * (i + 1));
 		g_assert (code - buf == 8);
-		emit_bytes (acfg, buf, code - buf);
+		emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	}
 
 	/* now the rgctx trampolines: each specific trampolines puts in the ip register
@@ -2139,7 +2139,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	g_assert (code - buf == COMMON_TRAMP_SIZE);
 
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	for (i = 0; i < count; ++i) {
 		code = buf;
@@ -2147,7 +2147,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 		ARM_B (code, 0);
 		arm_patch (code - 4, code - COMMON_TRAMP_SIZE - 8 * (i + 1));
 		g_assert (code - buf == 8);
-		emit_bytes (acfg, buf, code - buf);
+		emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	}
 
 	/*
@@ -2164,7 +2164,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, -4);
 	g_assert (code - buf == COMMON_TRAMP_SIZE);
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	for (i = 0; i < count; ++i) {
 		code = buf;
@@ -2172,7 +2172,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 		ARM_B (code, 0);
 		arm_patch (code - 4, code - COMMON_TRAMP_SIZE - 8 * (i + 1));
 		g_assert (code - buf == 8);
-		emit_bytes (acfg, buf, code - buf);
+		emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	}
 
 	/* now the unbox arbitrary trampolines: each specific trampolines puts in the ip register
@@ -2193,7 +2193,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	g_assert (code - buf == COMMON_TRAMP_SIZE);
 
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	for (i = 0; i < count; ++i) {
 		code = buf;
@@ -2201,7 +2201,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 		ARM_B (code, 0);
 		arm_patch (code - 4, code - COMMON_TRAMP_SIZE - 8 * (i + 1));
 		g_assert (code - buf == 8);
-		emit_bytes (acfg, buf, code - buf);
+		emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	}
 
 	/* now the imt trampolines: each specific trampolines puts in the ip register
@@ -2257,7 +2257,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 
 	/* Emit it */
 	g_assert (code - buf == IMT_TRAMP_SIZE);
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	for (i = 0; i < count; ++i) {
 		code = buf;
@@ -2265,7 +2265,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 		ARM_B (code, 0);
 		arm_patch (code - 4, code - IMT_TRAMP_SIZE - 8 * (i + 1));
 		g_assert (code - buf == 8);
-		emit_bytes (acfg, buf, code - buf);
+		emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	}
 
 	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_SPECIFIC] = 16;
@@ -2389,7 +2389,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	g_assert (code - buf == 16);
 
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	/*
 	 * Only one offset is needed, since the second one would be equal to the
 	 * first one.
@@ -2453,7 +2453,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	/* Branch to generic trampoline */
 	x86_jump_reg (code, X86_ECX);
 
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	*tramp_size = 17;
 	g_assert (code - buf == *tramp_size);
@@ -2500,7 +2500,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 
 	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, MONO_ABI_SIZEOF (MonoObject));
 
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	/* jump <method> */
 	emit_byte (acfg, '\xe9');
@@ -2521,7 +2521,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 
 	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, MONO_ABI_SIZEOF (MonoObject));
 
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	/* jump to method */
 	if (acfg->thumb_mixed && cfg->compile_llvm)
 		fprintf (acfg->fp, "\n\tbx %s\n", call_target);
@@ -2589,7 +2589,7 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	g_assert (code - buf == 16);
 
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) - 4 + 8);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (target_mgreg_t)) - 4 + 4);
 #elif defined(TARGET_ARM64)
@@ -2648,7 +2648,7 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	/* Branch to the target address */
 	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (target_mgreg_t));
 
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	*tramp_size = 15;
 	g_assert (code - buf == *tramp_size);
@@ -2796,9 +2796,9 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	mono_x86_patch (labels [3], code);
 	x86_breakpoint (code);
 
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
-	*tramp_size = code - buf;
+	*tramp_size = GPTRDIFF_TO_INT (code - buf);
 
 	g_free (buf);
 
@@ -2853,10 +2853,10 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	code2 = labels [0];
 	ARM_LDR_IMM (code2, ARMREG_R0, ARMREG_PC, (code - (labels [0] + 8)));
 
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (int)((offset * sizeof (target_mgreg_t)) + (code - (labels [0] + 8)) - 4));
 
-	*tramp_size = code - buf + 4;
+	*tramp_size = GPTRDIFF_TO_INT (code - buf + 4);
 #elif defined(TARGET_ARM64)
 	arm64_emit_imt_trampoline (acfg, offset, tramp_size);
 #elif defined(TARGET_POWERPC)
@@ -2955,7 +2955,7 @@ arch_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 	/* Branch to the target address */
 	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (target_mgreg_t));
 
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 
 	*tramp_size = 15;
 	g_assert (code - buf == *tramp_size);
@@ -2979,7 +2979,7 @@ arch_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 	g_assert (code - buf == 20);
 
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) + 4);
 #elif defined(TARGET_ARM64)
 	arm64_emit_gsharedvt_arg_trampoline (acfg, offset, tramp_size);
@@ -3019,7 +3019,7 @@ arch_emit_ftnptr_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp_si
 	g_assert (code - buf == 24);
 
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (target_mgreg_t)) + 12); // offset from ldr pc to addr
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) + 4); // offset from ldr pc to arg
 #else
@@ -3067,7 +3067,7 @@ arch_emit_unbox_arbitrary_trampoline (MonoAotCompile *acfg, int offset, int *tra
 	g_assert (code - buf == 12);
 
 	/* Emit it */
-	emit_bytes (acfg, buf, code - buf);
+	emit_bytes (acfg, buf, GPTRDIFF_TO_INT (code - buf));
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (int)((offset * sizeof (target_mgreg_t)) + (code - (label + 8)) - 4));
 	*tramp_size = 4 * 4;
 #else
@@ -3844,10 +3844,12 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			else if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR) {
 				encode_method_ref (acfg, info->d.unsafe_accessor.method, p, &p);
 				encode_value (info->d.unsafe_accessor.kind, p, &p);
-				/* WISH: is there some kind of string heap token we could use here? */
-				uint32_t len = (uint32_t) strlen (info->d.unsafe_accessor.member_name);
-				encode_value (len, p, &p);
-				encode_string (info->d.unsafe_accessor.member_name, p, &p);
+				if (info->d.unsafe_accessor.member_name) {
+					/* WISH: is there some kind of string heap token we could use here? */
+					uint32_t len = (uint32_t) strlen (info->d.unsafe_accessor.member_name);
+					encode_value (len, p, &p);
+					encode_string (info->d.unsafe_accessor.member_name, p, &p);
+				}
 			}
 			else if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN)
 				encode_signature (acfg, info->d.interp_in.sig, p, &p);
@@ -11398,7 +11400,7 @@ encode_uint_len (guint32 val, int len, guint8 *buf, guint8 **endbuf)
 {
 	if (len == 2) {
 		g_assert (val < 65536);
-		encode_int16 (val, buf, endbuf);
+		encode_int16 (GUINT32_TO_UINT16 (val), buf, endbuf);
 	} else {
 		encode_int ((gint32)val, buf, endbuf);
 	}
@@ -11452,7 +11454,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	 * Construct a chained hash table for mapping indexes in extra_method_info to
 	 * method indexes.
 	 */
-	guint table_size = g_spaced_primes_closest ((guint)(nmethods * 1.5));
+	guint table_size = g_spaced_primes_closest (GFLOAT_TO_UINT (nmethods * 1.5));
 	table = g_ptr_array_sized_new (table_size);
 	for (guint i = 0; i < table_size; ++i)
 		g_ptr_array_add (table, NULL);
@@ -11730,7 +11732,7 @@ emit_class_name_table (MonoAotCompile *acfg)
 	 * Construct a chained hash table for mapping class names to typedef tokens.
 	 */
 	guint32 rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
-	guint table_size = g_spaced_primes_closest (rows * 1.5);
+	guint table_size = g_spaced_primes_closest (GFLOAT_TO_UINT (rows * 1.5));
 	table = g_ptr_array_sized_new (table_size);
 	for (guint i = 0; i < table_size; ++i)
 		g_ptr_array_add (table, NULL);
@@ -12089,7 +12091,7 @@ emit_globals (MonoAotCompile *acfg)
 	 * Construct a chained hash table for mapping global names to their index in
 	 * the globals table.
 	 */
-	guint table_size = g_spaced_primes_closest (acfg->globals->len * 1.5);
+	guint table_size = g_spaced_primes_closest (GFLOAT_TO_UINT (acfg->globals->len * 1.5));
 	table = g_ptr_array_sized_new (table_size);
 	for (guint i = 0; i < table_size; ++i)
 		g_ptr_array_add (table, NULL);

@@ -186,14 +186,6 @@ namespace SVR {
 #define STRESS_HEAP_ARG(x)
 #endif // STRESS_HEAP
 
-//dynamic data interface
-struct gc_counters
-{
-    size_t current_size;
-    size_t promoted_size;
-    size_t collection_count;
-};
-
 enum bgc_state
 {
     bgc_not_in_process = 0,

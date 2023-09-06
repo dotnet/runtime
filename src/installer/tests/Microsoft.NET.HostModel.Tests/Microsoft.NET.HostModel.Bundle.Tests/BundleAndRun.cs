@@ -29,7 +29,7 @@ namespace Microsoft.NET.HostModel.Tests
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
+                .HaveStdOutContaining("Hello World!");
         }
 
         private void CheckFileSigned(string path)
@@ -130,8 +130,7 @@ namespace Microsoft.NET.HostModel.Tests
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                TestFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFixture);
+                TestFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid)
                     .PublishProject(runtime: TestFixture.CurrentRid,

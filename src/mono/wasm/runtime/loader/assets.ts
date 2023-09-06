@@ -78,8 +78,6 @@ const containedInSnapshotByAssetTypes: {
     "pdb": true,
     "heap": true,
     "icu": true,
-    ...jsModulesAssetTypes,
-    "dotnetwasm": true,
 };
 
 // these assets are instantiated differently than the main flow
@@ -95,7 +93,7 @@ export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
-function convert_single_asset(modulesAssets: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
+function convert_single_asset(assetsCollection: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
     const keys = Object.keys(resource || {});
     mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
 
@@ -110,7 +108,7 @@ function convert_single_asset(modulesAssets: AssetEntryInternal[], resource: Res
     set_single_asset(asset);
 
     // so that we can use it on the worker too
-    modulesAssets.push(asset);
+    assetsCollection.push(asset);
     return asset;
 }
 
@@ -168,15 +166,12 @@ export async function mono_download_assets(): Promise<void> {
             countAndStartDownload(asset);
         }
 
-        // continue after the dotnet.runtime.js was loaded
-        await loaderHelpers.runtimeModuleLoaded.promise;
-
         // continue after we know if memory snapshot is available or not
-        await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
+        await loaderHelpers.memorySnapshotSkippedOrDone.promise;
 
         // start fetching assets in parallel, only if memory snapshot is not available.
         for (const asset of containedInSnapshotAssets) {
-            if (!runtimeHelpers.loadedMemorySnapshot) {
+            if (!runtimeHelpers.loadedMemorySnapshotSize) {
                 countAndStartDownload(asset);
             } else {
                 // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
@@ -193,6 +188,8 @@ export async function mono_download_assets(): Promise<void> {
         }
 
         loaderHelpers.allDownloadsQueued.promise_control.resolve();
+
+        // continue after the dotnet.runtime.js was loaded
         await loaderHelpers.runtimeModuleLoaded.promise;
 
         const promises_of_asset_instantiation: Promise<void>[] = [];
@@ -211,7 +208,6 @@ export async function mono_download_assets(): Promise<void> {
                         // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
 
                         await runtimeHelpers.beforeOnRuntimeInitialized.promise;
-                        await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
                         runtimeHelpers.instantiate_asset(asset, url, data);
                     }
                 } else {
@@ -284,7 +280,7 @@ export function prepareAssets() {
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
         mono_assert(resources.jsModuleRuntime, "resources.jsModuleRuntime must be defined");
         mono_assert(!MonoWasmThreads || resources.jsModuleWorker, "resources.jsModuleWorker must be defined");
-        convert_single_asset(modulesAssets, resources.wasmNative, "dotnetwasm");
+        convert_single_asset(alwaysLoadedAssets, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (MonoWasmThreads) {

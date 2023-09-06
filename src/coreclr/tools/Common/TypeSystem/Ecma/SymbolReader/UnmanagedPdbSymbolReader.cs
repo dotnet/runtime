@@ -68,7 +68,7 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
 
                 var iid = ICLRMetaHost.IID;
-                if (Marshal.QueryInterface(externalComObject, ref iid, out IntPtr hostPtr) != 0)
+                if (Marshal.QueryInterface(externalComObject, in iid, out IntPtr hostPtr) != 0)
                 {
                     throw new ArgumentException("Expected ICLRMetaHost COM interface");
                 }
@@ -284,7 +284,7 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert(flags == CreateObjectFlags.UniqueInstance);
 
                 var iid = new Guid("AA544D42-28CB-11d3-BD22-0000F80849BD");
-                if (Marshal.QueryInterface(externalComObject, ref iid, out IntPtr ppv) != 0)
+                if (Marshal.QueryInterface(externalComObject, in iid, out IntPtr ppv) != 0)
                 {
                     return null;
                 }

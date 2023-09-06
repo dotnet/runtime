@@ -56,6 +56,9 @@ add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEB
 if (MSVC)
   add_linker_flag(/guard:cf)
 
+  # Load all imported DLLs from the System32 directory.
+  add_linker_flag(/DEPENDENTLOADFLAG:0x800)
+
   # Linker flags
   #
   set (WINDOWS_SUBSYSTEM_VERSION 6.01)
