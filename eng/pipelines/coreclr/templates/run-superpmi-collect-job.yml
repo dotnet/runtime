@@ -105,7 +105,7 @@ jobs:
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\obj\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Managed\nativeaot\SmokeTests'
     - ${{ if and(eq(parameters.collectionName, 'smoke_tests'), ne(parameters.osGroup, 'windows')) }}:
       - name: InputDirectory
-        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}/Managed/nativeaot/SmokeTests'
+        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Managed/nativeaot/SmokeTests'
 
     workspace:
       clean: all
