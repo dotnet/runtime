@@ -1,44 +1,58 @@
 ## About
 
-<!-- A description of the package and where one can find more documentation -->
-
-
+Microsoft.Bcl.TimeProvider provides time abstraction support for apps targeting .NET 7 and earlier, as well as those intended for the .NET Framework. For apps targeting .NET 8 and newer versions, referencing this package is unnecessary, as the types it contains are already included in the .NET 8 and higher platform versions.
 
 ## Key Features
 
-<!-- The key features of this package -->
-
-*
-*
-*
+* Provides a common abstraction for time-related operations.
 
 ## How to Use
 
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+```csharp
+using System;
+
+// A class that uses TimeProvider to get the current time in Utc coordinates
+public class UtcClock
+{
+    private readonly TimeProvider _timeProvider;
+
+    // Constructor that takes a TimeProvider as a dependency
+    public Clock(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
+    // A method that returns the current time as a string
+    public string GetTime()
+    {
+        return _timeProvider.GetLocalNow().ToString("HH:mm:ss");
+    }
+}
+
+// A class that inherits from TimeProvider and overrides the GetLocalNow method
+public class UtcTimeProvider : TimeProvider
+{
+    // Override the GetLocalNow method to always return UTC time
+    public override DateTimeOffset GetLocalNow()
+    {
+        return TimeProvider.System.GetUtcNow();
+    }
+}
+
+```
 
 ## Main Types
 
-<!-- The main types provided in this library -->
-
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `TimeProvider`
+* `TimeProviderTaskExtensions`
 
 ## Additional Documentation
 
-<!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.timeprovider)
 
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/**LIBRARYNAME**/overview)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/**LIBRARYNAME**)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
 
 ## Feedback & Contributing
-
-<!-- How to provide feedback on this package and contribute to it -->
 
 Microsoft.Bcl.TimeProvider is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
