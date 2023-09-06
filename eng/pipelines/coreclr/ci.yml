@@ -51,7 +51,7 @@ extends:
           # - linux_arm64
           - linux_musl_arm64
           # - linux_musl_x64
-          # - linux_x64
+          - linux_x64
           # - osx_arm64
           # - osx_x64
           # - windows_arm64
@@ -71,6 +71,7 @@ extends:
           # Adding it here will enable it also
           # - osx_arm64
           - linux_musl_arm64
+          - linux_x64
           jobParameters:
             testGroup: outerloop
 
@@ -84,7 +85,7 @@ extends:
           platforms:
           # - linux_arm
           - linux_musl_arm64
-          # - linux_x64
+          - linux_x64
           # - osx_arm64
           # - osx_x64
           # - windows_x86
@@ -104,6 +105,7 @@ extends:
           # Adding it here will enable it also
           # - osx_arm64
           - linux_musl_arm64
+          - linux_x64
           jobParameters:
             isOfficialBuild: false
             liveRuntimeBuildConfig: checked
@@ -132,6 +134,7 @@ extends:
           # Adding it here will enable it to also run this test
           # - osx_arm64
           - linux_musl_arm64
+          - linux_x64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -149,7 +152,7 @@ extends:
           # - linux_arm64
           # - linux_musl_x64
           - linux_musl_arm64
-          # - linux_x64
+          - linux_x64
           # - osx_x64
           # - windows_x64
           # - windows_x86
@@ -170,4 +173,4 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
           platforms:
           - linux_x64
-          - windows_x64
+          # - windows_x64

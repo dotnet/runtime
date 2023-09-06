@@ -741,23 +741,23 @@
     <HelixPreCommand Include="mkdir -p $spmi_collect_dir" />
   </ItemGroup>
 
-  <!-- <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' "> -->
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
     <!-- Merge all the per-test generted .MC files as a post-step -->
-  <!--   <HelixPostCommand Include="export spmi_collection_name=coreclr_tests" /> -->
-  <!--   <HelixPostCommand Include="export spmi_collection_type=run" /> -->
-  <!--   <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" /> -->
-  <!--   <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD/superpmi_scripts/superpmi.py" /> -->
-  <!--   <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" /> -->
-  <!--   <HelixPostCommand Include="mkdir -p $spmi_upload_dir" /> -->
-  <!--   <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_mch_file_tag" /> -->
-  <!--   <HelixPostCommand Include="export spmi_finalmch=$spmi_upload_dir/$spmi_output_base_name.mch" /> -->
-  <!--   <HelixPostCommand Include="export spmi_log_file=$spmi_upload_dir/$spmi_output_base_name.log" /> -->
-  <!--   <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $CORE_ROOT -\-skip_cleanup -\-clean -\-ci -\-skip_collection_step -\-skip_toc_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" /> -->
-  <!-- </ItemGroup> -->
-
-  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
-    <HelixPostCommand Include="ls -R" />
+    <HelixPostCommand Include="export spmi_collection_name=coreclr_tests" />
+    <HelixPostCommand Include="export spmi_collection_type=run" />
+    <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD/superpmi_scripts/superpmi.py" />
+    <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
+    <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />
+    <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_mch_file_tag" />
+    <HelixPostCommand Include="export spmi_finalmch=$spmi_upload_dir/$spmi_output_base_name.mch" />
+    <HelixPostCommand Include="export spmi_log_file=$spmi_upload_dir/$spmi_output_base_name.log" />
+    <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $CORE_ROOT --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
   </ItemGroup>
+
+  <!-- <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' "> -->
+  <!--   <HelixPostCommand Include="ls -R" /> -->
+  <!-- </ItemGroup> -->
 
   <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
   <PropertyGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(TestWrapperTargetsWindows)' != 'true'">
