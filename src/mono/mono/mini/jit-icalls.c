@@ -1694,7 +1694,7 @@ mono_throw_type_load (MonoClass* klass)
 	ERROR_DECL (error);
 
 	if (G_UNLIKELY(!klass)) {
-		mono_error_set_type_load_class (error, klass, "Attempting to load an invalid type.");
+		mono_error_set_generic_error (error, "System", "TypeLoadException", "");
 	} else {
 		char* klass_name = mono_type_get_full_name (klass);
 		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
