@@ -1425,8 +1425,8 @@ bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 
     switch (helper)
     {
-        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         case CORINFO_HELP_ISINSTANCEOFCLASS:
         case CORINFO_HELP_ISINSTANCEOFANY:
         case CORINFO_HELP_CHKCASTINTERFACE:
