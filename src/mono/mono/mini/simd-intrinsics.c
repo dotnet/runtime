@@ -2588,7 +2588,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 }
 
 // System.Numerics.Vector2/Vector3/Vector4, Quaternion, and Plane
-static guint16 vector2_methods[] = {
+static guint16 vector_2_3_4_methods[] = {
 	SN_ctor,
 	SN_Abs,
 	SN_Add,
@@ -2636,7 +2636,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	MonoType *type, *etype;
 
 
-	id = lookup_intrins (vector2_methods, sizeof (vector2_methods), cmethod);
+	id = lookup_intrins (vector_2_3_4_methods, sizeof (vector_2_3_4_methods), cmethod);
 	if (id == -1) {
 		// https://github.com/dotnet/runtime/issues/81961
 		// check_no_intrinsic_cattr (cmethod);
