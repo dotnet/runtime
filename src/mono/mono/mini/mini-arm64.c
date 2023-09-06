@@ -3969,7 +3969,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_EXPAND_R4:
 		case OP_EXPAND_R8: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_fdup_e (code, get_vector_size_macro (ins), t, dreg, sreg1, 0);
+			if (ins->opcode == OP_EXPAND_R8)
+				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
+			else
+				arm_neon_fdup_e (code, get_vector_size_macro (ins), t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_EXTRACT_I1:
@@ -4090,7 +4093,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case INTRINS_AARCH64_ADV_SIMD_FADDV: {
 				const int width = get_vector_size_macro (ins);
 				if (ins->inst_c1 == MONO_TYPE_R8) {
-					arm_neon_faddp (code, width, TYPE_F64, dreg, sreg1, sreg1);
+					arm_neon_faddp (code, VREG_FULL, TYPE_F64, dreg, sreg1, sreg1);
 				} else if (ins->inst_c1 == MONO_TYPE_R4) {
 					arm_neon_faddp (code, width, TYPE_F32, dreg, sreg1, sreg1);
 					if (width == VREG_FULL)
