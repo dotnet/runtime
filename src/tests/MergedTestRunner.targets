@@ -12,11 +12,6 @@
     <EmitCompilerGeneratedFiles Condition="'$(EmitCompilerGeneratedFiles)' == ''">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
-  <!-- TODO: temporary change; we probably need to change the behavior in tests.mobile.targets that sets these properties to true as a proper fix -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
-    <PublishTrimmed>false</PublishTrimmed>
-    <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
-  </PropertyGroup>
 
   <ItemGroup>
     <!-- string.Concat("_", string.Copy("%(Filename)").Replace("-", "_").Replace(".", "_")) -->
