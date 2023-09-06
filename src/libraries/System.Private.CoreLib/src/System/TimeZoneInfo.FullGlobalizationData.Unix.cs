@@ -289,14 +289,8 @@ namespace System
         // Helper function that returns an alternative ID using ICU data. Used primarily for converting from Windows IDs.
         private static unsafe string? GetAlternativeId(string id, out bool idIsIana)
         {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            // No alternative IDs in this target.
-            idIsIana = false;
-            return null;
-#else
             idIsIana = false;
             return TryConvertWindowsIdToIanaId(id, null, out string? ianaId) ? ianaId : null;
-#endif
         }
     }
 }

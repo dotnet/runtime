@@ -23,6 +23,10 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
     {
         NSString* tzName = [NSString stringWithCharacters: timeZoneId length: timeZoneIdLength];
         NSTimeZone* timeZone = [NSTimeZone timeZoneWithName:tzName];
+        if (timeZone == NULL)
+        {
+            return UnknownError;
+        }
         NSString* timeZoneName;
 
         if (type == TimeZoneDisplayName_TimeZoneName)

@@ -10,8 +10,8 @@ namespace System
         private static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, bool allocate, out string? windowsId)
         {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                windowsId = null;
-                return false;
+            windowsId = null;
+            return false;
 #else
             if (GlobalizationMode.Invariant ||
                 GlobalizationMode.UseNls ||
