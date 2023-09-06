@@ -1929,7 +1929,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
-			int index = args[1]->inst_c0;
+			int index = GTMREG_TO_INT (args[1]->inst_c0);
 
 			if (index < 0 || index >= elems) {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
@@ -2259,7 +2259,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
-			int index = args[1]->inst_c0;
+			int index = GTMREG_TO_INT (args[1]->inst_c0);
 
 			if (index < 0 || index >= elems) {
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
@@ -2724,7 +2724,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
-			int index = args[1]->inst_c0;
+			int index = GTMREG_TO_INT (args[1]->inst_c0);
 
 			if (index < 0 || index >= elems) {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
@@ -2806,7 +2806,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		g_assert (fsig->hasthis && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_I4 && fsig->params [1]->type == MONO_TYPE_R4);
 
 		gboolean indirect = FALSE;
-		int elems = 4, index = args [1]->inst_c0;
+		int elems = 4, index = GTMREG_TO_INT (args [1]->inst_c0);
 		int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
 		if (args [1]->opcode == OP_ICONST) {
@@ -5714,7 +5714,7 @@ emit_wasm_supported_intrinsics (
 				break;
 			}
 			case SN_ExtractScalar: {
-				op = type_to_xextract_op (arg0_type);
+				op = GINT_TO_UINT16 (type_to_xextract_op (arg0_type));
 				break;
 			}
 			case SN_LoadScalarVector128: {

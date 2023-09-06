@@ -70,15 +70,6 @@ jobs:
       value: ''
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR'
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-      # Variables used to publish packages to blob feed
-      - name: dotnetfeedUrl
-        value: https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json
-      - name: dotnetfeedPAT
-        value: $(dotnetfeed-storage-access-key-1)
-      # Variables used by arcade to gather asset manifests
-      - name: _DotNetPublishToBlobFeed
-        value: true
     - name: officialBuildIdArg
       value: ''
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -277,14 +268,6 @@ jobs:
             archiveExtension: $(archiveExtension)
             artifactName: $(nativeTestArtifactName)
             displayName: 'native test components'
-
-    # Get key vault secrets for publishing
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: AzureKeyVault@1
-        inputs:
-          azureSubscription: 'DotNet-Engineering-Services_KeyVault'
-          KeyVaultName: EngKeyVault
-          SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:

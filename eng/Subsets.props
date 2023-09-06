@@ -82,7 +82,7 @@
     <DefaultToolsSubsets>tools.illink</DefaultToolsSubsets>
 
     <DefaultHostSubsets>host.native+host.tools+host.pkg</DefaultHostSubsets>
-    <DefaultHostSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultHostSubsets)+host.tests</DefaultHostSubsets>
+    <DefaultHostSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultHostSubsets)+host.pretest+host.tests</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'"></DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">host.native</DefaultHostSubsets>
 
@@ -168,6 +168,7 @@
     <SubsetName Include="Host.Native" Description="The .NET hosts." />
     <SubsetName Include="Host.Pkg" Description="The .NET host packages." />
     <SubsetName Include="Host.Tools" Description="The .NET hosting libraries." />
+    <SubsetName Include="Host.PreTest" Description="Test assets which are necessary to run the .NET hosting tests." />
     <SubsetName Include="Host.Tests" Description="The .NET hosting tests." />
 
     <!-- Libs -->
@@ -483,6 +484,11 @@
 
   <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
+  </ItemGroup>
+
+  <!-- Host.pretest subset (consumes live built libraries assets so needs to come after libraries) -->
+  <ItemGroup Condition="$(_subset.Contains('+host.pretest+'))">
+    <ProjectToBuild Include="$(InstallerProjectRoot)tests\Assets\Projects\AppWithSubDirs\AppWithSubDirs.csproj" Category="host" />
   </ItemGroup>
 
   <!-- Host.tests subset (consumes live built libraries assets so needs to come after libraries) -->

@@ -2827,7 +2827,7 @@ ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCall
 	MonoType *type = type_handle.type;
 	g_assert (type->type == MONO_TYPE_FNPTR);
 	// FIXME: Once we address: https://github.com/dotnet/runtime/issues/90308 this should not be needed anymore
-	return type->data.method->suppress_gc_transition ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention;
+	return GUINT_TO_INT8 (type->data.method->suppress_gc_transition ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention);
 }
 
 MonoBoolean

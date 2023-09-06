@@ -18,9 +18,6 @@ if (MSVC)
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
     add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
-
-  # FIXME: Remove the line below when https://github.com/dotnet/runtime/issues/91249 is fixed.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>) # conversion from 'type1' to 'type2', possible loss of data
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
