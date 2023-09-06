@@ -165,6 +165,7 @@
           DependsOnTargets="InstallWorkloadUsingArtifacts"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
+  <!-- Must be imported before liveILLink.targets so that _RequiresLiveILLink is set early enough. -->
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
 </Project>

@@ -9,6 +9,8 @@
 
   <!-- resources.targets need to be imported before the Arcade SDK. -->
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
+  <!-- Must be imported before Directory.Build.targets, so that _RequiresLiveILLink is set early enough. -->
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true' or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
@@ -127,8 +129,6 @@
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)slngen.targets" Condition="'$(IsSlnGen)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true' or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
   <Import Project="$(RepositoryEngineeringDir)AvoidRestoreCycleOnSelfReference.targets" Condition="'$(AvoidRestoreCycleOnSelfReference)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 

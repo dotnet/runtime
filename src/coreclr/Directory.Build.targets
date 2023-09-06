@@ -1,4 +1,9 @@
 <Project>
+
+  <!-- Import targets here to have TargetPath and other macros defined. Limit to CoreLib. -->
+  <!-- Must be imported before Directory.Build.targets, so that _RequiresLiveILLink is set early enough. -->
+  <Import Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib' or '$(IsNativeAotProject)' == 'true'" Project="$(RepositoryEngineeringDir)illink.targets" />
+
   <Import Project="..\..\Directory.Build.targets" />
 
   <ItemGroup Condition="'$(UsingMicrosoftNoTargetsSdk)' != 'true'">
@@ -25,9 +30,5 @@
           DestinationFiles="@(_DebugSymbolToMove->Metadata('Destination'))"
           UseHardlinksIfPossible="false" />
   </Target>
-
-  <!-- Import targets here to have TargetPath and other macros defined. Limit to CoreLib. -->
-  <Import Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib' or '$(IsNativeAotProject)' == 'true'" Project="$(RepositoryEngineeringDir)illink.targets" />
-  <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
 
 </Project>
