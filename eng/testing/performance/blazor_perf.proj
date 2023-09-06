@@ -9,7 +9,7 @@
     <Python>python3</Python>
     <HelixPreCommands Condition="'$(AGENT_OS)' != 'Windows_NT'">$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
 
-    <PublishArgs>--has-workload --readonly-dotnet --msbuild %27&quot;/p:_TrimmerDumpDependencies=true;/p:HybridGlobalization=$(hybridGlobalization)&quot;%27 --msbuild /warnaserror:NU1602,NU1604 --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog $(LogDirectory)blazor_publish.binlog</PublishArgs>
+    <PublishArgs>--has-workload --readonly-dotnet --msbuild %27&quot;/p:_TrimmerDumpDependencies=true;/p:HybridGlobalization=$(hybridGlobalization);/warnaserror:NU1602,NU1604&quot;%27 --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog $(LogDirectory)blazor_publish.binlog</PublishArgs>
     <PublishCommand>$(EnvVars) $(Python) pre.py publish $(PublishArgs)</PublishCommand>
     <!-- For non-default configurations, add the configuration to the name of the test (in the matching format), otherwise didn't add anything.
     This will ensure that PowerBI's using the test name rather than the run configuration for the data continue to work properly and defaults are connected -->
