@@ -357,7 +357,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 		g_assert(info);
 		for (guint32 i = 0; i < info->num_fields; ++i) {
 			if (MONO_TYPE_ISSTRUCT (info->fields [i].field->type)) {
-				collect_field_info_nested (mono_class_from_mono_type_internal (info->fields [i].field->type), fields_array, info->fields [i].offset, pinvoke, unicode);
+				collect_field_info_nested (mono_class_from_mono_type_internal (info->fields [i].field->type), fields_array, (offset + info->fields [i].offset), pinvoke, unicode);
 			} else {
 				guint32 align;
 				StructFieldInfo f;
@@ -367,7 +367,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 															   info->fields [i].mspec,
 															   &align, TRUE, unicode);
 				f.offset = offset + info->fields [i].offset;
-				if (i == info->num_fields - 1 && f.size + f.offset < info->native_size) {
+				if ((i == info->num_fields - 1) && ((f.size + f.offset) < info->native_size)) {
 					/* This can happen with .pack directives eg. 'fixed' arrays */
 					if (MONO_TYPE_IS_PRIMITIVE (f.type)) {
 						/* Replicate the last field to fill out the remaining place, since the code in add_valuetype () needs type information */
@@ -7305,7 +7305,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_c0 == 0) {
 				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			} else {
-				int imm = ins->inst_c0;
+				int imm = GTMREG_TO_INT (ins->inst_c0);
 				amd64_sse_movaps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
 				amd64_sse_shufps_reg_reg_imm (code, SIMD_TEMP_REG, ins->sreg1, imm);
 				amd64_sse_pxor_reg_reg (code, ins->dreg, ins->dreg);
@@ -7326,7 +7326,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_pinsrq_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
 		case OP_INSERT_R4: {
-			guint8 imm = (0 << 6) | (ins->inst_c0 << 4);
+			guint8 imm = (0 << 6) | (GTMREG_TO_UINT8 (ins->inst_c0 << 4));
 			amd64_sse_insertps_reg_reg (code, ins->sreg1, ins->sreg2, imm);
 			break;
 		}

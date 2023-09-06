@@ -756,25 +756,23 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, is_a
                     logging.info("Uncompress %s", download_path)
 
                 if item_path.lower().endswith(".zip"):
-                    with zipfile.ZipFile(download_path, "r") as file_handle:
-                        file_handle.extractall(temp_location)
+                    with zipfile.ZipFile(download_path, "r") as zip:
+                        zip.extractall(target_dir)
+                        archive_names = zip.namelist()
                 else:
-                    with tarfile.open(download_path, "r") as file_handle:
-                        file_handle.extractall(temp_location)
+                    with tarfile.open(download_path, "r") as tar:
+                        tar.extractall(target_dir)
+                        archive_names = tar.getnames()
 
-                # Copy everything that was extracted to the target directory.
-                copy_directory(temp_location, target_dir, verbose_copy=verbose,
-                               match_func=lambda path: not path.endswith(".zip") and not path.endswith(".tar.gz"))
+                for archive_name in archive_names:
+                    if archive_name.endswith("/"):
+                        # Directory
+                        continue
 
-                # The caller wants to know where all the files ended up, so compute that.
-                for dirpath, _, files in os.walk(temp_location, topdown=True):
-                    for file_name in files:
-                        if not file_name.endswith(".zip") and not file_name.endswith(".tar.gz"):
-                            full_file_path = os.path.join(dirpath, file_name)
-                            target_path = full_file_path.replace(temp_location, target_dir)
-                            local_paths.append(target_path)
+                    target_path = os.path.join(target_dir, archive_name.replace("/", os.path.sep))
+                    local_paths.append(target_path)
             else:
-                # Not a zip file; download directory to target directory
+                # Not an archive
                 download_path = os.path.join(target_dir, item_name)
                 if is_item_url:
                     ok = download_one_url(item_path, download_path, fail_if_not_found=fail_if_not_found, is_azure_storage=is_azure_storage, display_progress=display_progress)

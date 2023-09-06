@@ -31,20 +31,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 12, 20)]
-        public static void Bind_ProgramMyClass(this IConfiguration configuration, object? obj)
+        [InterceptsLocation(@"src-0.cs", 12, 20)]
+        public static void Bind_ProgramMyClass(this IConfiguration configuration, object? instance)
         {
             if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (obj is null)
+            if (instance is null)
             {
-                throw new ArgumentNullException(nameof(obj));
+                return;
             }
 
-            var typedObj = (Program.MyClass)obj;
+            var typedObj = (Program.MyClass)instance;
             BindCore(configuration, ref typedObj, binderOptions: null);
         }
         #endregion IConfiguration extensions.
@@ -52,73 +52,73 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList", "MyDictionary", "MyComplexDictionary" });
 
-        public static void BindCore(IConfiguration configuration, ref List<int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref List<int> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj.Add(ParseInt(value, () => section.Path));
+                    instance.Add(ParseInt(value, () => section.Path));
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, string> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Dictionary<string, string> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj[section.Key] = value;
+                    instance[section.Key] = value;
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, Program.MyClass2> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Dictionary<string, Program.MyClass2> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (!(obj.TryGetValue(section.Key, out Program.MyClass2? element) && element is not null))
+                if (!(instance.TryGetValue(section.Key, out Program.MyClass2? element) && element is not null))
                 {
                     element = new Program.MyClass2();
                 }
-                obj[section.Key] = element;
+                instance[section.Key] = element;
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
-            obj.MyString = configuration["MyString"]!;
+            instance.MyString = configuration["MyString"]!;
 
             if (configuration["MyInt"] is string value1)
             {
-                obj.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section2)
             {
-                List<int>? temp4 = obj.MyList;
+                List<int>? temp4 = instance.MyList;
                 temp4 ??= new List<int>();
                 BindCore(section2, ref temp4, binderOptions);
-                obj.MyList = temp4;
+                instance.MyList = temp4;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section5)
             {
-                Dictionary<string, string>? temp7 = obj.MyDictionary;
+                Dictionary<string, string>? temp7 = instance.MyDictionary;
                 temp7 ??= new Dictionary<string, string>();
                 BindCore(section5, ref temp7, binderOptions);
-                obj.MyDictionary = temp7;
+                instance.MyDictionary = temp7;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyComplexDictionary")) is IConfigurationSection section8)
             {
-                Dictionary<string, Program.MyClass2>? temp10 = obj.MyComplexDictionary;
+                Dictionary<string, Program.MyClass2>? temp10 = instance.MyComplexDictionary;
                 temp10 ??= new Dictionary<string, Program.MyClass2>();
                 BindCore(section8, ref temp10, binderOptions);
-                obj.MyComplexDictionary = temp10;
+                instance.MyComplexDictionary = temp10;
             }
         }
 
