@@ -176,7 +176,7 @@
 - on the deputy thread
     - to dispatch async calls from UI thread to it
 
-### Blazor - what breaks when MT build
+## Blazor - what breaks when MT build
 - as compared to single threaded runtime, the major difference would be no synchronous callbacks.
     - for example from DOM `onClick`. This is one of the reasons people prefer ST WASM over Blazor Server.
     - but there is really [no way around it](#problem), because you can't have both MT and sync calls from UI.
@@ -187,7 +187,7 @@
 - throw PNSE from Blazor's [`IJSInProcessRuntime.Invoke`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsinprocessruntime.invoke)
 - throw PNSE from Blazor's any call to [`IJSUnmarshalledRuntime `](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsunmarshalledruntime)
 
-## Current state 2023 Sep
+# Current state 2023 Sep
  - we already ship MT version of the runtime in the wasm-tools workload.
  - It's enabled by `<WasmEnableThreads>true</WasmEnableThreads>` and it requires COOP HTTP headers.
  - It will serve extra file `dotnet.native.worker.js`.
