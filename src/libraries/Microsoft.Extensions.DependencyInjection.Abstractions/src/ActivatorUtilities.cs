@@ -22,10 +22,12 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class ActivatorUtilities
     {
-        // Support collectible assemblies.
-        // This has less overhead than s_collectibleConstructorInfos so we use it for the common cases.
 #if NETCOREAPP
+        // Support collectible assemblies.
+
+        // This has less overhead than s_collectibleConstructorInfos so we use it for the common cases.
         private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
+
         private static readonly Lazy<ConditionalWeakTable<Type, ConstructorInfoEx[]>> s_collectibleConstructorInfos = new();
 #endif
 
@@ -661,7 +663,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 Info = constructor;
                 Parameters = constructor.GetParameters();
-                IsPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
+                IsPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), inherit: false);
 
                 for (int i = 0; i < Parameters.Length; i++)
                 {
@@ -1103,8 +1105,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             public static void ClearCache(Type[]? _)
             {
-                // Ignore the types in Type[]; just clear out the cache.
-                // This avoids searching for references to these types in constructor arguments.
+                // Ignore the Type[] argument; just clear the caches.
                 s_constructorInfos.Clear();
                 if (s_collectibleConstructorInfos.IsValueCreated)
                 {
