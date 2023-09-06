@@ -7,7 +7,7 @@
 #endif
 
 #define SWITCH_MAX_DISTANCE (TARGET_POINTER_SIZE * BITS_IN_BYTE - 1)
-#define SWITCH_MIN_TESTS 3
+#define SWITCH_MIN_TESTS 4
 
 // Does given block represent JTRUE(X ==/!= CNS) construct?
 bool IsConstantTestBlock(const BasicBlock* block,
@@ -19,13 +19,12 @@ bool IsConstantTestBlock(const BasicBlock* block,
 {
     if (block->KindIs(BBJ_COND) && block->hasSingleStmt() && ((block->bbFlags & BBF_DONT_REMOVE) == 0))
     {
-        const GenTree* rootNode = block->firstStmt()->GetRootNode();
+        const GenTree* rootNode = block->lastStmt()->GetRootNode();
         assert(rootNode->OperIs(GT_JTRUE));
 
         // It has to be JTRUE(GT_EQ or GT_NE)
         if (rootNode->gtGetOp1()->OperIs(GT_EQ, GT_NE))
         {
-            // Let's rely on constants to be always on the right side for simplicity
             GenTree* op1 = rootNode->gtGetOp1()->gtGetOp1();
             GenTree* op2 = rootNode->gtGetOp1()->gtGetOp2();
 
@@ -281,9 +280,6 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* block)
                     // Current block is in a different EH region, stop searching and process what we already have
                     return optSwitchConvert(block, testValueIndex, testValues, variableNode);
                 }
-
-                // It's currently limited to LCL_VAR
-                assert(variableNode->OperIs(GT_LCL_VAR));
 
                 testValues[testValueIndex++] = currCns;
                 if (testValueIndex == SWITCH_MAX_DISTANCE)
