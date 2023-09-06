@@ -152,6 +152,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  switchrecognition.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
