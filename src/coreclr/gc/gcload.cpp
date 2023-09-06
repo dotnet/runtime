@@ -82,7 +82,11 @@ GC_Initialize(
     assert(clrToGC == nullptr);
 #endif
 
-#ifndef FEATURE_NATIVEAOT // GCConfig and GCToOSInterface are initialized in PalInit
+#if defined(BUILD_AS_STANDALONE) || !defined(FEATURE_NATIVEAOT) 
+
+    // For NativeAOT, GCConfig and GCToOSInterface are initialized in PalInit
+    // In case of NativeAOT using clrgc, the copy inside clrgc needs to be intiailized again
+
     // Initialize GCConfig before anything else - initialization of our
     // various components may want to query the current configuration.
     GCConfig::Initialize();
