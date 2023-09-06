@@ -150,13 +150,9 @@ jobs:
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - powershell: |
-          & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
-          pushd $env:TEMP
-          curl.exe -JLO http://aka.ms/vscollect.exe
-          ./vscollect.exe
-          popd
-          mkdir $(Build.SourcesDirectory)\artifacts\log
-          mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspre.zip
+          ./eng/disable_vsupdate.ps1
+          ./eng/collect_vsinfo.ps1 -ArchiveName vspre.zip
+        name: Collect vslogs on Entry and disable updates
         condition: always()
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
@@ -242,13 +238,8 @@ jobs:
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - powershell: |
-          & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' -all -prerelease
-          pushd $env:TEMP
-          curl.exe -JLO http://aka.ms/vscollect.exe
-          ./vscollect.exe
-          popd
-          mv $env:TEMP\vslogs.zip $(Build.SourcesDirectory)\artifacts\log\vspost.zip
-        condition: always()
+          ./eng/collect_vsinfo.ps1 -ArchiveName vspost.zip
+        name: Collect vslogs on exit
 
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs

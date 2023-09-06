@@ -1,0 +1,43 @@
+<#
+.PARAMETER ArchiveName
+Name of the archive containing vs logs
+
+.NOTES
+Returns 0 if succeeds, 1 otherwise
+#>
+[CmdletBinding(PositionalBinding=$false)]
+Param (
+  [Parameter(Mandatory=$True)]
+  [string] $ArchiveName
+)
+
+. $PSScriptRoot/common/tools.ps1
+
+$vscollect_uri="http://aka.ms/vscollect.exe"
+$vscollect="$env:TEMP\vscollect.exe"
+
+if (-not (Test-Path $vscollect)) {
+    Retry({
+        Write-Host "GET $vscollect_uri"
+        Invoke-WebRequest $vscollect_uri -OutFile $vscollect -UseBasicParsing
+    })
+
+    if (-not (Test-Path $vscollect)) {
+        Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "Unable to download vscollect."
+        exit 1
+    }
+}
+
+&"$vscollect"
+
+mkdir $LogDir
+Move-Item $env:TEMP\vslogs.zip "$LogDir\$ArchiveName"
+
+$vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+if (-not (Test-Path -Path "$vswhere" -PathType Leaf))
+{
+    Write-Error "Couldn't locate vswhere at $vswhere"
+    exit 1
+}
+
+ &"$vswhere" -all -prerelease -products * |  Tee-Object -FilePath "$LogDir\vs_where.log"
