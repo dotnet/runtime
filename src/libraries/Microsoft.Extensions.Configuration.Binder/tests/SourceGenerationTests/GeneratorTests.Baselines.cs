@@ -5,46 +5,15 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     public partial class ConfigurationBindingGeneratorTests
     {
-        private const string BindCallSampleCode = @"
-        using System.Collections.Generic;
-        using Microsoft.Extensions.Configuration;
-
-        public class Program
-        {
-        	public static void Main()
-        	{
-        		ConfigurationBuilder configurationBuilder = new();
-        		IConfigurationRoot config = configurationBuilder.Build();
-
-        		MyClass configObj = new();
-        		config.Bind(configObj);
-                config.Bind(configObj, options => { });
-                config.Bind(""key"", configObj);
-        	}
-
-        	public class MyClass
-        	{
-        		public string MyString { get; set; }
-        		public int MyInt { get; set; }
-        		public List<int> MyList { get; set; }
-        		public Dictionary<string, string> MyDictionary { get; set; }
-                public Dictionary<string, MyClass2> MyComplexDictionary { get; set; }
-        	}
-
-            public class MyClass2 { }
-        }";
-
-        [Theory]
-        [InlineData(LanguageVersion.Preview)]
-        public async Task Bind(LanguageVersion langVersion) =>
-            await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, langVersion, extType: ExtensionClassType.ConfigurationBinder);
+        [Fact]
+        public async Task Bind() =>
+            await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, extType: ExtensionClassType.ConfigurationBinder);
 
         [Fact]
         public async Task Bind_Instance()
@@ -163,9 +132,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         		IConfigurationRoot config = configurationBuilder.Build();
 
         		MyClass configObj = config.Get<MyClass>();
-                configObj = config.Get(typeof(MyClass2));
+                MyClass2 configObj2 = (MyClass2)config.Get(typeof(MyClass2));
                 configObj = config.Get<MyClass>(binderOptions => { });
-                configObj = config.Get(typeof(MyClass2), binderOptions => { });
+                configObj2 = (MyClass2)config.Get(typeof(MyClass2), binderOptions => { });
         	}
 
         	public class MyClass
@@ -302,7 +271,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 ConfigurationBuilder configurationBuilder = new();
                                 IConfigurationRoot config = configurationBuilder.Build();
 
-                                MyClass configObj = config.Get(typeof(MyClass2));
+                                MyClass2 configObj = (MyClass2)config.Get(typeof(MyClass2));
                             }
 
                             public class MyClass
@@ -590,9 +559,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 public UInt128 Prop12 { get; set; }
                                 public DateOnly Prop18 { get; set; }
                                 public TimeOnly Prop22 { get; set; }
-                                public byte[] Prop22 { get; set; }
-                                public int Prop23 { get; set; }
-                                public DateTime Prop24 { get; set; }
+                                public byte[] Prop28 { get; set; }
+                                public int Prop29 { get; set; }
+                                public DateTime Prop30 { get; set; }
                             }
                         }
                         """;
@@ -613,7 +582,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     {
                         ConfigurationBuilder configurationBuilder = new();
                         IConfiguration config = configurationBuilder.Build();
-                        IConfigurationSection section = config.GetSection(""MySection"");
+                        IConfigurationSection section = config.GetSection("MySection");
 
                         section.Get<MyClassWithCustomCollections>();
                     }
@@ -647,7 +616,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, assessDiagnostics: (d) =>
+            await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, validateOutputCompDiags: false, assessDiagnostics: (d) =>
             {
                 Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
                 Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
