@@ -61,6 +61,9 @@ namespace Internal.Runtime.Binder
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern System.Reflection.LoaderAllocator LoaderAllocator_EnsureReference(System.Reflection.LoaderAllocator LA, System.Reflection.LoaderAllocator pOtherLA);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void LoaderAllocator_RegisterBinder(System.Reflection.LoaderAllocator LA, AssemblyBinder binder);
+
         public static bool IsCompatibleAssemblyVersion(AssemblyName requestedName, AssemblyName foundName)
         {
             AssemblyVersion pRequestedVersion = requestedName.Version;

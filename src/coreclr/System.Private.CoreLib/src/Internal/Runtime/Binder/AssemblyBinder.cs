@@ -69,7 +69,7 @@ namespace Internal.Runtime.Binder
         }
 
         // void GetNameForDiagnostics(/*out*/ SString& alcName);
-        // 
+
         // static void GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName);
         // static void GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString& alcName);
 

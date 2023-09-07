@@ -127,6 +127,7 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyName.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\AssemblyVersion.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\BindResult.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\CustomAssemblyBinder.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\DefaultAssemblyBinder.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\TextualIdentityParser.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Binder\Tracing\ResolutionAttemptedOperation.cs" />
