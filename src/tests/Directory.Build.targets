@@ -524,6 +524,18 @@
 
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
+  <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
+  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
+
+  <Target Name="GetBinPlaceTargetFramework" />
+
+  <Import Project="$(RepoRoot)src\coreclr\clr.featuredefines.props" />
+
+  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
+
+  <!-- RunOnly projects have a special build for dependent projects -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
@@ -576,23 +588,10 @@
     <IlcArg Include="--trim:xunit.abstractions" />
   </ItemGroup>
 
-  <!-- Must be imported before liveILLink.targets, so that _RequiresLiveILLink is set early enough. -->
+  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
   <Import Project="$(RepoRoot)eng/liveILLink.targets" />
-  <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
-  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
-
-  <Target Name="GetBinPlaceTargetFramework" />
-
-  <Import Project="$(RepoRoot)src\coreclr\clr.featuredefines.props" />
-
-  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
-  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
-
-  <!-- RunOnly projects have a special build for dependent projects -->
-  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
-
-  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <Content Include="@(SanitizerRuntimeToCopy->'$(CoreCLRArtifactsPath)/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />
