@@ -150,7 +150,7 @@
     - how to do that during GC/finalizer ?
     - should we run finalizer per worker ?
 - is it ok for `SynchronizationContext` to be public API
-    - because it could contain UI thread SynchronizationContext, which user code should not be disposed on.
+    - because it could contain UI thread SynchronizationContext, which user code should not be dispatched on.
 
 ## JSHost.GlobalThis, JSHost.DotnetInstance, JSHost.ImportAsync
 - calls will be dispatched from deputy thread to UI JavaScript
@@ -165,8 +165,9 @@
     - is solution for deputy's SynchronizationContext same as for JSWebWorker's SynchronizationContext, from the code-gen perspective ?
     - how could "HTTP from any C# thread" redirect this to the thread of fetch JS object affinity ?
     - should generated code or the SynchronizationContext detect it from passed arguments ?
-    - TODO: explain why not make user responsible for doing it, instaed of changing generator
     - TODO: figure out backward compatibility of already generated code. Must work on single threaded
+- why not make user responsible for doing it, instead of changing generator ?
+    - I implemented MT version of HTTP and WS by calling `SynchronizationContext.Send` and it's less than perfect. It's difficult to do it right: Error handling, asynchrony.
 - on a JSWebWorker
     - to dispatch any calls of JSObject proxy members
     - to dispatch `Dispose()` of JSObject proxy
