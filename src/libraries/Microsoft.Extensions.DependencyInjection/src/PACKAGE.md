@@ -39,7 +39,7 @@ The main types provided by this library are:
 * API documentation
   - [DefaultServiceProviderFactory](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.defaultserviceproviderfactory)
   - [ServiceCollectionContainerBuilderExtensions](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.servicecollectioncontainerbuilderextensions)
-  - [ServiceProvider](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.serviceprovider)  
+  - [ServiceProvider](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.serviceprovider)
 
 ## Related Packages
 - `Microsoft.Extensions.DependencyInjection.Abstractions`

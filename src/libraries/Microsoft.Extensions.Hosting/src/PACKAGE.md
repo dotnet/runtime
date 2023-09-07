@@ -48,7 +48,7 @@ The main types provided by this library are:
 * `Microsoft.Extensions.Hosting.IHostedLifecycleService`
 
 ## Additional Documentation
-* [Generic host](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host)
+* [Generic host](https://learn.microsoft.com/dotnet/core/extensions/generic-host)
 * API documentation
   - [Host](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.host)
   - [HostApplicationBuilder](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.hostapplicationbuilder)
