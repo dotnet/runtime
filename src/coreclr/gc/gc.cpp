@@ -1454,8 +1454,6 @@ enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
     {
 #ifdef DYNAMIC_HEAP_COUNT
         uint64_t start = GetHighPrecisionTimeStamp();
-
-        msl->msl_wait_count++;
 #endif //DYNAMIC_HEAP_COUNT
 
         unsigned int i = 0;
@@ -1511,7 +1509,7 @@ enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
 #ifdef DYNAMIC_HEAP_COUNT
         uint64_t end = GetHighPrecisionTimeStamp();
         Interlocked::ExchangeAdd64 (&msl->msl_wait_time, end - start);
-        dprintf (3, ("wait for msl lock total time: %zd, total count: %zd, this time: %zd, this count: %u", msl->msl_wait_time, msl->msl_wait_count, end - start, i));
+        dprintf (3, ("h%d wait for msl lock wait time %zd, total wait time: %zd", heap_number, (end - start), msl->msl_wait_time));
 #endif //DYNAMIC_HEAP_COUNT
     }
     while (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free);
@@ -2351,9 +2349,6 @@ size_t      gc_heap::min_balance_threshold = 0;
 VOLATILE(BOOL) gc_heap::gc_started;
 
 #ifdef MULTIPLE_HEAPS
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
-int         gc_heap::heaps_in_this_gc = 0;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
 GCEvent     gc_heap::gc_start_event;
 bool        gc_heap::gc_thread_no_affinitize_p = false;
 uintptr_t   process_mask = 0;
@@ -2944,6 +2939,11 @@ BOOL gc_heap::should_expand_in_full_gc = FALSE;
 #ifdef DYNAMIC_HEAP_COUNT
 int gc_heap::dynamic_adaptation_mode = dynamic_adaptation_default;
 gc_heap::dynamic_heap_count_data_t SVR::gc_heap::dynamic_heap_count_data;
+uint64_t gc_heap::last_suspended_end_time = 0;
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+int gc_heap::heaps_in_this_gc = 0;
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 #endif // DYNAMIC_HEAP_COUNT
 
 // Provisional mode related stuff.
@@ -12522,7 +12522,6 @@ void gc_heap::clear_gen0_bricks()
 {
     if (!gen0_bricks_cleared)
     {
-        dprintf (6666, ("clearing gen0 bricks for h%d", heap_number));
         gen0_bricks_cleared = TRUE;
         //initialize brick table for gen 0
 #ifdef USE_REGIONS
@@ -22101,18 +22100,65 @@ void gc_heap::update_end_gc_time_per_heap()
     for (int gen_number = 0; gen_number <= settings.condemned_generation; gen_number++)
     {
         dynamic_data* dd = dynamic_data_of (gen_number);
+        dd_previous_gc_end_time (dd) = dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd);
+
+        if (heap_number == 0)
+        {
+            dprintf (6666, ("updating prev GC end time: prev start %I64d + prev gc elapsed %Id = %I64d", dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), dd_previous_gc_end_time (dd)));
+        }
+
         dd_gc_elapsed_time (dd) = (size_t)(end_gc_time - dd_time_clock (dd));
 
         if (heap_number == 0)
         {
-            dprintf (6666, ("updating NGC%d %Id elapsed time to %I64d - %I64d = %I64d", gen_number, dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
+            dprintf (6666, ("updating NGC%d %Id prev ending time %I64d, elapsed time to %I64d - %I64d = %I64d",
+                gen_number, dd_gc_clock (dd), dd_previous_gc_end_time (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
         }
     }
+
+#ifdef DYNAMIC_HEAP_COUNT
+    if (heap_number == 0)
+    {
+        if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+        {
+            dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
+            sample.elapsed_between_gcs = end_gc_time - last_suspended_end_time;
+            sample.gc_pause_time = dd_gc_elapsed_time (dynamic_data_of (0));
+            sample.msl_wait_time = get_msl_wait_time();
+
+            dprintf (6666, ("sample#%d: this GC end %I64d - last sus end %I64d = %I64d, this GC pause %I64d, msl wait %I64d",
+                dynamic_heap_count_data.sample_index, end_gc_time, last_suspended_end_time, sample.elapsed_between_gcs, sample.gc_pause_time, sample.msl_wait_time));
+
+            last_suspended_end_time = end_gc_time;
+
+            GCEventFireHeapCountSample_V1 (
+                (uint64_t)VolatileLoadWithoutBarrier (&settings.gc_index),
+                sample.elapsed_between_gcs,
+                sample.gc_pause_time,
+                sample.msl_wait_time);
+
+            dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
+
+            if (settings.condemned_generation == max_generation)
+            {
+                size_t elapsed_between_gen2_gcs = end_gc_time - dd_previous_gc_end_time (dynamic_data_of (max_generation));
+                size_t gen2_elapsed_time = sample.gc_pause_time;
+                dynamic_heap_count_data.gen2_gc_percents[dynamic_heap_count_data.gen2_sample_index] = (float)gen2_elapsed_time * 100.0f / elapsed_between_gen2_gcs;
+
+                dprintf (6666, ("gen2 sample#%d: this GC end %I64d - last gen2 end %I64d = %I64d, GC elapsed %I64d, percent %.3f",
+                    dynamic_heap_count_data.gen2_sample_index, end_gc_time, dd_previous_gc_end_time (dynamic_data_of (max_generation)), elapsed_between_gen2_gcs,
+                    gen2_elapsed_time, dynamic_heap_count_data.gen2_gc_percents[dynamic_heap_count_data.gen2_sample_index]));
+                dynamic_heap_count_data.gen2_sample_index = (dynamic_heap_count_data.gen2_sample_index + 1) % dynamic_heap_count_data_t::sample_size;
+            }
+        }
+    }
+#endif //DYNAMIC_HEAP_COUNT
 }
 
 void gc_heap::update_end_ngc_time()
 {
     end_gc_time = GetHighPrecisionTimeStamp();
+
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     last_gc_end_time_us = end_gc_time;
     dprintf (HEAP_BALANCE_LOG, ("[GC#%zd-%zd-%zd]", settings.gc_index,
@@ -22254,11 +22300,28 @@ void gc_heap::gc1()
     {
         dynamic_data* dd = dynamic_data_of (n);
         end_gc_time = GetHighPrecisionTimeStamp();
+        size_t time_since_last_gen2 = (size_t)(end_gc_time - (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)));
+        if (heap_number == 0)
+        {
+            dprintf (6666, ("BGC %Id end %I64d - (prev gen2 start %I64d + elapsed %Id = %I64d) = time inbewteen gen2 %Id",
+                dd_gc_clock (dd), end_gc_time, dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)), time_since_last_gen2));
+        }
         dd_gc_elapsed_time (dd) = (size_t)(end_gc_time - dd_time_clock (dd));
+#ifdef DYNAMIC_HEAP_COUNT
         if (heap_number == 0)
         {
             dprintf (6666, ("updating BGC %Id elapsed time to %I64d - %I64d = %I64d", dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
+
+            // add the BGC sample here - there's still a synchronization problem but we are only updating one number so either the other thread will read it
+            // or it won't. Either way the worst that can happen is the other thread misses reading this number.
+            float bgc_percent = (float)dd_gc_elapsed_time (dd) * 100.0f / (float)time_since_last_gen2;
+            dynamic_heap_count_data.gen2_gc_percents[dynamic_heap_count_data.gen2_sample_index] = bgc_percent;
+            dprintf (6666, ("gen2 sample %d elapsed %Id * 100 / time inbetween gen2 %Id = %.3f",
+                dynamic_heap_count_data.gen2_sample_index, dd_gc_elapsed_time (dd), time_since_last_gen2, bgc_percent));
+            dynamic_heap_count_data.gen2_sample_index = (dynamic_heap_count_data.gen2_sample_index + 1) % dynamic_heap_count_data_t::sample_size;
         }
+#endif //DYNAMIC_HEAP_COUNT
+
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         if (heap_number == 0)
         {
@@ -23445,7 +23508,7 @@ void gc_heap::update_collection_counts ()
 
         if (heap_number == 0)
         {
-            dprintf (6666, ("updating gen%d collection count to %Id, clock to %Id, prev time %I64d, time %I64d, elapsed between gcs %I64d",
+            dprintf (6666, ("updating gen%d collection count to %Id, clock to %Id, prev start time %I64d, start time %I64d, elapsed between gc starts %I64d",
                 i,
                 dd_collection_count (dd), dd_gc_clock (dd), dd_previous_time_clock (dd), dd_time_clock (dd),
                 (dd_time_clock (dd) - dd_previous_time_clock (dd))));
@@ -25165,35 +25228,17 @@ void gc_heap::recommission_heap()
 #endif //RECORD_LOH_STATE
 }
 
-uint64_t median_of_3 (uint64_t a, uint64_t b, uint64_t c)
-{
-#define compare_and_swap(i, j)      \
-    {                               \
-        if (i < j)                  \
-        {                           \
-            uint64_t t = i;         \
-                         i = j;     \
-                             j = t; \
-        }                           \
-    }
-    compare_and_swap (b, a);
-    compare_and_swap (c, a);
-    compare_and_swap (c, b);
-#undef compare_and_swap
-    return b;
-}
-
 float median_of_3 (float a, float b, float c)
 {
-#define compare_and_swap(i, j)      \
-    {                               \
-        if (i < j)                  \
-        {                           \
-            float t = i;         \
-                         i = j;     \
-                             j = t; \
-        }                           \
-    }
+#define compare_and_swap(i, j)          \
+        {                               \
+            if (i < j)                  \
+            {                           \
+                float t = i;            \
+                          i = j;        \
+                              j = t;    \
+            }                           \
+        }
     compare_and_swap (b, a);
     compare_and_swap (c, a);
     compare_and_swap (c, b);
@@ -25210,118 +25255,10 @@ void gc_heap::check_heap_count ()
         return;
     }
 
-    // we should be calling this only on the main GC thread
+    // we should be calling this only on the heap0's GC thread
     assert (heap_number == 0);
 
-    // acquire data for the current sample
-    uint64_t    soh_msl_wait_time = 0;
-    uint64_t    uoh_msl_wait_time = 0;
-    size_t      allocating_thread_count = 0;
-    size_t      heap_size = 0;
-    for (int i = 0; i < n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-
-        allocating_thread_count += hp->alloc_contexts_used;
-
-        soh_msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
-        hp->more_space_lock_soh.msl_wait_time = 0;
-        hp->more_space_lock_soh.msl_wait_count = 0;
-
-        uoh_msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
-        hp->more_space_lock_uoh.msl_wait_time = 0;
-        hp->more_space_lock_uoh.msl_wait_count = 0;
-
-        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
-        {
-            dynamic_data* dd = hp->dynamic_data_of (gen_idx);
-
-            // estimate the size of each generation as the live data size plus the budget
-            heap_size += dd_current_size (dd) + dd_desired_allocation (dd);
-            dprintf (3, ("h%d g%d current: %zd desired allocation: %zd", i, gen_idx, dd_promoted_size (dd), dd_desired_allocation (dd)));
-        }
-    }
-
-    dynamic_data* hp0_dd0 = g_heaps[0]->dynamic_data_of (0);
-
-    // persist data for the current sample
-    dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
-
-    uint64_t now = GetHighPrecisionTimeStamp();
-    uint64_t saved_last_sample_time = dynamic_heap_count_data.sample_time;
-
-    sample.soh_msl_wait_time = soh_msl_wait_time / n_heaps;
-    sample.uoh_msl_wait_time = uoh_msl_wait_time / n_heaps;
-    sample.elapsed_between_gcs = now - dynamic_heap_count_data.sample_time;
-    dynamic_heap_count_data.sample_time = now;
-    sample.gc_elapsed_time = dd_gc_elapsed_time (hp0_dd0);
-    sample.overhead_time = sample.soh_msl_wait_time + sample.uoh_msl_wait_time + sample.gc_elapsed_time;
-    sample.allocating_thread_count = allocating_thread_count;
-    sample.heap_size = heap_size;
-
-    dprintf (9999, ("sample %d: soh_msl_wait_time: %zd, uoh_msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
-        dynamic_heap_count_data.sample_index,
-        sample.soh_msl_wait_time,
-        sample.uoh_msl_wait_time,
-        now, saved_last_sample_time, 
-        sample.elapsed_between_gcs,
-        sample.gc_elapsed_time,
-        sample.overhead_time,
-        sample.heap_size/(1024*1024)));
-
-    GCEventFireHeapCountSample_V1(
-        sample.gc_elapsed_time,
-        sample.soh_msl_wait_time,
-        sample.uoh_msl_wait_time,
-        sample.elapsed_between_gcs
-    );
-
-    dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
-
-    dprintf (9999, ("current GC %Id, prev %Id", VolatileLoadWithoutBarrier (&settings.gc_index), prev_change_heap_count_gc_index));
-
-    float median_gen2_overhead_percent = 0.0f;
-    dynamic_data* hp0_dd2 = g_heaps[0]->dynamic_data_of (2);
-    if (dynamic_heap_count_data.gen2_gc_clock != dd_gc_clock (hp0_dd2))
-    {
-        size_t last_gc_clock = dynamic_heap_count_data.gen2_gc_clock;
-        dynamic_heap_count_data.gen2_gc_clock = dd_gc_clock (hp0_dd2);
-        uint64_t elapsed_between_gcs = dd_time_clock (hp0_dd2) - dd_previous_time_clock (hp0_dd2);
-
-        dprintf (6666, ("gen 2 elapsed between gc %Id - %Id: since last gen2 %zd gen 2 elapsed time: %zd",
-            last_gc_clock, dynamic_heap_count_data.gen2_gc_clock, elapsed_between_gcs, dd_gc_elapsed_time (hp0_dd2)));
-
-        // persist data for the current sample
-        dynamic_heap_count_data_t::gen2_sample& gen2_sample = dynamic_heap_count_data.gen2_samples[dynamic_heap_count_data.gen2_sample_index];
-
-        gen2_sample.elapsed_between_gcs = elapsed_between_gcs;
-        gen2_sample.gc_elapsed_time = dd_gc_elapsed_time (hp0_dd2);
-
-        dynamic_heap_count_data.gen2_sample_index += 1;
-
-        if (dynamic_heap_count_data.gen2_sample_index == dynamic_heap_count_data_t::sample_size)
-        {
-            dynamic_heap_count_data.gen2_sample_index = 0;
-
-            float percent_overhead[dynamic_heap_count_data_t::sample_size];
-            for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
-            {
-                dynamic_heap_count_data_t::gen2_sample& sample = dynamic_heap_count_data.gen2_samples[i];
-                percent_overhead[i] = (float)sample.gc_elapsed_time * 100.0f / sample.elapsed_between_gcs;
-                if (percent_overhead[i] < 0)
-                    percent_overhead[i] = 0;
-                else if (percent_overhead[i] > 100)
-                    percent_overhead[i] = 100;
-                dprintf (6666, ("gen2 sample %d: percent_overhead: %.3fms / %.3fms = %d%%",
-                    i, (float)sample.gc_elapsed_time / 1000.0, (float)sample.elapsed_between_gcs / 1000.0, (int)percent_overhead[i]));
-            }
-
-            median_gen2_overhead_percent = median_of_3 (percent_overhead[0], percent_overhead[1], percent_overhead[2]);
-
-            dprintf (6666, ("gen2 median gen2 overhead: %.3f", median_gen2_overhead_percent));
-        }
-    }
-
+    dprintf (9999, ("current GC %Id, prev %Id", VolatileLoadWithoutBarrier (&settings.gc_index), dynamic_heap_count_data.prev_gc_index));
     if (settings.gc_index < dynamic_heap_count_data.prev_gc_index + 3)
     {
         // reconsider the decision every few gcs
@@ -25333,47 +25270,62 @@ void gc_heap::check_heap_count ()
     {
         // can't have background gc running while we change the number of heaps
         // so it's useless to compute a new number of heaps here
-        dprintf (9999, ("BGC in progress, don't change"));
+        dprintf (6666, ("don't check! BGC in progress"));
     }
     else
 #endif //BACKGROUND_GC
     {
+        float median_gen2_tcp_percent = dynamic_heap_count_data.get_median_gen2_gc_percent();
+
         // If there was a blocking gen2 GC, the overhead would be very large and most likely we would not pick it. So we
         // rely on the gen2 sample's overhead calculated above.
-        float percent_overhead[dynamic_heap_count_data_t::sample_size];
+        float throughput_cost_percents[dynamic_heap_count_data_t::sample_size];
         for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
         {
             dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
-            percent_overhead[i] = (float)sample.overhead_time * 100.0f / sample.elapsed_between_gcs;
-            if (percent_overhead[i] < 0)
-                percent_overhead[i] = 0;
-            else if (percent_overhead[i] > 100)
-                percent_overhead[i] = 100;
-            dprintf (6666, ("sample %d: percent_overhead: %.3fms / %.3fms = %d%%",
-                i, (float)sample.overhead_time / 1000.0, (float)sample.elapsed_between_gcs / 1000.0, (int)percent_overhead[i]));
+            throughput_cost_percents[i] = (float)(sample.msl_wait_time / n_heaps + sample.gc_pause_time) * 100.0f / (float)sample.elapsed_between_gcs;
+            assert (throughput_cost_percents[i] >= 0.0);
+            if (throughput_cost_percents[i] > 100.0)
+                throughput_cost_percents[i] = 100.0;
+            dprintf (6666, ("sample %d: msl %I64d / %d + pause %I64d / elapsed %I64d = throughput_cost_percent: %.3f", i,
+                sample.msl_wait_time, n_heaps, sample.gc_pause_time, sample.elapsed_between_gcs, throughput_cost_percents[i]));
         }
 
-        float median_percent_overhead = median_of_3 (percent_overhead[0], percent_overhead[1], percent_overhead[2]);
+        float median_throughput_cost_percent = median_of_3 (throughput_cost_percents[0], throughput_cost_percents[1], throughput_cost_percents[2]);
 
         // apply exponential smoothing and use 1/3 for the smoothing factor
         const float smoothing = 3;
-        float smoothed_median_percent_overhead = dynamic_heap_count_data.smoothed_median_percent_overhead;
-        if (smoothed_median_percent_overhead != 0.0f)
+        float smoothed_median_throughput_cost_percent = dynamic_heap_count_data.smoothed_median_throughput_cost_percent;
+        if (smoothed_median_throughput_cost_percent != 0.0f)
         {
             // average it with the previous value
-            smoothed_median_percent_overhead = median_percent_overhead / smoothing + (smoothed_median_percent_overhead / smoothing) * (smoothing - 1);
+            smoothed_median_throughput_cost_percent = median_throughput_cost_percent / smoothing + (smoothed_median_throughput_cost_percent / smoothing) * (smoothing - 1);
         }
         else
         {
-            // first time? initialize to the median
-            smoothed_median_percent_overhead = median_percent_overhead;
+            smoothed_median_throughput_cost_percent = median_throughput_cost_percent;
         }
 
-        dprintf (6666, ("other median overhead: %.3f, smoothed median overhead: %.3f, gen2 overhead %.3f",
-            median_percent_overhead, smoothed_median_percent_overhead, median_gen2_overhead_percent));
+        dprintf (6666, ("median tcp: %.3f, smoothed tcp: %.3f, gen2 tcp %.3f",
+            median_throughput_cost_percent, smoothed_median_throughput_cost_percent, median_gen2_tcp_percent));
 
-        // estimate the space cost of adding a heap as the min gen0 size
-        size_t heap_space_cost_per_heap = dd_min_size (hp0_dd0);
+        size_t heap_size = 0;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+            {
+                dynamic_data* dd = hp->dynamic_data_of (gen_idx);
+
+                // estimate the size of each generation as the live data size plus the budget
+                heap_size += dd_current_size (dd) + dd_desired_allocation (dd);
+                dprintf (3, ("h%d g%d current: %zd desired allocation: %zd", i, gen_idx, dd_promoted_size (dd), dd_desired_allocation (dd)));
+            }
+        }
+
+        // estimate the space cost of adding a heap as the min gen0 budget
+        size_t heap_space_cost_per_heap = dd_min_size (g_heaps[0]->dynamic_data_of (0));
 
         // compute the % space cost of adding a heap
         float percent_heap_space_cost_per_heap = heap_space_cost_per_heap * 100.0f / heap_size;
@@ -25390,24 +25342,24 @@ void gc_heap::check_heap_count ()
         int step_down = (n_heaps + 1) / 3;
 
         // estimate the potential time benefit of going up a step
-        float overhead_reduction_per_step_up = smoothed_median_percent_overhead * step_up / (n_heaps + step_up);
+        float tcp_reduction_per_step_up = smoothed_median_throughput_cost_percent * step_up / (n_heaps + step_up);
 
         // estimate the potential time cost of going down a step
-        float overhead_increase_per_step_down = smoothed_median_percent_overhead * step_down / (n_heaps - step_down);
+        float tcp_increase_per_step_down = smoothed_median_throughput_cost_percent * step_down / (n_heaps - step_down);
 
         // estimate the potential space cost of going up a step
-        float space_cost_increase_per_step_up = percent_heap_space_cost_per_heap * step_up;
+        float scp_increase_per_step_up = percent_heap_space_cost_per_heap * step_up;
 
         // estimate the potential space saving of going down a step
-        float space_cost_decrease_per_step_down = percent_heap_space_cost_per_heap * step_down;
+        float scp_decrease_per_step_down = percent_heap_space_cost_per_heap * step_down;
 
-        dprintf (6666, ("[CHP] u %d, d %d | space/hp %Id / %Id(%.2fmb) = %.3f (u: %.3f, d: %.3f) | so %.3f, u * %.1f = %.3f, d * %.1f = %.3f",
+        dprintf (6666, ("[CHP] u %d, d %d | space cost %Id / heap %Id(%.2fmb) = scp %.3f (u: %.3f, d: %.3f) | tcp %.3f, u * %.1f = %.3f, d * %.1f = %.3f",
             step_up, step_down,
             heap_space_cost_per_heap, heap_size, ((float)heap_size / (float)1000 / (float)1000), percent_heap_space_cost_per_heap,
-            space_cost_increase_per_step_up, space_cost_decrease_per_step_down,
-            smoothed_median_percent_overhead,
-            ((float)step_up / (float)(n_heaps + step_up)), overhead_reduction_per_step_up,
-            ((float)step_down / (float)(n_heaps - step_down)), overhead_increase_per_step_down));
+            scp_increase_per_step_up, scp_decrease_per_step_down,
+            smoothed_median_throughput_cost_percent,
+            ((float)step_up / (float)(n_heaps + step_up)), tcp_reduction_per_step_up,
+            ((float)step_down / (float)(n_heaps - step_down)), tcp_increase_per_step_down));
 
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
         // quick hack for initial testing
@@ -25417,78 +25369,76 @@ void gc_heap::check_heap_count ()
         if ((new_n_heaps < n_heaps) && (dynamic_heap_count_data.lowest_heap_with_msl_uoh != -1))
         {
             new_n_heaps = min (dynamic_heap_count_data.lowest_heap_with_msl_uoh, new_n_heaps);
-
-            // but not down to zero, obviously...
             new_n_heaps = max (new_n_heaps, 1);
         }
-        dprintf (9999, ("stress %d -> %d", n_heaps, new_n_heaps));
+        dprintf (6666, ("stress %d -> %d", n_heaps, new_n_heaps));
 #else //STRESS_DYNAMIC_HEAP_COUNT
         int new_n_heaps = n_heaps;
-        if (median_percent_overhead > 10.0f)
+        if (median_throughput_cost_percent > 10.0f)
         {
             // ramp up more agressively - use as many heaps as it would take to bring
-            // the overhead down to 5%
-            new_n_heaps = (int)(n_heaps * (median_percent_overhead / 5.0));
-            dprintf (6666, ("[CHP0] o %.3f -> %d * %.3f = %d", median_percent_overhead, n_heaps, (median_percent_overhead / 5.0), new_n_heaps));
+            // the tcp down to 5%
+            new_n_heaps = (int)(n_heaps * (median_throughput_cost_percent / 5.0));
+            dprintf (6666, ("[CHP0] o %.3f -> %d * %.3f = %d", median_throughput_cost_percent, n_heaps, (median_throughput_cost_percent / 5.0), new_n_heaps));
             new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
         }
-        // if the median overhead is 10% or less, react slower
-        else if ((smoothed_median_percent_overhead > 5.0f) || (median_gen2_overhead_percent > 10.0f))
+        // if the median tcp is 10% or less, react slower
+        else if ((smoothed_median_throughput_cost_percent > 5.0f) || (median_gen2_tcp_percent > 10.0f))
         {
-            if (smoothed_median_percent_overhead > 5.0f)
+            if (smoothed_median_throughput_cost_percent > 5.0f)
             {
-                dprintf (6666, ("[CHP1] so %.3f > 5, %d + %d = %d", smoothed_median_percent_overhead, n_heaps, step_up, (n_heaps + step_up)));
+                dprintf (6666, ("[CHP1] so %.3f > 5, %d + %d = %d", smoothed_median_throughput_cost_percent, n_heaps, step_up, (n_heaps + step_up)));
             }
             else
             {
-                dprintf (6666, ("[CHP2] o2 %.3f > 10, %d + %d = %d", median_gen2_overhead_percent, n_heaps, step_up, (n_heaps + step_up)));
+                dprintf (6666, ("[CHP2] o2 %.3f > 10, %d + %d = %d", median_gen2_tcp_percent, n_heaps, step_up, (n_heaps + step_up)));
             }
             new_n_heaps += step_up;
         }
         // if we can save at least 1% more in time than we spend in space, increase number of heaps
-        else if ((overhead_reduction_per_step_up - space_cost_increase_per_step_up) >= 1.0f)
+        else if ((tcp_reduction_per_step_up - scp_increase_per_step_up) >= 1.0f)
         {
             dprintf (6666, ("[CHP3] % .3f - % .3f = % .3f, % d + % d = % d",
-                overhead_reduction_per_step_up, space_cost_increase_per_step_up, (overhead_reduction_per_step_up - space_cost_increase_per_step_up),
+                tcp_reduction_per_step_up, scp_increase_per_step_up, (tcp_reduction_per_step_up - scp_increase_per_step_up),
                 n_heaps, step_up, (n_heaps + step_up)));
             new_n_heaps += step_up;
         }
         // if we can save at least 1% more in space than we spend in time, decrease number of heaps
-        else if ((smoothed_median_percent_overhead < 1.0f) &&
-                 (median_gen2_overhead_percent < 5.0f) &&
-                 ((space_cost_decrease_per_step_down - overhead_increase_per_step_down) >= 1.0f))
+        else if ((smoothed_median_throughput_cost_percent < 1.0f) &&
+                 (median_gen2_tcp_percent < 5.0f) &&
+                 ((scp_decrease_per_step_down - tcp_increase_per_step_down) >= 1.0f))
         {
             dprintf (6666, ("[CHP4] so %.3f o2 %.3f, %.3f - %.3f = %.3f, %d + %d = %d",
-                smoothed_median_percent_overhead, median_gen2_overhead_percent,
-                space_cost_decrease_per_step_down, overhead_increase_per_step_down, (space_cost_decrease_per_step_down - overhead_increase_per_step_down),
+                smoothed_median_throughput_cost_percent, median_gen2_tcp_percent,
+                scp_decrease_per_step_down, tcp_increase_per_step_down, (scp_decrease_per_step_down - tcp_increase_per_step_down),
                 n_heaps, step_up, (n_heaps + step_up)));
             new_n_heaps -= step_down;
         }
 
-        assert (1 <= new_n_heaps);
+        assert (new_n_heaps >= 1);
         assert (new_n_heaps <= n_max_heaps);
 #endif //STRESS_DYNAMIC_HEAP_COUNT
 
         dynamic_heap_count_data.new_n_heaps = new_n_heaps;
 
         // store data used for decision to emit in ETW event
-        dynamic_heap_count_data.median_percent_overhead           = median_percent_overhead;
-        dynamic_heap_count_data.smoothed_median_percent_overhead  = smoothed_median_percent_overhead;
+        dynamic_heap_count_data.median_throughput_cost_percent           = median_throughput_cost_percent;
+        dynamic_heap_count_data.smoothed_median_throughput_cost_percent  = smoothed_median_throughput_cost_percent;
         dynamic_heap_count_data.percent_heap_space_cost_per_heap  = percent_heap_space_cost_per_heap;
-        dynamic_heap_count_data.overhead_reduction_per_step_up    = overhead_reduction_per_step_up;
-        dynamic_heap_count_data.overhead_increase_per_step_down   = overhead_increase_per_step_down;
-        dynamic_heap_count_data.space_cost_increase_per_step_up   = space_cost_increase_per_step_up;
-        dynamic_heap_count_data.space_cost_decrease_per_step_down = space_cost_decrease_per_step_down;
+        dynamic_heap_count_data.tcp_reduction_per_step_up    = tcp_reduction_per_step_up;
+        dynamic_heap_count_data.tcp_increase_per_step_down   = tcp_increase_per_step_down;
+        dynamic_heap_count_data.scp_increase_per_step_up   = scp_increase_per_step_up;
+        dynamic_heap_count_data.scp_decrease_per_step_down = scp_decrease_per_step_down;
 
         GCEventFireHeapCountTuning_V1(
             (uint16_t)dynamic_heap_count_data.new_n_heaps,
-            (uint64_t)VolatileLoad(&settings.gc_index),
-            dynamic_heap_count_data.median_percent_overhead,
-            dynamic_heap_count_data.smoothed_median_percent_overhead,
-            dynamic_heap_count_data.overhead_reduction_per_step_up,
-            dynamic_heap_count_data.overhead_increase_per_step_down,
-            dynamic_heap_count_data.space_cost_increase_per_step_up,
-            dynamic_heap_count_data.space_cost_decrease_per_step_down
+            (uint64_t)VolatileLoadWithoutBarrier (&settings.gc_index),
+            dynamic_heap_count_data.median_throughput_cost_percent,
+            dynamic_heap_count_data.smoothed_median_throughput_cost_percent,
+            dynamic_heap_count_data.tcp_reduction_per_step_up,
+            dynamic_heap_count_data.tcp_increase_per_step_down,
+            dynamic_heap_count_data.scp_increase_per_step_up,
+            dynamic_heap_count_data.scp_decrease_per_step_down
         );
 
         if (new_n_heaps != n_heaps)
@@ -25503,6 +25453,7 @@ void gc_heap::check_heap_count ()
             {
                 // background GC is running - reset the new heap count
                 dynamic_heap_count_data.new_n_heaps = n_heaps;
+                dprintf (6666, ("don't change! BGC in progress"));
 
                 GCToEEInterface::RestartEE(TRUE);
             }
@@ -25532,7 +25483,8 @@ void gc_heap::check_heap_count ()
 
     int new_n_heaps = dynamic_heap_count_data.new_n_heaps;
 
-    if (GCScan::GetGcRuntimeStructuresValid())
+    assert (!(dynamic_heap_count_data.init_only_p));
+
     {
         // At this point we are guaranteed to be able to change the heap count to the new one.
         // Change the heap count for joins here because we will need to join new_n_heaps threads together.
@@ -25572,7 +25524,7 @@ void gc_heap::check_heap_count ()
 
     // we made changes to the heap count that will change the overhead,
     // so change the smoothed overhead to reflect that
-    dynamic_heap_count_data.smoothed_median_percent_overhead  = dynamic_heap_count_data.smoothed_median_percent_overhead / n_heaps * old_n_heaps;
+    dynamic_heap_count_data.smoothed_median_throughput_cost_percent = dynamic_heap_count_data.smoothed_median_throughput_cost_percent / n_heaps * old_n_heaps;
 }
 
 bool gc_heap::prepare_to_change_heap_count (int new_n_heaps)
@@ -26035,6 +25987,26 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     }
 
     return true;
+}
+
+size_t gc_heap::get_msl_wait_time()
+{
+    assert (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes);
+
+    size_t msl_wait_since_pause = 0;
+
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+
+        msl_wait_since_pause += hp->more_space_lock_soh.msl_wait_time;
+        hp->more_space_lock_soh.msl_wait_time = 0;
+
+        msl_wait_since_pause += hp->more_space_lock_uoh.msl_wait_time;
+        hp->more_space_lock_uoh.msl_wait_time = 0;
+    }
+
+    return msl_wait_since_pause;
 }
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
@@ -43095,6 +43067,9 @@ bool gc_heap::init_dynamic_data()
     {
         process_start_time = now;
         smoothed_desired_total[0] = dynamic_data_of (0)->min_size * n_heaps;
+#ifdef DYNAMIC_HEAP_COUNT
+        last_suspended_end_time = now;
+#endif //DYNAMIC_HEAP_COUNT
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         last_gc_end_time_us = now;
         dprintf (HEAP_BALANCE_LOG, ("qpf=%zd, start: %zd(%d)", qpf, start_raw_ts, now));
@@ -45585,11 +45560,40 @@ void gc_heap::background_sweep()
     if (heap_number == 0)
     {
 #ifdef BGC_SERVO_TUNING
-        get_and_reset_loh_alloc_info();
+        get_and_reset_loh_alloc_info ();
 #endif //BGC_SERVO_TUNING
-        uint64_t suspended_end_ts = GetHighPrecisionTimeStamp();
+        uint64_t suspended_end_ts = GetHighPrecisionTimeStamp ();
         last_bgc_info[last_bgc_info_index].pause_durations[1] = (size_t)(suspended_end_ts - suspended_start_time);
         total_suspended_time += last_bgc_info[last_bgc_info_index].pause_durations[1];
+
+#ifdef DYNAMIC_HEAP_COUNT
+        if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+        {
+            dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
+            sample.msl_wait_time = get_msl_wait_time();
+            sample.elapsed_between_gcs = suspended_end_ts - last_suspended_end_time;
+            //sample.gc_pause_time = last_bgc_info[last_bgc_info_index].pause_durations[0] + last_bgc_info[last_bgc_info_index].pause_durations[1];
+            // I'm only counting the 2nd BGC pause because the 1st one can include time that happened before last_suspended_end_time. In small workload including
+            // the 1st pause can dramatically change the BGC cost. For large workload generally the 2nd pause is much longer.
+            sample.gc_pause_time = last_bgc_info[last_bgc_info_index].pause_durations[1];
+            dprintf (6666, ("BGC pause 1 %I64d - %I64d = %Id + pause 0 %Id = %Id", suspended_end_ts, suspended_start_time, last_bgc_info[last_bgc_info_index].pause_durations[1],
+                last_bgc_info[last_bgc_info_index].pause_durations[0], sample.gc_pause_time));
+
+            dprintf (6666, ("sample#%d: this BGC 2nd suspension end %I64d - last suspension end %I64d = %I64d, this GC pause %I64d, msl wait %I64d",
+                dynamic_heap_count_data.sample_index, suspended_end_ts, last_suspended_end_time, sample.elapsed_between_gcs, sample.gc_pause_time, sample.msl_wait_time));
+
+            GCEventFireHeapCountSample_V1 (
+                (uint64_t)VolatileLoadWithoutBarrier (&settings.gc_index),
+                sample.elapsed_between_gcs,
+                sample.gc_pause_time,
+                sample.msl_wait_time);
+
+            dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
+
+            last_suspended_end_time = suspended_end_ts;
+        }
+#endif //DYNAMIC_HEAP_COUNT
+
         restart_EE ();
     }
 
@@ -49576,9 +49580,13 @@ void gc_heap::add_bgc_pause_duration_0()
         size_t pause_duration = (size_t)(suspended_end_ts - suspended_start_time);
         last_recorded_gc_info* last_gc_info = &(last_bgc_info[last_bgc_info_index]);
         last_gc_info->pause_durations[0] = pause_duration;
+        dprintf (6666, ("BGC#%Id 1st suspend end %I64d - 1st start %I64d = %Id",
+            VolatileLoadWithoutBarrier (&settings.gc_index), suspended_end_ts, suspended_start_time, pause_duration));
         if (last_gc_info->index < last_ephemeral_gc_info.index)
         {
             last_gc_info->pause_durations[0] -= last_ephemeral_gc_info.pause_durations[0];
+
+            dprintf (6666, ("deduct eph GC %Id -> %Id", last_ephemeral_gc_info.pause_durations[0], last_gc_info->pause_durations[0]));
         }
 
         total_suspended_time += last_gc_info->pause_durations[0];
