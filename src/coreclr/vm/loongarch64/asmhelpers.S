@@ -631,6 +631,46 @@ LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
     bl  JIT_GetSharedGCStaticBase_Helper
 LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
+// Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
+#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+
+.macro GenerateRedirectedStubWithFrame stub, target
+
+    //
+    // This is the primary function to which execution will be redirected to.
+    //
+    NESTED_ENTRY \stub, _TEXT, NoHandler
+
+        //
+        // IN: ra: original IP before redirect
+        //
+
+        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 16
+
+        // alloc stack for FaultingExceptionFrame.
+        addi.d  $sp, $sp, -FaultingExceptionFrame_StackAlloc
+
+        // stack must be 16 bytes aligned
+        CHECK_STACK_ALIGNMENT
+
+        // Save pointer to FEF for GetFrameFromRedirectedStubStackFrame
+        addi.d  $a0, $sp, FaultingExceptionFrame_FrameOffset
+
+        // Prepare to initialize to NULL
+        st.d    $r0, $a0, 0  // Initialize vtbl (it is not strictly necessary)
+        st.d    $r0, $a0, FaultingExceptionFrame__m_fFilterExecuted  // Initialize BOOL for personality routine
+
+        bl   C_FUNC(\target)
+        // Target should not return.
+        EMIT_BREAKPOINT
+
+    NESTED_END \stub, _TEXT
+
+.endm
+
+GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
+
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
