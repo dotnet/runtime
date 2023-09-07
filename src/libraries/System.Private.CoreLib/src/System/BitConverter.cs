@@ -158,7 +158,7 @@ namespace System
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
             return true;
         }
-        
+
         /// <summary>
         /// Returns the specified 128-bit signed integer value as an array of bytes.
         /// </summary>
@@ -272,7 +272,7 @@ namespace System
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
             return true;
         }
-        
+
         /// <summary>
         /// Returns the specified 128-bit unsigned integer value as an array of bytes.
         /// </summary>
