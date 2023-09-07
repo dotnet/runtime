@@ -13,8 +13,12 @@ namespace System.Diagnostics.Tracing
     internal sealed unsafe partial class NativeRuntimeEventSource : EventSource
     {
         [NonEvent]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetClrInstanceId")]
+        private static partial ushort GetClrInstanceId();
+
+        [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void ResolutionAttempted(ushort CLRInstanceId,
+        public void ResolutionAttempted(
             string AssemblyName,
             ushort Stage,
             string AssemblyLoadContext,
@@ -25,7 +29,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.AssemblyLoaderKeyword))
             {
-                ResolutionAttempted(CLRInstanceId, AssemblyName, Stage, AssemblyLoadContext, Result, ResultAssemblyName, ResultAssemblyPath, ErrorMessage, null, null);
+                ResolutionAttempted(GetClrInstanceId(), AssemblyName, Stage, AssemblyLoadContext, Result, ResultAssemblyName, ResultAssemblyPath, ErrorMessage, null, null);
             }
         }
 

@@ -248,7 +248,6 @@ namespace Internal.Runtime.Binder.Tracing
             }
 
             NativeRuntimeEventSource.Log.ResolutionAttempted(
-                0, // GetClrInstanceId()
                 _assemblyName,
                 (ushort)stage,
                 _assemblyLoadContextName,
