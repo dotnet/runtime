@@ -96,6 +96,9 @@ __CAST_UTYPE_TO_STYPE(guint64, target_mgreg_t, PTRDIFF_MIN, PTRDIFF_MAX)
 #define GINT64_TO_TMREG(v)        G_CAST_TYPE_TO_TYPE(gint64, target_mgreg_t, v)
 #define GUINT64_TO_TMREG(v)       G_CAST_TYPE_TO_TYPE(guint64, target_mgreg_t, v)
 
+#define GINTPTR_TO_TMREG(v)       G_CAST_TYPE_TO_TYPE(gintptr, target_mgreg_t, v)
+#define GPTRDIFF_TO_TMREG(v)      G_CAST_TYPE_TO_TYPE(gptrdiff, target_mgreg_t, v)
+
 /* Alignment for MonoArray.vector */
 #if defined(_AIX)
 /*

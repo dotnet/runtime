@@ -180,7 +180,7 @@ public:
 enum HeapVerifyFlags {
     HEAPVERIFY_NONE             = 0,
     HEAPVERIFY_GC               = 1,   // Verify the heap at beginning and end of GC
-    HEAPVERIFY_BARRIERCHECK     = 2,   // Verify the brick table
+    HEAPVERIFY_BARRIERCHECK     = 2,   // Verify the assignment operations correctly went through write barrier code
     HEAPVERIFY_SYNCBLK          = 4,   // Verify sync block scanning
 
     // the following options can be used to mitigate some of the overhead introduced

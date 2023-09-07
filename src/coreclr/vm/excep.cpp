@@ -5778,6 +5778,7 @@ extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCal
         case COR_E_BADIMAGEFORMAT:
         case COR_E_NEWER_RUNTIME:
         case COR_E_ASSEMBLYEXPECTED:
+        case CLR_E_BIND_ARCHITECTURE_MISMATCH:
             bNoGeekStuff = TRUE;
             break;
     }
