@@ -10,13 +10,13 @@ using Xunit;
 
 #pragma warning disable CS0612, CS0618
 
-struct A
+public struct A
 {
     public long a;
     public long b;
 }
 
-struct AsAnyField
+public struct AsAnyField
 {
     [MarshalAs(UnmanagedType.AsAny)]
     public object intArray;

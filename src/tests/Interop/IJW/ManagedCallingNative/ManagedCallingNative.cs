@@ -9,9 +9,9 @@ using TestLibrary;
 
 namespace ManagedCallingNative
 {
-    class ManagedCallingNative
+    public class ManagedCallingNative
     {
-        static int Main()
+        public static int Main()
         {
             // Disable running on Windows 7 until IJW activation work is complete.
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)

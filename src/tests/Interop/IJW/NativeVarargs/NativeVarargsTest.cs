@@ -12,7 +12,7 @@ using Xunit;
 
 namespace NativeVarargsTest
 {
-    public NativeVarargsTest
+    public class NativeVarargsTest
     {
         public static int Main()
         {

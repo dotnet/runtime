@@ -26,12 +26,13 @@ public unsafe class Program
     private delegate int IntNativeMethodInvoker();
     private delegate void NativeMethodInvoker();
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
+            NegativeTest_ViaCalli();
             NegativeTest_NonBlittable();
             NegativeTest_InstantiatedGenericArguments();
             NegativeTest_FromInstantiatedGenericClass();
@@ -44,11 +45,6 @@ public unsafe class Program
             {
                 TestUnmanagedCallersOnlyValid_ThrowException();
                 TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException();
-            }
-
-            if (args.Length != 0 && args[0].Equals("calli"))
-            {
-                NegativeTest_ViaCalli();
             }
         }
         catch (Exception e)

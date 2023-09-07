@@ -70,7 +70,7 @@ public class DelegateTest
         {
             TestDelegate localDelegate = TestFunction;
             Assert.True(ValidateDelegateValueMatchesExpectedAndClear(expectedValue, ref localDelegate));
-            Assert.Equal(null, localDelegate);
+            Assert.Null(localDelegate);
         }
 
         {
@@ -102,7 +102,7 @@ public class DelegateTest
             };
 
             Assert.True(ValidateDelegateValueMatchesExpectedAndClearStruct(ref cb));
-            Assert.Equal(null, cb.del);
+            Assert.Null(cb.del);
         }
 
         {

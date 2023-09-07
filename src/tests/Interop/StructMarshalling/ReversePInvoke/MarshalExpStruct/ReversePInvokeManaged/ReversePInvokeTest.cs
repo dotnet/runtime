@@ -743,7 +743,7 @@ public class Test_ReversePInvokeTest
 
     #endregion
 
-    static int Main()
+    public static int Main()
     {
         try{
 
