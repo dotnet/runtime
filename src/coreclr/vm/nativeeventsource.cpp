@@ -189,4 +189,14 @@ extern "C" void QCALLTYPE LogContentionStop(uint8_t ContentionFlags, uint16_t Cl
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE LogResolutionAttempted(uint16_t CLRInstanceId, LPCWSTR AssemblyName, uint16_t Stage, LPCWSTR AssemblyLoadContext, uint16_t Result, LPCWSTR ResultAssemblyName, LPCWSTR ResultAssemblyPath, LPCWSTR ErrorMessage, LPCGUID ActivityId, LPCGUID RelatedActivityId)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwResolutionAttempted(CLRInstanceId, AssemblyName, Stage, AssemblyLoadContext, Result, ResultAssemblyName, ResultAssemblyPath, ErrorMessage, ActivityId, RelatedActivityId);
+
+    END_QCALL;
+}
+
 #endif // FEATURE_PERFTRACING
