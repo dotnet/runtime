@@ -9,6 +9,6 @@
   <ItemGroup>
     <!-- This is needed to make sure native binary gets installed in the right location -->
     <CMakeProjectReference Include="../UnmanagedCallersOnly/CMakeLists.txt" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>
