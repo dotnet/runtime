@@ -521,13 +521,14 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
-      # Wasm Library tests - Threading Legs
+      # Build and Smoke Tests only - Wasm Threading Legs
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - browser_wasm
-          nameSuffix: _Threading
+          nameSuffix: _Threading_Smoke
           extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - WasmTestOnBrowser
