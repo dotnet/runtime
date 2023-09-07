@@ -105,7 +105,7 @@ public class Reflection
     }
 
     [System.Security.SecuritySafeCritical]
-    static int Main()
+    public static int Main()
     {
         int failures = 0;
         if (!ReflectionLoad())

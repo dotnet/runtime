@@ -213,12 +213,11 @@ public class IUnknownMarshalingTest
         return true;
     }
 
-    public static int Main()
+    public static void Main()
     {
         IUnknownMarshalingTest testObj = new IUnknownMarshalingTest(); 
         testObj.Initialize();
         testObj.RunTests();
-        return 100;
     }
 
 }

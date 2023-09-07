@@ -11,7 +11,7 @@ namespace NetClient
     using Server.Contract;
     using Server.Contract.Servers;
 
-    class Program
+    public class Program
     {
         class ManagedInner : AggregationTestingClass
         {
@@ -33,7 +33,7 @@ namespace NetClient
             Assert.False(nativeOuter.AreAggregated(nativeOuter, new object()));
         }
 
-        static int Main()
+        public static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

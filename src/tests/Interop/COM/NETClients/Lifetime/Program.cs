@@ -82,7 +82,7 @@ namespace NetClient
             Assert.False(Marshal.AreComObjectsAvailableForCleanup());
         }
 
-        static int Main()
+        public static int Main()
         {
             // RegFree COM and STA apartments are not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

@@ -247,7 +247,7 @@ public class Test_RefCharArrayTest
     #endregion
 
     
-    static int Main()
+    public static int Main()
     {
         bool bresult = true;
 

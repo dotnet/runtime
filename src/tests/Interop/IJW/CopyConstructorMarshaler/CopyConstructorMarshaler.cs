@@ -9,9 +9,9 @@ using Xunit;
 
 namespace CopyConstructorMarshaler
 {
-    class CopyConstructorMarshaler
+    public class CopyConstructorMarshaler
     {
-        static int Main()
+        public static int Main()
         {
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)
             {

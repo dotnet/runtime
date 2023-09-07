@@ -4,7 +4,7 @@
 //
 
 //
-//	Adding tests for BoolArrayMarshaler code coverage
+//  Adding tests for BoolArrayMarshaler code coverage
 //
 //Rule for Passing Value
 //        Reverse Pinvoke
@@ -128,7 +128,7 @@ public class MarshalBoolArray
         //Since now the sizeconst doesnt support on ref,so only check the first item instead.
         //Unhandled Exception: System.Runtime.InteropServices.MarshalDirectiveException: Cannot marshal 'parameter #2': Cannot use SizeParamIndex for ByRef array parameters.
         //for (int i = 0; i < size; ++i) //Reverse PInvoke, true,false,true false,true
-        //{	
+        //{ 
         //    if ((0 == i % 2) && !array[i])
         //    {
         //      ReportFailure("Failed on the Managed Side:TestMethod_CallBackRefIn. The " + (i + 1) + "st Item failed", true.ToString(), false.ToString());
@@ -217,7 +217,7 @@ public class MarshalBoolArray
     #endregion
 
     [System.Security.SecuritySafeCritical]
-    static int Main()
+    public static void Main()
     {
         bool retVal = true;
         
@@ -263,13 +263,9 @@ public class MarshalBoolArray
             //TestFramework.LogError("019","Error happens in Native side:DoCallBackRefInOut");
         }
 
-	if(retVal)
-	{
-       //Console.WriteLine("Succeeded!");
-	  return 100;
-	}
-
-      throw new Exception("Failed");
-      // return 101;
+        if(!retVal)
+        {
+          throw new Exception("Failed");
+        }
     }
 }

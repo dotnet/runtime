@@ -28,7 +28,7 @@ class Test
     private static extern UIntPtr MarshalPointer_Out(out UIntPtr puintPtr);
 
 
-    public static int Main()
+    public static void Main()
     {
         UIntPtr uintPtrManaged = (UIntPtr)1000;
         UIntPtr uintPtrNative = (UIntPtr)2000;
@@ -56,7 +56,5 @@ class Test
         UIntPtr uintPtr6 = uintPtrManaged;
         Assert.Equal(uintPtrReturn, MarshalPointer_Out(out uintPtr6));
         Assert.Equal(uintPtrNative, uintPtr6);
-
-        return 100;
     }
 }

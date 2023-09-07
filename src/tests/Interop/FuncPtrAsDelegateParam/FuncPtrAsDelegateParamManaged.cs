@@ -29,7 +29,7 @@ public class Test_FuncPtrAsDelegateParamManaged
     }
 
     [SecuritySafeCritical]
-    static int Main()
+    public static int Main()
     {
         bool breturn = true;
 

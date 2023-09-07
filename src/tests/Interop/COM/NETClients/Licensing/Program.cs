@@ -88,7 +88,7 @@ namespace NetClient
                 var licenseTesting = (LicenseTesting)new LicenseTestingClass();
 
                 // During design time the IClassFactory::CreateInstance will be called - no license
-                Assert.Equal(null, licenseTesting.GetLicense());
+                Assert.Null(licenseTesting.GetLicense());
 
                 // Verify the value retrieved from the IClassFactory2::RequestLicKey was what was set
                 Assert.Equal(DefaultLicKey, LicenseManager.CurrentContext.GetSavedLicenseKey(typeof(LicenseTestingClass), resourceAssembly: null));

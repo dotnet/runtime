@@ -9,7 +9,7 @@ namespace ComWrappersTests.GlobalInstance
     using TestLibrary;
     using Xunit;
 
-    partial class Program
+    public partial class Program
     {
         private static void ValidateNotRegisteredForTrackerSupport()
         {
@@ -19,7 +19,7 @@ namespace ComWrappersTests.GlobalInstance
             Assert.NotEqual(GlobalComWrappers.ReleaseObjectsCallAck, hr);
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

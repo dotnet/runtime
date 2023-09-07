@@ -16,7 +16,7 @@ class Test
         throw new Exception(" === Fail: " + describe + "\n\tExpected:" + expect + "\n\tActual:" + actual);        
     }
     
-    public static int Main()
+    public static void Main()
     {
         //Test Method1
         bool boolValue1 = boolManaged;
@@ -122,8 +122,6 @@ class Test
         {
             TestVariantBool();
         }
-        
-        return 100;
     }
 
     private static void TestVariantBool()

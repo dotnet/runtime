@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace EnumRoundtrip
 {
-    class MarshalEnumManaged
+    public class MarshalEnumManaged
     {
         [Flags]
         public enum DialogResult
@@ -36,7 +36,7 @@ namespace EnumRoundtrip
 
         #endregion
         [System.Security.SecuritySafeCritical]
-        static int Main()
+        public static int Main()
         {
             bool result = true;
             int r = 0;
@@ -61,8 +61,7 @@ namespace EnumRoundtrip
                 TestFramework.LogError("04", "Main : Returned value of enum doesn't match with the value passed in to pinvoke call");
                 return 101;
             }
-
-            Console.WriteLine("PASS");
+            
             return 100;
         }
     }
