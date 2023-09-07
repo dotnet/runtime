@@ -149,6 +149,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

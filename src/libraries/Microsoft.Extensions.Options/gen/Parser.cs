@@ -240,6 +240,13 @@ namespace Microsoft.Extensions.Options.Generators
                 type = ((INamedTypeSymbol)type).TypeArguments[0];
             }
 
+            // Check first if the type is IEnumerable<T> interface
+            if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _symbolHolder.GenericIEnumerableSymbol))
+            {
+                return ((INamedTypeSymbol)type).TypeArguments[0];
+            }
+
+            // Check first if the type implement IEnumerable<T> interface
             foreach (var implementingInterface in type.AllInterfaces)
             {
                 if (SymbolEqualityComparer.Default.Equals(implementingInterface.OriginalDefinition, _compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T)))
