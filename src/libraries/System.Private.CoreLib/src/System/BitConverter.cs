@@ -251,7 +251,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 2.</returns>
-        public static unsafe byte[] GetBytes(Half value) => GetBytes(HalfToInt16Bits(value));
+        public static unsafe byte[] GetBytes(Half value) => GetBytes(HalfToUInt16Bits(value));
 
         /// <summary>
         /// Converts a half-precision floating-point value into a span of bytes.
@@ -273,7 +273,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 4.</returns>
-        public static byte[] GetBytes(float value) => GetBytes(SingleToInt32Bits(value));
+        public static byte[] GetBytes(float value) => GetBytes(SingleToUInt32Bits(value));
 
         /// <summary>
         /// Converts a single-precision floating-point value into a span of bytes.
@@ -295,7 +295,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 8.</returns>
-        public static byte[] GetBytes(double value) => GetBytes(DoubleToInt64Bits(value));
+        public static byte[] GetBytes(double value) => GetBytes(DoubleToUInt64Bits(value));
 
         /// <summary>
         /// Converts a double-precision floating-point value into a span of bytes.
