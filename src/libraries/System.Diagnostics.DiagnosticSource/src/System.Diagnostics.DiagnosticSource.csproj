@@ -135,4 +135,8 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="ILLink/ILLink.Substitutions.Shared.xml" />
+  </ItemGroup>
+
 </Project>

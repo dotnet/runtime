@@ -17,11 +17,22 @@ namespace System.Diagnostics.Metrics
         private Dictionary<string, List<Instrument>> _nonObservableInstrumentsCache = new();
         internal bool Disposed { get; private set; }
 
+        internal static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() =>
+            AppContext.TryGetSwitch("System.Diagnostics.Metrics.IsSupported", out bool isSupported) ? isSupported : true;
+
         /// <summary>
         /// Initialize a new instance of the Meter using the <see cref="MeterOptions" />.
         /// </summary>
         public Meter(MeterOptions options)
         {
+            if (!IsSupported)
+            {
+                Name = options is not null && options.Name is not null ? options.Name : throw new ArgumentNullException(nameof(options));
+                return;
+            }
+
             if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
@@ -61,6 +72,12 @@ namespace System.Diagnostics.Metrics
         /// </remarks>
         public Meter(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope = null)
         {
+            if (!IsSupported)
+            {
+                Name = name ?? throw new ArgumentNullException(nameof(name));
+                return;
+            }
+
             Initialize(name, version, tags, scope);
             Debug.Assert(Name is not null);
         }
