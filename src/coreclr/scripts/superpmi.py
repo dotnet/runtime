@@ -1137,6 +1137,10 @@ class SuperPMICollect:
                     if not original_rsp_filepath.endswith(".ilc.rsp"):
                         raise RuntimeError(f"Expected a '.ilc.rsp' file for nativeaot, but got {original_rsp_filepath}")
 
+                    # The contents of the rsp contain many knobs and arguments that represent customer scenarios.
+                    # Make a copy of the .ilc.rsp file as we are going to modify it. We do not want to modify the original one.
+                    # The modifications include re-writing paths for references, input assembly and the output.
+                    # We do this because the current paths in the rsp *may* not exist by the time we want to run ilc.
                     rsp_filepath = os.path.join(self.temp_location, make_safe_filename("nativeaot_" + original_rsp_filepath) + ".rsp")
                     shutil.copyfile(original_rsp_filepath, rsp_filepath)
 
@@ -4337,7 +4341,7 @@ def setup_args(args):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
 
-        if ((args.pmi is True) or (args.nativeaot is True)) and (len(args.ilc_rsps) == 0):
+        if ((args.nativeaot is True)) and (len(args.ilc_rsps) == 0):
             print("Specify `-ilc_rsps` if `--nativeaot` is given")
             sys.exit(1)
 
