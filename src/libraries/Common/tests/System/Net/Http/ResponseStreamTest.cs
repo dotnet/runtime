@@ -296,6 +296,7 @@ namespace System.Net.Http.Functional.Tests
             req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
 
             int size = 1500 * 1024 * 1024;
+            int multipartOverhead = 125 + 4 /* "test" */;
             int remaining = size;
             var content = new MultipartFormDataContent();
             content.Add(new StreamContent(new DelegateStream(
@@ -319,7 +320,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpResponseMessage response = await client.SendAsync(req))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.Equal((size + 129).ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
+                Assert.Equal((size + multipartOverhead).ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
                 // Streaming requests can't set Content-Length
                 Assert.False(response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
             }
