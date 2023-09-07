@@ -138,7 +138,7 @@
 - from UI javaScript it would be passed as Task to deputy worker
 - open question: passing JS promise to deputy should be fine. But does the `resolve()` need to block UI thread ?
 
-## Task, Task<T>
+## Task, Task\<T>
 - passing Task should work everywhere.
 - when marshaled to JS they bind to specific Promise and have affinity
     - the `SetResult` need to be marshaled on thread of the Promise.
