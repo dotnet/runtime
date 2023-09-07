@@ -54,6 +54,7 @@
     <Compile Include="GeneratorTests.cs" />
     <Compile Include="GeneratorTests.Baselines.cs" />
     <Compile Include="GeneratorTests.Baselines.Options.cs" />
+    <Compile Include="GeneratorTests.Helpers.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

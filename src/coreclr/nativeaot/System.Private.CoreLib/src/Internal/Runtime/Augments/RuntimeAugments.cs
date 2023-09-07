@@ -811,7 +811,7 @@ namespace Internal.Runtime.Augments
             if (ip == IntPtr.Zero)
                 return null;
 
-            return callbacks.TryGetMethodNameFromStartAddress(ip);
+            return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
