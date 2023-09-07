@@ -140,8 +140,8 @@ else ()
             STATIC
             ${NATIVECOMPRESSION_SOURCES}
         )
-        target_compile_options(System.IO.Compression.Native.Aot PRIVATE /guard:cf-)
-        target_compile_options(System.IO.Compression.Native.Aot PRIVATE /GL-)
+        set_target_properties(System.IO.Compression.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
+        set_target_properties(System.IO.Compression.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
         add_library(System.IO.Compression.Native.Aot.GuardCF
             STATIC
