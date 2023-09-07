@@ -175,7 +175,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         blockToRemove = nextBlock;
     }
 
-    const auto jumpCount = static_cast<unsigned>(maxValue - minValue);
+    const auto jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
     assert(jumpCount > 0 && jumpCount <= SWITCH_MAX_DISTANCE);
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
