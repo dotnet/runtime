@@ -166,7 +166,7 @@ namespace System
         /// <returns>An array of bytes with length 16.</returns>
         public static byte[] GetBytes(Int128 value)
         {
-            byte[] bytes = new byte[sizeof(Int128)];
+            byte[] bytes = new byte[Int128.Size];
             Unsafe.As<byte, Int128>(ref bytes[0]) = value;
             return bytes;
         }
@@ -179,7 +179,7 @@ namespace System
         /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryWriteBytes(Span<byte> destination, Int128 value)
         {
-            if (destination.Length < sizeof(Int128))
+            if (destination.Length < Int128.Size)
                 return false;
 
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
@@ -281,7 +281,7 @@ namespace System
         [CLSCompliant(false)]
         public static byte[] GetBytes(UInt128 value)
         {
-            byte[] bytes = new byte[sizeof(UInt128)];
+            byte[] bytes = new byte[UInt128.Size];
             Unsafe.As<byte, UInt128>(ref bytes[0]) = value;
             return bytes;
         }
@@ -295,7 +295,7 @@ namespace System
         [CLSCompliant(false)]
         public static bool TryWriteBytes(Span<byte> destination, UInt128 value)
         {
-            if (destination.Length < sizeof(UInt128))
+            if (destination.Length < UInt128.Size)
                 return false;
 
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
@@ -537,7 +537,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if (unchecked((UInt128)startIndex) >= unchecked((UInt128)value.Length))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
-            if (startIndex > value.Length - sizeof(Int128))
+            if (startIndex > value.Length - Int128.Size)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ByteArrayTooSmallForValue, ExceptionArgument.value);
 
             return Unsafe.ReadUnaligned<Int128>(ref value[startIndex]);
