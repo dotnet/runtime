@@ -21,6 +21,7 @@
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" Condition="'$(TargetOS)' == 'browser'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-superpmi-collect.targets" Condition="'$(SuperPmiCollect)' == 'true'" />
 
   <PropertyGroup Condition="'$(_workItemTimeout)' == ''">
     <!-- Normal jobs have a 30 minute timeout for arm/arm64, and 15 minute timeout otherwise.
@@ -288,6 +289,7 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).mch;$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
       </HelixWorkItem>
     </ItemGroup>
 

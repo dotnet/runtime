@@ -42,6 +42,7 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
+        public bool           SkipUpdateAppRefPack { get; set; }
         public bool           OnlyUpdateManifests{ get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
@@ -153,7 +154,10 @@ namespace Microsoft.Workload.Build.Tasks
             if (!InstallPacks(req, nugetConfigContents))
                 return false;
 
-            UpdateAppRef(req.TargetPath, req.Version);
+            if (!SkipUpdateAppRefPack)
+                UpdateAppRef(req.TargetPath, req.Version);
+            else
+                Log.LogMessage(MessageImportance.Low, "Skipping update of app.ref pack");
 
             return !Log.HasLoggedErrors;
         }
@@ -221,6 +225,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,
+                                                    silent: false,
                                                     debugMessageImportance: MessageImportance.Normal);
             if (exitCode != 0)
             {

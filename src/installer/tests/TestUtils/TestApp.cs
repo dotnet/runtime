@@ -67,10 +67,16 @@ namespace Microsoft.DotNet.CoreSetup.Test
         }
 
         public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true)
+            => CreateAppHost(Binaries.AppHost.FilePath, isWindowsGui, copyResources);
+
+        public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true)
+            => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources);
+
+        public void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
         {
             // Use the live-built apphost and HostModel to create the apphost to run
             HostWriter.CreateAppHost(
-                Binaries.AppHost.FilePath,
+                hostSourcePath,
                 AppExe,
                 Path.GetFileName(AppDll),
                 windowsGraphicalUserInterface: isWindowsGui,
@@ -101,7 +107,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 if (mock == MockedComponent.None)
                 {
                     // All product components
-                    var (assemblies, nativeLibraries) = GetRuntimeFiles();
+                    var (assemblies, nativeLibraries) = Binaries.GetRuntimeFiles();
                     l.WithAssemblyGroup(string.Empty, g =>
                     {
                         foreach (var file in assemblies)
@@ -172,29 +178,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             HostPolicyDll = Path.Combine(Location, Binaries.HostPolicy.FileName);
             HostFxrDll = Path.Combine(Location, Binaries.HostFxr.FileName);
             CoreClrDll = Path.Combine(Location, Binaries.CoreClr.FileName);
-        }
-
-        private static (IEnumerable<string> Assemblies, IEnumerable<string> NativeLibraries) GetRuntimeFiles()
-        {
-            var runtimePackDir = new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath;
-            var assemblies = Directory.GetFiles(runtimePackDir, "*.dll").Where(f => IsAssembly(f));
-
-            (string prefix, string suffix) = Binaries.GetSharedLibraryPrefixSuffix();
-            var nativeLibraries = Directory.GetFiles(runtimePackDir, $"{prefix}*{suffix}").Where(f => !IsAssembly(f));
-
-            return (assemblies, nativeLibraries);
-
-            static bool IsAssembly(string filePath)
-            {
-                if (Path.GetExtension(filePath) != ".dll")
-                    return false;
-
-                using (var fs = File.OpenRead(filePath))
-                using (var peReader = new System.Reflection.PortableExecutable.PEReader(fs))
-                {
-                    return peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
-                }
-            }
         }
     }
 }

@@ -555,7 +555,7 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
         dwLoadLibraryFlags = 0;
     }
 
-    if((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL)
+    if((*pHInst = WszLoadLibrary(lpFileName, NULL, dwLoadLibraryFlags)) == NULL)
     {
         return HRESULT_FROM_GetLastError();
     }
