@@ -8625,6 +8625,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                                                           (regNumber)regArg[i]);
                                 regArgNum--;
                                 regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
+                                regArg[j] = 0;
                                 if (regArgNum == 0)
                                 {
                                     break;

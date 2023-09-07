@@ -177,7 +177,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
 #endif // !TARGET_UNIX
 
     // Load Library
-    hLib = ::LoadLibraryA(PathToTempJit);
+    hLib = ::LoadLibraryExA(PathToTempJit, NULL, 0);
     if (hLib == 0)
     {
         LogError("LoadLibrary failed (0x%08x)", ::GetLastError());
@@ -237,7 +237,7 @@ bool JitInstance::reLoad(MethodContext* firstContext)
     FreeLibrary(hLib);
 
     // Load Library
-    hLib = ::LoadLibraryA(PathToTempJit);
+    hLib = ::LoadLibraryExA(PathToTempJit, NULL, 0);
     if (hLib == 0)
     {
         LogError("LoadLibrary failed (0x%08x)", ::GetLastError());

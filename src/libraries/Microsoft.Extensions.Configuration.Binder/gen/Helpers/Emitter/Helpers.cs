@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 foreach (InterceptorLocationInfo info in infoList)
                 {
-                    _writer.WriteLine($@"[{Identifier.InterceptsLocation}Attribute(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
+                    _writer.WriteLine($@"[{Identifier.InterceptsLocation}(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
                 }
             }
 
@@ -245,18 +245,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
 
             private static string GetInitalizeMethodDisplayString(ObjectSpec type) =>
-                $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.DisplayString.ToIdentifierSubstring()}";
+                $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.IdentifierCompatibleSubstring}";
         }
-    }
-
-    internal static class EmitterExtensions
-    {
-        public static string ToIdentifierSubstring(this string typeDisplayName) =>
-            typeDisplayName
-                .Replace("[]", nameof(Array))
-                .Replace(", ", string.Empty)
-                .Replace(".", string.Empty)
-                .Replace("<", string.Empty)
-                .Replace(">", string.Empty);
     }
 }

@@ -2,22 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal abstract record TypeSpec
     {
-        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
-            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
-            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
-            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
-
         public TypeSpec(ITypeSymbol type)
         {
             IsValueType = type.IsValueType;
             Namespace = type.ContainingNamespace?.ToDisplayString();
-            DisplayString = type.ToDisplayString(s_minimalDisplayFormat);
+            DisplayString = type.ToMinimalDisplayString();
+            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring(useUniqueName: true);
             Name = Namespace + "." + DisplayString.Replace(".", "+");
             IsInterface = type.TypeKind is TypeKind.Interface;
         }
@@ -25,6 +21,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public string Name { get; }
 
         public string DisplayString { get; }
+
+        public string IdentifierCompatibleSubstring { get; }
 
         public string? Namespace { get; }
 
