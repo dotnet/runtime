@@ -36,6 +36,7 @@ namespace Wasm.Build.Tests
         protected bool _enablePerTestCleanup = false;
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
+        protected bool _useSharedNuGetPackagesPath = true;
         private ProjectProviderBase _providerOfBaseType;
 
         private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
@@ -321,12 +322,20 @@ namespace Wasm.Build.Tests
             if (_projectDir == null)
                 _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
             _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
-            _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
 
-            if (Directory.Exists(_nugetPackagesDir))
-                Directory.Delete(_nugetPackagesDir, recursive: true);
+            if (_useSharedNuGetPackagesPath)
+            {
+                _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget-shared");
+            }
+            else
+            {
+                _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
+                if (Directory.Exists(_nugetPackagesDir))
+                    Directory.Delete(_nugetPackagesDir, recursive: true);
+            }
 
-            Directory.CreateDirectory(_nugetPackagesDir!);
+            if (!Directory.Exists(_nugetPackagesDir))
+                Directory.CreateDirectory(_nugetPackagesDir!);
             Directory.CreateDirectory(_logPath);
         }
 
