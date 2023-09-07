@@ -286,7 +286,7 @@ extern "C" uint16_t QCALLTYPE EventPipeInternal_GetClrInstanceId()
 {
     QCALL_CONTRACT;
 
-    uint16_t result;
+    uint16_t result = 0;
     BEGIN_QCALL;
 
     result = GetClrInstanceId();
