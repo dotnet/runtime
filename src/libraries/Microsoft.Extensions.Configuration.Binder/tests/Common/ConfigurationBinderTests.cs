@@ -30,7 +30,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
     }
 
-    public sealed partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
+    public partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void BindWithNestedTypesWithReadOnlyProperties()

@@ -7805,7 +7805,7 @@ guint
 mono_aligned_addr_hash (gconstpointer ptr)
 {
 	/* Same hashing we use for objects */
-	return (GPOINTER_TO_UINT (ptr) >> 3) * 2654435761u;
+	return (GCONSTPOINTER_TO_UINT (ptr) >> 3) * 2654435761u;
 }
 
 /*

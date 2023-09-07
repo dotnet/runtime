@@ -40,7 +40,8 @@ from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
-    create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name
+    create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
+    get_deepest_existing_directory
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -3199,20 +3200,21 @@ def process_mch_files_arg(coreclr_args):
         return [ mch_cache_dir ]
 
     # MCH files can be large. Log the disk space before and after the download.
-    if os.path.isdir(coreclr_args.spmi_location):
-        before_total, _, before_free = shutil.disk_usage(coreclr_args.spmi_location)
+    root_space_directory = get_deepest_existing_directory(coreclr_args.spmi_location)
+    if root_space_directory is not None:
+        before_total, _, before_free = shutil.disk_usage(root_space_directory)
         before_total_gb = int(before_total / 1024 / 1024 / 1024)
         before_free_gb = int(before_free / 1024 / 1024 / 1024)
-        logging.debug("Disk usage (%s): total %s GB; free %s GB", coreclr_args.spmi_location, format(before_total_gb, ','), format(before_free_gb, ','))
+        logging.debug("Disk usage (%s): total %s GB; free %s GB", root_space_directory, format(before_total_gb, ','), format(before_free_gb, ','))
 
     local_mch_paths = download_mch_from_azure(coreclr_args, mch_cache_dir)
 
-    if os.path.isdir(coreclr_args.spmi_location): # This should always be true here; just being defensive.
-        after_total, _, after_free = shutil.disk_usage(coreclr_args.spmi_location)
+    if root_space_directory is not None:
+        after_total, _, after_free = shutil.disk_usage(root_space_directory)
         after_total_gb = int(after_total / 1024 / 1024 / 1024)
         after_free_gb = int(after_free / 1024 / 1024 / 1024)
         consumed_gb = before_free_gb - after_free_gb
-        logging.debug("Disk usage (%s): total %s GB; free %s GB; consumed by download %s GB", coreclr_args.spmi_location, format(after_total_gb, ','), format(after_free_gb, ','), format(consumed_gb, ','))
+        logging.debug("Disk usage (%s): total %s GB; free %s GB; consumed by download %s GB", root_space_directory, format(after_total_gb, ','), format(after_free_gb, ','), format(consumed_gb, ','))
 
     # Add the private store files
     if coreclr_args.private_store is not None:

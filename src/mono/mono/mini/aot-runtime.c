@@ -6030,7 +6030,7 @@ mono_aot_get_unbox_arbitrary_trampoline (gpointer addr)
 static int
 i32_idx_comparer (const void *key, const void *member)
 {
-	gint32 idx1 = GPOINTER_TO_INT (key);
+	gint32 idx1 = GCONSTPOINTER_TO_INT (key);
 	gint32 idx2 = *(gint32*)member;
 	return idx1 - idx2;
 }
@@ -6038,7 +6038,7 @@ i32_idx_comparer (const void *key, const void *member)
 static int
 ui16_idx_comparer (const void *key, const void *member)
 {
-	int idx1 = GPOINTER_TO_INT (key);
+	int idx1 = GCONSTPOINTER_TO_INT (key);
 	int idx2 = *(guint16*)member;
 	return idx1 - idx2;
 }

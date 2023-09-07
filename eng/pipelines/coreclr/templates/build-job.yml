@@ -117,7 +117,6 @@ jobs:
     - ${{ parameters.variables }}
 
     steps:
-
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
@@ -262,11 +261,17 @@ jobs:
         parameters:
           name: ${{ parameters.platform }}
 
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+        displayName: Collect vslogs on exit
+        condition: always()
+
+
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '$(publishLogsArtifactPrefix)${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)_Attempt$(System.JobAttempt)_${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()
