@@ -151,10 +151,16 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     firstBlock->bbJumpDest    = nullptr;
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
-    // The root node is now SUB(nodeToTest, minValue)
-    firstBlock->lastStmt()->GetRootNode()->AsOp()->gtOp1 =
-        gtNewOperNode(GT_SUB, nodeToTest->TypeGet(), gtCloneExpr(nodeToTest),
-                      gtNewIconNode(minValue, nodeToTest->TypeGet()));
+
+    // The root node is now SUB(nodeToTest, minValue) if minValue != 0
+    GenTree* switchValue = gtCloneExpr(nodeToTest);
+    if (minValue != 0)
+    {
+        switchValue =
+            gtNewOperNode(GT_SUB, nodeToTest->TypeGet(), switchValue, gtNewIconNode(minValue, nodeToTest->TypeGet()));
+    }
+
+    firstBlock->lastStmt()->GetRootNode()->AsOp()->gtOp1 = switchValue;
     gtSetStmtInfo(firstBlock->lastStmt());
     fgSetStmtSeq(firstBlock->lastStmt());
     gtUpdateStmtSideEffects(firstBlock->lastStmt());
