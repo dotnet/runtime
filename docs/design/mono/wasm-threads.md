@@ -96,11 +96,13 @@
 - has SynchronizationContext installed on it
     - So that C# calls could be dispatched to it by runtime
 - throw PNSE on attempt to marshal sync C# delegate to UI JavaScript
+    - or throw later only when you try to call the function from JS side.
 - can run C# finalizers
 - will run GC
 - this cross-threading dispatch will have performance impact for the JS interop.
     - TODO: measure how much
     - this should not impact Blazor `renderBatch` perf.
+- VS debugger would connect to mono as usual. But chrome dev tools experience may be different, because it's will be async with the C# part.
 
 ## JSWebWorker with JS interop
 - is C# thread created and disposed by new API for it
@@ -194,7 +196,7 @@
 - Blazor renderBatch will continue working even with legacy interop in place.
     - Because it only reads memory and it doesn't call back to Mono VM.
 - Blazor's [`IJSInProcessRuntime.Invoke`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsinprocessruntime.invoke) should still work, because it's C#->JS direction
-- Blazor's [`IJSUnmarshalledRuntime `](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsunmarshalledruntime) should still work, because it's C#->JS direction
+- Blazor's [`IJSUnmarshalledRuntime`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsunmarshalledruntime) should still work, because it's C#->JS direction
 - TODO: Review Blazor's JavaScript APIs!
 
 # Current state 2023 Sep
