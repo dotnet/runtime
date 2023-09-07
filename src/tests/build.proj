@@ -195,7 +195,6 @@
       <AppDir>$(BuildDir)\apk</AppDir>
       <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
       <StripDebugSymbols>False</StripDebugSymbols>
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
@@ -206,6 +205,11 @@
       <MonoInterp>false</MonoInterp>
       <MonoInterp Condition="'$(RuntimeVariant)' == 'monointerpreter'">true</MonoInterp>
     </PropertyGroup>
+
+    <ItemGroup>
+      <RuntimeComponents Include="diagnostics_tracing" />
+      <RuntimeComponents Include="marshal-ilgen" />
+    </ItemGroup>
 
     <RemoveDir Directories="$(AppDir)" />
     <MakeDir Directories="$(BuildDir)"/>
@@ -247,7 +251,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         OutputDir="$(AppDir)"
         ProjectName="$(Category)"
-        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
         StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
