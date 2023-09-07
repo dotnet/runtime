@@ -370,6 +370,12 @@ jobs:
           displayName: Build and Package
           continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
+      - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+        - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+          displayName: Collect vslogs on exit
+          condition: always()
+
+
       - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: |
             du -sh $(Build.SourcesDirectory)/*
