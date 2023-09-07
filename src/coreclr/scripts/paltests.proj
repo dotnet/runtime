@@ -37,7 +37,7 @@
       <HelixWorkItem Include="PALTests">
         <PayloadArchive>@(PalTestArchive)</PayloadArchive>
         <Command>./runpaltestshelix.sh</Command>
-        <WorkItemTimeout>0:20</WorkItemTimeout>
+        <Timeout>0:10</Timeout>
       </HelixWorkItem>
     </ItemGroup>
   </Target>
