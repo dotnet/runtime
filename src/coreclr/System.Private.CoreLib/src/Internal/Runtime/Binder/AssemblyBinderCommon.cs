@@ -4,9 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using Internal.Runtime.Binder.Tracing;
 
@@ -416,6 +418,8 @@ namespace Internal.Runtime.Binder
 
         private static int BindAssemblyByProbingPaths(List<string> bindingPaths, AssemblyName requestedAssemblyName, out Assembly? result)
         {
+            PathSource pathSource = PathSource.AppPaths;
+
             // Loop through the binding paths looking for a matching assembly
             foreach (string bindingPath in bindingPaths)
             {
@@ -425,13 +429,13 @@ namespace Internal.Runtime.Binder
                 string fileName = fileNameWithoutExtension + ".dll";
 
                 int hr = GetAssembly(fileName, isInTPA: false, out Assembly? assembly);
-                // BinderTracing::PathProbed(fileName, pathSource, hr);
+                NativeRuntimeEventSource.Log.KnownPathProbed(fileName, (ushort)pathSource, hr);
 
                 if (hr < 0)
                 {
                     fileName = fileNameWithoutExtension + ".exe";
                     hr = GetAssembly(fileName, isInTPA: false, out assembly);
-                    // BinderTracing::PathProbed(fileName, pathSource, hr);
+                    NativeRuntimeEventSource.Log.KnownPathProbed(fileName, (ushort)pathSource, hr);
                 }
 
                 // Since we're probing, file not founds are ok and we should just try another
@@ -513,7 +517,7 @@ namespace Internal.Runtime.Binder
                     Debug.Assert(tpaFileName != null);
 
                     int hr = GetAssembly(tpaFileName, isInTPA: true, out tpaAssembly);
-                    // BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
+                    NativeRuntimeEventSource.Log.KnownPathProbed(tpaFileName, (ushort)PathSource.ApplicationAssemblies, hr);
 
                     bindResult.SetAttemptResult(hr, tpaAssembly);
 

@@ -95,6 +95,8 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
     # Fired by managed binder
     if "ResolutionAttempted" in symbol:
         return
+    if "KnownPathProbed" in symbol:
+        return
 
     evtLevel = eventNode.getAttribute("level")[4:]
     evtKeywords = ""

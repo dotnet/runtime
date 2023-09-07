@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tracing
 
         [Event(292, Level = EventLevel.Informational, Message = "", Task = default, Opcode = default, Version = 0, Keywords = Keywords.AssemblyLoaderKeyword)]
         private unsafe void ResolutionAttempted(
-            ushort CLRInstanceId,
+            ushort ClrInstanceId,
             string AssemblyName,
             ushort Stage,
             string AssemblyLoadContext,
@@ -46,13 +46,13 @@ namespace System.Diagnostics.Tracing
             Guid* ActivityId = null,
             Guid* RelatedActivityId = null)
         {
-            LogResolutionAttempted(CLRInstanceId, AssemblyName, Stage, AssemblyLoadContext, Result, ResultAssemblyName, ResultAssemblyPath, ErrorMessage, ActivityId, RelatedActivityId);
+            LogResolutionAttempted(ClrInstanceId, AssemblyName, Stage, AssemblyLoadContext, Result, ResultAssemblyName, ResultAssemblyPath, ErrorMessage, ActivityId, RelatedActivityId);
         }
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LogResolutionAttempted(
-            ushort CLRInstanceId,
+            ushort ClrInstanceId,
             string AssemblyName,
             ushort Stage,
             string AssemblyLoadContext,
@@ -60,6 +60,38 @@ namespace System.Diagnostics.Tracing
             string ResultAssemblyName,
             string ResultAssemblyPath,
             string ErrorMessage,
+            Guid* ActivityId,
+            Guid* RelatedActivityId);
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void KnownPathProbed(string FilePath, ushort Source, int Result)
+        {
+            if (IsEnabled(EventLevel.Informational, Keywords.AssemblyLoaderKeyword))
+            {
+                KnownPathProbed(GetClrInstanceId(), FilePath, Source, Result);
+            }
+        }
+
+        [Event(296, Level = EventLevel.Informational, Message = "", Task = default, Opcode = default, Version = 0, Keywords = Keywords.AssemblyLoaderKeyword)]
+        private unsafe void KnownPathProbed(
+            ushort ClrInstanceID,
+            string FilePath,
+            ushort Source,
+            int Result,
+            Guid* ActivityId = null,
+            Guid* RelatedActivityId = null)
+        {
+            LogKnownPathProbed(ClrInstanceID, FilePath, Source, Result, ActivityId, RelatedActivityId);
+        }
+
+        [NonEvent]
+        [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void LogKnownPathProbed(
+            ushort ClrInstanceId,
+            string FilePath,
+            ushort Source,
+            int Result,
             Guid* ActivityId,
             Guid* RelatedActivityId);
     }

@@ -199,4 +199,14 @@ extern "C" void QCALLTYPE LogResolutionAttempted(uint16_t CLRInstanceId, LPCWSTR
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE LogKnownPathProbed(uint16_t CLRInstanceId, LPCWSTR FilePath, uint16_t Source, int32_t Result, LPCGUID ActivityId, LPCGUID RelatedActivityId)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwKnownPathProbed(CLRInstanceId, FilePath, Source, Result, ActivityId, RelatedActivityId);
+
+    END_QCALL;
+}
+
 #endif // FEATURE_PERFTRACING

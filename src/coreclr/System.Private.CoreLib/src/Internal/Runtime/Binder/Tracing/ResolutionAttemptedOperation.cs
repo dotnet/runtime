@@ -257,4 +257,15 @@ namespace Internal.Runtime.Binder.Tracing
                 errorMsg);
         }
     }
+
+    // This must match the BindingPathSource value map in ClrEtwAll.man
+    internal enum PathSource : ushort
+    {
+        ApplicationAssemblies,
+        Unused,
+        AppPaths,
+        PlatformResourceRoots,
+        SatelliteSubdirectory,
+        Bundle
+    };
 }
