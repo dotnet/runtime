@@ -186,8 +186,6 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rdma");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc2");
             }
 
             // Vector<T> can always be part of the optimistic set, we only want to optionally exclude it from the supported set
