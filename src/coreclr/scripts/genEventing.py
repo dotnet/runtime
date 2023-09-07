@@ -1003,9 +1003,9 @@ def main(argv):
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man',  type=str, required=True,
                                     help='full path to manifest containing the description of events')
-    required.add_argument('--inc',  type=str, default=None,
+    required.add_argument('--incdir',  type=str, default=None,
                                     help='full path to directory where the header files will be generated')
-    required.add_argument('--inclist',  type=str,default="",
+    required.add_argument('--inc',  type=str,default="",
                                     help='full path to inclusion list')
     required.add_argument('--dummy',  type=str,default=None,
                                     help='full path to file that will have dummy definitions of FireEtw functions')
@@ -1021,12 +1021,12 @@ def main(argv):
         return 1
 
     sClrEtwAllMan     = args.man
-    incdir            = args.inc
+    incdir            = args.incdir
+    inclusion_filename = args.inc
     etmDummyFile      = args.dummy
     runtimeFlavor     = RuntimeFlavor(args.runtimeflavor)
     extern            = not args.nonextern
     write_xplatheader = not args.noxplatheader
-    inclusion_filename = args.inclist
 
     target_cpp = True
     if runtimeFlavor.mono:
