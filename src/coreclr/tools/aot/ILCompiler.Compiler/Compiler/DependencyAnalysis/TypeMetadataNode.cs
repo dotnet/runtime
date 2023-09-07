@@ -74,6 +74,18 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            if (_type.IsModuleType)
+            {
+                // Include a runtime artifact when metadata for module is created.
+                // This triggers other "module use" logic such as module initializers or partial trimming.
+                // This is our insurance in case the only thing from a module that was used was its metadata.
+                // This can pretty much only happen if the only reference to the module is a `typeof` in
+                // a custom attribute and the custom attribute doesn't have any dataflow annotations on it
+                // that would bring a reflectable runtime artifact from the type. The only thing we'd generate
+                // is the metadata for the type, but no MethodTable or method body.
+                dependencies.Add(factory.ReflectedType(_type), "Reflectable <Module> type");
+            }
+
             // If the user asked for complete metadata to be generated for all types that are getting metadata, ensure that.
             if ((mdManager._generationOptions & UsageBasedMetadataGenerationOptions.CompleteTypesOnly) != 0)
             {
