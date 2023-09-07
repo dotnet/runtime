@@ -1067,12 +1067,6 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
-
-// ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
@@ -1086,24 +1080,26 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
 
     //                           $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Allocate space and save Fp, Pc.
-    SAVE_ARGUMENT_REGISTERS $sp, 16          // Save $t0 and argument registers ($a0-$a7).
-    st.d     $zero, $sp, 88                   // Clear functionId.
-    SAVE_FLOAT_ARGUMENT_REGISTERS $sp, 96    // Save floating-point/SIMD registers ($fa0-$fa7).
+    // Please validate, SAVE_ARGUMENT_REGISTERS doesn't save $t0
+    SAVE_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters // Save $t0 and argument registers ($a0-$a7).
+    st.d     $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId // Clear functionId.
+    SAVE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
     addi.d     $t3, $fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    st.d     $t3, $sp, 224             // Save probeSp.
-    st.d     $t2, $sp, 232             // Save profiledSp.
+    st.d     $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp
+    st.d     $t2, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp
 
-    st.d    $zero, $sp, 240            // Clear hiddenArg.
+    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg // Clear hiddenArg.
     addi.d  $t3, $zero, \flags
-    st.w    $t3, $sp, 248              // Save flags.
-    st.d    $zero, $sp, 256            // clear unused field.
+    st.w    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags
+    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__unused
 
     ori     $a1, $t1, 0
     ori     $a2, $sp, 0
     bl      C_FUNC(\helper)
 
-    RESTORE_ARGUMENT_REGISTERS $sp, 16       // Restore $t0 and argument registers.
-    RESTORE_FLOAT_ARGUMENT_REGISTERS $sp, 96 // Restore floating-point/SIMD registers.
+    // Please validate, RESTORE_ARGUMENT_REGISTERS doesn't restore $t0
+    RESTORE_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters       // Restore $t0 and argument registers.
+    RESTORE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
     //                              $fp, $ra
     EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA
     EPILOG_RETURN

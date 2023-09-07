@@ -13,33 +13,9 @@
 
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
+#include "asmconstants.h"
 
 MethodDesc *FunctionIdToMethodDesc(FunctionID functionID);
-
-// TODO: move these to some common.h file
-// FLAGS
-#define PROFILE_ENTER        0x1
-#define PROFILE_LEAVE        0x2
-#define PROFILE_TAILCALL     0x4
-
-typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
-{
-    UINT32      r0;         // Keep r0 & r1 contiguous to make returning 64-bit results easier
-    UINT32      r1;
-    void       *R11;
-    void       *Pc;
-    union                   // Float arg registers as 32-bit (s0-s15) and 64-bit (d0-d7)
-    {
-        UINT32  s[16];
-        UINT64  d[8];
-    };
-    FunctionID  functionId;
-    void       *probeSp;    // stack pointer of managed function
-    void       *profiledSp; // location of arguments on stack
-    LPVOID      hiddenArg;
-    UINT32      flags;
-} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
-
 
 /*
  * ProfileGetIPFromPlatformSpecificHandle
