@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace Internal.Runtime.Binder
 {
     // System.Reflection.TypeLoading.AssemblyNameData
-    internal unsafe readonly struct AssemblyNameData
+    internal readonly unsafe struct AssemblyNameData
     {
         public readonly void* Name;
         public readonly void* Culture;
@@ -30,14 +30,14 @@ namespace Internal.Runtime.Binder
 
     internal abstract class AssemblyBinder
     {
-        public int BindAssemblyByName(in AssemblyNameData pAssemblyNameData, out Assembly assembly)
+        public int BindAssemblyByName(in AssemblyNameData pAssemblyNameData, out Assembly? assembly)
         {
             return BindUsingAssemblyName(new AssemblyName(pAssemblyNameData), out assembly);
         }
 
         public abstract int BindUsingPEImage(IntPtr pPEImage, bool excludeAppPaths, out Assembly assembly);
 
-        public abstract int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly assembly);
+        public abstract int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly);
 
         /// <summary>
         /// Get LoaderAllocator for binders that contain it. For other binders, return NULL.
@@ -46,7 +46,7 @@ namespace Internal.Runtime.Binder
 
         public abstract bool IsDefault { get; }
 
-        public ApplicationContext AppContext { get; }
+        public ApplicationContext AppContext { get; } = new ApplicationContext();
 
         // A GC handle to the managed AssemblyLoadContext.
         // It is a long weak handle for collectible AssemblyLoadContexts and strong handle for non-collectible ones.

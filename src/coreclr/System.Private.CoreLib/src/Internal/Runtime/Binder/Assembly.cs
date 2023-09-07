@@ -14,7 +14,7 @@ namespace Internal.Runtime.Binder
 
         public AssemblyName AssemblyName { get; }
 
-        // private IntPtr _pBinder; // PTR_AssemblyBinder
+        public AssemblyBinder? Binder { get; set; }
 
         public bool IsInTPA { get; }
 

@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace Internal.Runtime.Binder.Tracing
 {
@@ -66,14 +68,14 @@ namespace Internal.Runtime.Binder.Tracing
         }
 
         // One of native bindContext or binder is expected to be non-zero. If the managed ALC is set, binder is ignored.
-        public ResolutionAttemptedOperation(AssemblyName? assemblyName, AssemblyBinder? binder, IntPtr managedALC, ref int hResult)
+        public ResolutionAttemptedOperation(AssemblyName? assemblyName, AssemblyBinder? binder, GCHandle pManagedALC, ref int hResult)
         {
             _hr = ref hResult;
             _stage = Stage.NotYetStarted;
             _tracingEnabled = IsEnabled();
             _assemblyNameObject = assemblyName;
 
-            Debug.Assert(binder != null || managedALC != 0);
+            Debug.Assert(binder != null || pManagedALC.IsAllocated);
 
             if (!_tracingEnabled)
                 return;
@@ -83,7 +85,7 @@ namespace Internal.Runtime.Binder.Tracing
             if (_assemblyNameObject != null)
                 _assemblyName = _assemblyNameObject.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_VERSION | AssemblyNameIncludeFlags.INCLUDE_PUBLIC_KEY_TOKEN);
 
-            if (managedALC != 0)
+            if (pManagedALC.Target is AssemblyLoadContext managedALC)
             {
                 // AssemblyBinder::GetNameForDiagnosticsFromManagedALC(managedALC, m_assemblyLoadContextName);
             }

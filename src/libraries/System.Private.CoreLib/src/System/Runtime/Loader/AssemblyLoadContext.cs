@@ -102,6 +102,9 @@ namespace System.Runtime.Loader
             var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
             _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
 
+            // TODO: AdHoc
+            Internal.Runtime.Binder.DefaultAssemblyBinder.Default.ManagedAssemblyLoadContext = thisHandle;
+
             // Add this instance to the list of alive ALC
             Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
             lock (allContexts)
@@ -609,7 +612,7 @@ namespace System.Runtime.Loader
 #if !NATIVEAOT
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        internal static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 

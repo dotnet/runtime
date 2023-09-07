@@ -103,7 +103,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve a satellite assembly reference
         // after trying assembly resolution via Load override without success.
-        private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        internal static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 
@@ -129,7 +129,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve an assembly reference using the Resolving event
         // after trying assembly resolution via Load override and TPA load context without success.
-        private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        internal static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
             // Invoke the AssemblyResolve event callbacks if wired up
@@ -179,7 +179,7 @@ namespace System.Runtime.Loader
             InternalStartProfile(profile, _nativeAssemblyLoadContext);
         }
 
-        private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
+        internal static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
         {
             return
                 asm == null ? null :
@@ -215,7 +215,7 @@ namespace System.Runtime.Loader
         /// <summary>
         /// Called by the runtime to make sure the default ALC is initialized
         /// </summary>
-        private static void InitializeDefaultContext()
+        internal static void InitializeDefaultContext()
         {
             _ = Default;
         }
