@@ -214,12 +214,12 @@ def main(main_args):
         with TempDir() as temp_location:
             antigen_log = path.join(temp_location, get_antigen_filename(tag_name))
             env_variable = {}
-            if 'arm' not in run_duration:
+            if 'x86' in coreclr_args.run_configuration or 'x64' in coreclr_args.run_configuration:
                 # For x86 and x64, set this environment variable so Antigen process would
                 # get the hardware acceleration of Avx512 and through that, Antigen will
                 # generate code containing Avx512 specific intrinsic methods.
                 env_variable["DOTNET_PreferredVectorBitWidth"] = "512"
-            run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _output_file= antigen_log)
+            run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _output_file= antigen_log, _env= env_variable)
 
             # Copy issues for upload
             print("Copying issues to " + output_directory)
