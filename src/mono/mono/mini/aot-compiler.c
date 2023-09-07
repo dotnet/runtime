@@ -9868,11 +9868,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (!mono_method_is_generic_impl (method) && method->token != 0 && !cfg->deopt && !cfg->interp_entry_only) {
 			// The call to jit_call_can_be_supported_by_interp is necessary for WASM, because it would still interprete some methods sometimes even though they were already AOT'ed.
 			// When that happens, interpreter needs to have the capability to call the AOT'ed version of that method, since the method body has already been trimmed.
-			gboolean skip = FALSE;
+			gboolean skip_trim = FALSE;
 			if (acfg->aot_opts.interp) {
-				skip = !jit_call_can_be_supported_by_interp (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only);
+				skip_trim = !jit_call_can_be_supported_by_interp (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only);
 			}
-			if (!skip)
+			if (!skip_trim)
 				fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
 		}
 	}
