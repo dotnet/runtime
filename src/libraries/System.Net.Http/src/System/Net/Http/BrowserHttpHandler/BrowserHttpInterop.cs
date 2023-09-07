@@ -28,15 +28,18 @@ namespace System.Net.Http
         public static partial void AbortResponse(
             JSObject fetchResponse);
 
-        [JSImport("INTERNAL.http_wasm_request_stream_write")]
-        public static partial Task RequestStreamWrite(
-            JSObject requestStream,
+        [JSImport("INTERNAL.http_wasm_create_transform_stream")]
+        public static partial JSObject CreateTransformStream();
+
+        [JSImport("INTERNAL.http_wasm_transform_stream_write")]
+        public static partial Task TransformStreamWrite(
+            JSObject transformStream,
             IntPtr bufferPtr,
             int bufferLength);
 
-        [JSImport("INTERNAL.http_wasm_request_stream_close")]
-        public static partial Task<JSObject> RequestStreamClose(
-            JSObject requestStream,
+        [JSImport("INTERNAL.http_wasm_transform_stream_close")]
+        public static partial Task TransformStreamClose(
+            JSObject transformStream,
             Exception? error = null);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
@@ -72,13 +75,14 @@ namespace System.Net.Http
             JSObject abortControler);
 
         [JSImport("INTERNAL.http_wasm_fetch_stream")]
-        public static partial JSObject FetchStream(
+        public static partial Task<JSObject> Fetch(
             string uri,
             string[] headerNames,
             string[] headerValues,
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
-            JSObject abortControler);
+            JSObject abortControler,
+            JSObject transformStream);
 
         [JSImport("INTERNAL.http_wasm_fetch_bytes")]
         private static partial Task<JSObject> FetchBytes(

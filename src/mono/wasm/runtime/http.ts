@@ -65,32 +65,37 @@ export function http_wasm_abort_response(res: ResponseExtension): void {
     }
 }
 
-export async function http_wasm_request_stream_write(ts: TransformStreamExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<void> {
+export function http_wasm_create_transform_stream(): TransformStreamExtension {
+    const transform_stream = new TransformStream<Uint8Array, Uint8Array>() as TransformStreamExtension;
+    transform_stream.__writer = transform_stream.writable.getWriter();
+    return transform_stream;
+}
+
+export async function http_wasm_transform_stream_write(ts: TransformStreamExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<void> {
     mono_assert(bufferLength > 0, "expected bufferLength > 0");
-    await ts.__writer.ready;
+    mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
+    await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
-    await ts.__writer.write(copy);
+    await Promise.race([ts.__writer.write(copy), ts.__fetch_promise_control.promise]);
 }
 
-export async function http_wasm_request_stream_close(ts: TransformStreamExtension, error: Error | undefined): Promise<ResponseExtension> {
+export async function http_wasm_transform_stream_close(ts: TransformStreamExtension, error: Error | undefined): Promise<void> {
+    mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
     if (error) {
         ts.__fetch_promise_control.reject(error);
-        await ts.__writer.abort(error);
+        ts.__writer.abort(error);
     } else {
-        await ts.__writer.ready;
-        await ts.__writer.close();
+        await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
+        ts.__writer.close();
     }
-    return await ts.__fetch_promise_control.promise;
 }
 
-export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController): TransformStreamExtension {
-    const transform_stream = new TransformStream<Uint8Array, Uint8Array>() as TransformStreamExtension;
-    transform_stream.__writer = transform_stream.writable.getWriter();
-    const cancelable_promise = http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, transform_stream.readable);
-    transform_stream.__fetch_promise_control = loaderHelpers.getPromiseController(cancelable_promise);
-    return transform_stream;
+export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: TransformStreamExtension): Promise<ResponseExtension> {
+    const cancelable_promise = http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, body.readable);
+    body.__fetch_promise_control = loaderHelpers.getPromiseController(cancelable_promise);
+    return cancelable_promise;
 }
 
 export function http_wasm_fetch_bytes(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, bodyPtr: VoidPtr, bodyLength: number): Promise<ResponseExtension> {
@@ -205,8 +210,8 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
 }
 
 interface TransformStreamExtension extends TransformStream<Uint8Array, Uint8Array> {
-    __fetch_promise_control: PromiseController<ResponseExtension>
     __writer: WritableStreamDefaultWriter<Uint8Array>
+    __fetch_promise_control?: PromiseController<ResponseExtension>
 }
 
 interface ResponseExtension extends Response {

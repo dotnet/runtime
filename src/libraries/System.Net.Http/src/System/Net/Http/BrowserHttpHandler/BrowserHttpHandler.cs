@@ -220,9 +220,17 @@ namespace System.Net.Http
 
                     if (streamingEnabled)
                     {
-                        JSObject requestStream = BrowserHttpInterop.FetchStream(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController);
-
-                        promise = WasmHttpWriteStream.CopyToAsync(requestStream, request.Content, cancellationToken);
+                        JSObject transformStream = BrowserHttpInterop.CreateTransformStream();
+                        try
+                        {
+                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, transformStream);
+                            promise = WasmHttpWriteStream.CopyToAsync(promise, transformStream, request.Content, cancellationToken);
+                        }
+                        catch
+                        {
+                            transformStream.Dispose();
+                            throw;
+                        }
                     }
                     else
                     {
@@ -320,27 +328,32 @@ namespace System.Net.Http
 
     internal sealed class WasmHttpWriteStream : Stream
     {
-        private readonly JSObject _requestStream;
+        private readonly JSObject _transformStream;
 
-        public WasmHttpWriteStream(JSObject requestStream)
+        public WasmHttpWriteStream(JSObject transformStream)
         {
-            ArgumentNullException.ThrowIfNull(requestStream);
+            ArgumentNullException.ThrowIfNull(transformStream);
 
-            _requestStream = requestStream;
+            _transformStream = transformStream;
         }
 
-        public static async Task<JSObject> CopyToAsync(JSObject requestStream, HttpContent content, CancellationToken cancellationToken)
+        public static async Task<JSObject> CopyToAsync(Task<JSObject> fetchResponsePromise, JSObject transformStream, HttpContent content, CancellationToken cancellationToken)
         {
-            using (WasmHttpWriteStream stream = new WasmHttpWriteStream(requestStream))
+            using (WasmHttpWriteStream stream = new WasmHttpWriteStream(transformStream))
             {
                 try
                 {
-                    await content.CopyToAsync(stream, cancellationToken).ConfigureAwait(true);
-                    return await BrowserHttpInterop.RequestStreamClose(requestStream).ConfigureAwait(true);
+                    Task copyTask = content.CopyToAsync(stream, cancellationToken);
+                    if (await Task.WhenAny(copyTask, fetchResponsePromise).ConfigureAwait(true) == copyTask)
+                    {
+                        await copyTask.ConfigureAwait(true);
+                        await BrowserHttpInterop.TransformStreamClose(transformStream).ConfigureAwait(true);
+                    }
+                    return await fetchResponsePromise.ConfigureAwait(true);
                 }
                 catch (Exception ex)
                 {
-                    await BrowserHttpInterop.RequestStreamClose(requestStream, ex).ConfigureAwait(true);
+                    await BrowserHttpInterop.TransformStreamClose(transformStream, ex).ConfigureAwait(true);
                     throw;
                 }
             }
@@ -351,11 +364,11 @@ namespace System.Net.Http
             cancellationToken.ThrowIfCancellationRequested();
             using (Buffers.MemoryHandle handle = buffer.Pin())
             {
-                await RequestStreamWriteUnsafe(_requestStream, buffer, handle).ConfigureAwait(true);
+                await TransformStreamWriteUnsafe(_transformStream, buffer, handle).ConfigureAwait(true);
             }
 
-            static unsafe Task RequestStreamWriteUnsafe(JSObject requestStream, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
-                => BrowserHttpInterop.RequestStreamWrite(requestStream, (nint)handle.Pointer, buffer.Length);
+            static unsafe Task TransformStreamWriteUnsafe(JSObject transformStream, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
+                => BrowserHttpInterop.TransformStreamWrite(transformStream, (nint)handle.Pointer, buffer.Length);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -375,7 +388,7 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            _requestStream.Dispose();
+            _transformStream.Dispose();
         }
 
         public override void Flush()
