@@ -138,11 +138,6 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName initialization_log
-        displayName: Collect vslogs on Entry and disable updates
-        condition: always()
-
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: ./build$(scriptExt) -subset mono+clr.hosts $(crossArg) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(darwinFrameworks)
@@ -176,7 +171,7 @@ jobs:
       - script: build$(scriptExt) -subset mono+clr.hosts -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
 
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
       - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
         displayName: Collect vslogs on exit
         condition: always()

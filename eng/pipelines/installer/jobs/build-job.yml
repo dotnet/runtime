@@ -332,11 +332,6 @@ jobs:
         clean: true
         fetchDepth: $(checkoutFetchDepth)
 
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName initialization_log
-          displayName: Collect vslogs on Entry and disable updates
-          condition: always()
-
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - ${{ if ne(parameters.osGroup, 'windows') }}:
           - task: Bash@3
@@ -408,7 +403,7 @@ jobs:
           displayName: Build and Package
           continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
           displayName: Collect vslogs on exit
           condition: always()
