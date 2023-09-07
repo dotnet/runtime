@@ -15,6 +15,9 @@ namespace Internal.Runtime.Binder
 
         public override bool IsDefault => true;
 
+        // Not supported by this binder
+        public override System.Reflection.LoaderAllocator? GetLoaderAllocator() => null;
+
         // Helper functions
         private int BindAssemblyByNameWorker(AssemblyName assemblyName, out Assembly? coreCLRFoundAssembly, bool excludeAppPaths)
         {
@@ -85,5 +88,68 @@ namespace Internal.Runtime.Binder
 
             return hr;
         }
+
+        public override int BindUsingPEImage(nint pPEImage, bool excludeAppPaths, out Assembly? assembly)
+        {
+            assembly = null;
+            int hr;
+
+            try
+            {
+                Assembly? coreCLRFoundAssembly;
+                AssemblyName assemblyName = new AssemblyName(pPEImage);
+
+                // Validate architecture
+                if (!AssemblyBinderCommon.IsValidArchitecture(assemblyName.ProcessorArchitecture))
+                    return AssemblyBinderCommon.CLR_E_BIND_ARCHITECTURE_MISMATCH;
+
+                // Easy out for CoreLib
+                if (assemblyName.IsCoreLib)
+                    return HResults.E_FILENOTFOUND;
+
+                {
+                    // Ensure we are not being asked to bind to a TPA assembly
+
+                    Debug.Assert(AppContext.TrustedPlatformAssemblyMap != null);
+
+                    if (AppContext.TrustedPlatformAssemblyMap.ContainsKey(assemblyName.SimpleName))
+                    {
+                        // The simple name of the assembly being requested to be bound was found in the TPA list.
+                        // Now, perform the actual bind to see if the assembly was really in the TPA assembly list or not.
+                        hr = BindAssemblyByNameWorker(assemblyName, out coreCLRFoundAssembly, excludeAppPaths: true);
+                        if (hr >= 0)
+                        {
+                            Debug.Assert(coreCLRFoundAssembly != null);
+                            if (coreCLRFoundAssembly.IsInTPA)
+                            {
+                                assembly = coreCLRFoundAssembly;
+                                return hr;
+                            }
+                        }
+                    }
+                }
+
+                hr = AssemblyBinderCommon.BindUsingPEImage(this, assemblyName, pPEImage, excludeAppPaths, out coreCLRFoundAssembly);
+                if (hr == HResults.S_OK)
+                {
+                    Debug.Assert(coreCLRFoundAssembly != null);
+                    coreCLRFoundAssembly.Binder = this;
+                    assembly = coreCLRFoundAssembly;
+                }
+            }
+            catch (Exception ex)
+            {
+                return ex.HResult;
+            }
+
+            return hr;
+        }
+
+        public void SetupBindingPaths(string trustedPlatformAssemblies, string platformResourceRoots, string appPaths)
+        {
+            AppContext.SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, acquireLock: true);
+        }
+
+        // BindToSystem
     }
 }

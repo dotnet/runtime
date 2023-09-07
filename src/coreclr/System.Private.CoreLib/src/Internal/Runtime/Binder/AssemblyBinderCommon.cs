@@ -206,6 +206,7 @@ namespace Internal.Runtime.Binder
         public const int CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH = unchecked((int)0x80132001);
         public const int CLR_E_BIND_ASSEMBLY_NOT_FOUND = unchecked((int)0x80132004);
         public const int CLR_E_BIND_TYPE_NOT_FOUND = unchecked((int)0x80132005);
+        public const int CLR_E_BIND_ARCHITECTURE_MISMATCH = unchecked((int)0x80132006);
 
         public static int BindAssembly(AssemblyBinder binder, AssemblyName assemblyName, bool excludeAppPaths, out Assembly? result)
         {

@@ -35,7 +35,7 @@ namespace Internal.Runtime.Binder
             return BindUsingAssemblyName(new AssemblyName(pAssemblyNameData), out assembly);
         }
 
-        public abstract int BindUsingPEImage(IntPtr pPEImage, bool excludeAppPaths, out Assembly assembly);
+        public abstract int BindUsingPEImage(IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly);
 
         public abstract int BindUsingAssemblyName(AssemblyName assemblyName, out Assembly? assembly);
 
