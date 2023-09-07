@@ -1279,9 +1279,18 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
                 const uint32_t ldapurMask = 0b00111111111000000000110000000000;
                 const uint32_t ldapurBits = 0b00011001010000000000000000000000;
                 const uint32_t ldurBits   = 0b00111000010000000000000000000000;
+
+                const uint32_t stlurMask  = 0b00111111111000000000110000000000;
+                const uint32_t stlurBits  = 0b00011001000000000000000000000000;
+                const uint32_t sturBits   = 0b00111000000000000000000000000000;
                 if ((inst & ldapurMask) == ldapurBits)
                 {
                     inst ^= (ldapurBits ^ ldurBits);
+                    memcpy(&bytes[i], &inst, 4);
+                }
+                else if ((inst & stlurMask) == stlurBits)
+                {
+                    inst ^= (stlurBits ^ sturBits);
                     memcpy(&bytes[i], &inst, 4);
                 }
             }
