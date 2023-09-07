@@ -477,9 +477,9 @@ def main(main_args):
     # Copy Core_Root
 
     if platform_name == "windows":
-        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json", ".txt"])
+        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json", ".txt", ".xml", ".exports", "_version.c"])
     else:
-        acceptable_extensions = [".py", ".dll", ".json", ".txt"]
+        acceptable_extensions = [".py", ".dll", ".json", ".txt", ".xml", ".exports", "_version.c"]
         acceptable_extensions.append(".so" if platform_name == "linux" else ".dylib")
         if platform_name == "linux":
             acceptable_extensions.append(".so.1")
