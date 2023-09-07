@@ -28,6 +28,8 @@ namespace Wasm.Build.Tests
                 ("WasmEnableExceptionHandling", true),
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
+                ("WasmNativeStrip", false),
+                ("WasmNativeDebugSymbols", false),
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
             };
 
@@ -41,13 +43,13 @@ namespace Wasm.Build.Tests
                     // Config=Release always causes relinking when publishing
                     bool publishValue = forPublish && config == "Release" ? true : false;
                     // Setting the default value from the runtime pack shouldn't trigger relinking
-                    data.Add(config, $"<{defaultPair.propertyName}>{defaultPair.defaultValueInRuntimePack}</{defaultPair.propertyName}>",
+                    data.Add(config, $"<{defaultPair.propertyName}>{defaultPair.defaultValueInRuntimePack.ToString().ToLower()}</{defaultPair.propertyName}>",
                                         /*aot*/ false, /*build*/ false, /*publish*/ publishValue);
                     // Leaving the property unset, so checking the default
                     data.Add(config, "", /*aot*/ false, /*build*/ false, /*publish*/ publishValue);
 
                     // Setting the !default value should trigger relinking
-                    data.Add(config, $"<{defaultPair.propertyName}>{!defaultPair.defaultValueInRuntimePack}</{defaultPair.propertyName}>",
+                    data.Add(config, $"<{defaultPair.propertyName}>{(!defaultPair.defaultValueInRuntimePack).ToString().ToLower()}</{defaultPair.propertyName}>",
                                         /*aot*/ false, /*build*/ true, /*publish*/ true);
                 }
             }

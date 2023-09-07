@@ -151,22 +151,23 @@
 
     <Message Text="_SetDebugSymbolsPropertiesDefault WasmNativeStrip: $(WasmNativeStrip), WasmNativeDebugSymbols: $(WasmNativeDebugSymbols)" />
 
-    <!-- Default with nothing set --> <!-- Build+relink+config=debug -->
+    <!-- Default with nothing set: Build+relink+config=debug -->
     <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
       <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
       <WasmNativeStrip>false</WasmNativeStrip>
     </PropertyGroup>
-
     <PropertyGroup>
-      <!-- default -->
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">false</WasmNativeDebugSymbols>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
 
-      <!--<WasmBuildNative Condition="'$(WasmBuildNative)' == '' and ('$(WasmNativeStrip)' == 'true' or '$(WasmNativeDebugSymbols)' == 'true')">true</WasmBuildNative>-->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+      <!-- default -->
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(WasmNativeDebugSymbols)' == 'true'">false</WasmNativeStrip>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
     </PropertyGroup>
 
     <PropertyGroup>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and ('$(WasmNativeStrip)' == 'true' or '$(WasmNativeDebugSymbols)' == 'true')">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+
       <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
     </PropertyGroup>
 
