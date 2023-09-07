@@ -33,8 +33,6 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-cmake_policy(SET CMP0042 NEW)
-
 # Include directories
 
 include_directories(include)
