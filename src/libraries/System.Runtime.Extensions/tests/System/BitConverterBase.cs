@@ -250,6 +250,34 @@ namespace System.Tests
         [MemberData(nameof(ToInt64TestData))]
         public abstract void ToInt64(int index, long expected, byte[] byteArray);
 
+        private static byte[] s_toInt128ByteArray =
+            { 0x00, 0x36, 0x65, 0xC4, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+            0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0xCA, 0x9A, 0x3B, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 
+            0xFF, 0xFF, 0x01, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0x56, 0x55, 0x55, 0x55, 0x55, 0x55, 0xFF,
+            0xFF, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x00, 0x00, 0x64, 0xA7, 0xB3, 0xB6, 0xE0, 0x0D, 0x00, 0x00, 0x9C, 0x58, 0x4C, 
+            0x49, 0x1F, 0xF2 };
+
+        public static IEnumerable<object[]> ToInt128TestData()
+        {
+            yield return new object[] { 8, (Int128)0, s_toInt128ByteArray };
+            yield return new object[] { 5, (Int128)16777215, s_toInt128ByteArray };
+            yield return new object[] { 42, (Int128)-16777215, s_toInt128ByteArray };
+            yield return new object[] { 25, (Int128)1000000000, s_toInt128ByteArray };
+            yield return new object[] { 0, (Int128)-1000000000, s_toInt128ByteArray };
+            yield return new object[] { 29, 4294967296, s_toInt128ByteArray };
+            yield return new object[] { 34, -4294967296, s_toInt128ByteArray };
+            yield return new object[] { 53, 187649984473770, s_toInt128ByteArray };
+            yield return new object[] { 45, -187649984473770, s_toInt128ByteArray };
+            yield return new object[] { 59, 1000000000000000000, s_toInt128ByteArray };
+            yield return new object[] { 67, -1000000000000000000, s_toInt128ByteArray };
+            yield return new object[] { 37, 9223372036854775807, s_toInt128ByteArray };
+            yield return new object[] { 9, -9223372036854775808, s_toInt128ByteArray };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToInt128TestData))]
+        public abstract void ToInt128(int index, Int128 expected, byte[] byteArray);
+
         private static byte[] s_toUInt16ByteArray = { 15, 0, 0, 255, 3, 16, 39, 255, 255, 127 };
 
         public static IEnumerable<object[]> ToUInt16TestData()
@@ -304,6 +332,28 @@ namespace System.Tests
         [Theory]
         [MemberData(nameof(ToUInt64TestData))]
         public abstract void ToUInt64(int index, ulong expected, byte[] byteArray);
+        
+        private static byte[] s_toUInt128ByteArray =
+            { 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x64, 0xa7, 0xb3, 0xb6, 0xe0,
+            0x0d, 0x00, 0xca, 0x9a, 0x3b, 0x00, 0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0x00, 0x00, 0xe8, 0x89, 0x04,
+            0x23, 0xc7, 0x8a, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f };
+
+        public static IEnumerable<object[]> ToUInt128TestData()
+        {
+            yield return new object[] { 3, (UInt128)0, s_toUInt128ByteArray };
+            yield return new object[] { 0, (UInt128)16777215, s_toUInt128ByteArray };
+            yield return new object[] { 21, (UInt128)1000000000, s_toUInt128ByteArray };
+            yield return new object[] { 7, (UInt128)4294967296, s_toUInt128ByteArray };
+            yield return new object[] { 29, (UInt128)187649984473770, s_toUInt128ByteArray };
+            yield return new object[] { 13, (UInt128)1000000000000000000, s_toUInt128ByteArray };
+            yield return new object[] { 35, 10000000000000000000, s_toUInt128ByteArray };
+            yield return new object[] { 44, (UInt128)9223372036854775807, s_toUInt128ByteArray };
+            yield return new object[] { 43, 18446744073709551615, s_toUInt128ByteArray };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToUInt128TestData))]
+        public abstract void ToUInt128(int index, UInt128 expected, byte[] byteArray);
 
         private static byte[] s_toHalfByteArray =
             { 0x00, 0x00, 0xB7, 0x57, 0xFF, 0xFB, 0xFF, 0x7B, 0x01, 0x00, 0x00, 0xFE, 0x00, 0x7C, 0x00, 0xFC };
