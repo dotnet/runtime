@@ -1645,6 +1645,7 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init(const char *file)
     return mono_jit_init_version(file, "4.0");
 }
 
+typedef int32_t (*initialize_scripting_runtime_func)();
 typedef int32_t (*initialize_func)(HostStruct* s, int32_t size, HostStructNative* n, int32_t sizeNative);
 typedef void (*unity_log_func)(const char* format);
 
@@ -1779,6 +1780,13 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
     }
 
     mono_unity_initialize_host_apis(init_func);
+
+    initialize_scripting_runtime_func init_runtime_func;
+    hr = coreclr_create_delegate(g_CLRRuntimeHost, g_RootDomainId, "UnityEngine.Scripting", "UnityEngine.Scripting.Initialization", "NativeCallbackToPerformInitialization", (void**)&init_runtime_func);
+    if (hr == 0)
+    {
+        init_runtime_func();
+    }
 
     //coreClrHelperAssembly->EnsureActive();
     //gCoreCLRHelperAssembly = (MonoImage*)coreClrHelperAssembly;
