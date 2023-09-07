@@ -268,7 +268,7 @@ namespace Internal.Runtime.Binder
                 }
             }
 
-            if (!IsValidArchitecture(assemblyName.Architecture))
+            if (!IsValidArchitecture(assemblyName.ProcessorArchitecture))
             {
                 // Assembly reference contains wrong architecture
                 hr = HResults.FUSION_E_INVALID_NAME;
@@ -382,7 +382,7 @@ namespace Internal.Runtime.Binder
                 return HResults.S_FALSE;
 
             if (assembly != null && assemblyName.IsDefinition
-                && (assembly.AssemblyName.Architecture != assemblyName.Architecture))
+                && (assembly.AssemblyName.ProcessorArchitecture != assemblyName.ProcessorArchitecture))
             {
                 return FUSION_E_APP_DOMAIN_LOCKED;
             }
@@ -407,7 +407,7 @@ namespace Internal.Runtime.Binder
                 }
             }
 
-            if (requestedAssemblyName.Architecture != PEKind.None)
+            if (requestedAssemblyName.ProcessorArchitecture != PEKind.None)
             {
                 includeFlags |= AssemblyNameIncludeFlags.INCLUDE_ARCHITECTURE;
             }

@@ -29,7 +29,7 @@ namespace Internal.Runtime.Binder
             };
 
             // validate architecture
-            if (!AssemblyBinderCommon.IsValidArchitecture(AssemblyName.Architecture))
+            if (!AssemblyBinderCommon.IsValidArchitecture(AssemblyName.ProcessorArchitecture))
             {
                 // Assembly image can't be executed on this platform
                 throw new BadImageFormatException();

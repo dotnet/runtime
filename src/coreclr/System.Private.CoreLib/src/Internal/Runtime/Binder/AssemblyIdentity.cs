@@ -39,7 +39,7 @@ namespace Internal.Runtime.Binder
         public AssemblyVersion Version = new AssemblyVersion();
         public string CultureOrLanguage = string.Empty;
         public byte[] PublicKeyOrTokenBLOB = Array.Empty<byte>();
-        public PEKind Architecture;
+        public PEKind ProcessorArchitecture;
         public AssemblyContentType ContentType;
         public AssemblyIdentityFlags IdentityFlags;
 

@@ -74,7 +74,7 @@ namespace Internal.Runtime.Binder
             IntPtr pIMetaDataAssemblyImport = AssemblyBinderCommon.BinderAcquireImport(pPEImage, dwPAFlags);
             var scope = new System.Reflection.MetadataImport(pIMetaDataAssemblyImport, null);
 
-            Architecture = AssemblyBinderCommon.TranslatePEToArchitectureType(dwPAFlags);
+            ProcessorArchitecture = AssemblyBinderCommon.TranslatePEToArchitectureType(dwPAFlags);
 
             // Get the assembly token
             uint mda = scope.GetAssemblyFromScope();
@@ -163,6 +163,37 @@ namespace Internal.Runtime.Binder
 
                 IdentityFlags |= AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN;
             }
+        }
+
+        public AssemblyName(in AssemblyNameData data)
+        {
+            AssemblyIdentityFlags flags = data.IdentityFlags;
+            SimpleName = new MdUtf8String(data.Name).ToString();
+            Version = new AssemblyVersion
+            {
+                Major = data.MajorVersion,
+                Minor = data.MinorVersion,
+                Build = data.BuildNumber,
+                Revision = data.RevisionNumber
+            };
+            CultureOrLanguage = new MdUtf8String(data.Culture).ToString();
+
+            PublicKeyOrTokenBLOB = new ReadOnlySpan<byte>(data.PublicKeyOrToken, data.PublicKeyOrTokenLength).ToArray();
+            if ((flags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY) != 0)
+            {
+                // Convert public key to token
+
+                byte[]? publicKeyToken = System.Reflection.AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrTokenBLOB);
+                Debug.Assert(publicKeyToken != null);
+
+                PublicKeyOrTokenBLOB = publicKeyToken;
+                flags &= ~AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY;
+                flags |= AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN;
+            }
+
+            ProcessorArchitecture = data.ProcessorArchitecture;
+            ContentType = data.ContentType;
+            IdentityFlags = flags;
         }
 
         // TODO: Is this simple comparison enough?
@@ -267,7 +298,7 @@ namespace Internal.Runtime.Binder
 
             if ((dwUseIdentityFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PROCESSOR_ARCHITECTURE) != 0)
             {
-                dwHash ^= (uint)Architecture;
+                dwHash ^= (uint)ProcessorArchitecture;
                 dwHash = BitOperations.RotateLeft(dwHash, 4);
             }
 
@@ -313,7 +344,7 @@ namespace Internal.Runtime.Binder
 
                 if (fEquals && ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_ARCHITECTURE) != 0))
                 {
-                    fEquals = Architecture == other.Architecture;
+                    fEquals = ProcessorArchitecture == other.ProcessorArchitecture;
                 }
 
                 if (fEquals && ((dwIncludeFlags & AssemblyNameIncludeFlags.INCLUDE_VERSION) != 0))

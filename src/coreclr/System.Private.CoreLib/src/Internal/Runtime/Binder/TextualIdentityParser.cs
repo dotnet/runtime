@@ -57,7 +57,7 @@ namespace Internal.Runtime.Binder
             if ((includeFlags & AssemblyIdentityFlags.IDENTITY_FLAG_PROCESSOR_ARCHITECTURE) != 0)
             {
                 textualIdentity.Append(", processorArchitecture=");
-                textualIdentity.Append(pAssemblyIdentity.Architecture switch
+                textualIdentity.Append(pAssemblyIdentity.ProcessorArchitecture switch
                 {
                     PEKind.I386 => "x86",
                     PEKind.IA64 => "IA64",
