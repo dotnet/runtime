@@ -1545,9 +1545,8 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 											ins->inst_imm, ins->flags);
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
-				case OP_BOUNDS_CHECK:
-				case OP_BOUNDS_CHECK_SEXT: {
-					gboolean need_sext = ins->opcode == OP_BOUNDS_CHECK_SEXT;
+				case OP_BOUNDS_CHECK: {
+					gboolean need_sext = ins->backend.need_sext;
 					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1, FALSE);
 					if (COMPILE_LLVM (cfg)) {
 						int index2_reg;

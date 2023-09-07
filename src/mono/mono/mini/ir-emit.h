@@ -984,14 +984,12 @@ mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length
 				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), GINT_TO_UINT(array_length_offset), (index_reg), ex_name);
 		} else {
 			MonoInst *ins;
-			if (need_sext)
-				MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK_SEXT);
-			else
-				MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);
+			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);
 			ins->sreg1 = array_reg;
 			ins->sreg2 = index_reg;
 			ins->inst_p0 = (gpointer)ex_name;
 			ins->inst_imm = (array_length_offset);
+			ins->backend.need_sext = need_sext;
 			ins->flags |= MONO_INST_FAULT;
 			MONO_ADD_INS ((cfg)->cbb, ins);
 			(cfg)->flags |= MONO_CFG_NEEDS_DECOMPOSE;

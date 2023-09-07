@@ -4456,7 +4456,7 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 		MonoInst *index_ins = sp [1];
 #if SIZEOF_REGISTER == 8
 		if (sp [1]->type == STACK_I4) {
-			// stelemref wrapper recevies index as native int, sign extend it
+			// stelemref wrapper receives index as native int, sign extend it
 			guint32 dreg = alloc_preg (cfg);
 			guint32 sreg = index_ins->dreg;
 			EMIT_NEW_UNALU (cfg, index_ins, OP_SEXT_I4, dreg, sreg);
