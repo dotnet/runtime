@@ -11,11 +11,6 @@ using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
-    /// </summary>
-    public sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor, bool IsAbstract) : MarshallingInfo;
-
-    /// <summary>
     /// This class supports generating marshalling info for SafeHandle-derived types.
     /// </summary>
     public sealed class SafeHandleMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
@@ -64,9 +59,8 @@ namespace Microsoft.Interop
                 }
             }
 
-            // If we don't have the SafeHandleMarshaller<T> type, then we'll use the built-in support in the generator.
-            // This support will be removed when dotnet/runtime doesn't build any packages for platforms below .NET 8
-            // as the downlevel support is dotnet/runtime specific.
+            // If we don't have the SafeHandleMarshaller<T> type, then we'll return a MissingSupportMarshallingInfo
+            // indicating that we don't support marshalling SafeHandles with source-generated marshalling.
             if (_safeHandleMarshallerType is null)
             {
                 return new MissingSupportMarshallingInfo();
