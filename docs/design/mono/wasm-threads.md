@@ -23,6 +23,7 @@
      - in single-threaded build of the runtime, all of this is NOOP. That's why it works on UI thread.
 2. UI thread in the browser can't synchronously block
      - you can spin-lock but it's bad idea.
+         - Deadlock: when you spin-block, the JS timer loop and any messages are not pumping. But code in other threads may be waiting for some such event to resolve.
          - It eats your battery
          - Browser will kill your tab at random point (Aw, snap).
          - It's not deterministic and you can't really test your app to prove it harmless.
@@ -129,7 +130,7 @@
     - fast on worker -> worker
 
 ## Promise
-- passing promise should work everywhere.
+- passing Promise should work everywhere.
 - from UI javaScript it would be passed as Task to deputy worker
 - open question: passing JS promise to deputy should be fine. But does the `resolve()` need to block UI thread ?
 
@@ -157,6 +158,7 @@
 
 ## SynchronizationContext
 - we will need public C# API for it, `JSHost.xxxSynchronizationContext`
+- maybe `JSHost.Post(direction, lambda)` without exposing the `SynchronizationContext` would be better.
     - we could avoid it by generating late bound ICall. Very ugly.
 - hide `SynchronizationContext.Send` and `SynchronizationContext.Post` inside of the generated code.
     - needs to be also inside generated nested marshalers
@@ -175,6 +177,10 @@
         - it will need some public API any way, to be called from generated code.
 - on the deputy thread
     - to dispatch async calls from UI thread to it
+
+### dispatch alternatives
+- we could use emscripten's `emscripten_dispatch_to_thread_async` or JS `postMessage`
+- the details on how to interleave that with calls to `ToManaged` and `ToJS` for each argument may be tricky.
 
 ## Blazor - what breaks when MT build
 - as compared to single threaded runtime, the major difference would be no synchronous callbacks.
@@ -223,7 +229,7 @@
     - [ ] on UI synchronous JSImport
     - [ ] on UI synchronous C# delegate callback
     - [ ] throw fatal if somehow C# code was blocking on UI thread.
-- [ ] optinal: make underlying emscripten WebWorker pool allocation dynamic
+- [ ] optinal: make underlying emscripten WebWorker pool allocation dynamic, or provide C# API for that.
 - [ ] optinal: implement async function/delegate marshaling in JSImport/JSExport parameters.
 - [ ] optinal: enable blocking HTTP/WS APIs
 - [ ] optinal: enable lazy DLL download by blocking the caller
