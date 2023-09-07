@@ -82,7 +82,7 @@ namespace System.Numerics.Tensors.Tests
             float[] y = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(x, y, destination));
         }
 
         [Theory]
@@ -109,7 +109,7 @@ namespace System.Numerics.Tensors.Tests
             float y = NextSingle();
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(x, y, destination));
         }
 
         [Theory]
@@ -147,7 +147,7 @@ namespace System.Numerics.Tensors.Tests
             float[] y = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(x, y, destination));
         }
 
         [Theory]
@@ -174,7 +174,7 @@ namespace System.Numerics.Tensors.Tests
             float y = NextSingle();
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(x, y, destination));
         }
 
         [Theory]
@@ -212,7 +212,7 @@ namespace System.Numerics.Tensors.Tests
             float[] y = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(x, y, destination));
         }
 
         [Theory]
@@ -239,7 +239,7 @@ namespace System.Numerics.Tensors.Tests
             float y = NextSingle();
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(x, y, destination));
         }
 
         [Theory]
@@ -277,7 +277,7 @@ namespace System.Numerics.Tensors.Tests
             float[] y = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(x, y, destination));
         }
 
         [Theory]
@@ -304,7 +304,7 @@ namespace System.Numerics.Tensors.Tests
             float y = NextSingle();
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(x, y, destination));
         }
 
         [Theory]
@@ -329,7 +329,7 @@ namespace System.Numerics.Tensors.Tests
             float[] x = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Negate(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Negate(x, destination));
         }
 
         [Theory]
@@ -382,7 +382,7 @@ namespace System.Numerics.Tensors.Tests
             float[] multiplier = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
         [Theory]
@@ -404,6 +404,18 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensorsAndMultiplyWithScalar_ThrowsForMismatchedLengths_x_y(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+            float multiplier = NextSingle();
+            float[] destination = CreateTensor(tensorLength);
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
         public static void AddTwoTensorsAndMultiplyWithScalar_ThrowsForTooShortDestination(int tensorLength)
         {
             float[] x = CreateAndFillTensor(tensorLength);
@@ -411,7 +423,7 @@ namespace System.Numerics.Tensors.Tests
             float multiplier = NextSingle();
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
         [Theory]
@@ -433,6 +445,18 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        public static void AddTensorAndScalarAndMultiplyWithTensor_ThrowsForMismatchedLengths_x_z(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float y = NextSingle();
+            float[] multiplier = CreateAndFillTensor(tensorLength - 1);
+            float[] destination = CreateTensor(tensorLength);
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
         public static void AddTensorAndScalarAndMultiplyWithTensor_ThrowsForTooShortDestination(int tensorLength)
         {
             float[] x = CreateAndFillTensor(tensorLength);
@@ -440,7 +464,7 @@ namespace System.Numerics.Tensors.Tests
             float[] multiplier = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
         [Theory]
@@ -493,7 +517,7 @@ namespace System.Numerics.Tensors.Tests
             float[] addend = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
         [Theory]
@@ -522,7 +546,7 @@ namespace System.Numerics.Tensors.Tests
             float addend = NextSingle();
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
         [Theory]
@@ -551,7 +575,7 @@ namespace System.Numerics.Tensors.Tests
             float[] addend = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
         [Theory]
@@ -576,7 +600,7 @@ namespace System.Numerics.Tensors.Tests
             float[] x = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Exp(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Exp(x, destination));
         }
 
         [Theory]
@@ -601,7 +625,7 @@ namespace System.Numerics.Tensors.Tests
             float[] x = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Log(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Log(x, destination));
         }
 
         [Theory]
@@ -626,7 +650,7 @@ namespace System.Numerics.Tensors.Tests
             float[] x = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Cosh(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Cosh(x, destination));
         }
 
         [Theory]
@@ -651,7 +675,7 @@ namespace System.Numerics.Tensors.Tests
             float[] x = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Sinh(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sinh(x, destination));
         }
 
         [Theory]
@@ -676,7 +700,7 @@ namespace System.Numerics.Tensors.Tests
             float[] x = CreateAndFillTensor(tensorLength);
             float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Tanh(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Tanh(x, destination));
         }
     }
 }

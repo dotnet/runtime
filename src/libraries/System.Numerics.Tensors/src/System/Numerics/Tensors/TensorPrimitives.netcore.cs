@@ -7,167 +7,8 @@ using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
 {
-    /// <summary>Performs primitive tensor operations over spans of memory.</summary>
     public static partial class TensorPrimitives
     {
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> + <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] + <paramref name="y" />[i]</c>.</remarks>
-        public static unsafe void Add(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<AddOperator>(x, y, destination);
-
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> + <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a scalar.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] + <paramref name="y" /></c>.</remarks>
-        public static void Add(ReadOnlySpan<float> x, float y, Span<float> destination) =>
-            InvokeSpanScalarIntoSpan<AddOperator>(x, y, destination);
-
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> - <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a scalar.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] - <paramref name="y" />[i]</c>.</remarks>
-        public static void Subtract(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<SubtractOperator>(x, y, destination);
-
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> - <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a scalar.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] - <paramref name="y" /></c>.</remarks>
-        public static void Subtract(ReadOnlySpan<float> x, float y, Span<float> destination) =>
-            InvokeSpanScalarIntoSpan<SubtractOperator>(x, y, destination);
-
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> * <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] * <paramref name="y" /></c>.</remarks>
-        public static void Multiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MultiplyOperator>(x, y, destination);
-
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> * <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a scalar.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>
-        ///     <para>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] * <paramref name="y" /></c>.</para>
-        ///     <para>This method corresponds to the <c>scal</c> method defined by <c>BLAS1</c>.</para>
-        /// </remarks>
-        public static void Multiply(ReadOnlySpan<float> x, float y, Span<float> destination) =>
-            InvokeSpanScalarIntoSpan<MultiplyOperator>(x, y, destination);
-
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> / <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] / <paramref name="y" /></c>.</remarks>
-        public static void Divide(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<DivideOperator>(x, y, destination);
-
-        /// <summary>Computes the element-wise result of: <c><paramref name="x" /> / <paramref name="y" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a scalar.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <paramref name="x" />[i] / <paramref name="y" /></c>.</remarks>
-        public static void Divide(ReadOnlySpan<float> x, float y, Span<float> destination) =>
-            InvokeSpanScalarIntoSpan<DivideOperator>(x, y, destination);
-
-        /// <summary>Computes the element-wise result of: <c>-<paramref name="x" /></c>.</summary>
-        /// <param name="x">The tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = -<paramref name="x" />[i]</c>.</remarks>
-        public static void Negate(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<NegateOperator>(x, destination);
-
-        /// <summary>Computes the element-wise result of: <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="multiplier">The third tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="multiplier" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = (<paramref name="x" />[i] + <paramref name="y" />[i]) * <paramref name="multiplier" />[i]</c>.</remarks>
-        public static void AddMultiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> multiplier, Span<float> destination) =>
-            InvokeSpanSpanSpanIntoSpan<AddMultiplyOperator>(x, y, multiplier, destination);
-
-        /// <summary>Computes the element-wise result of: <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="multiplier">The third tensor, represented as a scalar.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = (<paramref name="x" />[i] + <paramref name="y" />[i]) * <paramref name="multiplier" /></c>.</remarks>
-        public static void AddMultiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, float multiplier, Span<float> destination) =>
-            InvokeSpanSpanScalarIntoSpan<AddMultiplyOperator>(x, y, multiplier, destination);
-
-        /// <summary>Computes the element-wise result of: <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a scalar.</param>
-        /// <param name="multiplier">The third tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="multiplier" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = (<paramref name="x" />[i] + <paramref name="y" />) * <paramref name="multiplier" />[i]</c>.</remarks>
-        public static void AddMultiply(ReadOnlySpan<float> x, float y, ReadOnlySpan<float> multiplier, Span<float> destination) =>
-            InvokeSpanScalarSpanIntoSpan<AddMultiplyOperator>(x, y, multiplier, destination);
-
-        /// <summary>Computes the element-wise result of: <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="addend">The third tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="addend" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />[i]) + <paramref name="addend" />[i]</c>.</remarks>
-        public static void MultiplyAdd(ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> addend, Span<float> destination) =>
-            InvokeSpanSpanSpanIntoSpan<MultiplyAddOperator>(x, y, addend, destination);
-
-        /// <summary>Computes the element-wise result of: <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="addend">The third tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>
-        ///     <para>This method effectively does <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />[i]) + <paramref name="addend" /></c>.</para>
-        ///     <para>This method corresponds to the <c>axpy</c> method defined by <c>BLAS1</c>.</para>
-        /// </remarks>
-        public static void MultiplyAdd(ReadOnlySpan<float> x, ReadOnlySpan<float> y, float addend, Span<float> destination) =>
-            InvokeSpanSpanScalarIntoSpan<MultiplyAddOperator>(x, y, addend, destination);
-
-        /// <summary>Computes the element-wise result of: <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c>.</summary>
-        /// <param name="x">The first tensor, represented as a span.</param>
-        /// <param name="y">The second tensor, represented as a span.</param>
-        /// <param name="addend">The third tensor, represented as a span.</param>
-        /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="addend" />'.</exception>
-        /// <exception cref="ArgumentException">Destination is too short.</exception>
-        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />) + <paramref name="addend" />[i]</c>.</remarks>
-        public static void MultiplyAdd(ReadOnlySpan<float> x, float y, ReadOnlySpan<float> addend, Span<float> destination) =>
-            InvokeSpanScalarSpanIntoSpan<MultiplyAddOperator>(x, y, addend, destination);
-
         private static unsafe void InvokeSpanIntoSpan<TUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination)
             where TUnaryOperator : IUnaryOperator
@@ -190,10 +31,7 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector512.StoreUnsafe(
-                            TUnaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector512<float>.Count;
                     }
@@ -203,10 +41,7 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        Vector512.StoreUnsafe(
-                            TUnaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -222,10 +57,7 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector256.StoreUnsafe(
-                            TUnaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector256<float>.Count;
                     }
@@ -235,10 +67,7 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        Vector256.StoreUnsafe(
-                            TUnaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -253,10 +82,7 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector128.StoreUnsafe(
-                            TUnaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector128<float>.Count;
                     }
@@ -266,10 +92,7 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        Vector128.StoreUnsafe(
-                            TUnaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -278,8 +101,7 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                Unsafe.Add(ref dRef, i) = TUnaryOperator.Invoke(
-                    Unsafe.Add(ref xRef, i));
+                Unsafe.Add(ref dRef, i) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, i));
 
                 i++;
             }
@@ -313,11 +135,8 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector512.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, (uint)i),
-                                Vector512.LoadUnsafe(ref yRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i),
+                                               Vector512.LoadUnsafe(ref yRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector512<float>.Count;
                     }
@@ -327,11 +146,8 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        Vector512.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector512.LoadUnsafe(ref yRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                               Vector512.LoadUnsafe(ref yRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -347,11 +163,8 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector256.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, (uint)i),
-                                Vector256.LoadUnsafe(ref yRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i),
+                                               Vector256.LoadUnsafe(ref yRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector256<float>.Count;
                     }
@@ -361,11 +174,8 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        Vector256.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector256.LoadUnsafe(ref yRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                               Vector256.LoadUnsafe(ref yRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -380,11 +190,8 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector128.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, (uint)i),
-                                Vector128.LoadUnsafe(ref yRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i),
+                                               Vector128.LoadUnsafe(ref yRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector128<float>.Count;
                     }
@@ -394,11 +201,8 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        Vector128.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector128.LoadUnsafe(ref yRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                               Vector128.LoadUnsafe(ref yRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -407,7 +211,8 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                Unsafe.Add(ref dRef, i) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, i), Unsafe.Add(ref yRef, i));
+                Unsafe.Add(ref dRef, i) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, i),
+                                                                 Unsafe.Add(ref yRef, i));
 
                 i++;
             }
@@ -437,11 +242,8 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector512.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, (uint)i),
-                                yVec),
-                            ref dRef, (uint)i);
+                        TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i),
+                                               yVec).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector512<float>.Count;
                     }
@@ -451,11 +253,8 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        Vector512.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                yVec),
-                            ref dRef, lastVectorIndex);
+                        TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                               yVec).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -473,11 +272,8 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector256.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, (uint)i),
-                                yVec),
-                            ref dRef, (uint)i);
+                        TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i),
+                                               yVec).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector256<float>.Count;
                     }
@@ -487,11 +283,8 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        Vector256.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                yVec),
-                            ref dRef, lastVectorIndex);
+                        TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                               yVec).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -508,11 +301,8 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector128.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, (uint)i),
-                                yVec),
-                            ref dRef, (uint)i);
+                        TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i),
+                                               yVec).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector128<float>.Count;
                     }
@@ -522,11 +312,8 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        Vector128.StoreUnsafe(
-                            TBinaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                yVec),
-                            ref dRef, lastVectorIndex);
+                        TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                               yVec).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -535,7 +322,8 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                Unsafe.Add(ref dRef, i) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, i), y);
+                Unsafe.Add(ref dRef, i) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, i),
+                                                                 y);
 
                 i++;
             }
@@ -570,12 +358,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector512.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, (uint)i),
-                                Vector512.LoadUnsafe(ref yRef, (uint)i),
-                                Vector512.LoadUnsafe(ref zRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i),
+                                                Vector512.LoadUnsafe(ref yRef, (uint)i),
+                                                Vector512.LoadUnsafe(ref zRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector512<float>.Count;
                     }
@@ -585,12 +370,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        Vector512.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector512.LoadUnsafe(ref yRef, lastVectorIndex),
-                                Vector512.LoadUnsafe(ref zRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                Vector512.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                Vector512.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -606,12 +388,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector256.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, (uint)i),
-                                Vector256.LoadUnsafe(ref yRef, (uint)i),
-                                Vector256.LoadUnsafe(ref zRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i),
+                                                Vector256.LoadUnsafe(ref yRef, (uint)i),
+                                                Vector256.LoadUnsafe(ref zRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector256<float>.Count;
                     }
@@ -621,12 +400,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        Vector256.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector256.LoadUnsafe(ref yRef, lastVectorIndex),
-                                Vector256.LoadUnsafe(ref zRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                Vector256.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                Vector256.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -641,12 +417,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector128.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, (uint)i),
-                                Vector128.LoadUnsafe(ref yRef, (uint)i),
-                                Vector128.LoadUnsafe(ref zRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i),
+                                                Vector128.LoadUnsafe(ref yRef, (uint)i),
+                                                Vector128.LoadUnsafe(ref zRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector128<float>.Count;
                     }
@@ -656,12 +429,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        Vector128.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector128.LoadUnsafe(ref yRef, lastVectorIndex),
-                                Vector128.LoadUnsafe(ref zRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                Vector128.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                Vector128.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -670,10 +440,9 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                Unsafe.Add(ref dRef, i) = TTernaryOperator.Invoke(
-                    Unsafe.Add(ref xRef, i),
-                    Unsafe.Add(ref yRef, i),
-                    Unsafe.Add(ref zRef, i));
+                Unsafe.Add(ref dRef, i) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, i),
+                                                                  Unsafe.Add(ref yRef, i),
+                                                                  Unsafe.Add(ref zRef, i));
 
                 i++;
             }
@@ -709,12 +478,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector512.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, (uint)i),
-                                Vector512.LoadUnsafe(ref yRef, (uint)i),
-                                zVec),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i),
+                                                Vector512.LoadUnsafe(ref yRef, (uint)i),
+                                                zVec).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector512<float>.Count;
                     }
@@ -724,12 +490,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        Vector512.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector512.LoadUnsafe(ref yRef, lastVectorIndex),
-                                zVec),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                Vector512.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                zVec).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -747,12 +510,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector256.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, (uint)i),
-                                Vector256.LoadUnsafe(ref yRef, (uint)i),
-                                zVec),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i),
+                                                Vector256.LoadUnsafe(ref yRef, (uint)i),
+                                                zVec).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector256<float>.Count;
                     }
@@ -762,12 +522,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        Vector256.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector256.LoadUnsafe(ref yRef, lastVectorIndex),
-                                zVec),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                Vector256.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                zVec).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -784,12 +541,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector128.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, (uint)i),
-                                Vector128.LoadUnsafe(ref yRef, (uint)i),
-                                zVec),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i),
+                                                Vector128.LoadUnsafe(ref yRef, (uint)i),
+                                                zVec).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector128<float>.Count;
                     }
@@ -799,12 +553,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        Vector128.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                Vector128.LoadUnsafe(ref yRef, lastVectorIndex),
-                                zVec),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                Vector128.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                zVec).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -813,10 +564,9 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                Unsafe.Add(ref dRef, i) = TTernaryOperator.Invoke(
-                    Unsafe.Add(ref xRef, i),
-                    Unsafe.Add(ref yRef, i),
-                    z);
+                Unsafe.Add(ref dRef, i) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, i),
+                                                                  Unsafe.Add(ref yRef, i),
+                                                                  z);
 
                 i++;
             }
@@ -852,12 +602,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector512.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, (uint)i),
-                                yVec,
-                                Vector512.LoadUnsafe(ref zRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i),
+                                                yVec,
+                                                Vector512.LoadUnsafe(ref zRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector512<float>.Count;
                     }
@@ -867,12 +614,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        Vector512.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                yVec,
-                                Vector512.LoadUnsafe(ref zRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                yVec,
+                                                Vector512.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -890,12 +634,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector256.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, (uint)i),
-                                yVec,
-                                Vector256.LoadUnsafe(ref zRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i),
+                                                yVec,
+                                                Vector256.LoadUnsafe(ref zRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector256<float>.Count;
                     }
@@ -905,12 +646,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        Vector256.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                yVec,
-                                Vector256.LoadUnsafe(ref zRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                yVec,
+                                                Vector256.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -927,12 +665,9 @@ namespace System.Numerics.Tensors
                     // Loop handling one vector at a time.
                     do
                     {
-                        Vector128.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, (uint)i),
-                                yVec,
-                                Vector128.LoadUnsafe(ref zRef, (uint)i)),
-                            ref dRef, (uint)i);
+                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i),
+                                                yVec,
+                                                Vector128.LoadUnsafe(ref zRef, (uint)i)).StoreUnsafe(ref dRef, (uint)i);
 
                         i += Vector128<float>.Count;
                     }
@@ -942,12 +677,9 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        Vector128.StoreUnsafe(
-                            TTernaryOperator.Invoke(
-                                Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                yVec,
-                                Vector128.LoadUnsafe(ref zRef, lastVectorIndex)),
-                            ref dRef, lastVectorIndex);
+                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                yVec,
+                                                Vector128.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -956,10 +688,9 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                Unsafe.Add(ref dRef, i) = TTernaryOperator.Invoke(
-                    Unsafe.Add(ref xRef, i),
-                    y,
-                    Unsafe.Add(ref zRef, i));
+                Unsafe.Add(ref dRef, i) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, i),
+                                                                  y,
+                                                                  Unsafe.Add(ref zRef, i));
 
                 i++;
             }
