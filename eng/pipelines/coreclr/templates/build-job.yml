@@ -127,7 +127,7 @@ jobs:
 
     steps:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveName initialization_log
+      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName initialization_log
         displayName: Collect vslogs on Entry and disable updates
         condition: always()
 
@@ -281,7 +281,7 @@ jobs:
           name: ${{ parameters.platform }}
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveName postbuild_log
+      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
         displayName: Collect vslogs on exit
         condition: always()
 
