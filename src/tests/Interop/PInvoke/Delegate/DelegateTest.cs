@@ -8,7 +8,7 @@ using Xunit;
 
 using static DelegateTestNative;
 
-class DelegateTest
+public class DelegateTest
 {
     private static void TestFunctionPointer()
     {
@@ -119,7 +119,7 @@ class DelegateTest
         Assert.Throws<MarshalDirectiveException>(() => MarshalDelegateAsInterface(TestFunction));
     }
 
-    static int Main()
+    public static int Main()
     {
         try
         {

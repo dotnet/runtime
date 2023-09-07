@@ -13,7 +13,7 @@ namespace NetClient
     using Server.Contract.Servers;
     using Server.Contract.Events;
 
-    class Program
+    public class Program
     {
         static void Validate_BasicCOMEvent()
         {
@@ -88,7 +88,7 @@ namespace NetClient
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

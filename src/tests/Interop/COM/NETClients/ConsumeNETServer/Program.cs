@@ -14,7 +14,7 @@ namespace NetClient
 
     using CoClass = Server.Contract.Servers;
 
-    class Program
+    public class Program
     {
         static void Validate_Activation()
         {
@@ -103,7 +103,7 @@ namespace NetClient
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

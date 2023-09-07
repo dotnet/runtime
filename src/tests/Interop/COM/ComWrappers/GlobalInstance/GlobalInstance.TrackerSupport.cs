@@ -10,7 +10,7 @@ namespace ComWrappersTests.GlobalInstance
     using TestLibrary;
     using Xunit;
 
-    partial class Program
+    public partial class Program
     {
         private static void ValidateNotRegisteredForMarshalling()
         {
@@ -25,7 +25,7 @@ namespace ComWrappersTests.GlobalInstance
             Assert.False(objWrapper is FakeWrapper, $"ComWrappers instance should not have been called");
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

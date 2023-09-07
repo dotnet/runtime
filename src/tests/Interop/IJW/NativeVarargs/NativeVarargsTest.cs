@@ -12,9 +12,9 @@ using Xunit;
 
 namespace NativeVarargsTest
 {
-    class NativeVarargsTest
+    public NativeVarargsTest
     {
-        static int Main()
+        public static int Main()
         {
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7 || TestLibrary.Utilities.IsWindowsNanoServer)
             {

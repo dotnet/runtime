@@ -1832,7 +1832,7 @@ public class MarshalStructTest
 
     #endregion
 
-    static int Main()
+    public static int Main()
     {
         try{
 

@@ -23,9 +23,9 @@ class NativeDateTime
     public static extern DateWrapper GetTomorrowWrapped(DateWrapper today);
 }
 
-class DateTimeTest
+public class DateTimeTest
 {
-    static int Main()
+    public static int Main()
     {
         try
         {

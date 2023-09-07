@@ -14,7 +14,7 @@ namespace NetClient
     using Server.Contract;
     using Server.Contract.Servers;
 
-    class Program
+    public class Program
     {
         static readonly string DefaultLicKey = "__MOCK_LICENSE_KEY__";
         static void ActivateLicensedObject()
@@ -121,7 +121,7 @@ namespace NetClient
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

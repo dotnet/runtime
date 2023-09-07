@@ -36,7 +36,7 @@ namespace ObjectiveCMarshalAPI
         public static extern IntPtr GetThrowException();
     }
 
-    unsafe class Program
+    public unsafe class Program
     {
         static void Validate_ReferenceTrackingAPIs_InvalidArgs()
         {
@@ -436,7 +436,7 @@ namespace ObjectiveCMarshalAPI
                 });
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

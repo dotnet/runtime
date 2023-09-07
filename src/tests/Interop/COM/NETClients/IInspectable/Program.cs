@@ -13,7 +13,7 @@ namespace NetClient
     using Server.Contract;
     using Server.Contract.Servers;
 
-    class Program
+    public class Program
     {
         static void Validate_IInspectable()
         {
@@ -21,7 +21,7 @@ namespace NetClient
             Assert.Throws<PlatformNotSupportedException>(() => _ = (IInspectableTesting2)server);
         }
 
-        static int Main()
+        public static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

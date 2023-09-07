@@ -12,9 +12,9 @@ namespace NonBlittablePointer
         public static unsafe extern void Negate(bool* ptr);
     }
 
-    class Program
+    public class Program
     {
-        static unsafe int Main()
+        public static unsafe int Main()
         {
             bool value = true;
             NonBlittablePointerNative.Negate(&value);
