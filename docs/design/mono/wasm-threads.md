@@ -184,8 +184,9 @@
     - process feedback from https://github.com/dotnet/aspnetcore/pull/48991 and make more async
 - Blazor renderBatch will continue working even with legacy interop in place.
     - Because it only reads memory and it doesn't call back to Mono VM.
-- throw PNSE from Blazor's [`IJSInProcessRuntime.Invoke`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsinprocessruntime.invoke)
-- throw PNSE from Blazor's any call to [`IJSUnmarshalledRuntime `](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsunmarshalledruntime)
+- Blazor's [`IJSInProcessRuntime.Invoke`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsinprocessruntime.invoke) should still work, because it's C#->JS direction
+- Blazor's [`IJSUnmarshalledRuntime `](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsunmarshalledruntime) should still work, because it's C#->JS direction
+- TODO: Review Blazor's JavaScript APIs!
 
 # Current state 2023 Sep
  - we already ship MT version of the runtime in the wasm-tools workload.
