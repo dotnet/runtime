@@ -2,8 +2,10 @@
 
 ## Goals
  - JS interop
-     - both sync and async calls and callbacks
-        - sync calls from JS to C# are part of the problem, see below
+     - async calls and callbacks
+     - sync calls from C# to JS
+     - sync calls from JS to C#
+        - this proposal rejects this goal in order to solve other goals. See below.
      - from UI thread to "some C# main thread" and back
      - from dedicated worker to it's JavaScript state and back
  - CPU intensive workloads on dotnet thread pool
@@ -44,7 +46,7 @@
 - it would make startup callbacks on wrong thread (blazor JS integration)
 - we would have to re-write Blazor's `renderBatch` to bytes streaming.
 11. throw PNSE any time C# code needs to block
-- It's not deterministic and you can't really test your app to prove it harmless.
+- throwing PNSE (on lock attempt or spin-block) is easy, but it doesn't solve the "test my app and prove it valid" problem.
 12. throw PNSE any time C# code or VM code needs needs to block
 - Mono VM needs to hold lock while allocating memory, even on the UI thread.
 13. modify `ConfigureAwait()`, work queue etc, to never dispatch to another thread.
