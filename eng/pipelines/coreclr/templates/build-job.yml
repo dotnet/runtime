@@ -93,9 +93,6 @@ jobs:
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrRuntimeComponentsBuildArg
         value: '-component runtime -component alljits -component paltests -component nativeaot -component spmi '
-    - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'x86')) }}:
-      - name: clrRuntimeComponentsBuildArg
-        value: '-component runtime -component jit -component iltools -component spmi '
 
     - name: pgoInstrumentArg
       value: ''
@@ -105,12 +102,6 @@ jobs:
 
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
-
-    - name: clrRuntimePortableBuildArg
-      value: ''
-    - ${{ if eq(parameters.osGroup, 'tizen') }}:
-      - name: clrRuntimePortableBuildArg
-        value: '-portablebuild=false'
 
     # Set a default empty argument for the pgo path.
     # This will be set during the 'native prerequisites' step if PGO optimization is enabled.
@@ -165,14 +156,14 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if or(eq(parameters.crossBuild, 'true'), ne(parameters.archType, 'x64')) }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg)
         displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targeting x86)
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
@@ -182,12 +173,8 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - ${{ if or(ne(parameters.osGroup, 'linux'), ne(parameters.archType, 'x86')) }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+clr.paltestlist $(crossArg) $(compilerArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
-        displayName: Build managed product components and packages
-    - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'x86')) }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
-        displayName: Build managed product components and packages
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+clr.paltestlist $(crossArg) $(compilerArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
+      displayName: Build managed product components and packages
 
     # Build native test components
     - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.disableClrTest, true)) }}:
