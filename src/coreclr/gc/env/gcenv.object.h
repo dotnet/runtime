@@ -127,7 +127,12 @@ public:
 
     bool HasCriticalFinalizer()
     {
+#ifdef FEATURE_NATIVEAOT
+        const int HasCriticalFinalizerFlag = 0x0002;
+        return (m_flags & HasCriticalFinalizerFlag) && !HasComponentSize();
+#else
         return (m_flags & MTFlag_HasCriticalFinalizer) != 0;
+#endif
     }
 
     bool IsArray()

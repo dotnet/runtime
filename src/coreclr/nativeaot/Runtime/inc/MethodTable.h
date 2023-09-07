@@ -139,14 +139,14 @@ private:
         HasFinalizerFlag        = 0x00100000,
 
         // This type contain gc pointers
-        HasPointersFlag         = 0x00200000,
+        HasPointersFlag         = 0x01000000,
 
         // This type is generic and one or more of it's type parameters is co- or contra-variant. This only
         // applies to interface and delegate types.
         GenericVarianceFlag     = 0x00800000,
 
         // This type has optional fields present.
-        OptionalFieldsFlag      = 0x01000000,
+        OptionalFieldsFlag      = 0x00200000,
 
         // This type is generic.
         IsGenericFlag           = 0x02000000,

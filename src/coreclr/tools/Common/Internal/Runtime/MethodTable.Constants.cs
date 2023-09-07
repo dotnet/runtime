@@ -34,7 +34,7 @@ namespace Internal.Runtime
         /// <summary>
         /// This type contain GC pointers.
         /// </summary>
-        HasPointersFlag = 0x00200000,
+        HasPointersFlag = 0x01000000,
 
         /// <summary>
         /// This MethodTable has sealed vtable entries
@@ -50,7 +50,7 @@ namespace Internal.Runtime
         /// <summary>
         /// This type has optional fields present.
         /// </summary>
-        OptionalFieldsFlag = 0x01000000,
+        OptionalFieldsFlag = 0x00200000,
 
         /// <summary>
         /// This type is generic.
