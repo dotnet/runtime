@@ -1,41 +1,41 @@
 ## About
-
-<!-- A description of the package and where one can find more documentation -->
-
-
+Supports using Windows Services with the hosting infrastructure.
 
 ## Key Features
-
-<!-- The key features of this package -->
-
-*
-*
-*
+* Can configure a host to be a Windows Service.
 
 ## How to Use
+From a Worker Service app created using the Visual Studio template:
+```cs
+IHost host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services =>
+    {
+        services.AddHostedService<Worker>();
+    })
+    // Configure as a Windows Service
+    .UseWindowsService(options =>
+    {
+        options.ServiceName = "My Service";
+    })
+    .Build();
 
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+host.Run();
+```
 
 ## Main Types
-
-<!-- The main types provided in this library -->
-
 The main types provided by this library are:
-
-* ``
-* ``
-* ``
+* `Microsoft.Extensions.Hosting.WindowsServiceLifetimeHostBuilderExtensions`
+* `Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceLifetime`
 
 ## Additional Documentation
-
-<!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
-
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/**LIBRARYNAME**/overview)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/**LIBRARYNAME**)
+* [WindowsServiceLifetime](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.windowsservices.windowsservicelifetime)
+* [WindowsServiceLifetimeHostBuilderExtensions](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.windowsservicelifetimehostbuilderextensions)
+* [Create Windows Service using BackgroundService](https://learn.microsoft.com/dotnet/core/extensions/windows-service)
+* [Host ASP.NET Core in a Windows Service](https://learn.microsoft.com/aspnet/core/host-and-deploy/windows-service?tabs=visual-studio)
 
 ## Related Packages
-
-<!-- The related packages associated with this package -->
+- `Microsoft.Extensions.Hosting`
+- `System.ServiceProcess.ServiceController`
 
 ## Feedback & Contributing
 
