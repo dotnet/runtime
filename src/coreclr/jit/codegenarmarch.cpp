@@ -1740,7 +1740,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 // Return Value:
 //    instruction to perform the volatile load/store with.
 //
-instruction CodeGen::genGetVolatileLdStIns(instruction currentIns, GenTreeIndir* indir, bool* needsBarrier) const
+instruction CodeGen::genGetVolatileLdStIns(instruction currentIns, GenTreeIndir* indir, bool* needsBarrier)
 {
     assert(indir->IsVolatile());
     assert(!varTypeIsFloating(indir));
