@@ -56,6 +56,7 @@ namespace System
         /// </summary>
         /// <param name="value">A Char value.</param>
         /// <returns>An array of bytes with length 2.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] GetBytes(char value)
         {
             byte[] bytes = new byte[sizeof(char)];
@@ -83,6 +84,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 2.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] GetBytes(short value)
         {
             byte[] bytes = new byte[sizeof(short)];
@@ -110,6 +112,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 4.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] GetBytes(int value)
         {
             byte[] bytes = new byte[sizeof(int)];
@@ -137,6 +140,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 8.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] GetBytes(long value)
         {
             byte[] bytes = new byte[sizeof(long)];
@@ -165,6 +169,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 2.</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] GetBytes(ushort value)
         {
             byte[] bytes = new byte[sizeof(ushort)];
@@ -194,6 +199,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 4.</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] GetBytes(uint value)
         {
             byte[] bytes = new byte[sizeof(uint)];
@@ -223,6 +229,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 8.</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] GetBytes(ulong value)
         {
             byte[] bytes = new byte[sizeof(ulong)];
