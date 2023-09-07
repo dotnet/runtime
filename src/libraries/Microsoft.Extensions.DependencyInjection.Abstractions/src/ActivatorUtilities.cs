@@ -23,11 +23,10 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class ActivatorUtilities
     {
 #if NETCOREAPP
-        // Support collectible assemblies.
-
-        // This has less overhead than s_collectibleConstructorInfos so we use it for the common cases.
+        // Support caching of constructor metadata for the common case of types in non-collectible assemblies.
         private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
 
+        // Support caching of constructor metadata for types in collectible assemblies.
         private static readonly Lazy<ConditionalWeakTable<Type, ConstructorInfoEx[]>> s_collectibleConstructorInfos = new();
 #endif
 
@@ -185,6 +184,7 @@ namespace Microsoft.Extensions.DependencyInjection
             value = CreateConstructorInfoExs(type);
 
 #if NET7_0_OR_GREATER
+            // ConditionalWeakTable doesn't support GetOrAdd(), so use TryAdd().
             if (s_collectibleConstructorInfos.Value.TryAdd(type, value))
             {
                 return value;
