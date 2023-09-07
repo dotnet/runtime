@@ -4214,8 +4214,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             // On arm64-v8.4+ we can use stlur* instructions with acquire/release semantics
             // if the address is LEA with just imm offset (unscaled)
             if (compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && addrIsAligned &&
-                (tree->Addr()->OperIs(GT_LEA) && !tree->HasIndex() && (tree->Scale() == 1) &&
-                 emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset())))
+                tree->Addr()->OperIs(GT_LEA) && !tree->HasIndex() && (tree->Scale() == 1) &&
+                emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset()))
             {
                 if (ins == INS_strb)
                 {
