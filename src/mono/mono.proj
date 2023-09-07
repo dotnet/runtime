@@ -12,7 +12,6 @@
   -->
 
   <PropertyGroup>
-    <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_HOST_DIR)' != ''">$(ROOTFS_HOST_DIR)</MonoCrossDir>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">false</MonoForceInterpreter>
     <ScriptExt Condition="'$(HostOS)' == 'windows'">.cmd</ScriptExt>
@@ -811,6 +810,10 @@
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)'))&quot;" />
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(CrossBuild)' == 'true' and '$(ROOTFS_HOST_DIR)' != ''">
+      <MonoCrossDir>$(ROOTFS_HOST_DIR)</MonoCrossDir>
+    </PropertyGroup>
+
     <!-- AOT compiler cross-build options  -->
     <ItemGroup Condition="'$(MonoCrossDir)' != ''">
       <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
@@ -860,7 +863,7 @@
       <_MonoSkipInitCompiler Condition="'$(CrossBuild)' == 'true'">false</_MonoSkipInitCompiler>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(PythonCmd) $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoAotCMakeConfigureCommand>
-      <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)'</_MonoAotCMakeConfigureCommand>
+      <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; ROOTFS_DIR=&quot;$(MonoCrossDir)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)'</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' == 'true' and '$(HostOS)' != 'windows'">$(_MonoAOTCCOption) $(_MonoAOTCXXOption) @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjCrossDir)&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
