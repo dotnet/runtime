@@ -669,29 +669,7 @@ LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
 .endm
 
-// ------------------------------------------------------------------
-//
-// Helpers for ThreadAbort exceptions
-//
-        NESTED_ENTRY RedirectForThreadAbort2, _TEXT, NoHandler
-        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 16
-
-        // stack must be 16 byte aligned
-        CHECK_STACK_ALIGNMENT
-
-        // On entry:
-        //
-        // a0 = address of FaultingExceptionFrame
-        //
-        // Invoke the helper to setup the FaultingExceptionFrame and raise the exception
-        bl    C_FUNC(ThrowControlForThread)
-
-        // ThrowControlForThread doesn't return.
-        EMIT_BREAKPOINT
-
-        NESTED_END RedirectForThreadAbort2, _TEXT
-
-GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
+GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
 
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
