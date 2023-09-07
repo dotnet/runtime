@@ -1,7 +1,7 @@
 ## About
 
 <!-- A description of the package and where one can find more documentation -->
-Provides uniform access and manipulation of security principals across multiple principal stores. The principal objects in the Account Management API include computer, group and user objects, principal stores include: 
+Provides uniform access and manipulation of security principals across multiple principal stores. The principal objects in the Account Management API include computer, group and user objects, principal stores include:
  * Active Directory Domain Services (AD DS)
  * Active Directory Lightweight Directory Services (AD LDS)
  * Machine SAM (MSAM).
