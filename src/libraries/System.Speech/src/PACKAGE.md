@@ -33,7 +33,7 @@ synth.Speak("Hello World!");
 // Speak a string asynchronously
 var prompt = synth.SpeakAsync("Goodnight Moon!");
 
-while(!prompt.IsCompleted)
+while (!prompt.IsCompleted)
 {
     Console.WriteLine("speaking...");
     Thread.Sleep(500);
