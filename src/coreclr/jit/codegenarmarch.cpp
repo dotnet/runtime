@@ -1734,15 +1734,27 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 //
 // Arguments:
 //    currentIns   - the current instruction to perform load/store
+//    targetReg    - the target register
 //    indir        - the indirection node representing the volatile load/store
 //    needsBarrier - OUT parameter. Set to true if an explicit memory barrier is required.
 //
 // Return Value:
 //    instruction to perform the volatile load/store with.
 //
-instruction CodeGen::genGetVolatileLdStIns(instruction currentIns, GenTreeIndir* indir, bool* needsBarrier)
+instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
+                                           regNumber     targetReg,
+                                           GenTreeIndir* indir,
+                                           bool*         needsBarrier)
 {
     assert(indir->IsVolatile());
+
+    if (!genIsValidIntReg(targetReg))
+    {
+        // We don't have special instructions to perform volatile loads/stores for non-integer registers.
+        *needsBarrier = true;
+        return currentIns;
+    }
+
     assert(!varTypeIsFloating(indir));
     assert(!varTypeIsSIMD(indir));
 
@@ -1873,14 +1885,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (tree->IsVolatile())
     {
-        if (genIsValidIntReg(targetReg))
-        {
-            ins = genGetVolatileLdStIns(ins, tree, &emitBarrier);
-        }
-        else
-        {
-            emitBarrier = true;
-        }
+        ins = genGetVolatileLdStIns(ins, targetReg, tree, &emitBarrier);
     }
 
     GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);

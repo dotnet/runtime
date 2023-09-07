@@ -4208,10 +4208,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         if (tree->IsVolatile())
         {
             bool needsBarrier = true;
-            if (genIsValidIntReg(dataReg))
-            {
-                ins = genGetVolatileLdStIns(ins, tree, &needsBarrier);
-            }
+            ins               = genGetVolatileLdStIns(ins, dataReg, tree, &needsBarrier);
 
             if (needsBarrier)
             {
