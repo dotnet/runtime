@@ -186,6 +186,9 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     firstBlock->bbNext                   = isReversed ? blockIfTrue : blockIfFalse;
     fgHasSwitch                          = true;
 
+    // Disable splitting, see fgMakeBasicBlocks which does the same for switch blocks
+    opts.compProcedureSplitting = false;
+
     // Compose a bit vector of all the values we have in the testValues array
     // to quickly check if a value is in the array
     ssize_t bitVector = 0;
