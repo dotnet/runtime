@@ -856,7 +856,9 @@ if (MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION $<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>>)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
 
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     # The generator expression in the following command means that the /homeparams option is added only for debug builds for C and C++ source files
