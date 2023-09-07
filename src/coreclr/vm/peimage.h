@@ -264,6 +264,10 @@ public:
     static IJWFixupData* GetIJWData(void* pBase);
     static PTR_LoaderHeap GetDllThunkHeap(void* pBase);
     static void UnloadIJWModule(void* pBase);
+    
+#ifndef DACCESS_COMPILE
+    static FCDECL2(IMDInternalImport*, ManagedBinderAcquireImport, PEImage*, DWORD*);
+#endif
 
 private:
 

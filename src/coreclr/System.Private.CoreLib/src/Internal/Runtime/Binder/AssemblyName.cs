@@ -4,8 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Internal.Runtime.Binder
 {
@@ -73,34 +71,30 @@ namespace Internal.Runtime.Binder
                 AssemblyIdentityFlags.IDENTITY_FLAG_CULTURE | AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL;
 
             int* dwPAFlags = stackalloc int[2];
-            using IMdInternalImport pIMetaDataAssemblyImport = BinderAcquireImport(pPEImage, dwPAFlags);
+            IntPtr pIMetaDataAssemblyImport = AssemblyBinderCommon.BinderAcquireImport(pPEImage, dwPAFlags);
+            var scope = new System.Reflection.MetadataImport(pIMetaDataAssemblyImport, null);
 
             Architecture = AssemblyBinderCommon.TranslatePEToArchitectureType(dwPAFlags);
 
             // Get the assembly token
-            uint mda;
-            pIMetaDataAssemblyImport.GetAssemblyFromScope(&mda);
+            uint mda = scope.GetAssemblyFromScope();
 
             AssemblyMetaDataInternal amd = default;
-            byte* pvPublicKeyToken = null;
-            uint dwPublicKeyToken = 0;
-            byte* pAssemblyName = null;
-            CorAssemblyFlags dwRefOrDefFlags = 0;
-            uint dwHashAlgId = 0;
 
             // Get name and metadata
-            pIMetaDataAssemblyImport.GetAssemblyProps(
-                mda,            // [IN] The Assembly for which to get the properties.
-                &pvPublicKeyToken,  // [OUT] Pointer to the PublicKeyToken blob.
-                &dwPublicKeyToken,  // [OUT] Count of bytes in the PublicKeyToken Blob.
-                &dwHashAlgId,   // [OUT] Hash Algorithm.
-                &pAssemblyName, // [OUT] Name.
-                &amd,           // [OUT] Assembly MetaData.
-                &dwRefOrDefFlags // [OUT] Flags.
-                );
+            scope.GetAssemblyProps(
+                mda,
+                out var pvPublicKeyToken,
+                out var dwPublicKeyToken,
+                out var dwHashAlgId,
+                out var assemblyName,
+                &amd,
+                out uint flags);
+
+            CorAssemblyFlags dwRefOrDefFlags = (CorAssemblyFlags)flags;
 
             {
-                string culture = Encoding.UTF8.GetString(amd.szLocale, string.strlen(amd.szLocale));
+                string culture = new MdUtf8String(amd.szLocale).ToString();
                 int index = culture.IndexOf(';');
                 if (index != -1)
                 {
@@ -112,8 +106,6 @@ namespace Internal.Runtime.Binder
             }
 
             {
-                string assemblyName = Encoding.UTF8.GetString(pAssemblyName, string.strlen(pAssemblyName));
-
                 const int MAX_PATH_FNAME = 260;
                 if (assemblyName.Length >= MAX_PATH_FNAME)
                 {
@@ -177,11 +169,6 @@ namespace Internal.Runtime.Binder
         public bool IsCoreLib => string.EqualsOrdinalIgnoreCase(SimpleName, CoreLib.Name);
 
         public bool IsNeutralCulture => string.EqualsOrdinalIgnoreCase(CultureOrLanguage, NeutralCulture);
-
-        // Foo internal calls
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IMdInternalImport BinderAcquireImport(IntPtr pPEImage, int* dwPAFlags);
 
         public override int GetHashCode() => GetHashCode(AssemblyNameIncludeFlags.INCLUDE_ALL);
 
@@ -367,12 +354,5 @@ namespace Internal.Runtime.Binder
 
             return TextualIdentityParser.ToString(this, dwUseIdentityFlags);
         }
-    }
-
-    internal unsafe interface IMdInternalImport : IDisposable
-    {
-        public void GetAssemblyFromScope(uint* ptkAssembly);
-
-        public void GetAssemblyProps(uint mda, byte** ppbPublicKey, uint* pcbPublicKey, uint* pulHashAlgId, byte** pszName, void* pMetadata, CorAssemblyFlags* pdwAsselblyFlags);
     }
 }

@@ -8,8 +8,6 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 using Internal.Runtime.Binder.Tracing;
 
 namespace Internal.Runtime.Binder
@@ -33,6 +31,9 @@ namespace Internal.Runtime.Binder
 
     internal static partial class AssemblyBinderCommon
     {
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern unsafe IntPtr BinderAcquireImport(IntPtr pPEImage, int* pdwPAFlags);
+
         [LibraryImport("Foo", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
 

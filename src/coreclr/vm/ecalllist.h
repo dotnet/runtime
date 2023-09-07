@@ -200,6 +200,9 @@ FCFuncStart(gMetaDataImport)
     FCFuncElement("_GetPInvokeMap", MetaDataImport::GetPinvokeMap)
     FCFuncElement("_IsValidToken", MetaDataImport::IsValidToken)
     FCFuncElement("_GetMarshalAs", MetaDataImport::GetMarshalAs)
+
+    FCFuncElement("_GetAssemblyFromScope", MetaDataImport::GetAssemblyFromScope)
+    FCFuncElement("_GetAssemblyProps", MetaDataImport::GetAssemblyProps)
 FCFuncEnd()
 
 FCFuncStart(gSignatureNative)
@@ -669,6 +672,10 @@ FCFuncStart(gComAwareWeakReferenceFuncs)
     FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
 
+FCFuncStart(gAssemblyBinderCommonFuncs)
+    FCFuncElement("BinderAcquireImport", PEImage::ManagedBinderAcquireImport)
+FCFuncEnd()
+
 #ifdef FEATURE_COMINTEROP
 
 //
@@ -771,6 +778,7 @@ FCClassElement("ValueType", "System", gValueTypeFuncs)
 FCClassElement("Variant", "System", gVariantFuncs)
 #endif
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
+FCClassElement("AssemblyBinderCommon", "Internal.Runtime.Binder", gAssemblyBinderCommonFuncs)
 
 #undef FCFuncElement
 #undef FCFuncElementSig

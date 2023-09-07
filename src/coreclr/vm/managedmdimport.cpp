@@ -655,6 +655,40 @@ MDImpl2(void, MetaDataImport::GetMemberRefProps,
 }
 FCIMPLEND
 
+MDImpl1(void, MetaDataImport::GetAssemblyFromScope,
+    mdAssembly* ptkAssembly)
+{
+    FCALL_CONTRACT;
+
+    HRESULT hr;
+    IMDInternalImport *_pScope = pScope;
+
+    hr = _pScope->GetAssemblyFromScope(ptkAssembly);
+    if (FAILED(hr))
+    {
+        FCThrowVoid(kBadImageFormatException);
+    }
+}
+FCIMPLEND
+
+MDImpl7(void, MetaDataImport::GetAssemblyProps,
+    mdAssembly mda,
+    const void** ppbPublicKey,
+    ULONG* pcbPublicKey,
+    ULONG* pulHashAlgId,
+    LPCSTR* pszName,
+    AssemblyMetaDataInternal* pMetaData,
+    DWORD* pdwAsselblyFlags)
+{
+    FCALL_CONTRACT;
+
+    HRESULT hr;
+    IMDInternalImport *_pScope = pScope;
+
+    hr = _pScope->GetAssemblyProps(mda, ppbPublicKey, pcbPublicKey, pulHashAlgId, pszName, pMetaData, pdwAsselblyFlags);
+}
+FCIMPLEND
+
 #if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("", on)			// restore command line optimization defaults
 #endif

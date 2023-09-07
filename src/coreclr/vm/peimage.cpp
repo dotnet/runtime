@@ -915,3 +915,43 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 
     return FALSE;
 }
+
+#ifndef DACCESS_COMPILE
+FCIMPL2(IMDInternalImport*, PEImage::ManagedBinderAcquireImport, PEImage* pPEImage, DWORD* pdwPAFlags)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pPEImage != NULL);
+    _ASSERTE(pdwPAFlags != NULL);
+
+    IMDInternalImport* ret = NULL;
+
+    // The same logic of BinderAcquireImport
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
+
+    PEImageLayout* pLayout = pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
+
+    // CheckCorHeader includes check of NT headers too
+    if (!pLayout->CheckCorHeader())
+        ThrowHR(COR_E_ASSEMBLYEXPECTED);
+
+    if (!pLayout->CheckFormat())
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
+
+    ret = pPEImage->GetMDImport();
+    if (!ret)
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    // No AddRef
+
+    HELPER_METHOD_FRAME_END();
+
+    return ret;
+}
+FCIMPLEND
+#endif // DACCESS_COMPILE
