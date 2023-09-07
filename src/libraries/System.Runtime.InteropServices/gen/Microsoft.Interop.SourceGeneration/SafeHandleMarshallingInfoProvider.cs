@@ -52,7 +52,6 @@ namespace Microsoft.Interop
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
             bool hasDefaultConstructor = false;
-            bool hasAccessibleDefaultConstructor = false;
             if (type is INamedTypeSymbol named && !named.IsAbstract && named.InstanceConstructors.Length > 0)
             {
                 foreach (IMethodSymbol ctor in named.InstanceConstructors)
@@ -60,7 +59,6 @@ namespace Microsoft.Interop
                     if (ctor.Parameters.Length == 0)
                     {
                         hasDefaultConstructor = ctor.DeclaredAccessibility == Accessibility.Public;
-                        hasAccessibleDefaultConstructor = _compilation.IsSymbolAccessibleWithin(ctor, _containingScope);
                         break;
                     }
                 }
@@ -71,7 +69,7 @@ namespace Microsoft.Interop
             // as the downlevel support is dotnet/runtime specific.
             if (_safeHandleMarshallerType is null)
             {
-                return new SafeHandleMarshallingInfo(hasAccessibleDefaultConstructor, type.IsAbstract);
+                return new MissingSupportMarshallingInfo();
             }
 
             INamedTypeSymbol entryPointType = _safeHandleMarshallerType.Construct(type);

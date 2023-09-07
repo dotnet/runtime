@@ -14,11 +14,6 @@ namespace Microsoft.Interop
 {
     public sealed class SafeHandleMarshaller : IMarshallingGenerator
     {
-        public bool IsSupported(TargetFramework target, Version version)
-        {
-            return target is TargetFramework.Net && version.Major >= 6;
-        }
-
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return SpecialTypeInfo.IntPtr;
