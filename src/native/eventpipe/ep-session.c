@@ -164,7 +164,6 @@ ep_session_alloc (
 	instance->session_type = session_type;
 	instance->format = format;
 	instance->rundown_requested = rundown_requested;
-	instance->rundown_thread_id = 0;
 	instance->synchronous_callback = sync_callback;
 	instance->callback_additional_data = callback_additional_data;
 
@@ -526,14 +525,6 @@ ep_session_write_event (
 		if (ep_session_get_rundown_enabled (session) && (ep_session_get_rundown_thread_id (session) != ep_thread_get_os_thread_id (ep_thread_get ()))) {
 			EP_ASSERT (ep_session_get_rundown_thread_id (session) != 0);
 			return false;
-		}
-
-		if (ep_session_get_rundown_enabled (session) && (ep_session_get_rundown_thread_id (session) == ep_thread_get_os_thread_id (ep_thread_get ()))) {
-			EventPipeProvider *provider = ep_event_get_provider (ep_event);
-			const ep_char8_t *provider_name = ep_provider_get_provider_name(provider);
-			if (ep_rt_utf8_string_compare_ignore_case (provider_name, "Microsoft-Windows-DotNETRuntimeRundown") != 0) {
-				EP_FAILFAST("Saw non rundown provider");
-			}
 		}
 
 		if (session->synchronous_callback) {
