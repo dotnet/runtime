@@ -356,18 +356,20 @@ namespace System.Net.Http.Functional.Tests
         }
 
         public static TheoryData CancelRequestReadFunctions
-            => new TheoryData<Func<Task<int>>>
+            => new TheoryData<bool, Func<Task<int>>>
             {
-                () => Task.FromResult(0),
-                () => Task.FromResult(1),
-                () => new TaskCompletionSource<int>().Task,
-                () => throw new FormatException(),
+                { false, () => Task.FromResult(0) },
+                { true, () => Task.FromResult(0) },
+                { false, () => Task.FromResult(1) },
+                { true, () => Task.FromResult(1) },
+                { false, () => throw new FormatException() },
+                { true, () => throw new FormatException() },
             };
 
         [OuterLoop]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(CancelRequestReadFunctions))]
-        public async Task BrowserHttpHandler_StreamingRequest_CancelRequest(Func<Task<int>> readFunc)
+        public async Task BrowserHttpHandler_StreamingRequest_CancelRequest(bool cancelAsync, Func<Task<int>> readFunc)
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
 
@@ -381,8 +383,9 @@ namespace System.Net.Http.Functional.Tests
             req.Content = new StreamContent(new DelegateStream(
                 canReadFunc: () => true,
                 readFunc: (buffer, offset, count) => throw new FormatException(),
-                readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                 {
+                    if (cancelAsync) await Task.Delay(1);
                     Assert.Equal(token.IsCancellationRequested, cancellationToken.IsCancellationRequested);
                     if (!token.IsCancellationRequested)
                     {
@@ -393,7 +396,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         readCancelledCount++;
                     }
-                    return readFunc();
+                    return await readFunc();
                 }));
 
             using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))

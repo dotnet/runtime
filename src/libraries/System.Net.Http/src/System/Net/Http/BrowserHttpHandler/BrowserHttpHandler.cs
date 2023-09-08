@@ -208,7 +208,7 @@ namespace System.Net.Http
                     }
                 }
 
-                Task<JSObject>? promise;
+                JSObject? fetchResponse;
                 cancellationToken.ThrowIfCancellationRequested();
                 if (request.Content != null)
                 {
@@ -220,16 +220,26 @@ namespace System.Net.Http
 
                     if (streamingEnabled)
                     {
-                        JSObject transformStream = BrowserHttpInterop.CreateTransformStream();
-                        try
+                        using (JSObject transformStream = BrowserHttpInterop.CreateTransformStream())
                         {
                             Task<JSObject> fetchPromise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, transformStream);
-                            promise = WasmHttpWriteStream.CopyToAsync(fetchPromise, transformStream, request.Content, cancellationToken);
-                        }
-                        catch
-                        {
-                            transformStream.Dispose();
-                            throw;
+                            ValueTask<JSObject> fetchTask = BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken, abortController, null); // initialize fetch cancellation
+
+                            using (WasmHttpWriteStream stream = new WasmHttpWriteStream(transformStream))
+                            {
+                                try
+                                {
+                                    await request.Content.CopyToAsync(stream, cancellationToken).ConfigureAwait(true);
+                                    await BrowserHttpInterop.TransformStreamClose(transformStream).ConfigureAwait(true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    BrowserHttpInterop.TransformStreamAbort(transformStream, ex);
+                                    // don't rethrow, prefer exceptions from fetch
+                                }
+                            }
+
+                            fetchResponse = await fetchTask.ConfigureAwait(true);
                         }
                     }
                     else
@@ -237,16 +247,16 @@ namespace System.Net.Http
                         byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(true);
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
+                        Task<JSObject> fetchPromise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
+                        fetchResponse = await BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken, abortController, null).ConfigureAwait(true);
                     }
                 }
                 else
                 {
-                    promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController);
+                    Task<JSObject> fetchPromise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController);
+                    fetchResponse = await BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken, abortController, null).ConfigureAwait(true);
                 }
 
-                cancellationToken.ThrowIfCancellationRequested();
-                JSObject fetchResponse = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController, null).ConfigureAwait(true);
                 return new WasmFetchResponse(fetchResponse, abortController, abortRegistration.Value);
             }
             catch (JSException jse)
@@ -335,24 +345,6 @@ namespace System.Net.Http
             ArgumentNullException.ThrowIfNull(transformStream);
 
             _transformStream = transformStream;
-        }
-
-        public static async Task<JSObject> CopyToAsync(Task<JSObject> fetchResponsePromise, JSObject transformStream, HttpContent content, CancellationToken cancellationToken)
-        {
-            using (WasmHttpWriteStream stream = new WasmHttpWriteStream(transformStream))
-            {
-                try
-                {
-                    await content.CopyToAsync(stream, cancellationToken).ConfigureAwait(true);
-                    await BrowserHttpInterop.TransformStreamClose(transformStream).ConfigureAwait(true);
-                    return await fetchResponsePromise.ConfigureAwait(true);
-                }
-                catch (Exception ex)
-                {
-                    BrowserHttpInterop.TransformStreamAbort(transformStream, ex);
-                    throw;
-                }
-            }
         }
 
         private async Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
