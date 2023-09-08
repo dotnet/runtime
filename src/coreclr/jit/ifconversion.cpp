@@ -656,10 +656,11 @@ bool OptIfConversionDsc::optIfConvert()
 
     if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
     {
-        // Don't optimise the block if it is inside a loop
-        // When inside a loop, branches are quicker than selects.
+        // Don't optimise the block if it is inside a loop. Loop-carried
+        // dependencies can cause significant stalls if if-converted.
         // Detect via the block weight as that will be high when inside a loop.
-        if (m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT)
+
+        if (m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT * 1.05)
         {
             JITDUMP("Skipping if-conversion inside loop (via weight)\n");
             return false;

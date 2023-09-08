@@ -312,7 +312,7 @@
     <ProjectReference Include="..\..\System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.TypeConverter\src\System.ComponentModel.TypeConverter.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />

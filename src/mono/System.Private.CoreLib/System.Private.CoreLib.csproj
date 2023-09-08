@@ -33,7 +33,8 @@
     <!-- Override InformationalVersion during servicing as it's returned via public api. -->
     <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
-    <NoWarn>$(NoWarn),0419,0649</NoWarn>
+    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
+    <NoWarn>$(NoWarn),0419,0649,AD0001</NoWarn>
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
@@ -121,7 +122,7 @@
 
     <FeatureMono>true</FeatureMono>
     <FeatureWasmThreads Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
-    <FeatureWasmPerfTracing Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and ('$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace')">true</FeatureWasmPerfTracing>
+    <FeatureWasmPerfTracing Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and ('$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmPerfTracing>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'">true</FeaturePortableTimer>
@@ -195,7 +196,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\EventPipe.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\NativeRuntimeEventSource.PortableThreadPool.NativeSinks.Mono.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
+      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.Mono.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />
@@ -205,6 +206,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBaseInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
@@ -248,6 +250,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\GCFrameRegistration.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />
@@ -267,7 +270,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
       <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
         <Link>CommonSystem\Collections\Generic\ArrayBuilder.cs</Link>
       </Compile>

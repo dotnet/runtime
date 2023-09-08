@@ -1900,7 +1900,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
             ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : 16;
 
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector512))
+            if (comp->IsBaselineVector512IsaSupportedOpportunistically())
             {
                 MaxUnrollSize = 128;
             }
@@ -1967,7 +1967,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                         if (GenTree::OperIsCmpCompare(oper))
                         {
                             assert(type == TYP_INT);
-                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_BOOL, op1, op2, CORINFO_TYPE_NATIVEUINT,
+                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_UBYTE, op1, op2, CORINFO_TYPE_NATIVEUINT,
                                                                genTypeSize(op1));
                         }
                         return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,
@@ -3441,7 +3441,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         var_types    castToType = cast->CastToType();
         GenTree*     castOp     = cast->gtGetOp1();
 
-        if (((castToType == TYP_BOOL) || (castToType == TYP_UBYTE)) && FitsIn<UINT8>(op2Value))
+        if ((castToType == TYP_UBYTE) && FitsIn<UINT8>(op2Value))
         {
             //
             // Since we're going to remove the cast we need to be able to narrow the cast operand
@@ -4958,9 +4958,14 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     GenTree* newThis = comp->gtNewIndir(TYP_REF, newThisAddr);
 
-    BlockRange().InsertAfter(thisExpr, newThisAddr, newThis);
-
+    // Insert the new 'this' arg right before the call to get the correct null
+    // behavior (the NRE that would logically happen inside Delegate.Invoke
+    // should happen after all args are evaluated). We must also move the
+    // PUTARG_REG node ahead.
     thisArgNode->AsOp()->gtOp1 = newThis;
+    BlockRange().Remove(thisArgNode);
+    BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
+
     ContainCheckIndir(newThis->AsIndir());
 
     // the control target is
@@ -6028,7 +6033,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !varTypeIsGC(addr))
+    const bool hasRcpc2 = comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !hasRcpc2)
     {
         // For Arm64 we avoid using LEA for volatile INDs
         // because we won't be able to use ldar/star
@@ -6050,6 +6056,20 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
                                                        &index,   // index val
                                                        &scale,   // scaling
                                                        &offset); // displacement
+
+#ifdef TARGET_ARM64
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile())
+    {
+        // Generally, we try to avoid creating addressing modes for volatile INDs so we can then use
+        // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
+        // addressing modes (if the offset fits into 9 bits)
+        assert(hasRcpc2);
+        if ((scale > 1) || (!emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset)) || (index != nullptr))
+        {
+            return false;
+        }
+    }
+#endif
 
     var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
 

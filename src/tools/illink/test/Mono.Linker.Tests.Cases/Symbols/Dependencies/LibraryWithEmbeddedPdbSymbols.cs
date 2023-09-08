@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Mono.Linker.Tests.Cases.Symbols.Dependencies
+﻿namespace Mono.Linker.Tests.Cases.Symbols.Dependencies
 {
 	public class LibraryWithEmbeddedPdbSymbols
 	{

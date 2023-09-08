@@ -194,10 +194,10 @@ namespace System.Security.Cryptography
         ///   <paramref name="hashAlgorithm"/> is not a known or supported hash algorithm.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF8.
+        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <remarks>
-        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF8 encoding.
+        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF-8 encoding.
         ///   for other encodings, perform the conversion using the desired encoding and use an overload which accepts the
         ///   label and context as a sequence of bytes.
         /// </remarks>
@@ -310,13 +310,13 @@ namespace System.Security.Cryptography
         ///   <paramref name="hashAlgorithm"/> is not a known or supported hash algorithm.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF8.
+        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The current platform does not have a supported implementation of HMAC.
         /// </exception>
         /// <remarks>
-        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF8 encoding.
+        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF-8 encoding.
         ///   for other encodings, perform the conversion using the desired encoding and use an overload which accepts the
         ///   label and context as a sequence of bytes.
         /// </remarks>
@@ -350,13 +350,13 @@ namespace System.Security.Cryptography
         ///   <paramref name="hashAlgorithm"/> is not a known or supported hash algorithm.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF8.
+        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The current platform does not have a supported implementation of HMAC.
         /// </exception>
         /// <remarks>
-        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF8 encoding.
+        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF-8 encoding.
         ///   for other encodings, perform the conversion using the desired encoding and use an overload which accepts the
         ///   label and context as a sequence of bytes.
         /// </remarks>
@@ -458,10 +458,10 @@ namespace System.Security.Cryptography
         ///   that can be derived.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF8.
+        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <remarks>
-        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF8 encoding.
+        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF-8 encoding.
         ///   for other encodings, perform the conversion using the desired encoding and use an overload which accepts the
         ///   label and context as a sequence of bytes.
         /// </remarks>
@@ -484,10 +484,10 @@ namespace System.Security.Cryptography
         ///   <paramref name="destination" /> is larger than the maximum number of bytes that can be derived.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF8.
+        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <remarks>
-        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF8 encoding.
+        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF-8 encoding.
         ///   for other encodings, perform the conversion using the desired encoding and use an overload which accepts the
         ///   label and context as a sequence of bytes.
         /// </remarks>
@@ -518,10 +518,10 @@ namespace System.Security.Cryptography
         ///   that can be derived.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF8.
+        ///   <paramref name="label" /> or <paramref name="context" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <remarks>
-        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF8 encoding.
+        ///   <paramref name="label" /> and <paramref name="context" /> will be converted to bytes using the UTF-8 encoding.
         ///   for other encodings, perform the conversion using the desired encoding and use an overload which accepts the
         ///   label and context as a sequence of bytes.
         /// </remarks>

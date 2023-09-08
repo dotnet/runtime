@@ -85,6 +85,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a{0,2147483648}", RegexOptions.None, RegexParseError.QuantifierOrCaptureGroupOutOfRange, 14)]
         // Surrogate pair which is parsed as [char,char-char,char] as we operate on UTF-16 code units.
         [InlineData("[\uD82F\uDCA0-\uD82F\uDCA3]", RegexOptions.IgnoreCase, RegexParseError.ReversedCharacterRange, 5)]
+        // [ inside a range is treated literally
+        [InlineData(@"[[::]", RegexOptions.None, null)]
+        [InlineData(@"[[:X:]", RegexOptions.None, null)]
+        [InlineData(@"[[:ab:]", RegexOptions.None, null)]
 
         // Following are borrowed from Rust regex tests ============
         // https://github.com/rust-lang/regex/blob/master/tests/noparse.rs

@@ -10,6 +10,7 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
+#include <generatedumpflags.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
@@ -150,7 +151,11 @@ bool
 ds_rt_config_value_get_enable (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics) != 0;
+	if (CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
+	{
+		return false;
+	}
+    return CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics_IPC) != 0;
 }
 
 static
@@ -161,7 +166,7 @@ ds_rt_config_value_get_ports (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
 }
 
 static
@@ -303,7 +308,7 @@ ds_rt_enable_perfmap (uint32_t type)
 
 #ifdef FEATURE_PERFMAP
 	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;
-	if (perfMapType == PerfMap::PerfMapType::DISABLED || perfMapType > PerfMap::PerfMapType::JITDUMP)
+	if (perfMapType == PerfMap::PerfMapType::DISABLED || perfMapType > PerfMap::PerfMapType::PERFMAP)
 	{
 		return DS_IPC_E_INVALIDARG;
 	}
@@ -327,6 +332,52 @@ ds_rt_disable_perfmap (void)
 #else // FEATURE_PERFMAP
 	return DS_IPC_E_NOTSUPPORTED;
 #endif // FEATURE_PERFMAP
+}
+
+static ep_char16_t * _ds_rt_coreclr_diagnostic_startup_hook_paths = NULL;
+
+static
+uint32_t
+ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
+{
+	if (NULL == startup_hook_path)
+		return DS_IPC_E_INVALIDARG;
+
+	HRESULT hr = S_OK;
+	// This is set to true when the EE has initialized, which occurs after
+	// the diagnostic suspension point has completed.
+	if (g_fEEStarted)
+	{
+		// This is not actually starting the EE (the above already checked that),
+		// but waits for the EE to be started so that the startup hook can be loaded
+		// and executed.
+		IfFailRet(EnsureEEStarted());
+
+		// Ensure runtime thread for diagnostic server thread
+		SetupThreadNoThrow(&hr);
+		IfFailRet(hr);
+
+		EX_TRY {
+			GCX_COOP();
+
+			// Load and call startup hook since managed execution is already running.
+			MethodDescCallSite callStartupHook(METHOD__STARTUP_HOOK_PROVIDER__CALL_STARTUP_HOOK);
+
+			ARG_SLOT args[1];
+			args[0] = PtrToArgSlot(startup_hook_path);
+
+			callStartupHook.Call(args);
+		}
+		EX_CATCH_HRESULT (hr);
+
+		IfFailRet(hr);
+	}
+	else
+	{
+		Assembly::AddDiagnosticStartupHookPath(reinterpret_cast<LPCWSTR>(startup_hook_path));
+	}
+
+	return DS_IPC_S_OK;
 }
 
 /*

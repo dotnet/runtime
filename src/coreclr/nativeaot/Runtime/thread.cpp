@@ -1281,17 +1281,19 @@ InlinedThreadStaticRoot* Thread::GetInlinedThreadStaticList()
     return m_pInlinedThreadLocalStatics;
 }
 
-void Thread::RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot)
+void Thread::RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot, TypeManager* typeManager)
 {
     ASSERT(newRoot->m_next == NULL);
     newRoot->m_next = m_pInlinedThreadLocalStatics;
     m_pInlinedThreadLocalStatics = newRoot;
+    // we do not need typeManager for runtime needs, but it may be useful for debugging purposes.
+    newRoot->m_typeManager = typeManager;
 }
 
-COOP_PINVOKE_HELPER(void, RhRegisterInlinedThreadStaticRoot, (Object** root))
+COOP_PINVOKE_HELPER(void, RhRegisterInlinedThreadStaticRoot, (Object** root, TypeManager* typeManager))
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
-    pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root);
+    pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root, typeManager);
 }
 
 // This is function is used to quickly query a value that can uniquely identify a thread

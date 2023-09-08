@@ -160,5 +160,17 @@ namespace Microsoft.Extensions
         public int Count => _items.Count;
         public bool IsReadOnly => false;
     }
+
+    public interface IGeolocation
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+
+    public sealed record GeolocationRecord : IGeolocation
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
     #endregion
 }

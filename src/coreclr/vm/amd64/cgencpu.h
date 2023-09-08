@@ -277,7 +277,47 @@ struct EHContext {
 
 #include "stublinkeramd64.h"
 
+//**********************************************************************
+// Profiling
+//**********************************************************************
 
+#ifdef PROFILING_SUPPORTED
+
+#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE 16
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    FunctionID  functionId;
+    void       *rbp;
+    void       *probeRsp;
+    void       *ip;
+    void       *profiledRsp;
+    UINT64      rax;
+    LPVOID      hiddenArg;
+    UINT64      flt0;   // floats stored as doubles
+    UINT64      flt1;
+    UINT64      flt2;
+    UINT64      flt3;
+#if defined(UNIX_AMD64_ABI)
+    UINT64      flt4;
+    UINT64      flt5;
+    UINT64      flt6;
+    UINT64      flt7;
+    UINT64      rdi;
+    UINT64      rsi;
+    UINT64      rdx;
+    UINT64      rcx;
+    UINT64      r8;
+    UINT64      r9;
+#endif
+    UINT32      flags;
+#if defined(UNIX_AMD64_ABI)
+    // A buffer to copy structs in to so they are sequential for GetFunctionEnter3Info.
+    UINT64      buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
+#endif
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling
@@ -342,7 +382,7 @@ inline void SetSP(CONTEXT *context, TADDR rsp)
     context->Rsp = rsp;
 }
 
-#if defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 inline DWORD64 GetSSP(const CONTEXT * context)
 {
     CONTRACTL
@@ -353,13 +393,15 @@ inline DWORD64 GetSSP(const CONTEXT * context)
         PRECONDITION(CheckPointer(context));
     }
     CONTRACTL_END;
-
+#ifdef TARGET_WINDOWS
     XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(const_cast<PCONTEXT>(context), XSTATE_CET_U, NULL);
     if ((pCET != NULL) && (pCET->Ia32CetUMsr != 0))
     {
         return pCET->Ia32Pl3SspMsr;
     }
-
+#else
+    // TODO: implement when we enable Intel CET on Unix
+#endif
     return 0;
 }
 
@@ -374,14 +416,18 @@ inline void SetSSP(CONTEXT *context, DWORD64 ssp)
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WINDOWS
     XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(context, XSTATE_CET_U, NULL);
     if (pCET != NULL)
     {
         pCET->Ia32Pl3SspMsr = ssp;
         pCET->Ia32CetUMsr = 1;
     }
+#else
+    // TODO: implement when we enable Intel CET on Unix
+#endif
 }
-#endif // TARGET_WINDOWS && !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 #define SetFP(context, ebp)
 inline TADDR GetFP(const CONTEXT * context)

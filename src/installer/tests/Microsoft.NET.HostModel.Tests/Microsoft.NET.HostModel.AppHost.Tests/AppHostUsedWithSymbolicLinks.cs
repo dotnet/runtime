@@ -235,12 +235,12 @@ namespace Microsoft.NET.HostModel.Tests
                 var localizedFixture = new TestProjectFixture("LocalizedApp", RepoDirectories);
                 localizedFixture
                     .EnsureRestoredForRid(localizedFixture.CurrentRid)
-                    .PublishProject(runtime: localizedFixture.CurrentRid);
+                    .PublishProject(runtime: localizedFixture.CurrentRid, selfContained: true);
 
                 var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 publishFixture
                     .EnsureRestoredForRid(publishFixture.CurrentRid)
-                    .PublishProject(runtime: publishFixture.CurrentRid);
+                    .PublishProject(runtime: publishFixture.CurrentRid, selfContained: true);
 
                 var fwPublishedFixture = new TestProjectFixture("PortableApp", RepoDirectories);
                 fwPublishedFixture

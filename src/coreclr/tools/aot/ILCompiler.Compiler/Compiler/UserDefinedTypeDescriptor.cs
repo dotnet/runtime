@@ -505,32 +505,36 @@ namespace ILCompiler
         private bool ShouldUseCanonicalTypeRecord(TypeDesc type)
         {
             // TODO: check the type's generic complexity
-            return type.GetGenericDepth() > NodeFactory.TypeSystemContext.GenericsConfig.MaxGenericDepthOfDebugRecord;
+            return GetGenericDepth(type) > NodeFactory.TypeSystemContext.GenericsConfig.MaxGenericDepthOfDebugRecord;
+
+            static int GetGenericDepth(TypeDesc type)
+            {
+                if (type.HasInstantiation)
+                {
+                    int maxGenericDepthInInstantiation = 0;
+                    foreach (TypeDesc instantiationType in type.Instantiation)
+                    {
+                        maxGenericDepthInInstantiation = Math.Max(GetGenericDepth(instantiationType), maxGenericDepthInInstantiation);
+                    }
+
+                    return maxGenericDepthInInstantiation + 1;
+                }
+
+                if (type.IsParameterizedType)
+                    return 1 + GetGenericDepth(((ParameterizedType)type).ParameterType);
+
+                return 0;
+            }
         }
 
         private TypeDesc GetDebugType(TypeDesc type)
         {
-            TypeDesc typeGenericComplexityInfo = type;
-
-            // Strip off pointer, array, and byref details.
-            while (typeGenericComplexityInfo is ParameterizedType paramType) {
-                typeGenericComplexityInfo = paramType.ParameterType;
-            }
-
-            // Types that have some canonical subtypes types should always be represented in normalized canonical form to the binder.
-            // Also, to avoid infinite generic recursion issues, attempt to use canonical form for fields with high generic complexity.
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific) || (typeGenericComplexityInfo is DefType defType) && ShouldUseCanonicalTypeRecord(defType))
+            // To avoid infinite generic recursion issues, attempt to use canonical form for fields with high generic complexity.
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific) || ShouldUseCanonicalTypeRecord(type))
             {
                 type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                // Re-check if the canonical subtype has acceptable generic complexity
-                typeGenericComplexityInfo = type;
-
-                while (typeGenericComplexityInfo is ParameterizedType paramType) {
-                    typeGenericComplexityInfo = paramType.ParameterType;
-                }
-
-                if ((typeGenericComplexityInfo is DefType canonDefType) && ShouldUseCanonicalTypeRecord(canonDefType))
+                if (ShouldUseCanonicalTypeRecord(type))
                 {
                     type = type.ConvertToCanonForm(CanonicalFormKind.Universal);
                 }

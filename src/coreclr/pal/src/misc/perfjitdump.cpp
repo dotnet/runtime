@@ -213,9 +213,6 @@ struct PerfJitDumpState
         enabled = true;
 
 exit:
-        if (result != 0)
-            return FatalError();
-
         return 0;
     }
 
@@ -298,10 +295,8 @@ exit:
                 } while (result > 0);
             } while (true);
 
-exit:
-            if (result != 0)
-                return FatalError();
         }
+exit:
         return 0;
     }
 
@@ -337,10 +332,8 @@ exit:
                 return FatalError();
 
             fd = -1;
-exit:
-            if (result != 0)
-                return -1;
         }
+exit:
         return 0;
     }
 };

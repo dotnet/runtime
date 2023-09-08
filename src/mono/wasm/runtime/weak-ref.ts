@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-const _use_weak_ref = typeof globalThis.WeakRef === "function";
+export const _use_weak_ref = typeof globalThis.WeakRef === "function";
 
 export function create_weak_ref<T extends object>(js_obj: T): WeakRef<T> {
     if (_use_weak_ref) {
@@ -12,6 +12,9 @@ export function create_weak_ref<T extends object>(js_obj: T): WeakRef<T> {
         return <any>{
             deref: () => {
                 return js_obj;
+            },
+            dispose: () => {
+                js_obj = null!;
             }
         };
     }

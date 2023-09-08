@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal CastingConverter(JsonConverter sourceConverter)
         {
-            Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(sourceConverter.TypeToConvert));
+            Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(sourceConverter.Type!));
             Debug.Assert(sourceConverter.SourceConverterForCastingConverter is null, "casting converters should not be layered.");
 
             _sourceConverter = sourceConverter;

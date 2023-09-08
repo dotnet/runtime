@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
@@ -19,6 +18,7 @@ namespace System.Text.Json
         /// Encapsulates all cached metadata referenced by the current <see cref="JsonSerializerOptions" /> instance.
         /// Context can be shared across multiple equivalent options instances.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal CachingContext CacheContext
         {
             get
@@ -178,6 +178,7 @@ namespace System.Text.Json
         }
 
         // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo ObjectTypeInfo
         {
             get

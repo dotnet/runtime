@@ -5,9 +5,6 @@ namespace System.Text.Json.Nodes
 {
     public abstract partial class JsonNode
     {
-        // trimming-safe default JsonSerializerOptions instance used by JsonNode methods.
-        private protected static readonly JsonSerializerOptions s_defaultOptions = new();
-
         /// <summary>
         ///   Converts the current instance to string in JSON format.
         /// </summary>
@@ -15,12 +12,7 @@ namespace System.Text.Json.Nodes
         /// <returns>JSON representation of current instance.</returns>
         public string ToJsonString(JsonSerializerOptions? options = null)
         {
-            using var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
-            using (var writer = new Utf8JsonWriter(output, options == null ? default(JsonWriterOptions) : options.GetWriterOptions()))
-            {
-                WriteTo(writer, options);
-            }
-
+            using PooledByteBufferWriter output = WriteToPooledBuffer(options, options?.GetWriterOptions() ?? default);
             return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
         }
 
@@ -45,12 +37,7 @@ namespace System.Text.Json.Nodes
                 }
             }
 
-            using var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
-            using (var writer = new Utf8JsonWriter(output, new JsonWriterOptions { Indented = true }))
-            {
-                WriteTo(writer);
-            }
-
+            using PooledByteBufferWriter output = WriteToPooledBuffer(writerOptions: new JsonWriterOptions { Indented = true });
             return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
         }
 
@@ -63,5 +50,19 @@ namespace System.Text.Json.Nodes
         /// </exception>
         /// <param name="options">Options to control the serialization behavior.</param>
         public abstract void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null);
+
+        /// <summary>
+        /// Creates a pooled buffer writer instance and serializes all contents to it.
+        /// </summary>
+        internal PooledByteBufferWriter WriteToPooledBuffer(
+            JsonSerializerOptions? options = null,
+            JsonWriterOptions writerOptions = default,
+            int bufferSize = JsonSerializerOptions.BufferSizeDefault)
+        {
+            var bufferWriter = new PooledByteBufferWriter(bufferSize);
+            using var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
+            WriteTo(writer, options);
+            return bufferWriter;
+        }
     }
 }

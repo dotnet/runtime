@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting;
@@ -36,6 +37,11 @@ public interface IHostApplicationBuilder
     /// Gets a collection of logging providers for the application to compose. This is useful for adding new logging providers.
     /// </summary>
     ILoggingBuilder Logging { get; }
+
+    /// <summary>
+    /// Allows enabling metrics and directing their output.
+    /// </summary>
+    IMetricsBuilder Metrics { get; }
 
     /// <summary>
     /// Gets a collection of services for the application to compose. This is useful for adding user provided or framework provided services.

@@ -1,18 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Searches for resources in Assembly manifest, used
-** for assembly-based resource lookup.
-**
-**
-===========================================================*/
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -22,15 +10,16 @@ using System.Reflection;
 
 namespace System.Resources
 {
-    //
+    /// <summary>
+    /// Searches for resources in  the assembly manifest, used for assembly-based resource lookup.
+    /// </summary>
     // Note: this type is integral to the construction of exception objects,
-    // and sometimes this has to be done in low memory situtations (OOM) or
+    // and sometimes this has to be done in low memory situations (OOM) or
     // to create TypeInitializationExceptions due to failure of a static class
     // constructor. This type needs to be extremely careful and assume that
     // any type it references may have previously failed to construct, so statics
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
-    //
     internal sealed partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;

@@ -45,3 +45,23 @@ build.cmd -s clr -c Release -arch arm64 -msbuild
 ```
 
 Since this is still in an experimental phase, the recommended way for building ARM64 is cross-compiling from an x64 machine. Instructions on how to do this can be found at the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#cross-compiling-for-arm32-and-arm64).
+
+## Native Sanitizers
+
+CoreCLR can be built with native sanitizers like AddressSanitizer to help catch memory safety issues. To build the project with native sanitizers, add the `-fsanitize address` argument to the build script like the following:
+
+```cmd
+build.cmd -s clr -fsanitize address
+```
+
+When building the repo with any native sanitizers, you should build all native components in the repo with the same set of sanitizers.
+
+The following sanitizers are supported for CoreCLR on Windows:
+
+| Sanitizer Name | Minimum VS Version | `-fsanitize` argument | Support Status |
+|----------------|--------------------|-----------------------|----------------|
+| AddressSanitizer | not yet released | `address` | experimental |
+
+## Using a custom compiler environment
+
+If you ever need to use a custom compiler environment for the native builds on Windows, you can set the `SkipVCEnvInit` environment variable to `1`. The build system will skip discovering Visual Studio and initializing its development environment when this flag is used. This is only required for very advanced scenarios and should be used rarely.

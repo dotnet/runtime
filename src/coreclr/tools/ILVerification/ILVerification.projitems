@@ -6,7 +6,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ILVerifyTypeSystemContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InstantiatedGenericParameter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IResolver.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeSystemHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TypeVerifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VerificationResult.cs" />
@@ -51,6 +50,9 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ResolutionFailure.cs">
       <Link>TypeSystem\Common\ResolutionFailure.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\SimpleArrayOfTRuntimeInterfacesAlgorithm.cs">
+      <Link>TypeSystem\Common\SimpleArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemEntity.cs">
       <Link>TypeSystem\Common\TypeSystemEntity.cs</Link>
@@ -126,6 +128,9 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\InstantiatedType.MethodImpls.cs">
       <Link>TypeSystem\Common\InstantiatedType.MethodImpls.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\InstantiatedType.TypeEquivalence.cs">
+      <Link>TypeSystem\Common\InstantiatedType.TypeEquivalence.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\LayoutInt.cs">
       <Link>TypeSystem\Common\LayoutInt.cs</Link>
@@ -223,6 +228,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeDesc.ToString.cs">
       <Link>TypeSystem\Common\TypeDesc.ToString.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeDesc.TypeEquivalence.cs">
+      <Link>TypeSystem\Common\TypeDesc.TypeEquivalence.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\DefType.cs">
       <Link>TypeSystem\Common\DefType.cs</Link>
     </Compile>
@@ -276,6 +284,12 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Ecma\EcmaType.Interfaces.cs">
       <Link>Ecma\EcmaType.Interfaces.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Ecma\EcmaType.TypeEquivalence.cs">
+      <Link>Ecma\EcmaType.TypeEquivalence.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Ecma\EffectiveVisibility.cs">
+      <Link>Ecma\EffectiveVisibility.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Ecma\MetadataExtensions.cs">
       <Link>Ecma\MetadataExtensions.cs</Link>

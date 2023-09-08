@@ -69,11 +69,11 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                return _root[ConfigurationPath.Combine(Path, key)];
+                return _root[Path + ConfigurationPath.KeyDelimiter + key];
             }
             set
             {
-                _root[ConfigurationPath.Combine(Path, key)] = value;
+                _root[Path + ConfigurationPath.KeyDelimiter + key] = value;
             }
         }
 
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Configuration
         ///     This method will never return <c>null</c>. If no matching sub-section is found with the specified key,
         ///     an empty <see cref="IConfigurationSection"/> will be returned.
         /// </remarks>
-        public IConfigurationSection GetSection(string key) => _root.GetSection(ConfigurationPath.Combine(Path, key));
+        public IConfigurationSection GetSection(string key) => _root.GetSection(Path + ConfigurationPath.KeyDelimiter + key);
 
         /// <summary>
         /// Gets the immediate descendant configuration sub-sections.

@@ -1085,10 +1085,10 @@ namespace System.Xml
         }
 
         public static bool IsWhitespace(ReadOnlySpan<char> chars) =>
-            chars.IndexOfAnyExcept(s_whitespaceChars) < 0;
+            !chars.ContainsAnyExcept(s_whitespaceChars);
 
         public static bool IsWhitespace(ReadOnlySpan<byte> bytes) =>
-            bytes.IndexOfAnyExcept(s_whitespaceBytes) < 0;
+            !bytes.ContainsAnyExcept(s_whitespaceBytes);
 
         public static bool IsWhitespace(char ch) =>
             ch is <= ' ' and (' ' or '\t' or '\r' or '\n');

@@ -534,11 +534,32 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #endif
 #ifdef __linux__
 	struct fpsimd_context *fpctx = (struct fpsimd_context*)&((ucontext_t*)sigctx)->uc_mcontext.__reserved;
-	int i;
 
-	g_assert (fpctx->head.magic == FPSIMD_MAGIC);
-	for (i = 0; i < 32; ++i)
-		mctx->fregs [i] = fpctx->vregs [i];
+	size_t size = 0;
+	do {
+		struct fpsimd_context *fpctx_temp = (struct fpsimd_context*)&(((ucontext_t*)sigctx)->uc_mcontext.__reserved[size]);
+
+		if (fpctx_temp->head.magic == FPSIMD_MAGIC)
+		{
+			g_assert (fpctx_temp->head.size >= sizeof (struct fpsimd_context));
+			g_assert (size + fpctx_temp->head.size <= sizeof (((ucontext_t*)sigctx)->uc_mcontext.__reserved));
+
+			fpctx = fpctx_temp;
+			break;
+		}
+
+		if (fpctx_temp->head.size == 0)
+			break;
+
+		size += fpctx_temp->head.size;
+	} while (size + sizeof (struct fpsimd_context) <= sizeof (((ucontext_t*)sigctx)->uc_mcontext.__reserved));
+
+	if (fpctx->head.magic == FPSIMD_MAGIC)
+		for (int i = 0; i < 32; ++i)
+			mctx->fregs [i] = fpctx->vregs [i];
+	else
+		for (int i = 0; i < 32; ++i)
+			mctx->fregs [i] = 0;
 #endif
 	/* FIXME: apple */
 #endif

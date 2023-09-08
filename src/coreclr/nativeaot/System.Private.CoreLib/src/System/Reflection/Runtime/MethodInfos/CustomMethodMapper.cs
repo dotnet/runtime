@@ -14,7 +14,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         // Certain types and methods are edge-cases that require special handling.
         //
-        public static MethodInvoker GetCustomMethodInvokerIfNeeded(this MethodBase methodBase)
+        public static MethodBaseInvoker GetCustomMethodInvokerIfNeeded(this MethodBase methodBase)
         {
             Type declaringType = methodBase.DeclaringType!;
             bool isNullable = declaringType.IsConstructedGenericType && declaringType.GetGenericTypeDefinition() == typeof(Nullable<>);

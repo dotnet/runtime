@@ -44,18 +44,19 @@ namespace Mono.Linker
 		readonly LinkContext _context;
 		readonly List<string> _directories = new ();
 		readonly Dictionary<AssemblyDefinition, string> _assemblyToPath = new ();
+		readonly Dictionary<string, AssemblyDefinition> _pathToAssembly = new ();
 		readonly List<MemoryMappedViewStream> _viewStreams = new ();
 		readonly ReaderParameters _defaultReaderParameters;
 
-		HashSet<string>? _unresolvedAssemblies;
+		readonly HashSet<string> _unresolvedAssembliesProbing = new ();
+		readonly HashSet<string> _unresolvedAssemblies = new ();
 		HashSet<string>? _reportedUnresolvedAssemblies;
 
-		public AssemblyResolver (LinkContext context)
+		public AssemblyResolver (LinkContext context, ReaderParameters readerParameters)
 		{
+			readerParameters.AssemblyResolver = this;
 			_context = context;
-			_defaultReaderParameters = new ReaderParameters () {
-				AssemblyResolver = this
-			};
+			_defaultReaderParameters = readerParameters;
 		}
 
 		public IDictionary<string, AssemblyDefinition> AssemblyCache { get; } = new Dictionary<string, AssemblyDefinition> (StringComparer.OrdinalIgnoreCase);
@@ -67,6 +68,16 @@ namespace Mono.Linker
 
 			throw new InternalErrorException ($"Assembly '{assembly}' was not loaded using ILLink resolver");
 		}
+
+		/// <summary>
+		/// We need to track unresolved assemblies separately when probing vs not probing.
+		///
+		/// This prevents a TryResolve call that fails to resolve an assembly from silencing a later Resolve call that fails to resolve the same
+		/// assembly when SkipUnresolved is false.
+		/// </summary>
+		/// <param name="probing"></param>
+		/// <returns>The known unresolved assemblies for probing mode or non probing mode</returns>
+		HashSet<string> GetUnresolvedAssemblies (bool probing) => probing ? _unresolvedAssembliesProbing : _unresolvedAssemblies;
 
 		AssemblyDefinition? ResolveFromReferences (AssemblyNameReference name)
 		{
@@ -91,7 +102,8 @@ namespace Mono.Linker
 			if (AssemblyCache.TryGetValue (name.Name, out AssemblyDefinition? asm))
 				return asm;
 
-			if (_unresolvedAssemblies?.Contains (name.Name) == true) {
+			var unresolvedAssemblies = GetUnresolvedAssemblies (probing);
+			if (unresolvedAssemblies.Contains (name.Name)) {
 				if (!probing)
 					ReportUnresolvedAssembly (name);
 				return null;
@@ -103,12 +115,10 @@ namespace Mono.Linker
 			asm ??= SearchDirectory (name);
 
 			if (asm == null) {
-				_unresolvedAssemblies ??= new HashSet<string> ();
-
 				if (!probing)
 					ReportUnresolvedAssembly (name);
 
-				_unresolvedAssemblies.Add (name.Name);
+				unresolvedAssemblies.Add (name.Name);
 				return null;
 			}
 
@@ -129,13 +139,19 @@ namespace Mono.Linker
 				_context.LogError (null, DiagnosticId.CouldNotFindAssemblyReference, reference.Name);
 		}
 
-		public void AddSearchDirectory (string directory)
+		public virtual void AddSearchDirectory (string directory)
 		{
 			_directories.Add (directory);
 		}
 
 		public AssemblyDefinition GetAssembly (string file)
 		{
+			// Sanitize the path for caching purposes
+			file = Path.GetFullPath (file);
+
+			if (_pathToAssembly.TryGetValue (file, out var loadedAssembly))
+				return loadedAssembly;
+
 			MemoryMappedViewStream? viewStream = null;
 			try {
 				// Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
@@ -147,6 +163,7 @@ namespace Mono.Linker
 				AssemblyDefinition result = ModuleDefinition.ReadModule (viewStream, _defaultReaderParameters).Assembly;
 
 				_assemblyToPath.Add (result, file);
+				_pathToAssembly.Add (file, result);
 
 				_viewStreams.Add (viewStream);
 
@@ -159,7 +176,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public AssemblyDefinition? Resolve (AssemblyNameReference name)
+		public virtual AssemblyDefinition? Resolve (AssemblyNameReference name)
 		{
 			return Resolve (name, probing: false);
 		}
@@ -170,7 +187,7 @@ namespace Mono.Linker
 			throw new NotSupportedException ();
 		}
 
-		static readonly string[] Extensions = new[] { ".dll", ".exe" };
+		static readonly string[] Extensions = new[] { ".dll", ".exe", ".winmd" };
 
 		AssemblyDefinition? SearchDirectory (AssemblyNameReference name)
 		{
@@ -190,9 +207,16 @@ namespace Mono.Linker
 			return null;
 		}
 
-		public void CacheAssembly (AssemblyDefinition assembly)
+		public virtual void CacheAssembly (AssemblyDefinition assembly)
 		{
-			AssemblyCache[assembly.Name.Name] = assembly;
+			if (AssemblyCache.TryGetValue (assembly.Name.Name, out var existing)) {
+				if (existing != assembly)
+					throw new ArgumentException ("Cannot overwrite an existing assembly with a different assembly");
+
+				return;
+			}
+
+			AssemblyCache.Add (assembly.Name.Name, assembly);
 			_context.RegisterAssembly (assembly);
 		}
 
@@ -221,7 +245,8 @@ namespace Mono.Linker
 			}
 
 			AssemblyCache.Clear ();
-			_unresolvedAssemblies?.Clear ();
+			_unresolvedAssemblies.Clear ();
+			_unresolvedAssembliesProbing.Clear ();
 
 			_reportedUnresolvedAssemblies?.Clear ();
 

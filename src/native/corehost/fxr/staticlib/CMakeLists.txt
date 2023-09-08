@@ -32,7 +32,7 @@ if (MSVC)
     # We ship libhostfxr.lib as a static library for external consumption, so
     # LTCG must be disabled to ensure that non-MSVC toolchains can work with it.
 
-    target_compile_options(libhostfxr PRIVATE /GL-)
+    set_target_properties(libhostfxr PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
     string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELEASE ${CMAKE_STATIC_LINKER_FLAGS_RELEASE})
     string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO})

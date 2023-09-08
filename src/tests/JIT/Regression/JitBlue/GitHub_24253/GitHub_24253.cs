@@ -33,10 +33,9 @@ namespace GitHub_24253
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             GetStruct(1);
-            return 100;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

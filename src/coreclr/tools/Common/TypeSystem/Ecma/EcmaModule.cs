@@ -526,6 +526,8 @@ namespace Internal.TypeSystem.Ecma
                     do
                     {
                         MethodDesc method = typeDescToInspect.GetMethod(name, sig, substitution);
+                        if (method == null && Context.SupportsTypeEquivalence)
+                            method = typeDescToInspect.GetMethodWithEquivalentSignature(name, sig, substitution);
                         if (method != null)
                         {
                             // If this resolved to one of the base types, make sure it's not a constructor.

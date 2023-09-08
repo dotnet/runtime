@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { mono_assert } from "../../../globals";
 import Serializer from "./base-serializer";
 import { CommandSetId, ServerCommandId } from "./types";
 

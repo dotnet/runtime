@@ -35,23 +35,22 @@ internal static class MsQuicHelpers
         return false;
     }
 
-    internal static unsafe IPEndPoint ToIPEndPoint(this ref QuicAddr quicAddress, AddressFamily? addressFamilyOverride = null)
+    internal static unsafe IPEndPoint QuicAddrToIPEndPoint(QuicAddr* quicAddress, AddressFamily? addressFamilyOverride = null)
     {
         // MsQuic always uses storage size as if IPv6 was used
-        Span<byte> addressBytes = new Span<byte>((byte*)Unsafe.AsPointer(ref quicAddress), Internals.SocketAddress.IPv6AddressSize);
-        return new Internals.SocketAddress(addressFamilyOverride ?? SocketAddressPal.GetAddressFamily(addressBytes), addressBytes).GetIPEndPoint();
+        Span<byte> addressBytes = new Span<byte>(quicAddress, SocketAddressPal.IPv6AddressSize);
+        if (addressFamilyOverride != null)
+        {
+            SocketAddressPal.SetAddressFamily(addressBytes, (AddressFamily)addressFamilyOverride!);
+        }
+        return IPEndPointExtensions.CreateIPEndPoint(addressBytes);
     }
 
-    internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint iPEndPoint)
+    internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint ipEndPoint)
     {
-        // TODO: is the layout same for SocketAddress.Buffer and QuicAddr on all platforms?
         QuicAddr result = default;
         Span<byte> rawAddress = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref result, 1));
-
-        Internals.SocketAddress address = IPEndPointExtensions.Serialize(iPEndPoint);
-        Debug.Assert(address.Size <= rawAddress.Length);
-
-        address.Buffer.AsSpan(0, address.Size).CopyTo(rawAddress);
+        ipEndPoint.Serialize(rawAddress);
         return result;
     }
 
@@ -69,7 +68,7 @@ internal static class MsQuicHelpers
 
         if (StatusFailed(status))
         {
-            throw ThrowHelper.GetExceptionForMsQuicStatus(status, $"GetParam({handle}, {parameter}) failed");
+            ThrowHelper.ThrowMsQuicException(status, $"GetParam({handle}, {parameter}) failed");
         }
 
         return value;
@@ -86,7 +85,7 @@ internal static class MsQuicHelpers
 
         if (StatusFailed(status))
         {
-            throw ThrowHelper.GetExceptionForMsQuicStatus(status, $"SetParam({handle}, {parameter}) failed");
+            ThrowHelper.ThrowMsQuicException(status, $"SetParam({handle}, {parameter}) failed");
         }
     }
 }

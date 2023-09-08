@@ -2245,6 +2245,18 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static long OpenSslVersion { get { throw null; } }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateHandle() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyId) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPublicKeyFromEngine(string engineName, string keyId) { throw null; }
         protected override bool ReleaseHandle() { throw null; }
     }
     public abstract partial class SHA1 : System.Security.Cryptography.HashAlgorithm
@@ -2462,6 +2474,44 @@ namespace System.Security.Cryptography
         protected sealed override byte[] HashFinal() { throw null; }
         public sealed override void Initialize() { }
         protected sealed override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public sealed partial class Shake128 : System.IDisposable
+    {
+        public Shake128() { }
+        public static bool IsSupported { get { throw null; } }
+        public void AppendData(byte[] data) { }
+        public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public void Dispose() { }
+        public byte[] GetCurrentHash(int outputLength) { throw null; }
+        public void GetCurrentHash(System.Span<byte> destination) { }
+        public byte[] GetHashAndReset(int outputLength) { throw null; }
+        public void GetHashAndReset(System.Span<byte> destination) { }
+        public static byte[] HashData(byte[] source, int outputLength) { throw null; }
+        public static byte[] HashData(System.IO.Stream source, int outputLength) { throw null; }
+        public static void HashData(System.IO.Stream source, System.Span<byte> destination) { }
+        public static byte[] HashData(System.ReadOnlySpan<byte> source, int outputLength) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, int outputLength, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class Shake256 : System.IDisposable
+    {
+        public Shake256() { }
+        public static bool IsSupported { get { throw null; } }
+        public void AppendData(byte[] data) { }
+        public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public void Dispose() { }
+        public byte[] GetCurrentHash(int outputLength) { throw null; }
+        public void GetCurrentHash(System.Span<byte> destination) { }
+        public byte[] GetHashAndReset(int outputLength) { throw null; }
+        public void GetHashAndReset(System.Span<byte> destination) { }
+        public static byte[] HashData(byte[] source, int outputLength) { throw null; }
+        public static byte[] HashData(System.IO.Stream source, int outputLength) { throw null; }
+        public static void HashData(System.IO.Stream source, System.Span<byte> destination) { }
+        public static byte[] HashData(System.ReadOnlySpan<byte> source, int outputLength) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, int outputLength, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class SignatureDescription
     {

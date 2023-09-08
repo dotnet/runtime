@@ -92,6 +92,23 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     /// </summary>
     private readonly MsQuicSafeHandle? _parent;
 
+#if DEBUG
+    /// <summary>
+    /// Native memory to hold TLS secrets. It needs to live same cycle as the underlying connection.
+    /// </summary>
+    private unsafe QUIC_TLS_SECRETS* _tlsSecrets;
+
+    public unsafe QUIC_TLS_SECRETS* GetSecretsBuffer()
+    {
+        if (_tlsSecrets == null)
+        {
+            _tlsSecrets = (QUIC_TLS_SECRETS*)NativeMemory.Alloc((nuint)sizeof(QUIC_TLS_SECRETS));
+        }
+
+        return _tlsSecrets;
+    }
+#endif
+
     public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
         : base(handle, safeHandleType)
     {
@@ -108,7 +125,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
         }
     }
 
-    protected override bool ReleaseHandle()
+    protected override unsafe bool ReleaseHandle()
     {
         base.ReleaseHandle();
         if (_context.IsAllocated)
@@ -123,6 +140,13 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
                 NetEventSource.Info(this, $"{this} {_parent} ref count decremented");
             }
         }
+#if DEBUG
+        if (_tlsSecrets != null)
+        {
+            NativeMemory.Clear(_tlsSecrets, (nuint)sizeof(QUIC_TLS_SECRETS));
+            NativeMemory.Free(_tlsSecrets);
+        }
+#endif
         return true;
     }
 }

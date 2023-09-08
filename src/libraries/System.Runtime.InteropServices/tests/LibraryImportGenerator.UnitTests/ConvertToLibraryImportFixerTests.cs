@@ -19,7 +19,6 @@ using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
 
 namespace LibraryImportGenerator.UnitTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ConvertToLibraryImportFixerTests
     {
         private const string ConvertToLibraryImportKey = "ConvertToLibraryImport";
@@ -1107,6 +1106,58 @@ namespace LibraryImportGenerator.UnitTests
                 nonBlittableOnlyFixedSource,
                 allFixedSource,
                 new Dictionary<string, Option> { { Option.MayRequireAdditionalWork, new Option.Bool(true) } });
+        }
+
+        [Fact]
+        public async Task BestFitMappingExplicitFalse()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", BestFitMapping = false)]
+                    public static extern void [|Method|]();
+                }
+
+               """;
+
+            string fixedSource = """
+                 using System.Runtime.InteropServices;
+                 partial class Test
+                 {
+                     [LibraryImport("DoesNotExist")]
+                     public static partial void {|CS8795:Method|}();
+                 }
+
+                """;
+
+            await VerifyCodeFixAsync(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task ThrowOnUnmappableCharExplicitFalse()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", ThrowOnUnmappableChar = false)]
+                    public static extern void [|Method|]();
+                }
+
+               """;
+
+            string fixedSource = """
+                 using System.Runtime.InteropServices;
+                 partial class Test
+                 {
+                     [LibraryImport("DoesNotExist")]
+                     public static partial void {|CS8795:Method|}();
+                 }
+
+                """;
+
+            await VerifyCodeFixAsync(source, fixedSource);
         }
 
         private static async Task VerifyCodeFixAsync(string source, string fixedSource)

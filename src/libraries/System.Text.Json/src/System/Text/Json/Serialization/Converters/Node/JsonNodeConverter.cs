@@ -25,26 +25,13 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, JsonNode? value, JsonSerializerOptions options)
         {
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNullValue();
-                // Note JsonSerializer.Deserialize<T>(JsonNode?) also calls WriteNullValue() for a null + root JsonNode.
             }
             else
             {
-                if (value is JsonValue jsonValue)
-                {
-                    ValueConverter.Write(writer, jsonValue, options);
-                }
-                else if (value is JsonObject jsonObject)
-                {
-                    ObjectConverter.Write(writer, jsonObject, options);
-                }
-                else
-                {
-                    Debug.Assert(value is JsonArray);
-                    ArrayConverter.Write(writer, (JsonArray)value, options);
-                }
+                value.WriteTo(writer, options);
             }
         }
 
@@ -85,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
                     node = new JsonArray(element, options);
                     break;
                 default:
-                    node = new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
+                    node = new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
                     break;
             }
 

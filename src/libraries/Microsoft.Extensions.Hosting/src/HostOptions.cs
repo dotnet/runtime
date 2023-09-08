@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Threading;
 using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Hosting
@@ -13,9 +14,24 @@ namespace Microsoft.Extensions.Hosting
     public class HostOptions
     {
         /// <summary>
-        /// The default timeout for <see cref="IHost.StopAsync(System.Threading.CancellationToken)"/>.
+        /// The default timeout for <see cref="IHost.StopAsync(CancellationToken)"/>.
         /// </summary>
+        /// <remarks>
+        /// This timeout also encompasses all host services implementing
+        /// <see cref="IHostedLifecycleService.StoppingAsync(CancellationToken)"/> and
+        /// <see cref="IHostedLifecycleService.StoppedAsync(CancellationToken)"/>.
+        /// </remarks>
         public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        /// The default timeout for <see cref="IHost.StartAsync(CancellationToken)"/>.
+        /// </summary>
+        /// <remarks>
+        /// This timeout also encompasses all host services implementing
+        /// <see cref="IHostedLifecycleService.StartingAsync(CancellationToken)"/> and
+        /// <see cref="IHostedLifecycleService.StartedAsync(CancellationToken)"/>.
+        /// </remarks>
+        public TimeSpan StartupTimeout { get; set; } = Timeout.InfiniteTimeSpan;
 
         /// <summary>
         /// Determines if the <see cref="IHost"/> will start registered instances of <see cref="IHostedService"/> concurrently or sequentially. Defaults to false.
@@ -44,6 +60,13 @@ namespace Microsoft.Extensions.Hosting
                 && int.TryParse(timeoutSeconds, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
             {
                 ShutdownTimeout = TimeSpan.FromSeconds(seconds);
+            }
+
+            timeoutSeconds = configuration["startupTimeoutSeconds"];
+            if (!string.IsNullOrEmpty(timeoutSeconds)
+                && int.TryParse(timeoutSeconds, NumberStyles.None, CultureInfo.InvariantCulture, out seconds))
+            {
+                StartupTimeout = TimeSpan.FromSeconds(seconds);
             }
 
             var servicesStartConcurrently = configuration["servicesStartConcurrently"];

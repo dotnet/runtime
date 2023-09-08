@@ -55,6 +55,11 @@ namespace System
                 return true;
             }
 
+            if (switchName == "System.Xml.XmlResolver.IsNetworkingEnabledByDefault")
+            {
+                return true;
+            }
+
             return false;
         }
     }

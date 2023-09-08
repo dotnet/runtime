@@ -75,6 +75,15 @@ namespace System.Security.Cryptography
                 }
             }
 
+            public static void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                _ = hashAlgorithmId;
+                _ = source;
+                _ = destination;
+                Debug.Fail("Caller should have checked if platform supported XOFs.");
+                throw new UnreachableException();
+            }
+
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);

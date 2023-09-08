@@ -114,9 +114,8 @@ public class TestClass_65690
         }
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new TestClass_65690().Method0();
-        return 100;
     }
 }

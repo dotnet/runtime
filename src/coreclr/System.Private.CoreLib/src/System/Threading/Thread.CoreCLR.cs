@@ -60,11 +60,10 @@ namespace System.Threading
 
         private Thread() { }
 
-        public extern int ManagedThreadId
+        public int ManagedThreadId
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            get => _managedThreadId;
         }
 
         /// <summary>Returns handle for interop with EE. The handle is guaranteed to be non-null.</summary>
@@ -275,17 +274,17 @@ namespace System.Threading
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-             if (state != ApartmentState.Unknown)
-             {
+            if (state != ApartmentState.Unknown)
+            {
                 if (throwOnError)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
                 }
 
                 return false;
-             }
+            }
 
-             return true;
+            return true;
         }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 

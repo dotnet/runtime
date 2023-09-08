@@ -2,31 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal abstract record TypeSpec
     {
-        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
-            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
-            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
-            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
-
         public TypeSpec(ITypeSymbol type)
         {
             IsValueType = type.IsValueType;
             Namespace = type.ContainingNamespace?.ToDisplayString();
-            FullyQualifiedDisplayString = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            MinimalDisplayString = type.ToDisplayString(s_minimalDisplayFormat);
-            Name = Namespace + "." + MinimalDisplayString.Replace(".", "+");
+            DisplayString = type.ToMinimalDisplayString();
+            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring(useUniqueName: true);
+            Name = Namespace + "." + DisplayString.Replace(".", "+");
+            IsInterface = type.TypeKind is TypeKind.Interface;
         }
 
         public string Name { get; }
 
-        public string FullyQualifiedDisplayString { get; }
+        public string DisplayString { get; }
 
-        public string MinimalDisplayString { get; }
+        public string IdentifierCompatibleSubstring { get; }
 
         public string? Namespace { get; }
 
@@ -40,12 +36,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public virtual bool CanInitialize => true;
 
-        /// <summary>
-        /// Location in the input compilation we picked up a call to Bind, Get, or Configure.
-        /// </summary>
-        public required Location? Location { get; init; }
+        public virtual bool NeedsMemberBinding { get; }
 
-        protected bool CanInitCompexType => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
+        public virtual TypeSpec EffectiveType => this;
+
+        public bool IsInterface { get; }
+
+        protected bool CanInitComplexObject() => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
     }
 
     internal enum TypeSpecKind

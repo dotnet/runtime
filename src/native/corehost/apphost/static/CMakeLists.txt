@@ -46,7 +46,7 @@ include(../../hostcommon/files.cmake)
 
 if(MSVC)
     # Host components don't try to handle asynchronous exceptions
-    add_compile_options(/EHsc)
+    set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     # Prevents libc from calling pthread_cond_destroy on static objects in
     # dlopen()'ed library which we dlclose() in pal::unload_library.
@@ -56,7 +56,9 @@ endif()
 if(CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DUNICODE)
     list(APPEND SOURCES
-        ../apphost.windows.cpp)
+        ../apphost.windows.cpp
+        ${CLR_SRC_NATIVE_DIR}/libs/Common/delayloadhook_windows.cpp
+    )
 
     list(APPEND HEADERS
         ../apphost.windows.h)
@@ -106,6 +108,9 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
     add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
+
+    # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
+    add_linker_flag("/DELAYLOAD:version.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -254,3 +259,5 @@ target_link_libraries(
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+add_sanitizer_runtime_support(singlefilehost)

@@ -202,18 +202,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void Constructor1_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument_Desktop()
-        {
-            AssemblyCatalogConstructorTests.Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument((s) =>
-            {
-                return new AssemblyCatalog(s);
-            });
-        }
-
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")] // Also see https://github.com/dotnet/runtime/issues/25099
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Constructor1_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO_Core()
         {
             AssemblyCatalogConstructorTests.Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO((s) =>
@@ -312,18 +301,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void Constructor2_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument_Desktop()
-        {
-            AssemblyCatalogConstructorTests.Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument((s) =>
-            {
-                return new AssemblyCatalog(s, new AssemblyCatalogTestsReflectionContext());
-            });
-        }
-
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")] // Also see https://github.com/dotnet/runtime/issues/25099
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Constructor2_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument()
         {
             AssemblyCatalogConstructorTests.Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO((s) =>
@@ -421,18 +399,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void Constructor3_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument()
-        {
-            AssemblyCatalogConstructorTests.Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument((s) =>
-            {
-                return new AssemblyCatalog(s, (ICompositionElement)new AssemblyCatalog(s));
-            });
-        }
-
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")] // // Also see https://github.com/dotnet/runtime/issues/25099
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Constructor3_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO_Core()
         {
             AssemblyCatalogConstructorTests.Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO((s) =>
@@ -529,18 +496,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void Constructor4_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument_Desktop()
-        {
-            AssemblyCatalogConstructorTests.Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument((s) =>
-            {
-                return new AssemblyCatalog(s, new AssemblyCatalogTestsReflectionContext(), (ICompositionElement)new AssemblyCatalog(s));
-            });
-        }
-
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")] // Also see https://github.com/dotnet/runtime/issues/25099
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Constructor4_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO_Core()
         {
             AssemblyCatalogConstructorTests.Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO((s) =>

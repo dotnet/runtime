@@ -11,7 +11,7 @@ namespace Test
     {
         public static ulong m_ulStatic1 = 237u;
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try { }
             finally
@@ -24,7 +24,6 @@ namespace Test
                 }
                 catch (Exception) { }
             }
-            return 100;
         }
     }
 }

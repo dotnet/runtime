@@ -424,6 +424,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(39), // BB contains a call needing a histogram profile
     BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(40), // BB has pred that has potential tail call
     BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(41), // Block has recursive tailcall that may turn into a loop
+    BBF_NO_CSE_IN                      = MAKE_BBFLAG(42), // Block should kill off any incoming CSE
 
     // The following are sets of flags.
 
@@ -719,6 +720,11 @@ struct BasicBlock : private LIR::Range
     bool KindIs(BBjumpKinds kind, T... rest) const
     {
         return KindIs(kind) || KindIs(rest...);
+    }
+
+    bool HasTerminator()
+    {
+        return KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_COND, BBJ_SWITCH, BBJ_RETURN);
     }
 
     // NumSucc() gives the number of successors, and GetSucc() returns a given numbered successor.
@@ -1221,7 +1227,15 @@ struct BasicBlock : private LIR::Range
     };
 
     template <typename TFunc>
+    BasicBlockVisit VisitEHSecondPassSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
     BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
+    BasicBlockVisit VisitRegularSuccs(Compiler* comp, TFunc func);
+
+    bool HasPotentialEHSuccs(Compiler* comp);
 
     // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
     // normally used via BasicBlock::Succs(), e.g.:

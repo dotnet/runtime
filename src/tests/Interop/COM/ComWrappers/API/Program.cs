@@ -86,14 +86,14 @@ namespace ComWrappersTests
             {
                 var iTrackerObjectIid = typeof(ITrackerObject).GUID;
                 IntPtr iTrackerComObject;
-                int hr = Marshal.QueryInterface(externalComObject, ref iTrackerObjectIid, out iTrackerComObject);
+                int hr = Marshal.QueryInterface(externalComObject, in iTrackerObjectIid, out iTrackerComObject);
                 if (hr == 0)
                 {
                     return new ITrackerObjectWrapper(iTrackerComObject);
                 }
                 var iTestIid = typeof(ITest).GUID;
                 IntPtr iTest;
-                hr = Marshal.QueryInterface(externalComObject, ref iTestIid, out iTest);
+                hr = Marshal.QueryInterface(externalComObject, in iTestIid, out iTest);
                 if (hr == 0)
                 {
                     return new ITestObjectWrapper(iTest);
@@ -319,12 +319,12 @@ namespace ComWrappersTests
                 Assert.NotEqual(IntPtr.Zero, nativeInstance);
 
                 var iid = typeof(ITest).GUID;
-                IntPtr itestPtr;
-                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, ref iid, out itestPtr));
+                nint itestPtr;
+                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, in iid, out itestPtr));
 
-                var inst = Marshal.PtrToStructure<VtblPtr>(itestPtr);
-                var vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
-                var setValue = (delegate* unmanaged<IntPtr, int, int>)vtbl.SetValue;
+                var inst = (ComWrappers.ComInterfaceDispatch*)itestPtr;
+                var vtbl = (ITestVtbl*)(inst->Vtable);
+                var setValue = (delegate* unmanaged<nint, int, int>)vtbl->SetValue;
 
                 Assert.Equal(0, setValue(itestPtr, value));
                 Assert.Equal(value, testInstance.GetValue());
@@ -332,7 +332,63 @@ namespace ComWrappersTests
                 // release for QueryInterface
                 Assert.Equal(1, Marshal.Release(itestPtr));
                 // release for GetOrCreateComInterfaceForObject
-                Assert.Equal(0, Marshal.Release(itestPtr));
+                Assert.Equal(0, Marshal.Release(nativeInstance));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateResurrection()
+        {
+            Console.WriteLine($"Running {nameof(ValidateResurrection)}...");
+
+            var wrappers = new TestComWrappers();
+
+            try
+            {
+                CreateResurrectingTestInstance(wrappers);
+
+                ForceGC();
+
+                CallSetValue(wrappers);
+            }
+            finally
+            {
+                Test.Resurrected = null;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void CreateResurrectingTestInstance(ComWrappers wrapper)
+            {
+                Test testInstance = new Test()
+                {
+                    EnableResurrection = true,
+                };
+                IntPtr nativeInstance = wrapper.GetOrCreateComInterfaceForObject(testInstance, CreateComInterfaceFlags.None);
+                Assert.Equal(0, Marshal.Release(nativeInstance));
+            }
+
+            unsafe static void CallSetValue(ComWrappers wrappers)
+            {
+                Assert.NotEqual(null, Test.Resurrected);
+                IntPtr nativeInstance = wrappers.GetOrCreateComInterfaceForObject(Test.Resurrected, CreateComInterfaceFlags.None);
+                Assert.NotEqual(IntPtr.Zero, nativeInstance);
+
+                var iid = typeof(ITest).GUID;
+                nint itestPtr;
+                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, in iid, out itestPtr));
+
+                var inst = (ComWrappers.ComInterfaceDispatch*)itestPtr;
+                var vtbl = (ITestVtbl*)(inst->Vtable);
+                var setValue = (delegate* unmanaged<nint, int, int>)vtbl->SetValue;
+
+                Assert.Equal(0, setValue(itestPtr, 42));
+                Assert.Equal(42, Test.Resurrected.GetValue());
+
+                // release for QueryInterface
+                Assert.Equal(1, Marshal.Release(itestPtr));
+                // release for GetOrCreateComInterfaceForObject
+                Assert.Equal(0, Marshal.Release(nativeInstance));
             }
         }
 
@@ -357,12 +413,12 @@ namespace ComWrappersTests
             IntPtr result;
             var anyGuid = new Guid("1E42439C-DCB5-4701-ACBD-87FE92E785DE");
             testObj.ICustomQueryInterface_GetInterfaceIID = anyGuid;
-            int hr = Marshal.QueryInterface(comWrapper, ref anyGuid, out result);
+            int hr = Marshal.QueryInterface(comWrapper, in anyGuid, out result);
             Assert.Equal(0, hr);
             Assert.Equal(testObj.ICustomQueryInterface_GetInterfaceResult, result);
 
             var anyGuid2 = new Guid("7996D0F9-C8DD-4544-B708-0F75C6FF076F");
-            hr = Marshal.QueryInterface(comWrapper, ref anyGuid2, out result);
+            hr = Marshal.QueryInterface(comWrapper, in anyGuid2, out result);
             const int E_NOINTERFACE = unchecked((int)0x80004002);
             Assert.Equal(E_NOINTERFACE, hr);
             Assert.Equal(IntPtr.Zero, result);
@@ -451,8 +507,7 @@ namespace ComWrappersTests
 
             // Create a wrapper for the unmanaged instance
             IntPtr unmanagedObj = MockReferenceTrackerRuntime.CreateTrackerObject();
-            Guid IID_IUnknown = IUnknownVtbl.IID_IUnknown;
-            Assert.Equal(0, Marshal.QueryInterface(unmanagedObj, ref IID_IUnknown, out IntPtr unmanagedObjIUnknown));
+            Assert.Equal(0, Marshal.QueryInterface(unmanagedObj, in IUnknownVtbl.IID_IUnknown, out IntPtr unmanagedObjIUnknown));
             var unmanagedWrapper = cw.GetOrCreateObjectForComInstance(unmanagedObj, CreateObjectFlags.None);
 
             // Also allocate a unique instance to validate looking from an uncached instance
@@ -542,7 +597,7 @@ namespace ComWrappersTests
             // Manually create a wrapper
             var iid = typeof(ITrackerObject).GUID;
             IntPtr iTestComObject;
-            int hr = Marshal.QueryInterface(trackerObjRaw, ref iid, out iTestComObject);
+            int hr = Marshal.QueryInterface(trackerObjRaw, in iid, out iTestComObject);
             Assert.Equal(0, hr);
             var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
@@ -607,7 +662,7 @@ namespace ComWrappersTests
                 // Manually create a wrapper
                 var iid = typeof(ITrackerObject).GUID;
                 IntPtr iTestComObject;
-                int hr = Marshal.QueryInterface(trackerObjRaw, ref iid, out iTestComObject);
+                int hr = Marshal.QueryInterface(trackerObjRaw, in iid, out iTestComObject);
                 Assert.Equal(0, hr);
                 var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
@@ -825,7 +880,7 @@ namespace ComWrappersTests
             // part of the contract for a Reference Tracker runtime.
             var iid = typeof(ITest).GUID;
             IntPtr iTestComObject;
-            int hr = Marshal.QueryInterface(refTrackerTarget, ref iid, out iTestComObject);
+            int hr = Marshal.QueryInterface(refTrackerTarget, in iid, out iTestComObject);
 
             const int COR_E_ACCESSING_CCW = unchecked((int)0x80131544);
             Assert.Equal(COR_E_ACCESSING_CCW, hr);
@@ -872,7 +927,6 @@ namespace ComWrappersTests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85137", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public void ValidateAggregationWithComObject()
         {
@@ -889,7 +943,6 @@ namespace ComWrappersTests
             Assert.Equal(0, allocTracker.GetCount());
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85137", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public void ValidateAggregationWithReferenceTrackerObject()
         {

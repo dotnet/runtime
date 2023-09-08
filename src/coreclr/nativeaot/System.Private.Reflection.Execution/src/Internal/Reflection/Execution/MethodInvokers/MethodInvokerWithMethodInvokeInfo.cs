@@ -12,7 +12,7 @@ using System.Reflection.Runtime.General;
 
 namespace Internal.Reflection.Execution.MethodInvokers
 {
-    internal abstract class MethodInvokerWithMethodInvokeInfo : MethodInvoker
+    internal abstract class MethodInvokerWithMethodInvokeInfo : MethodBaseInvoker
     {
         public MethodInvokerWithMethodInvokeInfo(MethodInvokeInfo methodInvokeInfo)
         {
@@ -32,7 +32,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         //
         // Creates the appropriate flavor of Invoker depending on the calling convention "shape" (static, instance or virtual.)
         //
-        internal static MethodInvoker CreateMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, MethodInvokeInfo methodInvokeInfo)
+        internal static MethodBaseInvoker CreateMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, MethodInvokeInfo methodInvokeInfo)
         {
             bool isStatic = false;
 

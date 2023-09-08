@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -35,7 +33,9 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+
+        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -161,7 +161,8 @@ namespace Microsoft.Interop
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(info, context);
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
@@ -268,9 +269,31 @@ namespace Microsoft.Interop
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
         {
-            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
+            if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCallerAllocated)
+                yield break;
+
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(info, context))
+            {
+                yield return statement;
+            }
+            // <marshallerType>.Free(<nativeIdentifier>);
+            yield return ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        _marshallerType,
+                        IdentifierName(ShapeMemberNames.Free)),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(IdentifierName(context.GetIdentifiers(info).native))))));
+        }
+
+        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCalleeAllocated)
+                yield break;
+
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(info, context))
             {
                 yield return statement;
             }
@@ -318,7 +341,39 @@ namespace Microsoft.Interop
             return _unmanagedType;
         }
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCallerAllocated)
+                yield break;
+
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            // <numElements> = <numElementsExpression>;
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    _numElementsExpression));
+        }
+
+        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCalleeAllocated)
+                yield break;
+
+            if (MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.ManagedToUnmanaged)
+            {
+                yield return EmptyStatement();
+                yield break;
+            }
+
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            // <numElements> = <numElementsExpression>;
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    _numElementsExpression));
+        }
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -385,6 +440,7 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            // int <numElements>;
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
@@ -392,7 +448,7 @@ namespace Microsoft.Interop
                     SingletonSeparatedList(
                         VariableDeclarator(numElementsIdentifier))));
             // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
-            // The value will never be used unless it has been initialized, so this is safe.
+            // The value may be used in cleanup before it has been initialized, so this is unsafe
             yield return MarshallerHelpers.SkipInitOrDefaultInit(
                 new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
                 {
@@ -521,6 +577,7 @@ namespace Microsoft.Interop
         private readonly ElementsMarshalling _elementsMarshalling;
         private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
+        private readonly ExpressionSyntax _numElementsExpression;
         private readonly bool _cleanupElementsAndSpace;
 
         public StatelessLinearCollectionMarshalling(
@@ -528,18 +585,20 @@ namespace Microsoft.Interop
             ElementsMarshalling elementsMarshalling,
             ManagedTypeInfo unmanagedType,
             MarshallerShape shape,
+            ExpressionSyntax numElementsExpression,
             bool cleanupElementsAndSpace)
         {
             _spaceMarshallingStrategy = spaceMarshallingStrategy;
             _elementsMarshalling = elementsMarshalling;
             _unmanagedType = unmanagedType;
             _shape = shape;
+            _numElementsExpression = numElementsExpression;
             _cleanupElementsAndSpace = cleanupElementsAndSpace;
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _unmanagedType;
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
         {
             if (!_cleanupElementsAndSpace)
             {
@@ -550,12 +609,59 @@ namespace Microsoft.Interop
 
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
             {
+                // If we don't have the numElements variable still available from unmarshal or marshal stage, we need to reassign that again
+                if (!context.AdditionalTemporaryStateLivesAcrossStages)
+                {
+                    // <numElements> = <numElementsExpression>;
+                    string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+                    yield return ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(numElementsIdentifier),
+                            _numElementsExpression));
+                }
                 yield return elementCleanup;
             }
 
-            foreach (var statement in _spaceMarshallingStrategy.GenerateCleanupStatements(info, context))
+            if (MarshallerHelpers.GetCleanupStage(info, context) is StubCodeContext.Stage.CleanupCallerAllocated)
             {
-                yield return statement;
+                foreach (var statement in _spaceMarshallingStrategy.GenerateCleanupCallerAllocatedResourcesStatements(info, context))
+                {
+                    yield return statement;
+                }
+            }
+        }
+
+        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            if (!_cleanupElementsAndSpace)
+            {
+                yield break;
+            }
+            StatementSyntax elementCleanup = _elementsMarshalling.GenerateElementCleanupStatement(info, context);
+
+            if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
+            {
+                // If we don't have the numElements variable still available from unmarshal or marshal stage, we need to reassign that again
+                if (!context.AdditionalTemporaryStateLivesAcrossStages)
+                {
+                    // <numElements> = <numElementsExpression>;
+                    string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+                    yield return ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(numElementsIdentifier),
+                            _numElementsExpression));
+                }
+                yield return elementCleanup;
+            }
+
+            if (MarshallerHelpers.GetCleanupStage(info, context) is StubCodeContext.Stage.CleanupCallerAllocated)
+            {
+                foreach (var statement in _spaceMarshallingStrategy.GenerateCleanupCalleeAllocatedResourcesStatements(info, context))
+                {
+                    yield return statement;
+                }
             }
         }
 
@@ -567,7 +673,8 @@ namespace Microsoft.Interop
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
                 // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
-                yield return _elementsMarshalling.GenerateClearManagedSource(info, context);
+                yield return _elementsMarshalling.GenerateClearUnmanagedDestination(info, context);
+
                 yield break;
             }
 
@@ -594,7 +701,16 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _spaceMarshallingStrategy.GeneratePinnedMarshalStatements(info, context);
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _spaceMarshallingStrategy.GeneratePinStatements(info, context);
 
-        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context) => _spaceMarshallingStrategy.GenerateSetupStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            foreach (var s in _spaceMarshallingStrategy.GenerateSetupStatements(info, context))
+                yield return s;
+            var elementsSetup = _elementsMarshalling.GenerateSetupStatement(info, context);
+            if (elementsSetup is not EmptyStatementSyntax)
+            {
+                yield return elementsSetup;
+            }
+        }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
 
@@ -612,7 +728,11 @@ namespace Microsoft.Interop
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
                 // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
-                yield return _elementsMarshalling.GenerateClearUnmanagedValuesSource(info, context);
+                yield return _elementsMarshalling.GenerateClearManagedValuesDestination(info, context);
+                foreach (var statement in _spaceMarshallingStrategy.GenerateUnmarshalStatements(info, context))
+                {
+                    yield return statement;
+                }
                 yield break;
             }
 

@@ -121,9 +121,6 @@ mono_lifo_semaphore_asyncwait_delete (LifoSemaphoreAsyncWait *semaphore);
  * destroyed.
  *
  * FIXME: should we just always use the mutex to protect the wait entry status+refcount?
- *
- * TODO: when we call emscripten_set_timeout it implicitly calls emscripten_runtime_keepalive_push which is
- * popped when the timeout runs.  But emscripten_clear_timeout doesn't pop - we need to pop ourselves
  */
 void
 mono_lifo_semaphore_asyncwait_prepare_wait (LifoSemaphoreAsyncWait *semaphore, int32_t timeout_ms,

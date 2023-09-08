@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -321,6 +322,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoCommands DetachDebugger(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_detach_debugger()");
 
         public static MonoCommands ReleaseObject(int runtimeId, DotnetObjectId objectId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_release_object('{objectId}')");
+
+        public static MonoCommands GetWasmFunctionIds(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_func_id_to_name_mappings()");
     }
 
     internal enum MonoErrorCodes
@@ -404,6 +407,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             AuxData = auxData;
             SdbAgent = sdbAgent;
             PauseOnExceptions = pauseOnExceptions;
+            Destroyed = false;
+            FrameworkScriptList = new();
         }
         public ExecutionContext CreateChildAsyncExecutionContext(SessionId sessionId)
             => new ExecutionContext(null, Id, AuxData, PauseOnExceptions)
@@ -432,6 +437,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int ThreadId { get; set; }
         public int Id { get; set; }
         public ExecutionContext ParentContext { get; private set; }
+
+        public List<int> FrameworkScriptList { get; init; }
         public SessionId SessionId { get; private set; }
 
         public bool PausedOnWasm { get; set; }
@@ -456,6 +463,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int TempBreakpointForSetNextIP { get; set; }
         internal bool FirstBreakpoint { get; set; }
 
+        internal bool Destroyed { get; set; }
+
         public DebugStore Store
         {
             get
@@ -466,6 +475,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return store;
             }
         }
+        public string[] WasmFunctionIds { get; internal set; }
 
         public PerScopeCache GetCacheForScope(int scopeId)
         {
@@ -501,5 +511,85 @@ namespace Microsoft.WebAssembly.Diagnostics
         public PerScopeCache()
         {
         }
+    }
+
+    internal sealed class ConcurrentExecutionContextDictionary
+    {
+        private ConcurrentDictionary<SessionId, ConcurrentBag<ExecutionContext>> contexts = new ();
+        public ExecutionContext GetCurrentContext(SessionId sessionId)
+            => TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context)
+                ? context
+                : throw new KeyNotFoundException($"No execution context found for session {sessionId}");
+
+        public bool TryGetCurrentExecutionContextValue(SessionId id, out ExecutionContext executionContext, bool ignoreDestroyedContext = true)
+        {
+            executionContext = null;
+            if (!contexts.TryGetValue(id, out ConcurrentBag<ExecutionContext> contextBag))
+                return false;
+            if (contextBag.IsEmpty)
+                return false;
+            IEnumerable<ExecutionContext> validContexts = null;
+            if (ignoreDestroyedContext)
+                validContexts = contextBag.Where(context => context.Destroyed == false);
+            else
+                validContexts = contextBag;
+            if (!validContexts.Any())
+                return false;
+            int maxId = validContexts.Max(context => context.Id);
+            executionContext = contextBag.FirstOrDefault(context => context.Id == maxId);
+            return executionContext != null;
+        }
+
+        public void OnDefaultContextUpdate(SessionId sessionId, ExecutionContext newContext)
+        {
+            if (TryGetAndAddContext(sessionId, newContext, out ExecutionContext previousContext))
+            {
+                foreach (KeyValuePair<string, BreakpointRequest> kvp in previousContext.BreakpointRequests)
+                {
+                    newContext.BreakpointRequests[kvp.Key] = kvp.Value.Clone();
+                }
+                newContext.PauseOnExceptions = previousContext.PauseOnExceptions;
+            }
+        }
+
+        public bool TryGetAndAddContext(SessionId sessionId, ExecutionContext newExecutionContext, out ExecutionContext previousExecutionContext)
+        {
+            bool hasExisting = TryGetCurrentExecutionContextValue(sessionId, out previousExecutionContext, ignoreDestroyedContext: false);
+            ConcurrentBag<ExecutionContext> bag = contexts.GetOrAdd(sessionId, _ => new ConcurrentBag<ExecutionContext>());
+            bag.Add(newExecutionContext);
+            return hasExisting;
+        }
+
+        public void CreateWorkerExecutionContext(SessionId workerSessionId, SessionId originSessionId, ILogger logger)
+        {
+            if (!TryGetCurrentExecutionContextValue(originSessionId, out ExecutionContext context))
+            {
+                logger.LogDebug($"Origin sessionId does not exist - {originSessionId}");
+                return;
+            }
+            if (contexts.ContainsKey(workerSessionId))
+            {
+                logger.LogDebug($"Worker sessionId already exists - {originSessionId}");
+                return;
+            }
+            contexts[workerSessionId] = new();
+            contexts[workerSessionId].Add(context.CreateChildAsyncExecutionContext(workerSessionId));
+        }
+
+        public void DestroyContext(SessionId sessionId, int id)
+        {
+            if (!contexts.TryGetValue(sessionId, out ConcurrentBag<ExecutionContext> contextBag))
+                return;
+            foreach (ExecutionContext context in contextBag.Where(x => x.Id == id).ToList())
+                context.Destroyed = true;
+        }
+        public void ClearContexts(SessionId sessionId)
+        {
+            if (!contexts.TryGetValue(sessionId, out ConcurrentBag<ExecutionContext> contextBag))
+                return;
+            foreach (ExecutionContext context in contextBag)
+                context.Destroyed = true;
+        }
+        public bool ContainsKey(SessionId sessionId) => contexts.ContainsKey(sessionId);
     }
 }

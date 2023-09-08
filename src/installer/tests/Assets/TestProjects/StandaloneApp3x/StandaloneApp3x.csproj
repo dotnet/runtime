@@ -4,6 +4,7 @@
     <TargetFrameworks>netcoreapp3.0;netcoreapp3.1</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <!--
