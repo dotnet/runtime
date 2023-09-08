@@ -343,17 +343,13 @@ namespace System.Net.Http
             {
                 try
                 {
-                    Task copyTask = content.CopyToAsync(stream, cancellationToken);
-                    if (await Task.WhenAny(copyTask, fetchResponsePromise).ConfigureAwait(true) == copyTask)
-                    {
-                        await copyTask.ConfigureAwait(true);
-                    }
+                    await content.CopyToAsync(stream, cancellationToken).ConfigureAwait(true);
                     await BrowserHttpInterop.TransformStreamClose(transformStream).ConfigureAwait(true);
                     return await fetchResponsePromise.ConfigureAwait(true);
                 }
                 catch (Exception ex)
                 {
-                    await BrowserHttpInterop.TransformStreamClose(transformStream, ex).ConfigureAwait(true);
+                    BrowserHttpInterop.TransformStreamAbort(transformStream, ex);
                     throw;
                 }
             }

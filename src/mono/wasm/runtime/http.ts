@@ -81,15 +81,16 @@ export async function http_wasm_transform_stream_write(ts: TransformStreamExtens
     await Promise.race([ts.__writer.write(copy), ts.__fetch_promise_control.promise]);
 }
 
-export async function http_wasm_transform_stream_close(ts: TransformStreamExtension, error: Error | undefined): Promise<void> {
+export async function http_wasm_transform_stream_close(ts: TransformStreamExtension): Promise<void> {
     mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
-    if (error) {
-        ts.__fetch_promise_control.reject(error);
-        ts.__writer.abort(error);
-    } else {
-        await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
-        ts.__writer.close();
-    }
+    await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
+    ts.__writer.close();
+}
+
+export function http_wasm_transform_stream_abort(ts: TransformStreamExtension, error: Error): void {
+    mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
+    ts.__fetch_promise_control.reject(error);
+    ts.__writer.abort(error);
 }
 
 export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: TransformStreamExtension): Promise<ResponseExtension> {

@@ -39,8 +39,12 @@ namespace System.Net.Http
 
         [JSImport("INTERNAL.http_wasm_transform_stream_close")]
         public static partial Task TransformStreamClose(
+            JSObject transformStream);
+
+        [JSImport("INTERNAL.http_wasm_transform_stream_abort")]
+        public static partial void TransformStreamAbort(
             JSObject transformStream,
-            Exception? error = null);
+            Exception error);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
         private static partial string[] _GetResponseHeaderNames(
