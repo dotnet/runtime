@@ -302,6 +302,7 @@ namespace System.Net.Http.Functional.Tests
             var content = new MultipartFormDataContent();
             content.Add(new StreamContent(new DelegateStream(
                 canReadFunc: () => true,
+                readFunc: (buffer, offset, count) => throw new FormatException(),
                 readAsyncFunc: (buffer, offset, count, cancellationToken) =>
                 {
                     if (remaining > 0)
