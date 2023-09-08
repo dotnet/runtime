@@ -347,8 +347,8 @@ namespace System.Net.Http
                     if (await Task.WhenAny(copyTask, fetchResponsePromise).ConfigureAwait(true) == copyTask)
                     {
                         await copyTask.ConfigureAwait(true);
-                        await BrowserHttpInterop.TransformStreamClose(transformStream).ConfigureAwait(true);
                     }
+                    await BrowserHttpInterop.TransformStreamClose(transformStream).ConfigureAwait(true);
                     return await fetchResponsePromise.ConfigureAwait(true);
                 }
                 catch (Exception ex)
