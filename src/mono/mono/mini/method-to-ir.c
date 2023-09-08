@@ -10419,8 +10419,11 @@ fld_emit_stage:
 				}
 
 				if (!is_const) {
-					MonoInst *load;
+					// This can happen in case of type load error.
+					if (!ins)
+						EMIT_NEW_PCONST (cfg, ins, 0);
 
+					MonoInst *load;
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, field->type, ins->dreg, 0);
 					load->flags |= ins_flag;
 					*sp++ = load;
