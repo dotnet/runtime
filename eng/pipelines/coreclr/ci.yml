@@ -39,21 +39,21 @@ extends:
       #
       # Debug builds
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-          buildConfig: debug
-          platforms:
-          # - linux_arm
-          - linux_arm64
-          # - linux_musl_arm64
-          # - linux_musl_x64
-          - linux_x64
-          # - osx_arm64
-          # - osx_x64
-          # - windows_arm64
-          jobParameters:
-            testGroup: outerloop
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      #     buildConfig: debug
+      #     platforms:
+      #     - linux_arm
+      #     - linux_arm64
+      #     - linux_musl_arm64
+      #     - linux_musl_x64
+      #     - linux_x64
+      #     - osx_arm64
+      #     - osx_x64
+      #     - windows_arm64
+      #     jobParameters:
+      #       testGroup: outerloop
 
       #
       # Checked builds
@@ -67,6 +67,8 @@ extends:
           # It is too early to include osx_arm64 in platform group all
           # Adding it here will enable it also
           # - osx_arm64
+          - linux_musl_arm64
+          - linux_musl_x64
           - linux_arm64
           - linux_x64
           jobParameters:
@@ -75,20 +77,20 @@ extends:
       #
       # Release builds
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-          buildConfig: release
-          platforms:
-          # - linux_arm
-          # - linux_musl_arm64
-          - linux_arm64
-          - linux_x64
-          # - osx_arm64
-          # - osx_x64
-          # - windows_x86
-          jobParameters:
-            testGroup: outerloop
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      #     buildConfig: release
+      #     platforms:
+      #     - linux_arm
+      #     - linux_musl_arm64
+      #     - linux_arm64
+      #     - linux_x64
+      #     - osx_arm64
+      #     - osx_x64
+      #     - windows_x86
+      #     jobParameters:
+      #       testGroup: outerloop
 
       #
       # Release library builds
@@ -102,6 +104,8 @@ extends:
           # It is too early to include osx_arm64 in platform group all
           # Adding it here will enable it also
           # - osx_arm64
+          - linux_musl_arm64
+          - linux_musl_x64
           - linux_arm64
           - linux_x64
           jobParameters:
@@ -116,7 +120,11 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          - linux_musl_arm64
+          - linux_musl_x64
+          - linux_arm64
+          - linux_x64
+          # - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           testGroup: outerloop
 
       #
@@ -131,6 +139,8 @@ extends:
           # It is too early to include osx_arm64 in platform group all
           # Adding it here will enable it to also run this test
           # - osx_arm64
+          - linux_musl_arm64
+          - linux_musl_x64
           - linux_arm64
           - linux_x64
           helixQueueGroup: ci
@@ -148,8 +158,8 @@ extends:
           buildConfig: checked
           platforms:
           - linux_arm64
-          # - linux_musl_x64
-          # - linux_musl_arm64
+          - linux_musl_x64
+          - linux_musl_arm64
           - linux_x64
           # - osx_x64
           # - windows_x64
@@ -176,19 +186,19 @@ extends:
       #
       # PAL Tests
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Debug
-          platforms:
-          - linux_x64
-          # - linux_musl_x64
-          - linux_arm64
-          # - linux_musl_arm64
-          # - osx_x64
-          # - osx_arm64
-          jobParameters:
-            buildArgs: -s clr.paltests+clr.paltestlist
-            nameSuffix: PALTests
-            extraStepsTemplate: /eng/pipelines/coreclr/templates/run-paltests-step.yml
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     buildConfig: Debug
+      #     platforms:
+      #     - linux_x64
+      #     - linux_musl_x64
+      #     - linux_arm64
+      #     - linux_musl_arm64
+      #     - osx_x64
+      #     - osx_arm64
+      #     jobParameters:
+      #       buildArgs: -s clr.paltests+clr.paltestlist
+      #       nameSuffix: PALTests
+      #       extraStepsTemplate: /eng/pipelines/coreclr/templates/run-paltests-step.yml
