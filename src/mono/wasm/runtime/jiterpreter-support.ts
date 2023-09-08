@@ -1588,8 +1588,10 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
 }
 
 export function getWasmFunctionTable() {
-    if (!wasmTable)
+    if (!wasmTable) {
         wasmTable = (<any>Module)["asm"]["__indirect_function_table"];
+        mono_log_info(`asm: ${JSON.stringify((<any>Module)["asm"])}`);
+    }
     if (!wasmTable)
         throw new Error("Module did not export the indirect function table");
     return wasmTable;
