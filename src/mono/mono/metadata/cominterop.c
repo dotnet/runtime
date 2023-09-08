@@ -2853,12 +2853,13 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
  * work, then NULL is returned.
  * Callers must free the returned string.
  */
-static gchar *unicode_to_external (const gunichar2 *uni)
+static gchar *
+unicode_to_external (const gunichar2 *uni)
 {
 	gchar *utf8;
 	GError *gerr = NULL;
 
-	utf8=g_utf16_to_utf8 (uni, -1, NULL, NULL, &gerr);
+	utf8 = g_utf16_to_utf8 (uni, -1, NULL, NULL, &gerr);
 	if (utf8 == NULL) {
 		mono_error_set_argument (err, "uni", gerr->message);
 		g_error_free (gerr);
