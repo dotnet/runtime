@@ -1,7 +1,7 @@
 ## About
 
 <!-- A description of the package and where one can find more documentation -->
-Provides uniform access and manipulation of security principals across multiple principal stores. The principal objects in the Account Management API include computer, group and user objects, principal stores include:
+Provides uniform access and manipulation of security principals across multiple principal stores. The principal objects in the Account Management API include computer, group and user objects. The principal stores includes:
  * Active Directory Domain Services (AD DS)
  * Active Directory Lightweight Directory Services (AD LDS)
  * Machine SAM (MSAM).
@@ -28,7 +28,7 @@ Provides uniform access and manipulation of security principals across multiple 
 // Create the principal context for the usr object.
 PrincipalContext ctx = new PrincipalContext(ContextType.Domain, "fabrikam.com", "CN=Users,DC=fabrikam,DC=com", "administrator", "securelyStoredPassword");
 
-// Create the principal user object from the context
+// Create the principal user object from the context.
 UserPrincipal usr = new UserPrincipal(ctx);
 usr.AdvancedSearchFilter.LastLogonTime(DateTime.Now, MatchType.LessThan); 
 usr.AdvancedSearchFilter.LastLogonTime(DateTime.Yesterday, MatchType.GreaterThan);
