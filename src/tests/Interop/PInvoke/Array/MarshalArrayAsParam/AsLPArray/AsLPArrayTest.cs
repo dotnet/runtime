@@ -630,7 +630,8 @@ public class ArrayMarshal
     }
     #endregion
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try{
             TestMarshalByVal_NoAttributes();

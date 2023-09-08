@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 [StructLayout(LayoutKind.Sequential, Pack = 8, Size = 8)]
 struct MyVector64<T> where T : struct { }
@@ -104,7 +105,8 @@ public unsafe class Program
     const int Pass = 100;
     const int Fail = 0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool succeeded = true;
 

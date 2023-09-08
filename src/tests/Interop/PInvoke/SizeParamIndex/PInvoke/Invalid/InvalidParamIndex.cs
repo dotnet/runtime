@@ -15,7 +15,8 @@ public class Program
     public static extern void SizeParamIndexWrongType(
         out string arrSize, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] out byte[] arrByte);
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Assert.Throws<MarshalDirectiveException>(() => SizeParamIndexTooBig(out var _, out var _));
         Assert.Throws<MarshalDirectiveException>(() => SizeParamIndexWrongType(out var _, out var _));

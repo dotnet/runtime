@@ -26,7 +26,8 @@ public unsafe class Program
     private delegate int IntNativeMethodInvoker();
     private delegate void NativeMethodInvoker();
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

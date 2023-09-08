@@ -15,6 +15,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
 public class MarshalBoolArray
 {
@@ -217,7 +218,8 @@ public class MarshalBoolArray
     #endregion
 
     [System.Security.SecuritySafeCritical]
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         bool retVal = true;
         

@@ -107,7 +107,7 @@ unsafe static class SuppressGCTransitionNative
     }
 }
 
-unsafe class SuppressGCTransitionTest
+public unsafe class SuppressGCTransitionTest
 {
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
     private static int ReturnInt(int value)
@@ -150,7 +150,8 @@ unsafe class SuppressGCTransitionTest
         return n + 1;
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);
 

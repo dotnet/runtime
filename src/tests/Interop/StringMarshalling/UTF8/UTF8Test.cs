@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Collections.Generic;
+using Xunit;
 
 // UTF8
 class UTF8StringTests
@@ -235,7 +236,8 @@ public class Test
                                  null,
                                };
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         // Test string as [In,Out] parameter
         for (int i = 0; i < utf8Strings.Length; i++)

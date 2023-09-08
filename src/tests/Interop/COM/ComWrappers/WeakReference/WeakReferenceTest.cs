@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ComWrappersTests
 {
@@ -277,7 +278,8 @@ namespace ComWrappersTests
             Assert.False(weakRef.TryGetTarget(out _));
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

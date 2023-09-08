@@ -652,7 +652,8 @@ public class ArrayMarshal
         Assert.Equal(sum, Get_Multidimensional_Array_Sum(array, ROWS, COLUMNS));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

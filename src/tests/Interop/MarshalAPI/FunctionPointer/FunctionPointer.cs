@@ -105,7 +105,8 @@ public partial class FunctionPtr
         Assert.Equal(expectedValue, outVar);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

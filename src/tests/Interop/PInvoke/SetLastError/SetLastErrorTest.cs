@@ -62,7 +62,8 @@ public class SetLastErrorTest
         Assert.Equal(0, actual);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

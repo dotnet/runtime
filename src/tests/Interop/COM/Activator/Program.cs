@@ -328,7 +328,8 @@ namespace Activator
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

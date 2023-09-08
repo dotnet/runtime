@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using TestLibrary;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace EnumRoundtrip
 {
@@ -36,7 +37,8 @@ namespace EnumRoundtrip
 
         #endregion
         [System.Security.SecuritySafeCritical]
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool result = true;
             int r = 0;

@@ -213,7 +213,8 @@ public class IUnknownMarshalingTest
         return true;
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         IUnknownMarshalingTest testObj = new IUnknownMarshalingTest(); 
         testObj.Initialize();

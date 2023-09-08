@@ -5,8 +5,9 @@ using System.Runtime.InteropServices;
 using System;
 using System.Reflection;
 using System.Text;
+using Xunit;
 
-class Test
+public class Test
 {
     const bool boolManaged = true;
     const bool boolNative = false;
@@ -16,7 +17,8 @@ class Test
         throw new Exception(" === Fail: " + describe + "\n\tExpected:" + expect + "\n\tActual:" + actual);        
     }
     
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         //Test Method1
         bool boolValue1 = boolManaged;

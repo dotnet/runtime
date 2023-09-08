@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 
-class Test
+public class Test
 {
     [DllImport(@"UIntPtrNative", CallingConvention = CallingConvention.StdCall)]
     private static extern UIntPtr Marshal_In([In]UIntPtr uintPtr);
@@ -28,7 +28,8 @@ class Test
     private static extern UIntPtr MarshalPointer_Out(out UIntPtr puintPtr);
 
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         UIntPtr uintPtrManaged = (UIntPtr)1000;
         UIntPtr uintPtrNative = (UIntPtr)2000;

@@ -107,7 +107,7 @@ unsafe static class SuppressGCTransitionNative
     }
 }
 
-unsafe class SuppressGCTransitionTest
+public unsafe class SuppressGCTransitionTest
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Inline_NoGCTransition(int expected)
@@ -286,7 +286,8 @@ unsafe class SuppressGCTransitionTest
         return n + 1;
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);
 
