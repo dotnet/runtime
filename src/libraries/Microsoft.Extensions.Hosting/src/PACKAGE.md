@@ -28,7 +28,7 @@ For a console app project:
     
         host.Start();
     
-        // Listens for Ctrl-C.
+        // Listens for Ctrl+C.
         host.WaitForShutdown();
     }
 ```
