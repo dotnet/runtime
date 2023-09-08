@@ -173,7 +173,7 @@ if(CLR_CMAKE_TARGET_WIN32)
             STATIC
             ${NATIVEGLOBALIZATION_SOURCES}
         )
-        target_compile_options(System.Globalization.Native.Aot.GuardCF PRIVATE /GL-)
+        set_target_properties(System.Globalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
         install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
