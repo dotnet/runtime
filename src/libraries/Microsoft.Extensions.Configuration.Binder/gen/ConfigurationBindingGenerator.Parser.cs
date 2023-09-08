@@ -217,7 +217,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return true;
                 }
 
-                return true;
+                return false;
             }
 
             private void RegisterTypeForGetCoreGen(TypeSpec typeSpec)
@@ -389,7 +389,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     PopulationCastType = null,
                 };
 
-                return TryRegisterTypeForBindCoreGen(listTypeSpec) && TryRegisterTypeForBindCoreGen(spec) ? spec : null;
+                bool registeredForBindCore = TryRegisterTypeForBindCoreGen(listTypeSpec) && TryRegisterTypeForBindCoreGen(spec);
+                Debug.Assert(registeredForBindCore);
+                return spec;
             }
 
             private CollectionSpec? CreateCollectionSpec(INamedTypeSymbol type)
@@ -405,7 +407,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     spec = CreateEnumerableSpec(type);
                 }
 
-                return spec is not null && TryRegisterTypeForBindCoreGen(spec) ? spec : null;
+                if (spec is null)
+                {
+                    return null;
+                }
+
+                bool registerForBindCoreGen = TryRegisterTypeForBindCoreGen(spec);
+                Debug.Assert(registerForBindCoreGen);
+                return spec;
             }
 
             private DictionarySpec CreateDictionarySpec(INamedTypeSymbol type, ITypeSymbol keyType, ITypeSymbol elementType)

@@ -622,5 +622,54 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
             });
         }
+
+        [Fact]
+        public async Task MinimalGenerationIfNoBindableMembers()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+                
+                public class Program
+                {
+                	public static void Main()
+                	{
+                		ConfigurationBuilder configurationBuilder = new();
+                		IConfiguration configuration = configurationBuilder.Build();
+
+                        TypeWithNoMembers obj = new();
+                        configuration.Bind(obj);
+
+                        TypeWithNoMembers_Wrapper obj2 = new();
+                        configuration.Bind(obj2);
+
+                        List<AbstractType_CannotInit> obj3 = new();
+                        configuration.Bind(obj3);
+                    }
+                }
+
+                public class TypeWithNoMembers
+                {
+                }
+
+                public class TypeWithNoMembers_Wrapper
+                {
+                    public TypeWithNoMembers Member { get; set; }
+                }
+
+                public abstract class AbstractType_CannotInit
+                {
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile(
+                "EmptyConfigType.generated.txt",
+                source,
+                assessDiagnostics: (d) =>
+                {
+                    Assert.Equal(2, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+                },
+                validateOutputCompDiags: false);
+        }
     }
 }
