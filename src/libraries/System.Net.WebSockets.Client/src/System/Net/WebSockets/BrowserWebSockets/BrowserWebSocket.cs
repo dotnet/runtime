@@ -580,10 +580,10 @@ namespace System.Net.WebSockets
             }
             try
             {
-                using (var receiveRegistration = cancellationToken.Register(() =>
+                using (var receiveRegistration = cancellationToken.Register(static (object? state) =>
                 {
-                    CancelablePromise.CancelPromise(jsTask);
-                }))
+                    CancelablePromise.CancelPromise((Task)state!);
+                }, jsTask))
                 {
                     await jsTask.ConfigureAwait(true);
                     return;

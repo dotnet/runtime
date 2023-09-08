@@ -123,30 +123,27 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
 
 
-        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? abortController, JSObject? fetchResponse)
+        public static async ValueTask CancelationHelper(Task promise, CancellationToken cancellationToken, JSObject? fetchResponse = null)
         {
             if (promise.IsCompletedSuccessfully)
             {
-                return promise.Result;
+                return;
             }
             try
             {
-                using (var operationRegistration = cancellationToken.Register(() =>
+                using (var operationRegistration = cancellationToken.Register(static (object? state) =>
                 {
-                    CancelablePromise.CancelPromise(promise, static (JSObject? _fetchResponse, JSObject? _abortController) =>
+                    (Task _promise, JSObject? _fetchResponse) = ((Task, JSObject?))state!;
+                    CancelablePromise.CancelPromise(_promise, static (JSObject? __fetchResponse) =>
                     {
-                        if (_abortController != null)
+                        if (__fetchResponse != null)
                         {
-                            AbortRequest(_abortController);
+                            AbortResponse(__fetchResponse);
                         }
-                        if (_fetchResponse != null)
-                        {
-                            AbortResponse(_fetchResponse);
-                        }
-                    }, fetchResponse, abortController);
-                }))
+                    }, _fetchResponse);
+                }, (promise, fetchResponse)))
                 {
-                    return await promise.ConfigureAwait(true);
+                    await promise.ConfigureAwait(true);
                 }
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
@@ -165,6 +162,16 @@ namespace System.Net.Http
                 }
                 throw new HttpRequestException(jse.Message, jse);
             }
+        }
+
+        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? fetchResponse = null)
+        {
+            if (promise.IsCompletedSuccessfully)
+            {
+                return promise.Result;
+            }
+            await CancelationHelper((Task)promise, cancellationToken, fetchResponse).ConfigureAwait(true);
+            return await promise.ConfigureAwait(true);
         }
     }
 

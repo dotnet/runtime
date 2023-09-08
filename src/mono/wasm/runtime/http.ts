@@ -78,6 +78,7 @@ export function http_wasm_transform_stream_write(ts: TransformStreamExtension, b
     const copy = view.slice() as Uint8Array;
     return wrap_as_cancelable_promise(async () => {
         mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
+        // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
         await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
         await Promise.race([ts.__writer.write(copy), ts.__fetch_promise_control.promise]);
     });
@@ -86,8 +87,9 @@ export function http_wasm_transform_stream_write(ts: TransformStreamExtension, b
 export function http_wasm_transform_stream_close(ts: TransformStreamExtension): Promise<void> {
     return wrap_as_cancelable_promise(async () => {
         mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
+        // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
         await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
-        ts.__writer.close();
+        await Promise.race([ts.__writer.close(), ts.__fetch_promise_control.promise]);
     });
 }
 

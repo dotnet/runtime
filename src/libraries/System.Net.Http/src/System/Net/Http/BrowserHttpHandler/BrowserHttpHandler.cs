@@ -133,25 +133,26 @@ namespace System.Net.Http
             List<string> headerNames = new List<string>(headerCount);
             List<string> headerValues = new List<string>(headerCount);
             JSObject abortController = BrowserHttpInterop.CreateAbortController();
-            CancellationTokenRegistration? abortRegistration = cancellationToken.Register(() =>
+            CancellationTokenRegistration? abortRegistration = cancellationToken.Register(static (object? state) =>
             {
+                JSObject _abortController = (JSObject)state!;
 #if FEATURE_WASM_THREADS
-                if (!abortController.IsDisposed)
+                if (!_abortController.IsDisposed)
                 {
-                    abortController.SynchronizationContext.Send(static (JSObject _abortController) =>
+                    _abortController.SynchronizationContext.Send(static (JSObject __abortController) =>
                     {
-                        BrowserHttpInterop.AbortRequest(_abortController);
-                        _abortController.Dispose();
-                    }, abortController);
+                        BrowserHttpInterop.AbortRequest(__abortController);
+                        __abortController.Dispose();
+                    }, _abortController);
                 }
 #else
-                if (!abortController.IsDisposed)
+                if (!_abortController.IsDisposed)
                 {
-                    BrowserHttpInterop.AbortRequest(abortController);
-                    abortController.Dispose();
+                    BrowserHttpInterop.AbortRequest(_abortController);
+                    _abortController.Dispose();
                 }
 #endif
-            });
+            }, abortController);
             try
             {
                 if (request.RequestUri == null)
@@ -223,14 +224,15 @@ namespace System.Net.Http
                         using (JSObject transformStream = BrowserHttpInterop.CreateTransformStream())
                         {
                             Task<JSObject> fetchPromise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, transformStream);
-                            ValueTask<JSObject> fetchTask = BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken, abortController, null); // initialize fetch cancellation
+                            Task<JSObject> fetchTask = BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken).AsTask(); // initialize fetch cancellation
 
                             using (WasmHttpWriteStream stream = new WasmHttpWriteStream(transformStream))
                             {
                                 try
                                 {
                                     await request.Content.CopyToAsync(stream, cancellationToken).ConfigureAwait(true);
-                                    await BrowserHttpInterop.TransformStreamClose(transformStream).ConfigureAwait(true);
+                                    Task closePromise = BrowserHttpInterop.TransformStreamClose(transformStream);
+                                    await BrowserHttpInterop.CancelationHelper(closePromise, cancellationToken).ConfigureAwait(true);
                                 }
                                 catch (Exception ex)
                                 {
@@ -248,13 +250,13 @@ namespace System.Net.Http
                         cancellationToken.ThrowIfCancellationRequested();
 
                         Task<JSObject> fetchPromise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
-                        fetchResponse = await BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken, abortController, null).ConfigureAwait(true);
+                        fetchResponse = await BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken).ConfigureAwait(true);
                     }
                 }
                 else
                 {
                     Task<JSObject> fetchPromise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController);
-                    fetchResponse = await BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken, abortController, null).ConfigureAwait(true);
+                    fetchResponse = await BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken).ConfigureAwait(true);
                 }
 
                 return new WasmFetchResponse(fetchResponse, abortController, abortRegistration.Value);
@@ -352,7 +354,8 @@ namespace System.Net.Http
             cancellationToken.ThrowIfCancellationRequested();
             using (Buffers.MemoryHandle handle = buffer.Pin())
             {
-                await TransformStreamWriteUnsafe(_transformStream, buffer, handle).ConfigureAwait(true);
+                Task writePromise = TransformStreamWriteUnsafe(_transformStream, buffer, handle);
+                await BrowserHttpInterop.CancelationHelper(writePromise, cancellationToken).ConfigureAwait(true);
             }
 
             static unsafe Task TransformStreamWriteUnsafe(JSObject transformStream, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
@@ -515,7 +518,7 @@ namespace System.Net.Http
 #if FEATURE_WASM_THREADS
             } //lock
 #endif
-            _length = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, null, _fetchResponse.FetchResponse).ConfigureAwait(true);
+            _length = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, _fetchResponse.FetchResponse).ConfigureAwait(true);
 #if FEATURE_WASM_THREADS
             lock (_fetchResponse.ThisLock)
             {
@@ -619,7 +622,7 @@ namespace System.Net.Http
 #if FEATURE_WASM_THREADS
                     } //lock
 #endif
-                    int response = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, null, self._fetchResponse.FetchResponse).ConfigureAwait(true);
+                    int response = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, self._fetchResponse.FetchResponse).ConfigureAwait(true);
                     return response;
                 }
 
