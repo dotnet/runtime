@@ -1789,7 +1789,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
-    bRangeAllowStress = false;
+    compAllowStress = true;
 
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
@@ -1829,7 +1829,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     static ConfigMethodRange fJitStressRange;
     fJitStressRange.EnsureInit(JitConfig.JitStressRange());
     assert(!fJitStressRange.Error());
-    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
+    compAllowStress =
+        fJitStressRange.Contains(info.compMethodHash()) &&
+        (JitConfig.JitStressOnly().isEmpty() ||
+         JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args));
+
 #endif // DEBUG
 
     eeInfoInitialized = false;
@@ -3542,13 +3546,7 @@ unsigned Compiler::compStressAreaHash(compStressArea area)
 //
 bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weight)
 {
-    if (!bRangeAllowStress)
-    {
-        return false;
-    }
-
-    if (!JitConfig.JitStressOnly().isEmpty() &&
-        !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+    if (!compAllowStress)
     {
         return false;
     }
@@ -4343,23 +4341,14 @@ const char* Compiler::compGetStressMessage() const
     if ((JitConfig.JitStressModeNames() != nullptr) || (getJitStressLevel() > 0))
     {
         // Is the method being jitted excluded from stress via range?
-        if (bRangeAllowStress)
+        if (compAllowStress)
         {
-            // Or is it excluded via name?
-            if (!JitConfig.JitStressOnly().isEmpty() ||
-                !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-            {
-                // Not excluded -- stress can happen
-                stressMessage = " JitStress";
-            }
-            else
-            {
-                stressMessage = " NoJitStress(Only)";
-            }
+            // Not excluded -- stress can happen
+            stressMessage = " JitStress";
         }
         else
         {
-            stressMessage = " NoJitStress(Range)";
+            stressMessage = " NoJitStress";
         }
     }
 #endif // DEBUG
