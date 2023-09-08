@@ -3721,7 +3721,7 @@ mono_class_setup_properties (MonoClass *klass)
 		properties = (MonoProperty *)mono_class_alloc0 (klass, sizeof (MonoProperty) * count);
 		for (guint32 i = first; i < last; ++i) {
 			mdcursor_t c;
-			md_token_to_cursor(klass->image->metadata_handle, mono_metadata_make_token(MONO_TABLE_PROPERTY, i), &c);
+			md_token_to_cursor(klass->image->metadata_handle, mono_metadata_make_token(MONO_TABLE_PROPERTY, i + 1), &c);
 
 			uint32_t flags;
 			if (1 != md_get_column_value_as_constant(c, mdtProperty_Flags, 1, &flags))
@@ -3741,7 +3741,7 @@ mono_class_setup_properties (MonoClass *klass)
 				MonoMethod *method;
 
 				mdcursor_t semantic;
-				md_token_to_cursor(klass->image->metadata_handle, mono_metadata_make_token(MONO_TABLE_METHODSEMANTICS, j), &semantic);
+				md_token_to_cursor(klass->image->metadata_handle, mono_metadata_make_token(MONO_TABLE_METHODSEMANTICS, j + 1), &semantic);
 				guint32 method_tok;
 				if (1 != md_get_column_value_as_token(semantic, mdtMethodSemantics_Method, 1, &method_tok))
 					g_assert_not_reached ();
