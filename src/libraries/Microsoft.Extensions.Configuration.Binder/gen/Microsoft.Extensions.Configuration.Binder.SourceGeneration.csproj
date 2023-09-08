@@ -23,6 +23,7 @@
     <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\SourceWriter.cs" Link="Common\SourceGenerators\SourceWriter.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\TypeModelHelper.cs" Link="Common\SourceGenerators\TypeModelHelper.cs" />
     <Compile Include="ConfigurationBindingGenerator.cs" />
     <Compile Include="ConfigurationBindingGenerator.Emitter.cs" />
     <Compile Include="ConfigurationBindingGenerator.Parser.cs" />

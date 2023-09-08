@@ -68,6 +68,7 @@ include_directories(inc)
 include_directories(.)
 include_directories(${GC_DIR})
 include_directories(${GC_DIR}/env)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/eventpipe/inc)
 
 if (WIN32)
   set(GC_HEADERS

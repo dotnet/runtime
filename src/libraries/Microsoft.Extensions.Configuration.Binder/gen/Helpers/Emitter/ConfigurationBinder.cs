@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -138,7 +139,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         EmitBlankLineIfRequired();
                         _writer.WriteLine($"/// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>");
                         EmitInterceptsLocationAnnotations(interceptorInfoList);
-                        EmitStartBlock($"public static void {Identifier.Bind}_{type.DisplayString.ToIdentifierSubstring()}(this {Identifier.IConfiguration} {Identifier.configuration}, {additionalParams})");
+                        EmitStartBlock($"public static void {Identifier.Bind}_{type.IdentifierCompatibleSubstring}(this {Identifier.IConfiguration} {Identifier.configuration}, {additionalParams})");
 
                         if (type.NeedsMemberBinding)
                         {

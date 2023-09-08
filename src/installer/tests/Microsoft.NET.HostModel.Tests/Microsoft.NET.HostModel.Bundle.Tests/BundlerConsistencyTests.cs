@@ -26,6 +26,14 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        public void EnableCompression_Before60_Fails()
+        {
+            // compression must be off when targeting pre-6.0
+            Assert.Throws<ArgumentException>(() =>
+                new Bundler("appName", RepoDirectoriesProvider.Default.TestAssetsOutput, BundleOptions.EnableCompression, targetFrameworkVersion: new Version(5, 0)));
+        }
+
+        [Fact]
         public void TestWithEmptySpecFails()
         {
             var fixture = sharedTestState.TestFixture.Copy();
@@ -281,9 +289,9 @@ namespace Microsoft.NET.HostModel.Tests
             var fixture = sharedTestState.TestFixture.Copy();
             var appBaseName =  BundleHelper.GetAppBaseName(fixture);
             string publishPath = BundleHelper.GetPublishPath(fixture);
-            
+
             // Make up a app.runtimeconfig.dev.json file in the publish directory.
-            File.Copy(Path.Combine(publishPath, $"{appBaseName}.runtimeconfig.json"), 
+            File.Copy(Path.Combine(publishPath, $"{appBaseName}.runtimeconfig.json"),
                       Path.Combine(publishPath, $"{appBaseName}.runtimeconfig.dev.json"));
 
             var bundler = BundleHelper.Bundle(fixture, options);
@@ -334,7 +342,7 @@ namespace Microsoft.NET.HostModel.Tests
             var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
             var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
             var alignment = (targetOS == OSPlatform.Linux && targetArch == Architecture.Arm64) ? 4096 : 16;
-            bundler.BundleManifest.Files.ForEach(file => 
+            bundler.BundleManifest.Files.ForEach(file =>
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
         }
 
