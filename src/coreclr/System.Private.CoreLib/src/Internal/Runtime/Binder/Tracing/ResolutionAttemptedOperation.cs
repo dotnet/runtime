@@ -88,10 +88,11 @@ namespace Internal.Runtime.Binder.Tracing
             if (pManagedALC.Target is AssemblyLoadContext managedALC)
             {
                 // AssemblyBinder::GetNameForDiagnosticsFromManagedALC(managedALC, m_assemblyLoadContextName);
+                _assemblyLoadContextName = AssemblyBinder.GetNameForDiagnosticsFromManagedALC(pManagedALC);
             }
             else
             {
-                // binder->GetNameForDiagnostics(m_assemblyLoadContextName);
+                _assemblyLoadContextName = binder.GetNameForDiagnostics();
             }
         }
 

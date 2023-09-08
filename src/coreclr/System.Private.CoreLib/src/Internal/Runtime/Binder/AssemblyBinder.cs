@@ -3,8 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace Internal.Runtime.Binder
 {
@@ -68,9 +69,21 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        // void GetNameForDiagnostics(/*out*/ SString& alcName);
+        public string GetNameForDiagnostics() => IsDefault ? "Default" : GetNameForDiagnosticsFromManagedALC(ManagedAssemblyLoadContext);
 
-        // static void GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName);
+        public static string GetNameForDiagnosticsFromManagedALC(GCHandle managedALC)
+        {
+            //if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
+            //{
+            //    alcName.Set(W("Default"));
+            //    return;
+            //}
+
+            var alc = managedALC.Target as AssemblyLoadContext;
+            Debug.Assert(alc != null);
+            return alc.ToString();
+        }
+
         // static void GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString& alcName);
 
         //# ifdef FEATURE_READYTORUN
