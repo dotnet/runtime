@@ -3705,6 +3705,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
             <Issue>Dynamic code generation is not supported on this platform</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/**">
+            <Issue>System.Diagnostics.Process is not supported</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
