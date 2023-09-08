@@ -101,8 +101,8 @@ namespace Internal.Runtime.Binder
                 addAllLoadedModules = true;
             }
 
-            ref SimpleNameToExpectedMVIDAndRequiringAssembly entry = ref CollectionsMarshal.GetValueRefOrNullRef(_assemblySimpleNameMvidCheckHash, simpleName);
-            if (Unsafe.IsNullRef(ref entry))
+            ref SimpleNameToExpectedMVIDAndRequiringAssembly entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_assemblySimpleNameMvidCheckHash, simpleName, out bool found);
+            if (!found)
             {
                 entry = new SimpleNameToExpectedMVIDAndRequiringAssembly
                 {
@@ -151,8 +151,8 @@ namespace Internal.Runtime.Binder
             loadedAssembly.GetMDImport().GetScopeProps(out Guid mvid);
             string simpleName = loadedAssembly.SimpleName;
 
-            ref SimpleNameToExpectedMVIDAndRequiringAssembly entry = ref CollectionsMarshal.GetValueRefOrNullRef(_assemblySimpleNameMvidCheckHash, simpleName);
-            if (Unsafe.IsNullRef(ref entry))
+            ref SimpleNameToExpectedMVIDAndRequiringAssembly entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_assemblySimpleNameMvidCheckHash, simpleName, out bool found);
+            if (!found)
             {
                 entry = new SimpleNameToExpectedMVIDAndRequiringAssembly
                 {
