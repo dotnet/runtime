@@ -521,7 +521,7 @@ typedef bool (* walk_fn)(Object*, void*);
 typedef bool (* walk_fn2)(Object*, uint8_t**, void*);
 typedef void (* gen_walk_fn)(void* context, int generation, uint8_t* range_start, uint8_t* range_end, uint8_t* range_reserved);
 typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, void* context, bool compacting_p, bool bgc_p);
-typedef void (* fq_walk_fn)(bool, void*);
+typedef void (* fq_walk_fn)(bool isCritical, void* pObject);
 typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
 typedef bool (* async_pin_enum_fn)(Object* object, void* context);
