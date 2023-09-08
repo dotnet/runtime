@@ -10,7 +10,7 @@
 
 * The package allows to fluently set up multiple `HttpClient` configurations for applications that use DI via `AddHttpClient` extension method.
 * `HttpClientFactory` caches `HttpMessageHandler` instances per configuration name, which allows to reuse resources between `HttpClient` instances to avoid port exhaustion.
-* `HttpClientFactory` manages lifetime of `HttpMessageHandler` instances and recycles connections to avoid losing DNS changes.
+* `HttpClientFactory` manages lifetime of `HttpMessageHandler` instances and recycles connections to track DNS changes.
 
 ## How to Use
 
