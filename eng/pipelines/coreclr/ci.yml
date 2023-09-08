@@ -120,11 +120,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          - linux_musl_arm64
-          - linux_musl_x64
-          - linux_arm64
-          - linux_x64
-          # - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           testGroup: outerloop
 
       #
