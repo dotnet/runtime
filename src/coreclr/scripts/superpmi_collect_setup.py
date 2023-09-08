@@ -302,7 +302,7 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
             if not os.path.isfile(curr_file_path):
                 continue
-            if not name.endswith(".dll") and not name.endswith(".exe") and not name.endswith(".ilc.rsp") and not name.endswith(".xml") and not name.endswith(".exports") and not name.endswith("_version.c"):
+            if not name.endswith(".dll") and not name.endswith(".exe") and not name.endswith(".ilc.rsp") and not name.endswith(".xml") and not name.endswith(".exports"):
                 continue
 
             size = os.path.getsize(curr_file_path)
@@ -477,9 +477,9 @@ def main(main_args):
     # Copy Core_Root
 
     if platform_name == "windows":
-        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json", ".txt", ".xml", ".exports", "_version.c"])
+        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json", ".txt", ".xml", ".exports"])
     else:
-        acceptable_extensions = [".py", ".dll", ".json", ".txt", ".xml", ".exports", "_version.c"]
+        acceptable_extensions = [".py", ".dll", ".json", ".txt", ".xml", ".exports"]
         acceptable_extensions.append(".so" if platform_name == "linux" else ".dylib")
         if platform_name == "linux":
             acceptable_extensions.append(".so.1")
