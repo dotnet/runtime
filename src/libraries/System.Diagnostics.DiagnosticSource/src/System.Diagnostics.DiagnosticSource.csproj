@@ -21,6 +21,10 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="ILLink/ILLink.Substitutions.Shared.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="System\Diagnostics\Activity.cs" />
     <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
     <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />
@@ -133,10 +137,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink/ILLink.Substitutions.Shared.xml" />
   </ItemGroup>
 
 </Project>

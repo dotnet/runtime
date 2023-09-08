@@ -10,7 +10,7 @@ namespace System.Diagnostics.Metrics.Tests
     public class MetricsNotSupportedTest
     {
         /// <summary>
-        /// Tests using Metrics when the System.Diagnostics.Metrics.IsSupported
+        /// Tests using Metrics when the System.Diagnostics.Metrics.Meter.IsSupported
         /// feature switch is set to disable all metrics operations.
         /// </summary>
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -19,7 +19,7 @@ namespace System.Diagnostics.Metrics.Tests
         public void IsSupportedSwitch(bool value)
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions.Add("System.Diagnostics.Metrics.IsSupported", value);
+            options.RuntimeConfigurationOptions.Add("System.Diagnostics.Metrics.Meter.IsSupported", value);
 
             RemoteExecutor.Invoke((val) =>
             {
