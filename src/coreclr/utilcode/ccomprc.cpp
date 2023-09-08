@@ -618,7 +618,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
 
             PathString rcPathName(rcPath);
 
-            if (!rcPathName.EndsWith(W("\\")))
+            if (!rcPathName.EndsWith(SString{ SString::Literal, W("\\") }))
             {
                 rcPathName.Append(W("\\"));
             }

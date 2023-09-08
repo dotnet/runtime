@@ -785,7 +785,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        SString assemblyPath = pPEAssembly->GetIdentityPath();
+                        SString assemblyPath{ pPEAssembly->GetIdentityPath() };
                         if (!assemblyPath.IsEmpty())
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
