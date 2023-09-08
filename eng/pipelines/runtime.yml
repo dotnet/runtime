@@ -557,8 +557,8 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
 
       #
-      # Android devices - Build the Mono runtime and run smoke tests
-      # Only mono has changed
+      # Android devices
+      # Build the whole product using Mono and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -577,18 +577,25 @@ extends:
               value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testGroup: innerloop
-            nameSuffix: MonoLibsTests
-            buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:EnableAdditionalTimezoneChecks=true
+            nameSuffix: AllSubsets_Mono
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:EnableAdditionalTimezoneChecks=true
             timeoutInMinutes: 480
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true))
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             extraStepsTemplate: /eng/pipelines/libraries/helix.yml
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              condition: >-
+                or(
+                eq(variables['librariesContainsChange'], true),
+                eq(variables['monoContainsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
