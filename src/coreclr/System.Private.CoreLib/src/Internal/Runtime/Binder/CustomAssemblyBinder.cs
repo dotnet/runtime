@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.Binder
@@ -40,7 +41,9 @@ namespace Internal.Runtime.Binder
             {
                 // Link to LoaderAllocator, keep a reference to it
                 // VERIFY(pLoaderAllocator->AddReferenceIfAlive());
-                AssemblyBinderCommon.LoaderAllocator_RegisterBinder(loaderAllocator, this);
+
+                // ((AssemblyLoaderAllocator*)pLoaderAllocator)->RegisterBinder(pBinder);
+                loaderAllocator.m_binderToRelease = this;
             }
 
             _loaderAllocator = loaderAllocator;

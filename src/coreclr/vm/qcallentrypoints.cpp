@@ -197,6 +197,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
+    DllImportEntry(LoaderAllocator_EnsureReference)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_InformThreadNameChange)
