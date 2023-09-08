@@ -4,35 +4,33 @@ This package implements a data provider for ODBC data sources.
 
 ## Key Features
 
-Allows access to legacy ODBC data sources.
+Allows access to ODBC data sources.
 
 ## How to Use
 
-This is a basic example of retrieving the results of a query using an `OdbcDataReader`. For examples of using an `OdbcDataAdapter`, and of updating an ODBC data source, please see the documentation.
+This is a basic example of retrieving the results of a query using an [OdbcDataReader](https://learn.microsoft.com/dotnet/api/system.data.odbc.odbcdatareader). For examples of using an [OdbcDataAdapter](https://learn.microsoft.com/dotnet/api/system.data.odbc.odbcdataadapter), and of updating an ODBC data source, please see the documentation.
 
 ```cs
 string queryString = "SELECT DISTINCT CustomerID FROM Orders";
-using (OdbcConnection connection = new OdbcConnection(connectionString))
+
+using OdbcConnection connection = new OdbcConnection(connectionString);
+using OdbcCommand command = new OdbcCommand(queryString, connection);
+
+connection.Open();
+using OdbcDataReader reader = command.ExecuteReader();
+
+while (reader.Read())
 {
-    OdbcCommand command = new OdbcCommand(queryString, connection);
-    connection.Open();
-    OdbcDataReader reader = command.ExecuteReader();
-
-    while (reader.Read())
-    {
-        Console.WriteLine("CustomerID={0}", reader[0]);
-    }
-
-    reader.Close();
+    Console.WriteLine("CustomerID={0}", reader[0]);
 }
 ```
 
 ## Main Types
 
-* `OdbcDataAdapter` represents a set of data commands and a database connection that are used to fill a `DataSet` and update the ODBC data source.
-* `OdbcDataReader` provides a way of reading a forward-only stream of data rows from an ODBC data source.
-* `OdbcCommand` represents an SQL statement or stored procedure to execute against an ODBC data source..
-* `OdbcConnection` represents an open connection to an ODBC data source.
+* [OdbcConnection](https://learn.microsoft.com/dotnet/api/system.data.odbc.odbcconnection) represents a connection to an ODBC data source.
+* [OdbcCommand](https://learn.microsoft.com/dotnet/api/system.data.odbc.odbccommand) represents an SQL statement or stored procedure to execute against an ODBC data source..
+* [OdbcDataReader](https://learn.microsoft.com/dotnet/api/system.data.odbc.odbcdatareader) provides a way of reading a forward-only stream of data rows from an ODBC data source.
+* [OdbcDataAdapter](https://learn.microsoft.com/dotnet/api/system.data.odbc.odbcdataadapter) represents a set of data commands and a database connection that are used to fill a [DataSet](https://learn.microsoft.com/dotnet/api/system.data.dataset) and update the ODBC data source.
 
 ## Additional Documentation
 
