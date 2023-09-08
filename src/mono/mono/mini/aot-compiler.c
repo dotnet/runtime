@@ -4326,6 +4326,7 @@ get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 	return index - 1;
 }
 
+/* Return TRUE if the method can be skipped */
 static gboolean
 collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
 {
@@ -4334,13 +4335,15 @@ collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (acfg->dedup_phase == DEDUP_SKIP)
 			return TRUE;
 		// Remember for later
-		if (acfg->dedup_phase == DEDUP_COLLECT && !g_hash_table_lookup (dedup_methods, method))
+		g_assert (acfg->dedup_phase == DEDUP_COLLECT);
+		if (!g_hash_table_lookup (dedup_methods, method))
 			g_hash_table_insert (dedup_methods, method, method);
+		else
+			// Already processed when compiling another assembly
+			return TRUE;
 	}
 	return FALSE;
 }
-
-
 
 static int
 add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra, int depth)
