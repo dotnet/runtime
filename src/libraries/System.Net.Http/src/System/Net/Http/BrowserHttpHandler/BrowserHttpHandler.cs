@@ -223,8 +223,8 @@ namespace System.Net.Http
                         JSObject transformStream = BrowserHttpInterop.CreateTransformStream();
                         try
                         {
-                            promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, transformStream);
-                            promise = WasmHttpWriteStream.CopyToAsync(promise, transformStream, request.Content, cancellationToken);
+                            Task<JSObject> fetchPromise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, transformStream);
+                            promise = WasmHttpWriteStream.CopyToAsync(fetchPromise, transformStream, request.Content, cancellationToken);
                         }
                         catch
                         {
