@@ -48,7 +48,8 @@ public class JittedMethodsCountingTest
         // App finished successfully. We can now take a look at how many methods
         // got jitted at runtime.
         Console.WriteLine("Number of Jitted Methods: {0}\n", appResult);
-        return appResult > 0 && appResult <= MAX_JITTED_METHODS_ACCEPTED ? 100 : 101;
+        // return appResult > 0 && appResult <= MAX_JITTED_METHODS_ACCEPTED ? 100 : 101;
+        return 101;
     }
 
     private static bool IsReadyToRunEnvSet()
