@@ -1,44 +1,43 @@
 ## About
+Contains abstractions to host user code in an application by encapsulating an application's resources and lifetime functionality including:
+- Dependency injection (DI).
+- Logging.
+- Configuration.
+- Starting, stopping and obtaining notifications.
 
-<!-- A description of the package and where one can find more documentation -->
-
-
+This package is also used to wire up specific application models like ASP.NET Core that are built on top of hosting.
 
 ## Key Features
-
-<!-- The key features of this package -->
-
-*
-*
-*
+* Provides the `BackgroundService` base class and the `IHostedService` interface for implementing worker services.
+* Provides interfaces used to configure and start\stop a host.
+* Provides types to obtain environment settings such as an application name and paths.
 
 ## How to Use
-
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+See the Conceptual documentation below for using `BackgroundService` and `IHostedService` to host worker services.
 
 ## Main Types
-
-<!-- The main types provided in this library -->
-
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `Microsoft.Extensions.Hosting.BackgroundService`
+* `Microsoft.Extensions.Hosting.IHostBuilder`
+* `Microsoft.Extensions.Hosting.IHostedService`
 
 ## Additional Documentation
-
-<!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
-
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/**LIBRARYNAME**/overview)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/**LIBRARYNAME**)
+* [Conceptual documentation]
+  - [Worker services in .NET](https://learn.microsoft.com/dotnet/core/extensions/workers)
+  - [Implement the IHostedService interface](https://learn.microsoft.com/dotnet/core/extensions/timer-service)
+* [API documentation]
+    - [BackgroundService](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.backgroundservice)
+    - [IHostBuilder](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.ihostbuilder)
+    - [IHostedService](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.ihostedservice)
 
 ## Related Packages
-
-<!-- The related packages associated with this package -->
+- `Microsoft.Extensions.Hosting`
+- `Microsoft.Extensions.Configuration.Abstractions`
+- `Microsoft.Extensions.DependencyInjection.Abstractions`
+- `Microsoft.Extensions.Diagnostics.Abstractions`
+- `Microsoft.Extensions.FileProviders.Abstractions`
+- `Microsoft.Extensions.Logging.Abstractions`
 
 ## Feedback & Contributing
-
-<!-- How to provide feedback on this package and contribute to it -->
-
 Microsoft.Extensions.Hosting.Abstractions is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
