@@ -9896,6 +9896,7 @@ calli_end:
 			MonoInst *thread_ins;
 			int ro_type;
 			gboolean is_typeload_failure = FALSE;
+			ins = NULL;
 
 			is_instance = (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDFLDA || il_op == MONO_CEE_STFLD);
 			if (is_instance) {
