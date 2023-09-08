@@ -1084,7 +1084,7 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     SAVE_ARGUMENT_REGISTERS       $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
     SAVE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
     st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId
-    addi.d  $t3, $fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
+    addi.d  $t3, $sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
     st.d    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp
     st.d    $t2, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp
 
@@ -1092,8 +1092,8 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     addi.w  $t3, $zero, \flags
     st.w    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags
 
-    ori     $a1, $t1, 0
-    ori     $a2, $sp, 0
+    ori     $a0, $t1, 0
+    ori     $a1, $sp, 0
     bl      C_FUNC(\helper)
 
     RESTORE_ARGUMENT_REGISTERS       $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
