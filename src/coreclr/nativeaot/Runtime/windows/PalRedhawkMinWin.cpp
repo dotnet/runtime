@@ -692,22 +692,15 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return converted;
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect)
+REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect)
 {
-    return VirtualAlloc(pAddress, size, allocationType, protect);
+    return VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, protect);
 }
 
-#pragma warning (push)
-#pragma warning (disable:28160) // warnings about invalid potential parameter combinations that would cause VirtualFree to fail - those are asserted for below
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size)
 {
-    assert(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
-    assert((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
-    assert(freeType != 0);
-
-    return VirtualFree(pAddress, size, freeType);
+    VirtualFree(pAddress, 0, MEM_RELEASE);
 }
-#pragma warning (pop)
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
 {
