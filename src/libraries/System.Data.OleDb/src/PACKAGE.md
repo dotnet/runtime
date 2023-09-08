@@ -1,44 +1,47 @@
 ## About
 
-<!-- A description of the package and where one can find more documentation -->
-
-
+This package implements a data provider for OLE DB data sources.
 
 ## Key Features
 
-<!-- The key features of this package -->
-
-*
-*
-*
+Allows access to legacy OLE DB data sources.
 
 ## How to Use
 
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+This is a basic example of retrieving the results of a query using an `OleDbDataReader`. For examples of using an `OleDbDataAdapter`, and of updating an OLE DB data source, please see the documentation.
+
+```cs
+string queryString = "SELECT OrderID, CustomerID FROM Orders";
+using (OleDbConnection connection = new OleDbConnection(connectionString))
+{
+    OleDbCommand command = new OleDbCommand(queryString, connection);
+    connection.Open();
+    OleDbDataReader reader = command.ExecuteReader();
+
+    while (reader.Read())
+    {
+        Console.WriteLine(reader.GetInt32(0) + ", " + reader.GetString(1));
+    }
+    // always call Close when done reading.
+    reader.Close();
+}
+```
 
 ## Main Types
 
-<!-- The main types provided in this library -->
-
-The main types provided by this library are:
-
-* ``
-* ``
-* ``
+* `OleDbDataAdapter` represents a set of data commands and a database connection that are used to fill a `DataSet` and update the OLE DB data source.
+* `OleDbDataReader` provides a way of reading a forward-only stream of data rows from an OLE DB data source.
+* `OleDbCommand` represents an SQL statement or stored procedure to execute against an OLE DB data source.
+* `OleDbConnection` represents an open connection to an OLE DB data source.
 
 ## Additional Documentation
 
-<!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
-
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/**LIBRARYNAME**/overview)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/**LIBRARYNAME**)
+* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.data.oledb)
 
 ## Related Packages
 
-<!-- The related packages associated with this package -->
+System.Data.Odbc is a similar package for accessing ODBC data sources.
 
 ## Feedback & Contributing
 
-<!-- How to provide feedback on this package and contribute to it -->
-
-**LIBRARY NAME** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+**System.Data.OleDb** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports are welcome at [the GitHub repository](https://github.com/dotnet/runtime). This package is considered complete and we only consider lower-risk or high-impact fixes that will maintain or improve quality.
