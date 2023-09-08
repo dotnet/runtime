@@ -1159,9 +1159,13 @@ class SuperPMICollect:
 
                     input_filename = os.path.basename(original_input_filepath)
 
-                    # The ilc.rsp files are stored in the 'native' folders, ex: 'ComWrappers/native/ComWrappers.ilc.rsp'
-                    # The corresponding input assemblies are in the folder above 'native', ex: 'ComWrappers/'
-                    input_filepath = os.path.abspath(os.path.join(original_rsp_filepath, "..", "..", input_filename))
+                    # The ilc.rsp files are stored in the 'native' folders, ex: 'ComWrappers/ComWrappers/native/ComWrappers.ilc.rsp'
+                    test_native_directory = os.path.abspath(os.path.join(original_rsp_filepath, "..")) # ex: 'ComWrappers/ComWrappers/native/'
+                    test_output_directory = os.path.join(test_native_directory, "..") # ex: 'ComWrappers/ComWrappers/'
+                    test_directory = os.path.join(test_output_directory, "..") # ex: 'ComWrappers/'
+
+                    # The corresponding input assemblies are in the folder above 'native', ex: 'ComWrappers/ComWrappers/'
+                    test_input_filepath = os.path.join(test_output_directory, input_filename)
 
                     # Blow away references, output, input assembly and directpinvokelist as we are going to use new ones.
                     rsp_file = open(rsp_filepath, "w")
@@ -1171,6 +1175,22 @@ class SuperPMICollect:
                         else:
                             return True
                     rsp_contents = list(filter(filter_rsp_argument, rsp_contents))
+
+                    # Fix-up paths for files located in the test's directories.
+                    def map_rsp_argument(line):
+                        if line.startswith("--exportsfile:"):
+                            arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--exportsfile:"):]))
+                            return f"--exportsfile:{arg_path}"
+                        elif line.startswith("--descriptor:"):
+                            arg_path = os.path.join(test_directory, os.path.basename(line[len("--descriptor:"):]))
+                            return f"--descriptor:{arg_path}"
+                        elif line.startswith("--substitution:"):
+                            arg_path = os.path.join(test_directory, os.path.basename(line[len("--substitution:"):]))
+                            return f"--substitution:{arg_path}"
+                        else:
+                            return line
+                    rsp_contents = list(map(map_rsp_argument, rsp_contents))
+
                     rsp_file.writelines(rsp_contents)
                     rsp_file.close()
 
@@ -1194,7 +1214,7 @@ class SuperPMICollect:
                     root_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename + "_")
 
                     with open(rsp_filepath, "a") as rsp_write_handle:
-                        rsp_write_handle.write(input_filepath + "\n")
+                        rsp_write_handle.write(test_input_filepath + "\n")
                         if self.coreclr_args.host_os.lower() == "windows":
                             rsp_write_handle.write("--directpinvokelist:" + os.path.join(self.core_root, "build", "WindowsAPIs.txt") + "\n")
                         rsp_write_handle.write("-o:" + nativeaot_output_assembly_filename + "\n")
