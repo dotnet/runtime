@@ -121,6 +121,6 @@
     <value>Destination is too short.</value>
   </data>
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
-    <value>Length of '{0}' must be same as length of '{1}'.</value>
+    <value>Input span arguments must all have the same length.</value>
   </data>
 </root>

@@ -923,7 +923,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             private static string GetConfigKeyCacheFieldName(ObjectSpec type) =>
-                $"s_configKeys_{type.DisplayString.ToIdentifierSubstring()}";
+                $"s_configKeys_{type.IdentifierCompatibleSubstring}";
         }
     }
 }

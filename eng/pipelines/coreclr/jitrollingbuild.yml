@@ -13,6 +13,11 @@ trigger:
 # and should not be triggerable from a PR.
 pr: none
 
+variables:
+# disable CodeQL here, we have a separate pipeline for it
+- name: Codeql.Enabled
+  value: False
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:

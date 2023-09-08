@@ -5488,6 +5488,8 @@ public:
 
     bool fgCreateLoopPreHeader(unsigned lnum);
 
+    void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);
+
     void fgUnreachableBlock(BasicBlock* block);
 
     void fgRemoveConditionalJump(BasicBlock* block);

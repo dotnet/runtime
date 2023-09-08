@@ -83,10 +83,10 @@ namespace ILLink.Shared.DataFlow
 			sb.Append ('{');
 			if (Dictionary != null) {
 				foreach (var kvp in Dictionary)
-					sb.Append (Environment.NewLine).Append ('\t').Append (kvp.Key.ToString ()).Append (" -> ").Append (kvp.Value.ToString ());
+					sb.AppendLine().Append ('\t').Append (kvp.Key.ToString ()).Append (" -> ").Append (kvp.Value.ToString ());
 			}
-			sb.Append (Environment.NewLine).Append ("\t_ -> ").Append (DefaultValue.ToString ());
-			sb.Append (Environment.NewLine).Append ('}');
+			sb.AppendLine().Append ("\t_ -> ").Append (DefaultValue.ToString ());
+			sb.AppendLine().Append ('}');
 			return sb.ToString ();
 		}
 

@@ -22,6 +22,9 @@ namespace TestUnhandledException
 
             Process testProcess = new Process();
 
+            // We don't need to trigger createdump logic.
+            testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
+
             testProcess.StartInfo.FileName = Environment.ProcessPath;
             testProcess.StartInfo.Arguments = Environment.CommandLine + " throw";
             testProcess.StartInfo.RedirectStandardError = true;
