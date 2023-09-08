@@ -1986,7 +1986,6 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             sParentCulture = sCulture;
 #endif // !TARGET_UNIX
         }
-        // (LPCWSTR) to restrict the size to null terminated size
         sCulture.Normalize();
         sParentCulture.Normalize();
         pCultureNames->AppendIfNotThere(sCulture);
