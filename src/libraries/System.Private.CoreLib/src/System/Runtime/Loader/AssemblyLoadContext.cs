@@ -102,8 +102,10 @@ namespace System.Runtime.Loader
             var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
             _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
 
+#if CORECLR
             // TODO: AdHoc
             Internal.Runtime.Binder.DefaultAssemblyBinder.Default.ManagedAssemblyLoadContext = thisHandle;
+#endif
 
             // Add this instance to the list of alive ALC
             Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
