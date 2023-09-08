@@ -558,7 +558,7 @@ MONO_RESTORE_WARNING
 			cfg->prefer_instances = TRUE;
 			
 		int align;
-		int esize = mono_type_size (t, &align);
+		mono_type_size (t, &align);
 		return mini_emit_memory_load (cfg, t, args [0], 0, ((guintptr)&(args [0]->dreg) % align == 0) ? 0 : MONO_INST_UNALIGNED);
 	} else if (!strcmp (cmethod->name, "WriteUnaligned")) {
 		g_assert (ctx);
