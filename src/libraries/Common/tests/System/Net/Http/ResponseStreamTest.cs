@@ -355,9 +355,19 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public static TheoryData CancelRequestReadFunctions
+            => new TheoryData<Func<Task<int>>>
+            {
+                () => Task.FromResult(0),
+                () => Task.FromResult(1),
+                () => new TaskCompletionSource<int>().Task,
+                () => throw new FormatException(),
+            };
+
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
-        public async Task BrowserHttpHandler_StreamingRequest_CancelRequest()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [MemberData(nameof(CancelRequestReadFunctions))]
+        public async Task BrowserHttpHandler_StreamingRequest_CancelRequest(Func<Task<int>> readFunc)
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
 
@@ -383,7 +393,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         readCancelledCount++;
                     }
-                    return Task.FromResult(1);
+                    return readFunc();
                 }));
 
             using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
