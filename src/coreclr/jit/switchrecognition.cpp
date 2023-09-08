@@ -6,7 +6,7 @@
 #pragma hdrstop
 #endif
 
-#define SWITCH_MAX_DISTANCE (TARGET_POINTER_SIZE * BITS_IN_BYTE - 1)
+#define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_IN_BYTE) - 1)
 #define SWITCH_MIN_TESTS 4
 
 // Does given block represent JTRUE(X ==/!= CNS) construct?
@@ -194,13 +194,14 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     ssize_t bitVector = 0;
     for (testIdx = 0; testIdx < testsCount; testIdx++)
     {
-        bitVector |= (1ULL << static_cast<unsigned>((testValues[testIdx] - minValue)));
+        assert(testIdx <= (int)((sizeof(ssize_t) * BITS_PER_BYTE) - 1));
+        bitVector |= (ssize_t)(1ULL << static_cast<unsigned>((testValues[testIdx] - minValue)));
     }
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
         // value exists in the testValues array (via bitVector) - 'true' case.
-        const bool isTrue = (bitVector & static_cast<unsigned>(1 << i));
+        const bool isTrue = (bitVector & static_cast<ssize_t>(1ULL << i)) != 0;
         jmpTab[i]         = isTrue ? blockIfTrue : blockIfFalse;
 
         // firstBlock already has a link to blockIfTrue so skip the first iteration
