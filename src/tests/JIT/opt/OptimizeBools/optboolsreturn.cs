@@ -116,7 +116,7 @@ public class CBoolTest
         bool b = x == 0 && y == 0 && z == 0 && w == 0;
         if (b)
         {
-            Console.WriteLine("AreZero4WithOutput true");
+            Console.WriteLine("AreZero4WithOutput true x");
         }
         return b;
     }
