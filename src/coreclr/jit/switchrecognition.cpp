@@ -121,13 +121,13 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         }
 
 #ifndef TARGET_XARCH
-		if ((newMaxValue - newMinValue) > 16)
-		{
-			// Currently, we rely on TryLowerAndOpToExtractLowestSetBit to lower the switch
-			// and it only supports XARCH targets. For non-XARCH targets, we only support
-			// low deltas to avoid emitting huge jump tables.
-		    break;
-		}
+        if ((newMaxValue - newMinValue) > 16)
+        {
+            // Currently, we rely on TryLowerAndOpToExtractLowestSetBit to lower the switch
+            // and it only supports XARCH targets. For non-XARCH targets, we only support
+            // low deltas to avoid emitting huge jump tables.
+            break;
+        }
 #endif
 
         // TODO: currently we mainly focus on creating the shape that is then expanded into a bit test
