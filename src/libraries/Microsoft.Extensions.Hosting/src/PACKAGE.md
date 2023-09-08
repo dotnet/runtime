@@ -1,12 +1,6 @@
 ## About
 Contains the .NET Generic Host `HostBuilder` which layers on the `Microsoft.Extensions.Hosting.Abstractions` package.
 
-A host encapsulates an app's resources and lifetime functionality, such as:
-- Dependency injection (DI).
-- Logging.
-- Configuration.
-- The `IHostedService` implementation which supports starting and stopping.
-
 ## Key Features
 * Contains the .NET Generic Host `HostBuilder`.
 
