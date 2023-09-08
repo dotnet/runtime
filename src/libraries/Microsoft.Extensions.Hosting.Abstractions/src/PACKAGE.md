@@ -23,10 +23,10 @@ The main types provided by this library are:
 * `Microsoft.Extensions.Hosting.IHostedService`
 
 ## Additional Documentation
-* [Conceptual documentation]
+* Conceptual documentation
   - [Worker services in .NET](https://learn.microsoft.com/dotnet/core/extensions/workers)
   - [Implement the IHostedService interface](https://learn.microsoft.com/dotnet/core/extensions/timer-service)
-* [API documentation]
+* API documentation
     - [BackgroundService](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.backgroundservice)
     - [IHostBuilder](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.ihostbuilder)
     - [IHostedService](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.ihostedservice)
