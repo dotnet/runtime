@@ -24,7 +24,7 @@ Install the `System.DirectoryServices` library from nuget
 dotnet add package System.DirectoryServices --version 7.0.1
 ```
 
-The sample need a real path to an Active Directory server to work properly:
+The sample needs a real path to an Active Directory server to work properly:
 
 ```cs
 using System.DirectoryServices;
