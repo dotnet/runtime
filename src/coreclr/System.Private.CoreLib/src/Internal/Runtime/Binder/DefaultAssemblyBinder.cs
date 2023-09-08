@@ -150,6 +150,12 @@ namespace Internal.Runtime.Binder
             AppContext.SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, acquireLock: true);
         }
 
+        // called by VM
+        public unsafe void SetupBindingPaths(char* trustedPlatformAssemblies, char* platformResourceRoots, char* appPaths)
+        {
+            SetupBindingPaths(new string(trustedPlatformAssemblies), new string(platformResourceRoots), new string(appPaths));
+        }
+
         // BindToSystem
     }
 }

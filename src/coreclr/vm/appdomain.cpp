@@ -572,7 +572,7 @@ BaseDomain::BaseDomain()
     }
     CONTRACTL_END;
 
-    m_pDefaultBinder = NULL;
+    m_pManagedDefaultBinder = NULL;
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
     m_pPinnedHeapHandleTable = NULL;
@@ -683,10 +683,10 @@ void BaseDomain::ClearBinderContext()
     }
     CONTRACTL_END;
 
-    if (m_pDefaultBinder)
+    if (m_pManagedDefaultBinder != NULL)
     {
-        delete m_pDefaultBinder;
-        m_pDefaultBinder = NULL;
+        DestroyHandle(m_pManagedDefaultBinder);
+        m_pManagedDefaultBinder = NULL;
     }
 }
 
@@ -3877,9 +3877,9 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 }
 
 
-DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
+OBJECTHANDLE AppDomain::CreateDefaultBinder()
 {
-    CONTRACT(DefaultAssemblyBinder *)
+    CONTRACT(OBJECTHANDLE)
     {
         GC_TRIGGERS;
         THROWS;
@@ -3889,17 +3889,25 @@ DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
     }
     CONTRACT_END;
 
-    if (!m_pDefaultBinder)
+    if (!m_pManagedDefaultBinder)
     {
         ETWOnStartup (FusionAppCtx_V1, FusionAppCtxEnd_V1);
 
-        GCX_PREEMP();
+        GCX_COOP();
 
-        // Initialize the assembly binder for the default context loads for CoreCLR.
-        IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::CreateDefaultBinder(&m_pDefaultBinder));
+        OBJECTREF managedBinder = AllocateObject(CoreLibBinder::GetClass(CLASS__BINDER_DEFAULTASSEMBLYBINDER));
+
+        GCPROTECT_BEGIN(managedBinder);
+
+        MethodDescCallSite ctor(METHOD__BINDER_DEFAULTASSEMBLYBINDER__CTOR);
+        ctor.Call((ARG_SLOT*)NULL);
+
+        m_pManagedDefaultBinder = CreateHandle(managedBinder);
+
+        GCPROTECT_END();
     }
 
-    RETURN m_pDefaultBinder;
+    RETURN m_pManagedDefaultBinder;
 }
 
 

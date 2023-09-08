@@ -1194,6 +1194,11 @@ DEFINE_METHOD(EH, RH_RETHROW, RhRethrow, SM_RefExInfo_RefExInfo_RetVoid)
 DEFINE_CLASS(EXINFO, Runtime, EH+ExInfo)
 #endif // FOR_ILLINK
 
+// Managed binder types
+DEFINE_CLASS(BINDER_DEFAULTASSEMBLYBINDER, InternalLoader, DefaultAssemblyBinder)
+DEFINE_METHOD(BINDER_DEFAULTASSEMBLYBINDER, CTOR, .ctor, IM_RetVoid)
+DEFINE_METHOD(BINDER_DEFAULTASSEMBLYBINDER, SETUP_BINDING_PATHS, SetupBindingPaths, gsig_IM_PtrChar_PtrChar_PtrChar_RetVoid)
+
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
 DEFINE_FIELD_U(_totalAvailableMemoryBytes, GCMemoryInfoData, totalAvailableMemoryBytes)
