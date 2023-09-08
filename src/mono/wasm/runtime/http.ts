@@ -71,20 +71,24 @@ export function http_wasm_create_transform_stream(): TransformStreamExtension {
     return transform_stream;
 }
 
-export async function http_wasm_transform_stream_write(ts: TransformStreamExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<void> {
+export function http_wasm_transform_stream_write(ts: TransformStreamExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<void> {
     mono_assert(bufferLength > 0, "expected bufferLength > 0");
-    mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
-    await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
-    await Promise.race([ts.__writer.write(copy), ts.__fetch_promise_control.promise]);
+    return wrap_as_cancelable_promise(async () => {
+        mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
+        await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
+        await Promise.race([ts.__writer.write(copy), ts.__fetch_promise_control.promise]);
+    });
 }
 
-export async function http_wasm_transform_stream_close(ts: TransformStreamExtension): Promise<void> {
-    mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
-    await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
-    ts.__writer.close();
+export function http_wasm_transform_stream_close(ts: TransformStreamExtension): Promise<void> {
+    return wrap_as_cancelable_promise(async () => {
+        mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
+        await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
+        ts.__writer.close();
+    });
 }
 
 export function http_wasm_transform_stream_abort(ts: TransformStreamExtension, error: Error): void {
