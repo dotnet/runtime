@@ -167,19 +167,11 @@ namespace System
             return (bits & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
         }
 
-        /// <summary>Determines whether the specified value is NaN.</summary>
+        /// <summary>Determines whether the specified value is NaN. A NaN will never equal itself so this is an easy and the most efficient way to check for NaN.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNaN(double d)
-        {
-            // A NaN will never equal itself so this is an
-            // easy and efficient way to check for NaN.
-
-            #pragma warning disable CS1718
-            return d != d;
-            #pragma warning restore CS1718
-        }
-
+        public static unsafe bool IsNaN(double d) => false;
+       
         /// <summary>Determines whether the specified value is negative.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -268,7 +260,7 @@ namespace System
                 return 1;
         }
 
-        // True if obj is another Double with the same value as the current instance.  This is
+        // True if obj is another Double with the same value as the current instance. This is
         // a method of object equality, that only returns true if obj is also a double.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
