@@ -144,7 +144,7 @@ struct PROFILE_PLATFORM_SPECIFIC_DATA
     void*                  profiledSp;
     void*                  hiddenArg;
     UINT64                 flags;
-    // Scratch space to reconstruct struct passed in registers
+    // Scratch space to reconstruct struct passed in two registers
     BYTE                   buffer[sizeof(ArgumentRegisters) + sizeof(FloatArgumentRegisters)];
 };
 #endif  // PROFILING_SUPPORTED
