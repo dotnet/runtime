@@ -378,6 +378,23 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # Build the Mono runtime
+      # Only mono has changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Debug
+          runtimeFlavor: mono
+          platforms:
+          - android_arm64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: MonoSubset
+            buildArgs: -s mono -c $(_BuildConfig)
+            condition: >-
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true)
+
       # Build the whole product using Mono runtime
       # Only when libraries, mono or installer are changed
       #
