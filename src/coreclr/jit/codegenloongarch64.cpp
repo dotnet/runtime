@@ -8654,17 +8654,8 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 
-    if (compiler->compProfilerMethHndIndirected)
-    {
-        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_FUNC_ID,
-                               (ssize_t)compiler->compProfilerMethHnd);
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID,
-                                    REG_PROFILER_ENTER_ARG_FUNC_ID, 0);
-    }
-    else
-    {
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
-    }
+    assert(!compiler->compProfilerMethHndIndirected);
+    instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
 
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
     genInstrWithConstant(INS_addi_d, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_CALLER_SP, genFramePointerReg(),
@@ -8699,17 +8690,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
 
     compiler->info.compProfilerCallback = true;
 
-    if (compiler->compProfilerMethHndIndirected)
-    {
-        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_PROFILER_LEAVE_ARG_FUNC_ID,
-                               (ssize_t)compiler->compProfilerMethHnd);
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID,
-                                    REG_PROFILER_LEAVE_ARG_FUNC_ID, 0);
-    }
-    else
-    {
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
-    }
+    assert(!compiler->compProfilerMethHndIndirected);
+    instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
 
     gcInfo.gcMarkRegSetNpt(RBM_PROFILER_LEAVE_ARG_FUNC_ID);
 
