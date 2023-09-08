@@ -22,7 +22,7 @@ using (OleDbConnection connection = new OleDbConnection(connectionString))
     {
         Console.WriteLine(reader.GetInt32(0) + ", " + reader.GetString(1));
     }
-    // always call Close when done reading.
+
     reader.Close();
 }
 ```
@@ -44,4 +44,4 @@ System.Data.Odbc is a similar package for accessing ODBC data sources.
 
 ## Feedback & Contributing
 
-**System.Data.OleDb** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports are welcome at [the GitHub repository](https://github.com/dotnet/runtime). This package is considered complete and we only consider lower-risk or high-impact fixes that will maintain or improve quality.
+**System.Data.OleDb** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports are welcome at [the GitHub repository](https://github.com/dotnet/runtime). This package is considered complete and we only consider low-risk, high-impact fixes that are necessary to maintain or improve quality.
