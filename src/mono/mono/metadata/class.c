@@ -2392,8 +2392,8 @@ static MonoClassField *
 mono_class_get_field_idx (MonoClass *klass, int idx)
 {
 	mono_class_setup_fields (klass);
-	if (mono_class_has_failure (klass))
-		return NULL;
+	//if (mono_class_has_failure (klass))
+		//return NULL;
 
 	while (klass) {
 		int first_field_idx = mono_class_get_first_field_idx (klass);

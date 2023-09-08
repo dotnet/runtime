@@ -9929,12 +9929,28 @@ calli_end:
 						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE)
 							clear_cfg_error (cfg);
 						
-						// We need to push something to the stack for these opcodes.
-						if (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD || il_op == MONO_CEE_LDFLDA || il_op == MONO_CEE_LDSFLDA) {
+						// We need to push a dummy value onto the stack, respecting the intended type.
+						if (il_op == MONO_CEE_LDFLDA || il_op == MONO_CEE_LDSFLDA) {
+							// Address is expected, push a null pointer.
 							EMIT_NEW_PCONST (cfg, *sp, NULL);
 							sp++;
+						} else if (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD) {
+							// An object is expected. Make best effort to find its type and push that. If that
+							// attempt fails, push a pointer to balance the stack. 
+							mono_class_init_internal (klass);
+							field = mono_class_get_field (klass, token);
+
+							if (field == NULL) {
+								// FIXME: this may be incorrect. Either find the correct type to push or skip the rest of BB.
+								EMIT_NEW_PCONST (cfg, *sp, NULL);
+								sp++;
+							} else {
+								ftype = mono_field_get_type_internal (field);
+								goto fld_emit_stage;
+							}
 						}
-						break;
+
+						break;	
 				}
 				CHECK_CFG_ERROR;
 			}
@@ -10329,6 +10345,8 @@ calli_end:
 					int ro_type = ftype->type;
 					if (!addr)
 						addr = mono_static_field_get_addr (vtable, field);
+
+fld_emit_stage:
 					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
 						ro_type = mono_class_enum_basetype_internal (ftype->data.klass)->type;
 					}
