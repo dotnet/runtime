@@ -1150,6 +1150,10 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 bool Lowering::TryLowerSwitchToBitTest(
     BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
 {
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+    // Other architectures may use this if they support either GT_BT or GT_TEST
+    return false;
+#else
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
     assert(bbSwitch->bbJumpKind == BBJ_SWITCH);
@@ -1291,6 +1295,7 @@ bool Lowering::TryLowerSwitchToBitTest(
 #endif // !TARGET_XARCH
 
     return true;
+#endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
 void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
