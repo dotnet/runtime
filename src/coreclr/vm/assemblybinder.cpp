@@ -32,7 +32,7 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
     STANDARD_VM_CONTRACT;
 
     BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-    AssemblyBinder* binder = componentModule->GetPEAssembly()->GetAssemblyBinder();
+    AssemblyBinder* binder = /* componentModule->GetPEAssembly()->GetAssemblyBinder() */ NULL;
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
     bool isNewNativeImage;

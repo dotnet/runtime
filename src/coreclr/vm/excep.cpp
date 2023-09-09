@@ -11708,7 +11708,8 @@ VOID GetAssemblyDetailInfo(SString    &sType,
     SString detailsUtf8;
 
     SString sAlcName;
-    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
+    // TODO: print managed alc name
+    // pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
     SString assemblyPath{ pPEAssembly->GetPath() };
     if (assemblyPath.IsEmpty())
     {

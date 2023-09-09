@@ -3079,7 +3079,9 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyO
 
     if (pPEAssembly->HasHostAssembly())
     {
-        DomainAssembly * pDA = pPEAssembly->GetHostAssembly()->GetDomainAssembly();
+        GCX_COOP();
+
+        DomainAssembly * pDA = ((BINDERASSEMBLYREF)ObjectFromHandle(pPEAssembly->GetHostAssembly()))->m_pDomainAssembly;
         if (pDA != nullptr && (pDA->IsLoaded() || (includeFailedToLoad && pDA->IsError())))
         {
             return pDA;
@@ -5073,7 +5075,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
             }
 
-            pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();
+            // unused with managed binder
+            // pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();
         }
 
         if (fResolvedAssembly)
