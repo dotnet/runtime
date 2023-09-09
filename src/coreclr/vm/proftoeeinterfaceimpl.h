@@ -56,7 +56,7 @@ class ProfileArgIterator
 private:
     void        *m_handle;
     ArgIterator  m_argIterator;
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     UINT64       m_bufferPos;
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_RISCV64)
@@ -76,7 +76,7 @@ private:
     LPVOID CopyStructFromFPRegs(int idxFPReg, int cntFPRegs, int hfaFieldSize);
 #endif
 
-#endif // UNIX_AMD64_ABI || TARGET_ARM64
+#endif // UNIX_AMD64_ABI || TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64
 
 public:
     ProfileArgIterator(MetaSig * pMetaSig, void* platformSpecificHandle);

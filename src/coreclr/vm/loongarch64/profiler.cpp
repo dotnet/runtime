@@ -35,6 +35,7 @@ ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHan
     _ASSERTE(pPlatformSpecificHandle != nullptr);
 
     m_handle = pPlatformSpecificHandle;
+    m_bufferPos = 0;
 
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(pPlatformSpecificHandle);
 #ifdef _DEBUG
@@ -68,7 +69,7 @@ ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHan
             }
             else
             {
-                // On ARM64 the generic instantiation parameter comes after the optional "this" pointer.
+                // On LoongArch64 the generic instantiation parameter comes after the optional "this" pointer.
                 if (m_argIterator.HasThis())
                 {
                     pData->hiddenArg = (void*)pData->argumentRegisters.a[1];
@@ -117,12 +118,41 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
         return nullptr;
     }
 
+    LPVOID pArg = nullptr;
+
     if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
     {
-        return (LPBYTE)&pData->floatArgumentRegisters + (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
-    }
+        pArg = (LPBYTE)&pData->floatArgumentRegisters + (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
 
-    LPVOID pArg = nullptr;
+        ArgLocDesc* pArgLocDesc = m_argIterator.GetArgLocDescForStructInRegs();
+
+        if (pArgLocDesc)
+        {
+            if (pArgLocDesc->m_cFloatReg == 1)
+            {
+                UINT32 bufferPos = m_bufferPos;
+
+                UINT64* dst = (UINT64*)&pData->buffer[bufferPos];
+                m_bufferPos += 16;
+                if (pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_FIRST)
+                {
+                    *dst++ = *(UINT64*)pArg;
+                    *dst = pData->argumentRegisters.a[pArgLocDesc->m_idxGenReg];
+                }
+                else
+                {
+                    _ASSERTE(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND);
+                    *dst++ = pData->argumentRegisters.a[pArgLocDesc->m_idxGenReg];
+                    *dst = *(UINT64*)pArg;
+                }
+                return (LPBYTE)&pData->buffer[bufferPos];
+            }
+
+            _ASSERTE(pArgLocDesc->m_cFloatReg == 2);
+        }
+
+        return pArg;
+    }
 
     if (TransitionBlock::IsArgumentRegisterOffset(argOffset))
     {
@@ -204,66 +234,39 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
 
     if (m_argIterator.HasRetBuffArg())
     {
-        if ((pData->flags & PROFILE_ENTER) != 0)
-        {
-            return (LPVOID)pData->x8;
-        }
-        else
-        {
-            // On ARM64 there is no requirement for the method to preserve the value stored in x8.
-            // In order to workaround this JIT will explicitly return the return buffer address in x0.
-            _ASSERTE((pData->flags & PROFILE_LEAVE) != 0);
-            return (LPVOID)pData->argumentRegisters.a[0];
-        }
+        return (LPVOID)pData->argumentRegisters.a[0];
     }
 
     UINT fpReturnSize = m_argIterator.GetFPReturnSize();
+
     if (fpReturnSize != 0)
     {
-        TypeHandle thReturnValueType;
-        m_argIterator.GetSig()->GetReturnTypeNormalized(&thReturnValueType);
-        if (!thReturnValueType.IsNull() && thReturnValueType.IsHFA())
+        if ((fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_ONLY_ONE) || (fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_ONLY_TWO))
         {
-            UINT hfaFieldSize = fpReturnSize / 4;
-            UINT totalSize = m_argIterator.GetSig()->GetReturnTypeSize();
-            _ASSERTE(totalSize % hfaFieldSize == 0);
-            _ASSERTE(totalSize <= 16);
-
-            BYTE *dest = pData->buffer;
-            for (UINT floatRegIdx = 0; floatRegIdx < totalSize / hfaFieldSize; ++floatRegIdx)
-            {
-                if (hfaFieldSize == 4)
-                {
-                    *(UINT32*)dest = *(UINT32*)&pData->floatArgumentRegisters.f[floatRegIdx];
-                    dest += 4;
-                }
-                else if (hfaFieldSize == 8)
-                {
-                    *(UINT64*)dest = *(UINT64*)&pData->floatArgumentRegisters.f[floatRegIdx];
-                    dest += 8;
-                }
-                else
-                {
-                    _ASSERTE(!"unimplemented on LOONGARCH yet!");
-#if 0
-                    _ASSERTE(hfaFieldSize == 16);
-                    *(NEON128*)dest = pData->floatArgumentRegisters.f[floatRegIdx];
-                    dest += 16;
-#endif
-                }
-
-                if (floatRegIdx > 8)
-                {
-                    // There's only space for 8 arguments in buffer
-                    _ASSERTE(FALSE);
-                    break;
-                }
-            }
-
-            return pData->buffer;
+            return &pData->floatArgumentRegisters.f[0];
         }
+        else
+        {
+            // If the return type is a structure including floating types and return by floating register.
+            // As we shared the scratch space, before calling the GetReturnBufferAddr,
+            // Make sure within the PROFILE_LEAVE stage!!!
+            _ASSERTE((pData->flags & PROFILE_LEAVE) != 0);
 
-        return &pData->floatArgumentRegisters.f[0];
+            // using the tail 16 bytes for return structure.
+            UINT64* dst = (UINT64*)&pData->buffer[sizeof(pData->buffer) - 16];
+            if (fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_FIRST)
+            {
+                *(double*)dst = pData->floatArgumentRegisters.f[0];
+                *(dst + 1) = pData->argumentRegisters.a[0];
+            }
+            else
+            {
+                _ASSERTE(fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_SECOND);
+                *dst = pData->argumentRegisters.a[0];
+                *(double*)(dst + 1) = pData->floatArgumentRegisters.f[0];
+            }
+            return dst;
+        }
     }
 
     if (!m_argIterator.GetSig()->IsReturnTypeVoid())
