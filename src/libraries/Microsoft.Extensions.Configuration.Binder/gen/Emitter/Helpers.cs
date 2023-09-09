@@ -12,9 +12,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Emitter
         {
-            private string? _emittedExtsTargetType;
-
             internal static readonly AssemblyName s_assemblyName = typeof(ConfigurationBindingGenerator).Assembly.GetName();
+
+            private string? _emittedExtsTargetType;
 
             private enum InitializationKind
             {
