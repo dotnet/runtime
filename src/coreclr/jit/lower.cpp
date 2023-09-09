@@ -1161,7 +1161,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     // We'll ensure that there are only 2 targets when building the bit table.
     //
 
-    if (targetCount > 3)
+    if (targetCount > 0) // test
     {
         return false;
     }
