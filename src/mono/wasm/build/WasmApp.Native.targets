@@ -463,6 +463,9 @@
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
 
+      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-static.a" Condition="'$(Configuration)' == 'Release'" />
+      <_MonoRuntimeComponentDontLink Remove="libmono-component-debugger-stub-static.a" Condition="'$(Configuration)' == 'Release'" />
+
       <_WasmNativeFileForLinking
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
           Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')" />
