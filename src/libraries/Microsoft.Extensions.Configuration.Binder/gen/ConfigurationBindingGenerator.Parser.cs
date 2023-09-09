@@ -373,12 +373,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private EnumerableSpec? CreateArraySpec(IArrayTypeSymbol arrayTypeSymbol)
             {
                 ITypeSymbol elementTypeSymbol = arrayTypeSymbol.ElementType;
-                if (!MemberTypeIsBindable(arrayTypeSymbol, elementTypeSymbol, Diagnostics.ElementTypeNotSupported, out TypeSpec elementTypeSpec) ||
-                    // We want a BindCore method for List<TElement> as a temp holder for the array values
-                    GetOrCreateTypeSpec(_typeSymbols.List.Construct(elementTypeSymbol)) is not EnumerableSpec listTypeSpec)
+
+                if (!MemberTypeIsBindable(arrayTypeSymbol, elementTypeSymbol, Diagnostics.ElementTypeNotSupported, out TypeSpec elementTypeSpec))
                 {
                     return null;
                 }
+
+                // We want a BindCore method for List<TElement> as a temp holder for the array values.
+                // Since the element type is supported, we can certainly a list of elements.
+                EnumerableSpec listTypeSpec = (EnumerableSpec)GetOrCreateTypeSpec(_typeSymbols.List.Construct(elementTypeSymbol));
 
                 EnumerableSpec spec = new EnumerableSpec(arrayTypeSymbol)
                 {
@@ -678,7 +681,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     List<string> missingParameters = new();
                     List<string> invalidParameters = new();
-                    bool canInitAllCtorParams = true;
 
                     foreach (IParameterSymbol parameter in ctor.Parameters)
                     {
@@ -700,7 +702,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 ConfigurationKeyName = propertySpec.ConfigurationKeyName,
                             };
 
-                            canInitAllCtorParams &= propertySpec.Type.CanInstantiate;
                             propertySpec.MatchingCtorParam = paramSpec;
                             objectSpec.ConstructorParameters.Add(paramSpec);
                         }

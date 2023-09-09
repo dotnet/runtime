@@ -117,13 +117,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 {
                                     _writer.WriteLine($@"throw new {Identifier.InvalidOperationException}(""{exMsg}"");");
                                 }
-                                else
-                                {
-                                    _writer.WriteLine($"// Cannot create an instance of {type.DisplayString}.");
-                                }
                             }
-                            break;
-                        default:
                             break;
                     }
 
@@ -681,8 +675,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             _writer.WriteLine($"{addExpr}({Identifier.value});");
                         }
                         break;
-                    default:
-                        break;
                 }
 
                 EmitEndBlock();
@@ -757,8 +749,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 EmitBindingLogic(complexElementType, Identifier.element, Identifier.section, InitializationKind.None);
                                 _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
                             }
-                            break;
-                        default:
                             break;
                     }
                 }
@@ -1101,7 +1091,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             Debug.Fail($"Invaild initialization kind: {initKind}");
                         }
                         break;
-
                 }
 
                 return true;

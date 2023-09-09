@@ -32,8 +32,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             ParseGetValueInvocation(invocation);
                         }
                         break;
-                    default:
-                        return;
                 }
             }
 
