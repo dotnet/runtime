@@ -68,5 +68,9 @@ namespace System.Reflection
         internal static partial void EnsureReference(IntPtr nativeLoaderAllocator, IntPtr otherNativeLoaderAllocator);
 
         internal void EnsureReference(LoaderAllocator otherLA) => EnsureReference(m_scout.m_nativeLoaderAllocator, otherLA.m_scout.m_nativeLoaderAllocator);
+
+        // Foo
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern bool IsCollectible();
     }
 }

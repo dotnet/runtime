@@ -39,18 +39,18 @@ namespace System.Runtime.Loader
             Interlocked.CompareExchange(ref s_allContexts, new Dictionary<long, WeakReference<AssemblyLoadContext>>(), null) ??
             s_allContexts;
 
-#region private data members
+        #region private data members
+#if CORECLR
+        private readonly Internal.Runtime.Binder.AssemblyBinder _assemblyBinder;
+#else
         // If you modify this field, you must also update the
         // AssemblyLoadContextBaseObject structure in object.h
         // and MonoManagedAssemblyLoadContext in object-internals.h
 
         // Contains the reference to VM's representation of the AssemblyLoadContext
         private readonly IntPtr _nativeAssemblyLoadContext;
-        #endregion
-
-#if CORECLR
-        private readonly Internal.Runtime.Binder.AssemblyBinder _assemblyBinder;
 #endif
+        #endregion
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
@@ -104,11 +104,12 @@ namespace System.Runtime.Loader
             // If this is a collectible ALC, we are creating a weak handle tracking resurrection otherwise we use a strong handle
             var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.WeakTrackResurrection : GCHandleType.Normal);
             var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
-            _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
 
 #if CORECLR
             // AssemblyNative_InitializeAssemblyLoadContext
             _assemblyBinder = InitializeAssemblyLoadContext(thisHandle, representsTPALoadContext, isCollectible);
+#else
+            _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
 #endif
 
             // Add this instance to the list of alive ALC
@@ -157,7 +158,11 @@ namespace System.Runtime.Loader
                     var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
                     // The underlying code will transform the original weak handle
                     // created by InitializeLoadContext to a strong handle
+#if CORECLR
+                    PrepareForAssemblyLoadContextRelease(_assemblyBinder, thisStrongHandle);
+#else
                     PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
+#endif
 
                     _state = InternalState.Unloading;
                 }

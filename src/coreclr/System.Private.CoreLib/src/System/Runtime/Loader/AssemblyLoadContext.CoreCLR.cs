@@ -15,8 +15,24 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetDefaultAssemblyBinder")]
         internal static partial IntPtr GetDefaultAssemblyBinder();
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InitializeAssemblyLoadContext")]
-        private static partial IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, [MarshalAs(UnmanagedType.Bool)] bool fRepresentsTPALoadContext, [MarshalAs(UnmanagedType.Bool)] bool isCollectible);
+        // Foo
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr PEImage_OpenImage(string pwzILPath, int mdInternalImportFlags, Internal.Runtime.Binder.BundleFileLocation bundleFileLocation = default);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool PEImage_CheckILFormat(IntPtr pPEImage);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool PEImage_IsILOnly(IntPtr pPEImage);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern string PEImage_GetPathForErrorMessage(IntPtr pPEImage);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern Internal.Runtime.Binder.IVMAssembly AssemblyNative_LoadFromPEImage(Internal.Runtime.Binder.AssemblyBinder pBinder, IntPtr pPEImage, bool excludeAppPaths = false);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe IntPtr PEImage_CreateFromByteArray(byte* ptrAssemblyArray, int cbAssemblyArrayLength);
 
         private static Internal.Runtime.Binder.AssemblyBinder InitializeAssemblyLoadContext(GCHandle ptrAssemblyLoadContext, bool representsTPALoadContext, bool isCollectible)
         {
@@ -53,12 +69,65 @@ namespace System.Runtime.Loader
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_PrepareForAssemblyLoadContextRelease")]
-        private static partial void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong);
+        private static void PrepareForAssemblyLoadContextRelease(Internal.Runtime.Binder.AssemblyBinder ptrNativeAssemblyBinder, GCHandle ptrAssemblyLoadContextStrong)
+        {
+            ((Internal.Runtime.Binder.CustomAssemblyBinder)ptrNativeAssemblyBinder).PrepareForLoadContextRelease(ptrAssemblyLoadContextStrong);
+        }
 
-        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
-        private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
+        private static unsafe RuntimeAssembly LoadFromStream(Internal.Runtime.Binder.AssemblyBinder assemblyBinder, byte* ptrAssemblyArray, int iAssemblyArrayLen, byte* ptrSymbols, int iSymbolArrayLen)
+        {
+            IntPtr pILImage = 0;
+
+            try
+            {
+                pILImage = PEImage_CreateFromByteArray(ptrAssemblyArray, iAssemblyArrayLen);
+
+                // Need to verify that this is a valid CLR assembly.
+                if (!PEImage_CheckILFormat(pILImage))
+                    throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
+
+                LoaderAllocator? loaderAllocator = assemblyBinder.GetLoaderAllocator();
+                if (loaderAllocator != null && loaderAllocator.IsCollectible() && !PEImage_IsILOnly(pILImage))
+                {
+                    // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
+                    throw new BadImageFormatException($"Cannot load a mixed assembly into a collectible AssemblyLoadContext. The format of the file '{PEImage_GetPathForErrorMessage(pILImage)}' is invalid.");
+                }
+
+                // Pass the stream based assembly as IL in an attempt to bind and load it
+                Internal.Runtime.Binder.IVMAssembly loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
+                RuntimeAssembly retAssembly = loadedAssembly.GetExposedObject();
+
+                // LOG((LF_CLASSLOADER,
+                //       LL_INFO100,
+                //       "\tLoaded assembly from a file\n"));
+
+                // In order to assign the PDB image (if present),
+                // the resulting assembly's image needs to be exactly the one
+                // we created above. We need pointer comparison instead of pe image equivalence
+                // to avoid mixed binaries/PDB pairs of other images.
+                // This applies to both Desktop CLR and CoreCLR, with or without fusion.
+                bool isSameAssembly = loadedAssembly.GetPEAssembly_GetPEImage() == pILImage;
+
+                // Setting the PDB info is only applicable for our original assembly.
+                // This applies to both Desktop CLR and CoreCLR, with or without fusion.
+                if (isSameAssembly)
+                {
+                    // #ifdef DEBUGGING_SUPPORTED
+                    if (ptrSymbols != null)
+                    {
+                        loadedAssembly.GetModule_SetSymbolBytes(ptrAssemblyArray, iSymbolArrayLen);
+                    }
+                    // #endif
+                }
+
+                return retAssembly;
+            }
+            finally
+            {
+                if (pILImage != 0)
+                    Internal.Runtime.Binder.AssemblyBinderCommon.ReleasePEImage(pILImage);
+            }
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalSetProfileRoot(string directoryPath);
@@ -66,9 +135,53 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder);
 
+        // Foo
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void InternalStartProfile(string? profile, Internal.Runtime.Binder.AssemblyBinder ptrNativeAssemblyBinder);
+
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
+#pragma warning disable IDE0060 // niPath is unused
+        private static RuntimeAssembly LoadFromPath(Internal.Runtime.Binder.AssemblyBinder assemblyBinder, string? ilPath, string? niPath)
+#pragma warning restore IDE0060
+        {
+            // Form the PEImage for the ILAssembly. In case of an exception, the holder will ensure
+            // the release of the image.
+            IntPtr pILImage = 0;
+
+            try
+            {
+                if (ilPath != null)
+                {
+                    pILImage = PEImage_OpenImage(ilPath, 0, default);
+
+                    // Need to verify that this is a valid CLR assembly.
+                    if (!PEImage_CheckILFormat(pILImage))
+                        throw new BadImageFormatException($"{SR.BadImageFormat_BadILFormat} The format of the file '{PEImage_GetPathForErrorMessage(pILImage)}' is invalid.");
+
+                    LoaderAllocator? loaderAllocator = assemblyBinder.GetLoaderAllocator();
+                    if (loaderAllocator != null && loaderAllocator.IsCollectible() && !PEImage_IsILOnly(pILImage))
+                    {
+                        // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
+                        throw new BadImageFormatException($"Cannot load a mixed assembly into a collectible AssemblyLoadContext. The format of the file '{PEImage_GetPathForErrorMessage(pILImage)}' is invalid.");
+                    }
+
+                    Internal.Runtime.Binder.IVMAssembly loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
+                    return loadedAssembly.GetExposedObject();
+
+                    // LOG((LF_CLASSLOADER,
+                    //       LL_INFO100,
+                    //       "\tLoaded assembly from a file\n"));
+                }
+
+                // The behavior was inherited from native implementation.
+                return null!;
+            }
+            finally
+            {
+                if (pILImage != 0)
+                    Internal.Runtime.Binder.AssemblyBinderCommon.ReleasePEImage(pILImage);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Assembly[] GetLoadedAssemblies();
@@ -95,29 +208,52 @@ namespace System.Runtime.Loader
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
-            RuntimeAssembly? loadedAssembly = null;
-            LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, nativeImagePath, ObjectHandleOnStack.Create(ref loadedAssembly));
-            return loadedAssembly!;
+            return LoadFromPath(_assemblyBinder, assemblyPath, nativeImagePath);
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         internal unsafe Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
         {
-            RuntimeAssembly? loadedAssembly = null;
-
             fixed (byte* ptrAssembly = arrAssembly, ptrSymbols = arrSymbols)
             {
-                LoadFromStream(_nativeAssemblyLoadContext, new IntPtr(ptrAssembly), arrAssembly.Length,
-                    new IntPtr(ptrSymbols), arrSymbols.Length, ObjectHandleOnStack.Create(ref loadedAssembly));
+                return LoadFromStream(_assemblyBinder, ptrAssembly, arrAssembly.Length,
+                    ptrSymbols, arrSymbols.Length);
             }
-
-            return loadedAssembly!;
         }
 
 #if TARGET_WINDOWS
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromInMemoryModule")]
-        private static partial IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyBinder, IntPtr hModule, ObjectHandleOnStack retAssembly);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe IntPtr PEImage_CreateFromHMODULE(IntPtr hMod);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool PEImage_HasCorHeader(IntPtr pPEImage);
+
+        private static RuntimeAssembly LoadFromInMemoryModuleInternal(Internal.Runtime.Binder.AssemblyBinder assemblyBinder, IntPtr hModule)
+        {
+            IntPtr pILImage = 0;
+
+            try
+            {
+                pILImage = PEImage_CreateFromHMODULE(hModule);
+
+                // Need to verify that this is a valid CLR assembly.
+                if (!PEImage_HasCorHeader(pILImage))
+                    throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
+
+                // Pass the in memory module as IL in an attempt to bind and load it
+                Internal.Runtime.Binder.IVMAssembly loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
+                return loadedAssembly.GetExposedObject();
+
+                // LOG((LF_CLASSLOADER,
+                //       LL_INFO100,
+                //       "\tLoaded assembly from a file\n"));
+            }
+            finally
+            {
+                if (pILImage != 0)
+                    Internal.Runtime.Binder.AssemblyBinderCommon.ReleasePEImage(pILImage);
+            }
+        }
 
         /// <summary>
         /// Load a module that has already been loaded into memory by the OS loader as a .NET assembly.
@@ -130,12 +266,7 @@ namespace System.Runtime.Loader
             {
                 VerifyIsAlive();
 
-                RuntimeAssembly? loadedAssembly = null;
-                LoadFromInMemoryModuleInternal(
-                    _nativeAssemblyLoadContext,
-                    moduleHandle,
-                    ObjectHandleOnStack.Create(ref loadedAssembly));
-                return loadedAssembly!;
+                return LoadFromInMemoryModuleInternal(_assemblyBinder, moduleHandle);
             }
         }
 #endif
@@ -215,7 +346,7 @@ namespace System.Runtime.Loader
         // Start profile optimization for the specified profile name.
         public void StartProfileOptimization(string? profile)
         {
-            InternalStartProfile(profile, _nativeAssemblyLoadContext);
+            InternalStartProfile(profile, _assemblyBinder);
         }
 
         internal static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)

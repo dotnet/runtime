@@ -225,5 +225,11 @@ namespace Internal.Runtime.Binder
         public System.Reflection.MetadataImport GetMDImport();
 
         public string SimpleName { get; }
+
+        public System.Reflection.RuntimeAssembly GetExposedObject();
+
+        public IntPtr GetPEAssembly_GetPEImage();
+
+        public unsafe void GetModule_SetSymbolBytes(byte* ptrSymbolArray, int cbSymbolArrayLength);
     }
 }
