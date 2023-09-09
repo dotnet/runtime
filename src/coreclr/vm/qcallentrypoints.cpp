@@ -177,6 +177,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_InternalTryGetRawMetadata)
     DllImportEntry(AssemblyNative_ApplyUpdate)
     DllImportEntry(AssemblyNative_IsApplyUpdateSupported)
+    DllImportEntry(AssemblyNative_GetDefaultAssemblyBinder)
     DllImportEntry(AssemblyNative_InitializeAssemblyLoadContext)
     DllImportEntry(AssemblyNative_PrepareForAssemblyLoadContextRelease)
     DllImportEntry(AssemblyNative_LoadFromPath)

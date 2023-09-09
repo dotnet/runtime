@@ -46,7 +46,11 @@ namespace System.Runtime.Loader
 
         // Contains the reference to VM's representation of the AssemblyLoadContext
         private readonly IntPtr _nativeAssemblyLoadContext;
-#endregion
+        #endregion
+
+#if CORECLR
+        private readonly Internal.Runtime.Binder.AssemblyBinder _assemblyBinder;
+#endif
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
@@ -103,8 +107,8 @@ namespace System.Runtime.Loader
             _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
 
 #if CORECLR
-            // TODO: AdHoc
-            Internal.Runtime.Binder.DefaultAssemblyBinder.Default.ManagedAssemblyLoadContext = thisHandle;
+            // AssemblyNative_InitializeAssemblyLoadContext
+            _assemblyBinder = InitializeAssemblyLoadContext(thisHandle, representsTPALoadContext, isCollectible);
 #endif
 
             // Add this instance to the list of alive ALC

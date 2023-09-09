@@ -10,9 +10,6 @@ namespace Internal.Runtime.Binder
 {
     internal sealed class DefaultAssemblyBinder : AssemblyBinder
     {
-        // TODO: AdHoc
-        internal static DefaultAssemblyBinder Default { get; } = new DefaultAssemblyBinder();
-
         public override bool IsDefault => true;
 
         // Not supported by this binder
