@@ -19,7 +19,6 @@
 #include "sstring.h"
 #include "holder.h"
 #include <bundle.h>
-#include "qcall.h"
 
 class SimpleRWLock;
 // --------------------------------------------------------------------------------
@@ -327,21 +326,6 @@ FORCEINLINE void PEImageRelease(PEImage *i)
     WRAPPER_NO_CONTRACT;
     i->Release();
 }
-
-#ifndef DACCESS_COMPILE
-extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags);
-extern "C" HRESULT QCALLTYPE PEImage_BinderAcquirePEImage(LPCWSTR wszAssemblyPath, PEImage * *ppPEImage, BundleFileLocation bundleFileLocation);
-extern "C" PEImage * QCALLTYPE PEImage_OpenImage(LPCWSTR pPath, MDInternalImportFlags flags, BundleFileLocation bundleFileLocation);
-extern "C" PEImage * QCALLTYPE PEImage_CreateFromByteArray(BYTE* array, DWORD size);
-extern "C" BOOL QCALLTYPE PEImage_CheckILFormat(PEImage * pPEImage);
-extern "C" BOOL QCALLTYPE PEImage_IsILOnly(PEImage * pPEImage);
-extern "C" void QCALLTYPE PEImage_Release(PEImage * pPEImage);
-extern "C" void QCALLTYPE PEImage_GetMVID(PEImage * pPEImage, GUID* pMVID);
-#ifdef TARGET_WINDOWS
-extern "C" PEImage * QCALLTYPE PEImage_CreateFromHMODULE(HMODULE hMod);
-extern "C" BOOL QCALLTYPE PEImage_HasCorHeader(PEImage * pPEImage);
-#endif // TARGET_WINDOWS
-#endif // DACCESS_COMPILE
 
 typedef Wrapper<PEImage *, DoNothing, PEImageRelease> PEImageHolder;
 
