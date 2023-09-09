@@ -1459,6 +1459,7 @@ class BinderAssemblyObject : public Object
 {
 public:
     PEImage* m_PEImage;
+    DomainAssembly* m_pDomainAssembly;
     OBJECTREF m_binder;
 };
 

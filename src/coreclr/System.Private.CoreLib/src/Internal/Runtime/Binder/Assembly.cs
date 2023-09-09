@@ -11,8 +11,11 @@ namespace Internal.Runtime.Binder
     internal sealed class Assembly
     {
         // fields used by VM
+#pragma warning disable CA1823, 414, 169
         public IntPtr PEImage;
+        private IntPtr m_pDomainAssembly;
         private AssemblyBinder? m_binder;
+#pragma warning restore CA1823, 414, 169
 
         public AssemblyBinder? Binder
         {
@@ -24,7 +27,6 @@ namespace Internal.Runtime.Binder
 
         public bool IsInTPA { get; }
 
-        // private IntPtr _domainAssembly; // DomainAssembly*
 
         public Assembly(nint pPEImage, bool isInTPA)
         {
