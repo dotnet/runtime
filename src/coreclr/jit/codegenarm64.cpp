@@ -334,11 +334,19 @@ bool CodeGen::genInstrWithConstant(instruction ins,
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
-        case INS_ldrsb:
-        case INS_ldrsh:
-        case INS_ldrsw:
         case INS_ldrb:
+        case INS_ldrsb:
+            assert(size == EA_1BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
+            break;
+
         case INS_ldrh:
+        case INS_ldrsh:
+            assert(size == EA_2BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
+            break;
+
+        case INS_ldrsw:
         case INS_ldr:
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
