@@ -45,6 +45,7 @@ struct VARSCANINFO
 
 //----------------------------------------------------------------------------
 
+#ifdef FEATURE_VARIABLE_HANDLES
 /*
  * Scan callback for tracing variable-strength handles.
  *
@@ -65,6 +66,7 @@ void CALLBACK VariableTraceDispatcher(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *
         pInfo->pfnTrace(pObjRef, NULL, lp1, pInfo->lp2);
     }
 }
+#endif // FEATURE_VARIABLE_HANDLES
 
 #ifdef FEATURE_REFCOUNTED_HANDLES
 /*
@@ -268,6 +270,7 @@ void CALLBACK PinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, ui
     callback(pRef, (ScanContext *)lp1, GC_CALL_PINNED);
 }
 
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
 void CALLBACK AsyncPinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     UNREFERENCED_PARAMETER(pExtraInfo);
@@ -284,7 +287,7 @@ void CALLBACK AsyncPinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInf
         GCToEEInterface::WalkAsyncPinnedForPromotion(pPinnedObj, (ScanContext *)lp1, callback);
     }
 }
-
+#endif // FEATURE_ASYNC_PINNED_HANDLES
 
 /*
  * Scan callback for tracing strong handles.
