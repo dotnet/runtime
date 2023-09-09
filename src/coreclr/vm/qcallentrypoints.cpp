@@ -193,6 +193,16 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetAssemblyCount)
     DllImportEntry(AssemblyNative_GetEntryAssembly)
     DllImportEntry(AssemblyNative_GetExecutingAssembly)
+    DllImportEntry(PEImage_OpenImage)
+    DllImportEntry(PEImage_CreateFromByteArray)
+    DllImportEntry(PEImage_CheckILFormat)
+    DllImportEntry(PEImage_IsILOnly)
+    DllImportEntry(PEImage_Release)
+    DllImportEntry(PEImage_GetMVID)
+#ifdef TARGET_WINDOWS
+    DllImportEntry(PEImage_CreateFromHMODULE)
+    DllImportEntry(PEImage_HasCorHeader)
+#endif
 #if defined(FEATURE_MULTICOREJIT)
     DllImportEntry(MultiCoreJIT_InternalSetProfileRoot)
     DllImportEntry(MultiCoreJIT_InternalStartProfile)

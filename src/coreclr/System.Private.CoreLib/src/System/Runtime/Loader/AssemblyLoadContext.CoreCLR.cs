@@ -17,22 +17,7 @@ namespace System.Runtime.Loader
 
         // Foo
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr PEImage_OpenImage(string pwzILPath, int mdInternalImportFlags, Internal.Runtime.Binder.BundleFileLocation bundleFileLocation = default);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool PEImage_CheckILFormat(IntPtr pPEImage);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool PEImage_IsILOnly(IntPtr pPEImage);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string PEImage_GetPathForErrorMessage(IntPtr pPEImage);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern Internal.Runtime.Binder.IVMAssembly AssemblyNative_LoadFromPEImage(Internal.Runtime.Binder.AssemblyBinder pBinder, IntPtr pPEImage, bool excludeAppPaths = false);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr PEImage_CreateFromByteArray(byte* ptrAssemblyArray, int cbAssemblyArrayLength);
 
         private static Internal.Runtime.Binder.AssemblyBinder InitializeAssemblyLoadContext(GCHandle ptrAssemblyLoadContext, bool representsTPALoadContext, bool isCollectible)
         {
@@ -90,7 +75,7 @@ namespace System.Runtime.Loader
                 if (loaderAllocator != null && loaderAllocator.IsCollectible() && !PEImage_IsILOnly(pILImage))
                 {
                     // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
-                    throw new BadImageFormatException($"Cannot load a mixed assembly into a collectible AssemblyLoadContext. The format of the file '{PEImage_GetPathForErrorMessage(pILImage)}' is invalid.");
+                    throw new BadImageFormatException("Cannot load a mixed assembly into a collectible AssemblyLoadContext");
                 }
 
                 // Pass the stream based assembly as IL in an attempt to bind and load it
@@ -125,7 +110,7 @@ namespace System.Runtime.Loader
             finally
             {
                 if (pILImage != 0)
-                    Internal.Runtime.Binder.AssemblyBinderCommon.ReleasePEImage(pILImage);
+                    PEImage_Release(pILImage);
             }
         }
 
@@ -156,13 +141,13 @@ namespace System.Runtime.Loader
 
                     // Need to verify that this is a valid CLR assembly.
                     if (!PEImage_CheckILFormat(pILImage))
-                        throw new BadImageFormatException($"{SR.BadImageFormat_BadILFormat} The format of the file '{PEImage_GetPathForErrorMessage(pILImage)}' is invalid.");
+                        throw new BadImageFormatException($"{SR.BadImageFormat_BadILFormat} The format of the file '{ilPath}' is invalid.");
 
                     LoaderAllocator? loaderAllocator = assemblyBinder.GetLoaderAllocator();
                     if (loaderAllocator != null && loaderAllocator.IsCollectible() && !PEImage_IsILOnly(pILImage))
                     {
                         // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
-                        throw new BadImageFormatException($"Cannot load a mixed assembly into a collectible AssemblyLoadContext. The format of the file '{PEImage_GetPathForErrorMessage(pILImage)}' is invalid.");
+                        throw new BadImageFormatException($"Cannot load a mixed assembly into a collectible AssemblyLoadContext. The format of the file '{ilPath}' is invalid.");
                     }
 
                     Internal.Runtime.Binder.IVMAssembly loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
@@ -179,7 +164,7 @@ namespace System.Runtime.Loader
             finally
             {
                 if (pILImage != 0)
-                    Internal.Runtime.Binder.AssemblyBinderCommon.ReleasePEImage(pILImage);
+                    PEImage_Release(pILImage);
             }
         }
 
@@ -222,12 +207,6 @@ namespace System.Runtime.Loader
         }
 
 #if TARGET_WINDOWS
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr PEImage_CreateFromHMODULE(IntPtr hMod);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool PEImage_HasCorHeader(IntPtr pPEImage);
-
         private static RuntimeAssembly LoadFromInMemoryModuleInternal(Internal.Runtime.Binder.AssemblyBinder assemblyBinder, IntPtr hModule)
         {
             IntPtr pILImage = 0;
@@ -251,7 +230,7 @@ namespace System.Runtime.Loader
             finally
             {
                 if (pILImage != 0)
-                    Internal.Runtime.Binder.AssemblyBinderCommon.ReleasePEImage(pILImage);
+                    PEImage_Release(pILImage);
             }
         }
 
@@ -308,6 +287,35 @@ namespace System.Runtime.Loader
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]
         private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_OpenImage", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial IntPtr PEImage_OpenImage(string path, int mdInternalImportFlags, Internal.Runtime.Binder.BundleFileLocation bundleFileLocation = default);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_CreateFromByteArray")]
+        private static unsafe partial IntPtr PEImage_CreateFromByteArray(byte* ptrArray, int size);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_CheckILFormat")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool PEImage_CheckILFormat(IntPtr pPEImage);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_IsILOnly")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool PEImage_IsILOnly(IntPtr pPEImage);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_Release")]
+        internal static partial void PEImage_Release(IntPtr pPEImage);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_GetMVID")]
+        internal static partial void PEImage_GetMVID(IntPtr pPEImage, out Guid mvid);
+
+#if TARGET_WINDOWS
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_CreateFromHMODULE")]
+        private static unsafe partial IntPtr PEImage_CreateFromHMODULE(IntPtr hMod);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_HasCorHeader")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool PEImage_HasCorHeader(IntPtr pPEImage);
+#endif
 
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)

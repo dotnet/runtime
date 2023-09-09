@@ -41,12 +41,6 @@ namespace Internal.Runtime.Binder
         private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ReleasePEImage(IntPtr pPEImage);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void PEImage_GetMVID(IntPtr pPEImage, out Guid mvid);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr DomainAssembly_GetPEAssembly(IntPtr pDomainAssembly);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -666,7 +660,7 @@ namespace Internal.Runtime.Binder
             finally
             {
                 // SAFE_RELEASE(pPEImage);
-                ReleasePEImage(pPEImage);
+                AssemblyLoadContext.PEImage_Release(pPEImage);
             }
         }
 
@@ -1018,8 +1012,8 @@ namespace Internal.Runtime.Binder
 
                         try
                         {
-                            PEImage_GetMVID(pPEImage, out incomingMVID);
-                            PEImage_GetMVID(bindResult.Assembly.PEImage, out boundMVID);
+                            AssemblyLoadContext.PEImage_GetMVID(pPEImage, out incomingMVID);
+                            AssemblyLoadContext.PEImage_GetMVID(bindResult.Assembly.PEImage, out boundMVID);
                         }
                         catch (Exception ex)
                         {
