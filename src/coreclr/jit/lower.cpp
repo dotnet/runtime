@@ -1150,10 +1150,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 bool Lowering::TryLowerSwitchToBitTest(
     BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
 {
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
-    // Other architectures may use this if they support either GT_BT or GT_TEST
-    return false;
-#else
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
     assert(bbSwitch->bbJumpKind == BBJ_SWITCH);
@@ -1273,15 +1269,15 @@ bool Lowering::TryLowerSwitchToBitTest(
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
 
-    //#ifdef TARGET_XARCH
-    //    //
-    //    // Append BT(bitTable, switchValue) and JCC(condition) to the switch block.
-    //    //
-    //    GenTree* bitTest = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
-    //    bitTest->gtFlags |= GTF_SET_FLAGS;
-    //    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
-    //    LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
-    //#else  // TARGET_XARCH
+#ifdef TARGET_XARCH
+    //
+    // Append BT(bitTable, switchValue) and JCC(condition) to the switch block.
+    //
+    GenTree* bitTest = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
+    bitTest->gtFlags |= GTF_SET_FLAGS;
+    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
+    LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
+#else  // TARGET_XARCH
     //
     // Fallback to AND(RSZ(bitTable, switchValue), 1)
     //
@@ -1291,18 +1287,10 @@ bool Lowering::TryLowerSwitchToBitTest(
     GenTree* andOp  = comp->gtNewOperNode(GT_AND, bitTableType, shift, one);
     GenTree* cmp    = comp->gtNewOperNode(GT_EQ, TYP_INT, andOp, tstCns);
     GenTree* jcc    = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
-
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, shift, tstCns, one);
     LIR::AsRange(bbSwitch).InsertAfter(one, andOp, cmp, jcc);
-
-    LowerNode(andOp);
-    LowerNode(cmp);
-    LowerNode(jcc);
-
-    //#endif // !TARGET_XARCH
-
+#endif // !TARGET_XARCH
     return true;
-#endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
 void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
