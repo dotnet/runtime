@@ -1440,6 +1440,28 @@ class AssemblyBaseObject : public Object
 NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive);
 #define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
+// managed Internal.Runtime.Binder.AssemblyBinder
+class AssemblyBinderObject : public Object
+{
+
+};
+
+#ifdef USE_CHECKED_OBJECTREFS
+
+#else
+
+#endif
+
+class PEImage;
+
+// managed Internal.Runtime.Binder.Assembly
+class BinderAssemblyObject : public Object
+{
+public:
+    PEImage* m_PEImage;
+    OBJECTREF m_binder;
+};
+
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
 //
@@ -1460,7 +1482,7 @@ class AssemblyLoadContextBaseObject : public Object
     OBJECTREF     _resolving;
     OBJECTREF     _unloading;
     OBJECTREF     _name;
-    INT_PTR       _nativeAssemblyLoadContext;
+    OBJECTREF     _assemblyBinder;
     int64_t       _id; // On 64-bit platforms this is a value type so it is placed after references and pointers
     DWORD         _state;
     CLR_BOOL      _isCollectible;
@@ -1471,7 +1493,7 @@ class AssemblyLoadContextBaseObject : public Object
     OBJECTREF     _resolving;
     OBJECTREF     _unloading;
     OBJECTREF     _name;
-    INT_PTR       _nativeAssemblyLoadContext;
+    OBJECTREF     _assemblyBinder;
     DWORD         _state;
     CLR_BOOL      _isCollectible;
 #endif // TARGET_64BIT
@@ -1481,7 +1503,7 @@ class AssemblyLoadContextBaseObject : public Object
    ~AssemblyLoadContextBaseObject() { LIMITED_METHOD_CONTRACT; }
 
   public:
-    INT_PTR GetNativeAssemblyBinder() { LIMITED_METHOD_CONTRACT; return _nativeAssemblyLoadContext; }
+    OBJECTREF GetNativeAssemblyBinder() { LIMITED_METHOD_CONTRACT; return _assemblyBinder; }
 };
 #if defined(TARGET_X86) && !defined(TARGET_UNIX)
 #include "poppack.h"
@@ -1524,6 +1546,10 @@ typedef REF<ReflectFieldObject> REFLECTFIELDREF;
 typedef REF<ThreadBaseObject> THREADBASEREF;
 
 typedef REF<AssemblyBaseObject> ASSEMBLYREF;
+
+typedef REF<AssemblyBinderObject> ASSEMBLYBINDERREF;
+
+typedef REF<BinderAssemblyObject> BINDERASSEMBLYREF;
 
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
@@ -1569,6 +1595,8 @@ typedef PTR_ReflectMethodObject REFLECTMETHODREF;
 typedef PTR_ReflectFieldObject REFLECTFIELDREF;
 typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
+typedef PTR_AssemblyBinderObject ASSEMBLYBINDERREF;
+typedef PTR_BinderAssemblyObject BINDERASSEMBLYREF;
 typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 

@@ -43,15 +43,14 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
-    AssemblyBinder *pBinder = NULL;
+    ASSEMBLYBINDERREF pBinder = NULL;
+
+    GCX_COOP();
 
     {
-        GCX_COOP();
-
         if (assemblyLoadContext.Get() != NULL)
         {
-            INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
-            pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
+            pBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
         }
 
         // Compute parent assembly

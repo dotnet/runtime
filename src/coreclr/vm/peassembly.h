@@ -301,7 +301,7 @@ public:
     }
 
     // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
-    PTR_BINDER_SPACE_Assembly GetHostAssembly()
+    OBJECTHANDLE GetHostAssembly()
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         return m_pHostAssembly;
@@ -310,10 +310,10 @@ public:
     // Returns the AssemblyBinder* instance associated with the PEAssembly
     // which owns the context into which the current PEAssembly was loaded.
     // For Dynamic assemblies this is the fallback binder.
-    PTR_AssemblyBinder GetAssemblyBinder();
+    ASSEMBLYBINDERREF GetAssemblyBinder();
 
 #ifndef DACCESS_COMPILE
-    void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
+    void SetFallbackBinder(OBJECTHANDLE pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
         m_pFallbackBinder = pFallbackBinder;
@@ -323,7 +323,7 @@ public:
 
     ULONG HashIdentity();
 
-    PTR_AssemblyBinder GetFallbackBinder()
+    OBJECTHANDLE GetFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -336,12 +336,12 @@ public:
 
     static PEAssembly* Open(
         PEImage* pPEImageIL,
-        BINDER_SPACE::Assembly* pHostAssembly);
+        BINDERASSEMBLYREF pHostAssembly);
 
     // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly* OpenSystem();
 
-    static PEAssembly* Open(BINDER_SPACE::Assembly* pBindResult);
+    static PEAssembly* Open(BINDERASSEMBLYREF pBindResult);
 
     static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit);
 
@@ -370,12 +370,13 @@ private:
     ~PEAssembly() {};
     PEAssembly() = default;
 #else
+    
     PEAssembly(
-        BINDER_SPACE::Assembly* pBindResultInfo,
+        BINDERASSEMBLYREF pBindResultInfo,
         IMetaDataEmit* pEmit,
         BOOL isSystem,
         PEImage* pPEImageIL = NULL,
-        BINDER_SPACE::Assembly* pHostAssembly = NULL
+        BINDERASSEMBLYREF pHostAssembly = NULL
     );
 
     ~PEAssembly();
@@ -426,7 +427,7 @@ private:
     Volatile<LONG>           m_refCount;
     bool                     m_isSystem;
 
-    PTR_BINDER_SPACE_Assembly m_pHostAssembly;
+    OBJECTHANDLE m_pHostAssembly;
 
     // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
     // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
@@ -435,7 +436,7 @@ private:
     // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    PTR_AssemblyBinder m_pFallbackBinder;
+    OBJECTHANDLE m_pFallbackBinder;
 
 };  // class PEAssembly
 

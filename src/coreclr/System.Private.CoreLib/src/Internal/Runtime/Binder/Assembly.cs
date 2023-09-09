@@ -10,11 +10,17 @@ namespace Internal.Runtime.Binder
     // We also store whether it was bound using TPA list
     internal sealed class Assembly
     {
+        // fields used by VM
         public IntPtr PEImage;
+        private AssemblyBinder? m_binder;
+
+        public AssemblyBinder? Binder
+        {
+            get => m_binder;
+            set => m_binder = value;
+        }
 
         public AssemblyName AssemblyName { get; }
-
-        public AssemblyBinder? Binder { get; set; }
 
         public bool IsInTPA { get; }
 
