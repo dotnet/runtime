@@ -92,6 +92,7 @@ namespace Internal.Runtime.Binder.Tracing
             }
             else
             {
+                Debug.Assert(binder != null);
                 _assemblyLoadContextName = binder.GetNameForDiagnostics();
             }
         }

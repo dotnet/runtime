@@ -44,7 +44,7 @@ namespace System.Reflection
         }
     }
 
-    internal sealed class LoaderAllocator
+    internal sealed partial class LoaderAllocator
     {
         private LoaderAllocator()
         {
