@@ -372,7 +372,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                     m_runtimeBaseAddress = baseAddress;
 
                     // explicit initialization for old gcc support; instead of just runtimeInfo { }
-                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { } };
+                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { }, .RuntimeVersion = { } };
                     if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
                     {
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
