@@ -1150,10 +1150,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 bool Lowering::TryLowerSwitchToBitTest(
     BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
 {
-#ifndef TARGET_XARCH
-    // Other architectures may use this if they substitute GT_BT with equivalent code.
-    return false;
-#else
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
     assert(bbSwitch->bbJumpKind == BBJ_SWITCH);
@@ -1223,7 +1219,7 @@ bool Lowering::TryLowerSwitchToBitTest(
         return false;
     }
 
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     //
     // See if we can avoid a 8 byte immediate on 64 bit targets. If all upper 32 bits are 1
     // then inverting the bit table will make them 0 so that the table now fits in 32 bits.
@@ -1270,20 +1266,31 @@ bool Lowering::TryLowerSwitchToBitTest(
         comp->fgAddRefPred(bbCase1, bbSwitch);
     }
 
+    var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
+    GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
+
+#ifdef TARGET_XARCH
     //
     // Append BT(bitTable, switchValue) and JCC(condition) to the switch block.
     //
-
-    var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
-    GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
-    GenTree*  bitTest      = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
+    GenTree* bitTest = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->gtFlags |= GTF_SET_FLAGS;
     GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
-
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
-
+#else  // TARGET_XARCH
+    //
+    // Fallback to AND(RSZ(bitTable, switchValue), 1)
+    //
+    GenTree* tstCns = comp->gtNewIconNode(bbSwitch->bbNext != bbCase0 ? 0 : 1, bitTableType);
+    GenTree* shift  = comp->gtNewOperNode(GT_RSZ, bitTableType, bitTableIcon, switchValue);
+    GenTree* one    = comp->gtNewIconNode(1, bitTableType);
+    GenTree* andOp  = comp->gtNewOperNode(GT_AND, bitTableType, shift, one);
+    GenTree* cmp    = comp->gtNewOperNode(GT_EQ, TYP_INT, andOp, tstCns);
+    GenTree* jcc    = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cmp);
+    LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, shift, tstCns, one);
+    LIR::AsRange(bbSwitch).InsertAfter(one, andOp, cmp, jcc);
+#endif // !TARGET_XARCH
     return true;
-#endif // TARGET_XARCH
 }
 
 void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
