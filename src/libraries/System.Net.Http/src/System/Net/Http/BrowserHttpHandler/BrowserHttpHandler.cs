@@ -133,9 +133,9 @@ namespace System.Net.Http
             List<string> headerNames = new List<string>(headerCount);
             List<string> headerValues = new List<string>(headerCount);
             JSObject abortController = BrowserHttpInterop.CreateAbortController();
-            CancellationTokenRegistration? abortRegistration = cancellationToken.Register(static (object? state) =>
+            CancellationTokenRegistration? abortRegistration = cancellationToken.Register(static s =>
             {
-                JSObject _abortController = (JSObject)state!;
+                JSObject _abortController = (JSObject)s!;
 #if FEATURE_WASM_THREADS
                 if (!_abortController.IsDisposed)
                 {

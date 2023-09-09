@@ -131,9 +131,9 @@ namespace System.Net.Http
             }
             try
             {
-                using (var operationRegistration = cancellationToken.Register(static (object? state) =>
+                using (var operationRegistration = cancellationToken.Register(static s =>
                 {
-                    (Task _promise, JSObject? _fetchResponse) = ((Task, JSObject?))state!;
+                    (Task _promise, JSObject? _fetchResponse) = ((Task, JSObject?))s!;
                     CancelablePromise.CancelPromise(_promise, static (JSObject? __fetchResponse) =>
                     {
                         if (__fetchResponse != null)

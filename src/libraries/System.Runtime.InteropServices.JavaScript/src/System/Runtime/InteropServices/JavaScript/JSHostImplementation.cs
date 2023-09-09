@@ -159,9 +159,9 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return jsTask.Result;
             }
-            using (var receiveRegistration = cancellationToken.Register(static (object? state) =>
+            using (var receiveRegistration = cancellationToken.Register(static s =>
             {
-                CancelablePromise.CancelPromise((Task<JSObject>)state!);
+                CancelablePromise.CancelPromise((Task<JSObject>)s!);
             }, jsTask))
             {
                 return await jsTask.ConfigureAwait(true);
