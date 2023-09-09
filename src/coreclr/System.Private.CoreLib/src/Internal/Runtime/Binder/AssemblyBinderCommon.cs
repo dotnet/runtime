@@ -32,13 +32,13 @@ namespace Internal.Runtime.Binder
 
     internal static partial class AssemblyBinderCommon
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern unsafe IntPtr BinderAcquireImport(IntPtr pPEImage, int* pdwPAFlags);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquireImport")]
+        public static unsafe partial IntPtr BinderAcquireImport(IntPtr pPEImage, int* pdwPAFlags);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquirePEImage", StringMarshalling = StringMarshalling.Utf8)]
+        private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
 
         // Foo
-
-        [LibraryImport("Foo", StringMarshalling = StringMarshalling.Utf8)]
-        private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr DomainAssembly_GetPEAssembly(IntPtr pDomainAssembly);

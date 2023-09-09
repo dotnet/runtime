@@ -193,6 +193,8 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetAssemblyCount)
     DllImportEntry(AssemblyNative_GetEntryAssembly)
     DllImportEntry(AssemblyNative_GetExecutingAssembly)
+    DllImportEntry(PEImage_BinderAcquireImport)
+    DllImportEntry(PEImage_BinderAcquirePEImage)
     DllImportEntry(PEImage_OpenImage)
     DllImportEntry(PEImage_CreateFromByteArray)
     DllImportEntry(PEImage_CheckILFormat)

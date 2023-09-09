@@ -266,10 +266,6 @@ public:
     static PTR_LoaderHeap GetDllThunkHeap(void* pBase);
     static void UnloadIJWModule(void* pBase);
     
-#ifndef DACCESS_COMPILE
-    static FCDECL2(IMDInternalImport*, ManagedBinderAcquireImport, PEImage*, DWORD*);
-#endif
-
 private:
 
     // ------------------------------------------------------------
@@ -333,6 +329,8 @@ FORCEINLINE void PEImageRelease(PEImage *i)
 }
 
 #ifndef DACCESS_COMPILE
+extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags);
+extern "C" HRESULT QCALLTYPE PEImage_BinderAcquirePEImage(LPCWSTR wszAssemblyPath, PEImage * *ppPEImage, BundleFileLocation bundleFileLocation);
 extern "C" PEImage * QCALLTYPE PEImage_OpenImage(LPCWSTR pPath, MDInternalImportFlags flags, BundleFileLocation bundleFileLocation);
 extern "C" PEImage * QCALLTYPE PEImage_CreateFromByteArray(BYTE* array, DWORD size);
 extern "C" BOOL QCALLTYPE PEImage_CheckILFormat(PEImage * pPEImage);

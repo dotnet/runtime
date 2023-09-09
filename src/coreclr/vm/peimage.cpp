@@ -917,19 +917,16 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 }
 
 #ifndef DACCESS_COMPILE
-FCIMPL2(IMDInternalImport*, PEImage::ManagedBinderAcquireImport, PEImage* pPEImage, DWORD* pdwPAFlags)
+extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags)
 {
-    FCALL_CONTRACT;
-
-    _ASSERTE(pPEImage != NULL);
-    _ASSERTE(pdwPAFlags != NULL);
+    QCALL_CONTRACT;
 
     IMDInternalImport* ret = NULL;
 
+    BEGIN_QCALL;
+    
     // The same logic of BinderAcquireImport
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
+    
     PEImageLayout* pLayout = pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
 
     // CheckCorHeader includes check of NT headers too
@@ -949,11 +946,41 @@ FCIMPL2(IMDInternalImport*, PEImage::ManagedBinderAcquireImport, PEImage* pPEIma
 
     // No AddRef
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return ret;
 }
-FCIMPLEND
+
+extern "C" HRESULT QCALLTYPE PEImage_BinderAcquirePEImage(LPCWSTR wszAssemblyPath, PEImage * *ppPEImage, BundleFileLocation bundleFileLocation)
+{
+    QCALL_CONTRACT;
+
+    HRESULT hr = S_OK;
+
+    BEGIN_QCALL;
+
+    EX_TRY
+    {
+        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
+
+        // Make sure that the IL image can be opened.
+        hr = pImage->TryOpenFile();
+        if (FAILED(hr))
+        {
+            goto Exit;
+        }
+
+        if (pImage)
+            *ppPEImage = pImage.Extract();
+    }
+    EX_CATCH_HRESULT(hr);
+
+Exit:
+
+    END_QCALL;
+
+    return hr;
+}
 
 extern "C" PEImage * QCALLTYPE PEImage_OpenImage(LPCWSTR pPath, MDInternalImportFlags flags, BundleFileLocation bundleFileLocation)
 {
