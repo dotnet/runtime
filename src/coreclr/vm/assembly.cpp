@@ -454,13 +454,21 @@ Assembly *Assembly::CreateDynamic(OBJECTHANDLE pBinder, NativeAssemblyNameParts*
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
     {
-        GCX_PREEMP();
-
         AssemblyLoaderAllocator* pBinderLoaderAllocator = nullptr;
         if (pBinder != nullptr)
         {
-            pBinderLoaderAllocator = pBinder->GetLoaderAllocator();
+            ASSEMBLYBINDERREF binderObj = (ASSEMBLYBINDERREF)ObjectFromHandle(pBinder);
+            MethodDescCallSite methGetLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR);
+            ARG_SLOT args[1] =
+            {
+                ObjToArgSlot(binderObj)
+            };
+            LOADERALLOCATORREF managedLA = (LOADERALLOCATORREF)methGetLoaderAllocator.Call_RetOBJECTREF(args);
+
+            pBinderLoaderAllocator = (AssemblyLoaderAllocator*)managedLA->GetNativeLoaderAllocator();
         }
+
+        GCX_PREEMP();
 
         // Create a new LoaderAllocator if appropriate
         if ((access & ASSEMBLY_ACCESS_COLLECT) != 0)

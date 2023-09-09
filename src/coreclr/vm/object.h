@@ -2273,6 +2273,12 @@ public:
         m_pLoaderAllocatorScout->m_nativeLoaderAllocator = pLoaderAllocator;
     }
 
+    LoaderAllocator* GetNativeLoaderAllocator()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pLoaderAllocatorScout->m_nativeLoaderAllocator;
+    }
+
     // README:
     // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
