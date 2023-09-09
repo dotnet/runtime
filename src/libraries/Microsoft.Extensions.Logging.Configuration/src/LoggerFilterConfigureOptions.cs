@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Logging
                 else
                 {
                     IConfigurationSection logLevelSection = configurationSection.GetSection(LogLevelKey);
-                    if (logLevelSection?.Exists())
+                    if (logLevelSection != null && logLevelSection.Exists())
                     {
                         // Load logger specific rules
                         string logger = configurationSection.Key;
