@@ -3331,6 +3331,12 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
         //
         GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
 
+        if (tree->isIndir() && tree->AsIndir()->Addr()->IsIconHandle(GTF_ICON_FTN_ADDR))
+        {
+            // IND(ICON_FTN_ADDR) may or may not have GTF_IND_INVARIANT flag.
+            flagsToCheck &= ~GTF_IND_INVARIANT;
+        }
+
         if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
         {
             // Print the tree so we can see it in the log.
