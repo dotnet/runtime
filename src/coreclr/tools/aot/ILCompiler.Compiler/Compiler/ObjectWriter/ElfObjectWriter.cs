@@ -32,8 +32,7 @@ namespace ILCompiler.ObjectWriter
     {
         private ElfObjectFile _objectFile;
         private int _sectionIndex;
-        private int _bssSectionIndex;
-        private Stream _bssStream;
+        private Dictionary<int, Stream> _bssStreams = new();
         private Dictionary<int, ElfSection> _sectionIndexToElfSection = new();
         private Dictionary<ElfSection, ElfRelocationTable> _sectionToRelocationTable = new();
 
@@ -59,28 +58,27 @@ namespace ILCompiler.ObjectWriter
 
         protected override void CreateSection(ObjectNodeSection section, out Stream sectionStream)
         {
-            if (section.Name == "bss")
-            {
-                Debug.Assert(_bssStream == null);
+            string sectionName =
+                section.Name == "rdata" ? ".rodata" :
+                (section.Name.StartsWith("_") || section.Name.StartsWith(".") ? section.Name : "." + section.Name);
 
-                _bssSectionIndex = _sectionIndex;
-                _bssStream = sectionStream = new MemoryStream();
+            sectionStream = new MemoryStream();
+
+            if (section.Type == SectionType.Uninitialized)
+            {
                 ElfSection elfSection = new ElfBinarySection()
                 {
-                    Name = ".bss",
+                    Name = sectionName,
                     Type = ElfSectionType.NoBits,
                     Flags = ElfSectionFlags.Alloc | ElfSectionFlags.Write,
                 };
 
+                _bssStreams[_sectionIndex] = sectionStream;
                 _sectionIndexToElfSection[_sectionIndex++] = elfSection;
                 _objectFile.AddSection(elfSection);
             }
             else
             {
-                string sectionName =
-                    section.Name == "rdata" ? ".rodata" :
-                    (section.Name.StartsWith("_") || section.Name.StartsWith(".") ? section.Name : "." + section.Name);
-
                 sectionStream = new MemoryStream();
                 ElfSection elfSection = new ElfBinarySection(sectionStream)
                 {
@@ -436,9 +434,9 @@ namespace ILCompiler.ObjectWriter
             _objectFile.AddSection(_symbolTable.Link.Section);
             _objectFile.AddSection(_symbolTable);
             _objectFile.AddSection(new ElfSectionHeaderStringTable());
-            if (_bssStream != null)
+            foreach (var (bssSectionIndex, bssStream) in _bssStreams)
             {
-                _sectionIndexToElfSection[_bssSectionIndex].Size = (ulong)_bssStream.Length;
+                _sectionIndexToElfSection[bssSectionIndex].Size = (ulong)bssStream.Length;
             }
 
             _objectFile.AddSection(new ElfBinarySection(Stream.Null)
