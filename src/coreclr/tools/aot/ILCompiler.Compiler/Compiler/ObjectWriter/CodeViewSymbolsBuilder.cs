@@ -104,6 +104,10 @@ namespace ILCompiler.ObjectWriter
         {
             using var symbolSubsection = GetSubsection(DebugSymbolsSubsectionType.Symbols);
 
+            // TODO: Do we need those?
+            _ = methodTypeIndex;
+            _ = debugEHClauseInfos;
+
             using (var recordWriter = symbolSubsection.StartRecord(S_GPROC32_ID))
             {
                 recordWriter.Write((uint)0); // pointer to the parent
