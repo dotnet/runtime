@@ -467,10 +467,8 @@ typedef enum
     /*
      * PINNED HANDLES for asynchronous operation
      *
-     * Pinned handles are strong handles which have the added property that they
-     * prevent an object from moving during a garbage collection cycle.  This is
-     * useful when passing a pointer to object innards out of the runtime while GC
-     * may be enabled.
+     * Pinned async handles are strong handles that pin a buffer or array of buffers owned
+     * by System.Threading.Overlapped instance.
      *
      * NOTE: HNDTYPE_ASYNCPINNED is no longer used in the VM starting .NET 8
      *       but we are keeping it here for backward compatibility purposes"
