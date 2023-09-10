@@ -587,15 +587,48 @@ namespace ILCompiler.ObjectWriter
 
         protected override string ExternCName(string name) => "_" + name;
 
-        protected override bool EmitCompactUnwinding(DwarfFde fde)
+        // This represents the following DWARF code:
+        //   DW_CFA_advance_loc: 4
+        //   DW_CFA_def_cfa_offset: +16
+        //   DW_CFA_offset: W29 -16
+        //   DW_CFA_offset: W30 -8
+        //   DW_CFA_advance_loc: 4
+        //   DW_CFA_def_cfa_register: W29
+        // which is generated for the following frame prolog/epilog:
+        //   stp fp, lr, [sp, #-10]!
+        //   mov fp, sp
+        //   ...
+        //   ldp fp, lr, [sp], #0x10
+        //   ret
+        private static ReadOnlySpan<byte> DwarfArm64EmptyFrame => new byte[]
         {
+            0x04, 0x00, 0xFF, 0xFF, 0x10, 0x00, 0x00, 0x00,
+            0x04, 0x02, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x04, 0x02, 0x1E, 0x00, 0x08, 0x00, 0x00, 0x00,
+            0x08, 0x01, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+
+        protected override bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob)
+        {
+            uint encoding = _compactUnwindDwarfCode;
+
+            if (_objectFile.CpuType == MachCpuType.Arm64)
+            {
+                if (blob.AsSpan().SequenceEqual(DwarfArm64EmptyFrame))
+                {
+                    // Frame-based encoding, no saved registers
+                    encoding = 0x04000000;
+                }
+            }
+
             _compactUnwindCodes.Add(new CompactUnwindCode(
-                PcStartSymbolName: fde.PcStartSymbolName,
-                PcLength: (uint)fde.PcLength,
-                Code: _compactUnwindDwarfCode // Use DWARF
+                PcStartSymbolName: startSymbolName,
+                PcLength: (uint)length,
+                Code: encoding,
+                LsdaSymbolName: encoding != _compactUnwindDwarfCode ? lsdaSymbolName : null
             ));
 
-            return false;
+            return encoding == _compactUnwindDwarfCode;
         }
 
         protected override ulong GetSectionVirtualAddress(int sectionIndex)
