@@ -348,7 +348,7 @@ g_utf8_to_utf16_impl (const gchar *str, glong len, glong *items_read, glong *ite
 	if (ret <= 0)
 		return NULL;
 
-	lpDestStr = malloc((ret + 1) * sizeof(gunichar2));
+	lpDestStr = g_malloc ((ret + 1) * sizeof(gunichar2));
 	ret = (glong)minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
 	lpDestStr[ret] = '\0';
 

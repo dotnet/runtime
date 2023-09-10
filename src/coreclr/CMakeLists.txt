@@ -73,8 +73,7 @@ endif()
 # Enable C++ EH with SEH
 #-------------------------
 if (MSVC)
-  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHa>) # enable C++ EH (w/ SEH exceptions)
+  set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHa) # enable C++ EH (w/ SEH exceptions)
 endif()
 
 #-------------------------------

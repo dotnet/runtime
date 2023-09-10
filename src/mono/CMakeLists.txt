@@ -828,7 +828,7 @@ set(EGLIB_GSSIZE "ptrdiff_t")
 #
 
 ######################################
-# DEBUG BUILD CHECKS
+# CHECKED BUILD CHECKS
 ######################################
 function(process_checked_build)
   string(REPLACE "," ";" tmp1 "${CHECKED_BUILD}")
@@ -838,17 +838,15 @@ function(process_checked_build)
   endforeach(arg)
 endfunction()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # if no explicit -DCHECKED_BUILD=args option, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
-  if (CHECKED_BUILD)
-    set(ENABLE_CHECKED_BUILD 1)
-    process_checked_build()
-  else()
-    set(ENABLE_CHECKED_BUILD 1)
-    set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
-  endif()
+if(CHECKED_BUILD)
+  set(ENABLE_CHECKED_BUILD 1)
+  process_checked_build()
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # if no explicit -DCHECKED_BUILD=args option and we're building debug, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
+  set(ENABLE_CHECKED_BUILD 1)
+  set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
 endif()
-### End of debug build checks
+### End of checked build checks
 
 ######################################
 # COMPONENT BUILD CHECKS

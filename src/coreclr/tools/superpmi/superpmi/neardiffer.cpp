@@ -91,7 +91,7 @@ bool NearDiffer::InitAsmDiff()
         coreDisToolsLibrary = coreCLRLoadedPath;
 #endif // TARGET_UNIX
 
-        HMODULE hCoreDisToolsLib = ::LoadLibraryW(coreDisToolsLibrary);
+        HMODULE hCoreDisToolsLib = ::LoadLibraryExW(coreDisToolsLibrary, NULL, 0);
         if (hCoreDisToolsLib == 0)
         {
             LogError("LoadLibrary(%s) failed (0x%08x)", MAKEDLLNAME_A("coredistools"), ::GetLastError());

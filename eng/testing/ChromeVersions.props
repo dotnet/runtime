@@ -1,13 +1,13 @@
 <Project>
   <PropertyGroup>
-      <linux_ChromeVersion>116.0.5845.140</linux_ChromeVersion>
+      <linux_ChromeVersion>116.0.5845.179</linux_ChromeVersion>
       <linux_ChromeRevision>1160321</linux_ChromeRevision>
       <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1160321</linux_ChromeBaseSnapshotUrl>
-      <linux_V8Version>11.6.189.19</linux_V8Version>
+      <linux_V8Version>11.6.189.20</linux_V8Version>
 
-      <win_ChromeVersion>116.0.5845.141</win_ChromeVersion>
+      <win_ChromeVersion>116.0.5845.180</win_ChromeVersion>
       <win_ChromeRevision>1160321</win_ChromeRevision>
       <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1160375</win_ChromeBaseSnapshotUrl>
-      <win_V8Version>11.6.189.19</win_V8Version>
+      <win_V8Version>11.6.189.20</win_V8Version>
   </PropertyGroup>
 </Project>

@@ -75,7 +75,8 @@ if(HAVE_SYS_ICU)
         pal_collation.m
         pal_casing.m
         pal_calendarData.m
-        pal_normalization.m)
+        pal_normalization.m
+        pal_timeZoneInfo.m)
 
     addprefix(icu_shim_darwin_sources "${ICU_SHIM_PATH}" "${icu_shim_darwin_sources_base}")
     set(icu_shim_sources ${icu_shim_sources} ${icu_shim_darwin_sources})
