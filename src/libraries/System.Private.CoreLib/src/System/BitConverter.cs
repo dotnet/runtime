@@ -262,7 +262,7 @@ namespace System
         public static unsafe byte[] GetBytes(Half value)
         {
             byte[] bytes = new byte[sizeof(Half)];
-            Unsafe.As<byte, Half>(ref bytes[0]) = value;
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(bytes), value);
             return bytes;
         }
 
