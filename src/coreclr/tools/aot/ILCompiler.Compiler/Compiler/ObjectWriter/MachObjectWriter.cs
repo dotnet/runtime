@@ -30,6 +30,7 @@ namespace ILCompiler.ObjectWriter
     {
         private sealed record CompactUnwindCode(string PcStartSymbolName, uint PcLength, uint Code, string LsdaSymbolName = null, string PersonalitySymbolName = null);
 
+        private TargetOS _targetOS;
         private MachObjectFile _objectFile;
         private MachSegment _segment;
 
@@ -74,6 +75,8 @@ namespace ILCompiler.ObjectWriter
                 MaximumProtection = MachVmProtection.Execute | MachVmProtection.Read | MachVmProtection.Write,
             };
             _objectFile.LoadCommands.Add(_segment);
+
+            _targetOS = factory.Target.OperatingSystem;
         }
 
         protected override void EmitSectionsAndLayout()
@@ -93,10 +96,49 @@ namespace ILCompiler.ObjectWriter
             _dySymbolTable = new MachDynamicLinkEditSymbolTable();
             _objectFile.LoadCommands.Add(_symbolTable);
             _objectFile.LoadCommands.Add(_dySymbolTable);
-            _objectFile.LoadCommands.Add(new MachVersionMinMacOS
+
+            var sdkVersion = new Version(16, 0, 0);
+            switch (_targetOS)
             {
-                MinimumPlatformVersion = new Version(10, 12, 0)
-            });
+                case TargetOS.OSX:
+                    _objectFile.LoadCommands.Add(new MachVersionMinMacOS
+                    {
+                        MinimumPlatformVersion = new Version(10, 12, 0),
+                        SdkVersion = sdkVersion,
+                    });
+                    break;
+
+                case TargetOS.MacCatalyst:
+                    _objectFile.LoadCommands.Add(new MachBuildVersion
+                    {
+                        TargetPlatform = MachPlatform.MacCatalyst,
+                        MinimumPlatformVersion = _objectFile.CpuType switch {
+                            MachCpuType.X86_64 => new Version(13, 5, 0),
+                            _ => new Version(14, 2, 0),
+                        },
+                        SdkVersion = sdkVersion,
+                    });
+                    break;
+
+                case TargetOS.iOS:
+                case TargetOS.iOSSimulator:
+                case TargetOS.tvOS:
+                case TargetOS.tvOSSimulator:
+                    _objectFile.LoadCommands.Add(new MachBuildVersion
+                    {
+                        TargetPlatform = _targetOS switch
+                        {
+                            TargetOS.iOS => MachPlatform.IOS,
+                            TargetOS.iOSSimulator => MachPlatform.IOSSimulator,
+                            TargetOS.tvOS => MachPlatform.TvOS,
+                            TargetOS.tvOSSimulator => MachPlatform.TvOSSimulator,
+                            _ => (MachPlatform)0,
+                        },
+                        MinimumPlatformVersion = new Version(11, 0, 0),
+                        SdkVersion = sdkVersion,
+                    });
+                    break;
+            }
 
             // Layout the sections
             _objectFile.UpdateLayout();

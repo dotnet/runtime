@@ -102,7 +102,7 @@ namespace ILCompiler.ObjectWriter
         protected bool ShouldShareSymbol(ObjectNode node)
         {
             // TODO: Not supported yet
-            if (_nodeFactory.Target.OperatingSystem == TargetOS.OSX ||
+            if (_nodeFactory.Target.IsOSXLike ||
                 _nodeFactory.Target.OperatingSystem == TargetOS.Linux)
                 return false;
 
@@ -112,7 +112,7 @@ namespace ILCompiler.ObjectWriter
         protected bool ShouldShareSymbol(ObjectNode node, ObjectNodeSection section)
         {
             // TODO: Not supported yet
-            if (_nodeFactory.Target.OperatingSystem == TargetOS.OSX ||
+            if (_nodeFactory.Target.IsOSXLike ||
                 _nodeFactory.Target.OperatingSystem == TargetOS.Linux)
                 return false;
 
