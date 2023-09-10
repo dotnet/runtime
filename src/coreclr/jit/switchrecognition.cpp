@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
@@ -126,6 +126,8 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         minValue = newMinValue;
         maxValue = newMaxValue;
     }
+
+    assert(testIdx <= testsCount);
 
     if (testIdx < SWITCH_MIN_TESTS)
     {
