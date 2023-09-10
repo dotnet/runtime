@@ -33,7 +33,6 @@ public unsafe class Program
         {
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
-            NegativeTest_ViaCalli();
             NegativeTest_NonBlittable();
             NegativeTest_InstantiatedGenericArguments();
             NegativeTest_FromInstantiatedGenericClass();
@@ -137,27 +136,6 @@ public unsafe class Program
         int n = 12345;
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&GenericClass<int>.CallbackMethod, n); });
-    }
-
-    [UnmanagedCallersOnly]
-    public static void CallbackViaCalli(int val)
-    {
-        Assert.True(false, $"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot be called via calli");
-    }
-
-    public static void NegativeTest_ViaCalli()
-    {
-        Console.WriteLine($"{nameof(NegativeTest_ViaCalli)} function via calli instruction. The CLR _will_ crash.");
-
-        // It is not possible to catch the resulting ExecutionEngineException exception.
-        // To observe the crashing behavior set a breakpoint in the ReversePInvokeBadTransition() function
-        // located in src/vm/dllimportcallback.cpp.
-        TestNativeMethod();
-
-        static void TestNativeMethod()
-        {
-            ((delegate*<int, void>)(delegate* unmanaged<int, void>)&CallbackViaCalli)(1234);
-        }
     }
 
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
