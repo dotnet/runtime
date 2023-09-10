@@ -63,6 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string section = nameof(section);
                 public const string sectionKey = nameof(sectionKey);
                 public const string services = nameof(services);
+                public const string sp = nameof(sp);
                 public const string temp = nameof(temp);
                 public const string type = nameof(type);
                 public const string typedObj = nameof(typedObj);
@@ -103,6 +104,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string IOptionsChangeTokenSource = nameof(IOptionsChangeTokenSource);
                 public const string IServiceCollection = nameof(IServiceCollection);
                 public const string Length = nameof(Length);
+                public const string Name = nameof(Name);
                 public const string NumberStyles = nameof(NumberStyles);
                 public const string Parse = nameof(Parse);
                 public const string Path = nameof(Path);
