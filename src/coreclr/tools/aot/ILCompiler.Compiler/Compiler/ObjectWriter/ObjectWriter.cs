@@ -309,6 +309,8 @@ namespace ILCompiler.ObjectWriter
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
+                dumper?.DumpObjectNode(_nodeFactory, node, nodeContents);
+
                 string currentSymbolName = null;
                 if (node is ISymbolNode symbolNode)
                 {
