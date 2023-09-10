@@ -76,17 +76,14 @@ namespace ILCompiler.ObjectWriter
                     SectionType.Executable =>
                         SectionCharacteristics.MemRead | SectionCharacteristics.MemExecute |
                         SectionCharacteristics.ContainsCode,
+                    SectionType.Uninitialized =>
+                        SectionCharacteristics.MemRead | SectionCharacteristics.MemWrite |
+                        SectionCharacteristics.ContainsUninitializedData,
                     _ => 0
                 }
             };
 
-            if (section.Name == "bss")
-            {
-                sectionHeader.SectionCharacteristics =
-                    SectionCharacteristics.MemRead | SectionCharacteristics.MemWrite |
-                    SectionCharacteristics.ContainsUninitializedData;
-            }
-            else if (section == DebugTypesSection)
+            if (section == DebugTypesSection)
             {
                 sectionHeader.SectionCharacteristics =
                     SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData |

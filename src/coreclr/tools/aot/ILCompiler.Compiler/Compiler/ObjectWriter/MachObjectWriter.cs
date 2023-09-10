@@ -146,7 +146,7 @@ namespace ILCompiler.ObjectWriter
             {
                 "bss" => MachSectionType.ZeroFill,
                 ".eh_frame" => MachSectionType.Coalesced,
-                _ => MachSectionType.Regular
+                _ => section.Type == SectionType.Uninitialized ? MachSectionType.ZeroFill : MachSectionType.Regular
             };
 
             MachSection machSection = new MachSection(_objectFile, segmentName, sectionName)
