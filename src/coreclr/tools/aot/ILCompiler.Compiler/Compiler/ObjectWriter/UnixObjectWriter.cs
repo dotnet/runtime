@@ -46,7 +46,7 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        protected virtual bool EmitCompactUnwinding(DwarfFde fde) => false;
+        protected virtual bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob) => false;
 
         protected override void EmitUnwindInfo(
             SectionWriter sectionWriter,
@@ -128,15 +128,17 @@ namespace ILCompiler.ObjectWriter
                         }
                     }
 
-                    var fde = new DwarfFde(_dwarfCie, DwarfFde.CfiCodeToInstructions(_dwarfCie, frameInfo.BlobData))
+                    string startSymbolName = start != 0 ? framSymbolName : currentSymbolName;
+                    ulong length = (ulong)(end - start);
+                    if (!EmitCompactUnwinding(startSymbolName, length, lsdaSymbolName, blob))
                     {
-                        PcStartSymbolName = start != 0 ? framSymbolName : currentSymbolName,
-                        PcLength = (ulong)(end - start),
-                        LsdaSymbolName = lsdaSymbolName,
-                    };
+                        var fde = new DwarfFde(_dwarfCie, DwarfFde.CfiCodeToInstructions(_dwarfCie, blob))
+                        {
+                            PcStartSymbolName = startSymbolName,
+                            PcLength = (ulong)(end - start),
+                            LsdaSymbolName = lsdaSymbolName,
+                        };
 
-                    if (!EmitCompactUnwinding(fde))
-                    {
                         _dwarfEhFrame.AddFde(fde);
                     }
                 }
