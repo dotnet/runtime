@@ -673,7 +673,7 @@ namespace ILCompiler.ObjectWriter
 
             public int Size => IsBigObj ? BigObjSize : RegularSize;
 
-            public void Write(Stream stream)
+            public void Write(FileStream stream)
             {
                 if (!IsBigObj)
                 {
@@ -738,7 +738,7 @@ namespace ILCompiler.ObjectWriter
                 sizeof(ushort) + // NumberOfLineNumbers
                 sizeof(uint);    // SectionCharacteristics
 
-            public void Write(Stream stream, CoffStringTable stringTable)
+            public void Write(FileStream stream, CoffStringTable stringTable)
             {
                 Span<byte> buffer = stackalloc byte[Size];
 
@@ -825,7 +825,7 @@ namespace ILCompiler.ObjectWriter
                 sizeof(uint) +  // SymbolTableIndex
                 sizeof(ushort); // Type
 
-            public void Write(Stream stream)
+            public void Write(FileStream stream)
             {
                 Span<byte> buffer = stackalloc byte[Size];
 
@@ -978,7 +978,7 @@ namespace ILCompiler.ObjectWriter
                 return offset;
             }
 
-            public void Write(Stream stream)
+            public void Write(FileStream stream)
             {
                 Span<byte> stringTableSize = stackalloc byte[4];
                 BinaryPrimitives.WriteInt32LittleEndian(stringTableSize, (int)(_stream.Length + 4));

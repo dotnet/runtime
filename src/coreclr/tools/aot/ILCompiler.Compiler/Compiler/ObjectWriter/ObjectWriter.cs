@@ -106,8 +106,17 @@ namespace ILCompiler.ObjectWriter
                 _nodeFactory.Target.OperatingSystem == TargetOS.Linux)
                 return false;
 
+            return ShouldShareSymbol(node, node.GetSection(_nodeFactory));
+        }
+
+        protected bool ShouldShareSymbol(ObjectNode node, ObjectNodeSection section)
+        {
+            // TODO: Not supported yet
+            if (_nodeFactory.Target.OperatingSystem == TargetOS.OSX ||
+                _nodeFactory.Target.OperatingSystem == TargetOS.Linux)
+                return false;
+
             // Foldable sections are always COMDATs
-            ObjectNodeSection section = node.Section;
             if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
                 section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
                 section == ObjectNodeSection.FoldableReadOnlyDataSection)
@@ -306,8 +315,8 @@ namespace ILCompiler.ObjectWriter
                     currentSymbolName = GetMangledName(symbolNode);
                 }
 
-                ObjectNodeSection section = node.Section;
-                if (ShouldShareSymbol(node))
+                ObjectNodeSection section = node.GetSection(_nodeFactory);
+                if (ShouldShareSymbol(node, section))
                 {
                     section = GetSharedSection(section, currentSymbolName);
                 }
