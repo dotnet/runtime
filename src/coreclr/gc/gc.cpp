@@ -51562,15 +51562,15 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
     // copy the generation data from this and the other finalize queue
     for (int i = FreeListSeg - 1; i >= 0; i--)
     {
-        size_t index1 = SegQueue (i) - m_Array;
-        size_t index2 = other_fq->SegQueue (i) - other_fq->m_Array;
-        size_t limit1 = SegQueueLimit (i) - m_Array;
-        size_t limit2 = other_fq->SegQueueLimit (i) - other_fq->m_Array;
-        size_t size1 = limit1 - index1;
-        size_t size2 = limit2 - index2;
+        size_t thisIndex = SegQueue (i) - m_Array;
+        size_t otherIndex = other_fq->SegQueue (i) - other_fq->m_Array;
+        size_t thisLimit = SegQueueLimit (i) - m_Array;
+        size_t otherLimit = other_fq->SegQueueLimit (i) - other_fq->m_Array;
+        size_t thisSize = thisLimit - thisIndex;
+        size_t otherSize = otherLimit - otherIndex;
 
-        memmove (&newArray[index1 + index2],           &m_Array[index1], sizeof(newArray[0]) * size1);
-        memmove (&newArray[limit1 + index2], &other_fq->m_Array[index2], sizeof(newArray[0]) * size2);
+        memmove (&newArray[thisIndex + otherIndex],           &m_Array[thisIndex ], sizeof(newArray[0]) * thisSize);
+        memmove (&newArray[thisLimit + otherIndex], &other_fq->m_Array[otherIndex], sizeof(newArray[0]) * otherSize);
     }
 
     // copy the finalization data from this and the other finalize queue
@@ -51578,15 +51578,15 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
     // note reverse order from above to preserve the existing data
     for (int i = FreeListSeg + 1; i <= MaxSeg; i++)
     {
-        size_t indexFromEnd1 = m_EndArray - SegQueue (i);
-        size_t indexFromEnd2 = other_fq->m_EndArray - other_fq->SegQueue (i);
-        size_t limitFromEnd1 = m_EndArray - SegQueueLimit (i);
-        size_t limitFromEnd2 = other_fq->m_EndArray - other_fq->SegQueueLimit (i);
-        size_t size1 = indexFromEnd1 - limitFromEnd1;
-        size_t size2 = indexFromEnd2 - limitFromEnd2;
+        size_t thisIndexFromEnd = m_EndArray - SegQueue (i);
+        size_t otherIndexFromEnd = other_fq->m_EndArray - other_fq->SegQueue (i);
+        size_t thisLimitFromEnd = m_EndArray - SegQueueLimit (i);
+        size_t otherLimitFromEnd = other_fq->m_EndArray - other_fq->SegQueueLimit (i);
+        size_t thisSize = thisIndexFromEnd - thisLimitFromEnd;
+        size_t otherSize = otherIndexFromEnd - otherLimitFromEnd;
 
-        memmove (&newArray[thisArraySize + growthCount - indexFromEnd1 - indexFromEnd2],           m_EndArray - indexFromEnd1, sizeof(newArray[0]) * size1);
-        memmove (&newArray[thisArraySize + growthCount - limitFromEnd1 - indexFromEnd2], other_fq->m_EndArray - indexFromEnd2, sizeof(newArray[0]) * size2);
+        memmove (&newArray[thisArraySize + growthCount - thisIndexFromEnd - otherIndexFromEnd],           m_EndArray -  thisIndexFromEnd, sizeof(newArray[0]) * thisSize);
+        memmove (&newArray[thisArraySize + growthCount - thisLimitFromEnd - otherIndexFromEnd], other_fq->m_EndArray - otherIndexFromEnd, sizeof(newArray[0]) * otherSize);
     }
 
     // adjust the m_FillPointers to reflect the sum of both queues on this queue,
