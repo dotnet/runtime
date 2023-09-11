@@ -7,7 +7,7 @@
 #endif
 
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_IN_BYTE) - 1)
-#define SWITCH_MIN_TESTS 4
+#define SWITCH_MIN_TESTS 3
 
 //-----------------------------------------------------------------------------
 //  optSwitchRecognition: Optimize range check for if (A || B || C || D) pattern and convert it to Switch block
@@ -67,8 +67,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                              GenTree**         variableNode = nullptr,
                              ssize_t*          cns          = nullptr)
 {
-    // The block is expected to be BBJ_COND with a single statement
-    if (block->KindIs(BBJ_COND) && block->hasSingleStmt() && ((block->bbFlags & BBF_DONT_REMOVE) == 0))
+    if (block->KindIs(BBJ_COND) && ((block->bbFlags & BBF_DONT_REMOVE) == 0))
     {
         const GenTree* rootNode = block->lastStmt()->GetRootNode();
         assert(rootNode->OperIs(GT_JTRUE));
@@ -172,6 +171,11 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             ssize_t     currCns          = 0;
             BasicBlock* currBlockIfTrue  = nullptr;
             BasicBlock* currBlockIfFalse = nullptr;
+
+            if (!currBb->hasSingleStmt())
+            {
+                return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
+            }
 
             // Inspect secondary blocks
             if (IsConstantTestCondBlock(currBb, &currBlockIfTrue, &currBlockIfFalse, &isReversed, &currVariableNode,
