@@ -4703,10 +4703,11 @@ private:
     static const int FinalizerMaxSeg = FinalizerListSeg;
 
     static const int MaxSeg = FreeListSeg;
+    static const int FillPointersCount = total_generation_count + ExtraSegCount + 2;
 
-    PTR_PTR_Object m_FillPointers[total_generation_count + ExtraSegCount];
-    PTR_PTR_Object m_Array;
-    PTR_PTR_Object m_EndArray;
+    PTR_PTR_Object m_FillPointers[FillPointersCount];
+    PTR_PTR_Object& Array() { return m_FillPointers[0]; }
+    PTR_PTR_Object& EndArray() { return m_FillPointers[FillPointersCount - 1]; }
     size_t   m_PromotedCount;
 
     VOLATILE(int32_t) lock;
@@ -4721,16 +4722,16 @@ private:
 
     inline PTR_PTR_Object& SegQueue (unsigned int Seg)
     {
-        return (Seg ? m_FillPointers [Seg-1] : m_Array);
+        return m_FillPointers [Seg];
     }
     inline PTR_PTR_Object& SegQueueLimit (unsigned int Seg)
     {
-        return (Seg == MaxSeg ? m_EndArray : m_FillPointers[Seg]);
+        return m_FillPointers[Seg + 1];
     }
 
     size_t UsedCount ()
     {
-        return (SegQueue(FreeListSeg) - m_Array) + (m_EndArray - SegQueueLimit(FreeListSeg));
+        return (SegQueue(FreeListSeg) - Array()) + (EndArray() - SegQueueLimit(FreeListSeg));
     }
 
     BOOL IsSegEmpty ( unsigned int i)
