@@ -6,6 +6,8 @@
 #pragma hdrstop
 #endif
 
+// We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
+// even without conversion to a bitmap test.
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_IN_BYTE) - 1)
 #define SWITCH_MIN_TESTS 4
 
@@ -19,8 +21,7 @@
 //  Notes:
 //      Detect if (a == val1 || a == val2 || a == val3 || ...) pattern and change it to switch tree
 //      to reduce compares and jumps, and perform bit operation instead in Lowering phase.
-//      This optimization is performed only for integer types. Limit the Switch
-//      conversion to only for 3 or more conditional patterns to reduce code size regressions.
+//      This optimization is performed only for integer types.
 //
 PhaseStatus Compiler::optSwitchRecognition()
 {
@@ -37,7 +38,6 @@ PhaseStatus Compiler::optSwitchRecognition()
 
     if (modified)
     {
-        fgReorderBlocks(/* useProfileData */ false);
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
@@ -67,7 +67,8 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                              GenTree**         variableNode = nullptr,
                              ssize_t*          cns          = nullptr)
 {
-    if (block->KindIs(BBJ_COND) && ((block->bbFlags & BBF_DONT_REMOVE) == 0))
+    // NOTE: caller is expected to check that a block has multiple statements or not
+    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && ((block->bbFlags & BBF_DONT_REMOVE) == 0))
     {
         const GenTree* rootNode = block->lastStmt()->GetRootNode();
         assert(rootNode->OperIs(GT_JTRUE));
@@ -174,6 +175,8 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
 
             if (!currBb->hasSingleStmt())
             {
+                // Only the first conditional block can have multiple statements.
+                // Stop searching and process what we already have.
                 return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
             }
 
@@ -183,25 +186,25 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             {
                 if (currBlockIfTrue != blockIfTrue)
                 {
-                    // This blocks jumps to a different target, stop searching and process what we already have
+                    // This blocks jumps to a different target, stop searching and process what we already have.
                     return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
                 }
 
                 if (!GenTree::Compare(currVariableNode, variableNode))
                 {
-                    // A different variable node is used, stop searching and process what we already have
+                    // A different variable node is used, stop searching and process what we already have.
                     return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
                 }
 
                 if (currBb->GetUniquePred(this) != prevBlock)
                 {
-                    // Multiple preds in a secondary block, stop searching and process what we already have
+                    // Multiple preds in a secondary block, stop searching and process what we already have.
                     return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
                 }
 
                 if (!BasicBlock::sameEHRegion(prevBlock, currBb))
                 {
-                    // Current block is in a different EH region, stop searching and process what we already have
+                    // Current block is in a different EH region, stop searching and process what we already have.
                     return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
                 }
 
@@ -209,13 +212,13 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
                 testValues[testValueIndex++] = currCns;
                 if (testValueIndex == SWITCH_MAX_DISTANCE)
                 {
-                    // Too many suitable tests found - stop and process what we already have
+                    // Too many suitable tests found - stop and process what we already have.
                     return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
                 }
 
                 if (isReversed)
                 {
-                    // We only support reversed test (GT_NE) for the last block - stop and check what we already have
+                    // We only support reversed test (GT_NE) for the last block.
                     return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
                 }
 
@@ -223,7 +226,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             }
             else
             {
-                // Current block is not a suitable test, stop searching and process what we already have
+                // Current block is not a suitable test, stop searching and process what we already have.
                 return optSwitchConvert(firstBlock, testValueIndex, testValues, variableNode);
             }
         }
@@ -283,6 +286,12 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         }
         minValue = newMinValue;
         maxValue = newMaxValue;
+    }
+
+    // if MaxValue is less than SWITCH_MAX_DISTANCE then don't bother with SUB(val, minValue)
+    if (maxValue <= SWITCH_MAX_DISTANCE)
+    {
+        minValue = 0;
     }
 
     assert(testIdx <= testsCount);
@@ -357,21 +366,16 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         bitVector |= (ssize_t)(1ULL << static_cast<unsigned>((testValues[testIdx] - minValue)));
     }
 
+    // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
+    fgRemoveRefPred(blockIfTrue, firstBlock);
+
     for (unsigned i = 0; i < jumpCount; i++)
     {
         // value exists in the testValues array (via bitVector) - 'true' case.
         const bool isTrue = (bitVector & static_cast<ssize_t>(1ULL << i)) != 0;
         jmpTab[i]         = isTrue ? blockIfTrue : blockIfFalse;
 
-        // firstBlock already has a link to blockIfTrue so skip the first iteration
-        if (i > 0)
-        {
-            fgAddRefPred(jmpTab[i], firstBlock);
-        }
-        else
-        {
-            assert(isTrue);
-        }
+        fgAddRefPred(jmpTab[i], firstBlock);
     }
 
     // Link the 'default' case
