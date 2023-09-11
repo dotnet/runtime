@@ -682,7 +682,7 @@ namespace LibObjectFile.Dwarf
             ulong sizeOf = 0;
 
             // unit_length
-            sizeOf += DwarfHelper.SizeOfUInt(Is64BitEncoding);
+            sizeOf += DwarfHelper.SizeOfUnitLength(Is64BitEncoding);
 
             sizeOf += 2; // version (uhalf)
 
@@ -691,11 +691,19 @@ namespace LibObjectFile.Dwarf
             ulong headerLengthStart = sizeOf;
             
             // minimum_instruction_length
+            sizeOf++;
+
+            if (Version >= 4)
+            {
+                // maximum_operations_per_instruction
+                sizeOf++;
+            }
+
             // default_is_stmt
             // line_base
             // line_range
             // opcode_base
-            sizeOf += 5;
+            sizeOf += 4;
 
             // StandardOpCodeLengths
             foreach (var opcodeLength in _standardOpCodeLengths)
@@ -738,8 +746,8 @@ namespace LibObjectFile.Dwarf
         {
             if (!_directoryNameToIndex.TryGetValue(directoryName, out dirIndex))
             {
-                uint directoryIndex = (uint) _directoryNames.Count + 1;
-                _directoryNameToIndex.Add(directoryName, directoryIndex);
+                dirIndex = (uint) _directoryNames.Count + 1;
+                _directoryNameToIndex.Add(directoryName, dirIndex);
                 sizeOf += (ulong) Encoding.UTF8.GetByteCount(directoryName) + 1;
                 _directoryNames.Add(directoryName);
             }
