@@ -2,13 +2,13 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
+This package provides types that allow applications to interact with the Windows performance counters.
+
 Windows allows you to examine how programs you run affect your computer's performance, both in real time and by collecting log data for later analysis. You can do this via the Windows Performance Monitor tool, which uses performance counters, among other features.
 
 Windows performance counters provide a high-level abstraction layer that provides a consistent interface for collecting various kinds of system data such as CPU, memory, and disk usage. They can be included in the operating system or can be part of individual applications. Windows Performance Monitor requests the current value of performance counters at specifiedtime intervals.
 
 System administrators often use performance counters to monitor systems for performance or behavior problems. Software developers often use performance counters to examine the resource usage of their programs.
-
-This package provides the `System.Diagnostics.PerformanceCounter.dll` assembly, which contains types that allow applications to interact with the Windows performance counters.
 
 ## Key Features
 
@@ -188,30 +188,16 @@ Notes:
 
 The main types provided by this library are:
 
-Under the [`System.Diagnostics`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics) namespace:
+Under the [`System.Diagnostics`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics) namespace, the main types are:
 
 * [`System.Diagnostics.CounterCreationData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.CounterCreationData)
 * [`System.Diagnostics.CounterCreationDataCollection`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.CounterCreationDataCollection)
-* [`System.Diagnostics.CounterSample`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.CounterSample)
-* [`System.Diagnostics.CounterSampleCalculator`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.CounterSampleCalculator)
-* [`System.Diagnostics.ICollectData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.ICollectData)
-* [`System.Diagnostics.InstanceData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.InstanceData)
-* [`System.Diagnostics.InstanceDataCollection`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.InstanceDataCollection)
-* [`System.Diagnostics.InstanceDataCollectionCollection`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.InstanceDataCollectionCollection)
 * [`System.Diagnostics.PerformanceCounter`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceCounter)
-* [`System.Diagnostics.PerformanceCounterCategory`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceCounterCategory)
-* [`System.Diagnostics.PerformanceCounterCategoryType`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceCounterCategoryType)
-* [`System.Diagnostics.PerformanceCounterInstanceLifetime`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceCounterInstanceLifetime)
-* [`System.Diagnostics.PerformanceCounterManager`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceCounterManager)
-* [`System.Diagnostics.PerformanceCounterType`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceCounterType)
 
-Under the [`System.Diagnostics.PerformanceData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData) namespace:
+Under the [`System.Diagnostics.PerformanceData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData) namespace, the main types are:
 
 * [`System.Diagnostics.PerformanceData.CounterData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterData)
 * [`System.Diagnostics.PerformanceData.CounterSet`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterSet)
-* [`System.Diagnostics.PerformanceData.CounterSetInstance`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterSetInstance)
-* [`System.Diagnostics.PerformanceData.CounterSetInstanceCounterDataSet`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterSetInstanceCounterDataSet)
-* [`System.Diagnostics.PerformanceData.CounterSetInstanceType`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterSetInstanceType)
 * [`System.Diagnostics.PerformanceData.CounterType`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterType)
 
 ## Additional Documentation
