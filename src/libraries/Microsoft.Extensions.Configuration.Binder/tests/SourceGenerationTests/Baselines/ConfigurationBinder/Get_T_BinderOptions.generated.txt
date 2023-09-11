@@ -97,11 +97,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
-            instance.MyString = configuration["MyString"]!;
+            if (configuration["MyString"] is string value3)
+            {
+                instance.MyString = value3!;
+            }
 
             if (configuration["MyInt"] is string value4)
             {
                 instance.MyInt = ParseInt(value4, () => configuration.GetSection("MyInt").Path);
+            }
+            else
+            {
+                instance.MyInt = default;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section5)

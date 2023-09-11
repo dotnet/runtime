@@ -70,6 +70,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
+            else
+            {
+                instance.MyInt = default;
+            }
         }
 
 

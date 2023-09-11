@@ -97,6 +97,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"return {parsedValueExpr};"),
                                     checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue,
+                                    useDefaultValueIfSectionValueIsNull : false,
                                     useIncrementalStringValueIdentifier: false);
                             }
                             break;
@@ -173,6 +174,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         Expression.sectionPath,
                         writeOnSuccess: (parsedValueExpr) => _writer.WriteLine($"return {parsedValueExpr};"),
                         checkForNullSectionValue: false,
+                        useDefaultValueIfSectionValueIsNull: false,
                         useIncrementalStringValueIdentifier: false);
 
                     EmitEndBlock();
@@ -307,6 +309,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (property.ShouldBindTo && property.MatchingCtorParam is null)
                     {
+                        // Currently properties don't have an 'else' failure case. Doing that may collide with the
+                        // feature to set properties to their default values if they don't exist in the config section.
+                        Debug.Assert(property.ErrorOnFailedBinding == false);
+
                         EmitBindImplForMember(property);
                     }
                 }
@@ -661,6 +667,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 Expression.sectionPath,
                                 (parsedValueExpr) => _writer.WriteLine($"{addExpr}({parsedValueExpr});"),
                                 checkForNullSectionValue: true,
+                                useDefaultValueIfSectionValueIsNull: false,
                                 useIncrementalStringValueIdentifier: false);
                         }
                         break;
@@ -696,6 +703,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Expression.sectionPath,
                     Emit_BindAndAddLogic_ForElement,
                     checkForNullSectionValue: false,
+                    useDefaultValueIfSectionValueIsNull: false,
                     useIncrementalStringValueIdentifier: false);
 
                 void Emit_BindAndAddLogic_ForElement(string parsedKeyExpr)
@@ -710,6 +718,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"),
                                     checkForNullSectionValue: true,
+                                    useDefaultValueIfSectionValueIsNull: false,
                                     useIncrementalStringValueIdentifier: false);
                             }
                             break;
@@ -786,6 +795,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 bool canSet)
             {
                 TypeSpec effectiveMemberType = member.Type.EffectiveType;
+
                 string sectionParseExpr = GetSectionFromConfigurationExpression(member.ConfigurationKeyName);
 
                 switch (effectiveMemberType)
@@ -794,11 +804,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             if (canSet)
                             {
-                                bool checkForNullSectionValue = member is ParameterSpec
-                                    ? true
-                                    : stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue;
-
-                                string nullBangExpr = checkForNullSectionValue ? string.Empty : "!";
+                                string nullBangExpr = member.Type.IsValueType ? string.Empty : "!";
+                                bool useDefaultValueIfSectionValueIsNull = member is PropertySpec &&
+                                    //stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue &&
+                                    member.Type.IsValueType &&
+                                    member.Type.SpecKind is not TypeSpecKind.Nullable;
 
                                 EmitBlankLineIfRequired();
                                 EmitBindingLogic(
@@ -806,7 +816,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     $@"{Identifier.configuration}[""{member.ConfigurationKeyName}""]",
                                     sectionPathExpr,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr}{nullBangExpr};"),
-                                    checkForNullSectionValue,
+                                    checkForNullSectionValue: true,
+                                    useDefaultValueIfSectionValueIsNull,
                                     useIncrementalStringValueIdentifier: true);
                             }
 
@@ -993,6 +1004,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string sectionPathExpr,
                 Action<string>? writeOnSuccess,
                 bool checkForNullSectionValue,
+                bool useDefaultValueIfSectionValueIsNull,
                 bool useIncrementalStringValueIdentifier)
             {
                 StringParsableTypeKind typeKind = type.StringParsableTypeKind;
@@ -1014,6 +1026,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 else
                 {
                     EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
+                    InvokeWriteOnSuccess();
+                    EmitEndBlock();
+                }
+
+                if (useDefaultValueIfSectionValueIsNull)
+                {
+                    parsedValueExpr = $"default";
+                    EmitStartBlock($"else");
                     InvokeWriteOnSuccess();
                     EmitEndBlock();
                 }

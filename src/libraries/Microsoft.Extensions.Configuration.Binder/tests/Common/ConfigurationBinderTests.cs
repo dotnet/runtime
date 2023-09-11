@@ -1712,13 +1712,12 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(2, options.ParsedBlacklist.Count); // should be initialized when calling the options.Blacklist setter.
 
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            // Setter not called if there's no matching configuration value.
-            Assert.Equal(0, options.OtherCode);
-#else
-            // doesn't exist in configuration. the setter sets default value '2'
-            Assert.Equal(2, options.OtherCode);
-#endif
+            Assert.Equal(2, options.OtherCode); // doesn't exist in configuration. the setter sets default value '2'
+
+            // These don't exist in configuration and setters are not called.
+            Assert.Equal(0, options.OtherCodeNullable);
+            Assert.Null(options.OtherCodeNull);
+            Assert.Null(options.OtherCodeUri);            
         }
 
         [Fact]

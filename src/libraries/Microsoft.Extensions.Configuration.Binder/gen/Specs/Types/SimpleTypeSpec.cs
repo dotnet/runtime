@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         None = 0,
 
         /// <summary>
-        /// Declared types that can be assigned directly from IConfigurationSection.Value, i.e. string and tyepof(object).
+        /// Declared types that can be assigned directly from IConfigurationSection.Value, i.e. string and typeof(object).
         /// </summary>
         AssignFromSectionValue = 1,
         Enum = 2,
