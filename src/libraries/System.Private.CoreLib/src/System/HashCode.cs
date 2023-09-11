@@ -304,7 +304,7 @@ namespace System
             Add(value?.GetHashCode() ?? 0);
         }
 
-        public void Add<T>(T value, IEqualityComparer<T>? comparer)
+        public void Add<T>(T? value, IEqualityComparer<T>? comparer)
         {
             Add(value is null ? 0 : (comparer?.GetHashCode(value) ?? value.GetHashCode()));
         }
