@@ -287,7 +287,9 @@ collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pas
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
+collect_parser.add_argument("--nativeaot", action="store_true", help="Run nativeaot on a set of directories or 'ilc.rsps' files.")
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
+collect_parser.add_argument("-ilc_rsps", dest="ilc_rsps", nargs="+", default=[], help="For --nativeaot only. A list of 'ilc.rsp' files.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help="Specify a \"load path\" where assemblies can be found during pmi.dll run. Optional; the argument values are translated to PMIPATH environment variable.")
@@ -680,6 +682,12 @@ class SuperPMICollect:
             if coreclr_args.tiered_compilation or coreclr_args.tiered_pgo:
                raise RuntimeError("Tiering options have no effect for pmi or crossgen2 collections.")
 
+        if coreclr_args.nativeaot:
+            self.ilc_rsps = coreclr_args.ilc_rsps
+            self.exclude = coreclr_args.exclude
+            if coreclr_args.tiered_compilation or coreclr_args.tiered_pgo:
+                raise RuntimeError("Tiering options have no effect for nativeaot collections.")
+
         if coreclr_args.tiered_compilation and coreclr_args.tiered_pgo:
             raise RuntimeError("Pass only one tiering option.")
 
@@ -741,7 +749,7 @@ class SuperPMICollect:
 
                 self.temp_location = temp_location
 
-                if self.coreclr_args.crossgen2:
+                if self.coreclr_args.crossgen2 or self.coreclr_args.nativeaot:
                     jit_name = os.path.basename(self.jit_path)
                     # There are issues when running SuperPMI and crossgen2 when using the same JIT binary. 
                     # Therefore, we produce a copy of the JIT binary for SuperPMI to use. 
@@ -852,17 +860,37 @@ class SuperPMICollect:
 
             # If we need them, collect all the assemblies we're going to use for the collection(s).
             # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
-            if self.coreclr_args.pmi or self.coreclr_args.crossgen2:
-                assemblies = []
-                for item in self.assemblies:
-                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude)))
-                if len(assemblies) == 0:
-                    logging.error("No assemblies found using `-assemblies` and `-exclude` arguments!")
+            if self.coreclr_args.pmi or self.coreclr_args.crossgen2 or self.coreclr_args.nativeaot:
+
+                def filter_file(file):
+                    if self.coreclr_args.nativeaot:
+                        extensions = [".ilc.rsp"]
+                    else:
+                        extensions = [".dll", ".exe"]
+                    return any(file.endswith(extension) for extension in extensions) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude))
+
+                if self.coreclr_args.nativeaot:
+                    ilc_rsps = []
+                    for item in self.ilc_rsps:
+                        ilc_rsps += get_files_from_path(item, match_func=filter_file)
+                    if len(ilc_rsps) == 0:
+                        logging.error("No 'ilc.rsp' files found using `-ilc_rsps` and `-exclude` arguments!")
+                    else:
+                        logging.debug("Using ilc_rsps:")
+                        for item in ilc_rsps:
+                            logging.debug("  %s", item)
+                        logging.debug("") # add trailing empty line
                 else:
-                    logging.debug("Using assemblies:")
-                    for item in assemblies:
-                        logging.debug("  %s", item)
-                    logging.debug("") # add trailing empty line
+                    assemblies = []
+                    for item in self.assemblies:
+                        assemblies += get_files_from_path(item, match_func=filter_file)
+                    if len(assemblies) == 0:
+                        logging.error("No assemblies found using `-assemblies` and `-exclude` arguments!")
+                    else:
+                        logging.debug("Using assemblies:")
+                        for item in assemblies:
+                            logging.debug("  %s", item)
+                        logging.debug("") # add trailing empty line
 
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
@@ -1101,6 +1129,168 @@ class SuperPMICollect:
                 os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.crossgen2 is True"
+
+            ################################################################################################ Do collection using nativeaot
+            if self.coreclr_args.nativeaot is True:
+                logging.debug("Starting collection using nativeaot")
+
+                async def run_nativeaot(print_prefix, original_rsp_filepath, self):
+                    if not original_rsp_filepath.endswith(".ilc.rsp"):
+                        raise RuntimeError(f"Expected a '.ilc.rsp' file for nativeaot, but got {original_rsp_filepath}")
+
+                    # The contents of the rsp contain many knobs and arguments that represent customer scenarios.
+                    # Make a copy of the .ilc.rsp file as we are going to modify it. We do not want to modify the original one.
+                    # The modifications include re-writing paths for references, input assembly and the output.
+                    # We do this because the current paths in the rsp *may* not exist by the time we want to run ilc.
+                    rsp_filepath = os.path.join(self.temp_location, make_safe_filename("nativeaot_" + original_rsp_filepath) + ".rsp")
+                    shutil.copyfile(original_rsp_filepath, rsp_filepath)
+
+                    rsp_file = open(rsp_filepath, "r")
+                    rsp_contents = rsp_file.readlines()
+                    rsp_file.close()
+
+                    original_input_filepath = ""
+
+                    for line in rsp_contents:
+                        if not line.startswith("-"):
+                            original_input_filepath = line
+
+                    if original_input_filepath == "":
+                        raise RuntimeError(f"Unable to find input file in {original_rsp_filepath}")
+
+                    input_filename = os.path.basename(original_input_filepath)
+
+                    # The ilc.rsp files are stored in the 'native' folders, ex: 'ComWrappers/ComWrappers/native/ComWrappers.ilc.rsp'
+                    test_native_directory = os.path.abspath(os.path.join(original_rsp_filepath, "..")) # ex: 'ComWrappers/ComWrappers/native/'
+                    test_output_directory = os.path.join(test_native_directory, "..") # ex: 'ComWrappers/ComWrappers/'
+                    test_directory = os.path.join(test_output_directory, "..") # ex: 'ComWrappers/'
+
+                    # The corresponding input assemblies are in the folder above 'native', ex: 'ComWrappers/ComWrappers/'
+                    test_input_filepath = os.path.join(test_output_directory, input_filename)
+
+                    # Blow away references, output, input assembly and directpinvokelist as we are going to use new ones.
+                    rsp_file = open(rsp_filepath, "w")
+                    def filter_rsp_argument(line):
+                        if line.startswith("-r:") or line.startswith("-o:") or not line.startswith("-") or line.startswith("--directpinvokelist:"):
+                            return False
+                        else:
+                            return True
+                    rsp_contents = list(filter(filter_rsp_argument, rsp_contents))
+
+                    # Fix-up paths for files located in the test's directories.
+                    def map_rsp_argument(line):
+                        if line.startswith("--exportsfile:"):
+                            arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--exportsfile:"):]))
+                            return f"--exportsfile:{arg_path}"
+                        elif line.startswith("--descriptor:"):
+                            arg_path = os.path.join(test_directory, os.path.basename(line[len("--descriptor:"):]))
+                            return f"--descriptor:{arg_path}"
+                        elif line.startswith("--substitution:"):
+                            arg_path = os.path.join(test_directory, os.path.basename(line[len("--substitution:"):]))
+                            return f"--substitution:{arg_path}"
+                        else:
+                            return line
+                    rsp_contents = list(map(map_rsp_argument, rsp_contents))
+
+                    rsp_file.writelines(rsp_contents)
+                    rsp_file.close()
+
+                    nativeaot_output_filename = os.path.splitext(input_filename)[0]
+                    if self.coreclr_args.host_os.lower() == "windows":
+                        root_nativeaot_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename) + ".out.obj"
+                    else:
+                        root_nativeaot_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename) + ".out.a"
+                    nativeaot_output_assembly_filename = os.path.join(self.temp_location, root_nativeaot_output_filename)
+                    try:
+                        if os.path.exists(nativeaot_output_assembly_filename):
+                            os.remove(nativeaot_output_assembly_filename)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s", nativeaot_output_assembly_filename, ose)
+                            return
+                        else:
+                            raise ose
+
+                    root_output_filename = make_safe_filename("nativeaot_" + nativeaot_output_filename + "_")
+
+                    with open(rsp_filepath, "a") as rsp_write_handle:
+                        rsp_write_handle.write(test_input_filepath + "\n")
+                        if self.coreclr_args.host_os.lower() == "windows":
+                            rsp_write_handle.write("--directpinvokelist:" + os.path.join(self.core_root, "build", "WindowsAPIs.txt") + "\n")
+                        rsp_write_handle.write("-o:" + nativeaot_output_assembly_filename + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.coreclr_args.nativeaot_aotsdk_path, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
+                        rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
+                        for var, value in dotnet_env.items():
+                            rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
+
+                    # Log what is in the response file
+                    write_file_to_log(rsp_filepath)
+
+                    command = [self.coreclr_args.nativeaot_tool_path, "@" + rsp_filepath]
+                    command_string = " ".join(command)
+                    logging.debug("%s%s", print_prefix, command_string)
+
+                    begin_time = datetime.datetime.now()
+
+                    try:
+                        stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
+                        stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
+
+                        proc = await asyncio.create_subprocess_shell(
+                            command_string,
+                            stdout=stdout_file_handle,
+                            stderr=stderr_file_handle)
+
+                        await proc.communicate()
+
+                        os.close(stdout_file_handle)
+                        os.close(stderr_file_handle)
+
+                        # No need to keep zero-length files
+                        if is_zero_length_file(stdout_filepath):
+                            os.remove(stdout_filepath)
+                        if is_zero_length_file(stderr_filepath):
+                            os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s", root_output_filename, ose)
+                        else:
+                            raise ose
+
+                    # Delete the response file unless we are skipping cleanup
+                    if not self.coreclr_args.skip_cleanup:
+                        os.remove(rsp_filepath)
+
+                    elapsed_time = datetime.datetime.now() - begin_time
+                    logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
+
+                # Set environment variables.
+                nativeaot_command_env = env_copy.copy()
+                set_and_report_env(nativeaot_command_env, root_env)
+
+                old_env = os.environ.copy()
+                os.environ.update(nativeaot_command_env)
+
+                ilc_rsps = list(filter(lambda ilc_rsp: ilc_rsp.endswith(".ilc.rsp"), ilc_rsps))
+                helper = AsyncSubprocessHelper(ilc_rsps, verbose=True)
+                helper.run_to_completion(run_nativeaot, self)
+
+                os.environ.clear()
+                os.environ.update(old_env)
+            ################################################################################################ end of "self.coreclr_args.nativeaot is True"
 
         mc_files = [os.path.join(self.temp_location, item) for item in os.listdir(self.temp_location) if item.endswith(".mc")]
         if len(mc_files) == 0:
@@ -4070,9 +4260,20 @@ def setup_args(args):
                             "Unable to set crossgen2")
 
         coreclr_args.verify(args,
+                            "nativeaot",
+                            lambda unused: True,
+                            "Unable to set nativeaot")
+
+        coreclr_args.verify(args,
                             "assemblies",
                             lambda unused: True,
                             "Unable to set assemblies",
+                            modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
+
+        coreclr_args.verify(args,
+                            "ilc_rsps",
+                            lambda unused: True,
+                            "Unable to set ilc_rsps",
                             modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
 
         coreclr_args.verify(args,
@@ -4156,12 +4357,16 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set pmi_path")
 
-        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False) and not coreclr_args.skip_collection_step:
-            print("Either a collection command or `--pmi` or `--crossgen2` or `--skip_collection_step` must be specified")
+        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False) and (args.nativeaot is False) and not coreclr_args.skip_collection_step:
+            print("Either a collection command or `--pmi` or `--crossgen2` or `--nativeaot` or `--skip_collection_step` must be specified")
             sys.exit(1)
 
         if (args.collection_command is not None) and (len(args.assemblies) > 0):
             print("Don't specify `-assemblies` if a collection command is given")
+            sys.exit(1)
+
+        if (args.collection_command is not None) and (len(args.ilc_rsps) > 0):
+            print("Don't specify `-ilc_rsps` if a collection command is given")
             sys.exit(1)
 
         if (args.collection_command is not None) and (len(args.exclude) > 0):
@@ -4172,6 +4377,10 @@ def setup_args(args):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
 
+        if ((args.nativeaot is True)) and (len(args.ilc_rsps) == 0):
+            print("Specify `-ilc_rsps` if `--nativeaot` is given")
+            sys.exit(1)
+
         if not args.pmi:
             if args.pmi_path is not None:
                 logging.warning("Warning: -pmi_path is set but --pmi is not.")
@@ -4180,8 +4389,11 @@ def setup_args(args):
 
         if args.collection_command is None and args.merge_mch_files is not True and not coreclr_args.skip_collection_step:
             assert args.collection_args is None
-            assert (args.pmi is True) or (args.crossgen2 is True)
-            assert len(args.assemblies) > 0
+            if args.nativeaot:
+                assert len(args.ilc_rsps) > 0
+            else:
+                assert (args.pmi is True) or (args.crossgen2 is True)
+                assert len(args.assemblies) > 0
 
         if coreclr_args.merge_mch_files:
             assert len(coreclr_args.mch_files) > 0
@@ -4205,6 +4417,32 @@ def setup_args(args):
             coreclr_args.crossgen2_tool_path = crossgen2_tool_path
             coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
+            if coreclr_args.dotnet_tool_path is not None:
+                logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
+
+        if coreclr_args.nativeaot:
+            # Can we find nativeaot?
+            nativeaot_tool_name = "ilc.exe" if platform.system() == "Windows" else "ilc"
+            nativeaot_tool_path = os.path.abspath(os.path.join(coreclr_args.core_root, "ilc-published", nativeaot_tool_name))
+            nativeaot_aotsdk_path = os.path.abspath(os.path.join(coreclr_args.core_root, "aotsdk"))
+            if not os.path.exists(nativeaot_tool_path):
+                print("`--nativeaot` is specified, but couldn't find " + nativeaot_tool_path + ". (Is it built?)")
+                sys.exit(1)
+            if not os.path.exists(nativeaot_aotsdk_path):
+                print("`--nativeaot` is specified, but couldn't find directory " + nativeaot_aotsdk_path + ". (Is it built?)")
+                sys.exit(1)
+
+            # dotnet will not be used to run ilc.exe, but we need to establish the dotnet tool path regardless
+            dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
+            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
+            if not os.path.exists(dotnet_tool_path):
+                dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
+                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
+
+            coreclr_args.nativeaot_tool_path = nativeaot_tool_path
+            coreclr_args.nativeaot_aotsdk_path = nativeaot_aotsdk_path
+            coreclr_args.dotnet_tool_path = dotnet_tool_path
+            logging.debug("Using nativeaot tool %s", coreclr_args.nativeaot_tool_path)
             if coreclr_args.dotnet_tool_path is not None:
                 logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
 
