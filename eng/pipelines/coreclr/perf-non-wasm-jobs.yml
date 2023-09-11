@@ -1,9 +1,6 @@
-parameters:
-  TestHybridGlobalization: false
-
 jobs:
 
-- ${{ if or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), parameters.TestHybridGlobalization) }}:
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
 
   # build mono iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -159,7 +156,7 @@ jobs:
         iOSStripSymbols: True
         hybridGlobalization: True
 
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule'), eq(parameters.TestHybridGlobalization, false)) }}:
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
