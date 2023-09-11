@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using SourceGenerators;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -132,24 +132,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void EmitMethods(MethodsToGen_ConfigurationBinder method, string additionalParams, string configExpression, bool configureOptions)
                 {
-                    foreach (KeyValuePair<TypeSpec, List<InterceptorLocationInfo>> pair in _sourceGenSpec.InterceptionInfo_ConfigBinder.GetOverloadInfo(method))
+                    foreach ((ComplexTypeSpec type, List<InterceptorLocationInfo> interceptorInfoList) in _sourceGenSpec.InterceptionInfo_ConfigBinder.GetOverloadInfo(method))
                     {
-                        (TypeSpec type, List<InterceptorLocationInfo> interceptorInfoList) = (pair.Key, pair.Value);
-
                         EmitBlankLineIfRequired();
                         _writer.WriteLine($"/// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>");
                         EmitInterceptsLocationAnnotations(interceptorInfoList);
                         EmitStartBlock($"public static void {Identifier.Bind}_{type.IdentifierCompatibleSubstring}(this {Identifier.IConfiguration} {Identifier.configuration}, {additionalParams})");
 
-                        if (type.NeedsMemberBinding)
+                        if (type.HasBindableMembers)
                         {
+                            Debug.Assert(!type.IsValueType);
                             string binderOptionsArg = configureOptions ? $"{Identifier.GetBinderOptions}({Identifier.configureOptions})" : $"{Identifier.binderOptions}: null";
 
                             EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
-                            if (!type.IsValueType)
-                            {
-                                EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
-                            }
+                            EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
                             _writer.WriteLine($$"""
                                 var {{Identifier.typedObj}} = ({{type.EffectiveType.DisplayString}}){{Identifier.instance}};
                                 {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, {{binderOptionsArg}});

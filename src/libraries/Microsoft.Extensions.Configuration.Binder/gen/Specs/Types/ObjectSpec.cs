@@ -8,20 +8,20 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record ObjectSpec : TypeSpec
+    internal sealed record ObjectSpec : ComplexTypeSpec
     {
         public ObjectSpec(INamedTypeSymbol type) : base(type) { }
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Object;
 
-        public override InitializationStrategy InitializationStrategy { get; set; }
+        public override bool HasBindableMembers => Properties.Values.Any(p => p.ShouldBindTo);
 
-        public override bool CanInitialize => CanInitComplexObject();
+        public override bool CanInstantiate => InstantiationStrategy is not InstantiationStrategy.None && InitExceptionMessage is null;
 
         public Dictionary<string, PropertySpec> Properties { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public List<ParameterSpec> ConstructorParameters { get; } = new();
 
-        public override bool NeedsMemberBinding => Properties.Values.Any(p => p.ShouldBind());
+        public string? InitExceptionMessage { get; set; }
     }
 }
