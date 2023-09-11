@@ -7,7 +7,7 @@
 #endif
 
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_IN_BYTE) - 1)
-#define SWITCH_MIN_TESTS 3
+#define SWITCH_MIN_TESTS 4
 
 //-----------------------------------------------------------------------------
 //  optSwitchRecognition: Optimize range check for if (A || B || C || D) pattern and convert it to Switch block
