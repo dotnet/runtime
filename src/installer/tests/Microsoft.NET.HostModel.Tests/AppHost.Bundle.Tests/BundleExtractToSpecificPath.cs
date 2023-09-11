@@ -12,7 +12,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleExtractToSpecificPath : BundleTestBase, IClassFixture<BundleExtractToSpecificPath.SharedTestState>
+    public class BundleExtractToSpecificPath : IClassFixture<BundleExtractToSpecificPath.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -25,14 +25,10 @@ namespace AppHost.Bundle.Tests
         private void AbsolutePath()
         {
             SingleFileTestApp app = sharedTestState.SelfContainedApp;
-
-            // Publish the bundle
-            BundleOptions options = BundleOptions.BundleNativeBinaries;
-            Manifest manifest;
-            string singleFile = sharedTestState.SelfContainedApp.Bundle(options, out manifest);
+            var bundledApp = sharedTestState.BundledApp;
 
             // Verify expected files in the bundle directory
-            var bundleDir = Directory.GetParent(singleFile);
+            var bundleDir = Directory.GetParent(bundledApp.Path);
             bundleDir.Should().OnlyHaveFiles(new[]
             {
                 Binaries.GetExeFileNameForCurrentPlatform(app.Name),
@@ -44,7 +40,7 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app for the first time, and extract files to
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
-            Command.Create(singleFile)
+            Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
@@ -52,14 +48,15 @@ namespace AppHost.Bundle.Tests
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
 
-            var extractDir = app.GetExtractionDir(extractBaseDir, manifest);
-            extractDir.Should().OnlyHaveFiles(BundleHelper.GetExtractedFiles(manifest, options));
+            var extractDir = app.GetExtractionDir(extractBaseDir, bundledApp.Manifest);
+            extractDir.Should().OnlyHaveFiles(BundleHelper.GetExtractedFiles(bundledApp.Manifest, bundledApp.Options));
         }
 
         [InlineData("./foo", BundleOptions.BundleAllContent)]
         [InlineData("../foo", BundleOptions.BundleAllContent)]
         [InlineData("foo", BundleOptions.BundleAllContent)]
         [InlineData("foo/bar", BundleOptions.BundleAllContent)]
+        [InlineData("foo\\bar", BundleOptions.BundleAllContent)]
         [InlineData("./foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("../foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("foo", BundleOptions.BundleNativeBinaries)]
@@ -104,19 +101,15 @@ namespace AppHost.Bundle.Tests
         [Fact]
         private void ExtractionDirectoryReused()
         {
-            var app = sharedTestState.SelfContainedApp;
-
-            // Publish the bundle
-            Manifest manifest;
-            BundleOptions options = BundleOptions.BundleNativeBinaries;
-            string singleFile = app.Bundle(options, out manifest);
+            SingleFileTestApp app = sharedTestState.SelfContainedApp;
+            var bundledApp = sharedTestState.BundledApp;
 
             // Directory for extraction.
             string extractBaseDir = app.GetNewExtractionRootPath();
 
             // Run the bunded app for the first time, and extract files to
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
-            Command.Create(singleFile)
+            Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
@@ -124,7 +117,7 @@ namespace AppHost.Bundle.Tests
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
 
-            var extractDir = app.GetExtractionDir(extractBaseDir, manifest);
+            var extractDir = app.GetExtractionDir(extractBaseDir, bundledApp.Manifest);
             extractDir.Refresh();
             DateTime firstWriteTime = extractDir.LastWriteTimeUtc;
 
@@ -134,7 +127,7 @@ namespace AppHost.Bundle.Tests
             }
 
             // Run the bundled app again (reuse extracted files)
-            Command.Create(singleFile)
+            Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
@@ -148,19 +141,15 @@ namespace AppHost.Bundle.Tests
         [Fact]
         private void RecoverMissingFiles()
         {
-            var app = sharedTestState.SelfContainedApp;
-
-            // Publish the bundle
-            Manifest manifest;
-            BundleOptions options = BundleOptions.BundleNativeBinaries;
-            string singleFile = app.Bundle(options, out manifest);
+            SingleFileTestApp app = sharedTestState.SelfContainedApp;
+            var bundledApp = sharedTestState.BundledApp;
 
             // Directory for extraction.
             string extractBaseDir = app.GetNewExtractionRootPath();
 
             // Run the bunded app for the first time, and extract files to
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
-            Command.Create(singleFile)
+            Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
@@ -169,8 +158,8 @@ namespace AppHost.Bundle.Tests
                 .And.HaveStdOutContaining("Hello World");
 
             // Remove the extracted files, but keep the extraction directory
-            var extractDir = app.GetExtractionDir(extractBaseDir, manifest);
-            var extractedFiles = BundleHelper.GetExtractedFiles(manifest, options);
+            var extractDir = app.GetExtractionDir(extractBaseDir, bundledApp.Manifest);
+            var extractedFiles = BundleHelper.GetExtractedFiles(bundledApp.Manifest, bundledApp.Options);
 
             foreach (string file in extractedFiles)
                 File.Delete(Path.Combine(extractDir.FullName, file));
@@ -179,7 +168,7 @@ namespace AppHost.Bundle.Tests
             extractDir.Should().NotHaveFiles(extractedFiles);
 
             // Run the bundled app again (recover deleted files)
-            Command.Create(singleFile)
+            Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
@@ -194,7 +183,7 @@ namespace AppHost.Bundle.Tests
         private void NonexistentDefault_Fails()
         {
             string nonExistentPath = Path.Combine(
-                Path.GetDirectoryName(sharedTestState.BundledAppExecutablePath),
+                Path.GetDirectoryName(sharedTestState.BundledApp.Path),
                 "nonexistent");
 
             string defaultExpansionEnvVariable = OperatingSystem.IsWindows() ? "TMP" : "HOME";
@@ -202,7 +191,7 @@ namespace AppHost.Bundle.Tests
                 $"Failed to determine default extraction location. Check if 'TMP'" :
                 $"Default extraction directory [{nonExistentPath}] either doesn't exist or is not accessible for read/write.";
 
-            Command.Create(sharedTestState.BundledAppExecutablePath)
+            Command.Create(sharedTestState.BundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(defaultExpansionEnvVariable, nonExistentPath)
@@ -221,7 +210,8 @@ namespace AppHost.Bundle.Tests
                 home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             }
 
-            Command.Create(sharedTestState.BundledAppExecutablePath)
+            var bundledApp = sharedTestState.BundledApp;
+            Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("HOME", null)
@@ -229,15 +219,14 @@ namespace AppHost.Bundle.Tests
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
 
-            DirectoryInfo expectedExtractDir = sharedTestState.SelfContainedApp.GetExtractionDir(Path.Combine(home, ".net"), sharedTestState.BundledAppManifest);
-            var extractedFiles = BundleHelper.GetExtractedFiles(sharedTestState.BundledAppManifest, BundleOptions.BundleNativeBinaries);
+            DirectoryInfo expectedExtractDir = sharedTestState.SelfContainedApp.GetExtractionDir(Path.Combine(home, ".net"), bundledApp.Manifest);
+            var extractedFiles = BundleHelper.GetExtractedFiles(bundledApp.Manifest, bundledApp.Options);
             expectedExtractDir.Should().HaveFiles(extractedFiles);
         }
 
-        public class SharedTestState : SharedTestStateBase, IDisposable
+        public class SharedTestState : IDisposable
         {
-            public string BundledAppExecutablePath { get; }
-            public Manifest BundledAppManifest { get; }
+            public (string Path, Manifest Manifest, BundleOptions Options) BundledApp{ get; }
 
             public SingleFileTestApp SelfContainedApp { get; }
 
@@ -249,8 +238,9 @@ namespace AppHost.Bundle.Tests
                 File.Copy(Binaries.CoreClr.MockPath, Path.Combine(SelfContainedApp.NonBundledLocation, Binaries.CoreClr.MockName));
 
                 // Create a bundled app that can be used by multiple tests
-                BundledAppExecutablePath = SelfContainedApp.Bundle(BundleOptions.BundleNativeBinaries, out Manifest manifest);
-                BundledAppManifest = manifest;
+                BundleOptions options = BundleOptions.BundleNativeBinaries;
+                string bundlePath = SelfContainedApp.Bundle(options, out Manifest manifest);
+                BundledApp = (bundlePath, manifest, options);
             }
 
             public void Dispose()
