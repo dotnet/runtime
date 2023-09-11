@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
-    <!-- Uses a lot of `dynamic` that IlcTrimMetadata=false happens for fix -->
+    <!-- Uses a lot of `dynamic` that IlcTrimMetadata=false happens to fix -->
     <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>
