@@ -174,7 +174,10 @@ jobs:
 
     - checkout: self
       clean: true
-      fetchDepth: $(checkoutFetchDepth)
+      # If running in source build mode, a git stash will be used for the inner clone. Avoid setting a fetch depth,
+      # as a stash of a shallow cloned repo is not currently supported.
+      ${{ if ne(parameters.isSourceBuild, true) }}:
+        fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
