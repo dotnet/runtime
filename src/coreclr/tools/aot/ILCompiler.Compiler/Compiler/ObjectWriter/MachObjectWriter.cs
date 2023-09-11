@@ -634,7 +634,6 @@ namespace ILCompiler.ObjectWriter
         protected override ulong GetSectionVirtualAddress(int sectionIndex)
         {
             var machSection = _segment.Sections[sectionIndex];
-            Debug.Assert(machSection.VirtualAddress != 0);
             return machSection.VirtualAddress;
         }
 
