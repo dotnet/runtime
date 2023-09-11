@@ -313,12 +313,10 @@ namespace Microsoft.Interop
                 return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, explicitForwarding: true, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
             }
 
-            bool supportsTargetFramework = true;
-            if (pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders)
-            {
-                supportsTargetFramework = pinvokeStub.GeneratorFactoryKey.Key.TargetFramework == TargetFramework.Net
-                    && pinvokeStub.GeneratorFactoryKey.Key.Version.Major >= 6;
-            }
+            bool supportsTargetFramework = pinvokeStub.LibraryImportData.SetLastError
+                && !options.GenerateForwarders
+                && pinvokeStub.GeneratorFactoryKey.Key.TargetFramework == TargetFramework.Net
+                && pinvokeStub.GeneratorFactoryKey.Key.Version.Major >= 6;
 
             foreach (TypePositionInfo typeInfo in pinvokeStub.SignatureContext.ElementTypeInformation)
             {
