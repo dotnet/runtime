@@ -7612,9 +7612,6 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if (mHandleMask & CorHandleStrongDependent)
         result |= (1 << HNDTYPE_DEPENDENT);
 
-    if (mHandleMask & CorHandleStrongAsyncPinned)
-        result |= (1 << HNDTYPE_ASYNCPINNED);
-
     if (mHandleMask & CorHandleStrongSizedByref)
         result |= (1 << HNDTYPE_SIZEDREF);
 
@@ -7752,10 +7749,6 @@ HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetch
             case HNDTYPE_DEPENDENT:
                 roots[i].dwType = (DWORD)CorHandleStrongDependent;
                 roots[i].i64ExtraData = GetDependentHandleSecondary(CLRDATA_ADDRESS_TO_TADDR(handle.Handle)).GetAddr();
-                break;
-
-            case HNDTYPE_ASYNCPINNED:
-                roots[i].dwType = (DWORD)CorHandleStrongAsyncPinned;
                 break;
 
             case HNDTYPE_SIZEDREF:
