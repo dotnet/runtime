@@ -234,6 +234,12 @@ if ($vs) {
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
 
+  if ($librariesConfiguration)
+  {
+    # Respect the RuntimeConfiguration variable for building inside VS with different libraries configurations
+    $env:LIBRARIESCONFIGURATION=$librariesConfiguration
+  }
+
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
 
