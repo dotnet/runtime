@@ -1,18 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
-using DotnetRuntime.SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator
     {
-        private sealed partial class Parser
+        internal sealed partial class Parser
         {
             private void ParseInvocation_ServiceCollectionExt(BinderInvocation invocation)
             {
@@ -32,11 +30,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                MethodsToGen_Extensions_ServiceCollection overload;
+                MethodsToGen overload;
 
                 if (paramCount is 2 && SymbolEqualityComparer.Default.Equals(_typeSymbols.IConfiguration, @params[1].Type))
                 {
-                    overload = MethodsToGen_Extensions_ServiceCollection.Configure_T;
+                    overload = MethodsToGen.ServiceCollectionExt_Configure_T;
                 }
                 else if (paramCount is 3)
                 {
@@ -46,12 +44,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (secondParamType.SpecialType is SpecialType.System_String &&
                         SymbolEqualityComparer.Default.Equals(_typeSymbols.IConfiguration, thirdParamType))
                     {
-                        overload = MethodsToGen_Extensions_ServiceCollection.Configure_T_name;
+                        overload = MethodsToGen.ServiceCollectionExt_Configure_T_name;
                     }
                     else if (SymbolEqualityComparer.Default.Equals(_typeSymbols.IConfiguration, secondParamType) &&
                         SymbolEqualityComparer.Default.Equals(_typeSymbols.ActionOfBinderOptions, thirdParamType))
                     {
-                        overload = MethodsToGen_Extensions_ServiceCollection.Configure_T_BinderOptions;
+                        overload = MethodsToGen.ServiceCollectionExt_Configure_T_BinderOptions;
                     }
                     else
                     {
@@ -63,7 +61,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     SymbolEqualityComparer.Default.Equals(_typeSymbols.IConfiguration, @params[2].Type) &&
                     SymbolEqualityComparer.Default.Equals(_typeSymbols.ActionOfBinderOptions, @params[3].Type))
                 {
-                    overload = MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions;
+                    overload = MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions;
                 }
                 else
                 {
@@ -78,18 +76,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (GetTargetTypeForRootInvocation(typeSymbol, invocation.Location) is ComplexTypeSpec typeSpec &&
                     TryRegisterTypeForMethodGen(overload, typeSpec))
                 {
-                    RegisterInterceptor(overload, operation);
+                    _interceptorInfoBuilder.RegisterInterceptor(overload, operation);
                 }
             }
 
-            private bool TryRegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection overload, ComplexTypeSpec typeSpec)
+            private bool TryRegisterTypeForMethodGen(MethodsToGen overload, ComplexTypeSpec typeSpec)
             {
-                if (TryRegisterTypeForBindCoreMainGen(typeSpec))
+                Debug.Assert((MethodsToGen.ServiceCollectionExt_Any & overload) is not 0);
+                if (_helperInfoBuilder.TryRegisterTypeForBindCoreMainGen(typeSpec))
                 {
-                    _sourceGenSpec.MethodsToGen_ServiceCollectionExt |= overload;
-                    _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                    _interceptorInfoBuilder.MethodsToGen |= overload;
+                    _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
                     // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource, IConfigureOptions<>, ConfigureNamedOptions<>.
-                    _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.Options");
+                    _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.Options");
                     return true;
                 }
 

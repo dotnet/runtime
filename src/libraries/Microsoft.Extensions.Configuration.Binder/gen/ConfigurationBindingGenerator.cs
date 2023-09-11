@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
+//#define LAUNCH_DEBUGGER
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -13,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [Generator]
     public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
-        private static readonly string ProjectName = Emitter.s_assemblyName.Name;
+        private static readonly string ProjectName = Emitter.s_assemblyName.Name!;
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -29,7 +30,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValueProvider<(SourceGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>)> genSpec = context.SyntaxProvider
+            IncrementalValueProvider<(SourceGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>?)> genSpec = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
                     BinderInvocation.Create)
@@ -38,9 +39,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 .Combine(compilationData)
                 .Select((tuple, cancellationToken) =>
                 {
-                    Parser parser = new(tuple.Right);
-                    SourceGenerationSpec spec = parser.ParseSourceGenerationSpec(tuple.Left, cancellationToken);
-                    ImmutableEquatableArray<DiagnosticInfo> diagnostics = parser.Diagnostics.ToImmutableEquatableArray();
+                    if (tuple.Right is not CompilationData compilationData)
+                    {
+                        return (null, null);
+                    }
+
+                    Parser parser = new(compilationData);
+                    SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(tuple.Left);
+                    ImmutableEquatableArray<DiagnosticInfo>? diagnostics = parser.Diagnostics?.ToImmutableEquatableArray();
                     return (spec, diagnostics);
                 })
                 .WithTrackingName(nameof(SourceGenerationSpec));
@@ -48,11 +54,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             context.RegisterSourceOutput(genSpec, ReportDiagnosticsAndEmitSource);
         }
 
-        private static void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (SourceGenerationSpec? SourceGenerationSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics) input)
+        private static void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (SourceGenerationSpec? SourceGenerationSpec, ImmutableEquatableArray<DiagnosticInfo>? Diagnostics) input)
         {
-            foreach (DiagnosticInfo diagnostic in input.Diagnostics)
+            if (input.Diagnostics is ImmutableEquatableArray<DiagnosticInfo> diagnostics)
             {
-                sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                foreach (DiagnosticInfo diagnostic in diagnostics)
+                {
+                    sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                }
             }
 
             if (input.SourceGenerationSpec is SourceGenerationSpec spec)
@@ -62,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        private sealed record CompilationData
+        internal sealed class CompilationData
         {
             public bool LanguageVersionIsSupported { get; }
             public KnownTypeSymbols? TypeSymbols { get; }
@@ -79,6 +88,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     TypeSymbols = new KnownTypeSymbols(compilation);
                 }
             }
+        }
+
+        internal sealed record SourceGenerationSpec
+        {
+            public required InterceptorInfo InterceptorInfo { get; init; }
+            public required BindingHelperInfo BindingHelperInfo { get; init; }
         }
     }
 }

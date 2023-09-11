@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator
     {
-        private sealed partial class Parser
+        internal sealed partial class Parser
         {
             private static class DiagnosticDescriptors
             {

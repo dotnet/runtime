@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics.Hashing;
 using Microsoft.CodeAnalysis;
@@ -42,21 +41,4 @@ internal readonly struct DiagnosticInfo : IEquatable<DiagnosticInfo>
         hashCode = HashHelpers.Combine(hashCode, Location?.GetHashCode() ?? 0);
         return hashCode;
     }
-}
-
-internal static class DiagnosticInfoExtensions
-{
-    public static void Register(this List<DiagnosticInfo> diagnostics, DiagnosticDescriptor descriptor, Location location, params object?[]? messageArgs) =>
-        diagnostics.Add(new DiagnosticInfo
-        {
-            Descriptor = descriptor,
-            Location = location.GetTrimmedLocation(),
-            MessageArgs = messageArgs ?? Array.Empty<object?>(),
-        });
-
-    /// <summary>
-    /// Creates a copy of the Location instance that does not capture a reference to Compilation.
-    /// </summary>
-    private static Location GetTrimmedLocation(this Location location)
-        => Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
 }

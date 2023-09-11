@@ -3,33 +3,31 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis;
-using DotnetRuntime.SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator
     {
-        private sealed partial class Parser
+        internal sealed partial class Parser
         {
             private void ParseInvocation_ConfigurationBinder(BinderInvocation invocation)
             {
                 switch (invocation.Operation.TargetMethod.Name)
                 {
-                    case nameof(MethodsToGen_ConfigurationBinder.Bind):
+                    case "Bind":
                         {
                             ParseBindInvocation_ConfigurationBinder(invocation);
                         }
                         break;
-                    case nameof(MethodsToGen_ConfigurationBinder.Get):
+                    case "Get":
                         {
                             ParseGetInvocation(invocation);
                         }
                         break;
-                    case nameof(MethodsToGen_ConfigurationBinder.GetValue):
+                    case "GetValue":
                         {
                             ParseGetValueInvocation(invocation);
                         }
@@ -48,39 +46,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                MethodsToGen_ConfigurationBinder overload = MethodsToGen_ConfigurationBinder.None;
+                MethodsToGen overload = MethodsToGen.None;
 
                 if (paramCount is 2)
                 {
-                    overload = MethodsToGen_ConfigurationBinder.Bind_instance;
+                    overload = MethodsToGen.ConfigBinder_Bind_instance;
                 }
                 else if (paramCount is 3)
                 {
                     if (@params[1].Type.SpecialType is SpecialType.System_String)
                     {
-                        overload = MethodsToGen_ConfigurationBinder.Bind_key_instance;
+                        overload = MethodsToGen.ConfigBinder_Bind_key_instance;
                     }
                     else if (SymbolEqualityComparer.Default.Equals(@params[2].Type, _typeSymbols.ActionOfBinderOptions))
                     {
-                        overload = MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions;
+                        overload = MethodsToGen.ConfigBinder_Bind_instance_BinderOptions;
                     }
                 }
 
-                if (overload is MethodsToGen_ConfigurationBinder.None)
+                if (overload is MethodsToGen.None)
                 {
                     return;
                 }
 
                 int instanceIndex = overload switch
                 {
-                    MethodsToGen_ConfigurationBinder.Bind_instance => 1,
-                    MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions => 1,
-                    MethodsToGen_ConfigurationBinder.Bind_key_instance => 2,
+                    MethodsToGen.ConfigBinder_Bind_instance => 1,
+                    MethodsToGen.ConfigBinder_Bind_instance_BinderOptions => 1,
+                    MethodsToGen.ConfigBinder_Bind_key_instance => 2,
                     _ => throw new InvalidOperationException()
                 };
 
                 IArgumentOperation instanceArg = GetArgumentForParameterAtIndex(operation.Arguments, instanceIndex);
-                if (instanceArg.Parameter.Type.SpecialType != SpecialType.System_Object)
+                if (instanceArg.Parameter?.Type.SpecialType is not SpecialType.System_Object)
                 {
                     return;
                 }
@@ -89,19 +87,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (!IsValidRootConfigType(type))
                 {
-                    Diagnostics.Register(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
+                    ReportDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
                     return;
                 }
 
-                if (type!.IsValueType)
+                if (type.IsValueType)
                 {
-                    Diagnostics.Register(DiagnosticDescriptors.InvalidBindInput, invocation.Location, type);
+                    ReportDiagnostic(DiagnosticDescriptors.ValueTypesInvalidForBind, invocation.Location, type);
                     return;
                 }
 
-                if (GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
+                if (GetTargetTypeForRootInvocationCore(type, invocation.Location) is ComplexTypeSpec typeSpec)
                 {
-                    RegisterInterceptor(overload, typeSpec, invocation.Operation);
+                    _interceptorInfoBuilder.RegisterInterceptor_ConfigBinder_Bind(overload, typeSpec, invocation.Operation);
                 }
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
@@ -146,7 +144,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                MethodsToGen_ConfigurationBinder overload = MethodsToGen_ConfigurationBinder.None;
+                MethodsToGen overload = MethodsToGen.None;
                 ITypeSymbol? type;
 
                 if (targetMethod.IsGenericMethod)
@@ -160,11 +158,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (paramCount is 1)
                     {
-                        overload = MethodsToGen_ConfigurationBinder.Get_T;
+                        overload = MethodsToGen.ConfigBinder_Get_T;
                     }
                     else if (paramCount is 2 && SymbolEqualityComparer.Default.Equals(@params[1].Type, _typeSymbols.ActionOfBinderOptions))
                     {
-                        overload = MethodsToGen_ConfigurationBinder.Get_T_BinderOptions;
+                        overload = MethodsToGen.ConfigBinder_Get_T_BinderOptions;
                     }
                 }
                 else if (paramCount > 3)
@@ -178,18 +176,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (paramCount is 2)
                     {
-                        overload = MethodsToGen_ConfigurationBinder.Get_TypeOf;
+                        overload = MethodsToGen.ConfigBinder_Get_TypeOf;
                     }
                     else if (paramCount is 3 && SymbolEqualityComparer.Default.Equals(@params[2].Type, _typeSymbols.ActionOfBinderOptions))
                     {
-                        overload = MethodsToGen_ConfigurationBinder.Get_TypeOf_BinderOptions;
+                        overload = MethodsToGen.ConfigBinder_Get_TypeOf_BinderOptions;
                     }
                 }
 
                 if (GetTargetTypeForRootInvocation(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    RegisterInvocation(overload, invocation.Operation);
-                    RegisterTypeForGetCoreGen(typeSpec);
+                    _interceptorInfoBuilder.RegisterInterceptor(overload, operation);
+                    _helperInfoBuilder.RegisterTypeForGetCoreGen(typeSpec);
                 }
 
             }
@@ -201,7 +199,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
                 int paramCount = @params.Length;
 
-                MethodsToGen_ConfigurationBinder overload = MethodsToGen_ConfigurationBinder.None;
+                MethodsToGen overload = MethodsToGen.None;
                 ITypeSymbol? type;
 
                 if (targetMethod.IsGenericMethod)
@@ -215,11 +213,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (paramCount is 2)
                     {
-                        overload = MethodsToGen_ConfigurationBinder.GetValue_T_key;
+                        overload = MethodsToGen.ConfigBinder_GetValue_T_key;
                     }
                     else if (paramCount is 3 && SymbolEqualityComparer.Default.Equals(@params[2].Type, type))
                     {
-                        overload = MethodsToGen_ConfigurationBinder.GetValue_T_key_defaultValue;
+                        overload = MethodsToGen.ConfigBinder_GetValue_T_key_defaultValue;
                     }
                 }
                 else if (paramCount > 4)
@@ -238,44 +236,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (paramCount is 3)
                     {
-                        overload = MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key;
+                        overload = MethodsToGen.ConfigBinder_GetValue_TypeOf_key;
                     }
                     else if (paramCount is 4 && @params[3].Type.SpecialType is SpecialType.System_Object)
                     {
-                        overload = MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key_defaultValue;
+                        overload = MethodsToGen.ConfigBinder_GetValue_TypeOf_key_defaultValue;
                     }
                 }
 
-                ITypeSymbol effectiveType = (IsNullable(type, out ITypeSymbol? underlyingType) ? underlyingType : type)!;
-
                 if (!IsValidRootConfigType(type))
                 {
-                    Diagnostics.Register(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
+                    ReportDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
                     return;
                 }
 
-                if (IsParsableFromString(effectiveType, out _))
+                ITypeSymbol effectiveType = IsNullable(type, out ITypeSymbol? underlyingType) ? underlyingType : type;
+
+                if (IsParsableFromString(effectiveType, out _) &&
+                    GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    RegisterInvocation(overload, invocation.Operation);
-                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetValueCore, typeSpec);
+                    _interceptorInfoBuilder.RegisterInterceptor(overload, operation);
+                    _helperInfoBuilder.RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetValueCore, typeSpec);
                 }
-            }
-
-            private void RegisterInvocation(MethodsToGen_ConfigurationBinder overload, IInvocationOperation operation)
-            {
-                _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
-                RegisterInterceptor(overload, operation);
-            }
-
-            /// <summary>
-            /// Registers generated Bind methods as interceptors. This is done differently from other root
-            /// methods <see cref="RegisterInterceptor(Enum, IInvocationOperation)"/> because we need to
-            /// explicitly account for the type to bind, to avoid type-check issues for polymorphic objects.
-            /// </summary>
-            private void RegisterInterceptor(MethodsToGen_ConfigurationBinder overload, TypeSpec typeSpec, IInvocationOperation operation)
-            {
-                _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
-                _interceptionInfo_ConfigBinder.RegisterOverloadInfo(overload, typeSpec, operation);
             }
         }
     }

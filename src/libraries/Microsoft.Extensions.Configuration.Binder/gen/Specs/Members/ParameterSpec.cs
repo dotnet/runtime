@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (parameter.HasExplicitDefaultValue)
             {
-                string formatted = SymbolDisplay.FormatPrimitive(parameter.ExplicitDefaultValue, quoteStrings: true, useHexadecimalNumbers: false);
+                string formatted = SymbolDisplay.FormatPrimitive(parameter.ExplicitDefaultValue!, quoteStrings: true, useHexadecimalNumbers: false);
                 if (formatted is not "null")
                 {
                     DefaultValueExpr = formatted;

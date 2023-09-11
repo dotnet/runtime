@@ -3,11 +3,9 @@
 
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
-using DotnetRuntime.SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    [DebuggerDisplay("Name={Name}, Type={TypeRef.Name}")]
     internal abstract record MemberSpec
     {
         public MemberSpec(ISymbol member)
@@ -20,7 +18,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public string Name { get; }
         public string DefaultValueExpr { get; protected set; }
 
-        public required TypeRef TypeRef { get; init; }
+        public required TypeSpec Type { get; init; }
         public required string ConfigurationKeyName { get; init; }
 
         public abstract bool CanGet { get; }

@@ -81,8 +81,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             foreach (Diagnostic diagnostic in d)
             {
-                Assert.True(diagnostic.Id == Diagnostics.InvalidBindInput.Id);
-                Assert.Contains(Diagnostics.InvalidBindInput.Title, diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
+                Assert.True(diagnostic.Id == Diagnostics.ValueTypesInvalidForBind.Id);
+                Assert.Contains(Diagnostics.ValueTypesInvalidForBind.Title, diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
                 Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
                 Assert.NotNull(diagnostic.Location);
             }

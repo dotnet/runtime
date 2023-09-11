@@ -113,8 +113,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 #if UPDATE_BASELINES
             if (!success)
             {
-                const string envVarName = "RepoRootDir"
-                string errMessage = $"To update baselines, specify a '{envVarName}' environment variable. See this assembly's README.md doc for more details."
+                const string envVarName = "RepoRootDir";
+                string errMessage = $"To update baselines, specify a '{envVarName}' environment variable. See this assembly's README.md doc for more details.";
 
                 string? repoRootDir = Environment.GetEnvironmentVariable(envVarName);
                 Assert.True(repoRootDir is not null, errMessage);

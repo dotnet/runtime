@@ -37,12 +37,6 @@ namespace System.Text.Json.SourceGeneration
         }
 
         /// <summary>
-        /// Creates a copy of the Location instance that does not capture a reference to Compilation.
-        /// </summary>
-        public static Location GetTrimmedLocation(this Location location)
-            => Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
-
-        /// <summary>
         /// Returns true if the specified location is contained in one of the syntax trees in the compilation.
         /// </summary>
         public static bool ContainsLocation(this Compilation compilation, Location location)

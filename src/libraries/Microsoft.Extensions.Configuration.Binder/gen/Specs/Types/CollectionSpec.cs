@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
-using DotnetRuntime.SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -11,6 +10,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public CollectionSpec(ITypeSymbol type) : base(type) { }
 
         public sealed override bool CanInstantiate => TypeToInstantiate?.CanInstantiate ?? InstantiationStrategy is not InstantiationStrategy.None;
+
+        public sealed override required InstantiationStrategy InstantiationStrategy { get; set; }
 
         public required TypeSpec ElementType { get; init; }
 

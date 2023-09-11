@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public ComplexTypeSpec(ITypeSymbol type) : base(type) { }
 
-        public InstantiationStrategy InstantiationStrategy { get; set; }
+        public virtual InstantiationStrategy InstantiationStrategy { get; set; }
 
         public sealed override bool CanBindTo => CanInstantiate || HasBindableMembers;
 

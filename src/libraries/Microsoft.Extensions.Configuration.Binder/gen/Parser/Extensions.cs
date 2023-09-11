@@ -16,6 +16,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             genericsOptions: SymbolDisplayGenericsOptions.None,
             miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
+        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+
         public static void RegisterCacheEntry<TKey, TValue, TEntry>(this Dictionary<TKey, TValue> cache, TKey key, TEntry entry)
             where TKey : notnull
             where TValue : ICollection<TEntry>, new()
@@ -26,12 +32,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             entryCollection.Add(entry);
-        }
-
-        public static void Deconstruct(this KeyValuePair<TypeSpec, List<InterceptorLocationInfo>> source, out ComplexTypeSpec Key, out List<InterceptorLocationInfo> Value)
-        {
-            Key = (ComplexTypeSpec)source.Key;
-            Value = source.Value;
         }
 
         public static string ToIdentifierCompatibleSubstring(this ITypeSymbol type)
@@ -63,6 +63,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             return sb.ToString();
+        }
+
+        public static (string? Namespace, string DisplayString, string Name) GetTypeName(this ITypeSymbol type)
+        {
+            string? @namespace = type.ContainingNamespace?.ToDisplayString();
+            string displayString = type.ToDisplayString(s_minimalDisplayFormat);
+            string name = (@namespace is null ? string.Empty : @namespace + ".") + displayString.Replace(".", "+");
+            return (@namespace, displayString, name);
         }
     }
 }

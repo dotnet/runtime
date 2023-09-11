@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion OptionsBuilder<TOptions> extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyInt", "MyList", "MyString" });
 
         public static void BindCoreMain(IConfiguration configuration, object instance, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -104,26 +104,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
-            if (configuration["MyString"] is string value1)
+            if (configuration["MyInt"] is string value1)
             {
-                instance.MyString = value1;
-            }
-
-            if (configuration["MyInt"] is string value2)
-            {
-                instance.MyInt = ParseInt(value2, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.MyInt = default;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section3)
+            if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section2)
             {
-                List<int>? temp5 = instance.MyList;
-                temp5 ??= new List<int>();
-                BindCore(section3, ref temp5, defaultValueIfNotFound: false, binderOptions);
-                instance.MyList = temp5;
+                List<int>? temp4 = instance.MyList;
+                temp4 ??= new List<int>();
+                BindCore(section2, ref temp4, defaultValueIfNotFound: false, binderOptions);
+                instance.MyList = temp4;
+            }
+
+            if (configuration["MyString"] is string value5)
+            {
+                instance.MyString = value5;
             }
         }
 

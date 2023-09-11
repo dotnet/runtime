@@ -9,22 +9,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [DebuggerDisplay("Name={DisplayString}, Kind={SpecKind}")]
     internal abstract record TypeSpec
     {
-        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
-            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
-            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
-            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
-
         public TypeSpec(ITypeSymbol type)
         {
-            Namespace = type.ContainingNamespace?.ToDisplayString();
-            DisplayString = type.ToDisplayString(s_minimalDisplayFormat);
-            Name = (Namespace is null ? string.Empty : Namespace + ".") + DisplayString.Replace(".", "+");
+            (Namespace, DisplayString, Name) = type.GetTypeName();
+            AssemblyQualifiedName = type.ContainingAssembly + type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring();
             IsValueType = type.IsValueType;
         }
 
         public string Name { get; }
+
+        public string AssemblyQualifiedName { get; }
 
         public string DisplayString { get; }
 

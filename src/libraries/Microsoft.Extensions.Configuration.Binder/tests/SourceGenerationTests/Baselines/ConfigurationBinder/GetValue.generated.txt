@@ -61,35 +61,35 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return null;
             }
 
-            if (type == typeof(int))
+            if (type == typeof(byte[]))
             {
-                return ParseInt(value, () => section.Path);
+                return ParseByteArray(value, () => section.Path);
             }
             else if (type == typeof(bool?))
             {
                 return ParseBool(value, () => section.Path);
             }
-            else if (type == typeof(byte[]))
-            {
-                return ParseByteArray(value, () => section.Path);
-            }
             else if (type == typeof(CultureInfo))
             {
                 return ParseCultureInfo(value, () => section.Path);
+            }
+            else if (type == typeof(int))
+            {
+                return ParseInt(value, () => section.Path);
             }
 
             return null;
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static byte[] ParseByteArray(string value, Func<string?> getPath)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return Convert.FromBase64String(value);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(byte[])}'.", exception);
             }
         }
 
@@ -105,18 +105,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static byte[] ParseByteArray(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return Convert.FromBase64String(value);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(byte[])}'.", exception);
-            }
-        }
-
         public static CultureInfo ParseCultureInfo(string value, Func<string?> getPath)
         {
             try
@@ -126,6 +114,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             catch (Exception exception)
             {
                 throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(CultureInfo)}'.", exception);
+            }
+        }
+
+        public static int ParseInt(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

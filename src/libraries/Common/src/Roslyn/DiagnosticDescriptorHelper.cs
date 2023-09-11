@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 {
     internal static partial class DiagnosticDescriptorHelper
@@ -21,5 +19,11 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 
             return new DiagnosticDescriptor(id, title, messageFormat, category, defaultSeverity, isEnabledByDefault, description, helpLink, customTags);
         }
+
+        /// <summary>
+        /// Creates a copy of the Location instance that does not capture a reference to Compilation.
+        /// </summary>
+        public static Location GetTrimmedLocation(this Location location)
+            => Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
     }
 }

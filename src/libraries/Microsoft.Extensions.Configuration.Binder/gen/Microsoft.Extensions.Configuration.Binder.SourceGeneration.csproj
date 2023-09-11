@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework Condition="'$(EnableNullable)' == 'true'">$(NetCoreAppToolCurrent)</TargetFramework>
     <CLSCompliant>false</CLSCompliant>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
@@ -14,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
@@ -40,15 +42,15 @@
     <Compile Include="Parser\ConfigurationBinder.cs" />
     <Compile Include="Parser\Extensions.cs" />
     <Compile Include="Parser\DiagnosticDescriptors.cs" />
+    <Compile Include="Parser\KnownTypeSymbols.cs" />
     <Compile Include="Parser\OptionsBuilderConfigurationExtensions.cs" />
     <Compile Include="Parser\OptionsConfigurationServiceCollectionExtensions.cs" />
-    <Compile Include="Specs\InterceptorLocationInfo.cs" />
-    <Compile Include="Specs\KnownTypeSymbols.cs" />
+    <Compile Include="Specs\BindingHelperInfo.cs" />
+    <Compile Include="Specs\InterceptorInfo.cs" />
     <Compile Include="Specs\MethodsToGen.cs" />
     <Compile Include="Specs\Members\MemberSpec.cs" />
     <Compile Include="Specs\Members\ParameterSpec.cs" />
     <Compile Include="Specs\Members\PropertySpec.cs" />
-    <Compile Include="Specs\SourceGenerationSpec.cs" />
     <Compile Include="Specs\Types\CollectionSpec.cs" />
     <Compile Include="Specs\Types\ComplexTypeSpec.cs" />
     <Compile Include="Specs\Types\NullableSpec.cs" />

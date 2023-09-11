@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator
     {
-        private sealed partial class Parser
+        internal sealed partial class Parser
         {
             private void ParseInvocation_OptionsBuilderExt(BinderInvocation invocation)
             {
@@ -58,16 +58,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                MethodsToGen_Extensions_OptionsBuilder overload = paramCount switch
+                MethodsToGen overload = paramCount switch
                 {
-                    2 => MethodsToGen_Extensions_OptionsBuilder.Bind_T,
+                    2 => MethodsToGen.OptionsBuilderExt_Bind_T,
                     3 when SymbolEqualityComparer.Default.Equals(_typeSymbols.ActionOfBinderOptions, @params[2].Type) =>
-                        MethodsToGen_Extensions_OptionsBuilder.Bind_T_BinderOptions,
-                    _ => MethodsToGen_Extensions_OptionsBuilder.None
+                        MethodsToGen.OptionsBuilderExt_Bind_T_BinderOptions,
+                    _ => MethodsToGen.None
                 };
 
-                if (overload is not MethodsToGen_Extensions_OptionsBuilder.None &&
-                    TryRegisterTypeForMethodGen(MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions, typeSpec))
+                if (overload is not MethodsToGen.None &&
+                    TryRegisterTypeForMethodGen(MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions, typeSpec))
                 {
                     RegisterInvocation(overload, operation);
                 }
@@ -84,22 +84,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (paramCount is 3 &&
                     @params[1].Type.SpecialType is SpecialType.System_String &&
                     SymbolEqualityComparer.Default.Equals(_typeSymbols.ActionOfBinderOptions, @params[2].Type) &&
-                    TryRegisterTypeForBindCoreMainGen(typeSpec))
+                    _helperInfoBuilder.TryRegisterTypeForBindCoreMainGen(typeSpec))
                 {
-                    RegisterInvocation(MethodsToGen_Extensions_OptionsBuilder.BindConfiguration_T_path_BinderOptions, invocation.Operation);
+                    RegisterInvocation(MethodsToGen.OptionsBuilderExt_BindConfiguration_T_path_BinderOptions, invocation.Operation);
                 }
             }
 
-            private void RegisterInvocation(MethodsToGen_Extensions_OptionsBuilder overload, IInvocationOperation operation)
+            private void RegisterInvocation(MethodsToGen overload, IInvocationOperation operation)
             {
-                _sourceGenSpec.MethodsToGen_OptionsBuilderExt |= overload;
-                RegisterInterceptor(overload, operation);
+                _interceptorInfoBuilder.RegisterInterceptor(overload, operation);
 
                 // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource.
-                _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.Options");
+                _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.Options");
 
                 // Emitting refs to OptionsBuilder<T>.
-                _sourceGenSpec.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
             }
         }
     }

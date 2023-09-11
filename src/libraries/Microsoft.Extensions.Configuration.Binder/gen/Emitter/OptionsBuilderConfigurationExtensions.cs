@@ -7,11 +7,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Emitter
         {
-            private bool ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder methods) => (_sourceGenSpec.MethodsToGen_OptionsBuilderExt & methods) != 0;
-
             private void EmitBindingExtensions_OptionsBuilder()
             {
-                if (!ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Any))
+                if (!ShouldEmitMethods(MethodsToGen.OptionsBuilderExt_Any))
                 {
                     return;
                 }
@@ -24,7 +22,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindMethods_Extensions_OptionsBuilder()
             {
-                if (!ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Bind))
+                if (!ShouldEmitMethods(MethodsToGen.OptionsBuilderExt_Bind))
                 {
                     return;
                 }
@@ -32,15 +30,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 const string documentation = @"/// <summary>Registers a configuration instance which <typeparamref name=""TOptions""/> will bind against.</summary>";
                 const string paramList = $"{Identifier.IConfiguration} {Identifier.config}";
 
-                if (ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Bind_T))
+                if (ShouldEmitMethods(MethodsToGen.OptionsBuilderExt_Bind_T))
                 {
-                    EmitMethodStartBlock(MethodsToGen_Extensions_OptionsBuilder.Bind_T, "Bind", paramList, documentation);
+                    EmitMethodStartBlock(MethodsToGen.OptionsBuilderExt_Bind_T, "Bind", paramList, documentation);
                     _writer.WriteLine($"return Bind({Identifier.optionsBuilder}, {Identifier.config}, {Identifier.configureBinder}: null);");
                     EmitEndBlock();
                 }
 
                 EmitMethodStartBlock(
-                    MethodsToGen_Extensions_OptionsBuilder.Bind_T_BinderOptions,
+                    MethodsToGen.OptionsBuilderExt_Bind_T_BinderOptions,
                     "Bind",
                     paramList + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureBinder}",
                     documentation);
@@ -57,7 +55,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindConfigurationMethod()
             {
-                if (!ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.BindConfiguration_T_path_BinderOptions))
+                if (!ShouldEmitMethods(MethodsToGen.OptionsBuilderExt_BindConfiguration_T_path_BinderOptions))
                 {
                     return;
                 }
@@ -65,7 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 const string documentation = $@"/// <summary>Registers the dependency injection container to bind <typeparamref name=""TOptions""/> against the <see cref=""{Identifier.IConfiguration}""/> obtained from the DI service provider.</summary>";
                 string paramList = $"string {Identifier.configSectionPath}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureBinder} = null";
 
-                EmitMethodStartBlock(MethodsToGen_Extensions_OptionsBuilder.BindConfiguration, "BindConfiguration", paramList, documentation);
+                EmitMethodStartBlock(MethodsToGen.OptionsBuilderExt_BindConfiguration, "BindConfiguration", paramList, documentation);
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configSectionPath);
@@ -89,7 +87,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitEndBlock();
             }
 
-            private void EmitMethodStartBlock(MethodsToGen_Extensions_OptionsBuilder method, string methodName, string paramList, string documentation)
+            private void EmitMethodStartBlock(MethodsToGen method, string methodName, string paramList, string documentation)
             {
                 paramList = $"this {TypeDisplayString.OptionsBuilderOfTOptions} {Identifier.optionsBuilder}, {paramList}";
                 EmitBlankLineIfRequired();
