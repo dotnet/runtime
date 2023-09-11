@@ -51569,8 +51569,8 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
         size_t thisSize = thisLimit - thisIndex;
         size_t otherSize = otherLimit - otherIndex;
 
-        memmove (&newArray[thisIndex + otherIndex],           &m_Array[thisIndex ], sizeof(newArray[0]) * thisSize);
-        memmove (&newArray[thisLimit + otherIndex], &other_fq->m_Array[otherIndex], sizeof(newArray[0]) * otherSize);
+        memmove (&newArray[thisIndex + otherIndex],           &m_Array[thisIndex ], sizeof(newArray[0])*thisSize );
+        memmove (&newArray[thisLimit + otherIndex], &other_fq->m_Array[otherIndex], sizeof(newArray[0])*otherSize);
     }
 
     // copy the finalization data from this and the other finalize queue
@@ -51585,8 +51585,8 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
         size_t thisSize = thisIndexFromEnd - thisLimitFromEnd;
         size_t otherSize = otherIndexFromEnd - otherLimitFromEnd;
 
-        memmove (&newArray[thisArraySize + growthCount - thisIndexFromEnd - otherIndexFromEnd],           m_EndArray -  thisIndexFromEnd, sizeof(newArray[0]) * thisSize);
-        memmove (&newArray[thisArraySize + growthCount - thisLimitFromEnd - otherIndexFromEnd], other_fq->m_EndArray - otherIndexFromEnd, sizeof(newArray[0]) * otherSize);
+        memmove (&newArray[thisArraySize + growthCount - thisIndexFromEnd - otherIndexFromEnd],           m_EndArray -  thisIndexFromEnd, sizeof(newArray[0])*thisSize );
+        memmove (&newArray[thisArraySize + growthCount - thisLimitFromEnd - otherIndexFromEnd], other_fq->m_EndArray - otherIndexFromEnd, sizeof(newArray[0])*otherSize);
     }
 
     // adjust the m_FillPointers to reflect the sum of both queues on this queue,
