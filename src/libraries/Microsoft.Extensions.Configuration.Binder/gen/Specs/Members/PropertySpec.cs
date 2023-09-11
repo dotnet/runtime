@@ -29,6 +29,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public override bool CanSet { get; }
 
-        public bool ShouldBind() => CanGet || CanSet;
+        public bool ShouldBindTo => CanGet || CanSet;
     }
 }

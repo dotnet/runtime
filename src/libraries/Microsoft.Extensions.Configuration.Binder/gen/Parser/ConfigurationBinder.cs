@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis.Operations;
@@ -14,31 +13,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Parser
         {
-            private void RegisterMethodInvocation_ConfigurationBinder(BinderInvocation invocation)
+            private void ParseInvocation_ConfigurationBinder(BinderInvocation invocation)
             {
                 switch (invocation.Operation.TargetMethod.Name)
                 {
                     case nameof(MethodsToGen_ConfigurationBinder.Bind):
                         {
-                            RegisterBindInvocation(invocation);
+                            ParseBindInvocation_ConfigurationBinder(invocation);
                         }
                         break;
                     case nameof(MethodsToGen_ConfigurationBinder.Get):
                         {
-                            RegisterGetInvocation(invocation);
+                            ParseGetInvocation(invocation);
                         }
                         break;
                     case nameof(MethodsToGen_ConfigurationBinder.GetValue):
                         {
-                            RegisterGetValueInvocation(invocation);
+                            ParseGetValueInvocation(invocation);
                         }
                         break;
-                    default:
-                        return;
                 }
             }
 
-            private void RegisterBindInvocation(BinderInvocation invocation)
+            private void ParseBindInvocation_ConfigurationBinder(BinderInvocation invocation)
             {
                 IInvocationOperation operation = invocation.Operation!;
                 ImmutableArray<IParameterSymbol> @params = operation.TargetMethod.Parameters;
@@ -102,7 +99,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    RegisterAsInterceptor_ConfigBinder_BindMethod(overload, typeSpec, invocation.Operation);
+                    RegisterInterceptor(overload, typeSpec, invocation.Operation);
                 }
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
@@ -122,7 +119,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     };
             }
 
-            private void RegisterGetInvocation(BinderInvocation invocation)
+            private void ParseGetInvocation(BinderInvocation invocation)
             {
                 IInvocationOperation operation = invocation.Operation!;
                 IMethodSymbol targetMethod = operation.TargetMethod;
@@ -176,13 +173,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (GetTargetTypeForRootInvocation(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    RegisterAsInterceptor_ConfigBinder(overload, invocation.Operation);
+                    RegisterInvocation(overload, invocation.Operation);
                     RegisterTypeForGetCoreGen(typeSpec);
                 }
 
             }
 
-            private void RegisterGetValueInvocation(BinderInvocation invocation)
+            private void ParseGetValueInvocation(BinderInvocation invocation)
             {
                 IInvocationOperation operation = invocation.Operation!;
                 IMethodSymbol targetMethod = operation.TargetMethod;
@@ -245,23 +242,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (IsParsableFromString(effectiveType, out _) &&
                     GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
                 {
-                    RegisterAsInterceptor_ConfigBinder(overload, invocation.Operation);
+                    RegisterInvocation(overload, invocation.Operation);
                     RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetValueCore, typeSpec);
                 }
             }
 
-            private void RegisterAsInterceptor_ConfigBinder(MethodsToGen_ConfigurationBinder overload, IInvocationOperation operation)
+            private void RegisterInvocation(MethodsToGen_ConfigurationBinder overload, IInvocationOperation operation)
             {
                 _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
-                RegisterAsInterceptor(overload, operation);
+                RegisterInterceptor(overload, operation);
             }
 
             /// <summary>
             /// Registers generated Bind methods as interceptors. This is done differently from other root
-            /// methods <see cref="RegisterAsInterceptor(Enum, IInvocationOperation)"/> because we need to
+            /// methods <see cref="RegisterInterceptor(Enum, IInvocationOperation)"/> because we need to
             /// explicitly account for the type to bind, to avoid type-check issues for polymorphic objects.
             /// </summary>
-            private void RegisterAsInterceptor_ConfigBinder_BindMethod(MethodsToGen_ConfigurationBinder overload, TypeSpec typeSpec, IInvocationOperation operation)
+            private void RegisterInterceptor(MethodsToGen_ConfigurationBinder overload, TypeSpec typeSpec, IInvocationOperation operation)
             {
                 _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
                 _sourceGenSpec.InterceptionInfo_ConfigBinder.RegisterOverloadInfo(overload, typeSpec, operation);

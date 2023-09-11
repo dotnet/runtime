@@ -1,10 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
+    [DebuggerDisplay("Name={DisplayString}, Kind={SpecKind}")]
     internal abstract record TypeSpec
     {
         private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
@@ -34,17 +36,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public abstract TypeSpecKind SpecKind { get; }
 
-        public virtual InitializationStrategy InitializationStrategy { get; set; }
+        public abstract bool CanBindTo { get; }
 
-        public virtual string? InitExceptionMessage { get; set; }
+        public abstract bool CanInstantiate { get; }
 
-        public virtual bool CanInitialize => true;
-
-        public virtual bool NeedsMemberBinding { get; }
-
-        public virtual TypeSpec EffectiveType => this;
-
-        protected bool CanInitComplexObject() => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
+        public abstract TypeSpec EffectiveType { get; }
     }
 
     internal enum TypeSpecKind

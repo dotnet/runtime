@@ -5,25 +5,19 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal abstract record CollectionSpec : TypeSpec
+    internal abstract record CollectionSpec : ComplexTypeSpec
     {
         public CollectionSpec(ITypeSymbol type) : base(type) { }
 
+        public sealed override bool CanInstantiate => TypeToInstantiate?.CanInstantiate ?? InstantiationStrategy is not InstantiationStrategy.None;
+
         public required TypeSpec ElementType { get; init; }
-
-        public CollectionSpec? ConcreteType { get; set; }
-
-        public CollectionSpec? PopulationCastType { get; set; }
 
         public required CollectionPopulationStrategy PopulationStrategy { get; init; }
 
-        public override bool CanInitialize => ConcreteType?.CanInitialize ?? CanInitComplexObject();
+        public required CollectionSpec? TypeToInstantiate { get; init; }
 
-        public override required InitializationStrategy InitializationStrategy { get; set; }
-
-        public required string? ToEnumerableMethodCall { get; init; }
-
-        public sealed override bool NeedsMemberBinding => true;
+        public required CollectionSpec? PopulationCastType { get; init; }
     }
 
     internal sealed record EnumerableSpec : CollectionSpec
@@ -31,6 +25,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public EnumerableSpec(ITypeSymbol type) : base(type) { }
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Enumerable;
+
+        public override bool HasBindableMembers => PopulationStrategy is not CollectionPopulationStrategy.Unknown && ElementType.CanBindTo;
     }
 
     internal sealed record DictionarySpec : CollectionSpec
@@ -38,6 +34,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public DictionarySpec(INamedTypeSymbol type) : base(type) { }
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Dictionary;
+
+        public override bool HasBindableMembers => PopulationStrategy is not CollectionPopulationStrategy.Unknown;
 
         public required ParsableFromStringSpec KeyType { get; init; }
     }
