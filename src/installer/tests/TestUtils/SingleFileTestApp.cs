@@ -60,6 +60,19 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
+        public static IReadOnlyList<FileSpec> GetRuntimeFilesToBundle()
+        {
+            var runtimeAssemblies = Binaries.GetRuntimeFiles().Assemblies;
+            List<FileSpec> fileSpecs = new List<FileSpec>();
+            foreach (var asset in runtimeAssemblies)
+            {
+                fileSpecs.Add(new FileSpec(asset, Path.GetFileName(asset)));
+            }
+
+            fileSpecs.Sort((a, b) => string.CompareOrdinal(a.BundleRelativePath, b.BundleRelativePath));
+            return fileSpecs;
+        }
+
         public string Bundle(BundleOptions options, Version? bundleVersion = null)
         {
             string bundleDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(Location, "bundle"));
@@ -81,11 +94,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             // If this is a self-contained app, add the runtime assemblies to the bundle
             if (selfContained)
             {
-                var runtimeAssemblies = Binaries.GetRuntimeFiles().Assemblies;
-                foreach (var asset in runtimeAssemblies)
-                {
-                    fileSpecs.Add(new FileSpec(asset, Path.GetFileName(asset)));
-                }
+                fileSpecs.AddRange(GetRuntimeFilesToBundle());
             }
 
             // Sort the file specs to keep the bundle construction deterministic.

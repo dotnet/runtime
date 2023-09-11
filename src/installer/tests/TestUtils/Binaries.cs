@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static class CoreClr
         {
             public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("coreclr");
-            public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
+            public static string FilePath = Path.Combine(new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath, FileName);
 
             public static string MockName = GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr");
             public static string MockPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, MockName);
