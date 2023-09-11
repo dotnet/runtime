@@ -149,7 +149,8 @@ namespace ILCompiler.ObjectWriter
             uint methodTypeIndex,
             string methodName,
             SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode)
+            INodeWithDebugInfo debugNode,
+            bool hasSequencePoints)
         {
             var lowPC = GetSectionVirtualAddress(methodSymbol.SectionIndex) + (ulong)methodSymbol.Value;
             DebugEHClauseInfo[] clauses = null;
@@ -167,7 +168,10 @@ namespace ILCompiler.ObjectWriter
                 debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
                 clauses ?? Array.Empty<DebugEHClauseInfo>());
 
-            _dwarfBuilder.EmitLineInfo(methodSymbol.SectionIndex, lowPC, debugNode.GetNativeSequencePoints());
+            if (hasSequencePoints)
+            {
+                _dwarfBuilder.EmitLineInfo(methodSymbol.SectionIndex, lowPC, debugNode.GetNativeSequencePoints());
+            }
         }
 
         protected abstract void EmitDebugSections(DwarfFile dwarfFile);

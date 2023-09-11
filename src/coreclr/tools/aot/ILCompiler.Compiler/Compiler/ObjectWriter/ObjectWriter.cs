@@ -271,7 +271,8 @@ namespace ILCompiler.ObjectWriter
             uint methodTypeIndex,
             string methodName,
             SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode);
+            INodeWithDebugInfo debugNode,
+            bool hasSequencePoints);
 
         protected abstract void EmitDebugSections();
 
@@ -386,9 +387,9 @@ namespace ILCompiler.ObjectWriter
                     }
 
                     if (node is INodeWithDebugInfo debugNode &&
-                        node is ISymbolDefinitionNode symbolDefinitionNode &&
-                        debugNode.GetNativeSequencePoints().Any())
+                        node is ISymbolDefinitionNode symbolDefinitionNode)
                     {
+                        bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
                         uint methodTypeIndex = node is IMethodNode methodNode ?
                             _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) :
                             0;
@@ -396,7 +397,7 @@ namespace ILCompiler.ObjectWriter
 
                         if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                         {
-                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode);
+                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
                         }
                     }
                 }
