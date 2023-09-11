@@ -685,6 +685,10 @@ static bool _validate_md_find_token_of_range_element(mdcursor_t expected, mdcurs
     case mdtid_Field:
     case mdtid_MethodDef:
     case mdtid_Param:
+#ifdef DNMD_PORTABLE_PDB
+    case mdtid_LocalVariable:
+    case mdtid_LocalConstant:
+#endif // DNMD_PORTABLE_PDB
         IF_FALSE_RETURN(md_cursor_to_token(expected, &expected_tk));
         break;
     case mdtid_Event:
@@ -744,6 +748,16 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
         tgt_table_id = mdtid_PropertyMap;
         tgt_col = mdtPropertyMap_PropertyList;
         break;
+#ifdef DNMD_PORTABLE_PDB
+    case mdtid_LocalVariable:
+        tgt_table_id = mdtid_LocalScope;
+        tgt_col = mdtLocalScope_VariableList;
+        break;
+    case mdtid_LocalConstant:
+        tgt_table_id = mdtid_LocalScope;
+        tgt_col = mdtLocalScope_ConstantList;
+        break;
+#endif // DNMD_PORTABLE_PDB
     default:
         return false;
     }
@@ -823,6 +837,10 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
     case mdtid_Field:
     case mdtid_MethodDef:
     case mdtid_Param:
+#ifdef DNMD_PORTABLE_PDB
+    case mdtid_LocalVariable:
+    case mdtid_LocalConstant:
+#endif // DNMD_PORTABLE_PDB
         *tgt_cursor = pos;
         return true;
     case mdtid_Event:

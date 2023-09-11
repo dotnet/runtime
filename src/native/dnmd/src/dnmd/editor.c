@@ -22,6 +22,7 @@ typedef struct mdeditor__
     md_heap_editor_t guid_heap;
     md_heap_editor_t blob_heap;
     md_heap_editor_t user_string_heap;
+    md_heap_editor_t pdb_heap;
 
     // Metadata tables - II.22
     mdtable_editor_t* tables;
@@ -52,6 +53,9 @@ static mdeditor_t* get_editor(mdcxt_t* cxt)
     editor->guid_heap.stream = &cxt->guid_heap;
     editor->blob_heap.stream = &cxt->blob_heap;
     editor->user_string_heap.stream = &cxt->user_string_heap;
+#ifdef DNMD_PORTABLE_PDB
+    editor->pdb_heap.stream = &cxt->pdb;
+#endif // DNMD_PORTABLE_PDB
 
     mem += editor_mem;
     editor->tables = (mdtable_editor_t*)mem;
@@ -458,6 +462,84 @@ bool insert_row_into_table(mdcxt_t* cxt, mdtable_id_t table_id, uint32_t row_ind
     *new_row = create_cursor(target_table_editor->table, row_index);
     return true;
 }
+
+#ifdef DNMD_PORTABLE_PDB
+bool update_referenced_type_system_table_row_count(mdcxt_t* cxt, mdtable_id_t updated_table, uint32_t new_max_row_count)
+{
+    assert(updated_table < mdtid_FirstPdb);
+
+    mdeditor_t* editor = get_editor(cxt);
+    if (editor == NULL)
+        return false;
+
+    md_pdb_t pdb;
+    if (!try_get_pdb(cxt, &pdb))
+        return false;
+
+    if (pdb.type_system_table_rows[updated_table] >= new_max_row_count)
+        return true;
+
+    pdb.type_system_table_rows[updated_table] = new_max_row_count;
+
+    for (mdtable_id_t table_id = mdtid_FirstPdb; table_id < mdtid_End; ++table_id)
+    {
+        mdtable_t* table = &editor->cxt->tables[table_id];
+        if (table->cxt == NULL) // This table is not used in the current image
+            continue;
+
+        // Update all columns in the table that can refer to the updated table
+        // to be the correct width for the updated table's new size.
+        if (!set_column_size_for_max_row_count(editor, table, updated_table, mdtc_none, new_max_row_count))
+            return false;
+    }
+    
+    size_t pdb_heap_size = cxt->pdb.size;
+    if (!(pdb.referenced_type_system_tables & (1ULL << updated_table)))
+    {
+        // If we haven't referenced this type system table yet, then we need to allocate space for the row count
+        // and mark that we're referencing it now.
+        pdb_heap_size += sizeof(uint32_t);
+        pdb.referenced_type_system_tables |= (1ULL << updated_table);
+    }
+
+    if (editor->pdb_heap.heap.ptr == NULL || pdb_heap_size < editor->pdb_heap.heap.size)
+    {
+        // If we don't have space for the new row count or we haven't edited the PDB heap yet, then we need to allocate more space.
+        if (!allocate_more_editable_space(editor->cxt, &editor->pdb_heap.heap, editor->pdb_heap.stream, pdb_heap_size))
+            return false;
+    }
+
+    uint8_t* pdb_heap_data = editor->pdb_heap.heap.ptr;
+    size_t pdb_heap_data_length = editor->pdb_heap.heap.size;
+    // We can skip over the PDB ID and the entrypoint token.
+    if (!advance_output_stream(&pdb_heap_data, &pdb_heap_data_length, ARRAY_SIZE(pdb.pdb_id) + sizeof(mdToken)))
+        return false;
+    
+    // Write the bitset of referenced type system tables.
+    if (!write_u64(&pdb_heap_data, &pdb_heap_data_length, pdb.referenced_type_system_tables))
+        return false;
+    
+    // Now write the row counts for each referenced type system table.
+    size_t n = count_set_bits(pdb.referenced_type_system_tables);
+    uint8_t const* pdb_end = pdb_heap_data + (n * sizeof(uint32_t));
+
+    // Read in all row data defined by the references bits.
+    for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+    {
+        if (pdb.referenced_type_system_tables & (1ULL << i))
+        {
+            // Read in the row count for referenced tables
+            if (!write_u32(&pdb_heap_data, &pdb_heap_data_length, pdb.type_system_table_rows[i]))
+                return false;
+        }
+    }
+
+    // Validate we wrote the row counts properly
+    if (pdb_heap_data != pdb_end)
+        return false;
+    return true;
+}
+#endif // DNMD_PORTABLE_PDB
 
 static md_heap_editor_t* get_heap_editor_by_id(mdeditor_t* editor, mdtcol_t heap_id)
 {

@@ -85,6 +85,18 @@ static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_id
                 return -1;
         }
 
+#ifdef DNMD_PORTABLE_PDB
+        {
+            uint32_t table_row = RidFromToken(token);
+            mdtable_id_t table_id = ExtractTokenType(token);
+            if (table_id < mdtid_FirstPdb)
+            {
+                if (!update_referenced_type_system_table_row_count(acxt.table->cxt, table_id, table_row))
+                    return -1;
+            }
+        }
+#endif
+
         uint32_t raw;
         if (acxt.col_details & mdtc_idx_table)
         {
@@ -496,6 +508,10 @@ static bool col_points_to_list(mdcursor_t* c, col_index_t col_index)
         return col_index == mdtEventMap_EventList;
     case mdtid_MethodDef:
         return col_index == mdtMethodDef_ParamList;
+#ifdef DNMD_PORTABLE_PDB
+    case mdtid_LocalScope:
+        return col_index == mdtLocalScope_VariableList || col_index == mdtLocalScope_ConstantList;
+#endif // DNMD_PORTABLE_PDB
     }
     return false;
 }

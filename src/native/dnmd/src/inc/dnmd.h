@@ -119,6 +119,9 @@ typedef enum
 
     mdtid_End,
     mdtid_First = mdtid_Module,
+#ifdef DNMD_PORTABLE_PDB
+    mdtid_FirstPdb = mdtid_Document,
+#endif // DNMD_PORTABLE_PDB
 } mdtable_id_t;
 
 // Table cursor definition
