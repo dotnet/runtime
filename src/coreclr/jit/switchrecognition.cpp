@@ -9,22 +9,22 @@
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_IN_BYTE) - 1)
-#define SWITCH_MIN_TESTS 4
+#define SWITCH_MIN_TESTS 3
 
 //-----------------------------------------------------------------------------
-//  optSwitchRecognition: Optimize range check for if (A || B || C || D) pattern and convert it to Switch block
+//  optSwitchRecognition: Optimize range check for `x == cns1 || x == cns2 || x == cns3 ...`
+//      pattern and convert it to Switch block (jump table) which is then *might* be converted
+//      to a bitmap test via TryLowerSwitchToBitTest.
+//      TODO: recognize general jump table patterns.
 //
-//  Returns:
-//      MODIFIED_NOTHING if no optimization is performed.
-//      MODIFIED_EVERYTHING otherwise.
-//
-//  Notes:
-//      Detect if (a == val1 || a == val2 || a == val3 || ...) pattern and change it to switch tree
-//      to reduce compares and jumps, and perform bit operation instead in Lowering phase.
-//      This optimization is performed only for integer types.
+//  Return Value:
+//      MODIFIED_EVERYTHING if the optimization was applied.
 //
 PhaseStatus Compiler::optSwitchRecognition()
 {
+// Limit to XARCH, ARM is already doing a great job with such comparisons using
+// a series of ccmp instruction (see ifConvert phase).
+#ifdef TARGET_XARCH
     bool modified = false;
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -41,7 +41,7 @@ PhaseStatus Compiler::optSwitchRecognition()
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
-
+#endif
     return PhaseStatus::MODIFIED_NOTHING;
 }
 
