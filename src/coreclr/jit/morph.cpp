@@ -11028,7 +11028,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
 
-            if (lhs == nullptr || rhs == nullptr)
+            if ((lhs == nullptr) || (rhs == nullptr))
+            {
+                break;
+            }
+
+            // Filter out side effecting cases for several reasons:
+            // 1. gtNewSimdBinOpNode may swap operand order.
+            // 2. The code above will swap operand order.
+            // 3. The code above does not handle GTF_REVERSE_OPS.
+            if (((lhs->gtFlags | rhs->gtFlags) & GTF_ALL_EFFECT) != 0)
             {
                 break;
             }
