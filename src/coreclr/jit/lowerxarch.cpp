@@ -8555,9 +8555,7 @@ bool Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
         simd16Val.f64[1] = vecCon->gtSimd64Val.f64[1];
         GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD16);
         memcpy(&compressedVecCon->gtSimdVal, &simd16Val, sizeof(simd16_t));
-        // GenTreeIndir* compressedVecConIndir = comp->gtNewIndir(TYP_I_IMPL, compressedVecCon, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         BlockRange().InsertBefore(node->Data(), compressedVecCon);
-        // BlockRange().InsertBefore(node->Data(), compressedVecConIndir);
         BlockRange().Remove(vecCon);
         GenTreeHWIntrinsic* broadcast128 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector128ToVector512, CORINFO_TYPE_UINT, 64);
         BlockRange().InsertBefore(node, broadcast128);
@@ -8836,6 +8834,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 assert(!node->OperIsMemoryLoad());
                 bool supportsRegOptional = false;
+                
                 if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                 {
                     MakeSrcContained(node, op1);
