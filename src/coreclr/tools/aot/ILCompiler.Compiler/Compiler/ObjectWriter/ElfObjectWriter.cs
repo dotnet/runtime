@@ -138,7 +138,13 @@ namespace ILCompiler.ObjectWriter
             }
             else if (relocType == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 ||
                      relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 ||
-                     relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)
+                     relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A ||
+                     relocType == RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12 ||
+                     relocType == RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC ||
+                     relocType == RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21 ||
+                     relocType == RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12 ||
+                     relocType == RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12 ||
+                     relocType == RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL)
             {
                 // NOTE: Zero addend in code is currently always used for these.
                 // R2R object writer has the same assumption.
@@ -221,6 +227,12 @@ namespace ILCompiler.ObjectWriter
                         RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => ElfRelocationType.R_AARCH64_CALL26,
                         RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ElfRelocationType.R_AARCH64_ADR_PREL_PG_HI21,
                         RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ElfRelocationType.R_AARCH64_ADD_ABS_LO12_NC,
+                        RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12 => ElfRelocationType.R_AARCH64_TLSLE_ADD_TPREL_HI12,
+                        RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC => ElfRelocationType.R_AARCH64_TLSLE_ADD_TPREL_LO12_NC,
+                        RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21 => ElfRelocationType.R_AARCH64_TLSDESC_ADR_PAGE21,
+                        RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12 => ElfRelocationType.R_AARCH64_TLSDESC_LD64_LO12,
+                        RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12 => ElfRelocationType.R_AARCH64_TLSDESC_ADD_LO12,
+                        RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL => ElfRelocationType.R_AARCH64_TLSDESC_CALL,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
