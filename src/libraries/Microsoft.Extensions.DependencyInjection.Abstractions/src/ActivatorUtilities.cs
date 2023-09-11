@@ -183,25 +183,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             value = CreateConstructorInfoExs(type);
 
-#if NET7_0_OR_GREATER
-            // ConditionalWeakTable doesn't support GetOrAdd(), so use TryAdd().
-            if (s_collectibleConstructorInfos.Value.TryAdd(type, value))
-            {
-                return value;
-            }
-#else
-            try
-            {
-                s_collectibleConstructorInfos.Value.Add(type, value);
-                return value;
-            }
-            catch (ArgumentException) { }
-#endif
-
-            // Use the instance from another thread that just added the same type.
-            bool success = s_collectibleConstructorInfos.Value.TryGetValue(type, out value);
-            Debug.Assert(success);
-            return value!;
+            // ConditionalWeakTable doesn't support GetOrAdd() so use AddOrUpdate(). This means threads
+            // can have different instances for the same type, but that is OK since they are equivalent.
+            s_collectibleConstructorInfos.Value.AddOrUpdate(type, value);
+            return value;
         }
 #endif // NETCOREAPP
 
