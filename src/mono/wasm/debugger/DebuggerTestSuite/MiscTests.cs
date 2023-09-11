@@ -1164,6 +1164,7 @@ namespace DebuggerTests
         }
 
         [ConditionalFact(nameof(WasmMultiThreaded))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task TestDebugUsingMultiThreadedRuntime()
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "MultiThreadedTest", "Write", 2);

@@ -148,7 +148,7 @@ export function http_wasm_fetch_bytes(url: string, header_names: string[], heade
     return http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, copy);
 }
 
-export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: string | Uint8Array | ReadableStream | null): ControllablePromise<ResponseExtension> {
+export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: Uint8Array | ReadableStream | null): ControllablePromise<ResponseExtension> {
     verifyEnvironment();
     mono_assert(url && typeof url === "string", "expected url string");
     mono_assert(header_names && header_values && Array.isArray(header_names) && Array.isArray(header_values) && header_names.length === header_values.length, "expected headerNames and headerValues arrays");
