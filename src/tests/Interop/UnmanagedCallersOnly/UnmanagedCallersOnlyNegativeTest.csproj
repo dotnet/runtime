@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Test needs explicit executable and isolation as it tests crashing the runtime. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>

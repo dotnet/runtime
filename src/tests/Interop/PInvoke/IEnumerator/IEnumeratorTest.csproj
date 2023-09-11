@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, UnloadabilityIncompatible, CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/37237 -->
     <GCStressIncompatible>true</GCStressIncompatible>

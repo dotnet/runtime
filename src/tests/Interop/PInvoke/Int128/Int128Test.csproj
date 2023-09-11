@@ -5,7 +5,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>embedded</DebugType>
-    <OutputType>exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Int128Test.cs" />
