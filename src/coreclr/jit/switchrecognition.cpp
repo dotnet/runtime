@@ -29,7 +29,7 @@ PhaseStatus Compiler::optSwitchRecognition()
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         // block->KindIs(BBJ_COND) check is for better throughput.
-        if (block->KindIs(BBJ_COND) && optSwitchDetectAndConvert(block))
+        if (block->KindIs(BBJ_COND) && !block->isRunRarely() && optSwitchDetectAndConvert(block))
         {
             JITDUMP("Converted block " FMT_BB " to switch\n", block->bbNum)
             modified = true;
