@@ -12,7 +12,7 @@ using InteropServices = System.Runtime.InteropServices;
 
 public class JittedMethodsCountingTest
 {
-    private const int MAX_JITTED_METHODS_ACCEPTED = 100;
+    private const int MAX_JITTED_METHODS_ACCEPTED = 50;
 
     [Fact]
     public static int TestEntryPoint()
