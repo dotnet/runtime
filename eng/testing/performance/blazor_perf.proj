@@ -48,12 +48,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="SOD - Minimum Blazor Template - Publish$(RunConfigsString)">
+    <HelixWorkItem Condition="'$(hybridGlobalization)' != 'True'" Include="SOD - Minimum Blazor Template - Publish$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
       <Command>cd $(BlazorMinDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - Minimum Blazor Template - Publish - AOT$(RunConfigsString)">
+    <HelixWorkItem Condition="'$(hybridGlobalization)' != 'True'" Include="SOD - Minimum Blazor Template - Publish - AOT$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
       <Command>cd $(BlazorMinAOTDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
