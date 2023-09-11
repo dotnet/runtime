@@ -51562,7 +51562,15 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
     // copy the generation data from this and the other finalize queue
     for (int i = FreeListSeg - 1; i >= 0; i--)
     {
-        MergeSegment(newArray, 0, this, other_fq, i);
+        size_t index1 = SegQueue (i) - m_Array;
+        size_t index2 = other_fq->SegQueue (i) - other_fq->m_Array;
+        size_t limit1 = SegQueueLimit (i) - m_Array;
+        size_t limit2 = other_fq->SegQueueLimit (i) - other_fq->m_Array;
+        size_t size1 = limit1 - index1;
+        size_t size2 = limit2 - index2;
+
+        memmove (&newArray[index1 + index2],           &m_Array[index1], sizeof(newArray[0]) * size1);
+        memmove (&newArray[limit1 + index2], &other_fq->m_Array[index2], sizeof(newArray[0]) * size2);
     }
 
     // copy the finalization data from this and the other finalize queue
@@ -51570,24 +51578,39 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
     // note reverse order from above to preserve the existing data
     for (int i = FreeListSeg + 1; i <= MaxSeg; i++)
     {
-        MergeSegment(newArray, growthCount, this, other_fq, i);
+        size_t indexFromEnd1 = m_EndArray - SegQueue (i);
+        size_t indexFromEnd2 = other_fq->m_EndArray - other_fq->SegQueue (i);
+        size_t limitFromEnd1 = m_EndArray - SegQueueLimit (i);
+        size_t limitFromEnd2 = other_fq->m_EndArray - other_fq->SegQueueLimit (i);
+        size_t size1 = indexFromEnd1 - limitFromEnd1;
+        size_t size2 = indexFromEnd2 - limitFromEnd2;
+
+        memmove (&newArray[thisArraySize + growthCount - indexFromEnd1 - indexFromEnd2],           m_EndArray - indexFromEnd1, sizeof(newArray[0]) * size1);
+        memmove (&newArray[thisArraySize + growthCount - limitFromEnd1 - indexFromEnd2], other_fq->m_EndArray - indexFromEnd2, sizeof(newArray[0]) * size2);
     }
 
     // adjust the m_FillPointers to reflect the sum of both queues on this queue,
     // and reflect that the other queue is now empty
     //
-    // unlike copying, this loop does include 'FreeListSeg' since the
-    // boundary needs to be set correctly, but including MaxSeg itself would
-    // set m_EndArray
-    for (int i = MaxSeg - 1; i >= 0; i--)
+    // unlike copying, these loops do need to set the 'FreeListSeg' boundaries,
+    // but including MaxSeg itself would set m_EndArray
+    for (int i = 0; i < FreeListSeg; ++i)
     {
         size_t thisLimit = SegQueueLimit (i) - m_Array;
         size_t otherLimit = other_fq->SegQueueLimit (i) - other_fq->m_Array;
-        size_t offset = ((i >= FreeListSeg) ? growthCount : 0);
 
-        SegQueueLimit (i) = &newArray[thisLimit + otherLimit + offset];
+        SegQueueLimit (i) = &newArray[thisLimit + otherLimit];
 
         other_fq->SegQueueLimit (i) = other_fq->m_Array;
+    }
+    for (int i = MaxSeg; i > FreeListSeg; i--)
+    {
+        size_t thisLimit = m_EndArray - SegQueue (i);
+        size_t otherLimit = other_fq->m_EndArray - other_fq->SegQueue (i);
+
+        SegQueue (i) = &newArray[(thisArraySize + growthCount) - thisLimit - otherLimit];
+
+        other_fq->SegQueue (i) = other_fq->m_EndArray;
     }
     if (m_Array != newArray)
     {
@@ -51596,28 +51619,6 @@ bool CFinalize::MergeFinalizationData (CFinalize* other_fq)
         m_EndArray = &m_Array [neededArraySize];
     }
     return true;
-}
-
-// merge finalization data for one segment
-//
-// Start:   fq1: | ... (size X) ... | segment1 | ... |
-//          fq2: | ... (size Y) ... | segment2 | ... |
-//
-// Result: dest: | ... (size X+Y+destExtraOffset) ... | segment1 segment2 | ... |
-//
-// dest might be unique or m_Array in fq1.
-// destExtraOffset is used to keep the segments after the FreeListSeg at the end of the array.
-void CFinalize::MergeSegment (Object** dest, size_t destExtraOffset, CFinalize* fq1, CFinalize* fq2, unsigned int segment)
-{
-    size_t index1 = fq1->SegQueue (segment) - fq1->m_Array;
-    size_t index2 = fq2->SegQueue (segment) - fq2->m_Array;
-    size_t limit1 = fq1->SegQueueLimit (segment) - fq1->m_Array;
-    size_t limit2 = fq2->SegQueueLimit (segment) - fq2->m_Array;
-    size_t size1 = limit1 - index1;
-    size_t size2 = limit2 - index2;
-
-    memmove (&dest[index1 + index2 + destExtraOffset], &fq1->m_Array[index1], sizeof(dest[0]) * size1);
-    memmove (&dest[limit1 + index2 + destExtraOffset], &fq2->m_Array[index2], sizeof(dest[0]) * size2);
 }
 
 // split finalization data from this queue with another queue
@@ -51658,13 +51659,13 @@ bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
     PTR_PTR_Object segQueue = m_Array;
     for (int i = 0; i < FreeListSeg; i++)
     {
-        segQueue = SplitSegment(segQueue, &newFillPointers[0], other_fq, i, TRUE);
+        segQueue = SplitSegment(segQueue, &newFillPointers[0], other_fq, i);
     }
 
     segQueue = m_EndArray;
-    for (int i = MaxSeg; i > FreeListSeg; i++)
+    for (int i = MaxSeg; i > FreeListSeg; i--)
     {
-        segQueue = SplitSegment(segQueue, &newFillPointers[0], other_fq, i, FALSE);
+        segQueue = SplitSegment(segQueue, &newFillPointers[0], other_fq, i);
     }
 
     // finally update the fill pointers from the new copy we generated
@@ -51678,7 +51679,7 @@ bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
 
 // split finalization data for one segment
 //
-// Case: copying_left_to_right == true
+// Case: segment < FreeListSeg
 //   Start:
 //           this: | copied | ... | half1 half2 | ... |
 //                          ^
@@ -51692,7 +51693,7 @@ bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
 //
 //       other_fq: | copied | half2 | ... |
 //
-// Case: copying_left_to_right == false
+// Case: segment > FreeListSeg
 //   Start:
 //           this: | ... | half1 half2 | ... | copied |
 //                                           ^
@@ -51707,8 +51708,10 @@ bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
 //       other_fq: | ... | half2 | copied |
 //
 // dest might be unique or m_Array in fq1
-Object** CFinalize::SplitSegment(Object** thisDest, Object*** newFillPointers, CFinalize* other_fq, unsigned int segment, BOOL copying_left_to_right)
+Object** CFinalize::SplitSegment(Object** thisDest, Object*** newFillPointers, CFinalize* other_fq, unsigned int segment)
 {
+    ASSERT(segment != FreeListSeg);
+
     size_t thisIndex = SegQueue (segment) - m_Array;
     size_t thisLimit = SegQueueLimit (segment) - m_Array;
     size_t thisSize = thisLimit - thisIndex;
@@ -51717,11 +51720,11 @@ Object** CFinalize::SplitSegment(Object** thisDest, Object*** newFillPointers, C
     // and slide the other half to its new position in the queue
     // (this will delete the moved half once copies and m_FillPointers updates are completed)
     size_t otherSize = thisSize / 2;
-    Object** otherDest = other_fq->SegQueue (segment);
     size_t thisNewSize = thisSize - otherSize;
 
-    if (copying_left_to_right)
+    if (segment < FreeListSeg)
     {
+        Object** otherDest = other_fq->SegQueue(segment);
         memmove (otherDest, &m_Array[thisIndex + thisNewSize], sizeof(other_fq->m_Array[0]) * otherSize);
         other_fq->SegQueueLimit (segment) = otherDest + otherSize;
 
@@ -51731,7 +51734,7 @@ Object** CFinalize::SplitSegment(Object** thisDest, Object*** newFillPointers, C
     }
     else
     {
-        otherDest -= otherSize;
+        Object** otherDest = other_fq->SegQueueLimit(segment) - otherSize;
         memmove (otherDest, &m_Array[thisIndex + thisNewSize], sizeof(other_fq->m_Array[0]) * otherSize);
         other_fq->SegQueue (segment) = otherDest;
 

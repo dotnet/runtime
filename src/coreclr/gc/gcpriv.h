@@ -4742,8 +4742,7 @@ private:
         return (SegQueueLimit(i) == SegQueue (i));
     }
 
-    static void MergeSegment (Object** dest, size_t destExtraOffset, CFinalize* fq1, CFinalize* fq2, unsigned int segment);
-    Object** SplitSegment (Object** dest, Object*** newFillPointers, CFinalize* other_fq, unsigned int segment, BOOL copying_left_to_right);
+    Object** SplitSegment (Object** dest, Object*** newFillPointers, CFinalize* other_fq, unsigned int segment);
 
 public:
     ~CFinalize();
