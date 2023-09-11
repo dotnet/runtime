@@ -429,7 +429,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     case    HNDTYPE_WEAK_LONG:
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
     case    HNDTYPE_WEAK_NATIVE_COM:
-#endif
+#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
         rootFlags |= kEtwGCRootFlagsWeakRef;
         break;
 
