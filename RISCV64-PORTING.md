@@ -26,11 +26,25 @@
  - [fibonacci-msbuild](https://github.com/dotnet/samples/tree/main/core/console-apps/fibonacci-msbuild)
  - [Fibonacci](https://github.com/dotnet/samples/tree/main/core/console-apps/FibonacciBetterMsBuild)
  - [serialization](https://github.com/dotnet/samples/tree/main/csharp/)
- - [string.format](https://github.com/dotnet/samples/tree/main/csharp/api/string.format/bin/Debug/net8.0/string.format.examples.dll)
+ - [string.format](https://github.com/dotnet/samples/tree/main/csharp/api/string.format)
+ - [classes-quickstart](https://github.com/dotnet/samples/tree/main/csharp/classes-quickstart)
+ - [console-linq](https://github.com/dotnet/samples/tree/main/csharp/getting-started)
+ - [versioning](https://github.com/dotnet/samples/tree/main/csharp/versioning)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
  - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+ - [](https://github.com/dotnet/samples/tree/main/csharp/)
+
+ 
 
 ## Got Error:
  - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/getting-started/console-webapiclient): Crashed because Multi Thread

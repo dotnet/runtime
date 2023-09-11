@@ -1865,6 +1865,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LREM_UN:
 	case OP_IREM_UN_IMM:
 
+	case OP_ICONV_TO_OVF_U1:
 	case OP_ICONV_TO_OVF_U2:
 	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U:
@@ -2264,6 +2265,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCEQ:
 		case OP_FCLT:
 		case OP_RCLT:
+		case OP_RCLT_UN:
 		case OP_FCLT_UN:
 		case OP_RISCV_SETFREG_R4:
 		case OP_R4CONST:
@@ -3622,7 +3624,13 @@ emit_move_return_value (MonoCompile *cfg, guint8 *code, MonoInst *ins)
 			if (riscv_stdext_d)
 				riscv_fsgnj_d (code, call->inst.dreg, cinfo->ret.reg, cinfo->ret.reg);
 			else
-				riscv_fsgnj_s (code, ins->dreg, cinfo->ret.reg, cinfo->ret.reg);
+				riscv_fsgnj_s (code, call->inst.dreg, cinfo->ret.reg, cinfo->ret.reg);
+		}
+		break;
+	case ArgInFRegR4:
+		g_assert (riscv_stdext_d || riscv_stdext_f);
+		if (call->inst.dreg != cinfo->ret.reg) {
+			riscv_fsgnj_s (code, call->inst.dreg, cinfo->ret.reg, cinfo->ret.reg);
 		}
 		break;
 	case ArgVtypeInIReg: {
