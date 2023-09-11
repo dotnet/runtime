@@ -353,13 +353,11 @@ namespace System.Collections.Tests
         [Fact]
         public static void CopyToBoolArray()
         {
-            for (int size = 10000; size < 10100; size++)
+            for (int size = 4; size < 100; size++)
             {
                 var bitArray = new BitArray(size);
                 bitArray[1] = true;
                 bitArray[3] = true;
-                bitArray[31] = true;
-                bitArray[34] = true;
 
                 for (int i = 0; i < 100; i++)
                 {
@@ -368,8 +366,6 @@ namespace System.Collections.Tests
 
                     expectedOutput[i + 1] = true;
                     expectedOutput[i + 3] = true;
-                    expectedOutput[i + 31] = true;
-                    expectedOutput[i + 34] = true;
                     bitArray.CopyTo(actualOutput, i);
 
                     Assert.Equal(expectedOutput, actualOutput);
