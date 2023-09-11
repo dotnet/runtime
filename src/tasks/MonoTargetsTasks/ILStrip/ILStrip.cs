@@ -308,5 +308,9 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         var trimmedAssemblyItem = new TaskItem(assemblyFilePath);
         trimmedAssemblyItem.SetMetadata("TrimmedAssemblyFileName", trimmedAssemblyFilePath);
         _trimmedAssemblies.Add(trimmedAssemblyItem);
+
+        FileInfo fileInfo = new FileInfo(assemblyFilePath);
+        DateTime lastModified = fileInfo.LastWriteTime;
+        File.SetLastWriteTime(trimmedAssemblyFilePath, lastModified);
     }
 }
