@@ -571,7 +571,8 @@ namespace ILCompiler.ObjectWriter
             uint methodTypeIndex,
             string methodName,
             SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode)
+            INodeWithDebugInfo debugNode,
+            bool hasSequencePoints)
         {
             DebugEHClauseInfo[] clauses = null;
             CodeViewSymbolsBuilder debugSymbolsBuilder;
@@ -600,11 +601,14 @@ namespace ILCompiler.ObjectWriter
                 debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
                 clauses ?? Array.Empty<DebugEHClauseInfo>());
 
-            debugSymbolsBuilder.EmitLineInfo(
-                _debugFileTableBuilder,
-                methodName,
-                methodSymbol.Size,
-                debugNode.GetNativeSequencePoints());
+            if (hasSequencePoints)
+            {
+                debugSymbolsBuilder.EmitLineInfo(
+                    _debugFileTableBuilder,
+                    methodName,
+                    methodSymbol.Size,
+                    debugNode.GetNativeSequencePoints());
+            }
         }
 
         protected override void EmitDebugSections()
