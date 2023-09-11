@@ -49,6 +49,7 @@ public abstract class BenchTask
         public virtual int InitialSamples => 10;
         public virtual int NumberOfRuns => 5;
         public virtual int RunLength => 5000;
+        public virtual Task<bool> IsEnabled() => Task.FromResult(true);
 
         public virtual Task BeforeBatch() { return Task.CompletedTask; }
 
@@ -59,15 +60,16 @@ public abstract class BenchTask
 
         public virtual bool HasRunStepAsync => false;
 
-        protected virtual int CalculateSteps(int milliseconds, TimeSpan initTs)
+        protected virtual int CalculateSteps(int milliseconds, TimeSpan initTs, int initialSamples)
         {
-            return (int)(milliseconds * InitialSamples / Math.Max(1.0, initTs.TotalMilliseconds));
+            return (int)(milliseconds * initialSamples / Math.Max(1.0, initTs.TotalMilliseconds));
         }
 
         public async Task<Result> RunBatch(BenchTask task, int milliseconds)
         {
             DateTime start = DateTime.Now;
             DateTime end;
+            int initialSamples = InitialSamples;
             try
             {
                 // run one to eliminate possible startup overhead and do GC collection
@@ -79,15 +81,35 @@ public abstract class BenchTask
                 GC.Collect();
 
                 start = DateTime.Now;
-                for (currentStep = 0; currentStep < InitialSamples; currentStep++)
-                    if (HasRunStepAsync)
-                        await RunStepAsync();
-                    else
-                        RunStep();
+                if (HasRunStepAsync)
+                    await RunStepAsync();
+                else
+                    RunStep();
                 end = DateTime.Now;
 
+                // try to limit initial samples to 1s
+                var oneTs = end - start;
+                var maxInitMs = 1000;
+                if (oneTs.TotalMilliseconds > 0 && oneTs.TotalMilliseconds*InitialSamples > maxInitMs)
+                    initialSamples = (int)(maxInitMs/oneTs.TotalMilliseconds);
+
+                if (initialSamples > 1) {
+                    GC.Collect();
+
+                    start = DateTime.Now;
+                    for (currentStep = 0; currentStep < initialSamples; currentStep++)
+                        if (HasRunStepAsync)
+                            await RunStepAsync();
+                        else
+                            RunStep();
+                    end = DateTime.Now;
+                } else {
+                    // we already have the 1st measurement
+                    initialSamples = 1;
+                }
+
                 var initTs = end - start;
-                int steps = CalculateSteps(milliseconds, initTs);
+                int steps = CalculateSteps(milliseconds, initTs, initialSamples);
 
                 start = DateTime.Now;
                 for (currentStep = 0; currentStep < steps; currentStep++)
@@ -101,14 +123,14 @@ public abstract class BenchTask
 
                 var ts = end - start;
 
-                return new Result { span = ts + initTs, steps = steps + InitialSamples, taskName = task.Name, measurementName = Name };
+                return new Result { span = ts + initTs, steps = steps + initialSamples, taskName = task.Name, measurementName = Name };
             }
             catch (Exception ex)
             {
                 end = DateTime.Now;
                 var ts = end - start;
                 Console.WriteLine(ex);
-                return new Result { span = ts, steps = currentStep + InitialSamples, taskName = task.Name, measurementName = Name + " " + ex.Message };
+                return new Result { span = ts, steps = currentStep + initialSamples, taskName = task.Name, measurementName = Name + " " + ex.Message };
             }
         }
     }

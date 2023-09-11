@@ -10,7 +10,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'shortsig'// as "format"
+.assembly ASSEMBLY_NAME// as "format"
 {
 }
 .assembly extern xunit.core {}

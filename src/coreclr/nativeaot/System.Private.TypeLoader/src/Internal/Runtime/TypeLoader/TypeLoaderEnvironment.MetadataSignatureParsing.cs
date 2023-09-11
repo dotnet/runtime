@@ -173,12 +173,23 @@ namespace Internal.Runtime.TypeLoader
 
         private bool CompareTypeSigWithType(ref NativeParser parser, TypeManagerHandle moduleHandle, Handle typeHandle)
         {
-            while (typeHandle.HandleType == HandleType.TypeSpecification)
+            while (typeHandle.HandleType == HandleType.TypeSpecification
+                || typeHandle.HandleType == HandleType.ModifiedType)
             {
-                typeHandle = typeHandle
-                    .ToTypeSpecificationHandle(_metadataReader)
-                    .GetTypeSpecification(_metadataReader)
-                    .Signature;
+                if (typeHandle.HandleType == HandleType.TypeSpecification)
+                {
+                    typeHandle = typeHandle
+                        .ToTypeSpecificationHandle(_metadataReader)
+                        .GetTypeSpecification(_metadataReader)
+                        .Signature;
+                }
+                else
+                {
+                    typeHandle = typeHandle
+                        .ToModifiedTypeHandle(_metadataReader)
+                        .GetModifiedType(_metadataReader)
+                        .Type;
+                }
             }
 
             // startOffset lets us backtrack to the TypeSignatureKind for external types since the TypeLoader
@@ -353,16 +364,8 @@ namespace Internal.Runtime.TypeLoader
                         switch (typeHandle.HandleType)
                         {
                             case HandleType.TypeDefinition:
-                                if (!TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(
+                                if (!TypeLoaderEnvironment.TryGetNamedTypeForMetadata(
                                     new QTypeDefinition(_metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader)), out type2))
-                                {
-                                    return false;
-                                }
-                                break;
-
-                            case HandleType.TypeReference:
-                                if (!TypeLoaderEnvironment.TryResolveNamedTypeForTypeReference(
-                                    _metadataReader, typeHandle.ToTypeReferenceHandle(_metadataReader), out type2))
                                 {
                                     return false;
                                 }

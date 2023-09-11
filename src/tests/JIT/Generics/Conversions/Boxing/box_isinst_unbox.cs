@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class Tests
 {
@@ -39,7 +40,8 @@ public static class Tests
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         BoxIsInstUnbox1<int>(1).Expect(1);
         BoxIsInstUnbox1<uint>(1).Expect(-1);

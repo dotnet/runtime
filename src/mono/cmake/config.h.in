@@ -51,6 +51,9 @@
 /* pthread is a pointer */
 #cmakedefine PTHREAD_POINTER_ID 1
 
+/* Targeting a Unix-like platform */
+#cmakedefine TARGET_UNIX 1
+
 /* Targeting the Android platform */
 #cmakedefine HOST_ANDROID 1
 
@@ -72,11 +75,17 @@
 /* Target Platform is Win32 */
 #cmakedefine TARGET_WIN32 1
 
+/* ... */
+#cmakedefine TARGET_WINDOWS 1
+
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
 /* Host Platform is OSX or Mac Catalyst */
 #cmakedefine HOST_OSX 1
+
+/* ... */
+#cmakedefine TARGET_OSX 1
 
 /* Host Platform is iOS */
 #cmakedefine HOST_IOS 1
@@ -86,6 +95,15 @@
 
 /* Host Platform is Mac Catalyst */
 #cmakedefine HOST_MACCAT 1
+
+/* Target Platform is Linux */
+#cmakedefine TARGET_LINUX 1
+
+/* Target Platform is Linux (bionic libc)*/
+#cmakedefine TARGET_LINUX_BIONIC 1
+
+/* Target Platform is Linux (musl libc)*/
+#cmakedefine TARGET_LINUX_MUSL 1
 
 /* Use classic Windows API support */
 #cmakedefine HAVE_CLASSIC_WINAPI_SUPPORT 1
@@ -235,9 +253,6 @@
 /* Reduce runtime requirements (and capabilities) */
 #cmakedefine MONO_SMALL_CONFIG 1
 
-/* String of disabled features */
-#define DISABLED_FEATURES @DISABLED_FEATURES@
-
 /* Disable AOT Compiler */
 #cmakedefine DISABLE_AOT 1
 
@@ -298,9 +313,6 @@
 
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
-
-/* Disable user thread creation on WebAssembly */
-#cmakedefine DISABLE_WASM_USER_THREADS 1
 
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
@@ -664,6 +676,9 @@
 #cmakedefine MONO_CROSS_COMPILE 1
 
 /* ... */
+#cmakedefine TARGET_BROWSER 1
+
+/* ... */
 #cmakedefine TARGET_WASM 1
 
 /* ... */
@@ -870,21 +885,6 @@
 /* Enable experiment 'Tiered Compilation' */
 #cmakedefine ENABLE_EXPERIMENT_TIERED 1
 
-/* Enable checked build */
-#cmakedefine ENABLE_CHECKED_BUILD 1
-
-/* Enable GC checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_GC 1
-
-/* Enable metadata checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
-
-/* Enable thread checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_THREAD 1
-
-/* Enable private types checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1
-
 /* Enable EventPipe library support */
 #cmakedefine ENABLE_PERFTRACING 1
 
@@ -927,6 +927,9 @@
 /* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
 #cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
 
+/* Enable runtime checks of casts between types */
+#cmakedefine ENABLE_CHECKED_BUILD_CASTS 1
+
 /* Enable static linking of mono runtime components */
 #cmakedefine STATIC_COMPONENTS
 
@@ -938,6 +941,9 @@
 
 /* Enable WebCIL image loader */
 #cmakedefine ENABLE_WEBCIL 1
+
+/* define if clockgettime exists */
+#cmakedefine HAVE_CLOCK_GETTIME 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

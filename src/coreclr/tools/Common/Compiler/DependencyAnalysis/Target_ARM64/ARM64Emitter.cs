@@ -31,6 +31,13 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             Builder.EmitUInt(instruction);
         }
 
+        public void EmitMVN(Register regDst, ushort imm16)
+        {
+            Debug.Assert((uint)regDst <= 0x1f);
+            uint instruction = 0x92800000u | ((uint)imm16 << 5) | (uint)regDst;
+            Builder.EmitUInt(instruction);
+        }
+
         public void EmitMOV(Register regDst, ISymbolNode symbol)
         {
             // ADRP regDst, [symbol (21bit ADRP thing)]
@@ -169,7 +176,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
 
         public void EmitRETIfEqual()
         {
+            // b.ne #8
             Builder.EmitUInt(0b01010100_0000000000000000010_0_0001u);
+            EmitRET();
+        }
+
+        public void EmitRETIfNotEqual()
+        {
+            // b.eq #8
+            Builder.EmitUInt(0b01010100_0000000000000000010_0_0000u);
             EmitRET();
         }
 
@@ -178,6 +193,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             uint offset = symbol.RepresentsIndirectionCell ? 6u : 2u;
 
             Builder.EmitUInt(0b01010100_0000000000000000000_0_0001u | offset << 5);
+
+            EmitJMP(symbol);
+        }
+
+        public void EmitJNE(ISymbolNode symbol)
+        {
+            uint offset = symbol.RepresentsIndirectionCell ? 6u : 2u;
+
+            Builder.EmitUInt(0b01010100_0000000000000000000_0_0000u | offset << 5);
 
             EmitJMP(symbol);
         }

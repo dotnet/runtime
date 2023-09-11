@@ -20,7 +20,7 @@ namespace System.Text.Json
         private const int UnseekableStreamInitialRentSize = 4096;
 
         /// <summary>
-        ///   Parse memory as UTF-8-encoded text representing a single JSON value into a JsonDocument.
+        ///   Parse memory as UTF-8 encoded text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   <para>
@@ -50,7 +50,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a sequence as UTF-8-encoded text representing a single JSON value into a JsonDocument.
+        ///   Parse a sequence as UTF-8 encoded text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   <para>
@@ -101,7 +101,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   Parse a <see cref="Stream"/> as UTF-8 encoded data representing a single JSON value into a
         ///   JsonDocument.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON data to parse.</param>
@@ -180,7 +180,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   Parse a <see cref="Stream"/> as UTF-8 encoded data representing a single JSON value into a
         ///   JsonDocument.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON data to parse.</param>
@@ -226,6 +226,24 @@ namespace System.Text.Json
                 ArrayPool<byte>.Shared.Return(drained.Array);
                 throw;
             }
+        }
+
+        internal static async Task<JsonDocument> ParseAsyncCoreUnrented(
+            Stream utf8Json,
+            JsonDocumentOptions options = default,
+            CancellationToken cancellationToken = default)
+        {
+            ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+            Debug.Assert(drained.Array != null);
+
+            byte[] owned = new byte[drained.Count];
+            Buffer.BlockCopy(drained.Array, 0, owned, 0, drained.Count);
+
+            // Holds document content, clear it before returning it.
+            drained.AsSpan().Clear();
+            ArrayPool<byte>.Shared.Return(drained.Array);
+
+            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
         }
 
         /// <summary>
@@ -673,7 +691,7 @@ namespace System.Text.Json
             {
                 MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
                 database.Append(tokenType, startLocation: 0, utf8Json.Length);
-                return new JsonDocument(utf8Json, database);
+                return new JsonDocument(utf8Json, database, isDisposable: false);
             }
         }
 
@@ -739,7 +757,7 @@ namespace System.Text.Json
                 }
             }
 
-            return new JsonDocument(utf8Json, database);
+            return new JsonDocument(utf8Json, database, isDisposable: false);
         }
 
         private static ArraySegment<byte> ReadToEnd(Stream stream)

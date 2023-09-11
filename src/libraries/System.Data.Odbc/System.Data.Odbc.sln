@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.Odbc", "src\Sys
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.Odbc.Tests", "tests\System.Data.Odbc.Tests.csproj", "{B0451507-A304-47CB-B14F-257E44B8AC18}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{8DD9B5E3-A86A-4E2D-9CD4-567E358184FE}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{76183E18-B488-4466-AEE5-3C5D0B3CD917}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{C41CDCD9-00FB-4A87-893A-9E4788790EE7}"
@@ -16,6 +18,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.CodePages", "..\System.Text.Encoding.CodePages\ref\System.Text.Encoding.CodePages.csproj", "{D7E6B130-F82B-40B6-B76C-BD6451753BE1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.CodePages", "..\System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj", "{BD3A8348-A2AC-468A-B8D9-B639190B0FD8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.Generator", "..\System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj", "{89FD20D3-AF2B-4DAA-8CB3-847E4EA19A5F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D561F200-5EE8-46AF-A1B8-537A2A0EFA8F}"
 EndProject
@@ -47,6 +51,10 @@ Global
 		{B0451507-A304-47CB-B14F-257E44B8AC18}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0451507-A304-47CB-B14F-257E44B8AC18}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0451507-A304-47CB-B14F-257E44B8AC18}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DD9B5E3-A86A-4E2D-9CD4-567E358184FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DD9B5E3-A86A-4E2D-9CD4-567E358184FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DD9B5E3-A86A-4E2D-9CD4-567E358184FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DD9B5E3-A86A-4E2D-9CD4-567E358184FE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{76183E18-B488-4466-AEE5-3C5D0B3CD917}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{76183E18-B488-4466-AEE5-3C5D0B3CD917}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{76183E18-B488-4466-AEE5-3C5D0B3CD917}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -67,6 +75,10 @@ Global
 		{BD3A8348-A2AC-468A-B8D9-B639190B0FD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD3A8348-A2AC-468A-B8D9-B639190B0FD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD3A8348-A2AC-468A-B8D9-B639190B0FD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89FD20D3-AF2B-4DAA-8CB3-847E4EA19A5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89FD20D3-AF2B-4DAA-8CB3-847E4EA19A5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89FD20D3-AF2B-4DAA-8CB3-847E4EA19A5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89FD20D3-AF2B-4DAA-8CB3-847E4EA19A5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -79,8 +91,10 @@ Global
 		{D7E6B130-F82B-40B6-B76C-BD6451753BE1} = {08F7B256-AB13-4784-98C4-737888DC7428}
 		{EDE27BD9-9134-4118-94BD-C9782811684D} = {416AFA87-B3A9-4F0C-822F-BB08F8837609}
 		{BD3A8348-A2AC-468A-B8D9-B639190B0FD8} = {416AFA87-B3A9-4F0C-822F-BB08F8837609}
+		{8DD9B5E3-A86A-4E2D-9CD4-567E358184FE} = {4A564597-B792-466F-A641-DC264A3D6C66}
 		{76183E18-B488-4466-AEE5-3C5D0B3CD917} = {4A564597-B792-466F-A641-DC264A3D6C66}
 		{C41CDCD9-00FB-4A87-893A-9E4788790EE7} = {4A564597-B792-466F-A641-DC264A3D6C66}
+		{89FD20D3-AF2B-4DAA-8CB3-847E4EA19A5F} = {4A564597-B792-466F-A641-DC264A3D6C66}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D222D648-ABA4-4D02-9230-A2B2CC3F3C39}

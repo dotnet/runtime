@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Test case showing that we can have "more complex"
 // IR after a tail call if we do early flow opts.
@@ -11,7 +12,7 @@ interface IX
 {
 }
 
-class X : IX
+public class X : IX
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     bool P1(object o) => false;
@@ -85,7 +86,8 @@ class X : IX
 
     // This stops F0 from being inlined
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         X x = new X();
         bool b = x.F0(x);

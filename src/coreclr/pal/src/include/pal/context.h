@@ -28,6 +28,8 @@ extern "C"
 #include <signal.h>
 #include <pthread.h>
 
+#include <minipal/cpuid.h>
+
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
 #if HAVE_UCONTEXT_T
@@ -232,7 +234,7 @@ bool Xstate_IsAvx512Supported();
 #define FPREG_MxCsr(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr)
 #define FPREG_MxCsr_Mask(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr_mask)
 
-#endif // HOST_LOONGARCH64
+#endif // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #else // HOST_64BIT
 

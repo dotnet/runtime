@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'simple' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_simple_boxunbox
 {

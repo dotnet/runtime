@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_Jmp1
 {
     const int Pass = 100;
@@ -24,7 +25,8 @@ L3:
         return x+1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int y = Jmp1(1);
         if (y == 4) return Pass;

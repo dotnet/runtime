@@ -60,11 +60,10 @@ namespace System.Threading
 
         private Thread() { }
 
-        public extern int ManagedThreadId
+        public int ManagedThreadId
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            get => _managedThreadId;
         }
 
         /// <summary>Returns handle for interop with EE. The handle is guaranteed to be non-null.</summary>
@@ -248,7 +247,7 @@ namespace System.Threading
             //  Once we CoUninitialize the thread, the OS will still
             //  report the thread as implicitly in the MTA if any
             //  other thread in the process is CoInitialized.
-            if ((state == System.Threading.ApartmentState.Unknown) && (retState == System.Threading.ApartmentState.MTA))
+            if ((state == ApartmentState.Unknown) && (retState == ApartmentState.MTA))
             {
                 return true;
             }
@@ -275,17 +274,17 @@ namespace System.Threading
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-             if (state != ApartmentState.Unknown)
-             {
+            if (state != ApartmentState.Unknown)
+            {
                 if (throwOnError)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
                 }
 
                 return false;
-             }
+            }
 
-             return true;
+            return true;
         }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 

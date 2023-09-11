@@ -114,7 +114,7 @@ namespace System.Xml
         /// </devdoc>
         public static string ToString(string name, string? ns)
         {
-            return ns == null || ns.Length == 0 ? name : $"{ns}:{name}";
+            return string.IsNullOrEmpty(ns) ? name : $"{ns}:{name}";
         }
 
         // --------- Some useful internal stuff -----------------

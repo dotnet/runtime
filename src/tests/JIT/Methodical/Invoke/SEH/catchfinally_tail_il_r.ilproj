@@ -5,6 +5,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="catchfinally_tail_r.il" />
     <Compile Include="catchfinally_tail.il" />
   </ItemGroup>
 </Project>

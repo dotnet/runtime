@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_NullOrEmptySubType_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>("subtype", () => new MultipartContent(null));
+            AssertExtensions.Throws<ArgumentNullException>("subtype", () => new MultipartContent(null));
             AssertExtensions.Throws<ArgumentException>("subtype", () => new MultipartContent(""));
             AssertExtensions.Throws<ArgumentException>("subtype", () => new MultipartContent(" "));
         }
@@ -24,7 +24,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_NullOrEmptyBoundary_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", null));
+            AssertExtensions.Throws<ArgumentNullException>("boundary", () => new MultipartContent("Some", null));
             AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", ""));
             AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", " "));
         }

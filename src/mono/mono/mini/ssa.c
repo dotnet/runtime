@@ -504,7 +504,7 @@ mono_ssa_compute (MonoCompile *cfg)
 				ins->opcode = OP_FPHI;
 				break;
 			case STACK_VTYPE:
-				ins->opcode = MONO_CLASS_IS_SIMD (cfg, var->klass) ? OP_XPHI : OP_VPHI;
+				ins->opcode = mini_class_is_simd (cfg, var->klass) ? OP_XPHI : OP_VPHI;
 				break;
 			}
 

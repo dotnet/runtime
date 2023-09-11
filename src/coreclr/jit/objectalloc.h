@@ -66,9 +66,7 @@ private:
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
-#ifdef DEBUG
-    static Compiler::fgWalkResult AssertWhenAllocObjFoundVisitor(GenTree** pTree, Compiler::fgWalkData* data);
-#endif // DEBUG
+
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
 

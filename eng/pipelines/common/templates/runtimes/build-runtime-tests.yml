@@ -1,0 +1,23 @@
+parameters:
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  buildConfig: ''
+  testBuildArgs: ''
+  #arcade-specific parameters
+  condition: always()
+  continueOnError: false
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+  shouldContinueOnError: false
+
+
+steps:
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
+      displayName: Build Tests
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
+      displayName: Build Tests

@@ -441,9 +441,14 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
-            ProtocolToken message = CreateShutdownToken()!;
+            byte[]? message = CreateShutdownToken();
             _shutdown = true;
-            return InnerStream.WriteAsync(message.Payload, default).AsTask();
+            if (message != null)
+            {
+                return InnerStream.WriteAsync(message, default).AsTask();
+            }
+
+            return Task.CompletedTask;
         }
         #endregion
 

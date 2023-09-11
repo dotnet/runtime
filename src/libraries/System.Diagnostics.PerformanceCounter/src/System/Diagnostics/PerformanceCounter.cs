@@ -548,14 +548,14 @@ namespace System.Diagnostics
                 _counterType = counterSample._counterType;
                 if (!categorySample._isMultiInstance)
                 {
-                    if (_instanceName != null && _instanceName.Length != 0)
+                    if (!string.IsNullOrEmpty(_instanceName))
                         throw new InvalidOperationException(SR.Format(SR.InstanceNameProhibited, _instanceName));
 
                     return counterSample.GetSingleValue();
                 }
                 else
                 {
-                    if (_instanceName == null || _instanceName.Length == 0)
+                    if (string.IsNullOrEmpty(_instanceName))
                         throw new InvalidOperationException(SR.InstanceNameRequired);
 
                     return counterSample.GetInstanceValue(_instanceName);

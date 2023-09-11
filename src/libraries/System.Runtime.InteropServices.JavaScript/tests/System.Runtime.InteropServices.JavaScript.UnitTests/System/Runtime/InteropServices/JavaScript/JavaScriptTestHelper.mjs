@@ -276,6 +276,10 @@ export function invokeStructClassRecords(arg1) {
 }
 
 export function echopromise(arg1) {
+    if (globalThis.gc) {
+        //console.log('globalThis.gc');
+        globalThis.gc();
+    }
     return new Promise(resolve => setTimeout(() => resolve(arg1), 0));
 }
 

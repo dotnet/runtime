@@ -3,6 +3,7 @@
 
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
   <PropertyGroup>
+    <SelfContained>true</SelfContained>
     <Platform>AnyCPU</Platform>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>

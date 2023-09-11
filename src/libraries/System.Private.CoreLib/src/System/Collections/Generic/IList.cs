@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if MONO
+using System.Diagnostics.CodeAnalysis;
+#endif
+
 namespace System.Collections.Generic
 {
     // An IList is an ordered collection of objects.  The exact ordering
@@ -12,11 +16,11 @@ namespace System.Collections.Generic
         T this[int index]
         {
 #if MONO
-            [System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(Array.InternalArray__get_Item) + "``1", typeof(Array))]
+            [DynamicDependency(nameof(Array.InternalArray__get_Item) + "``1", typeof(Array))]
 #endif
             get;
 #if MONO
-            [System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(Array.InternalArray__set_Item) + "``1", typeof(Array))]
+            [DynamicDependency(nameof(Array.InternalArray__set_Item) + "``1", typeof(Array))]
 #endif
             set;
         }
@@ -24,7 +28,7 @@ namespace System.Collections.Generic
         // Returns the index of a particular item, if it is in the list.
         // Returns -1 if the item isn't in the list.
 #if MONO
-        [System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(Array.InternalArray__IndexOf) + "``1", typeof(Array))]
+        [DynamicDependency(nameof(Array.InternalArray__IndexOf) + "``1", typeof(Array))]
 #endif
         int IndexOf(T item);
 
@@ -33,13 +37,13 @@ namespace System.Collections.Generic
         // number of elements in the list.  If index equals the number
         // of items in the list, then value is appended to the end.
 #if MONO
-        [System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(Array.InternalArray__Insert) + "``1", typeof(Array))]
+        [DynamicDependency(nameof(Array.InternalArray__Insert) + "``1", typeof(Array))]
 #endif
         void Insert(int index, T item);
 
         // Removes the item at position index.
 #if MONO
-        [System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(Array.InternalArray__RemoveAt), typeof(Array))]
+        [DynamicDependency(nameof(Array.InternalArray__RemoveAt), typeof(Array))]
 #endif
         void RemoveAt(int index);
     }

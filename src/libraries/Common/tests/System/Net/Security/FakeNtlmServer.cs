@@ -24,7 +24,7 @@ namespace System.Net.Security
     // and responses for unit test purposes. The validation checks the
     // structure of the messages, their integrity and use of specified
     // features (eg. MIC).
-    internal class FakeNtlmServer
+    internal class FakeNtlmServer : IDisposable
     {
         public FakeNtlmServer(NetworkCredential expectedCredential)
         {
@@ -140,6 +140,14 @@ namespace System.Net.Security
             ConstrainedAuthentication = 1,
             MICPresent = 2,
             UntrustedSPN = 4,
+        }
+
+        public void Dispose()
+        {
+            _clientSeal?.Dispose();
+            _clientSeal = null;
+            _serverSeal?.Dispose();
+            _serverSeal = null;
         }
 
         private static ReadOnlySpan<byte> GetField(ReadOnlySpan<byte> payload, int fieldOffset)
@@ -396,6 +404,9 @@ namespace System.Net.Security
 
         public void ResetKeys()
         {
+            _clientSeal?.Dispose();
+            _serverSeal?.Dispose();
+
             _clientSeal = new RC4(_clientSealingKey);
             _serverSeal = new RC4(_serverSealingKey);
         }

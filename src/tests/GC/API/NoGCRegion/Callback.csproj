@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestExecutionArguments />
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Consider enable it for Mono whenever the implementation is ready -->
+    <!-- https://github.com/dotnet/runtime/issues/73167 -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Callback.cs" />
+  </ItemGroup>
+</Project>

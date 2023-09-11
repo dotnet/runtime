@@ -874,7 +874,7 @@ namespace DebuggerTests
                 await CheckProps(t_props, new
                     {
                         Status = TGetter("Status")
-                    }, "t_props", num_fields: 58);
+                    }, "t_props", num_fields: 33);
             });
 
 
@@ -938,6 +938,12 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalsUsingClassFromLibraryUsingDebugTypeFull()
         {
+            /*DebugType.Full generates symbols in a format that we don't understand (vs portable). If JMC=true (default for tests) then we will not load the assemblies
+            that don't have debug symbols. With JMC=false, the assembly will be loaded, even with unusable symbols, and the proxy will use the assembly metadata
+            instead.
+
+            This test specifically tries to inspect an object defined in the external library, so we need JMC=false here.*/
+            await SetJustMyCode(false);
             var expression = $"{{ invoke_static_method('[debugger-test] DebugTypeFull:CallToEvaluateLocal'); }}";
 
             await EvaluateAndCheck(
@@ -1002,6 +1008,8 @@ namespace DebuggerTests
             1160)]
         public async Task InspectPropertiesOfObjectFromExternalLibrary(string className, int line)
         {
+            //Setting JustMyCode = false because we are trying to inspect an object from an external library, and this is only allowed when JMC is disabled
+            await SetJustMyCode(false);
             var expression = $"{{ invoke_static_method('[debugger-test] {className}:Run'); }}";
 
             await EvaluateAndCheck(
@@ -1065,6 +1073,12 @@ namespace DebuggerTests
         [InlineData("ClassInheritsFromNonUserCodeClass", 1335, false)]
         [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, true)]
         [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols", 1618, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols", 1618, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass", 1635, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass", 1635, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1653, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1653, false)]
         public async Task InspectThisThatInheritsFromClassNonUserCode(string class_name, int line, bool jmc)
         {
             await SetJustMyCode(jmc);
@@ -1150,6 +1164,7 @@ namespace DebuggerTests
         }
 
         [ConditionalFact(nameof(WasmMultiThreaded))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task TestDebugUsingMultiThreadedRuntime()
         {
             var bp = await SetBreakpointInMethod("debugger-test.dll", "MultiThreadedTest", "Write", 2);

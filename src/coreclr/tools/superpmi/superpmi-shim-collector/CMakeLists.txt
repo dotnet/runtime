@@ -74,11 +74,13 @@ if(CLR_CMAKE_HOST_UNIX)
         mscorrc
         coreclrpal
         palrt
+        coreclrminipal
     )
 else()
     target_link_libraries(superpmi-shim-collector
         PRIVATE
         advapi32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}
     )

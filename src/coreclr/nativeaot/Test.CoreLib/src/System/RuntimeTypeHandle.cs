@@ -10,17 +10,17 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public struct RuntimeTypeHandle
     {
-        private EETypePtr _pEEType;
+        private IntPtr _value;
 
-        internal RuntimeTypeHandle(EETypePtr pEEType)
+        internal RuntimeTypeHandle(IntPtr value)
         {
-            _pEEType = pEEType;
+            _value = value;
         }
 
         [Intrinsic]
-        internal static unsafe IntPtr GetValueInternal(RuntimeTypeHandle handle)
+        internal static unsafe IntPtr ToIntPtr(RuntimeTypeHandle handle)
         {
-            return (IntPtr)handle._pEEType.ToPointer();
+            return handle._value;
         }
     }
 }
@@ -32,7 +32,7 @@ namespace Internal.Runtime.CompilerHelpers
     {
         private static RuntimeTypeHandle GetRuntimeTypeHandle(IntPtr pEEType)
         {
-            return new RuntimeTypeHandle(new EETypePtr(pEEType));
+            return new RuntimeTypeHandle(pEEType);
         }
     }
 }

@@ -15,7 +15,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'huge_objref'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

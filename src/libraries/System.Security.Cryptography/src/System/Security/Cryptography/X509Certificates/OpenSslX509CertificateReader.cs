@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
                 TryReadX509Pem(rawData, out cert) ||
                 OpenSslPkcsFormatReader.TryReadPkcs7Der(rawData, out cert) ||
                 OpenSslPkcsFormatReader.TryReadPkcs7Pem(rawData, out cert) ||
-                OpenSslPkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, out cert, out openSslException))
+                OpenSslPkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, readingFromFile: false, out cert, out openSslException))
             {
                 if (cert == null)
                 {
@@ -87,6 +87,7 @@ namespace System.Security.Cryptography.X509Certificates
                     File.ReadAllBytes(fileName),
                     password,
                     ephemeralSpecified,
+                    readingFromFile: true,
                     out pal,
                     out Exception? exception);
 

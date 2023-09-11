@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'int32_neg_range'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

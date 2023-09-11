@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 internal class Win32Interop
 {
@@ -39,7 +40,8 @@ public class Test_static02
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Eval(Gen<int>.PInvokeTest() == 6);
         Eval(Gen<double>.PInvokeTest() == 6);

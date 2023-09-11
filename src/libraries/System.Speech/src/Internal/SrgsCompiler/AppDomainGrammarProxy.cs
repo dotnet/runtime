@@ -277,7 +277,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         private static NameValuePair[] ParseInitParams(string initParameters)
         {
-            string[] parameters = initParameters.Split(new char[] { ';' }, StringSplitOptions.None);
+            string[] parameters = initParameters.Split(';', StringSplitOptions.None);
             NameValuePair[] pairs = new NameValuePair[parameters.Length];
 
             for (int i = 0; i < parameters.Length; i++)

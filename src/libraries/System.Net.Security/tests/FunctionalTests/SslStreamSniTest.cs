@@ -203,7 +203,7 @@ namespace System.Net.Security.Tests
                         server.AuthenticateAsServerAsync(serverOptions, default));
 
             Assert.Equal(string.Empty, server.TargetHostName);
-            Assert.Equal(string.Empty, client.TargetHostName);
+            Assert.Equal(target, client.TargetHostName);
         }
 
         [Theory]
@@ -237,6 +237,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task UnencodedHostName_ValidatesCertificate()
         {
             string rawHostname = "räksmörgås.josefsson.org";

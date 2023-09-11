@@ -22,7 +22,7 @@ class ComPlusCallMethodDesc;
 #include <cgencpu.h>
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 void ResumeAtJit(PT_CONTEXT pContext, LPVOID oldFP);
 #endif
 
@@ -63,10 +63,6 @@ extern "C" void STDCALL ExternalMethodFixupPatchLabel(void);
 extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);
 
-extern "C" void STDCALL TransparentProxyStub(void);
-extern "C" void STDCALL TransparentProxyStub_CrossContext();
-extern "C" void STDCALL TransparentProxyStubPatchLabel(void);
-
 #ifdef FEATURE_READYTORUN
 extern "C" void STDCALL DelayLoad_MethodCall();
 
@@ -75,38 +71,10 @@ extern "C" void STDCALL DelayLoad_Helper_Obj();
 extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif
 
-// Returns information about the CPU processor.
-// Note that this information may be the least-common-denominator in the
-// case of a multi-proc machine.
-
-#ifdef TARGET_X86
-void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo);
-#else
-inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-    cpuInfo->dwCPUType = 0;
-    cpuInfo->dwFeatures = 0;
-    cpuInfo->dwExtendedFeatures = 0;
-}
-
-#endif // !TARGET_X86
-
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
 extern "C" DWORD xmmYmmStateSupport();
 extern "C" DWORD avx512StateSupport();
 #endif
-
-inline bool TargetHasAVXSupport()
-{
-#if (defined(TARGET_X86) || defined(TARGET_AMD64))
-    int cpuInfo[4];
-    __cpuid(cpuInfo, 0x00000001);           // All x86/AMD64 targets support cpuid.
-    const int CPUID_ECX = 2;
-    return ((cpuInfo[CPUID_ECX] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
-#endif // (defined(TARGET_X86) || defined(TARGET_AMD64))
-    return false;
-}
 
 #ifdef DACCESS_COMPILE
 

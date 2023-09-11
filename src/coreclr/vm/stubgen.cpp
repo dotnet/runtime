@@ -1237,6 +1237,11 @@ void ILCodeStream::EmitCLT_UN()
     WRAPPER_NO_CONTRACT;
     Emit(CEE_CLT_UN, -1, 0);
 }
+void ILCodeStream::EmitCONSTRAINED(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_CONSTRAINED, 0, token);
+}
 void ILCodeStream::EmitCONV_I()
 {
     WRAPPER_NO_CONTRACT;
@@ -2587,7 +2592,7 @@ void ILStubLinker::GetStubReturnType(LocalDesc* pLoc, Module* pModule)
 
     IfFailThrow(ptr.GetData(&nArgs));
 
-    GetManagedTypeHelper(pLoc, pModule, ptr.GetPtr(), m_pTypeContext, m_pMD);
+    GetManagedTypeHelper(pLoc, pModule, ptr.GetPtr(), m_pTypeContext);
 }
 
 CorCallingConvention ILStubLinker::GetStubTargetCallingConv()
@@ -2897,7 +2902,7 @@ static size_t GetManagedTypeForMDArray(LocalDesc* pLoc, Module* pModule, PCCOR_S
 
 
 // static
-void ILStubLinker::GetManagedTypeHelper(LocalDesc* pLoc, Module* pModule, PCCOR_SIGNATURE psigManagedArg, SigTypeContext *pTypeContext, MethodDesc *pMD)
+void ILStubLinker::GetManagedTypeHelper(LocalDesc* pLoc, Module* pModule, PCCOR_SIGNATURE psigManagedArg, SigTypeContext *pTypeContext)
 {
     CONTRACTL
     {
@@ -3046,7 +3051,7 @@ void ILStubLinker::GetStubTargetReturnType(LocalDesc* pLoc, Module* pModule)
     }
     CONTRACTL_END;
 
-    GetManagedTypeHelper(pLoc, pModule, m_nativeFnSigBuilder.GetReturnSig(), m_pTypeContext, NULL);
+    GetManagedTypeHelper(pLoc, pModule, m_nativeFnSigBuilder.GetReturnSig(), m_pTypeContext);
 }
 
 void ILStubLinker::GetStubArgType(LocalDesc* pLoc)
@@ -3073,7 +3078,7 @@ void ILStubLinker::GetStubArgType(LocalDesc* pLoc, Module* pModule)
     }
     CONTRACTL_END;
 
-    GetManagedTypeHelper(pLoc, pModule, m_managedSigPtr.GetPtr(), m_pTypeContext, m_pMD);
+    GetManagedTypeHelper(pLoc, pModule, m_managedSigPtr.GetPtr(), m_pTypeContext);
 }
 
 //---------------------------------------------------------------------------------------

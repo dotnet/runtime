@@ -33,7 +33,7 @@ namespace System.Xml
     /// </devdoc>
     public partial class XmlConvert
     {
-        internal static char[] crt = new char[] { '\n', '\r', '\t' };
+        private const string Crt = "\t\n\r";
 
         /// <devdoc>
         ///    <para>
@@ -311,12 +311,7 @@ namespace System.Xml
         /// </devdoc>
         public static string VerifyName(string name)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentNullException(nameof(name), SR.Xml_EmptyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             // parse name
             int endPos = ValidateNames.ParseNameNoNamespaces(name, 0);
@@ -374,12 +369,7 @@ namespace System.Xml
 
         internal static string VerifyNCName(string name, ExceptionType exceptionType)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentNullException(nameof(name), SR.Xml_EmptyLocalName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             int end = ValidateNames.ParseNCName(name, 0);
 
@@ -418,7 +408,7 @@ namespace System.Xml
 
             if (token.StartsWith(' ') ||
                 token.EndsWith(' ') ||
-                token.IndexOfAny(crt) >= 0 ||
+                token.AsSpan().ContainsAny(Crt) ||
                 token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
@@ -435,7 +425,7 @@ namespace System.Xml
 
             if (token.StartsWith(' ') ||
                 token.EndsWith(' ') ||
-                token.IndexOfAny(crt) >= 0 ||
+                token.AsSpan().ContainsAny(Crt) ||
                 token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
@@ -474,7 +464,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNMTOKEN(string name)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 return new XmlException(SR.Xml_EmptyName, string.Empty);
             }
@@ -490,7 +480,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNormalizedString(string str)
         {
-            if (str.IndexOfAny(crt) != -1)
+            if (str.AsSpan().ContainsAny(Crt))
             {
                 return new XmlSchemaException(SR.Sch_NotNormalizedString, str);
             }
@@ -1319,7 +1309,7 @@ namespace System.Xml
             {
                 // string.Empty is a valid uri but not "   "
                 s = TrimString(s);
-                if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
+                if (s.Length == 0 || s.Contains("##"))
                 {
                     throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
@@ -1341,7 +1331,7 @@ namespace System.Xml
             if (s != null && s.Length > 0)
             { //string.Empty is a valid uri but not "   "
                 s = TrimString(s);
-                if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
+                if (s.Length == 0 || s.Contains("##"))
                 {
                     return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
@@ -1403,7 +1393,7 @@ namespace System.Xml
 
         internal static void VerifyCharData(string? data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
-            if (data == null || data.Length == 0)
+            if (string.IsNullOrEmpty(data))
             {
                 return;
             }

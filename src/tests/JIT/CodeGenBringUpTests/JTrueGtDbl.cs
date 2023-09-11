@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_JTrueGtDbl
 {
     const int Pass = 100;
@@ -23,7 +24,8 @@ public class BringUpTest_JTrueGtDbl
         return returnValue;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnValue = Pass;
 

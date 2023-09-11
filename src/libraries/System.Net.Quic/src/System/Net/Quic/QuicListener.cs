@@ -48,7 +48,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     {
         if (!IsSupported)
         {
-            throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason));
         }
 
         // Validate and fill in defaults for the options.
@@ -157,7 +157,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
         // Get the actual listening endpoint.
         address = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS);
-        LocalEndPoint = address.ToIPEndPoint(options.ListenEndPoint.AddressFamily);
+        LocalEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&address, options.ListenEndPoint.AddressFamily);
     }
 
     /// <summary>
@@ -209,13 +209,16 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <param name="clientHello">The TLS ClientHello data.</param>
     private async void StartConnectionHandshake(QuicConnection connection, SslClientHelloInfo clientHello)
     {
+        bool wrapException = false;
         CancellationToken cancellationToken = default;
         try
         {
-            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
             linkedCts.CancelAfter(QuicDefaults.HandshakeTimeout);
             cancellationToken = linkedCts.Token;
+            wrapException = true;
             QuicServerConnectionOptions options = await _connectionOptionsCallback(connection, clientHello, cancellationToken).ConfigureAwait(false);
+            wrapException = false;
             options.Validate(nameof(options)); // Validate and fill in defaults for the options.
             await connection.FinishHandshakeAsync(options, clientHello.ServerName, cancellationToken).ConfigureAwait(false);
             if (!_acceptQueue.Writer.TryWrite(connection))
@@ -267,7 +270,10 @@ public sealed partial class QuicListener : IAsyncDisposable
             }
 
             await connection.DisposeAsync().ConfigureAwait(false);
-            if (!_acceptQueue.Writer.TryWrite(ex))
+            if (!_acceptQueue.Writer.TryWrite(
+                    wrapException ?
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException(QuicError.CallbackError, null, SR.net_quic_callback_error, ex)) :
+                        ex))
             {
                 // Channel has been closed, connection is already disposed, do nothing.
             }
@@ -281,7 +287,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"{this} Refusing connection from {data.Info->RemoteAddress->ToIPEndPoint()} due to backlog limit");
+                NetEventSource.Info(this, $"{this} Refusing connection from {MsQuicHelpers.QuicAddrToIPEndPoint(data.Info->RemoteAddress)} due to backlog limit");
             }
 
             Interlocked.Increment(ref _pendingConnectionsCapacity);
@@ -333,7 +339,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Process the event.
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type}");
+                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type} {listenerEvent->ToString()}");
             }
             return instance.HandleListenerEvent(ref *listenerEvent);
         }

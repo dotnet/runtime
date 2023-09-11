@@ -624,7 +624,7 @@ namespace System.Runtime.Serialization
 
             string str = reader.ReadElementContentAsString();
 
-            if (str == null || str.Length == 0)
+            if (string.IsNullOrEmpty(str))
                 ThrowConversionException(string.Empty, "UInt64");
 
             return XmlConverter.ToUInt64(str);
@@ -634,7 +634,7 @@ namespace System.Runtime.Serialization
         {
             string str = reader.ReadContentAsString();
 
-            if (str == null || str.Length == 0)
+            if (string.IsNullOrEmpty(str))
                 ThrowConversionException(string.Empty, "UInt64");
 
             return XmlConverter.ToUInt64(str);
@@ -773,7 +773,7 @@ namespace System.Runtime.Serialization
         {
             string name;
             string? ns;
-            if (str == null || str.Length == 0)
+            if (string.IsNullOrEmpty(str))
                 name = ns = string.Empty;
             else
                 XmlObjectSerializerReadContext.ParseQualifiedName(str, this, out name, out ns, out _);

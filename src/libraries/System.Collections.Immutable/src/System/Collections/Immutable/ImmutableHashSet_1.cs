@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -12,6 +12,7 @@ namespace System.Collections.Immutable
     /// An immutable unordered hash set implementation.
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
+    [CollectionBuilder(typeof(ImmutableHashSet), nameof(ImmutableHashSet.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
 #if NETCOREAPP
@@ -237,6 +238,14 @@ namespace System.Collections.Immutable
             Requires.NotNull(other, nameof(other));
 
             return this.Union(other, avoidWithComparer: false);
+        }
+
+        /// <summary>
+        /// See the <see cref="IImmutableSet{T}"/> interface.
+        /// </summary>
+        internal ImmutableHashSet<T> Union(ReadOnlySpan<T> other)
+        {
+            return Union(other, this.Origin).Finalize(this);
         }
 
         /// <summary>
@@ -678,6 +687,29 @@ namespace System.Collections.Immutable
             int count = 0;
             SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> newRoot = origin.Root;
             foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
+            {
+                int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
+                HashBucket bucket = newRoot.GetValueOrDefault(hashCode);
+                OperationResult result;
+                ImmutableHashSet<T>.HashBucket newBucket = bucket.Add(item, origin.EqualityComparer, out result);
+                if (result == OperationResult.SizeChanged)
+                {
+                    newRoot = UpdateRoot(newRoot, hashCode, origin.HashBucketEqualityComparer, newBucket);
+                    count++;
+                }
+            }
+
+            return new MutationResult(newRoot, count);
+        }
+
+        /// <summary>
+        /// Performs the set operation on a given data structure.
+        /// </summary>
+        private static MutationResult Union(ReadOnlySpan<T> other, MutationInput origin)
+        {
+            int count = 0;
+            SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> newRoot = origin.Root;
+            foreach (T item in other)
             {
                 int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
                 HashBucket bucket = newRoot.GetValueOrDefault(hashCode);

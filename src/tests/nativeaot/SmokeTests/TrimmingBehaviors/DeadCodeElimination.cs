@@ -21,6 +21,7 @@ class DeadCodeElimination
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
         TestBranchesInGenericCodeRemoval.Run();
+        TestLimitedMetadataBlobs.Run();
 
         return 100;
     }
@@ -320,7 +321,7 @@ class DeadCodeElimination
             Console.WriteLine(s_type == typeof(Never));
 
 #if !DEBUG
-            ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Never));
 #endif
         }
     }
@@ -369,7 +370,7 @@ class DeadCodeElimination
 
             // We only expect to be able to get rid of it when optimizing
 #if !DEBUG
-            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+            ThrowIfPresentWithUsableMethodTable(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
 #endif
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
 
@@ -377,6 +378,51 @@ class DeadCodeElimination
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UsedFromVirtual));
         }
     }
+
+    class TestLimitedMetadataBlobs
+    {
+        class MyAttribute : Attribute
+        {
+            public MyAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type t) { }
+        }
+
+        class ShouldNotBeNeeded
+        {
+        }
+
+        [My(typeof(ShouldNotBeNeeded))]
+        interface INeverImplemented
+        {
+            void Never();
+        }
+
+        static INeverImplemented s_instance;
+#if !DEBUG
+        static Type s_type;
+#endif
+
+        internal static void Run()
+        {
+            Console.WriteLine("Testing generation of limited metadata blobs");
+
+            // Force a reference to the interface from a dispatch cell
+            if (s_instance != null)
+                s_instance.Never();
+
+            // Following is for release only since it relies on optimizing the typeof into an unconstructed
+            // MethodTable.
+#if !DEBUG
+            // Force another reference from an LDTOKEN
+            if (s_type == typeof(INeverImplemented))
+                s_type = typeof(object);
+#endif
+
+            ThrowIfPresent(typeof(TestLimitedMetadataBlobs), nameof(ShouldNotBeNeeded));
+            ThrowIfPresent(typeof(TestLimitedMetadataBlobs), nameof(MyAttribute));
+            ThrowIfNotPresent(typeof(TestLimitedMetadataBlobs), nameof(INeverImplemented));
+        }
+    }
+
 
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
@@ -388,6 +434,22 @@ class DeadCodeElimination
         {
             throw new Exception(typeName);
         }
+    }
+
+    private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
+    {
+        Type t = GetTypeSecretly(testType, typeName);
+        if (t == null)
+            return;
+
+        try
+        {
+            RuntimeHelpers.GetUninitializedObject(t);
+
+            // Should have thrown NotSupported above.
+            throw new Exception();
+        }
+        catch (NotSupportedException) { }
     }
 
     private static void ThrowIfNotPresent(Type testType, string typeName)

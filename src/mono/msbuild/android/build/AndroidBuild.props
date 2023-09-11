@@ -4,7 +4,11 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
-    <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
+    <_HostOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows</_HostOS>
+    <_HostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_HostOS>
+    <_HostOS Condition="'$(_HostOS)' == ''">linux</_HostOS>
+
+    <_IsLibraryMode Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
 
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
     <AndroidBuildDependsOn>

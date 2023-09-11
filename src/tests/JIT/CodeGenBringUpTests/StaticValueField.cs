@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 struct TestValue
 {
   public int a;
@@ -12,12 +13,12 @@ struct TestValue
 
 // This test stores a primitive (no-GC fields) value type to a static field
 // and checks if the contents are correct.
-class StaticValueField
+public class StaticValueField
 {
   const int Pass = 100;
   const int Fail = -1;
   static TestValue sField;
-  public static void Init()
+  internal static void Init()
   {
     TestValue v = new TestValue();
     v.a = 100;
@@ -26,7 +27,8 @@ class StaticValueField
     sField = v;
   }
 
-  public static int Main()
+  [Fact]
+  public static int TestEntryPoint()
   {
     Init();
     if (sField.a == 100

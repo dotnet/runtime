@@ -940,10 +940,10 @@
     <value>'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter '{0}' of '{1}' don't match overridden generic parameter '{2}' of '{3}'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.</value>
   </data>
   <data name="CaseInsensitiveTypeGetTypeCallIsNotSupportedTitle" xml:space="preserve">
-    <value>Call to 'Type.GetType' method can perform case insensitive lookup of the type, currently ILLink can not guarantee presence of all the matching types.</value>
+    <value>Call to 'Type.GetType' method can perform case insensitive lookup of the type, currently trimming can not guarantee presence of all the matching types.</value>
   </data>
   <data name="CaseInsensitiveTypeGetTypeCallIsNotSupportedMessage" xml:space="preserve">
-    <value>Call to '{0}' can perform case insensitive lookup of the type, currently ILLink can not guarantee presence of all the matching types.</value>
+    <value>Call to '{0}' can perform case insensitive lookup of the type, currently trimming can not guarantee presence of all the matching types.</value>
   </data>
   <data name="DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStringsTitle" xml:space="preserve">
     <value>Field has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to fields of type 'System.Type' or 'System.String'.</value>

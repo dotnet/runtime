@@ -539,7 +539,7 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef)
     DefineFullyQualifiedNameForClassW();
     szName = GetFullyQualifiedNameForClassNestedAwareW(pIntfMT);
 
-    cchName = (ULONG)wcslen(szName);
+    cchName = (ULONG)u16_strlen(szName);
 
     // Start with the interface name.
     cbCur = cchName * sizeof(WCHAR);
@@ -919,9 +919,9 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
 
         if (retval == 0)
         {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
             COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
 
         if (DefaultCharUsed)
@@ -952,9 +952,9 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
 
         if (retval == 0)
         {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
             COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
 
@@ -2318,7 +2318,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
     // Get the name of the class.
     DefineFullyQualifiedNameForClassW();
     szName = GetFullyQualifiedNameForClassNestedAwareW(pIntfMT);
-    cchName = (ULONG)wcslen(szName);
+    cchName = (ULONG)u16_strlen(szName);
 
     // Start with the interface name.
     cbCur = cchName * sizeof(WCHAR);
@@ -2753,12 +2753,12 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
     CONTRACTL_END;
 
     // Find the first character after the = in the standard DISPID member name.
-    LPWSTR strDispId = wcsstr(&strStdDispIdMemberName[STANDARD_DISPID_PREFIX_LENGTH], W("=")) + 1;
+    LPWSTR strDispId = (LPWSTR)u16_strchr(&strStdDispIdMemberName[STANDARD_DISPID_PREFIX_LENGTH], W('=')) + 1;
     if (!strDispId)
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_STD_DISPID_NAME);
 
     // Validate that the last character of the standard member name is a ].
-    LPWSTR strClosingBracket = wcsstr(strDispId, W("]"));
+    LPWSTR strClosingBracket = (LPWSTR)u16_strchr(strDispId, W(']'));
     if (!strClosingBracket || (strClosingBracket[1] != 0))
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_STD_DISPID_NAME);
 
@@ -3114,7 +3114,7 @@ void IUInvokeDispMethod(
 
     // Validate that the target is valid for the specified type.
     if (!IsComTargetValidForType(pRefClassObj, pTarget))
-        COMPlusThrow(kTargetException, W("RFLCT.Targ_ITargMismatch"));
+        COMPlusThrow(kTargetException, W("RFLCT_Targ_ITargMismatch"));
 
     // If the invoked type is an interface, make sure it is IDispatch based.
     if (pInvokedMT->IsInterface())
@@ -3578,7 +3578,7 @@ static void GetComClassHelper(
         NewArrayHolder<WCHAR> wszRefServer = NULL;
         if (pClassFactInfo->m_strServerName)
         {
-            size_t len = wcslen(pClassFactInfo->m_strServerName)+1;
+            size_t len = u16_strlen(pClassFactInfo->m_strServerName)+1;
             wszRefServer = new WCHAR[len];
             wcscpy_s(wszRefServer, len, pClassFactInfo->m_strServerName);
         }

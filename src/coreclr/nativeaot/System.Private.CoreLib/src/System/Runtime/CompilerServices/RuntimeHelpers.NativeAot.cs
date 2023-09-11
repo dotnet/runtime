@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Reflection.Augments;
+using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using System.Diagnostics.CodeAnalysis;
@@ -347,10 +348,19 @@ namespace System.Runtime.CompilerServices
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
             }
 
+            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots > 0);
+            if (mt->NumVtableSlots == 0)
+            {
+                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(type);
+            }
+            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
+            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(new EETypePtr(mt)) != 0);
+
             if (mt->IsNullable)
             {
                 mt = mt->NullableType;
-                return GetUninitializedObject(Type.GetTypeFromEETypePtr(new EETypePtr(mt)));
+                return GetUninitializedObject(Type.GetTypeFromMethodTable(mt));
             }
 
             // Triggering the .cctor here is slightly different than desktop/CoreCLR, which

@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class LargeFuncletFrame
 {
@@ -188,7 +189,7 @@ public class LargeFuncletFrame
             return s1_44;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -203,10 +204,10 @@ public class LargeFuncletFrame
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         new LargeFuncletFrame().Method0();
-        return 100;
     }
 }
 /*

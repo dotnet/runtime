@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 
-.assembly 'b323557' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class public FullProof {

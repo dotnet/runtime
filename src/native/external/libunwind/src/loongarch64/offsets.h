@@ -4,19 +4,15 @@
 
 /* Offsets for LoongArch64 Linux "ucontext_t":  */
 
-/* First 24 bytes in sigframe are argument save space and padding for
-what used to be signal trampolines. Ref: arch/loongarch/kernel/signal.c */
-#define LINUX_SF_TRAMP_SIZE 0x18
-
 # define LINUX_UC_FLAGS_OFF		0x0	/* offsetof(struct ucontext_t, __uc_flags) */
 # define LINUX_UC_LINK_OFF		0x8	/* offsetof(struct ucontext_t, uc_link) */
 # define LINUX_UC_STACK_OFF		0x10	/* offsetof(struct ucontext_t, uc_stack) */
 # define LINUX_UC_SIGMASK_OFF		0x28	/* offsetof(struct ucontext_t, uc_sigmask) */
-# define LINUX_UC_MCONTEXT_OFF		0xc0	/* offsetof(struct ucontext_t, uc_mcontext) */
+# define LINUX_UC_MCONTEXT_OFF		0xb0	/* offsetof(struct ucontext_t, uc_mcontext) */
 
-# define LINUX_UC_MCONTEXT_PC		0xc0	/* offsetof(struct ucontext_t, uc_mcontext.__pc) */
-# define LINUX_UC_MCONTEXT_GREGS	0xc8	/* offsetof(struct ucontext_t, uc_mcontext.__gregs) */
-/* Offsets for AArch64 Linux "struct sigcontext": */
+# define LINUX_UC_MCONTEXT_PC		0xb0	/* offsetof(struct ucontext_t, uc_mcontext.__pc) */
+# define LINUX_UC_MCONTEXT_GREGS	0xb8	/* offsetof(struct ucontext_t, uc_mcontext.__gregs) */
+/* Offsets for LoongArch64 Linux "struct sigcontext": */
 #define LINUX_SC_R0_OFF   (LINUX_UC_MCONTEXT_GREGS - LINUX_UC_MCONTEXT_OFF)
 #define LINUX_SC_R1_OFF   (LINUX_SC_R0_OFF + 1*8)
 #define LINUX_SC_R2_OFF   (LINUX_SC_R0_OFF + 2*8)

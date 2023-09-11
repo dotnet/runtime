@@ -334,7 +334,7 @@ public:
     // Signals to the finalizer thread that there are objects ready to
     // be finalized.
     virtual
-    void EnableFinalization(bool foundFinalizers) = 0;
+    void EnableFinalization(bool gcHasWorkForFinalizerThread) = 0;
 
     // Signals to the EE that the GC encountered a fatal error and can't recover.
     virtual

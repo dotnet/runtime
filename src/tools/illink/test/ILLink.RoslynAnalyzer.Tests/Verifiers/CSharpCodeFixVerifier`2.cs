@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ILLink.Shared;
@@ -36,6 +38,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 					return solution;
 				});
 			}
+
+			protected override ImmutableArray<(Project project, Diagnostic diagnostic)> SortDistinctDiagnostics (IEnumerable<(Project project, Diagnostic diagnostic)> diagnostics)
+			{
+				// Only include non-suppressed diagnostics in the result. Our tests suppress diagnostics
+				// with 'UnconditionalSuppressMessageAttribute', and expect them not to be reported.
+				return base.SortDistinctDiagnostics (diagnostics)
+					.Where (diagnostic => !diagnostic.diagnostic.IsSuppressed)
+					.ToImmutableArray ();
+			}
 		}
 
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer}.Diagnostic()"/>
@@ -54,8 +65,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			=> CSharpAnalyzerVerifier<TAnalyzer>.Diagnostic (descriptor);
 
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-		public static Task VerifyAnalyzerAsync (string source, (string, string)[]? analyzerOptions = null, IEnumerable<MetadataReference>? additionalReferences = null, params DiagnosticResult[] expected)
-			=> CSharpAnalyzerVerifier<TAnalyzer>.VerifyAnalyzerAsync (source, analyzerOptions, additionalReferences, expected);
+		public static Task VerifyAnalyzerAsync (
+			string source,
+			bool consoleApplication,
+			(string, string)[]? analyzerOptions = null,
+			IEnumerable<MetadataReference>? additionalReferences = null,
+			params DiagnosticResult[] expected)
+			=> CSharpAnalyzerVerifier<TAnalyzer>.VerifyAnalyzerAsync (source, consoleApplication, analyzerOptions, additionalReferences, expected);
 
 		/// <summary>
 		/// Verifies the analyzer provides diagnostics which, in combination with the code fix, produce the expected

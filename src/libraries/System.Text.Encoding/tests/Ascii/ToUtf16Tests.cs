@@ -20,15 +20,15 @@ namespace System.Text.Tests
         [Fact]
         public static void AllAsciiInput()
         {
-            using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(128);
-            using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(128);
+            using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(256);
+            using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(256);
 
             // Fill source with 00 .. 7F, then trap future writes.
 
             Span<byte> asciiSpan = asciiMem.Span;
             for (int i = 0; i < asciiSpan.Length; i++)
             {
-                asciiSpan[i] = (byte)i;
+                asciiSpan[i] = (byte)(i % 128);
             }
             asciiMem.MakeReadonly();
 
@@ -44,11 +44,11 @@ namespace System.Text.Tests
                 // First, validate that the workhorse saw the incoming data as all-ASCII.
 
                 Assert.Equal(OperationStatus.Done, Ascii.ToUtf16(asciiSpan.Slice(i), utf16Span.Slice(i), out int charsWritten));
-                Assert.Equal(128 - i, charsWritten);
+                Assert.Equal(256 - i, charsWritten);
 
                 // Then, validate that the data was transcoded properly.
 
-                for (int j = i; j < 128; j++)
+                for (int j = i; j < 256; j++)
                 {
                     Assert.Equal((ushort)asciiSpan[i], (ushort)utf16Span[i]);
                 }
@@ -58,15 +58,15 @@ namespace System.Text.Tests
         [Fact]
         public static void SomeNonAsciiInput()
         {
-            using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(128);
-            using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(128);
+            using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(256);
+            using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(256);
 
             // Fill source with 00 .. 7F, then trap future writes.
 
             Span<byte> asciiSpan = asciiMem.Span;
             for (int i = 0; i < asciiSpan.Length; i++)
             {
-                asciiSpan[i] = (byte)i;
+                asciiSpan[i] = (byte)(i % 128);
             }
 
             // We'll write to the UTF-16 span.

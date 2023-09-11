@@ -37,6 +37,15 @@
 #pragma warning(disable:4800) // type' : forcing value to bool 'true' or 'false' (performance warning)
 #endif
 
+// ArrayRef API is deprecated on C++17
+#if defined(__clang__) && (_LIBCPP_STD_VER > 17 || defined(__APPLE__))
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
+
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
@@ -303,7 +312,11 @@ mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 LLVMValueRef
 mono_llvm_create_constant_data_array (const uint8_t *data, int len)
 {
+#if LLVM_API_VERSION >= 1600
+	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), ArrayRef(data, len)));
+#else
 	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), makeArrayRef(data, len)));
+#endif
 }
 
 void
@@ -766,7 +779,7 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 unsigned int
 mono_llvm_get_prim_size_bits (LLVMTypeRef type)
 {
-	return unwrap (type)->getPrimitiveSizeInBits ();
+	return GUINT64_TO_INT (unwrap (type)->getPrimitiveSizeInBits ());
 }
 
 /*

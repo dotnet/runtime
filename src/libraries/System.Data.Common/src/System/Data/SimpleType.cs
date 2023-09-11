@@ -229,7 +229,7 @@ namespace System.Data
         {
             XmlElement typeNode = dc.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SIMPLETYPE, Keywords.XSDNS);
 
-            if (_name != null && _name.Length != 0)
+            if (!string.IsNullOrEmpty(_name))
             {
                 // this is a global type
                 typeNode.SetAttribute(Keywords.NAME, _name);

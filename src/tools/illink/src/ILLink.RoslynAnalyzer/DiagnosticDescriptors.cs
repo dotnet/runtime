@@ -16,7 +16,8 @@ namespace ILLink.RoslynAnalyzer
 				diagnosticString.GetMessageFormat (),
 				diagnosticId.GetDiagnosticCategory (),
 				DiagnosticSeverity.Warning,
-				true);
+				true,
+				diagnosticId.GetHelpUri());
 		}
 
 		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId, DiagnosticString diagnosticString)
@@ -25,7 +26,8 @@ namespace ILLink.RoslynAnalyzer
 				diagnosticString.GetMessage (),
 				diagnosticId.GetDiagnosticCategory (),
 				DiagnosticSeverity.Warning,
-				true);
+				true,
+				diagnosticId.GetHelpUri());
 
 		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId,
 			LocalizableResourceString? lrsTitle = null,
@@ -35,6 +37,8 @@ namespace ILLink.RoslynAnalyzer
 			bool isEnabledByDefault = true,
 			string? helpLinkUri = null)
 		{
+			helpLinkUri ??= diagnosticId.GetHelpUri();
+
 			if (lrsTitle == null || lrsMessage == null) {
 				var diagnosticString = new DiagnosticString (diagnosticId);
 				return new DiagnosticDescriptor (diagnosticId.AsString (),

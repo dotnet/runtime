@@ -59,12 +59,12 @@ namespace System.Globalization
 
         internal static long GetNumberOfDays(DateTime date)
         {
-            return date.Ticks / GregorianCalendar.TicksPerDay;
+            return date.Ticks / Calendar.TicksPerDay;
         }
 
         private static int GetGregorianYear(double numberOfDays)
         {
-            return new DateTime(Math.Min((long)(Math.Floor(numberOfDays) * GregorianCalendar.TicksPerDay), DateTime.MaxValue.Ticks)).Year;
+            return new DateTime(Math.Min((long)(Math.Floor(numberOfDays) * Calendar.TicksPerDay), DateTime.MaxValue.Ticks)).Year;
         }
 
         private enum CorrectionAlgorithm

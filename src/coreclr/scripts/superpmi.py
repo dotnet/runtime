@@ -40,7 +40,8 @@ from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
-    create_unique_directory_name, create_unique_file_name, get_files_from_path
+    create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
+    get_deepest_existing_directory
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -539,10 +540,6 @@ class AsyncSubprocessHelper:
         self.verbose = verbose
         self.subproc_count_queue = None
 
-        if 'win32' in sys.platform:
-            # Windows specific event-loop policy & cmd
-            asyncio.set_event_loop(asyncio.ProactorEventLoop())
-
     async def __get_item__(self, item, index, size, async_callback, *extra_args):
         """ Wrapper to the async callback which will schedule based on the queue
         """
@@ -600,7 +597,21 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        loop = asyncio.get_event_loop()
+
+        try:
+            if sys.version_info[:2] >= (3, 7):
+                loop = asyncio.get_running_loop()
+            else:
+                loop = asyncio.get_event_loop()
+        except RuntimeError:
+            if 'win32' in sys.platform:
+                # Windows specific event-loop policy & cmd
+                loop = asyncio.ProactorEventLoop()
+            else:
+                loop = asyncio.new_event_loop()
+
+            asyncio.set_event_loop(loop)
+            
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.clear()
         os.environ.update(reset_env)
@@ -642,7 +653,9 @@ class SuperPMICollect:
 
         self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
 
-        self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
+        jit_name = get_jit_name(coreclr_args)
+        self.jit_path = os.path.join(coreclr_args.core_root, jit_name)
+
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
 
@@ -728,6 +741,23 @@ class SuperPMICollect:
 
                 self.temp_location = temp_location
 
+                if self.coreclr_args.crossgen2:
+                    jit_name = os.path.basename(self.jit_path)
+                    # There are issues when running SuperPMI and crossgen2 when using the same JIT binary. 
+                    # Therefore, we produce a copy of the JIT binary for SuperPMI to use. 
+                    jit_name_ext = os.path.splitext(jit_name)[1]
+                    jit_name_without_ext = os.path.splitext(jit_name)[0]
+                    try:
+                        self.superpmi_jit_path = os.path.join(self.temp_location, jit_name_without_ext + "_superpmi" + jit_name_ext)
+                        shutil.copyfile(self.jit_path, self.superpmi_jit_path)
+                    except Exception:
+                        # Fallback to original JIT path if we are not able to make a copy.
+                        self.superpmi_jit_path = self.jit_path
+                else:
+                    self.superpmi_jit_path = self.jit_path
+
+                logging.info("SuperPMI JIT Path: %s", self.superpmi_jit_path)
+
                 # If we have passed temp_dir, then we have a few flags we need
                 # to check to see where we are in the collection process. Note that this
                 # functionality exists to help not lose progress during a SuperPMI collection.
@@ -790,7 +820,7 @@ class SuperPMICollect:
 
             root_env = {}
             root_env["SuperPMIShimLogPath"] = self.temp_location
-            root_env["SuperPMIShimPath"] = self.jit_path
+            root_env["SuperPMIShimPath"] = self.superpmi_jit_path
 
             dotnet_env = {}
             dotnet_env["EnableExtraSuperPmiQueries"] = "1"
@@ -1281,8 +1311,8 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
         repro_files = []
         for item in mc_files:
             repro_files.append(os.path.join(repro_location, os.path.basename(item)))
-            logging.debug("Copying %s -> %s", item, repro_location)
-            shutil.copy2(item, repro_location)
+            logging.debug("Moving %s -> %s", item, repro_location)
+            shutil.move(item, repro_location)
 
         logging.info("")
         logging.info("Repro {} .mc file(s) created for failures:".format(len(repro_files)))
@@ -1347,7 +1377,7 @@ class SuperPMIReplay:
 
             common_flags = [
                 "-v", "ewi",  # display errors, warnings, missing, jit info
-                "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
+                "-r", os.path.join(temp_location, "repro") # Repro name prefix, create .mc repro files
             ]
 
             if self.coreclr_args.altjit:
@@ -1695,7 +1725,7 @@ class SuperPMIReplayAsmDiffs:
                     "-v", "ewi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
                     "-diffsInfo", diffs_info,  # Information about diffs
-                    "-r", os.path.join(temp_location, "repro"),  # Repro name, create .mc repro files
+                    "-r", os.path.join(temp_location, "repro"),  # Repro name prefix, create .mc repro files
                     "-baseMetricsSummary", base_metrics_summary_file, # Create summary of metrics we can use to get total code size impact
                     "-diffMetricsSummary", diff_metrics_summary_file,
                 ]
@@ -1734,7 +1764,6 @@ class SuperPMIReplayAsmDiffs:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
-                    logging.debug("return_code: %s", return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -2384,10 +2413,16 @@ class SuperPMIReplayThroughputDiff:
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
 
         diff_option_flags = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
 
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
@@ -2462,7 +2497,10 @@ class SuperPMIReplayThroughputDiff:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.pin_path] + pin_options + ["--"] + [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
-                    logging.debug("return_code: %s", return_code)
+
+                if return_code != 0:
+                    command_string = " ".join(command)
+                    logging.debug("'%s': Error return code: %s", command_string, return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -2688,8 +2726,8 @@ def determine_pmi_location(coreclr_args):
     return pmi_location
 
 
-def determine_jit_name(coreclr_args):
-    """ Determine the jit based on the OS. If "-jit_name" is specified, then use the specified jit.
+def get_jit_name(coreclr_args):
+    """ Determine the JIT file name to use based on the platform. If "-jit_name" is specified, then use the specified jit.
         This function is called for cases where the "-jit_name" flag is not used, so be careful not
         to depend on the "jit_name" attribute existing.
 
@@ -2704,30 +2742,7 @@ def determine_jit_name(coreclr_args):
     if hasattr(coreclr_args, "jit_name") and coreclr_args.jit_name is not None:
         return coreclr_args.jit_name
 
-    jit_base_name = "clrjit"
-
-    if coreclr_args.arch != coreclr_args.target_arch or coreclr_args.host_os != coreclr_args.target_os:
-        # If `-target_arch` or `-target_os` was specified, then figure out the name of the cross-compiler JIT to use.
-
-        if coreclr_args.target_arch.startswith("arm"):
-            os_name = "universal"
-        elif coreclr_args.target_os == "osx" or coreclr_args.target_os == "linux":
-            os_name = "unix"
-        elif coreclr_args.target_os == "windows":
-            os_name = "win"
-        else:
-            raise RuntimeError("Unknown OS.")
-
-        jit_base_name = 'clrjit_{}_{}_{}'.format(os_name, coreclr_args.target_arch, coreclr_args.arch)
-
-    if coreclr_args.host_os == "osx":
-        return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "linux":
-        return "lib" + jit_base_name + ".so"
-    elif coreclr_args.host_os == "windows":
-        return jit_base_name + ".dll"
-    else:
-        raise RuntimeError("Unknown OS.")
+    return determine_jit_name(coreclr_args.host_os, coreclr_args.target_os, coreclr_args.arch, coreclr_args.target_arch)
 
 
 def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_path=True, throw_on_not_found=True):
@@ -3184,7 +3199,22 @@ def process_mch_files_arg(coreclr_args):
         logging.info("Found download cache directory \"%s\" and --force_download not set; skipping download", mch_cache_dir)
         return [ mch_cache_dir ]
 
+    # MCH files can be large. Log the disk space before and after the download.
+    root_space_directory = get_deepest_existing_directory(coreclr_args.spmi_location)
+    if root_space_directory is not None:
+        before_total, _, before_free = shutil.disk_usage(root_space_directory)
+        before_total_gb = int(before_total / 1024 / 1024 / 1024)
+        before_free_gb = int(before_free / 1024 / 1024 / 1024)
+        logging.debug("Disk usage (%s): total %s GB; free %s GB", root_space_directory, format(before_total_gb, ','), format(before_free_gb, ','))
+
     local_mch_paths = download_mch_from_azure(coreclr_args, mch_cache_dir)
+
+    if root_space_directory is not None:
+        after_total, _, after_free = shutil.disk_usage(root_space_directory)
+        after_total_gb = int(after_total / 1024 / 1024 / 1024)
+        after_free_gb = int(after_free / 1024 / 1024 / 1024)
+        consumed_gb = before_free_gb - after_free_gb
+        logging.debug("Disk usage (%s): total %s GB; free %s GB; consumed by download %s GB", root_space_directory, format(after_total_gb, ','), format(after_free_gb, ','), format(consumed_gb, ','))
 
     # Add the private store files
     if coreclr_args.private_store is not None:
@@ -3648,7 +3678,7 @@ def process_base_jit_path_arg(coreclr_args):
         for git_hash in change_list_hashes:
             logging.debug("%s: %s", hashnum, git_hash)
 
-            jit_name = determine_jit_name(coreclr_args)
+            jit_name = get_jit_name(coreclr_args)
             basejit_dir = os.path.join(default_basejit_root_dir, "{}.{}.{}.{}".format(git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
             basejit_path = os.path.join(basejit_dir, jit_name)
             if os.path.isfile(basejit_path):
@@ -3724,7 +3754,8 @@ def download_clrjit_pintool(coreclr_args):
         return
 
     pin_dir_path = get_pintools_path(coreclr_args)
-    pintools_rel_path = "{}/{}/{}.zip".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower())
+    extension = "zip" if coreclr_args.host_os.lower() == "windows" else "tar.gz"
+    pintools_rel_path = "{}/{}/{}.{}".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower(), extension)
     pintool_uri = "{}/{}".format(az_blob_storage_superpmi_container_uri, pintools_rel_path)
     local_files = download_files([pintool_uri], pin_dir_path, verbose=False, is_azure_storage=True, fail_if_not_found=False)
     if len(local_files) <= 0:
@@ -3839,7 +3870,7 @@ def setup_args(args):
     def setup_jit_path_arg(jit_path):
         if jit_path is not None:
             return os.path.abspath(jit_path)
-        return find_tool(coreclr_args, determine_jit_name(coreclr_args), search_path=False)  # It doesn't make sense to search PATH for the JIT dll.
+        return find_tool(coreclr_args, get_jit_name(coreclr_args), search_path=False)  # It doesn't make sense to search PATH for the JIT dll.
 
     def setup_error_limit(error_limit):
         if error_limit is None:
@@ -3928,7 +3959,7 @@ def setup_args(args):
                             "Unable to set jit_name.")
 
         coreclr_args.verify(args,
-                            "altjit",                   # Must be set before `jit_path` (determine_jit_name() depends on it)
+                            "altjit",                   # Must be set before `jit_path` (get_jit_name() depends on it)
                             lambda unused: True,
                             "Unable to set altjit.")
 

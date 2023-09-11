@@ -10,12 +10,7 @@ namespace System.Text.Json.Serialization
     /// </remarks>
     /// </summary>
     [Flags]
-#if BUILDING_SOURCE_GENERATOR
-    internal
-#else
-    public
-#endif
-    enum JsonNumberHandling
+    public enum JsonNumberHandling
     {
         /// <summary>
         /// Numbers will only be read from <see cref="JsonTokenType.Number"/> tokens and will only be written as JSON numbers (without quotes).

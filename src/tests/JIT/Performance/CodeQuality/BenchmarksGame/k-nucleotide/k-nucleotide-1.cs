@@ -16,6 +16,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -81,7 +82,8 @@ namespace BenchmarksGame
     public class KNucleotide_1
     {
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
 

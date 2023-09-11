@@ -34,6 +34,236 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> Abs(Vector256<long> value) => Abs(value);
 
             /// <summary>
+            /// __m128i _mm_alignr_epi32 (__m128i a, __m128i b, const int count)
+            ///   VALIGND xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> AlignRight32(Vector128<int> left, Vector128<int> right, [ConstantExpected] byte mask) => AlignRight32(left, right, mask);
+            /// <summary>
+            /// __m128i _mm_alignr_epi32 (__m128i a, __m128i b, const int count)
+            ///   VALIGND xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> AlignRight32(Vector128<uint> left, Vector128<uint> right, [ConstantExpected] byte mask) => AlignRight32(left, right, mask);
+            /// <summary>
+            /// __m256i _mm256_alignr_epi32 (__m256i a, __m256i b, const int count)
+            ///   VALIGND ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> AlignRight32(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte mask) => AlignRight32(left, right, mask);
+            /// <summary>
+            /// __m256i _mm256_alignr_epi32 (__m256i a, __m256i b, const int count)
+            ///   VALIGND ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> AlignRight32(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte mask) => AlignRight32(left, right, mask);
+
+            /// <summary>
+            /// __m128i _mm_alignr_epi64 (__m128i a, __m128i b, const int count)
+            ///   VALIGNQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> AlignRight64(Vector128<long> left, Vector128<long> right, [ConstantExpected] byte mask) => AlignRight64(left, right, mask);
+            /// <summary>
+            /// __m128i _mm_alignr_epi64 (__m128i a, __m128i b, const int count)
+            ///   VALIGNQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> AlignRight64(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected] byte mask) => AlignRight64(left, right, mask);
+            /// <summary>
+            /// __m256i _mm256_alignr_epi64 (__m256i a, __m256i b, const int count)
+            ///   VALIGNQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> AlignRight64(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte mask) => AlignRight64(left, right, mask);
+            /// <summary>
+            /// __m256i _mm256_alignr_epi64 (__m256i a, __m256i b, const int count)
+            ///   VALIGNQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> AlignRight64(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte mask) => AlignRight64(left, right, mask);
+
+            /// <summary>
+            /// __m128i _mm_cmpge_epi32 (__m128i a, __m128i b)
+            ///   VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(5)
+            /// </summary>
+            public static Vector128<int> CompareGreaterThanOrEqual(Vector128<int> left, Vector128<int> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            /// __m128i _mm_cmplt_epi32 (__m128i a, __m128i b)
+            ///   VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(1)
+            /// </summary>
+            public static Vector128<int> CompareLessThan(Vector128<int> left, Vector128<int> right) => CompareLessThan(left, right);
+            /// <summary>
+            /// __m128i _mm_cmple_epi32 (__m128i a, __m128i b)
+            ///   VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(2)
+            /// </summary>
+            public static Vector128<int> CompareLessThanOrEqual(Vector128<int> left, Vector128<int> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            /// __m128i _mm_cmpne_epi32 (__m128i a, __m128i b)
+            ///   VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(4)
+            /// </summary>
+            public static Vector128<int> CompareNotEqual(Vector128<int> left, Vector128<int> right) => CompareNotEqual(left, right);
+
+            /// <summary>
+            /// __m256i _mm256_cmpge_epi32 (__m256i a, __m256i b)
+            ///   VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(5)
+            /// </summary>
+            public static Vector256<int> CompareGreaterThanOrEqual(Vector256<int> left, Vector256<int> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmplt_epi32 (__m256i a, __m256i b)
+            ///   VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(1)
+            /// </summary>
+            public static Vector256<int> CompareLessThan(Vector256<int> left, Vector256<int> right) => CompareLessThan(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmple_epi32 (__m256i a, __m256i b)
+            ///   VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(2)
+            /// </summary>
+            public static Vector256<int> CompareLessThanOrEqual(Vector256<int> left, Vector256<int> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmpne_epi32 (__m256i a, __m256i b)
+            ///   VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(4)
+            /// </summary>
+            public static Vector256<int> CompareNotEqual(Vector256<int> left, Vector256<int> right) => CompareNotEqual(left, right);
+
+            /// <summary>
+            /// __m128i _mm_cmpge_epi64 (__m128i a, __m128i b)
+            ///   VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(5)
+            /// </summary>
+            public static Vector128<long> CompareGreaterThanOrEqual(Vector128<long> left, Vector128<long> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            /// __m128i _mm_cmplt_epi64 (__m128i a, __m128i b)
+            ///   VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(1)
+            /// </summary>
+            public static Vector128<long> CompareLessThan(Vector128<long> left, Vector128<long> right) => CompareLessThan(left, right);
+            /// <summary>
+            /// __m128i _mm_cmple_epi64 (__m128i a, __m128i b)
+            ///   VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(2)
+            /// </summary>
+            public static Vector128<long> CompareLessThanOrEqual(Vector128<long> left, Vector128<long> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            /// __m128i _mm_cmpne_epi64 (__m128i a, __m128i b)
+            ///   VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(4)
+            /// </summary>
+            public static Vector128<long> CompareNotEqual(Vector128<long> left, Vector128<long> right) => CompareNotEqual(left, right);
+
+            /// <summary>
+            /// __m256i _mm256_cmpge_epi64 (__m256i a, __m256i b)
+            ///   VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(5)
+            /// </summary>
+            public static Vector256<long> CompareGreaterThanOrEqual(Vector256<long> left, Vector256<long> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmplt_epi64 (__m256i a, __m256i b)
+            ///   VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(1)
+            /// </summary>
+            public static Vector256<long> CompareLessThan(Vector256<long> left, Vector256<long> right) => CompareLessThan(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmple_epi64 (__m256i a, __m256i b)
+            ///   VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(2)
+            /// </summary>
+            public static Vector256<long> CompareLessThanOrEqual(Vector256<long> left, Vector256<long> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmpne_epi64 (__m256i a, __m256i b)
+            ///   VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(4)
+            /// </summary>
+            public static Vector256<long> CompareNotEqual(Vector256<long> left, Vector256<long> right) => CompareNotEqual(left, right);
+
+            /// <summary>
+            /// __m128i _mm_cmpgt_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)
+            /// </summary>
+            public static Vector128<uint> CompareGreaterThan(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            /// __m128i _mm_cmpge_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(5)
+            /// </summary>
+            public static Vector128<uint> CompareGreaterThanOrEqual(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            /// __m128i _mm_cmplt_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(1)
+            /// </summary>
+            public static Vector128<uint> CompareLessThan(Vector128<uint> left, Vector128<uint> right) => CompareLessThan(left, right);
+            /// <summary>
+            /// __m128i _mm_cmple_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(2)
+            /// </summary>
+            public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> left, Vector128<uint> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            /// __m128i _mm_cmpne_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(4)
+            /// </summary>
+            public static Vector128<uint> CompareNotEqual(Vector128<uint> left, Vector128<uint> right) => CompareNotEqual(left, right);
+
+            /// <summary>
+            /// __m256i _mm256_cmpgt_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(6)
+            /// </summary>
+            public static Vector256<uint> CompareGreaterThan(Vector256<uint> left, Vector256<uint> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmpge_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(5)
+            /// </summary>
+            public static Vector256<uint> CompareGreaterThanOrEqual(Vector256<uint> left, Vector256<uint> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmplt_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(1)
+            /// </summary>
+            public static Vector256<uint> CompareLessThan(Vector256<uint> left, Vector256<uint> right) => CompareLessThan(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmple_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(2)
+            /// </summary>
+            public static Vector256<uint> CompareLessThanOrEqual(Vector256<uint> left, Vector256<uint> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmpne_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(4)
+            /// </summary>
+            public static Vector256<uint> CompareNotEqual(Vector256<uint> left, Vector256<uint> right) => CompareNotEqual(left, right);
+
+            /// <summary>
+            /// __m128i _mm_cmpgt_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(6)
+            /// </summary>
+            public static Vector128<ulong> CompareGreaterThan(Vector128<ulong> left, Vector128<ulong> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            /// __m128i _mm_cmpge_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(5)
+            /// </summary>
+            public static Vector128<ulong> CompareGreaterThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            /// __m128i _mm_cmplt_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(1)
+            /// </summary>
+            public static Vector128<ulong> CompareLessThan(Vector128<ulong> left, Vector128<ulong> right) => CompareLessThan(left, right);
+            /// <summary>
+            /// __m128i _mm_cmple_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(2)
+            /// </summary>
+            public static Vector128<ulong> CompareLessThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            /// __m128i _mm_cmpne_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(4)
+            /// </summary>
+            public static Vector128<ulong> CompareNotEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareNotEqual(left, right);
+
+            /// <summary>
+            /// __m256i _mm256_cmpgt_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(6)
+            /// </summary>
+            public static Vector256<ulong> CompareGreaterThan(Vector256<ulong> left, Vector256<ulong> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmpge_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(5)
+            /// </summary>
+            public static Vector256<ulong> CompareGreaterThanOrEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmplt_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(1)
+            /// </summary>
+            public static Vector256<ulong> CompareLessThan(Vector256<ulong> left, Vector256<ulong> right) => CompareLessThan(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmple_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(2)
+            /// </summary>
+            public static Vector256<ulong> CompareLessThanOrEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            /// __m256i _mm256_cmpne_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(4)
+            /// </summary>
+            public static Vector256<ulong> CompareNotEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareNotEqual(left, right);
+
+            /// <summary>
             /// __m128i _mm_cvtepi32_epi8 (__m128i a)
             ///   VPMOVDB xmm1/m32 {k1}{z}, xmm2
             /// </summary>
@@ -182,7 +412,7 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             public static Vector128<int> ConvertToVector128Int32(Vector256<ulong> value) => ConvertToVector128Int32(value);
             /// <summary>
-            /// __m128i _mm128_cvtsepi64_epi32 (__m128i a)
+            /// __m128i _mm_cvtsepi64_epi32 (__m128i a)
             ///   VPMOVSQD xmm1/m64 {k1}{z}, xmm2
             /// </summary>
             public static Vector128<int> ConvertToVector128Int32WithSaturation(Vector128<long> value) => ConvertToVector128Int32WithSaturation(value);
@@ -321,12 +551,12 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector128<ushort> ConvertToVector128UInt16WithSaturation(Vector256<ulong> value) => ConvertToVector128UInt16WithSaturation(value);
 
             /// <summary>
-            /// __m128i _mm128_cvtepi64_epi32 (__m128i a)
+            /// __m128i _mm_cvtepi64_epi32 (__m128i a)
             ///   VPMOVQD xmm1/m128 {k1}{z}, xmm2
             /// </summary>
             public static Vector128<uint> ConvertToVector128UInt32(Vector128<long> value) => ConvertToVector128UInt32(value);
             /// <summary>
-            /// __m128i _mm128_cvtepi64_epi32 (__m128i a)
+            /// __m128i _mm_cvtepi64_epi32 (__m128i a)
             ///   VPMOVQD xmm1/m128 {k1}{z}, xmm2
             /// </summary>
             public static Vector128<uint> ConvertToVector128UInt32(Vector128<ulong> value) => ConvertToVector128UInt32(value);
@@ -356,7 +586,7 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             public static Vector128<uint> ConvertToVector128UInt32(Vector256<double> value) => ConvertToVector128UInt32(value);
             /// <summary>
-            /// __m128i _mm128_cvtusepi64_epi32 (__m128i a)
+            /// __m128i _mm_cvtusepi64_epi32 (__m128i a)
             ///   VPMOVUSQD xmm1/m128 {k1}{z}, xmm2
             /// </summary>
             public static Vector128<uint> ConvertToVector128UInt32WithSaturation(Vector128<ulong> value) => ConvertToVector128UInt32WithSaturation(value);
@@ -403,6 +633,69 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector256<float> value) => ConvertToVector256UInt32WithTruncation(value);
 
             /// <summary>
+            /// __m128 _mm_fixupimm_ps(__m128 a, __m128 b, __m128i tbl, int imm);
+            ///   VFIXUPIMMPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> Fixup(Vector128<float> left, Vector128<float> right, Vector128<int> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+            /// <summary>
+            /// __m128d _mm_fixupimm_pd(__m128d a, __m128d b, __m128i tbl, int imm);
+            ///   VFIXUPIMMPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> Fixup(Vector128<double> left, Vector128<double> right, Vector128<long> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+            /// <summary>
+            /// __m256 _mm256_fixupimm_ps(__m256 a, __m256 b, __m256i tbl, int imm);
+            ///   VFIXUPIMMPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Fixup(Vector256<float> left, Vector256<float> right, Vector256<int> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+            /// <summary>
+            /// __m256d _mm256_fixupimm_pd(__m256d a, __m256d b, __m256i tbl, int imm);
+            ///   VFIXUPIMMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Fixup(Vector256<double> left, Vector256<double> right, Vector256<long> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+
+            /// <summary>
+            /// __m128 _mm_getexp_ps (__m128 a)
+            ///   VGETEXPPS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> GetExponent(Vector128<float> value) => GetExponent(value);
+            /// <summary>
+            /// __m128d _mm_getexp_pd (__m128d a)
+            ///   VGETEXPPD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> GetExponent(Vector128<double> value) => GetExponent(value);
+            /// <summary>
+            /// __m256 _mm256_getexp_ps (__m256 a)
+            ///   VGETEXPPS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> GetExponent(Vector256<float> value) => GetExponent(value);
+            /// <summary>
+            /// __m256d _mm256_getexp_pd (__m256d a)
+            ///   VGETEXPPD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> GetExponent(Vector256<double> value) => GetExponent(value);
+
+            /// <summary>
+            /// __m128 _mm_getmant_ps (__m128 a)
+            ///   VGETMANTPS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> GetMantissa(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m128d _mm_getmant_pd (__m128d a)
+            ///   VGETMANTPD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> GetMantissa(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m256 _mm256_getmant_ps (__m256 a)
+            ///   VGETMANTPS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> GetMantissa(Vector256<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m256d _mm256_getmant_pd (__m256d a)
+            ///   VGETMANTPD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> GetMantissa(Vector256<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+
+            /// <summary>
             /// __m128i _mm_max_epi64 (__m128i a, __m128i b)
             ///   VPMAXSQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
             /// </summary>
@@ -445,6 +738,44 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> Min(Vector256<ulong> left, Vector256<ulong> right) => Min(left, right);
 
             /// <summary>
+            /// __m128i _mm_permutex2var_epi64 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2Q xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            ///   VPERMT2Q xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> PermuteVar2x64x2(Vector128<long> lower, Vector128<long> indices, Vector128<long> upper) => PermuteVar2x64x2(lower, indices, upper);
+            /// <summary>
+            /// __m128i _mm_permutex2var_epi64 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2Q xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            ///   VPERMT2Q xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> PermuteVar2x64x2(Vector128<ulong> lower, Vector128<ulong> indices, Vector128<ulong> upper) => PermuteVar2x64x2(lower, indices, upper);
+            /// <summary>
+            /// __m128d _mm_permutex2var_pd (__m128d a, __m128i idx, __m128i b)
+            ///   VPERMI2PD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            ///   VPERMT2PD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> PermuteVar2x64x2(Vector128<double> lower, Vector128<long> indices, Vector128<double> upper) => PermuteVar2x64x2(lower, indices, upper);
+
+            /// <summary>
+            /// __m128i _mm_permutex2var_epi32 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2D xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            ///   VPERMT2D xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<int> PermuteVar4x32x2(Vector128<int> lower, Vector128<int> indices, Vector128<int> upper) => PermuteVar4x32x2(lower, indices, upper);
+            /// <summary>
+            /// __m128i _mm_permutex2var_epi32 (__m128i a, __m128i idx, __m128i b)
+            ///   VPERMI2D xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            ///   VPERMT2D xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> PermuteVar4x32x2(Vector128<uint> lower, Vector128<uint> indices, Vector128<uint> upper) => PermuteVar4x32x2(lower, indices, upper);
+            /// <summary>
+            /// __m128 _mm_permutex2var_ps (__m128 a, __m128i idx, __m128i b)
+            ///   VPERMI2PS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            ///   VPERMT2PS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> PermuteVar4x32x2(Vector128<float> lower, Vector128<int> indices, Vector128<float> upper) => PermuteVar4x32x2(lower, indices, upper);
+
+            /// <summary>
             /// __m256i _mm256_permute4x64_epi64 (__m256i a, __m256i b)
             ///   VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
@@ -459,6 +790,292 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPERMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
             public static Vector256<double> PermuteVar4x64(Vector256<double> value, Vector256<long> control) => PermuteVar4x64(value, control);
+
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi64 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2Q ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            ///   VPERMT2Q ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> PermuteVar4x64x2(Vector256<long> lower, Vector256<long> indices, Vector256<long> upper) => PermuteVar4x64x2(lower, indices, upper);
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi64 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2Q ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            ///   VPERMT2Q ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> PermuteVar4x64x2(Vector256<ulong> lower, Vector256<ulong> indices, Vector256<ulong> upper) => PermuteVar4x64x2(lower, indices, upper);
+            /// <summary>
+            /// __m256d _mm256_permutex2var_pd (__m256d a, __m256i idx, __m256i b)
+            ///   VPERMI2PD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            ///   VPERMT2PD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> PermuteVar4x64x2(Vector256<double> lower, Vector256<long> indices, Vector256<double> upper) => PermuteVar4x64x2(lower, indices, upper);
+
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi32 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2D ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            ///   VPERMT2D ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<int> PermuteVar8x32x2(Vector256<int> lower, Vector256<int> indices, Vector256<int> upper) => PermuteVar8x32x2(lower, indices, upper);
+            /// <summary>
+            /// __m256i _mm256_permutex2var_epi32 (__m256i a, __m256i idx, __m256i b)
+            ///   VPERMI2D ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            ///   VPERMT2D ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> PermuteVar8x32x2(Vector256<uint> lower, Vector256<uint> indices, Vector256<uint> upper) => PermuteVar8x32x2(lower, indices, upper);
+            /// <summary>
+            /// __m256 _mm256_permutex2var_ps (__m256 a, __m256i idx, __m256i b)
+            ///   VPERMI2PS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            ///   VPERMT2PS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> PermuteVar8x32x2(Vector256<float> lower, Vector256<int> indices, Vector256<float> upper) => PermuteVar8x32x2(lower, indices, upper);
+
+            /// <summary>
+            /// __m128 _mm_rcp14_ps (__m128 a, __m128 b)
+            ///   VRCP14PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> Reciprocal14(Vector128<float> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m128d _mm_rcp14_pd (__m128d a, __m128d b)
+            ///   VRCP14PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> Reciprocal14(Vector128<double> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m256 _mm256_rcp14_ps (__m256 a, __m256 b)
+            ///   VRCP14PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> Reciprocal14(Vector256<float> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m256d _mm256_rcp14_pd (__m256d a, __m256d b)
+            ///   VRCP14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> Reciprocal14(Vector256<double> value) => Reciprocal14(value);
+
+            /// <summary>
+            /// __m128 _mm_rsqrt14_ps (__m128 a, __m128 b)
+            ///   VRSQRT14PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> ReciprocalSqrt14(Vector128<float> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m128d _mm_rsqrt14_pd (__m128d a, __m128d b)
+            ///   VRSQRT14PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> ReciprocalSqrt14(Vector128<double> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m256 _mm256_rsqrt14_ps (__m256 a, __m256 b)
+            ///   VRSQRT14PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> ReciprocalSqrt14(Vector256<float> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m256d _mm256_rsqrt14_pd (__m256d a, __m256d b)
+            ///   VRSQRT14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> ReciprocalSqrt14(Vector256<double> value) => ReciprocalSqrt14(value);
+
+            /// <summary>
+            /// __m128i _mm_rol_epi32 (__m128i a, int imm8)
+            ///   VPROLD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> RotateLeft(Vector128<int> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+            /// <summary>
+            /// __m128i _mm_rol_epi32 (__m128i a, int imm8)
+            ///   VPROLD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> RotateLeft(Vector128<uint> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+            /// <summary>
+            /// __m128i _mm_rol_epi64 (__m128i a, int imm8)
+            ///   VPROLQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> RotateLeft(Vector128<long> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+            /// <summary>
+            /// __m128i _mm_rol_epi64 (__m128i a, int imm8)
+            ///   VPROLQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> RotateLeft(Vector128<ulong> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+            /// <summary>
+            /// __m256i _mm256_rol_epi32 (__m256i a, int imm8)
+            ///   VPROLD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> RotateLeft(Vector256<int> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+            /// <summary>
+            /// __m256i _mm256_rol_epi32 (__m256i a, int imm8)
+            ///   VPROLD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> RotateLeft(Vector256<uint> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+            /// <summary>
+            /// __m256i _mm256_rol_epi64 (__m256i a, int imm8)
+            ///   VPROLQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> RotateLeft(Vector256<long> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+            /// <summary>
+            /// __m256i _mm256_rol_epi64 (__m256i a, int imm8)
+            ///   VPROLQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> RotateLeft(Vector256<ulong> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+
+            /// <summary>
+            /// __m128i _mm_rolv_epi32 (__m128i a, __m128i b)
+            ///   VPROLDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<int> RotateLeftVariable(Vector128<int> value, Vector128<uint> count) => RotateLeftVariable(value, count);
+            /// <summary>
+            /// __m128i _mm_rolv_epi32 (__m128i a, __m128i b)
+            ///   VPROLDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> RotateLeftVariable(Vector128<uint> value, Vector128<uint> count) => RotateLeftVariable(value, count);
+            /// <summary>
+            /// __m128i _mm_rolv_epi64 (__m128i a, __m128i b)
+            ///   VPROLQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> RotateLeftVariable(Vector128<long> value, Vector128<ulong> count) => RotateLeftVariable(value, count);
+            /// <summary>
+            /// __m128i _mm_rolv_epi64 (__m128i a, __m128i b)
+            ///   VPROLQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> RotateLeftVariable(Vector128<ulong> value, Vector128<ulong> count) => RotateLeftVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_rolv_epi32 (__m256i a, __m256i b)
+            ///   VPROLDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<int> RotateLeftVariable(Vector256<int> value, Vector256<uint> count) => RotateLeftVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_rolv_epi32 (__m256i a, __m256i b)
+            ///   VPROLDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> RotateLeftVariable(Vector256<uint> value, Vector256<uint> count) => RotateLeftVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_rolv_epi64 (__m256i a, __m256i b)
+            ///   VPROLQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> RotateLeftVariable(Vector256<long> value, Vector256<ulong> count) => RotateLeftVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_rolv_epi64 (__m256i a, __m256i b)
+            ///   VPROLQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> RotateLeftVariable(Vector256<ulong> value, Vector256<ulong> count) => RotateLeftVariable(value, count);
+
+            /// <summary>
+            /// __m128i _mm_ror_epi32 (__m128i a, int imm8)
+            ///   VPRORD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> RotateRight(Vector128<int> value, [ConstantExpected] byte count) => RotateRight(value, count);
+            /// <summary>
+            /// __m128i _mm_ror_epi32 (__m128i a, int imm8)
+            ///   VPRORD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> RotateRight(Vector128<uint> value, [ConstantExpected] byte count) => RotateRight(value, count);
+            /// <summary>
+            /// __m128i _mm_ror_epi64 (__m128i a, int imm8)
+            ///   VPRORQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> RotateRight(Vector128<long> value, [ConstantExpected] byte count) => RotateRight(value, count);
+            /// <summary>
+            /// __m128i _mm_ror_epi64 (__m128i a, int imm8)
+            ///   VPRORQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> RotateRight(Vector128<ulong> value, [ConstantExpected] byte count) => RotateRight(value, count);
+            /// <summary>
+            /// __m256i _mm256_ror_epi32 (__m256i a, int imm8)
+            ///   VPRORD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> RotateRight(Vector256<int> value, [ConstantExpected] byte count) => RotateRight(value, count);
+            /// <summary>
+            /// __m256i _mm256_ror_epi32 (__m256i a, int imm8)
+            ///   VPRORD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> RotateRight(Vector256<uint> value, [ConstantExpected] byte count) => RotateRight(value, count);
+            /// <summary>
+            /// __m256i _mm256_ror_epi64 (__m256i a, int imm8)
+            ///   VPRORQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> RotateRight(Vector256<long> value, [ConstantExpected] byte count) => RotateRight(value, count);
+            /// <summary>
+            /// __m256i _mm256_ror_epi64 (__m256i a, int imm8)
+            ///   VPRORQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> RotateRight(Vector256<ulong> value, [ConstantExpected] byte count) => RotateRight(value, count);
+
+            /// <summary>
+            /// __m128i _mm_rorv_epi32 (__m128i a, __m128i b)
+            ///   VPRORDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<int> RotateRightVariable(Vector128<int> value, Vector128<uint> count) => RotateRightVariable(value, count);
+            /// <summary>
+            /// __m128i _mm_rorv_epi32 (__m128i a, __m128i b)
+            ///   VPRORDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> RotateRightVariable(Vector128<uint> value, Vector128<uint> count) => RotateRightVariable(value, count);
+            /// <summary>
+            /// __m128i _mm_rorv_epi64 (__m128i a, __m128i b)
+            ///   VPRORQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> RotateRightVariable(Vector128<long> value, Vector128<ulong> count) => RotateRightVariable(value, count);
+            /// <summary>
+            /// __m128i _mm_rorv_epi64 (__m128i a, __m128i b)
+            ///   VPRORQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> RotateRightVariable(Vector128<ulong> value, Vector128<ulong> count) => RotateRightVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_rorv_epi32 (__m256i a, __m256i b)
+            ///   VPRORDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<int> RotateRightVariable(Vector256<int> value, Vector256<uint> count) => RotateRightVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_rorv_epi32 (__m256i a, __m256i b)
+            ///   VPRORDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> RotateRightVariable(Vector256<uint> value, Vector256<uint> count) => RotateRightVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_rorv_epi64 (__m256i a, __m256i b)
+            ///   VPRORQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> RotateRightVariable(Vector256<long> value, Vector256<ulong> count) => RotateRightVariable(value, count);
+            /// <summary>
+            /// __m256i _mm256_rorv_epi64 (__m256i a, __m256i b)
+            ///   VPRORQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> RotateRightVariable(Vector256<ulong> value, Vector256<ulong> count) => RotateRightVariable(value, count);
+
+            /// <summary>
+            /// __m128 _mm_roundscale_ps (__m128 a, int imm)
+            ///   VRNDSCALEPS xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> RoundScale(Vector128<float> value, [ConstantExpected] byte control) => RoundScale(value, control);
+            /// <summary>
+            /// __m128d _mm_roundscale_pd (__m128d a, int imm)
+            ///   VRNDSCALEPD xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> RoundScale(Vector128<double> value, [ConstantExpected] byte control) => RoundScale(value, control);
+            /// <summary>
+            /// __m256 _mm256_roundscale_ps (__m256 a, int imm)
+            ///   VRNDSCALEPS ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> RoundScale(Vector256<float> value, [ConstantExpected] byte control) => RoundScale(value, control);
+            /// <summary>
+            /// __m256d _mm256_roundscale_pd (__m256d a, int imm)
+            ///   VRNDSCALEPD ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> RoundScale(Vector256<double> value, [ConstantExpected] byte control) => RoundScale(value, control);
+
+            /// <summary>
+            /// __m128 _mm_scalef_ps (__m128 a, int imm)
+            ///   VSCALEFPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> Scale(Vector128<float> left, Vector128<float> right) => Scale(left, right);
+            /// <summary>
+            /// __m128d _mm_scalef_pd (__m128d a, int imm)
+            ///   VSCALEFPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> Scale(Vector128<double> left, Vector128<double> right) => Scale(left, right);
+            /// <summary>
+            /// __m256 _mm256_scalef_ps (__m256 a, int imm)
+            ///   VSCALEFPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> Scale(Vector256<float> left, Vector256<float> right) => Scale(left, right);
+            /// <summary>
+            /// __m256d _mm256_scalef_pd (__m256d a, int imm)
+            ///   VSCALEFPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> Scale(Vector256<double> left, Vector256<double> right) => Scale(left, right);
 
             /// <summary>
             /// __m128i _mm_sra_epi64 (__m128i a, __m128i count)
@@ -492,6 +1109,150 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPSRAVQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
             public static Vector256<long> ShiftRightArithmeticVariable(Vector256<long> value, Vector256<ulong> count) => ShiftRightArithmeticVariable(value, count);
+
+            /// <summary>
+            /// __m256d _mm256_shuffle_f64x2 (__m256d a, __m256d b, const int imm8)
+            ///   VSHUFF64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Shuffle2x128(Vector256<double> left, Vector256<double> right, [ConstantExpected] byte control) => Shuffle2x128(left, right, control);
+            /// <summary>
+            /// __m256i _mm256_shuffle_i32x4 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> Shuffle2x128(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte control) => Shuffle2x128(left, right, control);
+            /// <summary>
+            /// __m256i _mm256_shuffle_i64x2 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> Shuffle2x128(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte control) => Shuffle2x128(left, right, control);
+            /// <summary>
+            /// __m256 _mm256_shuffle_f32x4 (__m256 a, __m256 b, const int imm8)
+            ///   VSHUFF32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Shuffle2x128(Vector256<float> left, Vector256<float> right, [ConstantExpected] byte control) => Shuffle2x128(left, right, control);
+            /// <summary>
+            /// __m256i _mm256_shuffle_i32x4 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> Shuffle2x128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte control) => Shuffle2x128(left, right, control);
+            /// <summary>
+            /// __m256i _mm256_shuffle_i64x2 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> Shuffle2x128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte control) => Shuffle2x128(left, right, control);
+
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, byte imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<sbyte> TernaryLogic(Vector128<sbyte> a, Vector128<sbyte> b, Vector128<sbyte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, byte imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<byte> TernaryLogic(Vector128<byte> a, Vector128<byte> b, Vector128<byte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, short imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<short> TernaryLogic(Vector128<short> a, Vector128<short> b, Vector128<short> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, short imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<ushort> TernaryLogic(Vector128<ushort> a, Vector128<ushort> b, Vector128<ushort> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi32 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> TernaryLogic(Vector128<int> a, Vector128<int> b, Vector128<int> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi32 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> TernaryLogic(Vector128<uint> a, Vector128<uint> b, Vector128<uint> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi64 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> TernaryLogic(Vector128<long> a, Vector128<long> b, Vector128<long> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi64 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> TernaryLogic(Vector128<ulong> a, Vector128<ulong> b, Vector128<ulong> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128 _mm_ternarylogic_ps (__m128 a, __m128 b, __m128 c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<float> TernaryLogic(Vector128<float> a, Vector128<float> b, Vector128<float> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128d _mm_ternarylogic_pd (__m128d a, __m128d b, __m128d c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<double> TernaryLogic(Vector128<double> a, Vector128<double> b, Vector128<double> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, byte imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<sbyte> TernaryLogic(Vector256<sbyte> a, Vector256<sbyte> b, Vector256<sbyte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, byte imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<byte> TernaryLogic(Vector256<byte> a, Vector256<byte> b, Vector256<byte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, short imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<short> TernaryLogic(Vector256<short> a, Vector256<short> b, Vector256<short> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, short imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<ushort> TernaryLogic(Vector256<ushort> a, Vector256<ushort> b, Vector256<ushort> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi32 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> TernaryLogic(Vector256<int> a, Vector256<int> b, Vector256<int> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi32 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> TernaryLogic(Vector256<uint> a, Vector256<uint> b, Vector256<uint> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi64 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> TernaryLogic(Vector256<long> a, Vector256<long> b, Vector256<long> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi64 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> TernaryLogic(Vector256<ulong> a, Vector256<ulong> b, Vector256<ulong> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256 _mm256_ternarylogic_ps (__m256 a, __m256 b, __m256 c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<float> TernaryLogic(Vector256<float> a, Vector256<float> b, Vector256<float> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256d _mm256_ternarylogic_pd (__m256d a, __m256d b, __m256d c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<double> TernaryLogic(Vector256<double> a, Vector256<double> b, Vector256<double> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
         }
 
         [Intrinsic]
@@ -584,6 +1345,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) => Add(left, right);
 
         /// <summary>
+        /// __m512i _mm512_alignr_epi32 (__m512i a, __m512i b, const int count)
+        ///   VALIGND zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> AlignRight32(Vector512<int> left, Vector512<int> right, [ConstantExpected] byte mask) => AlignRight32(left, right, mask);
+        /// <summary>
+        /// __m512i _mm512_alignr_epi32 (__m512i a, __m512i b, const int count)
+        ///   VALIGND zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> AlignRight32(Vector512<uint> left, Vector512<uint> right, [ConstantExpected] byte mask) => AlignRight32(left, right, mask);
+
+        /// <summary>
+        /// __m512i _mm512_alignr_epi64 (__m512i a, __m512i b, const int count)
+        ///   VALIGNQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> AlignRight64(Vector512<long> left, Vector512<long> right, [ConstantExpected] byte mask) => AlignRight64(left, right, mask);
+        /// <summary>
+        /// __m512i _mm512_alignr_epi64 (__m512i a, __m512i b, const int count)
+        ///   VALIGNQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> AlignRight64(Vector512<ulong> left, Vector512<ulong> right, [ConstantExpected] byte mask) => AlignRight64(left, right, mask);
+
+        /// <summary>
         /// __m512i _mm512_and_si512 (__m512i a, __m512i b)
         ///   VPANDD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
@@ -666,6 +1449,37 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ulong> AndNot(Vector512<ulong> left, Vector512<ulong> right) => AndNot(left, right);
 
         /// <summary>
+        /// __m512d _mm512_blendv_pd (__m512d a, __m512d b, __m512d mask)
+        ///   VBLENDMPD zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> BlendVariable(Vector512<double> left, Vector512<double> right, Vector512<double> mask) => BlendVariable(left, right, mask);
+        /// <summary>
+        /// __m512i _mm512_blendv_epi32 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> BlendVariable(Vector512<int> left, Vector512<int> right, Vector512<int> mask) => BlendVariable(left, right, mask);
+        /// <summary>
+        /// __m512i _mm512_blendv_epi64 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> BlendVariable(Vector512<long> left, Vector512<long> right, Vector512<long> mask) => BlendVariable(left, right, mask);
+        /// <summary>
+        /// __m512 _mm512_blendv_ps (__m512 a, __m512 b, __m512 mask)
+        ///   VBLENDMPS zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> BlendVariable(Vector512<float> left, Vector512<float> right, Vector512<float> mask) => BlendVariable(left, right, mask);
+        /// <summary>
+        /// __m512i _mm512_blendv_epu32 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> BlendVariable(Vector512<uint> left, Vector512<uint> right, Vector512<uint> mask) => BlendVariable(left, right, mask);
+        /// <summary>
+        /// __m512i _mm512_blendv_epu64 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> BlendVariable(Vector512<ulong> left, Vector512<ulong> right, Vector512<ulong> mask) => BlendVariable(left, right, mask);
+
+        /// <summary>
         /// __m512i _mm512_broadcastd_epi32 (__m128i a)
         ///   VPBROADCASTD zmm1 {k1}{z}, xmm2/m32
         /// </summary>
@@ -727,6 +1541,286 @@ namespace System.Runtime.Intrinsics.X86
         ///   VBROADCASTF64x4 zmm1 {k1}{z}, m256
         /// </summary>
         public static unsafe Vector512<double> BroadcastVector256ToVector512(double* address) => BroadcastVector256ToVector512(address);
+
+        /// <summary>
+        /// __m512d _mm512_cmp_pd (__m512d a, __m512d b, const int imm8)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> Compare(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+        /// <summary>
+        /// __m512d _mm512_cmpeq_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(0)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareEqual(Vector512<double> left, Vector512<double> right) => CompareEqual(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpgt_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(14)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareGreaterThan(Vector512<double> left, Vector512<double> right) => CompareGreaterThan(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpge_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(13)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareGreaterThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmplt_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(1)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareLessThan(Vector512<double> left, Vector512<double> right) => CompareLessThan(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmple_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(2)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareLessThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpneq_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(4)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotEqual(Vector512<double> left, Vector512<double> right) => CompareNotEqual(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpngt_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(10)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotGreaterThan(Vector512<double> left, Vector512<double> right) => CompareNotGreaterThan(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpnge_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(9)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotGreaterThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareNotGreaterThanOrEqual(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpnlt_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(5)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotLessThan(Vector512<double> left, Vector512<double> right) => CompareNotLessThan(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpnle_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(6)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotLessThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareNotLessThanOrEqual(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpord_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(7)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareOrdered(Vector512<double> left, Vector512<double> right) => CompareOrdered(left, right);
+        /// <summary>
+        /// __m512d _mm512_cmpunord_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(3)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareUnordered(Vector512<double> left, Vector512<double> right) => CompareUnordered(left, right);
+
+        /// <summary>
+        /// __m512 _mm512_cmp_ps (__m512 a, __m512 b, const int imm8)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> Compare(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+        /// <summary>
+        /// __m512 _mm512_cmpeq_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(0)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareEqual(Vector512<float> left, Vector512<float> right) => CompareEqual(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpgt_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(14)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareGreaterThan(Vector512<float> left, Vector512<float> right) => CompareGreaterThan(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpge_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(13)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareGreaterThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmplt_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(1)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareLessThan(Vector512<float> left, Vector512<float> right) => CompareLessThan(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmple_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(2)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareLessThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpneq_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(4)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotEqual(Vector512<float> left, Vector512<float> right) => CompareNotEqual(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpngt_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(10)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotGreaterThan(Vector512<float> left, Vector512<float> right) => CompareNotGreaterThan(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpnge_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(9)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotGreaterThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareNotGreaterThanOrEqual(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpnlt_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(5)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotLessThan(Vector512<float> left, Vector512<float> right) => CompareNotLessThan(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpnle_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(6)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotLessThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareNotLessThanOrEqual(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpord_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(7)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareOrdered(Vector512<float> left, Vector512<float> right) => CompareOrdered(left, right);
+        /// <summary>
+        /// __m512 _mm512_cmpunord_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(3)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareUnordered(Vector512<float> left, Vector512<float> right) => CompareUnordered(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_cmpeq_epi32 (__m512i a, __m512i b)
+        ///   VPCMPEQD k1 {k2}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> CompareEqual(Vector512<int> left, Vector512<int> right) => CompareEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpgt_epi32 (__m512i a, __m512i b)
+        ///   VPCMPGTD k1 {k2}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> CompareGreaterThan(Vector512<int> left, Vector512<int> right) => CompareGreaterThan(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpge_epi32 (__m512i a, __m512i b)
+        ///   VPCMPD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(5)
+        /// </summary>
+        public static Vector512<int> CompareGreaterThanOrEqual(Vector512<int> left, Vector512<int> right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmplt_epi32 (__m512i a, __m512i b)
+        ///   VPCMPD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(1)
+        /// </summary>
+        public static Vector512<int> CompareLessThan(Vector512<int> left, Vector512<int> right) => CompareLessThan(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmple_epi32 (__m512i a, __m512i b)
+        ///   VPCMPD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(2)
+        /// </summary>
+        public static Vector512<int> CompareLessThanOrEqual(Vector512<int> left, Vector512<int> right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpne_epi32 (__m512i a, __m512i b)
+        ///   VPCMPD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(4)
+        /// </summary>
+        public static Vector512<int> CompareNotEqual(Vector512<int> left, Vector512<int> right) => CompareNotEqual(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_cmpeq_epi64 (__m512i a, __m512i b)
+        ///   VPCMPEQQ k1 {k2}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> CompareEqual(Vector512<long> left, Vector512<long> right) => CompareEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpgt_epi64 (__m512i a, __m512i b)
+        ///   VPCMPGTQ k1 {k2}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> CompareGreaterThan(Vector512<long> left, Vector512<long> right) => CompareGreaterThan(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpge_epi64 (__m512i a, __m512i b)
+        ///   VPCMPQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(5)
+        /// </summary>
+        public static Vector512<long> CompareGreaterThanOrEqual(Vector512<long> left, Vector512<long> right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmplt_epi64 (__m512i a, __m512i b)
+        ///   VPCMPQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(1)
+        /// </summary>
+        public static Vector512<long> CompareLessThan(Vector512<long> left, Vector512<long> right) => CompareLessThan(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmple_epi64 (__m512i a, __m512i b)
+        ///   VPCMPQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(2)
+        /// </summary>
+        public static Vector512<long> CompareLessThanOrEqual(Vector512<long> left, Vector512<long> right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpne_epi64 (__m512i a, __m512i b)
+        ///   VPCMPQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(4)
+        /// </summary>
+        public static Vector512<long> CompareNotEqual(Vector512<long> left, Vector512<long> right) => CompareNotEqual(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_cmpeq_epu32 (__m512i a, __m512i b)
+        ///   VPCMPEQD k1 {k2}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> CompareEqual(Vector512<uint> left, Vector512<uint> right) => CompareEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpgt_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(6)
+        /// </summary>
+        public static Vector512<uint> CompareGreaterThan(Vector512<uint> left, Vector512<uint> right) => CompareGreaterThan(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpge_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(5)
+        /// </summary>
+        public static Vector512<uint> CompareGreaterThanOrEqual(Vector512<uint> left, Vector512<uint> right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmplt_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(1)
+        /// </summary>
+        public static Vector512<uint> CompareLessThan(Vector512<uint> left, Vector512<uint> right) => CompareLessThan(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmple_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(2)
+        /// </summary>
+        public static Vector512<uint> CompareLessThanOrEqual(Vector512<uint> left, Vector512<uint> right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpne_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(4)
+        /// </summary>
+        public static Vector512<uint> CompareNotEqual(Vector512<uint> left, Vector512<uint> right) => CompareNotEqual(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_cmpeq_epu64 (__m512i a, __m512i b)
+        ///   VPCMPEQQ k1 {k2}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> CompareEqual(Vector512<ulong> left, Vector512<ulong> right) => CompareEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpgt_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(6)
+        /// </summary>
+        public static Vector512<ulong> CompareGreaterThan(Vector512<ulong> left, Vector512<ulong> right) => CompareGreaterThan(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpge_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(5)
+        /// </summary>
+        public static Vector512<ulong> CompareGreaterThanOrEqual(Vector512<ulong> left, Vector512<ulong> right) => CompareGreaterThanOrEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmplt_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(1)
+        /// </summary>
+        public static Vector512<ulong> CompareLessThan(Vector512<ulong> left, Vector512<ulong> right) => CompareLessThan(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmple_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(2)
+        /// </summary>
+        public static Vector512<ulong> CompareLessThanOrEqual(Vector512<ulong> left, Vector512<ulong> right) => CompareLessThanOrEqual(left, right);
+        /// <summary>
+        /// __m512i _mm512_cmpne_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(4)
+        /// </summary>
+        public static Vector512<ulong> CompareNotEqual(Vector512<ulong> left, Vector512<ulong> right) => CompareNotEqual(left, right);
 
         /// <summary>
         /// __m128 _mm_cvtsi32_ss (__m128 a, int b)
@@ -1221,6 +2315,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> ExtractVector256(Vector512<double> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
 
         /// <summary>
+        /// __m512 _mm512_fixupimm_ps(__m512 a, __m512 b, __m512i tbl, int imm);
+        ///   VFIXUPIMMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> Fixup(Vector512<float> left, Vector512<float> right, Vector512<int> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+        /// <summary>
+        /// __m512d _mm512_fixupimm_pd(__m512d a, __m512d b, __m512i tbl, int imm);
+        ///   VFIXUPIMMPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> Fixup(Vector512<double> left, Vector512<double> right, Vector512<long> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+
+        /// <summary>
+        /// __m128 _mm_fixupimm_ss(__m128 a, __m128 b, __m128i tbl, int imm);
+        ///   VFIXUPIMMSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> FixupScalar(Vector128<float> left, Vector128<float> right, Vector128<int> table, [ConstantExpected] byte control) => FixupScalar(left, right, table, control);
+        /// <summary>
+        /// __m128d _mm_fixupimm_sd(__m128d a, __m128d b, __m128i tbl, int imm);
+        ///   VFIXUPIMMSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> FixupScalar(Vector128<double> left, Vector128<double> right, Vector128<long> table, [ConstantExpected] byte control) => FixupScalar(left, right, table, control);
+
+        /// <summary>
         /// __m512 _mm512_fmadd_ps (__m512 a, __m512 b, __m512 c)
         ///   VFMADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
@@ -1285,6 +2401,74 @@ namespace System.Runtime.Intrinsics.X86
         ///   VFNMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplySubtractNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplySubtractNegated(a, b, c);
+
+        /// <summary>
+        /// __m512 _mm512_getexp_ps (__m512 a)
+        ///   VGETEXPPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> GetExponent(Vector512<float> value) => GetExponent(value);
+        /// <summary>
+        /// __m512d _mm512_getexp_pd (__m512d a)
+        ///   VGETEXPPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> GetExponent(Vector512<double> value) => GetExponent(value);
+
+        /// <summary>
+        /// __m128 _mm_getexp_ss (__m128 a)
+        ///   VGETEXPSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// </summary>
+        public static Vector128<float> GetExponentScalar(Vector128<float> value) => GetExponentScalar(value);
+        /// <summary>
+        /// __m128d _mm_getexp_sd (__m128d a)
+        ///   VGETEXPSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// </summary>
+        public static Vector128<double> GetExponentScalar(Vector128<double> value) => GetExponentScalar(value);
+        /// <summary>
+        /// __m128 _mm_getexp_ss (__m128 a, __m128 b)
+        ///   VGETEXPSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> GetExponentScalar(Vector128<float> upper, Vector128<float> value) => GetExponentScalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_getexp_sd (__m128d a, __m128d b)
+        ///   VGETEXPSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> GetExponentScalar(Vector128<double> upper, Vector128<double> value) => GetExponentScalar(upper, value);
+
+        /// <summary>
+        /// __m512 _mm512_getmant_ps (__m512 a)
+        ///   VGETMANTPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> GetMantissa(Vector512<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+        /// <summary>
+        /// __m512d _mm512_getmant_pd (__m512d a)
+        ///   VGETMANTPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> GetMantissa(Vector512<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+
+        /// <summary>
+        /// __m128 _mm_getmant_ss (__m128 a)
+        ///   VGETMANTSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// </summary>
+        public static Vector128<float> GetMantissaScalar(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(value, control);
+        /// <summary>
+        /// __m128d _mm_getmant_sd (__m128d a)
+        ///   VGETMANTSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// </summary>
+        public static Vector128<double> GetMantissaScalar(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(value, control);
+        /// <summary>
+        /// __m128 _mm_getmant_ss (__m128 a, __m128 b)
+        ///   VGETMANTSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> GetMantissaScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(upper, value, control);
+        /// <summary>
+        /// __m128d _mm_getmant_sd (__m128d a, __m128d b)
+        ///   VGETMANTSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> GetMantissaScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(upper, value, control);
 
         /// <summary>
         /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
@@ -1723,6 +2907,25 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> PermuteVar8x64(Vector512<double> value, Vector512<long> control) => PermuteVar8x64(value, control);
 
         /// <summary>
+        /// __m512i _mm512_permutex2var_epi64 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2Q zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        ///   VPERMT2Q zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> PermuteVar8x64x2(Vector512<long> lower, Vector512<long> indices, Vector512<long> upper) => PermuteVar8x64x2(lower, indices, upper);
+        /// <summary>
+        /// __m512i _mm512_permutex2var_epi64 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2Q zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        ///   VPERMT2Q zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> PermuteVar8x64x2(Vector512<ulong> lower, Vector512<ulong> indices, Vector512<ulong> upper) => PermuteVar8x64x2(lower, indices, upper);
+        /// <summary>
+        /// __m512d _mm512_permutex2var_pd (__m512d a, __m512i idx, __m512i b)
+        ///   VPERMI2PD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        ///   VPERMT2PD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> PermuteVar8x64x2(Vector512<double> lower, Vector512<long> indices, Vector512<double> upper) => PermuteVar8x64x2(lower, indices, upper);
+
+        /// <summary>
         /// __m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)
         ///   VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
@@ -1737,6 +2940,233 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPERMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
         public static Vector512<float> PermuteVar16x32(Vector512<float> left, Vector512<int> control) => PermuteVar16x32(left, control);
+
+        /// <summary>
+        /// __m512i _mm512_permutex2var_epi32 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2D zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        ///   VPERMT2D zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> PermuteVar16x32x2(Vector512<int> lower, Vector512<int> indices, Vector512<int> upper) => PermuteVar16x32x2(lower, indices, upper);
+        /// <summary>
+        /// __m512i _mm512_permutex2var_epi32 (__m512i a, __m512i idx, __m512i b)
+        ///   VPERMI2D zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        ///   VPERMT2D zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> PermuteVar16x32x2(Vector512<uint> lower, Vector512<uint> indices, Vector512<uint> upper) => PermuteVar16x32x2(lower, indices, upper);
+        /// <summary>
+        /// __m512 _mm512_permutex2var_ps (__m512 a, __m512i idx, __m512i b)
+        ///   VPERMI2PS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        ///   VPERMT2PS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> PermuteVar16x32x2(Vector512<float> lower, Vector512<int> indices, Vector512<float> upper) => PermuteVar16x32x2(lower, indices, upper);
+
+        /// <summary>
+        /// __m512 _mm512_rcp14_ps (__m512 a, __m512 b)
+        ///   VRCP14PS zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> Reciprocal14(Vector512<float> value) => Reciprocal14(value);
+        /// <summary>
+        /// __m512d _mm512_rcp14_pd (__m512d a, __m512d b)
+        ///   VRCP14PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> Reciprocal14(Vector512<double> value) => Reciprocal14(value);
+
+        /// <summary>
+        /// __m128 _mm_rcp14_ss (__m128 a)
+        ///   VRCP14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// </summary>
+        public static Vector128<float> Reciprocal14Scalar(Vector128<float> value) => Reciprocal14Scalar(value);
+        /// <summary>
+        /// __m128d _mm_rcp14_sd (__m128d a)
+        ///   VRCP14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// </summary>
+        public static Vector128<double> Reciprocal14Scalar(Vector128<double> value) => Reciprocal14Scalar(value);
+        /// <summary>
+        /// __m128 _mm_rcp14_ss (__m128 a, __m128 b)
+        ///   VRCP14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> Reciprocal14Scalar(Vector128<float> upper, Vector128<float> value) => Reciprocal14Scalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_rcp14_sd (__m128d a, __m128d b)
+        ///   VRCP14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> Reciprocal14Scalar(Vector128<double> upper, Vector128<double> value) => Reciprocal14Scalar(upper, value);
+
+        /// <summary>
+        /// __m512 _mm512_rsqrt14_ps (__m512 a, __m512 b)
+        ///   VRSQRT14PS zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> ReciprocalSqrt14(Vector512<float> value) => ReciprocalSqrt14(value);
+        /// <summary>
+        /// __m512d _mm512_rsqrt14_pd (__m512d a, __m512d b)
+        ///   VRSQRT14PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> ReciprocalSqrt14(Vector512<double> value) => ReciprocalSqrt14(value);
+
+        /// <summary>
+        /// __m128 _mm_rsqrt14_ss (__m128 a)
+        ///   VRSQRT14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrt14Scalar(Vector128<float> value) => ReciprocalSqrt14Scalar(value);
+        /// <summary>
+        /// __m128d _mm_rsqrt14_sd (__m128d a)
+        ///   VRSQRT14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// </summary>
+        public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> value) => ReciprocalSqrt14Scalar(value);
+        /// <summary>
+        /// __m128 _mm_rsqrt14_ss (__m128 a, __m128 b)
+        ///   VRSQRT14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrt14Scalar(Vector128<float> upper, Vector128<float> value) => ReciprocalSqrt14Scalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_rsqrt14_sd (__m128d a, __m128d b)
+        ///   VRSQRT14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> upper, Vector128<double> value) => ReciprocalSqrt14Scalar(upper, value);
+
+        /// <summary>
+        /// __m512i _mm512_rol_epi32 (__m512i a, int imm8)
+        ///   VPROLD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> RotateLeft(Vector512<int> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+        /// <summary>
+        /// __m512i _mm512_rol_epi32 (__m512i a, int imm8)
+        ///   VPROLD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> RotateLeft(Vector512<uint> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+        /// <summary>
+        /// __m512i _mm512_rol_epi64 (__m512i a, int imm8)
+        ///   VPROLQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> RotateLeft(Vector512<long> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+        /// <summary>
+        /// __m512i _mm512_rol_epi64 (__m512i a, int imm8)
+        ///   VPROLQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> RotateLeft(Vector512<ulong> value, [ConstantExpected] byte count) => RotateLeft(value, count);
+
+        /// <summary>
+        /// __m512i _mm512_rolv_epi32 (__m512i a, __m512i b)
+        ///   VPROLDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> RotateLeftVariable(Vector512<int> value, Vector512<uint> count) => RotateLeftVariable(value, count);
+        /// <summary>
+        /// __m512i _mm512_rolv_epi32 (__m512i a, __m512i b)
+        ///   VPROLDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> RotateLeftVariable(Vector512<uint> value, Vector512<uint> count) => RotateLeftVariable(value, count);
+        /// <summary>
+        /// __m512i _mm512_rolv_epi64 (__m512i a, __m512i b)
+        ///   VPROLQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> RotateLeftVariable(Vector512<long> value, Vector512<ulong> count) => RotateLeftVariable(value, count);
+        /// <summary>
+        /// __m512i _mm512_rolv_epi64 (__m512i a, __m512i b)
+        ///   VPROLQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> RotateLeftVariable(Vector512<ulong> value, Vector512<ulong> count) => RotateLeftVariable(value, count);
+
+        /// <summary>
+        /// __m512i _mm512_ror_epi32 (__m512i a, int imm8)
+        ///   VPRORD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> RotateRight(Vector512<int> value, [ConstantExpected] byte count) => RotateRight(value, count);
+        /// <summary>
+        /// __m512i _mm512_ror_epi32 (__m512i a, int imm8)
+        ///   VPRORD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> RotateRight(Vector512<uint> value, [ConstantExpected] byte count) => RotateRight(value, count);
+        /// <summary>
+        /// __m512i _mm512_ror_epi64 (__m512i a, int imm8)
+        ///   VPRORQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> RotateRight(Vector512<long> value, [ConstantExpected] byte count) => RotateRight(value, count);
+        /// <summary>
+        /// __m512i _mm512_ror_epi64 (__m512i a, int imm8)
+        ///   VPRORQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> RotateRight(Vector512<ulong> value, [ConstantExpected] byte count) => RotateRight(value, count);
+
+        /// <summary>
+        /// __m512i _mm512_rorv_epi32 (__m512i a, __m512i b)
+        ///   VPRORDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> RotateRightVariable(Vector512<int> value, Vector512<uint> count) => RotateRightVariable(value, count);
+        /// <summary>
+        /// __m512i _mm512_rorv_epi32 (__m512i a, __m512i b)
+        ///   VPRORDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> RotateRightVariable(Vector512<uint> value, Vector512<uint> count) => RotateRightVariable(value, count);
+        /// <summary>
+        /// __m512i _mm512_rorv_epi64 (__m512i a, __m512i b)
+        ///   VPRORQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> RotateRightVariable(Vector512<long> value, Vector512<ulong> count) => RotateRightVariable(value, count);
+        /// <summary>
+        /// __m512i _mm512_rorv_epi64 (__m512i a, __m512i b)
+        ///   VPRORQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> RotateRightVariable(Vector512<ulong> value, Vector512<ulong> count) => RotateRightVariable(value, count);
+
+        /// <summary>
+        /// __m512 _mm512_roundscale_ps (__m512 a, int imm)
+        ///   VRNDSCALEPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> RoundScale(Vector512<float> value, [ConstantExpected] byte control) => RoundScale(value, control);
+        /// <summary>
+        /// __m512d _mm512_roundscale_pd (__m512d a, int imm)
+        ///   VRNDSCALEPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> RoundScale(Vector512<double> value, [ConstantExpected] byte control) => RoundScale(value, control);
+
+        /// <summary>
+        /// __m128 _mm_roundscale_ss (__m128 a, int imm)
+        ///   VRNDSCALESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> RoundScaleScalar(Vector128<float> value, [ConstantExpected] byte control) => RoundScaleScalar(value, control);
+        /// <summary>
+        /// __m128d _mm_roundscale_sd (__m128d a, int imm)
+        ///   VRNDSCALESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> RoundScaleScalar(Vector128<double> value, [ConstantExpected] byte control) => RoundScaleScalar(value, control);
+        /// <summary>
+        /// __m128 _mm_roundscale_ss (__m128 a, __m128 b, int imm)
+        ///   VRNDSCALESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> RoundScaleScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected] byte control) => RoundScaleScalar(upper, value, control);
+        /// <summary>
+        /// __m128d _mm_roundscale_sd (__m128d a, __m128d b, int imm)
+        ///   VRNDSCALESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> RoundScaleScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected] byte control) => RoundScaleScalar(upper, value, control);
+
+        /// <summary>
+        /// __m512 _mm512_scalef_ps (__m512 a, __m512 b)
+        ///   VSCALEFPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Scale(Vector512<float> left, Vector512<float> right) => Scale(left, right);
+        /// <summary>
+        /// __m512d _mm512_scalef_pd (__m512d a, __m512d b)
+        ///   VSCALEFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Scale(Vector512<double> left, Vector512<double> right) => Scale(left, right);
+
+        /// <summary>
+        /// __m128 _mm_scalef_ss (__m128 a, __m128 b)
+        ///   VSCALEFSS xmm1 {k1}{z}, xmm2, xmm3/m32{er}
+        /// </summary>
+        public static Vector128<float> ScaleScalar(Vector128<float> left, Vector128<float> right) => ScaleScalar(left, right);
+        /// <summary>
+        /// __m128d _mm_scalef_sd (__m128d a, __m128d b)
+        ///   VSCALEFSD xmm1 {k1}{z}, xmm2, xmm3/m64{er}
+        /// </summary>
+        public static Vector128<double> ScaleScalar(Vector128<double> left, Vector128<double> right) => ScaleScalar(left, right);
 
         /// <summary>
         /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)
@@ -1917,6 +3347,37 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSHUFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
         /// </summary>
         public static Vector512<double> Shuffle(Vector512<double> value, Vector512<double> right, [ConstantExpected] byte control) => Shuffle(value, right, control);
+
+        /// <summary>
+        /// __m512d _mm512_shuffle_f64x2 (__m512d a, __m512d b, const int imm8)
+        ///   VSHUFF64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<double> Shuffle4x128(Vector512<double> left, Vector512<double> right, [ConstantExpected] byte control) => Shuffle4x128(left, right, control);
+        /// <summary>
+        /// __m512i _mm512_shuffle_i32x4 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> Shuffle4x128(Vector512<int> left, Vector512<int> right, [ConstantExpected] byte control) => Shuffle4x128(left, right, control);
+        /// <summary>
+        /// __m512i _mm512_shuffle_i64x2 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> Shuffle4x128(Vector512<long> left, Vector512<long> right, [ConstantExpected] byte control) => Shuffle4x128(left, right, control);
+        /// <summary>
+        /// __m512 _mm512_shuffle_f32x4 (__m512 a, __m512 b, const int imm8)
+        ///   VSHUFF32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<float> Shuffle4x128(Vector512<float> left, Vector512<float> right, [ConstantExpected] byte control) => Shuffle4x128(left, right, control);
+        /// <summary>
+        /// __m512i _mm512_shuffle_i32x4 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> Shuffle4x128(Vector512<uint> left, Vector512<uint> right, [ConstantExpected] byte control) => Shuffle4x128(left, right, control);
+        /// <summary>
+        /// __m512i _mm512_shuffle_i64x2 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> Shuffle4x128(Vector512<ulong> left, Vector512<ulong> right, [ConstantExpected] byte control) => Shuffle4x128(left, right, control);
 
         /// <summary>
         /// __m512 _mm512_sqrt_ps (__m512 a)
@@ -2112,6 +3573,63 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Subtract(Vector512<double> left, Vector512<double> right) => Subtract(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<sbyte> TernaryLogic(Vector512<sbyte> a, Vector512<sbyte> b, Vector512<sbyte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, byte imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<byte> TernaryLogic(Vector512<byte> a, Vector512<byte> b, Vector512<byte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, short imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<short> TernaryLogic(Vector512<short> a, Vector512<short> b, Vector512<short> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, short imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<ushort> TernaryLogic(Vector512<ushort> a, Vector512<ushort> b, Vector512<ushort> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi32 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> TernaryLogic(Vector512<int> a, Vector512<int> b, Vector512<int> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi32 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> TernaryLogic(Vector512<uint> a, Vector512<uint> b, Vector512<uint> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi64 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> TernaryLogic(Vector512<long> a, Vector512<long> b, Vector512<long> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi64 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> TernaryLogic(Vector512<ulong> a, Vector512<ulong> b, Vector512<ulong> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512 _mm512_ternarylogic_ps (__m512 a, __m512 b, __m512 c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<float> TernaryLogic(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512d _mm512_ternarylogic_pd (__m512d a, __m512d b, __m512d c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<double> TernaryLogic(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
 
         /// <summary>
         /// __m512i _mm512_unpackhi_epi32 (__m512i a, __m512i b)

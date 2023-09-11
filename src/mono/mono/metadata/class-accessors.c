@@ -579,6 +579,23 @@ mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
 }
 
 /**
+ * mono_class_set_deferred_failure:
+ * \param klass class in which the failure was detected
+ 
+ * This method marks the class with a deferred failure, indicating that a failure was detected but it will be processed during AOT runtime..
+ * Note that only the first failure is kept.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_set_deferred_failure (MonoClass *klass)
+{
+	mono_loader_lock ();
+	klass->has_deferred_failure = 1;
+	mono_loader_unlock ();
+}
+
+/**
  * mono_class_set_nonblittable:
  * \param klass class which will be marked as not blittable.
  *

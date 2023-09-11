@@ -10,6 +10,7 @@
 #include <atomic>
 #include <cassert>
 #include <exception>
+#include <stdexcept>
 #include <list>
 #include <mutex>
 #include <unordered_map>

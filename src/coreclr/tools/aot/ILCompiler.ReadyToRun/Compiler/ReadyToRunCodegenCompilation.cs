@@ -106,6 +106,8 @@ namespace ILCompiler
                 }
             }
 
+            _nodeFactory.DetectGenericCycles(caller, callee);
+
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
 
@@ -126,6 +128,46 @@ namespace ILCompiler
 
         public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
+            if (declMethod.OwningType.IsInterface)
+            {
+                // The virtual method resolution algorithm in the managed type system is not implemented to work correctly
+                // in the presence of calling type equivalent interfaces.
+                // Notably:
+                // If the decl is to a interface equivalent to, but not equal to any interface implemented on the
+                // owning type, then the logic for matching up methods by method index is not present.
+                // AND
+                // If the owningType implements multiple different type equivalent interfaces that are all mutually
+                // equivalent, the implementation for finding the correct implementation method requires walking the
+                // type hierarchy and searching for exact and equivalent matches at each level (much like variance)
+                // This logic is also currently unimplemented.
+                // NOTE: We do not currently have tests in the runtime suite which cover these cases
+                if (declMethod.OwningType.HasTypeEquivalence)
+                {
+                    // To protect against this, require that the implType implement exactly the right interface, and
+                    // no additional interfaces that are equivalent
+                    bool foundExactMatch = false;
+                    bool foundEquivalentMatch = false;
+                    foreach (var @interface in implType.RuntimeInterfaces)
+                    {
+                        if (@interface == declMethod.OwningType)
+                        {
+                            foundExactMatch = true;
+                            continue;
+                        }
+                        if (@interface.IsEquivalentTo(declMethod.OwningType))
+                        {
+                            foundEquivalentMatch = true;
+                        }
+                    }
+
+                    if (!foundExactMatch || foundEquivalentMatch)
+                    {
+                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE;
+                        return null;
+                    }
+                }
+            }
+
             return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
         }
 
@@ -255,6 +297,8 @@ namespace ILCompiler
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
+
+        public bool DeterminismCheckFailed { get; set; }
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
@@ -407,6 +451,11 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
+            bool automaticTypeValidation = _nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.Automatic || _nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging;
+            if (_nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 
@@ -424,7 +473,10 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags,
                 _nodeFactory.OptimizationFlags,
-                _nodeFactory.ImageBase);
+                _nodeFactory.ImageBase,
+                automaticTypeValidation ? inputModule : null,
+                genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
+                genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
@@ -475,10 +527,16 @@ namespace ILCompiler
                 return true;
             }
 
-            if (!(type is MetadataType defType))
+            if (type is not MetadataType defType)
             {
                 // Non metadata backed types have layout defined in all version bubbles
                 return true;
+            }
+
+            if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(defType))
+            {
+                // Vector<T> always needs a layout check
+                return false;
             }
 
             if (!NodeFactory.CompilationModuleGroup.VersionsWithModule(defType.Module))
@@ -800,9 +858,9 @@ namespace ILCompiler
                     Logger.Writer.WriteLine("Compiling " + methodName);
                 }
 
-                if (_printReproInstructions != null)
+                if (_nodeFactory.OptimizationFlags.PrintReproArgs)
                 {
-                    Logger.Writer.WriteLine($"Single method repro args:{_printReproInstructions(method)}");
+                    Logger.Writer.WriteLine($"Single method repro args:{GetReproInstructions(method)}");
                 }
 
                 try
@@ -878,6 +936,11 @@ namespace ILCompiler
         public override void Dispose()
         {
             Array.Clear(_corInfoImpls);
+        }
+
+        public string GetReproInstructions(MethodDesc method)
+        {
+            return _printReproInstructions(method);
         }
     }
 }

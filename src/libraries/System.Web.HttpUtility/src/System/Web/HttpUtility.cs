@@ -143,7 +143,12 @@ namespace System.Web
 
         [return: NotNullIfNotNull(nameof(value))]
         public static string? HtmlEncode(object? value) =>
-            value == null ? null : HtmlEncode(Convert.ToString(value, CultureInfo.CurrentCulture) ?? string.Empty);
+            value switch
+            {
+                null => null,
+                IHtmlString ihs => ihs.ToHtmlString() ?? string.Empty,
+                _ => HtmlEncode(Convert.ToString(value, CultureInfo.CurrentCulture) ?? string.Empty),
+            };
 
         public static void HtmlEncode(string? s, TextWriter output) => HttpEncoder.HtmlEncode(s, output);
 

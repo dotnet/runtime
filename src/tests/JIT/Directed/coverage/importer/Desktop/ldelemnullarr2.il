@@ -10,7 +10,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly legacy library ldelemnullarr2 { }
+.assembly legacy library ASSEMBLY_NAME { }
 .class public auto ansi beforefieldinit ldelemnullarr2
        extends [mscorlib]System.Object
 {

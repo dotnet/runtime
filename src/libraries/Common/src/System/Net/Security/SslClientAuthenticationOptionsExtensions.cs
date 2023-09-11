@@ -14,9 +14,11 @@ namespace System.Net.Security
     {
         public static SslClientAuthenticationOptions ShallowClone(this SslClientAuthenticationOptions options)
         {
+            // Use non-default values to verify the clone works fine.
             var clone = new SslClientAuthenticationOptions()
             {
                 AllowRenegotiation = options.AllowRenegotiation,
+                AllowTlsResume = options.AllowTlsResume,
                 ApplicationProtocols = options.ApplicationProtocols != null ? new List<SslApplicationProtocol>(options.ApplicationProtocols) : null,
                 CertificateRevocationCheckMode = options.CertificateRevocationCheckMode,
                 CertificateChainPolicy = options.CertificateChainPolicy,
@@ -32,7 +34,10 @@ namespace System.Net.Security
 
 #if DEBUG
             // Try to detect if a property gets added that we're not copying correctly.
-            foreach (PropertyInfo pi in typeof(SslClientAuthenticationOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            // The property count is guard for new properties that also needs to be added above.
+            PropertyInfo[] properties = typeof(SslClientAuthenticationOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
+            Debug.Assert(properties.Length == 13);
+            foreach (PropertyInfo pi in properties)
             {
                 object? origValue = pi.GetValue(options);
                 object? cloneValue = pi.GetValue(clone);

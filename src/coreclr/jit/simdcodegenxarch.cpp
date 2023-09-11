@@ -47,15 +47,15 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     GenTree* addr = treeNode->Addr();
     genConsumeAddress(addr);
 
+    GenTree*  data    = treeNode->Data();
+    regNumber dataReg = genConsumeReg(data);
+
     if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
     {
         genEmitStoreLclTypeSimd12(treeNode, addr->AsLclFld()->GetLclNum(), addr->AsLclFld()->GetLclOffs());
         genUpdateLife(treeNode);
         return;
     }
-
-    GenTree*  data    = treeNode->Data();
-    regNumber dataReg = genConsumeReg(data);
 
     emitter* emit = GetEmitter();
 

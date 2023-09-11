@@ -901,7 +901,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 else
                 {
-                    var ioe = Assert.IsType<IOException>(ex);
+                    var ioe = Assert.IsType<HttpIOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
                     var qex = Assert.IsType<QuicException>(hre.InnerException);
                     Assert.Equal(QuicError.OperationAborted, qex.QuicError);
@@ -1029,6 +1029,67 @@ namespace System.Net.Http.Functional.Tests
             SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
             Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
             await connection.DisposeAsync();
+        }
+
+        [Fact]
+        public async Task ConnectionAttemptCanceled_AuthorityNotBlocked()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                Http3LoopbackConnection connection;
+                while (true)
+                {
+                    try
+                    {
+                        connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                        break;
+                    }
+                    catch (Exception ex) // Ignore exception and continue until a viable connection is established.
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
+                }
+                await connection.HandleRequestAsync();
+                await connection.DisposeAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using CancellationTokenSource cts = new CancellationTokenSource();
+                using HttpClient client = CreateHttpClient(new SocketsHttpHandler()
+                {
+                    SslOptions = new SslClientAuthenticationOptions()
+                    {
+                        RemoteCertificateValidationCallback = (_, _, _, _) =>
+                        {
+                            cts.Cancel();
+                            return true;
+                        }
+                    }
+                });
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.SendAsync(request, cts.Token));
+
+                // Next call must succeed
+                using HttpRequestMessage request2 = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                await client.SendAsync(request2);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
         [Fact]
@@ -1565,6 +1626,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ServerSendsTrailingHeaders_Success()
         {
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            SemaphoreSlim clientFinishedSemaphore = new SemaphoreSlim(0);
 
             Task serverTask = Task.Run(async () =>
             {
@@ -1575,6 +1637,7 @@ namespace System.Net.Http.Functional.Tests
                 await requestStream.ReadRequestDataAsync();
                 await requestStream.SendResponseAsync(isFinal: false);
                 await requestStream.SendResponseHeadersAsync(null, new[] { new HttpHeaderData("MyHeader", "MyValue") });
+                await clientFinishedSemaphore.WaitAsync(TimeSpan.FromSeconds(20));
             });
 
             Task clientTask = Task.Run(async () =>
@@ -1594,6 +1657,7 @@ namespace System.Net.Http.Functional.Tests
                 (string key, IEnumerable<string> value) = Assert.Single(response.TrailingHeaders);
                 Assert.Equal("MyHeader", key);
                 Assert.Equal("MyValue", Assert.Single(value));
+                clientFinishedSemaphore.Release();
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);

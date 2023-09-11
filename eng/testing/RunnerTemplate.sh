@@ -157,6 +157,42 @@ elif [[ "$(uname -s)" == "Linux" ]]; then
 fi
 # ========================= END Core File Setup ==============================
 
+# ========================= BEGIN support for SuperPMI collection ==============================
+if [ ! -z $spmi_enable_collection ]; then
+  echo "SuperPMI collection enabled"
+  # spmi_collect_dir and spmi_core_root need to be set before this script is run, if SuperPMI collection is enabled.
+  if [ -z $spmi_collect_dir ]; then
+    echo "ERROR - spmi_collect_dir not defined"
+    exit 1
+  fi
+  if [ -z $spmi_core_root ]; then
+    echo "ERROR - spmi_core_root not defined"
+    exit 1
+  fi
+  mkdir -p $spmi_collect_dir
+  export spmi_file_extension=so
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    export spmi_file_extension=dylib
+  fi
+  export SuperPMIShimLogPath=$spmi_collect_dir
+  export SuperPMIShimPath=$spmi_core_root/libclrjit.$spmi_file_extension
+  export DOTNET_EnableExtraSuperPmiQueries=1
+  export DOTNET_JitPath=$spmi_core_root/libsuperpmi-shim-collector.$spmi_file_extension
+  if [ ! -e $SuperPMIShimPath ]; then
+    echo "ERROR - $SuperPMIShimPath not found"
+    exit 1
+  fi
+  if [ ! -e $DOTNET_JitPath ]; then
+    echo "ERROR - $DOTNET_JitPath not found"
+    exit 1
+  fi
+  echo "SuperPMIShimLogPath=$SuperPMIShimLogPath"
+  echo "SuperPMIShimPath=$SuperPMIShimPath"
+  echo "DOTNET_EnableExtraSuperPmiQueries=$DOTNET_EnableExtraSuperPmiQueries"
+  echo "DOTNET_JitPath=$DOTNET_JitPath"
+fi
+# ========================= END support for SuperPMI collection ==============================
+
 # ========================= BEGIN Test Execution =============================
 echo ----- start $(date) ===============  To repro directly: =====================================================
 echo pushd $EXECUTION_DIR
@@ -166,6 +202,9 @@ echo ===========================================================================
 pushd $EXECUTION_DIR
 [[RunCommands]]
 test_exitcode=$?
+if [[ -s testResults.xml ]]; then
+  has_test_results=1;
+fi;
 popd
 echo ----- end $(date) ----- exit code $test_exitcode ----------------------------------------------------------
 
@@ -230,7 +269,7 @@ popd >/dev/null
 # ======================== END Core File Inspection ==========================
 # The helix work item should not exit with non-zero if tests ran and produced results
 # The special console runner for runtime returns 1 when tests fail
-if [[ "$test_exitcode" == "1" ]]; then
+if [[ "$test_exitcode" == "1" && "$has_test_results" == "1" ]]; then
   if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
     exit 0
   fi

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 interface IFoo 
 {
@@ -64,7 +65,8 @@ public class InvalidPromotion
         return false;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return G<ObjectSequence1>(1) ? 100 : -1;
     }

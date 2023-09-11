@@ -1,6 +1,8 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{21CC9F35-ACAA-4452-BE92-BBAE2E927B20}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{F148597E-9706-49BD-ACBC-E18F634B5128}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{D3B40403-2973-45CE-A0A4-97C38CBE86FE}"
@@ -29,6 +31,10 @@ Global
 		{21CC9F35-ACAA-4452-BE92-BBAE2E927B20}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21CC9F35-ACAA-4452-BE92-BBAE2E927B20}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21CC9F35-ACAA-4452-BE92-BBAE2E927B20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F148597E-9706-49BD-ACBC-E18F634B5128}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F148597E-9706-49BD-ACBC-E18F634B5128}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F148597E-9706-49BD-ACBC-E18F634B5128}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F148597E-9706-49BD-ACBC-E18F634B5128}.Release|Any CPU.Build.0 = Release|Any CPU
 		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -56,6 +62,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{21CC9F35-ACAA-4452-BE92-BBAE2E927B20} = {E3C3C868-FBDB-4F07-A72E-F734016C0B3B}
 		{3A6C62D5-EFCA-4119-BC60-C917533848A8} = {E3C3C868-FBDB-4F07-A72E-F734016C0B3B}
+		{F148597E-9706-49BD-ACBC-E18F634B5128} = {6F1E3122-547E-4134-BB45-6E33B880DC34}
 		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821} = {6F1E3122-547E-4134-BB45-6E33B880DC34}
 		{D3B40403-2973-45CE-A0A4-97C38CBE86FE} = {6F1E3122-547E-4134-BB45-6E33B880DC34}
 		{E40DBC0E-386A-4B32-8DCE-9FE13EAD47BE} = {AE1B6C0D-2991-4048-9B81-5683599B0CA4}

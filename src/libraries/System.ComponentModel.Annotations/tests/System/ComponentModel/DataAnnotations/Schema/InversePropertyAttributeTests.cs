@@ -17,9 +17,15 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
 
         [Theory]
         [InlineData(null)]
+        public static void Ctor_String_NullProperty_ThrowsArgumentException(string property)
+        {
+            AssertExtensions.Throws<ArgumentNullException>("property", null, () => new InversePropertyAttribute(property));
+        }
+
+        [Theory]
         [InlineData("")]
         [InlineData(" \t\r\n")]
-        public static void Ctor_String_NullOrWhitespaceProperty_ThrowsArgumentException(string property)
+        public static void Ctor_String_WhitespaceProperty_ThrowsArgumentException(string property)
         {
             AssertExtensions.Throws<ArgumentException>("property", null, () => new InversePropertyAttribute(property));
         }

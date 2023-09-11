@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
             }
 
             LiteHash hash = CreateHash(hashAlgorithmId);
-            return ProcessStreamAsync(hash, source, cancellationToken);
+            return ProcessStreamAsync(hash, hash.HashSizeInBytes, source, cancellationToken);
         }
 
         internal static int HmacStream(
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography
             }
 
             LiteHmac hash = CreateHmac(hashAlgorithmId, key);
-            return ProcessStreamAsync(hash, source, cancellationToken);
+            return ProcessStreamAsync(hash, hash.HashSizeInBytes, source, cancellationToken);
         }
 
         /// This takes ownership of the hash parameter and disposes of it when done.
@@ -166,13 +166,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        /// This takes ownership of the hash parameter and disposes of it when done.
+        // This takes ownership of the hash parameter and disposes of it when done.
         private static async ValueTask<byte[]> ProcessStreamAsync<T>(
             T hash,
+            int outputLength,
             Stream source,
             CancellationToken cancellationToken) where T : ILiteHash
         {
-            byte[] result = new byte[hash.HashSizeInBytes];
+            byte[] result = new byte[outputLength];
             int written = await ProcessStreamAsync(hash, source, result, cancellationToken).ConfigureAwait(false);
 
             Debug.Assert(written == result.Length);

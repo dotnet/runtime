@@ -42,9 +42,6 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (MightHaveInterfaceDispatchMap(factory))
-                dependencyList.Add(factory.InterfaceDispatchMap(_type), "Canonical interface dispatch map");
-
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
             if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
@@ -56,17 +53,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
 
                 AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencyList);
-            }
-
-            // Keep track of the default constructor map dependency for this type if it has a default constructor
-            // We only do this for reflection blocked types because dataflow analysis is responsible for
-            // generating default constructors for Activator.CreateInstance in other cases.
-            MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
-            if (defaultCtor != null && factory.MetadataManager.IsReflectionBlocked(defaultCtor))
-            {
-                dependencyList.Add(new DependencyListEntry(
-                    factory.CanonicalEntrypoint(defaultCtor),
-                    "DefaultConstructorNode"));
             }
 
             return dependencyList;

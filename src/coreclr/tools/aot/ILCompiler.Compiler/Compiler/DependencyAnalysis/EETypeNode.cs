@@ -372,16 +372,8 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType defType = _type.GetClosestDefType();
 
-            // Interfaces don't have vtables and we don't need to track their slot use.
-            // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
-            // those have slots and we dispatch on them.
-            bool needsDependenciesForVirtualMethodImpls = !defType.IsInterface
-                || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
-
             // If we're producing a full vtable, none of the dependencies are conditional.
-            needsDependenciesForVirtualMethodImpls &= !factory.VTable(defType).HasFixedSlots;
-
-            if (needsDependenciesForVirtualMethodImpls)
+            if (!factory.VTable(defType).HasFixedSlots)
             {
                 bool isNonInterfaceAbstractType = !defType.IsInterface && ((MetadataType)defType).IsAbstract;
 
@@ -436,6 +428,12 @@ namespace ILCompiler.DependencyAnalysis
                     ((System.Collections.IStructuralEquatable)defType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
                     EqualityComparer<DefType>.Default));
 
+                // Interfaces don't have vtables and we don't need to track their instance method slot use.
+                // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
+                // those have slots and we dispatch on them.
+                bool needsDependenciesForInstanceInterfaceMethodImpls = !defType.IsInterface
+                    || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
+
                 // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
                 // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
                 // possible for any IFoo object to actually be an instance of T.
@@ -455,6 +453,9 @@ namespace ILCompiler.DependencyAnalysis
                             continue;
 
                         bool isStaticInterfaceMethod = interfaceMethod.Signature.IsStatic;
+
+                        if (!isStaticInterfaceMethod && !needsDependenciesForInstanceInterfaceMethodImpls)
+                            continue;
 
                         MethodDesc implMethod = isStaticInterfaceMethod ?
                             defType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :
@@ -622,16 +623,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (!ConstructedEETypeNode.CreationAllowed(_type))
-            {
-                // If necessary MethodTable is the highest load level for this type, ask the metadata manager
-                // if we have any dependencies due to presence of the EEType.
-                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
+            // Ask the metadata manager
+            // if we have any dependencies due to presence of the EEType.
+            bool isFullType = factory.MaximallyConstructableType(_type) == this;
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type, isFullType);
 
-                // If necessary MethodTable is the highest load level, consider this a module use
-                if(_type is MetadataType mdType)
-                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
-            }
+            if (_type is MetadataType mdType)
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
 
             if (_type.IsFunctionPointer)
                 FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
@@ -689,6 +687,7 @@ namespace ILCompiler.DependencyAnalysis
 
             OutputTypeManagerIndirection(factory, ref objData);
             OutputWritableData(factory, ref objData);
+            OutputDispatchMap(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
@@ -740,6 +739,11 @@ namespace ILCompiler.DependencyAnalysis
                     flags |= (uint)EETypeFlags.HasSealedVTableEntriesFlag;
             }
 
+            if (MightHaveInterfaceDispatchMap(factory))
+            {
+                flags |= (uint)EETypeFlags.HasDispatchMap;
+            }
+
             if (HasOptionalFields)
             {
                 flags |= (uint)EETypeFlags.OptionalFieldsFlag;
@@ -788,7 +792,13 @@ namespace ILCompiler.DependencyAnalysis
                 int pointerSize = _type.Context.Target.PointerSize;
                 int objectSize;
 
-                if (_type.IsDefType)
+                if (_type.IsInterface)
+                {
+                    // Interfaces don't live on the GC heap. Don't bother computing a number.
+                    // Zero compresses better than any useless number we would come up with.
+                    return 0;
+                }
+                else if (_type.IsDefType)
                 {
                     LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
 
@@ -1200,17 +1210,23 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private void OutputDispatchMap(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (MightHaveInterfaceDispatchMap(factory))
+            {
+                ISymbolNode dispatchMap = factory.InterfaceDispatchMap(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(dispatchMap, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(dispatchMap);
+            }
+        }
+
         /// <summary>
         /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            if (!relocsOnly && MightHaveInterfaceDispatchMap(factory))
-            {
-                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(canonType).IndexFromBeginningOfArray));
-            }
-
             ComputeRareFlags(factory);
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
@@ -1320,10 +1336,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory context)
         {
-            if (!context.IsCppCodegenTemporaryWorkaround)
-            {
-                Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> MethodTable");
-            }
+            Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> MethodTable");
         }
 
         protected static void AddDependenciesForUniversalGVMSupport(NodeFactory factory, TypeDesc type, ref DependencyList dependencies)

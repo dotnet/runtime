@@ -1226,7 +1226,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					dest_var = get_vreg_to_inst (cfg, ins->dreg);
 
 					if (!src_var)
-						src_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->dreg);
+						src_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->sreg1);
 
 					if (!dest_var)
 						dest_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->dreg);
@@ -1545,16 +1545,24 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 											ins->inst_imm, ins->flags);
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
-				case OP_BOUNDS_CHECK:
+				case OP_BOUNDS_CHECK: {
+					gboolean need_sext = ins->backend.need_sext;
 					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1, FALSE);
 					if (COMPILE_LLVM (cfg)) {
-						int index2_reg = alloc_preg (cfg);
-						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
+						int index2_reg;
+						if (need_sext) {
+							index2_reg = alloc_preg (cfg);
+							MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
+						} else {
+							index2_reg = ins->sreg2;
+						}
 						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, GINT32_TO_UINT32(ins->inst_imm), index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
 					} else {
+						g_assert (!need_sext);
 						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
 					}
 					break;
+				}
 				case OP_NEWARR: {
 					ERROR_DECL (vt_error);
 					MonoClass *array_class = mono_class_create_array (ins->inst_newa_class, 1);

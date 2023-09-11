@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly legacy library ldfldunboxedvt { }
+.assembly legacy library ASSEMBLY_NAME { }
 .class public sequential ansi sealed beforefieldinit VT
        extends [mscorlib]System.ValueType
 {

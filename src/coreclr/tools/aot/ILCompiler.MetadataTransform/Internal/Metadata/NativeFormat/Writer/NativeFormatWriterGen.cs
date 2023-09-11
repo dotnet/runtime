@@ -53,19 +53,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             int hash = -1450734452;
             hash = ((hash << 13) - (hash >> 19)) ^ (ElementType == null ? 0 : ElementType.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ Rank.GetHashCode();
-            if (Sizes != null)
+            for (int i = 0; i < Sizes.Length; i++)
             {
-                for (int i = 0; i < Sizes.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Sizes[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Sizes[i].GetHashCode();
             }
-            if (LowerBounds != null)
+            for (int i = 0; i < LowerBounds.Length; i++)
             {
-                for (int i = 0; i < LowerBounds.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ LowerBounds[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ LowerBounds[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -209,12 +203,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 1817079014;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -423,12 +414,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 2080036690;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -555,12 +543,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -210173789;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -687,12 +672,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 1195490519;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -951,12 +933,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -1341795012;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1083,12 +1062,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -889690268;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1215,12 +1191,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -1304463479;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1406,12 +1379,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 234859551;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1538,12 +1508,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -2043917844;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1805,12 +1772,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -89281077;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1937,12 +1901,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -1294553100;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2069,12 +2030,9 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 47301549;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2224,19 +2182,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             int hash = 478371161;
             hash = ((hash << 13) - (hash >> 19)) ^ (Constructor == null ? 0 : Constructor.GetHashCode());
-            if (FixedArguments != null)
-            {
             for (int i = 0; i < FixedArguments.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (FixedArguments[i] == null ? 0 : FixedArguments[i].GetHashCode());
-                }
-            }
-            if (NamedArguments != null)
             {
+                hash = ((hash << 13) - (hash >> 19)) ^ (FixedArguments[i] == null ? 0 : FixedArguments[i].GetHashCode());
+            }
             for (int i = 0; i < NamedArguments.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (NamedArguments[i] == null ? 0 : NamedArguments[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (NamedArguments[i] == null ? 0 : NamedArguments[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2351,19 +2303,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            if (MethodSemantics != null)
-            {
             for (int i = 0; i < MethodSemantics.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
-                }
-            }
-            if (CustomAttributes != null)
             {
+                hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
+            }
             for (int i = 0; i < CustomAttributes.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2453,12 +2399,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (DefaultValue == null ? 0 : DefaultValue.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ Offset.GetHashCode();
-            if (CustomAttributes != null)
-            {
             for (int i = 0; i < CustomAttributes.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2710,12 +2653,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ Kind.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            if (Constraints != null)
-            {
             for (int i = 0; i < Constraints.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (Constraints[i] == null ? 0 : Constraints[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (Constraints[i] == null ? 0 : Constraints[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2890,19 +2830,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ ImplFlags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
-            if (Parameters != null)
-            {
             for (int i = 0; i < Parameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-                }
-            }
-            if (GenericParameters != null)
             {
+                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
+            }
             for (int i = 0; i < GenericParameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (GenericParameters[i] == null ? 0 : GenericParameters[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (GenericParameters[i] == null ? 0 : GenericParameters[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -3132,19 +3066,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ CallingConvention.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ GenericParameterCount.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (ReturnType == null ? 0 : ReturnType.GetHashCode());
-            if (Parameters != null)
-            {
             for (int i = 0; i < Parameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-                }
-            }
-            if (VarArgParameters != null)
             {
+                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
+            }
             for (int i = 0; i < VarArgParameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (VarArgParameters[i] == null ? 0 : VarArgParameters[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (VarArgParameters[i] == null ? 0 : VarArgParameters[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -3840,20 +3768,14 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
-            if (MethodSemantics != null)
-            {
             for (int i = 0; i < MethodSemantics.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
             }
             hash = ((hash << 13) - (hash >> 19)) ^ (DefaultValue == null ? 0 : DefaultValue.GetHashCode());
-            if (CustomAttributes != null)
-            {
             for (int i = 0; i < CustomAttributes.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -3966,12 +3888,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             int hash = -1535652143;
             hash = ((hash << 13) - (hash >> 19)) ^ CallingConvention.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            if (Parameters != null)
-            {
             for (int i = 0; i < Parameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -4281,21 +4200,15 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ MinorVersion.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ BuildNumber.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ RevisionNumber.GetHashCode();
-            if (PublicKey != null)
+            for (int i = 0; i < PublicKey.Length; i++)
             {
-                for (int i = 0; i < PublicKey.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ PublicKey[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ PublicKey[i].GetHashCode();
             }
             hash = ((hash << 13) - (hash >> 19)) ^ (Culture == null ? 0 : Culture.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (ModuleName == null ? 0 : ModuleName.GetHashCode());
-            if (Mvid != null)
+            for (int i = 0; i < Mvid.Length; i++)
             {
-                for (int i = 0; i < Mvid.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Mvid[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Mvid[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -4404,12 +4317,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ MinorVersion.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ BuildNumber.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ RevisionNumber.GetHashCode();
-            if (PublicKeyOrToken != null)
+            for (int i = 0; i < PublicKeyOrToken.Length; i++)
             {
-                for (int i = 0; i < PublicKeyOrToken.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ PublicKeyOrToken[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ PublicKeyOrToken[i].GetHashCode();
             }
             hash = ((hash << 13) - (hash >> 19)) ^ (Culture == null ? 0 : Culture.GetHashCode());
             LeaveGetHashCode();

@@ -207,7 +207,7 @@ namespace System.Xml.Serialization
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel, XmlMappingAccess access)
         {
             ElementAccessor element = new ElementAccessor();
-            element.Name = elementName == null || elementName.Length == 0 ? elementName : XmlConvert.EncodeLocalName(elementName);
+            element.Name = string.IsNullOrEmpty(elementName) ? elementName : XmlConvert.EncodeLocalName(elementName);
             element.Namespace = ns;
 
             MembersMapping membersMapping = ImportMembersMapping(members, ns, hasWrapperElement, rpc, openModel, new RecursionLimiter());
@@ -696,7 +696,7 @@ namespace System.Xml.Serialization
         private TypeMapping? GetTypeMapping(string? typeName, string? ns, TypeDesc typeDesc, NameTable typeLib, Type? type)
         {
             TypeMapping? mapping;
-            if (typeName == null || typeName.Length == 0)
+            if (string.IsNullOrEmpty(typeName))
                 mapping = type == null ? null : (TypeMapping?)_anonymous[type];
             else
                 mapping = (TypeMapping?)typeLib[typeName, ns];

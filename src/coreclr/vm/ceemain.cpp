@@ -170,10 +170,6 @@
 #include "stringarraylist.h"
 #include "stubhelpers.h"
 
-#ifdef FEATURE_STACK_SAMPLING
-#include "stacksampler.h"
-#endif
-
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
@@ -932,10 +928,6 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
-#ifdef FEATURE_STACK_SAMPLING
-        StackSampler::Init();
-#endif
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
@@ -1242,7 +1234,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
-        PerfMap::Destroy();
+        PerfMap::Disable();
 #endif
 
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.

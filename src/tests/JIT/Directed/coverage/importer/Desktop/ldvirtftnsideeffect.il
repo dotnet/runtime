@@ -1,6 +1,6 @@
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
-.assembly ldvirtftnsideeffect { }
+.assembly ASSEMBLY_NAME { }
 .method public static class MyTest f(class MyTest)
 {
 ldarg.0

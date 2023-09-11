@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -29,7 +28,7 @@ namespace System.Reflection
         private readonly MethodAttributes m_methodAttributes;
         private readonly BindingFlags m_bindingFlags;
         private Signature? m_signature;
-        private ConstructorInvoker? m_invoker;
+        private MethodBaseInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -37,20 +36,17 @@ namespace System.Reflection
             get
             {
                 InvocationFlags flags = Invoker._invocationFlags;
-                if ((flags & InvocationFlags.Initialized) == 0)
-                {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
-                }
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
 
-        private ConstructorInvoker Invoker
+        private MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new ConstructorInvoker(this);
+                m_invoker ??= new MethodBaseInvoker(this);
                 return m_invoker;
             }
         }

@@ -41,6 +41,7 @@ If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it w
 
 Visual Studio's capabilities as a full IDE provide a lot of help making the runtime debugging more amiable.
 
+0. Run `.\build.cmd clr.nativeprereqs -a <architecture> -c <configuration>`. This will build some of the tools requiremented for the native build. This step only needs to be run once as long you don't clean the `artifacts` directory.
 1. Open the CoreCLR solution _(coreclr.sln)_ in Visual Studio.
    * _Method 1_: Use the build scripts to open the solution:
       1. Run `.\build.cmd -vs coreclr.sln -a <architecture> -c <configuration>`. This will create and launch the CoreCLR solution in VS for the specified architecture and configuration. By default, this will be `x64 Debug`.

@@ -18,7 +18,7 @@
 #include "sgen-memory-governor.h"
 #include "sgen-workers.h"
 #include "sgen-client.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
 
 #include <errno.h>

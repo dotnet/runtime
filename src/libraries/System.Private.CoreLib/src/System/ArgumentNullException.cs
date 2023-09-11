@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Exception class for null arguments to a method.
-**
-**
-=============================================================================*/
-
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -17,10 +8,11 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    // The ArgumentException is thrown when an argument
-    // is null when it shouldn't be.
+    /// <summary>
+    /// The exception that is thrown when a <see langword="null"/> reference (<see langword="Nothing"/> in Visual Basic) is passed to a method that does not accept it as a valid argument.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentNullException : ArgumentException
     {
         // Creates a new ArgumentNullException with its message

@@ -431,7 +431,7 @@ namespace System.Xml.Xsl.XsltOld
         // the value is ignored iff forwards-compatible mode is on.
         private string[]? ResolvePrefixes(string tokens)
         {
-            if (tokens == null || tokens.Length == 0)
+            if (string.IsNullOrEmpty(tokens))
             {
                 return null;
             }

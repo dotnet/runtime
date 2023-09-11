@@ -4,6 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Web\IHtmlString.cs" />
     <Compile Include="System\Web\HttpUtility.cs" />
     <Compile Include="System\Web\Util\HttpEncoder.cs" />
     <Compile Include="System\Web\Util\HttpEncoderUtility.cs" />

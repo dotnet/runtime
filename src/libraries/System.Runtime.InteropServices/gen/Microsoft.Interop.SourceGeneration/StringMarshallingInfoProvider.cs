@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-
     /// <summary>
     /// This class supports generating marshalling info for the <see cref="string"/> type.
     /// This includes support for the <c>System.Runtime.InteropServices.StringMarshalling</c> enum.
@@ -16,11 +13,11 @@ namespace Microsoft.Interop
     public sealed class StringMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         private readonly Compilation _compilation;
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
         private readonly AttributeData _stringMarshallingCustomAttribute;
         private readonly DefaultMarshallingInfo _defaultMarshallingInfo;
 
-        public StringMarshallingInfoProvider(Compilation compilation, IGeneratorDiagnostics diagnostics, AttributeData stringMarshallingCustomAttribute, DefaultMarshallingInfo defaultMarshallingInfo)
+        public StringMarshallingInfoProvider(Compilation compilation, GeneratorDiagnosticsBag diagnostics, AttributeData stringMarshallingCustomAttribute, DefaultMarshallingInfo defaultMarshallingInfo)
         {
             _compilation = compilation;
             _diagnostics = diagnostics;

@@ -41,6 +41,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PrivateParameterizedCtor_WithAttribute))]
         [JsonSerializable(typeof(InternalParameterizedCtor_WithAttribute))]
         [JsonSerializable(typeof(ProtectedParameterizedCtor_WithAttribute))]
+        [JsonSerializable(typeof(PrivateParameterlessCtor_WithAttribute))]
+        [JsonSerializable(typeof(InternalParameterlessCtor_WithAttribute))]
+        [JsonSerializable(typeof(ProtectedParameterlessCtor_WithAttribute))]
         [JsonSerializable(typeof(SinglePublicParameterizedCtor))]
         [JsonSerializable(typeof(SingleParameterlessCtor_MultiplePublicParameterizedCtor))]
         [JsonSerializable(typeof(SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct))]
@@ -58,6 +61,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Parameterized_WrapperForICollection))]
         [JsonSerializable(typeof(Point_2D_Struct))]
         [JsonSerializable(typeof(Point_2D_Struct_WithAttribute))]
+        [JsonSerializable(typeof(Point_2D_Struct_WithAttribute?))]
         [JsonSerializable(typeof(ObjWCtorMixedParams))]
         [JsonSerializable(typeof(Person_Class))]
         [JsonSerializable(typeof(Point_2D))]
@@ -140,13 +144,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
         [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
-#if FIXED  // https://github.com/dotnet/roslyn/issues/66900
+        [JsonSerializable(typeof(StructWithPropertyInit))]
+        [JsonSerializable(typeof(StructWithFieldInit))]
+        [JsonSerializable(typeof(StructWithExplicitParameterlessCtor))]
         [JsonSerializable(typeof(ClassWithManyConstructorParameters))]
-#endif
         [JsonSerializable(typeof(ClassWithInvalidArray))]
         [JsonSerializable(typeof(ClassWithInvalidDictionary))]
         [JsonSerializable(typeof(TypeWithEnumParameters))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyDefaultParam))]
+        [JsonSerializable(typeof(ClassWithCustomConverterOnCtorParameter))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -183,6 +189,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PrivateParameterizedCtor_WithAttribute))]
         [JsonSerializable(typeof(InternalParameterizedCtor_WithAttribute))]
         [JsonSerializable(typeof(ProtectedParameterizedCtor_WithAttribute))]
+        [JsonSerializable(typeof(PrivateParameterlessCtor_WithAttribute))]
+        [JsonSerializable(typeof(InternalParameterlessCtor_WithAttribute))]
+        [JsonSerializable(typeof(ProtectedParameterlessCtor_WithAttribute))]
         [JsonSerializable(typeof(SinglePublicParameterizedCtor))]
         [JsonSerializable(typeof(SingleParameterlessCtor_MultiplePublicParameterizedCtor))]
         [JsonSerializable(typeof(SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct))]
@@ -200,6 +209,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Parameterized_WrapperForICollection))]
         [JsonSerializable(typeof(Point_2D_Struct))]
         [JsonSerializable(typeof(Point_2D_Struct_WithAttribute))]
+        [JsonSerializable(typeof(Point_2D_Struct_WithAttribute?))]
         [JsonSerializable(typeof(ObjWCtorMixedParams))]
         [JsonSerializable(typeof(Person_Class))]
         [JsonSerializable(typeof(Point_2D))]
@@ -282,13 +292,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
         [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
-#if FIXED // https://github.com/dotnet/roslyn/issues/66900
+        [JsonSerializable(typeof(StructWithPropertyInit))]
+        [JsonSerializable(typeof(StructWithFieldInit))]
+        [JsonSerializable(typeof(StructWithExplicitParameterlessCtor))]
         [JsonSerializable(typeof(ClassWithManyConstructorParameters))]
-#endif
         [JsonSerializable(typeof(ClassWithInvalidArray))]
         [JsonSerializable(typeof(ClassWithInvalidDictionary))]
         [JsonSerializable(typeof(TypeWithEnumParameters))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyDefaultParam))]
+        [JsonSerializable(typeof(ClassWithCustomConverterOnCtorParameter))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

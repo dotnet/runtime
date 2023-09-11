@@ -40,6 +40,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
+using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -444,6 +446,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOutOfMemoryException_StringTooLong()
+        {
+            throw new OutOfMemoryException(SR.OutOfMemory_StringTooLong);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
             throw new ArgumentException(SR.Argument_IncompatibleArrayType);
@@ -522,6 +530,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowInvalidOperationException_InvalidUtf8()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_InvalidUtf8);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowFormatException_BadFormatSpecifier()
         {
             throw new FormatException(SR.Argument_BadFormatSpecifier);
@@ -531,6 +545,12 @@ namespace System
         internal static void ThrowFormatException_NeedSingleChar()
         {
             throw new FormatException(SR.Format_NeedSingleChar);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowFormatException_BadBoolean(ReadOnlySpan<char> value)
+        {
+            throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
         }
 
         [DoesNotReturn]
@@ -591,6 +611,22 @@ namespace System
         internal static void ThrowFormatIndexOutOfRange()
         {
             throw new FormatException(SR.Format_IndexOutOfRange);
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)
+        {
+            Type? declaringType = memberInfo.DeclaringType;
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_MemberInfo, declaringType, memberInfo));
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(Attribute attribute)
+        {
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_Attribute, attribute));
+        }
+
+        internal static AmbiguousMatchException GetAmbiguousMatchException(CustomAttributeData customAttributeData)
+        {
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_CustomAttributeData, customAttributeData));
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
@@ -662,7 +698,7 @@ namespace System
         {
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             if (!(default(T) == null) && value == null)
-                ThrowHelper.ThrowArgumentNullException(argName);
+                ThrowArgumentNullException(argName);
         }
 
         // Throws if 'T' is disallowed in Vector<T> in the Numerics namespace.
@@ -670,7 +706,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedNumericsVectorBaseType<T>()
-            where T : struct
         {
             if (!Vector<T>.IsSupported)
             {
@@ -683,7 +718,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>()
-            where T : struct
         {
             if (!Vector64<T>.IsSupported)
             {
@@ -696,7 +730,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>()
-            where T : struct
         {
             if (!Vector128<T>.IsSupported)
             {
@@ -709,7 +742,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>()
-            where T : struct
         {
             if (!Vector256<T>.IsSupported)
             {
@@ -722,7 +754,6 @@ namespace System
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector512BaseType<T>()
-            where T : struct
         {
             if (!Vector512<T>.IsSupported)
             {

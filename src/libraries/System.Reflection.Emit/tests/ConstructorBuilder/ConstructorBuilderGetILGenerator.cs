@@ -52,5 +52,40 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => constructor.GetILGenerator());
             Assert.Throws<InvalidOperationException>(() => constructor.GetILGenerator(10));
         }
+
+        [Fact]
+        public void HasDefaultValueShouldBeFalseWhenParameterDoNotDefineDefaultValue()
+        {
+            var builder = Helpers.DynamicModule();
+            var type = builder.DefineType("MyProxy", TypeAttributes.Public);
+
+            var constructorBuilder = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(Version) });
+            var il = constructorBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ret);
+
+            var typeInfo = type.CreateTypeInfo();
+            var constructor = typeInfo.GetConstructor(new[] { typeof(Version) });
+            var parameters = constructor.GetParameters();
+            Assert.False(parameters[0].HasDefaultValue);
+        }
+
+        [Fact]
+        public void HasDefaultValueShouldBeTrueWhenParameterDoDefineDefaultValue()
+        {
+            var builder = Helpers.DynamicModule();
+            var type = builder.DefineType("MyProxy", TypeAttributes.Public);
+
+            var constructorBuilder = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(Version) });
+            ParameterBuilder parameter = constructorBuilder.DefineParameter(1, ParameterAttributes.Optional | ParameterAttributes.HasDefault, "param1");
+            parameter.SetConstant(default(Version));
+            var il = constructorBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ret);
+
+            var typeInfo = type.CreateTypeInfo();
+            var constructor = typeInfo.GetConstructor(new[] { typeof(Version) });
+            var parameters = constructor.GetParameters();
+            Assert.True(parameters[0].HasDefaultValue);
+            Assert.Null(parameters[0].DefaultValue);
+        }
     }
 }

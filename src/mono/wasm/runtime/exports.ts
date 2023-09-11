@@ -2,57 +2,64 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import GitHash from "consts:gitHash";
 import BuildConfiguration from "consts:configuration";
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import type { DotnetHostBuilder, RuntimeAPI } from "./types-api";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
+import type { RuntimeAPI } from "./types";
 
-import { Module, disableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, } from "./globals";
-import { is_nullish } from "./types";
-import { configureEmscriptenStartup, configureWorkerStartup } from "./startup";
+import { Module, linkerDisableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
+import { GlobalObjects, is_nullish } from "./types/internal";
+import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
 import { export_internal } from "./exports-internal";
 import { export_api } from "./export-api";
-import { mono_exit } from "./run";
-import { globalObjectsRoot, unifyModuleConfig } from "./run-outer";
-import { HostBuilder } from "./run-outer";
-import { initializeReplacements, init_polyfills } from "./polyfills";
+import { initializeReplacements } from "./polyfills";
 
 // legacy
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
 import { export_binding_api, export_internal_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { initializeLegacyExports } from "./net6-legacy/globals";
+import { mono_log_warn, mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { instantiate_asset, instantiate_symbols_asset } from "./assets";
+import { jiterpreter_dump_stats } from "./jiterpreter";
+import { forceDisposeProxies } from "./gc-handles";
 
-function initializeExports(): RuntimeAPI {
+function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
-    const globals = globalObjectsRoot;
+    const globals = globalObjects;
     const globalThisAny = globalThis as any;
 
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         initializeLegacyExports(globals);
     }
-    init_polyfills();
 
     // here we merge methods from the local objects into exported objects
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         Object.assign(globals.mono, export_mono_api());
         Object.assign(globals.binding, export_binding_api());
         Object.assign(globals.internal, export_internal_api());
     }
     Object.assign(globals.internal, export_internal());
+    Object.assign(runtimeHelpers, {
+        stringify_as_error_with_stack: mono_wasm_stringify_as_error_with_stack,
+        instantiate_symbols_asset,
+        instantiate_asset,
+        jiterpreter_dump_stats,
+        forceDisposeProxies,
+    });
+
     const API = export_api();
     Object.assign(exportedRuntimeAPI, {
         INTERNAL: globals.internal,
         Module: module,
         runtimeBuildInfo: {
             productVersion: ProductVersion,
-            gitHash: GitHash,
+            gitHash: runtimeHelpers.gitHash,
             buildConfiguration: BuildConfiguration
         },
         ...API,
     });
-    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         Object.assign(exportedRuntimeAPI, {
             MONO: globals.mono,
             BINDING: globals.binding,
@@ -66,12 +73,12 @@ function initializeExports(): RuntimeAPI {
     if (!module.disableDotnet6Compatibility) {
         Object.assign(module, exportedRuntimeAPI);
 
-        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
             // backward compatibility
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-                console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
+                mono_log_warn("Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
                 return mono_bind_static_method(fqn, signature);
             };
         }
@@ -87,7 +94,7 @@ function initializeExports(): RuntimeAPI {
                     if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
-                        console.warn(`MONO_WASM: global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        mono_log_warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
                         value = provider();
                     }
                     return value;
@@ -135,9 +142,6 @@ class RuntimeList {
 }
 
 // export external API
-const dotnet: DotnetHostBuilder = new HostBuilder();
-const exit = mono_exit;
 export {
-    dotnet, exit,
-    globalObjectsRoot as earlyExports, passEmscriptenInternals, initializeExports, initializeReplacements, unifyModuleConfig, configureEmscriptenStartup, configureWorkerStartup
+    passEmscriptenInternals, initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals
 };

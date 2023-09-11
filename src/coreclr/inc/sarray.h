@@ -70,15 +70,7 @@ class SArray
     void Append(ELEMENT elem)
     {
         WRAPPER_NO_CONTRACT;
-        *Append() = elem;
-    }
-
-    ELEMENT AppendEx(ELEMENT elem)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        *Append() = elem;
-        return elem;
+        *Append() = std::move(elem);
     }
 
     void Insert(const Iterator &i);

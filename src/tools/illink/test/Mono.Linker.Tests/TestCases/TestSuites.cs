@@ -238,6 +238,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.TopLevelStatementsTests))]
+		public void TopLevelStatementsTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.TracingTests))]
 		public void TracingTests (TestCase testCase)
 		{

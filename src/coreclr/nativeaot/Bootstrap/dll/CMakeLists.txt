@@ -8,10 +8,10 @@ set(SOURCES
 
 add_library(bootstrapperdll STATIC ${SOURCES})
 
-install_static_library(bootstrapperdll aotsdk nativeaot)
+install_bootstrapper_object(bootstrapperdll aotsdk)
 
 if (CLR_CMAKE_TARGET_WIN32)
   add_library(bootstrapperdll.GuardCF STATIC ${SOURCES})
-  install_static_library(bootstrapperdll.GuardCF aotsdk nativeaot)
-  target_compile_options(bootstrapperdll.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
+  install_bootstrapper_object(bootstrapperdll.GuardCF aotsdk)
+  set_target_properties(bootstrapperdll.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
 endif()

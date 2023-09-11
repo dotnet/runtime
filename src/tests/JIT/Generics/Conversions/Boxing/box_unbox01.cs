@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct ValX0 { }
 public struct ValY0 { }
@@ -51,7 +52,8 @@ public class Test_box_unbox01
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Eval(new Gen<int>().Unbox(new Gen<int>().Box(1)).Equals(1));
         Eval(new Gen<double>().Unbox(new Gen<double>().Box(1.111)).Equals(1.111));

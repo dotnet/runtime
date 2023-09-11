@@ -186,7 +186,7 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 #define MONO_ARCH_REDZONE_SIZE 128
 
@@ -196,7 +196,7 @@ typedef struct {
 
 #endif
 
-#if defined(TARGET_IOS) || defined(TARGET_WATCHOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WATCHOS)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 
@@ -222,11 +222,13 @@ typedef enum {
 	ArgOnStackR4,
 	/*
 	 * Vtype passed in consecutive int registers.
-	 * ainfo->reg is the firs register,
+	 * ainfo->reg is the first register,
 	 * ainfo->nregs is the number of registers,
 	 * ainfo->size is the size of the structure.
 	 */
 	ArgVtypeInIRegs,
+	/* SIMD arg in NEON register */
+	ArgInSIMDReg,
 	ArgVtypeByRef,
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,

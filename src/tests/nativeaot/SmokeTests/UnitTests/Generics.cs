@@ -47,6 +47,7 @@ class Generics
         TestRecursionInGenericVirtualMethods.Run();
         TestRecursionInGenericInterfaceMethods.Run();
         TestRecursionThroughGenericLookups.Run();
+        TestRecursionInFields.Run();
         TestGvmLookupDependency.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
@@ -3362,6 +3363,24 @@ class Generics
             // There is a generic recursion in the above hierarchy. This just tests that we can compile.
             new ArrayHandler<object>().Write(null);
             new RangeHandler<object>().Write(default);
+        }
+    }
+
+    class TestRecursionInFields
+    {
+        class Chunk<T>
+        {
+            public Chunk<T[]> TheChunk;
+            public Chunk()
+            {
+                if (typeof(T).ToString().Length < 100)
+                    TheChunk = new Chunk<T[]>();
+            }
+        }
+
+        public static void Run()
+        {
+            typeof(Chunk<byte>).GetFields();
         }
     }
 

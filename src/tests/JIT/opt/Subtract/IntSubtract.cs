@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
-    static class IntSubtract
+    public static class IntSubtract
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static sbyte Int8_Subtract(sbyte x, sbyte y)
@@ -102,7 +103,8 @@ namespace CodeGenTests
             return x - y;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Int8
             if (Int8_Subtract(SByte.MinValue, 15) != 113)

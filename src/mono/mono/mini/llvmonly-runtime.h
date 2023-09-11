@@ -32,6 +32,8 @@ G_EXTERN_C void mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTram
 G_EXTERN_C void mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer method_info, MonoVTable *vtable);
 
 G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
+G_EXTERN_C void mini_llvmonly_throw_index_out_of_range_exception (void);
+G_EXTERN_C void mini_llvmonly_throw_invalid_cast_exception (void);
 
 G_EXTERN_C void mini_llvmonly_throw_aot_failed_exception (const char *name);
 

@@ -3,12 +3,14 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             {
                 var a = new System.Numerics.Vector<int>(1);

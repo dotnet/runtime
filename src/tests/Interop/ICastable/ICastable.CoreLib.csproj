@@ -7,9 +7,9 @@
   -->
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <CLRTestKind>SharedLibrary</CLRTestKind>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
-    <Nullable>annotations</Nullable>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(RepoRoot)/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/ICastable.cs" />

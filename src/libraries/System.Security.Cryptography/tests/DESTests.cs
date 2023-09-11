@@ -19,6 +19,15 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void DesDerivedFeedbackSize()
+        {
+            using (DES des = new DESMinimal())
+            {
+                Assert.Equal(64, des.FeedbackSize);
+            }
+        }
+
         private class DESLegalSizesBreaker : DESMinimal
         {
             public DESLegalSizesBreaker()

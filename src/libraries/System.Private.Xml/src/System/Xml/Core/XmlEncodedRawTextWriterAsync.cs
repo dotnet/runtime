@@ -181,7 +181,7 @@ namespace System.Xml
 
             Task task;
             _bufChars[_bufPos++] = (char)'<';
-            if (prefix != null && prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 task = RawTextAsync(prefix, ":", localName);
             }
@@ -213,7 +213,7 @@ namespace System.Xml
                 _bufChars[_bufPos++] = (char)'<';
                 _bufChars[_bufPos++] = (char)'/';
 
-                if (prefix != null && prefix.Length != 0)
+                if (!string.IsNullOrEmpty(prefix))
                 {
                     return RawTextAsync(prefix, ":", localName, ">");
                 }
@@ -245,7 +245,7 @@ namespace System.Xml
             _bufChars[_bufPos++] = (char)'<';
             _bufChars[_bufPos++] = (char)'/';
 
-            if (prefix != null && prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 return RawTextAsync(prefix, ":", localName, ">");
             }
@@ -1919,7 +1919,7 @@ namespace System.Xml
         public override async Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             CheckAsyncCall();
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             // Add indentation
             if (!_mixedContent && base._textPos != base._bufPos)

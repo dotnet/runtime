@@ -18,7 +18,6 @@ namespace System.Reflection.Runtime.EventInfos
     //
     // The runtime's implementation of EventInfo's
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeEventInfo : EventInfo
     {
         protected RuntimeEventInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
@@ -120,18 +119,13 @@ namespace System.Reflection.Runtime.EventInfos
 
         protected RuntimeEventInfo WithDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return this;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = MetadataName;
             }
+#endif
             return this;
         }
 
@@ -174,6 +168,8 @@ namespace System.Reflection.Runtime.EventInfos
         private volatile MethodInfo _lazyAdder;
         private volatile MethodInfo _lazyRemover;
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }

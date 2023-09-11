@@ -27,7 +27,7 @@ namespace System.Net.Http.Tests
             Assert.Equal(new EntityTagHeaderValue("\"y\""), rangeCondition.EntityTag);
             Assert.Null(rangeCondition.Date);
 
-            AssertExtensions.Throws<ArgumentException>("tag", () => { new RangeConditionHeaderValue((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("tag", () => { new RangeConditionHeaderValue((string)null); });
         }
 
         [Fact]

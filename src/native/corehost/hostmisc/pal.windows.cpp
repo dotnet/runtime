@@ -7,7 +7,6 @@
 #include "longfile.h"
 
 #include <cassert>
-#include <locale>
 #include <ShlObj.h>
 #include <ctime>
 
@@ -941,4 +940,8 @@ void pal::mutex_t::lock()
 void pal::mutex_t::unlock()
 {
     ::LeaveCriticalSection(&_impl);
+}
+
+void pal::initialize_createdump()
+{
 }

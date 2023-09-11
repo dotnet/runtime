@@ -40,6 +40,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace V8.Crypto
 {
@@ -47,29 +49,17 @@ namespace V8.Crypto
     {
         private const string INPUT = "The quick brown fox jumped over the extremely lazy frogs!";
 
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = 1;
+            return Test(null, false);
+        }
 
-            if (args.Length > 0)
-            {
-                n = Int32.Parse(args[0]);
-            }
-
-            bool verbose = false;
-
-            if (args.Length > 1)
-            {
-                switch (args[1])
-                {
-                    case "verbose":
-                        verbose = true;
-                        break;
-                    default:
-                        Console.WriteLine("Bad arg: '{0}'.\n", args[1]);
-                        return -1;
-                }
-            }
+        // Main method entrypoint runs the manual timer loop
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int Test(int? iters, bool verbose)
+        {
+            int n = iters ?? 1;
 
             Measure(n, verbose);
 

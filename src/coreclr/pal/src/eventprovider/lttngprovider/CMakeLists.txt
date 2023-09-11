@@ -1,7 +1,7 @@
-include(FindPythonInterp)
+include(FindPython)
 set (GENERATE_SCRIPT ${CLR_DIR}/scripts/genLttngProvider.py)
 
-set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
+set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
 
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run
@@ -62,9 +62,14 @@ add_dependencies(coreclrtraceptprovider generated_eventing_headers)
 
 find_library(LTTNG NAMES lttng-ust)
 
+# --noinhibit-exec works around error produced by lld from LLVM 16
+# that is caused by invalid symbols in the lttng we are linking against:
+# ld.lld: error: liblttng-ust.so: invalid local symbol '__stop___tracepoints_ptrs' in global part of symbol table
+# see https://github.com/llvm/llvm-project/commit/3ac94280245415be66cb1b603367c5f4f6d498e7
 target_link_libraries(coreclrtraceptprovider
                       PRIVATE
                       ${LTTNG}
+                      -Wl,--noinhibit-exec
 )
 
 set_target_properties(coreclrtraceptprovider PROPERTIES LINKER_LANGUAGE CXX)

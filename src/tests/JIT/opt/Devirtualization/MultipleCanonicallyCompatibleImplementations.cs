@@ -1,10 +1,12 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 
 public class MultipleCanonicallyCompatibleImplementations
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string atom1Call = Foo<Atom1>.Call();
         string atom2Call = Foo<Atom2>.Call();

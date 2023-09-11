@@ -155,6 +155,7 @@ namespace Internal.Runtime.TypeLoader
                 int baseSize = 0;
 
                 bool isValueType;
+                bool hasDispatchMap;
                 bool hasFinalizer;
                 bool isNullable;
                 bool isArray;
@@ -172,6 +173,7 @@ namespace Internal.Runtime.TypeLoader
                 baseSize = (int)pTemplateEEType->RawBaseSize;
                 isValueType = pTemplateEEType->IsValueType;
                 hasFinalizer = pTemplateEEType->IsFinalizable;
+                hasDispatchMap = pTemplateEEType->HasDispatchMap;
                 isNullable = pTemplateEEType->IsNullable;
                 flags = pTemplateEEType->Flags;
                 isArray = pTemplateEEType->IsArray;
@@ -225,9 +227,6 @@ namespace Internal.Runtime.TypeLoader
                 if (rareFlags != 0)
                     optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
 
-                // Dispatch map is fetched from template type
-                optionalFields.ClearField(EETypeOptionalFieldTag.DispatchMap);
-
                 // Compute size of optional fields encoding
                 cbOptionalFieldsSize = optionalFields.Encode();
 
@@ -251,6 +250,7 @@ namespace Internal.Runtime.TypeLoader
                     int cbEEType = (int)MethodTable.GetSizeofEEType(
                         numVtableSlots,
                         runtimeInterfacesLength,
+                        hasDispatchMap,
                         hasFinalizer,
                         cbOptionalFieldsSize > 0,
                         hasSealedVTable,
@@ -300,6 +300,12 @@ namespace Internal.Runtime.TypeLoader
                     for (int i = 0; i < numVtableSlots; i++)
                         pVtable[i] = pTemplateVtable[i];
 
+                    // Copy dispatch map from the template type
+                    if (hasDispatchMap)
+                    {
+                        pEEType->DispatchMap = pTemplateEEType->DispatchMap;
+                    }
+
                     // Copy Pointer to finalizer method from the template type
                     if (hasFinalizer)
                     {
@@ -318,7 +324,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
                     MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
-                    pEEType->WritableData = writableDataPtr;
+                    pEEType->WritableData = (void*)writableDataPtr;
                 }
 
                 pEEType->DynamicTemplateType = pTemplateEEType;
@@ -363,7 +369,7 @@ namespace Internal.Runtime.TypeLoader
                 if (state.GcDataSize != 0)
                 {
                     // Statics are allocated on GC heap
-                    object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
+                    object obj = RuntimeAugments.RawNewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
                     gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 
                     pEEType->DynamicGcStaticsData = gcStaticData;
@@ -520,17 +526,17 @@ namespace Internal.Runtime.TypeLoader
             int numSeries = 0;
             int i = 0;
 
-            bool first = true;
+            int first = -1;
             int last = 0;
             short numPtrs = 0;
             while (i < bitfield.Count)
             {
                 if (bitfield[i])
                 {
-                    if (first)
+                    if (first == -1)
                     {
-                        baseOffset += i;
-                        first = false;
+                        first = i;
+                        baseOffset += first;
                     }
                     else if (gcdesc != null)
                     {
@@ -559,7 +565,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (numSeries > 0)
                 {
-                    *ptr-- = (short)((bitfield.Count - last + baseOffset - 2) * IntPtr.Size);
+                    *ptr-- = (short)((first + bitfield.Count - last) * IntPtr.Size);
                     *ptr-- = numPtrs;
 
                     *(void**)gcdesc = (void*)-numSeries;

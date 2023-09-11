@@ -23,6 +23,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         public bool SupportsRawDerivation => true;
 
+        public bool SupportsSha3 => false;
+
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {
             if (string.IsNullOrEmpty(friendlyNameOrValue))

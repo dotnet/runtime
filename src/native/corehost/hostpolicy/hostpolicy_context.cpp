@@ -135,6 +135,19 @@ namespace
     }
 }
 
+bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
+{
+    const auto &iter = std::find(init.cfg_keys.cbegin(), init.cfg_keys.cend(), _X("System.Runtime.Loader.UseRidGraph"));
+    if (iter != init.cfg_keys.cend())
+    {
+        size_t idx = iter - init.cfg_keys.cbegin();
+        return pal::strcasecmp(init.cfg_values[idx].data(), _X("true")) == 0;
+    }
+
+    // Reading the RID fallback graph is disabled by default
+    return false;
+}
+
 int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
 {
     application = args.managed_application;
@@ -142,6 +155,11 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     host_path = hostpolicy_init.host_info.host_path;
     breadcrumbs_enabled = enable_breadcrumbs;
 
+    deps_json_t::rid_resolution_options_t rid_resolution_options
+    {
+        should_read_rid_fallback_graph(hostpolicy_init),
+        nullptr, /*rid_fallback_graph*/
+    };
     deps_resolver_t resolver
     {
         args,
@@ -149,7 +167,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         hostpolicy_init.additional_deps_serialized.c_str(),
         shared_store::get_paths(hostpolicy_init.tfm, host_mode, host_path),
         hostpolicy_init.probe_paths,
-        /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
+        rid_resolution_options,
         hostpolicy_init.is_framework_dependent
     };
 
@@ -166,7 +184,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     if (breadcrumbs_enabled)
     {
         pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-        pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+        pal::string_t policy_version = _STRINGIFY(HOST_VERSION);
 
         // Always insert the hostpolicy that the code is running on.
         breadcrumbs.insert(policy_name);
@@ -262,7 +280,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     coreclr_properties.add(common_property::AppContextDepsFiles, app_context_deps_str.c_str());
     coreclr_properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
     coreclr_properties.add(common_property::ProbingDirectories, resolver.get_lookup_probe_directories().c_str());
-    coreclr_properties.add(common_property::RuntimeIdentifier, get_current_runtime_id(true /*use_fallback*/).c_str());
+    coreclr_properties.add(common_property::RuntimeIdentifier, get_runtime_id().c_str());
 
     bool set_app_paths = false;
 

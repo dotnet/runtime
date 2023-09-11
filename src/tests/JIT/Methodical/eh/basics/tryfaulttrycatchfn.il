@@ -11,7 +11,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'tryfaulttrycatchfn' {}
+.assembly ASSEMBLY_NAME {}
 
 .method public static void middle() {
     .maxstack  1

@@ -160,7 +160,7 @@ namespace System.Xml.Xsl.IlGen
 
                 for (int i = 0; i < paramNames.Length; i++)
                 {
-                    if (paramNames[i] != null && paramNames[i]!.Length != 0)
+                    if (!string.IsNullOrEmpty(paramNames[i]))
                         methBldr.DefineParameter(i + (isRaw ? 1 : 2), ParameterAttributes.None, paramNames[i]);
                 }
 

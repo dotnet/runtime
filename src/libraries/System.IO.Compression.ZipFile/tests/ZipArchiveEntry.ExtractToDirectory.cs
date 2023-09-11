@@ -91,5 +91,25 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
+
+        [Fact]
+        public void ExtractToDirectoryZipArchiveOverwrite()
+        {
+            string zipFileName = zfile("normal.zip");
+            string folderName = zfolder("normal");
+
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                using (ZipArchive archive = ZipFile.Open(zipFileName, ZipArchiveMode.Read))
+                {
+                    archive.ExtractToDirectory(tempFolder.Path);
+                    Assert.Throws<IOException>(() => archive.ExtractToDirectory(tempFolder.Path /* default false */));
+                    Assert.Throws<IOException>(() => archive.ExtractToDirectory(tempFolder.Path, overwriteFiles: false));
+                    archive.ExtractToDirectory(tempFolder.Path, overwriteFiles: true);
+
+                    DirsEqual(tempFolder.Path, folderName);
+                }
+            }
+        }
     }
 }

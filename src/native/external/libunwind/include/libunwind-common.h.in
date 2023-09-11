@@ -101,7 +101,7 @@ unw_caching_policy_t;
 
 typedef enum
   {
-    UNW_INIT_SIGNAL_FRAME = 1,          /* We know this is a signal frame */
+    UNW_INIT_SIGNAL_FRAME = 1           /* We know this is a signal frame */
   }
 unw_init_local2_flags_t;
 
@@ -207,6 +207,24 @@ typedef struct unw_accessors
        NULL.  */
     int (*get_proc_name) (unw_addr_space_t, unw_word_t, char *, size_t,
 			  unw_word_t *, void *);
+
+    /* Optional call back to return a mask to be used with pointer
+     * authentication on arm64.
+     *
+     * The on bits in the returned mask indicate which bits in a return address
+     * are part of a pointer authentication code.  These are the bits in the
+     * return address to turn off so that the calling frame can be found
+     * for the unwinding to continue.
+     *
+     * The return value must be host-endian.  e.g. if the target is big-endian
+     * and the host is little endian, the implementation of this function
+     * must byte swap.
+     *
+     * This callback is optional and may be set to NULL.  In this case all
+     * the bits in the return address are used, as if no masking were done.
+     */
+    unw_word_t (*ptrauth_insn_mask) (unw_addr_space_t, void *);
+
   }
 unw_accessors_t;
 
@@ -255,6 +273,7 @@ unw_save_loc_t;
 #define unw_get_save_loc		UNW_OBJ(get_save_loc)
 #define unw_is_signal_frame		UNW_OBJ(is_signal_frame)
 #define unw_get_proc_name		UNW_OBJ(get_proc_name)
+#define unw_get_proc_name_by_ip		UNW_OBJ(get_proc_name_by_ip)
 #define unw_set_caching_policy		UNW_OBJ(set_caching_policy)
 #define unw_set_cache_size		UNW_OBJ(set_cache_size)
 #define unw_regname			UNW_ARCH_OBJ(regname)
@@ -293,7 +312,10 @@ extern int unw_set_fpreg (unw_cursor_t *, int, unw_fpreg_t);
 extern int unw_get_save_loc (unw_cursor_t *, int, unw_save_loc_t *);
 extern int unw_is_signal_frame (unw_cursor_t *);
 extern int unw_get_proc_name (unw_cursor_t *, char *, size_t, unw_word_t *);
+extern int unw_get_proc_name_by_ip (unw_addr_space_t, unw_word_t, char *,
+				    size_t, unw_word_t *, void *);
 extern const char *unw_strerror (int);
 extern int unw_backtrace (void **, int);
+extern int unw_backtrace2 (void **, int, unw_context_t*, int);
 
 extern unw_addr_space_t unw_local_addr_space;

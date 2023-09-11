@@ -174,13 +174,6 @@
       System.Xml.XPath;
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
-    <NetCoreAppLibraryNoReference>
-      System.Private.CoreLib;
-      System.Private.DataContractSerialization;
-      System.Private.Uri;
-      System.Private.Xml;
-      System.Private.Xml.Linq;
-    </NetCoreAppLibraryNoReference>
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
       ComInterfaceGenerator;
@@ -205,6 +198,8 @@
       Microsoft.Extensions.Configuration.Xml;
       Microsoft.Extensions.DependencyInjection;
       Microsoft.Extensions.DependencyInjection.Abstractions;
+      Microsoft.Extensions.Diagnostics;
+      Microsoft.Extensions.Diagnostics.Abstractions;
       Microsoft.Extensions.FileProviders.Abstractions;
       Microsoft.Extensions.FileProviders.Composite;
       Microsoft.Extensions.FileProviders.Physical;
@@ -251,7 +246,6 @@
   <ItemGroup>
     <NetFxReference Include="$(NetFxReference)" />
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
-    <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
     <NetCoreAppLibraryGenerator Include="$(NetCoreAppLibraryGenerator)" />
     <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
     <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />

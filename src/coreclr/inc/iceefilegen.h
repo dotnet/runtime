@@ -115,18 +115,11 @@ class ICeeFileGen {
     virtual HRESULT SetComImageFlags (HCEEFILE ceeFile, DWORD mask);
     virtual HRESULT GetComImageFlags (HCEEFILE ceeFile, DWORD *mask);
 
-    // get IMapToken interface for tracking mapped tokens
-    virtual HRESULT GetIMapTokenIface(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken);
     virtual HRESULT SetDirectoryEntry (HCEEFILE ceeFile, HCEESECTION section, ULONG num, ULONG size, ULONG offset = 0);
 
     // Write out the metadata in "emitter" to the metadata section in "ceeFile"
     // Use EmitMetaDataAt() for more control
     virtual HRESULT EmitMetaDataEx (HCEEFILE ceeFile, IMetaDataEmit *emitter);
-
-    virtual HRESULT GetIMapTokenIfaceEx(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken);
-
-    virtual HRESULT CreateCeeFileFromICeeGen(
-        ICeeGenInternal *pFromICeeGen, HCEEFILE *ceeFile, DWORD createFlags = ICEE_CREATE_FILE_PURE_IL); // call this to instantiate a file handle
 
     virtual HRESULT SetManifestEntry(HCEEFILE ceeFile, ULONG size, ULONG offset);
 
@@ -164,12 +157,6 @@ class ICeeFileGen {
 
     virtual HRESULT GetFileTimeStamp (HCEEFILE ceeFile, DWORD *pTimeStamp);
 
-    // Add a notification handler. If it implements an interface that
-    // the ICeeFileGen understands, S_OK is returned. Otherwise,
-    // E_NOINTERFACE.
-    virtual HRESULT AddNotificationHandler(HCEEFILE ceeFile,
-                                           IUnknown *pHandler);
-
     virtual HRESULT SetFileAlignment(HCEEFILE ceeFile, ULONG fileAlignment);
 
     virtual HRESULT ClearComImageFlags (HCEEFILE ceeFile, DWORD mask);
@@ -181,13 +168,6 @@ class ICeeFileGen {
     virtual HRESULT GetHeaderInfo (HCEEFILE ceeFile, PIMAGE_NT_HEADERS *ppNtHeaders,
                                                      PIMAGE_SECTION_HEADER *ppSections,
                                                      ULONG *pNumSections);
-
-    // Seed file is a base file which is copied over into the output file
-    // Note that there are restrictions on the seed file (the sections
-    // cannot be relocated), and that the copy is not complete as the new
-    // headers overwrite the seed file headers.
-    virtual HRESULT CreateCeeFileEx2(HCEEFILE *ceeFile, ULONG createFlags,
-                                     LPCWSTR seedFileName = NULL);
 
     virtual HRESULT SetVTableEntry64(HCEEFILE ceeFile, ULONG size, void* ptr);
 };

@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ProgramException : Exception {}
 
@@ -155,7 +156,8 @@ public unsafe class Program
         return GetPtr();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         foreach (var method in typeof(Program)
             .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)

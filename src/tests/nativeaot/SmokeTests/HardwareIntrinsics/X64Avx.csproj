@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
+    <!-- Sanitizers increase the binary size, so it ends up outside of our expected range. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+    <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);AVX_INTRINSICS;VECTORT128_INTRINSICS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--instruction-set:avx" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sysctl -a
+        sysctl -a | grep machdep.cpu.leaf7_features | grep AVX >/dev/null
+        if [ $? -ne 0 ]; then
+          echo No support for AVX, test not applicable.
+          exit 0
+        fi
+    fi
+    if [[ "$OSTYPE" == "linux"* ]]; then
+        if ! grep -q '^flags.*avx' /proc/cpuinfo 2>/dev/null; then
+          echo No support for AVX, test not applicable.
+          exit 0
+        fi
+    fi
+]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

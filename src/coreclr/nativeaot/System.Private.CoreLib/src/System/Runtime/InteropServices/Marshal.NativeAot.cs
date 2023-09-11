@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices
                 structureTypeHandle.IsInterface() ||
                 InteropExtensions.AreTypesAssignable(typeof(Delegate).TypeHandle, structureTypeHandle))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.LastResortToString));
+                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             }
 
             if (structureTypeHandle.IsBlittable())
@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr destroyStructureStub = RuntimeInteropData.GetDestroyStructureStub(structureTypeHandle, out bool hasInvalidLayout);
             if (hasInvalidLayout)
-                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.LastResortToString));
+                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroyed
             if (destroyStructureStub != IntPtr.Zero)
             {

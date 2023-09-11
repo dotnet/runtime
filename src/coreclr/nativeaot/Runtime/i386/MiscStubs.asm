@@ -15,7 +15,7 @@ include AsmMacros.inc
 ; The call to the helper will be emitted by JIT in the function prolog when large (larger than 0x3000 bytes) stack frame is required.
 ;
 ; NOTE: this helper will modify a value of esp and must establish the frame pointer.
-PAGE_SIZE equ 1000h
+PROBE_STEP equ 1000h
 
 _RhpStackProbe PROC public
     ; On entry:
@@ -25,10 +25,10 @@ _RhpStackProbe PROC public
     push    ebp
     mov     ebp, esp
 
-    and     esp, -PAGE_SIZE      ; esp points to the **lowest address** on the last probed page
+    and     esp, -PROBE_STEP      ; esp points to the **lowest address** on the last probed page
                                  ; This is done to make the loop end condition simpler.
 ProbeLoop:
-    sub     esp, PAGE_SIZE       ; esp points to the lowest address of the **next page** to probe
+    sub     esp, PROBE_STEP       ; esp points to the lowest address of the **next page** to probe
     test    [esp], eax           ; esp points to the lowest address on the **last probed** page
     cmp     esp, eax
     jg      ProbeLoop            ; if esp > eax, then we need to probe at least one more page.

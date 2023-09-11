@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_JTrueEqFP
 {
     const int Pass = 100;
@@ -22,7 +23,8 @@ public class BringUpTest_JTrueEqFP
         return returnValue;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnValue = Pass;
 

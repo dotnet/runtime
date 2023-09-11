@@ -748,7 +748,7 @@ namespace System.Data
                 DataCommonEventSource.Log.Trace("<ds.DataSet.set_DataSetName|API> {0}, '{1}'", ObjectID, value);
                 if (value != _dataSetName)
                 {
-                    if (value == null || value.Length == 0)
+                    if (string.IsNullOrEmpty(value))
                     {
                         throw ExceptionBuilder.SetDataSetNameToEmpty();
                     }
@@ -3339,7 +3339,7 @@ namespace System.Data
         }
 
         // SDUB: may be better to rewrite this as nonrecursive?
-        internal DataTable? FindTable(DataTable? baseTable, PropertyDescriptor[] props, int propStart)
+        internal static DataTable? FindTable(DataTable? baseTable, PropertyDescriptor[] props, int propStart)
         {
             if (props.Length < propStart + 1)
             {

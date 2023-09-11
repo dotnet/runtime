@@ -255,11 +255,6 @@ check_include_files(
     HAVE_GNU_LIBNAMES_H)
 
 check_symbol_exists(
-    arc4random_buf
-    "stdlib.h"
-    HAVE_ARC4RANDOM_BUF)
-
-check_symbol_exists(
     TIOCGWINSZ
     "sys/ioctl.h"
     HAVE_TIOCGWINSZ)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Diagnostics;
 using System.IO;
 
 namespace System.Security.Cryptography
@@ -12,28 +13,11 @@ namespace System.Security.Cryptography
     {
         internal static byte[] HashData(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> source)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
-            {
-                return SHA256.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return SHA1.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return SHA512.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return SHA384.HashData(source);
-            }
-            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return MD5.HashData(source);
-            }
-
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            int hashSizeInBytes = HashSize(hashAlgorithm);
+            byte[] result = new byte[hashSizeInBytes];
+            int written = HashProviderDispenser.OneShotHashProvider.HashData(hashAlgorithm.Name!, source, result);
+            Debug.Assert(written == hashSizeInBytes);
+            return result;
         }
 
         internal static bool TryHashData(
@@ -42,54 +26,30 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            int hashSizeInBytes = HashSize(hashAlgorithm);
+
+            if (destination.Length < hashSizeInBytes)
             {
-                return SHA256.TryHashData(source, destination, out bytesWritten);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return SHA1.TryHashData(source, destination, out bytesWritten);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return SHA512.TryHashData(source, destination, out bytesWritten);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return SHA384.TryHashData(source, destination, out bytesWritten);
-            }
-            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return MD5.TryHashData(source, destination, out bytesWritten);
+                bytesWritten = 0;
+                return false;
             }
 
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(hashAlgorithm.Name!, source, destination);
+            Debug.Assert(bytesWritten == hashSizeInBytes);
+            return true;
         }
 
         internal static byte[] HashData(HashAlgorithmName hashAlgorithm, Stream source)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (!source.CanRead)
             {
-                return SHA256.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return SHA1.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return SHA512.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return SHA384.HashData(source);
-            }
-            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return MD5.HashData(source);
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
             }
 
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            int hashSizeInBytes = HashSize(hashAlgorithm);
+            return LiteHashProvider.HashStream(hashAlgorithm.Name!, hashSizeInBytes, source);
         }
 
         internal static int MacData(
@@ -98,28 +58,96 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             Span<byte> destination)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            int macSizeInBytes = MacSize(hashAlgorithm);
+
+            if (destination.Length < macSizeInBytes)
             {
-                return HMACSHA256.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return HMACSHA1.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return HMACSHA512.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return HMACSHA384.HashData(key, source, destination);
-            }
-            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return HMACMD5.HashData(key, source, destination);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            int written = HashProviderDispenser.OneShotHashProvider.MacData(hashAlgorithm.Name!, key, source, destination);
+            Debug.Assert(written == macSizeInBytes);
+            return written;
+        }
+
+        private static int HashSize(HashAlgorithmName hashAlgorithm)
+        {
+            switch (hashAlgorithm.Name)
+            {
+                case HashAlgorithmNames.SHA256:
+                    return SHA256.HashSizeInBytes;
+                case HashAlgorithmNames.SHA1:
+                    return SHA1.HashSizeInBytes;
+                case HashAlgorithmNames.SHA512:
+                    return SHA512.HashSizeInBytes;
+                case HashAlgorithmNames.SHA384:
+                    return SHA384.HashSizeInBytes;
+                case HashAlgorithmNames.SHA3_256:
+                    if (!HashProviderDispenser.HashSupported(HashAlgorithmNames.SHA3_256))
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+
+                    return SHA3_256.HashSizeInBytes;
+                case HashAlgorithmNames.SHA3_384:
+                    if (!HashProviderDispenser.HashSupported(HashAlgorithmNames.SHA3_384))
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+
+                    return SHA3_384.HashSizeInBytes;
+                case HashAlgorithmNames.SHA3_512:
+                    if (!HashProviderDispenser.HashSupported(HashAlgorithmNames.SHA3_512))
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+
+                    return SHA3_512.HashSizeInBytes;
+                case HashAlgorithmNames.MD5 when Helpers.HasMD5:
+                    return MD5.HashSizeInBytes;
+                default:
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            }
+        }
+
+        private static int MacSize(HashAlgorithmName hashAlgorithm)
+        {
+            switch (hashAlgorithm.Name)
+            {
+                case HashAlgorithmNames.SHA256:
+                    return HMACSHA256.HashSizeInBytes;
+                case HashAlgorithmNames.SHA1:
+                    return HMACSHA1.HashSizeInBytes;
+                case HashAlgorithmNames.SHA512:
+                    return HMACSHA512.HashSizeInBytes;
+                case HashAlgorithmNames.SHA384:
+                    return HMACSHA384.HashSizeInBytes;
+                case HashAlgorithmNames.SHA3_256:
+                    if (!HashProviderDispenser.MacSupported(HashAlgorithmNames.SHA3_256))
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+
+                    return HMACSHA3_256.HashSizeInBytes;
+                case HashAlgorithmNames.SHA3_384:
+                    if (!HashProviderDispenser.MacSupported(HashAlgorithmNames.SHA3_384))
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+
+                    return HMACSHA3_384.HashSizeInBytes;
+                case HashAlgorithmNames.SHA3_512:
+                    if (!HashProviderDispenser.MacSupported(HashAlgorithmNames.SHA3_512))
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+
+                    return HMACSHA3_512.HashSizeInBytes;
+                case HashAlgorithmNames.MD5 when Helpers.HasMD5:
+                    return HMACMD5.HashSizeInBytes;
+                default:
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            }
         }
     }
 }

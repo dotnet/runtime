@@ -257,7 +257,7 @@ protected:
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
 #endif
     void genEnregisterIncomingStackArgs();
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 #else
     void genEnregisterOSRArgsAndLocals();
@@ -423,11 +423,11 @@ protected:
         regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
-        int fiSP_to_FPRA_save_delta;         // FP/RA register save offset from SP (positive)
+        int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
+        int fiCalleeSavedPadding;            // CalleeSaved offset padding (positive)
         int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
         int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
-        int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
-        int fiSpDelta1;                      // Stack pointer delta 1 (negative)
+        int fiSpDelta;                       // Stack pointer delta (negative)
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
@@ -780,6 +780,9 @@ protected:
 #endif
 
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
+#if defined(FEATURE_SIMD)
+    void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
+#endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
 
@@ -898,7 +901,6 @@ protected:
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
     void genCodeForCCMP(GenTreeCCMP* ccmp);
-    void genCodeForCinc(GenTreeOp* cinc);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
@@ -961,6 +963,7 @@ protected:
     void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
+    void genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
     void genSSEIntrinsic(GenTreeHWIntrinsic* node);
@@ -971,6 +974,7 @@ protected:
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
+    void genPermuteVar2x(GenTreeHWIntrinsic* node);
     void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
     void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
@@ -1226,18 +1230,21 @@ protected:
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     void genJumpTable(GenTree* tree);
     void genTableBasedSwitch(GenTree* tree);
-    void genCodeForArrIndex(GenTreeArrIndex* treeNode);
-    void genCodeForArrOffset(GenTreeArrOffs* treeNode);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     instruction genGetInsForOper(GenTree* treeNode);
 #else
     instruction genGetInsForOper(genTreeOps oper, var_types type);
 #endif
+    instruction genGetVolatileLdStIns(instruction   currentIns,
+                                      regNumber     targetReg,
+                                      GenTreeIndir* indir,
+                                      bool*         needsBarrier);
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
     GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
     regNumber getCallIndirectionCellReg(GenTreeCall* call);
     void genCall(GenTreeCall* call);
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
+    void genDefinePendingCallLabel(GenTreeCall* call);
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1247,7 +1254,6 @@ protected:
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);
     void genCodeForBfiz(GenTreeOp* tree);
-    void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)

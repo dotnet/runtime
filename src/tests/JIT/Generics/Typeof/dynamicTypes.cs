@@ -42,6 +42,7 @@ sealed class DS : B
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class X<T>
 {
@@ -123,10 +124,10 @@ sealed class DS : B
         public override void incCount() { ds_count*= 41;}
 }
 
-class mainMethod
+public class mainMethod
 {
         public static bool failed = false;
-        public static void checkGetType<T>(X<T> x)
+        internal static void checkGetType<T>(X<T> x)
         {
                 if(x.GetType() == typeof(DS)) (new DS()).incCount();
                 if(x.GetType() == typeof(CS)) (new CS()).incCount();
@@ -143,7 +144,7 @@ class mainMethod
                 if(x.GetType() == null) (new X<string>()).incCount();
         }
 
-        public static void checkIs<T>(X<T> x)
+        internal static void checkIs<T>(X<T> x)
         {
                 //start from X<T>
                 //if(x is null ) (new X< X<string> >()).incCount();
@@ -160,7 +161,7 @@ class mainMethod
                 if(x is CS) (new CS()).incCount();
                 if(x is DS) (new DS()).incCount();
         }
-        public static void checkAs<T>(X<T> x)
+        internal static void checkAs<T>(X<T> x)
         {
                 X< X<double> > x6 = x as X< X<double> >;
                 if(x6 != null) (new X< X<double> >()).incCount();
@@ -195,7 +196,7 @@ class mainMethod
                 Console.WriteLine(D.b_count);
                 */
         }
-        public static void checkGetTypeStringCast(X<string> x)
+        internal static void checkGetTypeStringCast(X<string> x)
         {
                 if(x.GetType() == typeof(DS)) ((DS)x).incCount();
                 if(x.GetType() == typeof(D)) ((D)x).incCount();
@@ -209,7 +210,7 @@ class mainMethod
                 if(x.GetType() == null) ((X<string>)x).incCount();
                 //if(x.GetType() == typeof(DS)) ((DS)x).incCount();
         }        
-        public static void checkGetTypeIntCast(X<int> x)
+        internal static void checkGetTypeIntCast(X<int> x)
         {
                 if(x.GetType() == typeof(CS)) ((CS)x).incCount();
                 if(x.GetType() == typeof(C)) ((C)x).incCount();
@@ -224,7 +225,7 @@ class mainMethod
 
                 //if(x.GetType() == typeof(CS)) ((CS)x).incCount();
         }        
-        public static void checkIsStringCast(X<string> x)
+        internal static void checkIsStringCast(X<string> x)
         {
                 //if(x is null ) ((X< X<string> >)x).incCount();
                 //if(x is X< X<double> >) ((X< X<double> >)x).incCount();
@@ -242,7 +243,7 @@ class mainMethod
 
                 //if(x is DS) ((DS)x).incCount();
         }
-        public static void checkIsIntCast(X<int> x)
+        internal static void checkIsIntCast(X<int> x)
         {
                 //if(x is null ) ((X< X<string> >)x).incCount();
                 //if(x is X< X<double> >) ((X< X<double> >)x).incCount();
@@ -260,7 +261,7 @@ class mainMethod
 
                 //if(x is CS) ((CS)x).incCount();
         }
-        public static void checkAsStringCast(X<string> x)
+        internal static void checkAsStringCast(X<string> x)
         {
                 //X< X<double> > x6 = x as X< X<double> >;
                 //if(x6 != null) ((X< X<double> >)x).incCount();
@@ -293,7 +294,7 @@ class mainMethod
                 checkCount(ref B.b_count, 31, "AS Failed for D");
                 */
         }
-        public static void checkAsIntCast(X<int> x)
+        internal static void checkAsIntCast(X<int> x)
         {
                 //X< X<double> > x6 = x as X< X<double> >;
                 //if(x6 != null) ((X< X<double> >)x).incCount();
@@ -752,7 +753,8 @@ class mainMethod
                 //Console.WriteLine("-----------{0}", i++);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
                 callCheckGetType();
                 callCheckIs();

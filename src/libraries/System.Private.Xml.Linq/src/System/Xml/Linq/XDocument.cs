@@ -936,7 +936,7 @@ namespace System.Xml.Linq
 
         internal override void ValidateString(string s)
         {
-            if (s.AsSpan().IndexOfAnyExcept(" \t\r\n") >= 0)
+            if (s.AsSpan().ContainsAnyExcept(" \t\r\n"))
             {
                 throw new ArgumentException(SR.Argument_AddNonWhitespace);
             }

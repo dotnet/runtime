@@ -179,8 +179,6 @@ class PEDecoder
     DWORD GetCheckSum() const;
     WORD GetMachine() const;
     WORD GetCharacteristics() const;
-    DWORD GetFileAlignment() const;
-    DWORD GetSectionAlignment() const;
     SIZE_T GetSizeOfStackReserve() const;
     SIZE_T GetSizeOfStackCommit() const;
     SIZE_T GetSizeOfHeapReserve() const;

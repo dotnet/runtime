@@ -2,4 +2,4 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /// pthread_t in C
-export type pthread_ptr = number;
+export type pthreadPtr = number;

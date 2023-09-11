@@ -4,16 +4,15 @@
 #ifndef __thread_h__
 #define __thread_h__
 
-#include "regdisplay.h"
 #include "StackFrameIterator.h"
-
-#include "forward_declarations.h"
+#include "slist.h" // DefaultSListTraits
 
 struct gc_alloc_context;
 class RuntimeInstance;
 class ThreadStore;
 class CLREventStatic;
 class Thread;
+class TypeManager;
 
 #ifdef TARGET_UNIX
 #include "UnixContext.h"
@@ -74,6 +73,16 @@ struct GCFrameRegistration
     int m_MaybeInterior;
 };
 
+struct InlinedThreadStaticRoot
+{
+    // The reference to the memory block that stores variables for the current {thread, typeManager} combination
+    Object* m_threadStaticsBase;
+    // The next root in the list. All roots in the list belong to the same thread, but to different typeManagers.
+    InlinedThreadStaticRoot* m_next;
+    // m_typeManager is used by NativeAOT.natvis when debugging
+    TypeManager* m_typeManager;
+};
+
 struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
@@ -88,7 +97,8 @@ struct ThreadBuffer
     uintptr_t               m_uHijackedReturnValueFlags;            
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
-    Object*                 m_pThreadLocalModuleStatics;
+    Object*                 m_pThreadLocalStatics;
+    InlinedThreadStaticRoot* m_pInlinedThreadLocalStatics;
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
@@ -287,6 +297,9 @@ public:
     void SetThreadAbortException(Object *exception);
 
     Object** GetThreadStaticStorage();
+
+    InlinedThreadStaticRoot* GetInlinedThreadStaticList();
+    void RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot, TypeManager* typeManager);
 
     NATIVE_CONTEXT* GetInterruptedContext();
 

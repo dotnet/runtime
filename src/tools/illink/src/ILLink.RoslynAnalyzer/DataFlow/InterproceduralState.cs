@@ -45,7 +45,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			=> throw new NotImplementedException ();
 
 		public InterproceduralState<TValue, TValueLattice> Clone ()
-			=> new (Methods.Clone (),
+			=> new (Methods.DeepCopy (),
 			HoistedLocals.Clone (), lattice);
 
 		public void TrackMethod (MethodBodyValue method)

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NullabilityInfoContextSupport>false</NullabilityInfoContextSupport>
@@ -33,6 +32,26 @@
 
   <ItemGroup>
     <TrimmerRootDescriptor Include="NonEmbedded.ILLink.Descriptor.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)NonEmbedded.ILLink.Substitutions1.xml" />
+    <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)NonEmbedded.ILLink.Substitutions2.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Dataflow.cs">
+      <LogicalName>RemovedResource1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DeadCodeElimination.cs">
+      <LogicalName>RemovedResource2</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FeatureSwitches.cs">
+      <LogicalName>RemovedResource3</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Main.cs">
+      <LogicalName>KeptResource</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

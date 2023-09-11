@@ -217,6 +217,7 @@ namespace DebuggerTests
         [MemberData(nameof(FalseConditions))]
         [MemberData(nameof(TrueConditions))]
         [MemberData(nameof(InvalidConditions))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task ConditionalBreakpoint2(string function_to_call, string method_to_stop, string condition, bool bp_stop_expected)
         {
             Result [] bps = new Result[2];
@@ -699,6 +700,7 @@ namespace DebuggerTests
         [InlineData(true, "Debugger.stepInto", "RunStepThroughWithNonUserCode", "RunStepThroughWithNonUserCode", -1, 8, "RunStepThroughWithNonUserCode", -1, 4)]
         [InlineData(false, "Debugger.resume", "RunStepThroughWithNonUserCode", "StepThroughWithNonUserCodeUserBp", 927, 8, "RunStepThroughWithNonUserCode", -1, 4)]
         [InlineData(true, "Debugger.resume", "RunStepThroughWithNonUserCode", "RunStepThroughWithNonUserCode", -1, 8, "RunStepThroughWithNonUserCode", -1, 4)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task StepThroughOrNonUserCodeAttributeWithUserBp(
             bool justMyCodeEnabled, string debuggingFunction, string evalFunName,
             string functionNameCheck1, int line1, int col1,
@@ -837,9 +839,9 @@ namespace DebuggerTests
         [Theory]
         [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1089, 1005, 1003, 1007)]
         [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1090, 1049, 1047, 1051)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsync>d__3>", 37, 1018, 1016, 1020)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "DefaultInterfaceMethod.EvaluateAsync", 1097, 1018, 1016, 1020)]
         [InlineData("IDefaultInterface", "DefaultMethodStatic", "EvaluateStatic", "DefaultInterfaceMethod.EvaluateStatic", 1126, 1024, 1022, 1026)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsyncStatic>d__5>", 37, 1033, 1031, 1035)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "DefaultInterfaceMethod.EvaluateAsyncStatic", 1131, 1033, 1031, 1035)]
         public async Task BreakInDefaultInterfaceMethod(
             string dimClassName, string dimName, string entryMethod,  string prevFrameInDim, int evaluateAsPrevFrameLine, int dimAsPrevFrameLine, int functionLocationLine, int functionEndLine)
         {

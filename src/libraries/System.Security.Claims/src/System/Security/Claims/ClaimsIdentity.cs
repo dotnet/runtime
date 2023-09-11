@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -12,6 +13,7 @@ namespace System.Security.Claims
     /// <summary>
     /// An Identity that is represented by a set of claims.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class ClaimsIdentity : IIdentity
     {
         private enum SerializationMask
@@ -932,6 +934,32 @@ namespace System.Security.Claims
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        internal string DebuggerToString()
+        {
+            // DebuggerDisplayAttribute is inherited. Use virtual members instead of private fields to gather data.
+            int claimsCount = 0;
+            foreach (Claim item in Claims)
+            {
+                claimsCount++;
+            }
+
+            string debugText = $"IsAuthenticated = {(IsAuthenticated ? "true" : "false")}";
+            if (Name != null)
+            {
+                // The ClaimsIdentity.Name property requires that ClaimsIdentity.NameClaimType is correctly
+                // configured to match the name of the logical name claim type of the identity.
+                // Because of this, only include name if the ClaimsIdentity.Name property has a value.
+                // Not including the name is to avoid developer confusion at seeing "Name = (null)" on an authenticated identity.
+                debugText += $", Name = {Name}";
+            }
+            if (claimsCount > 0)
+            {
+                debugText += $", Claims = {claimsCount}";
+            }
+
+            return debugText;
         }
     }
 }

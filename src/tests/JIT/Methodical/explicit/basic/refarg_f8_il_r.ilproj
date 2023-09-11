@@ -8,6 +8,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="refarg_f8_r.il" />
     <Compile Include="refarg_f8.il" />
   </ItemGroup>
 </Project>

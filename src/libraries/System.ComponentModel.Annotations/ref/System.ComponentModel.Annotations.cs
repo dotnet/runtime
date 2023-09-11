@@ -281,7 +281,6 @@ namespace System.ComponentModel.DataAnnotations
     {
         public RequiredAttribute() { }
         public bool AllowEmptyStrings { get { throw null; } set { } }
-        public bool DisallowAllDefaultValues { get { throw null; } set { } }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -388,14 +387,14 @@ namespace System.ComponentModel.DataAnnotations
         public static bool TryValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, bool validateAllProperties) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static bool TryValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults) { throw null; }
-        public static bool TryValidateValue(object value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { throw null; }
+        public static bool TryValidateValue(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, bool validateAllProperties) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static void ValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }
-        public static void ValidateValue(object value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { }
+        public static void ValidateValue(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { }
     }
 }
 namespace System.ComponentModel.DataAnnotations.Schema

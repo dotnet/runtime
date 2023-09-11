@@ -25,7 +25,6 @@ namespace System.Reflection.Runtime.General
     //
     // Collect various metadata reading tasks for better chunking...
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public static class NativeFormatMetadataReaderExtensions
     {

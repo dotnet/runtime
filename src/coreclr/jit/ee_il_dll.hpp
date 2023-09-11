@@ -17,8 +17,6 @@ class CILJit : public ICorJitCompiler
     void getVersionIdentifier(GUID* versionIdentifier /* OUT */
                               );
 
-    unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags);
-
     void setTargetOS(CORINFO_OS os);
 };
 
@@ -42,12 +40,6 @@ void Compiler::eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               CORINFO_FIELD_INFO*     pResult)
 {
     info.compCompHnd->getFieldInfo(pResolvedToken, info.compMethodHnd, accessFlags, pResult);
-}
-
-FORCEINLINE
-uint32_t Compiler::eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
-{
-    return info.compCompHnd->getThreadLocalFieldInfo(field);
 }
 
 /*****************************************************************************
@@ -182,7 +174,7 @@ inline var_types JITtype2varType(CorInfoType type)
         // see the definition of enum CorInfoType in file inc/corinfo.h
         TYP_UNDEF,  // CORINFO_TYPE_UNDEF           = 0x0,
         TYP_VOID,   // CORINFO_TYPE_VOID            = 0x1,
-        TYP_BOOL,   // CORINFO_TYPE_BOOL            = 0x2,
+        TYP_UBYTE,  // CORINFO_TYPE_BOOL            = 0x2,
         TYP_USHORT, // CORINFO_TYPE_CHAR            = 0x3,
         TYP_BYTE,   // CORINFO_TYPE_BYTE            = 0x4,
         TYP_UBYTE,  // CORINFO_TYPE_UBYTE           = 0x5,
@@ -243,7 +235,7 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
         // see the definition of enum CorInfoType in file inc/corinfo.h
         TYP_UNDEF,  // CORINFO_TYPE_UNDEF           = 0x0,
         TYP_VOID,   // CORINFO_TYPE_VOID            = 0x1,
-        TYP_BOOL,   // CORINFO_TYPE_BOOL            = 0x2,
+        TYP_UBYTE,  // CORINFO_TYPE_BOOL            = 0x2,
         TYP_USHORT, // CORINFO_TYPE_CHAR            = 0x3,
         TYP_BYTE,   // CORINFO_TYPE_BYTE            = 0x4,
         TYP_UBYTE,  // CORINFO_TYPE_UBYTE           = 0x5,

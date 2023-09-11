@@ -1555,7 +1555,7 @@ namespace System.Net.Tests
         public void Method_SetInvalidString_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            AssertExtensions.Throws<ArgumentException>("value", () => request.Method = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => request.Method = null);
             AssertExtensions.Throws<ArgumentException>("value", () => request.Method = string.Empty);
             AssertExtensions.Throws<ArgumentException>("value", () => request.Method = "Method(2");
         }

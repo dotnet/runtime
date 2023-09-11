@@ -14,15 +14,14 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map of generic virtual method implementations.
     /// </summary>
-    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private Dictionary<MethodDesc, Dictionary<TypeDesc, MethodDesc>> _gvmImplementations;
 
         public GenericVirtualMethodTableNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__gvm_table_End", true);
             _externalReferences = externalReferences;
             _gvmImplementations = new Dictionary<MethodDesc, Dictionary<TypeDesc, MethodDesc>>();
         }
@@ -32,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__gvm_table");
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -135,9 +134,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeFormatWriter.Save();
 
-            _endSymbol.SetSymbolOffset(streamBytes.Length);
+            _size = streamBytes.Length;
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

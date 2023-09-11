@@ -8,7 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly legacy library 'stfldstatic1_importer' {}
+.assembly legacy library ASSEMBLY_NAME {}
 .class public auto ansi beforefieldinit stfldstatic1
        extends [mscorlib]System.Object
 {

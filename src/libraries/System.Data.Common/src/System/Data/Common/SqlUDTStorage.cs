@@ -182,6 +182,9 @@ namespace System.Data.Common
                     }
                 }
                 Type type = (typeName == null) ? _dataType : Type.GetType(typeName)!;
+
+                TypeLimiter.EnsureTypeIsAllowed(type);
+
                 object Obj = System.Activator.CreateInstance(type, true)!;
                 Debug.Assert(xmlReader is DataTextReader, "Invalid DataTextReader is being passed to customer");
                 ((IXmlSerializable)Obj).ReadXml(xmlReader);

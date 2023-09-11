@@ -143,21 +143,18 @@ namespace Microsoft.NET.Build.Tasks
 
             bool version5 = crossgen2PackVersion.Major < 6;
             bool isSupportedTarget = ExtractTargetPlatformAndArchitecture(_targetRuntimeIdentifier, out _targetPlatform, out _targetArchitecture);
-            string targetOS = _targetPlatform switch
-            {
-                "linux" => "linux",
-                "linux-musl" => "linux",
-                "osx" => "osx",
-                "win" => "windows",
-                _ => null
-            };
+
+            // Normalize target OS for crossgen invocation
+            string targetOS = (_targetPlatform == "win") ? "windows" :
+                // Map linux-{ musl,bionic,etc.} to linux
+                _targetPlatform.StartsWith("linux-", StringComparison.Ordinal) ? "linux" :
+                _targetPlatform;
 
             // In .NET 5 Crossgen2 supported only the following host->target compilation scenarios:
             //      win-x64 -> win-x64
             //      linux-x64 -> linux-x64
             //      linux-musl-x64 -> linux-musl-x64
             isSupportedTarget = isSupportedTarget &&
-                targetOS != null &&
                 (!version5 || _targetRuntimeIdentifier == _hostRuntimeIdentifier) &&
                 GetCrossgen2ComponentsPaths(version5);
 
@@ -297,8 +294,20 @@ namespace Microsoft.NET.Build.Tasks
                     }
                 }
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
+                // Only x64 supported for OSX
+                if (_targetArchitecture != Architecture.X64 || RuntimeInformation.OSArchitecture != Architecture.X64)
+                {
+                    return false;
+                }
+
+                _crossgenTool.ToolPath = Path.Combine(_crossgenTool.PackagePath, "tools", "crossgen");
+                _crossgenTool.ClrJitPath = Path.Combine(_crossgenTool.PackagePath, "runtimes", _targetRuntimeIdentifier, "native", "libclrjit.dylib");
+            }
+            else
+            {
+                // Generic Unix, including Linux and FreeBSD
                 if (_targetArchitecture == Architecture.Arm || _targetArchitecture == Architecture.Arm64)
                 {
                     if (RuntimeInformation.OSArchitecture == _targetArchitecture)
@@ -323,22 +332,6 @@ namespace Microsoft.NET.Build.Tasks
                     _crossgenTool.ClrJitPath = Path.Combine(_crossgenTool.PackagePath, "runtimes", _targetRuntimeIdentifier, "native", "libclrjit.so");
                 }
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                // Only x64 supported for OSX
-                if (_targetArchitecture != Architecture.X64 || RuntimeInformation.OSArchitecture != Architecture.X64)
-                {
-                    return false;
-                }
-
-                _crossgenTool.ToolPath = Path.Combine(_crossgenTool.PackagePath, "tools", "crossgen");
-                _crossgenTool.ClrJitPath = Path.Combine(_crossgenTool.PackagePath, "runtimes", _targetRuntimeIdentifier, "native", "libclrjit.dylib");
-            }
-            else
-            {
-                // Unknown platform
-                return false;
-            }
 
             return File.Exists(_crossgenTool.ToolPath) && File.Exists(_crossgenTool.ClrJitPath);
         }
@@ -352,11 +345,6 @@ namespace Microsoft.NET.Build.Tasks
                 toolFileName = "crossgen2.exe";
                 v5_clrJitFileNamePattern = "clrjit-{0}.dll";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                toolFileName = "crossgen2";
-                v5_clrJitFileNamePattern = "libclrjit-{0}.so";
-            }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 toolFileName = "crossgen2";
@@ -364,8 +352,9 @@ namespace Microsoft.NET.Build.Tasks
             }
             else
             {
-                // Unknown platform
-                return false;
+                // Generic Unix, including Linux and FreeBSD
+                toolFileName = "crossgen2";
+                v5_clrJitFileNamePattern = "libclrjit-{0}.so";
             }
 
             if (version5)

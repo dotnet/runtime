@@ -21,13 +21,13 @@ namespace System.Net.Mime
         // characters allowed inside of comments
         internal static readonly bool[] Ctext = CreateCharactersAllowedInComments();
 
-        private static readonly IndexOfAnyValues<char> s_charactersAllowedInHeaderNames =
+        private static readonly SearchValues<char> s_charactersAllowedInHeaderNames =
             // ftext = %d33-57 / %d59-126
-            IndexOfAnyValues.Create("!\"#$%&'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+            SearchValues.Create("!\"#$%&'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
-        private static readonly IndexOfAnyValues<char> s_charactersAllowedInTokens =
+        private static readonly SearchValues<char> s_charactersAllowedInTokens =
             // ttext = %d33-126 except '()<>@,;:\"/[]?='
-            IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~");
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
         internal const char Quote = '\"';
         internal const char Space = ' ';
@@ -146,7 +146,7 @@ namespace System.Net.Mime
 
         internal static void ValidateHeaderName(string data)
         {
-            if (data.Length == 0 || data.AsSpan().IndexOfAnyExcept(s_charactersAllowedInHeaderNames) >= 0)
+            if (data.Length == 0 || data.AsSpan().ContainsAnyExcept(s_charactersAllowedInHeaderNames))
             {
                 throw new FormatException(SR.InvalidHeaderName);
             }
@@ -354,7 +354,7 @@ namespace System.Net.Mime
             c == Tab || c == Space || c == CR || c == LF;
 
         internal static bool HasCROrLF(string data) =>
-            data.AsSpan().IndexOfAny(CR, LF) >= 0;
+            data.AsSpan().ContainsAny(CR, LF);
 
         // Is there a FWS ("\r\n " or "\r\n\t") starting at the given index?
         internal static bool IsFWSAt(string data, int index)

@@ -44,12 +44,15 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactoryProperty), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithCustomConverterNullableProperty), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactoryNullableProperty), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -144,19 +147,22 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterProperty))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactoryProperty))]
     [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty))]
+    [JsonSerializable(typeof(ClassWithCustomConverterNullableProperty))]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactoryNullableProperty))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
         public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter<EnumWrittenAsString>))]
     public enum EnumWrittenAsString
     {
         A = 1
