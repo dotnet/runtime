@@ -606,9 +606,9 @@ namespace
         // or an existing known extension. This is done due to issues with case-sensitive file systems
         // on Windows. The Windows loader always appends ".DLL" as opposed to the more common ".dll".
         if (libNameIsRelativePath
-            && !libName.EndsWith(SString{ SString::Literal, W(".") })
-            && !libName.EndsWithCaseInsensitive(SString{ SString::Literal, W(".dll") })
-            && !libName.EndsWithCaseInsensitive(SString{ SString::Literal, W(".exe") }))
+            && !libName.EndsWith(SL(W(".")))
+            && !libName.EndsWithCaseInsensitive(SL(W(".dll")))
+            && !libName.EndsWithCaseInsensitive(SL(W(".exe"))))
         {
             libNameVariations[varCount++] = NameSuffixFmt;
         }

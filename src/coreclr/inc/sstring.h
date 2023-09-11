@@ -877,7 +877,7 @@ typedef InlineSString<2 * 260> LongPathString;
 //        s = SL("My literal String");
 // ================================================================================
 
-#define SL(_literal) SString(SString::Literal, _literal)
+#define SL(_literal) SString{ SString::Literal, _literal }
 
 // ================================================================================
 // Special contract definition - THROWS_UNLESS_NORMALIZED
