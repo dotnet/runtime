@@ -612,14 +612,15 @@ namespace ILCompiler.ObjectWriter
         {
             uint encoding = _compactUnwindDwarfCode;
 
-            if (_objectFile.CpuType == MachCpuType.Arm64)
+            // TODO: Re-enable this optimization
+            /*if (_objectFile.CpuType == MachCpuType.Arm64)
             {
                 if (blob.AsSpan().SequenceEqual(DwarfArm64EmptyFrame))
                 {
                     // Frame-based encoding, no saved registers
                     encoding = 0x04000000;
                 }
-            }
+            }*/
 
             _compactUnwindCodes.Add(new CompactUnwindCode(
                 PcStartSymbolName: startSymbolName,
