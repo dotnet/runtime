@@ -116,11 +116,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
-            instance.MyString = configuration["MyString"]!;
+            if (configuration["MyString"] is string value4)
+            {
+                instance.MyString = value4!;
+            }
 
             if (configuration["MyInt"] is string value5)
             {
                 instance.MyInt = ParseInt(value5, () => configuration.GetSection("MyInt").Path);
+            }
+            else
+            {
+                instance.MyInt = default;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section6)
@@ -155,6 +162,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (configuration["MyInt"] is string value15)
             {
                 instance.MyInt = ParseInt(value15, () => configuration.GetSection("MyInt").Path);
+            }
+            else
+            {
+                instance.MyInt = default;
             }
         }
 

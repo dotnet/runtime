@@ -443,6 +443,9 @@ namespace Microsoft.Extensions
         public class OptionWithCollectionProperties
         {
             private int _otherCode;
+            private int _otherCodeNullable;
+            private object _otherCodeNull;
+            private Uri _otherCodeUri;
             private ICollection<string> blacklist = new HashSet<string>();
 
             public ICollection<string> Blacklist
@@ -460,11 +463,30 @@ namespace Microsoft.Extensions
             // ParsedBlacklist initialized using the setter of Blacklist.
             public ICollection<string> ParsedBlacklist { get; private set; } = new HashSet<string>();
 
-            // This property not having any match in the configuration. Still the setter need to be called during the binding.
+            // This does not have a match in the configuration, however the setter should be called during the binding:
             public int OtherCode
             {
                 get => _otherCode;
                 set => _otherCode = value == 0 ? 2 : value;
+            }
+
+            // These do not have any match in the configuration, and the setters should not be called  during the binding:
+            public int? OtherCodeNullable
+            {
+                get => _otherCodeNullable;
+                set => _otherCodeNullable = !value.HasValue ? 3 : value.Value;
+            }
+
+            public object? OtherCodeNull
+            {
+                get => _otherCodeNull;
+                set => _otherCodeNull = value is null ? 4 : value;
+            }
+
+            public Uri OtherCodeUri
+            {
+                get => _otherCodeUri;
+                set => _otherCodeUri = value is null ? new Uri("hello") : value;
             }
         }
 
