@@ -279,6 +279,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
 
         const ssize_t newMinValue = min(minValue, testValue);
         const ssize_t newMaxValue = max(maxValue, testValue);
+        assert(newMaxValue >= newMinValue);
         if ((newMaxValue - newMinValue) > SWITCH_MAX_DISTANCE)
         {
             // Stop here, the distance between min and max is too big
@@ -288,17 +289,17 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         maxValue = newMaxValue;
     }
 
-    // if MaxValue is less than SWITCH_MAX_DISTANCE then don't bother with SUB(val, minValue)
-    if (maxValue <= SWITCH_MAX_DISTANCE)
-    {
-        minValue = 0;
-    }
-
     assert(testIdx <= testsCount);
     if (testIdx < SWITCH_MIN_TESTS)
     {
         // Make sure we still have at least SWITCH_MIN_TESTS values after we filtered out some of them
         return false;
+    }
+
+    // if MaxValue is less than SWITCH_MAX_DISTANCE then don't bother with SUB(val, minValue)
+    if (maxValue <= SWITCH_MAX_DISTANCE)
+    {
+        minValue = 0;
     }
 
     // Find the last block in the chain
