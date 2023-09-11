@@ -309,7 +309,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'OSX' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'tvOS'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'OSX' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'tvOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
   </ItemGroup>
@@ -413,7 +413,7 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'OSX' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'tvOS'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'OSX' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'tvOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
   </ItemGroup>
