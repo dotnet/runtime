@@ -438,7 +438,9 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
         break;
 
     case    HNDTYPE_PINNED:
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
     case    HNDTYPE_ASYNCPINNED:
+#endif // FEATURE_ASYNC_PINNED_HANDLES
         rootFlags |= kEtwGCRootFlagsPinning;
         break;
 
@@ -472,6 +474,10 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
         }
         break;
 #endif // FEATURE_REFCOUNTED_HANDLES
+
+    default:
+        _ASSERTE(!"Unexpected handle type");
+        break;
     }
 
     _UNCHECKED_OBJECTREF pSec = NULL;
