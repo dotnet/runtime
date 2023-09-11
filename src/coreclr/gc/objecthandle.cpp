@@ -993,7 +993,7 @@ void TraceVariableHandlesBySingleThread(HANDLESCANPROC pfnTrace, uintptr_t lp1, 
         walk = walk->pNext;
     }
 }
-#endif
+#endif // FEATURE_VARIABLE_HANDLES
 
 //----------------------------------------------------------------------------
 
