@@ -51121,8 +51121,7 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
     unsigned int dest = gen_segment (gen);
 
     // Adjust boundary for segments so that GC will keep objects alive.
-    Object*** s_i = &SegQueue (FreeListSeg);
-    if ((*s_i) == SegQueueLimit(FreeListSeg))
+    if (IsSegEmpty(FreeListSeg))
     {
         if (!GrowArray())
         {
@@ -51142,26 +51141,25 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
             return false;
         }
     }
-    Object*** end_si = &SegQueueLimit (dest);
+    unsigned int currentSegment = FreeListSeg - 1;
     do
     {
-        //is the segment empty?
-        if (!(*s_i == *(s_i-1)))
+        if (!IsSegEmpty(currentSegment))
         {
             //no, move the first element of the segment to the (new) last location in the segment
-            *(*s_i) = *(*(s_i-1));
+            *SegQueueLimit(currentSegment) = *SegQueue(currentSegment);
         }
         //increment the fill pointer
-        (*s_i)++;
+        SegQueueLimit(currentSegment)++;
         //go to the next segment.
-        s_i--;
-    } while (s_i > end_si);
+        currentSegment--;
+    } while (currentSegment > dest);
 
     // We have reached the destination segment
     // store the object
-    **s_i = obj;
+    *SegQueueLimit(dest) = obj;
     // increment the fill pointer
-    (*s_i)++;
+    SegQueueLimit(dest)++;
 
     LeaveFinalizeLock();
 
