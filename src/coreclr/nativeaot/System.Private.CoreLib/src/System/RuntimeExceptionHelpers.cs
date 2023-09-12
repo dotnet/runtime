@@ -118,7 +118,7 @@ namespace System
             }
         }
 
-        public enum RhFailFastReason
+        internal enum RhFailFastReason
         {
             Unknown = 0,
             InternalError = 1,                                   // "Runtime internal error"
