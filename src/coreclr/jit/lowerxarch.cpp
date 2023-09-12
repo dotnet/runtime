@@ -99,7 +99,11 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 #if defined(FEATURE_HW_INTRINSICS)
     if(comp->IsBaselineVector512IsaSupportedOpportunistically() && node->Data()->OperIs(GT_CNS_VEC) && node->Data()->AsVecCon()->TypeIs(TYP_SIMD64))
     {
-        TryCompressConstVecData(node);
+        if(!node->Data()->AsVecCon()->IsAllBitsSet() && !node->Data()->AsVecCon()->IsZero())
+        {
+            // To avoid some unexpected regression, this optimization only applies to non-all 1/0 constant vectors.
+            TryCompressConstVecData(node);
+        }
     }
 #endif
     // Optimization: do not unnecessarily zero-extend the result of setcc.
