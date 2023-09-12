@@ -142,7 +142,7 @@ namespace System.Net.Http.Metrics
                 // https://github.com/open-telemetry/semantic-conventions/blob/2bad9afad58fbd6b33cc683d1ad1f006e35e4a5d/docs/http/http-spans.md
                 if (statusCode >= 400 && statusCode <= 599)
                 {
-                    errorType = GetStatusCodeString(statusCode);
+                    errorType = GetErrorStatusCodeString(statusCode);
                     return true;
                 }
             }
@@ -221,11 +221,14 @@ namespace System.Net.Http.Metrics
                 : statusCode;
         }
 
-        private static string GetStatusCodeString(int statusCode)
+        private static string GetErrorStatusCodeString(int statusCode)
         {
-            string[] strings = LazyInitializer.EnsureInitialized(ref s_statusCodeStrings, static () => new string[512]);
-            return (uint)statusCode < (uint)strings.Length
-                ? strings[statusCode] ??= statusCode.ToString()
+            Debug.Assert(statusCode >= 400 && statusCode <= 599);
+
+            string[] strings = LazyInitializer.EnsureInitialized(ref s_statusCodeStrings, static () => new string[200]);
+            int index = statusCode - 400;
+            return (uint)index < (uint)strings.Length
+                ? strings[index] ??= statusCode.ToString()
                 : statusCode.ToString();
         }
 
