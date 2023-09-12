@@ -72,6 +72,7 @@ LOCAL_LABEL(NoFloatingPoint):
 
     // call pTarget
     jirl $ra, $t4, 0
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
 
     ld.w  $a3, $s0, CallDescrData__fpReturnSize
 
@@ -205,4 +206,8 @@ LOCAL_LABEL(ReturnDone):
     EPILOG_RESTORE_REG  23, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x20
     jirl  $r0, $ra, 0
+
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+    .quad LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
+
 NESTED_END CallDescrWorkerInternal, _TEXT

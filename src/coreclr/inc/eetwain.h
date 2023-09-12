@@ -332,7 +332,7 @@ virtual void            LeaveCatch(GCInfoToken gcInfoToken,
                                    PCONTEXT pCtx)=0;
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
 
 /*
     Last chance for the runtime support to do fixups in the context
@@ -347,7 +347,7 @@ virtual HRESULT FixContextForEnC(PCONTEXT        pCtx,
                const ICorDebugInfo::NativeVarInfo * newMethodVars,
                                     SIZE_T          newMethodVarsCount) = 0;
 
-#endif // FEATURE_ENC_SUPPORTED
+#endif // FEATURE_REMAP_FUNCTION
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -597,7 +597,7 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
                          PCONTEXT pCtx);
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
 /*
     Last chance for the runtime support to do fixups in the context
     before execution continues inside an EnC updated function.
@@ -610,7 +610,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
                             EECodeInfo    * pNewCodeInfo,
        const ICorDebugInfo::NativeVarInfo * newMethodVars,
                             SIZE_T          newMethodVarsCount);
-#endif // FEATURE_ENC_SUPPORTED
+#endif // FEATURE_REMAP_FUNCTION
 
 #endif // #ifndef DACCESS_COMPILE
 

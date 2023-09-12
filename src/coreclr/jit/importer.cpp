@@ -685,9 +685,9 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
         return true;
     }
 
-    if (TypeIs(sigType, TYP_BOOL, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT))
+    if (TypeIs(sigType, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT))
     {
-        if (TypeIs(nodeType, TYP_BOOL, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT, TYP_I_IMPL))
+        if (TypeIs(nodeType, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT, TYP_I_IMPL))
         {
             return true;
         }
@@ -1381,18 +1381,26 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 //
 bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitProfileCasts() != 1))
+    if (!opts.IsInstrumented() || (JitConfig.JitProfileCasts() != 1))
     {
         return false;
     }
 
-    if (tree->IsCall() && tree->AsCall()->gtCallType == CT_HELPER)
+    if (tree->IsHelperCall())
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
-        if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
+        switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
         {
-            return true;
+            case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            case CORINFO_HELP_ISINSTANCEOFARRAY:
+            case CORINFO_HELP_ISINSTANCEOFCLASS:
+            case CORINFO_HELP_ISINSTANCEOFANY:
+            case CORINFO_HELP_CHKCASTINTERFACE:
+            case CORINFO_HELP_CHKCASTARRAY:
+            case CORINFO_HELP_CHKCASTCLASS:
+            case CORINFO_HELP_CHKCASTANY:
+                return true;
+            default:
+                break;
         }
     }
     return false;
@@ -1410,22 +1418,25 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 //
 bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 {
-    if (JitConfig.JitConsumeProfileForCasts() == 0)
+    if ((JitConfig.JitConsumeProfileForCasts() != 1) || !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         return false;
     }
 
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    switch (helper)
     {
-        return false;
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_CHKCASTANY:
+            return true;
+        default:
+            return false;
     }
-
-    if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-        (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
-    {
-        return true;
-    }
-    return false;
 }
 
 GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -2979,7 +2990,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
 
                                     static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                    impPushOnStack(gtNewIndir(TYP_BOOL, objToBox), typeInfo(TYP_INT));
+                                    impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
 
                                     JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                     return 1 + sizeof(mdToken);

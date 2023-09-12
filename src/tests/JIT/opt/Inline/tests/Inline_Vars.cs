@@ -2816,8 +2816,9 @@ public class Test_Inline_Vars
         Console.WriteLine(a400);
         return 100;
     }
+
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         (new Test_Inline_Vars()).RunTest0_Inline();
 
@@ -3620,8 +3621,5 @@ public class Test_Inline_Vars
         (new Test_Inline_Vars()).RunTest399();
 
         (new Test_Inline_Vars()).RunTest400_NoInline();
-        return 100;
     }
 }
-
-

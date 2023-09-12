@@ -11,10 +11,10 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> NativeCalendarName_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, in this collection it always differs
-            string islamicName = PlatformDetection.IsNodeJS ? "UMALQURA" : "islamic-umalqura";
-            string gregorianName = PlatformDetection.IsNodeJS ? "GREGORIAN" : "gregory";
-            string persianName = PlatformDetection.IsNodeJS ? "PERSIAN" : "persian";
-            string bhuddistName = PlatformDetection.IsNodeJS ? "THAI" : "buddhist";
+            string islamicName = "islamic-umalqura";
+            string gregorianName = "gregory";
+            string persianName = "persian";
+            string bhuddistName = "buddhist";
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, islamicName }; // التقويم الإسلامي (أم القرى)
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, gregorianName }; // የግሪጎሪያን የቀን አቆጣጠር
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, gregorianName }; // григориански календар
@@ -203,7 +203,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, gregorianName }; // 公曆
             yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, gregorianName };
         }
-        
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         [MemberData(nameof(NativeCalendarName_Get_TestData_HybridGlobalization))]
         public void NativeCalendarName_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string expected)

@@ -1729,6 +1729,134 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 }
 
 //------------------------------------------------------------------------
+// genGetVolatileLdStIns: Determine the most efficient instruction to perform a
+//    volatile load or store and whether an explicit barrier is required or not.
+//
+// Arguments:
+//    currentIns   - the current instruction to perform load/store
+//    targetReg    - the target register
+//    indir        - the indirection node representing the volatile load/store
+//    needsBarrier - OUT parameter. Set to true if an explicit memory barrier is required.
+//
+// Return Value:
+//    instruction to perform the volatile load/store with.
+//
+instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
+                                           regNumber     targetReg,
+                                           GenTreeIndir* indir,
+                                           bool*         needsBarrier)
+{
+    assert(indir->IsVolatile());
+
+    if (!genIsValidIntReg(targetReg))
+    {
+        // We don't have special instructions to perform volatile loads/stores for non-integer registers.
+        *needsBarrier = true;
+        return currentIns;
+    }
+
+    assert(!varTypeIsFloating(indir));
+    assert(!varTypeIsSIMD(indir));
+
+#ifdef TARGET_ARM64
+    *needsBarrier = false;
+
+    if (indir->IsUnaligned() && (currentIns != INS_ldrb) && (currentIns != INS_strb))
+    {
+        // We have to use a normal load/store + explicit memory barrier
+        // to avoid unaligned access exceptions.
+        *needsBarrier = true;
+        return currentIns;
+    }
+
+    const bool addrIsInReg = indir->Addr()->isUsedFromReg();
+
+    // With RCPC2 (arm64 v8.4+) we can work with simple addressing modes like [reg + simm9]
+    const bool shouldUseRcpc2 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && !addrIsInReg &&
+                                indir->Addr()->OperIs(GT_LEA) && !indir->HasIndex() && (indir->Scale() == 1) &&
+                                emitter::emitIns_valid_imm_for_unscaled_ldst_offset(indir->Offset());
+
+    if (shouldUseRcpc2)
+    {
+        assert(!addrIsInReg);
+        switch (currentIns)
+        {
+            // Loads
+
+            case INS_ldrb:
+                return INS_ldapurb;
+
+            case INS_ldrh:
+                return INS_ldapurh;
+
+            case INS_ldr:
+                return INS_ldapur;
+
+            // Stores
+
+            case INS_strb:
+                return INS_stlurb;
+
+            case INS_strh:
+                return INS_stlurh;
+
+            case INS_str:
+                return INS_stlur;
+
+            default:
+                *needsBarrier = true;
+                return currentIns;
+        }
+    }
+
+    // Only RCPC2 (arm64 v8.4+) allows us to deal with contained addresses.
+    // In other cases we'll have to emit a normal load/store + explicit memory barrier.
+    // It means that lower should generally avoid generating contained addresses for volatile loads/stores
+    // so we can use cheaper instructions.
+    if (!addrIsInReg)
+    {
+        *needsBarrier = true;
+        return currentIns;
+    }
+
+    // RCPC1 (arm64 v8.3+) offers a bit more relaxed memory ordering than ldar. Which is sufficient for
+    // .NET memory model's requirements, see https://github.com/dotnet/runtime/issues/67374
+    const bool hasRcpc1 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc);
+    switch (currentIns)
+    {
+        // Loads
+
+        case INS_ldrb:
+            return hasRcpc1 ? INS_ldaprb : INS_ldarb;
+
+        case INS_ldrh:
+            return hasRcpc1 ? INS_ldaprh : INS_ldarh;
+
+        case INS_ldr:
+            return hasRcpc1 ? INS_ldapr : INS_ldar;
+
+        // Stores
+
+        case INS_strb:
+            return INS_stlrb;
+
+        case INS_strh:
+            return INS_stlrh;
+
+        case INS_str:
+            return INS_stlr;
+
+        default:
+            *needsBarrier = true;
+            return currentIns;
+    }
+#else  // TARGET_ARM64
+    *needsBarrier = true;
+    return currentIns;
+#endif // !TARGET_ARM64
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
 // Arguments:
@@ -1755,33 +1883,9 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     bool emitBarrier = false;
 
-    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+    if (tree->IsVolatile())
     {
-#ifdef TARGET_ARM64
-        bool addrIsInReg   = tree->Addr()->isUsedFromReg();
-        bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
-
-        // on arm64-v8.3+ we can use ldap* instructions with acquire/release semantics to avoid
-        // full memory barriers if mixed with STLR
-        bool hasRcpc = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc);
-
-        if ((ins == INS_ldrb) && addrIsInReg)
-        {
-            ins = hasRcpc ? INS_ldaprb : INS_ldarb;
-        }
-        else if ((ins == INS_ldrh) && addrIsInReg && addrIsAligned)
-        {
-            ins = hasRcpc ? INS_ldaprh : INS_ldarh;
-        }
-        else if ((ins == INS_ldr) && addrIsInReg && addrIsAligned && genIsValidIntReg(targetReg))
-        {
-            ins = hasRcpc ? INS_ldapr : INS_ldar;
-        }
-        else
-#endif // TARGET_ARM64
-        {
-            emitBarrier = true;
-        }
+        ins = genGetVolatileLdStIns(ins, targetReg, tree, &emitBarrier);
     }
 
     GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);

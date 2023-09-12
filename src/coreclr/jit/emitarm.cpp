@@ -4770,8 +4770,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        id->idSetIsCallRegPtr();
-
         if (isJump)
         {
             ins = INS_bx; // INS_bx  Reg
@@ -4850,6 +4848,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     dispIns(id);
     appendToCurIG(id);
+    emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
 }
 
 /*****************************************************************************

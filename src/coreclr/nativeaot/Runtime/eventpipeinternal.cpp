@@ -2,8 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#include "eventpipeadapter.h"
 #include "PalRedhawk.h"
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-provider.h>
+#include <eventpipe/ep-config.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-instance.h>
+#include <eventpipe/ep-session.h>
+#include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-metadata-generator.h>
+#include <eventpipe/ep-event-payload.h>
+#include <eventpipe/ep-buffer-manager.h>
 
 #ifdef FEATURE_PERFTRACING
 
@@ -59,16 +68,16 @@ EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
         for (uint32_t i = 0; i < numProviders; ++i) {
             ep_provider_config_init (
                 &configProviders[i],
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName), -1),
+                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName)),
                 nativeProviders[i].keywords,
                 static_cast<EventPipeEventLevel>(nativeProviders[i].loggingLevel),
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData), -1));
+                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData)));
         }
     }
 
     ep_char8_t *outputPathUTF8 = NULL;
     if (outputFile)
-        outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputFile), -1);
+        outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputFile));
     EventPipeSessionID result = ep_enable (
         outputPathUTF8,
         circularBufferSizeInMB,
@@ -105,7 +114,9 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
     EventPipeCallback pCallbackFunc,
     void* pCallbackContext)
 {
-    EventPipeProvider* pProvider = EventPipeAdapter::CreateProvider(providerName, pCallbackFunc, pCallbackContext);
+    ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
+    EventPipeProvider * pProvider = ep_create_provider (providerNameUTF8, pCallbackFunc, pCallbackContext);
+    ep_rt_utf8_string_free (providerNameUTF8);
     return reinterpret_cast<intptr_t>(pProvider);
 }
 
@@ -122,7 +133,7 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_DefineEvent(
 
     _ASSERTE(provHandle != 0);
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
-    pEvent = EventPipeAdapter::AddEvent(pProvider, eventID, keywords, eventVersion, (EventPipeEventLevel)level, /* needStack = */ true, (uint8_t *)pMetadata, metadataLength);
+    pEvent = ep_provider_add_event(pProvider, eventID, keywords, eventVersion, (EventPipeEventLevel)level, /* needStack = */ true, (uint8_t *)pMetadata, metadataLength);
     _ASSERTE(pEvent != NULL);
 
     return reinterpret_cast<intptr_t>(pEvent);
@@ -133,7 +144,7 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(const WC
     EventPipeProvider * provider = NULL;
     if (providerName)
     {
-        ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
+        ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
         provider = ep_get_provider (providerNameUTF8);
         ep_rt_utf8_string_free(providerNameUTF8);
     }
@@ -222,7 +233,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_WriteEventData(
 {
     _ASSERTE(eventHandle != 0);
     EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
-    EventPipeAdapter::WriteEvent(pEvent, pEventData, eventDataCount, pActivityId, pRelatedActivityId);
+    ep_write_event_2(pEvent, pEventData, eventDataCount, reinterpret_cast<const uint8_t*>(pActivityId), reinterpret_cast<const uint8_t*>(pRelatedActivityId));
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetSessionInfo(uint64_t sessionID, EventPipeSessionInfo *pSessionInfo)

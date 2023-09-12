@@ -1054,11 +1054,38 @@ namespace System.Tests
             };
             yield return new object[]
             {
+                typeof(DIMs.I2),
+                typeof(DIMs.C3),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I1),
+                typeof(DIMs.C3),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M"), typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic))
+                }
+            };
+            yield return new object[]
+            {
                 typeof(DIMs.I4),
                 typeof(DIMs.C4),
                 new Tuple<MethodInfo, MethodInfo>[]
                 {
                     new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I4).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I3),
+                typeof(DIMs.C4),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic))
                 }
             };
             yield return new object[]
@@ -1070,6 +1097,148 @@ namespace System.Tests
                     new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
                 }
             };
+            yield return new object[]
+            {
+                typeof(DIMs.I1),
+                typeof(DIMs.C4),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M"), typeof(DIMs.C4).GetMethod("M"))
+                }
+            };
+
+            // Test all combinations of the following:
+            // Static method
+            // Implementation by having the same name, explicit implementation, & default implementation (where applicable - only level 2)
+            // Non-generic interface, generic interface
+            // Non-generic type, generic type
+            // 3 levels of inheritance (of the interfaces): 1 - static abstract method, 2 - add a default implementation, 3 - re-abstractify it
+            // Checks that all the applicable interfaces are working properly
+            (Type Type, bool IncludePrefix, bool AnyTarget, Type InterfaceGenericParameter, int Index)[] classTypes = new (Type, bool, bool, Type, int)[]
+            {
+                // List of every type we are going to test
+                // (Type, whether it's implemented explicitly, whether it's not implemented in the level 2 interface, the generic parameter for Ix<T>, the level)
+                (typeof(SIMs.C1), false, true, typeof(int), 1),
+                (typeof(SIMs.C1Explicit), true, true, typeof(int), 1),
+                (typeof(SIMs.C1<string>), false, true, typeof(string), 1),
+                (typeof(SIMs.C1Explicit<string>), true, true, typeof(string), 1),
+                (typeof(SIMs.C1<>), false, true, typeof(SIMs.C1<>).GetGenericArguments()[0], 1),
+                (typeof(SIMs.C1Explicit<>), true, true, typeof(SIMs.C1Explicit<>).GetGenericArguments()[0], 1),
+                (typeof(SIMs.C2Implicit), false, false, typeof(int), 2),
+                (typeof(SIMs.C2), false, true, typeof(int), 2),
+                (typeof(SIMs.C2Explicit), true, true, typeof(int), 2),
+                (typeof(SIMs.C2Implicit<string>), false, false, typeof(string), 2),
+                (typeof(SIMs.C2<string>), false, true, typeof(string), 2),
+                (typeof(SIMs.C2Explicit<string>), true, true, typeof(string), 2),
+                (typeof(SIMs.C2Implicit<>), false, false, typeof(SIMs.C2Implicit<>).GetGenericArguments()[0], 2),
+                (typeof(SIMs.C2<>), false, true, typeof(SIMs.C2<>).GetGenericArguments()[0], 2),
+                (typeof(SIMs.C2Explicit<>), true, true, typeof(SIMs.C2Explicit<>).GetGenericArguments()[0], 2),
+                (typeof(SIMs.C3), false, true, typeof(int), 3),
+                (typeof(SIMs.C3Explicit), true, true, typeof(int), 3),
+                (typeof(SIMs.C3<string>), false, true, typeof(string), 3),
+                (typeof(SIMs.C3Explicit<string>), true, true, typeof(string), 3),
+                (typeof(SIMs.C3<>), false, true, typeof(SIMs.C3<>).GetGenericArguments()[0], 3),
+                (typeof(SIMs.C3Explicit<>), true, true, typeof(SIMs.C3Explicit<>).GetGenericArguments()[0], 3),
+            };
+            foreach ((Type Type, bool IncludePrefix, bool AnyTarget, Type InterfaceGenericParameter, int Index) classType in classTypes)
+            {
+                BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+                // This is the member name of the explicit interface implementation method in the class for the generic interface
+                string level1MethodNamePrefixTyped = "System.Tests.TypeTestsExtended.SIMs.I1<" + (classType.Type.GetGenericArguments().Length == 0 ? "System.Int32" : "S") + ">.";
+
+                // Check we have the expected implementation for the level 1 interfaces (abstract definitions - M and G methods)
+                Type level1GenericInterface = typeof(SIMs.I1<>).MakeGenericType(classType.InterfaceGenericParameter);
+                Type level2GenericInterface = typeof(SIMs.I2<>).MakeGenericType(classType.InterfaceGenericParameter);
+                Type level3GenericInterface = typeof(SIMs.I3<>).MakeGenericType(classType.InterfaceGenericParameter);
+                foreach ((Type Type, Type Level2InterfaceType, string MethodNamePrefix, string MethodNamePrefixTyped) interfaceType in new (Type, Type, string, string)[]
+                    {
+                        (typeof(SIMs.I1), typeof(SIMs.I2), "System.Tests.TypeTestsExtended.SIMs.I1.", "System.Tests.TypeTestsExtended.SIMs.I1."),
+                        (level1GenericInterface, level2GenericInterface, "System.Tests.TypeTestsExtended.SIMs.I1<S>.", level1MethodNamePrefixTyped),
+                    })
+                {
+                    // Look up the interface method which should be implemented
+                    MethodInfo MInterface = interfaceType.Type.GetMethod("M", bindingFlags);
+                    MethodInfo GInterface = interfaceType.Type.GetMethod("G", bindingFlags);
+
+                    // Look up the implementation
+                    MethodInfo MTarget, GTarget;
+                    if (classType.AnyTarget)
+                    {
+                        // The class implements it, either implicitly or explicitly (if IncludePrefix is specified)
+                        MTarget = classType.Type.GetMethod((classType.IncludePrefix ? interfaceType.MethodNamePrefixTyped : "") + "M", bindingFlags);
+                        GTarget = classType.Type.GetMethod((classType.IncludePrefix ? interfaceType.MethodNamePrefixTyped : "") + "G", bindingFlags);
+                    }
+                    else
+                    {
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/90863")]
+                        if (classType.Type == typeof(SIMs.C2Implicit<string>) && interfaceType.Type == typeof(SIMs.I1<string>)) continue;
+
+                        // It's implemented implicitly by the level 2 interface
+                        MTarget = interfaceType.Level2InterfaceType.GetMethod(interfaceType.MethodNamePrefix + "M", bindingFlags);
+                        GTarget = interfaceType.Level2InterfaceType.GetMethod(interfaceType.MethodNamePrefix + "G", bindingFlags);
+                    }
+
+                    // Return our test case
+                    yield return new object[]
+                    {
+                        interfaceType.Type,
+                        classType.Type,
+                        new Tuple<MethodInfo, MethodInfo>[]
+                        {
+                            new Tuple<MethodInfo, MethodInfo>(MInterface, MTarget),
+                            new Tuple<MethodInfo, MethodInfo>(GInterface, GTarget)
+                        }
+                    };
+                }
+
+                // Check we have the expected implementation for the level 2 interfaces (virtual explicit default implementations - none)
+                if (classType.Index >= 2)
+                {
+                    // There should be no methods for these interfaces
+                    // Return our test cases
+                    yield return new object[]
+                    {
+                        typeof(SIMs.I2),
+                        classType.Type,
+                        new Tuple<MethodInfo, MethodInfo>[0]
+                    };
+                    yield return new object[]
+                    {
+                        level2GenericInterface,
+                        classType.Type,
+                        new Tuple<MethodInfo, MethodInfo>[0]
+                    };
+                }
+
+                // Check we have the expected implementation for the level 3 interfaces (abstract explicit implementations - I1.M and I1.G methods)
+                // Fails on mono: [ActiveIssue("https://github.com/dotnet/runtime/issues/91027")]
+                if (!PlatformDetection.IsMonoRuntime && classType.Index >= 3)
+                {
+                    foreach ((Type Type, string MethodNamePrefix) interfaceType in new (Type, string)[]
+                        {
+                            (typeof(SIMs.I3), "System.Tests.TypeTestsExtended.SIMs.I1."),
+                            (level3GenericInterface, "System.Tests.TypeTestsExtended.SIMs.I1<S>."),
+                        })
+                    {
+                        // There should be no implementation for these methods - null
+                        MethodInfo MInterface = interfaceType.Type.GetMethod(interfaceType.MethodNamePrefix + "M", bindingFlags);
+                        MethodInfo GInterface = interfaceType.Type.GetMethod(interfaceType.MethodNamePrefix + "G", bindingFlags);
+
+                        // Return our test cases
+                        yield return new object[]
+                        {
+                            interfaceType.Type,
+                            classType.Type,
+                            new Tuple<MethodInfo, MethodInfo>[]
+                            {
+                                new Tuple<MethodInfo, MethodInfo>(MInterface, null),
+                                new Tuple<MethodInfo, MethodInfo>(GInterface, null)
+                            }
+                        };
+                    }
+                }
+            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89157", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -1165,6 +1334,136 @@ namespace System.Tests
             internal abstract class C4 : I4
             {
                 public abstract void M();
+            }
+        }
+
+        static class SIMs
+        {
+            internal interface I1
+            {
+                static abstract void M();
+                static abstract void G<T>();
+            }
+            internal interface I1<S>
+            {
+                static abstract void M();
+                static abstract void G<T>();
+            }
+
+            internal class C1 : I1, I1<int>
+            {
+                public static void M() { }
+                public static void G<T>() { }
+            }
+
+            internal class C1Explicit : I1, I1<int>
+            {
+                static void I1.M() { }
+                static void I1.G<T>() { }
+                static void I1<int>.M() { }
+                static void I1<int>.G<T>() { }
+            }
+
+            internal class C1<S> : I1, I1<S>
+            {
+                public static void M() { }
+                public static void G<T>() { }
+            }
+
+            internal class C1Explicit<S> : I1, I1<S>
+            {
+                static void I1.M() { }
+                static void I1.G<T>() { }
+                static void I1<S>.M() { }
+                static void I1<S>.G<T>() { }
+            }
+
+
+            internal interface I2 : I1
+            {
+                // add a default implementation
+                static void I1.M() { }
+                static void I1.G<T>() { }
+            }
+            internal interface I2<S> : I1<S>
+            {
+                // add a default implementation
+                static void I1<S>.M() { }
+                static void I1<S>.G<T>() { }
+            }
+
+            internal class C2Implicit : I2, I2<int> { }
+
+            internal class C2 : I2, I2<int>
+            {
+                public static void M() { }
+                public static void G<T>() { }
+            }
+
+            internal class C2Explicit : I2, I2<int>
+            {
+                static void I1.M() { }
+                static void I1.G<T>() { }
+                static void I1<int>.M() { }
+                static void I1<int>.G<T>() { }
+            }
+
+            internal class C2Implicit<S> : I2, I2<S> { }
+
+            internal class C2<S> : I2, I2<S>
+            {
+                public static void M() { }
+                public static void G<T>() { }
+            }
+
+            internal class C2Explicit<S> : I2, I2<S>
+            {
+                static void I1.M() { }
+                static void I1.G<T>() { }
+                static void I1<S>.M() { }
+                static void I1<S>.G<T>() { }
+            }
+
+
+            internal interface I3 : I2
+            {
+                // reabstract it
+                static abstract void I1.M();
+                static abstract void I1.G<T>();
+            }
+            internal interface I3<S> : I2<S>
+            {
+                // reabstract it
+                static abstract void I1<S>.M();
+                static abstract void I1<S>.G<T>();
+            }
+
+            internal class C3 : I3, I3<int>
+            {
+                public static void M() { }
+                public static void G<T>() { }
+            }
+
+            internal class C3Explicit : I3, I3<int>
+            {
+                static void I1.M() { }
+                static void I1.G<T>() { }
+                static void I1<int>.M() { }
+                static void I1<int>.G<T>() { }
+            }
+
+            internal class C3<S> : I3, I3<S>
+            {
+                public static void M() { }
+                public static void G<T>() { }
+            }
+
+            internal class C3Explicit<S> : I3, I3<S>
+            {
+                static void I1.M() { }
+                static void I1.G<T>() { }
+                static void I1<S>.M() { }
+                static void I1<S>.G<T>() { }
             }
         }
 #endregion

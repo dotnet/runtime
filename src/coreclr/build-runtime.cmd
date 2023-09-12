@@ -142,7 +142,7 @@ if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
-if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
+if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%~2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 if /i "%1" == "-fsanitize"           (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&shift&shift&goto Arg_Loop)
 
@@ -427,6 +427,10 @@ if %__BuildNative% EQU 1 (
         echo     !__BuildErr!
         goto ExitWithCode
     )
+
+    @REM Temporarily disabling PGO until updated files with new linker flag are available.
+    @REM https://github.com/dotnet/runtime/pull/89311
+    GOTO :SkipNativeBuild
 
     if %__EnforcePgo% EQU 1 (
         set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"

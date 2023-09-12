@@ -157,6 +157,8 @@ The following shows the structure for a Release build, but except the name in th
 
 Note: You can flatten the `_framework` folder away by putting `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in a property group in the project file.
 
+Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../my-frontend/wwwroot</WasmAppDir>` in a property group in the project file.
+
 #### `_framework` folder structure
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
@@ -193,12 +195,13 @@ See also [fetch integrity on MDN](https://developer.mozilla.org/en-US/docs/Web/A
 
 ### Pre-fetching
 In order to start downloading application resources as soon as possible you can add HTML elements to `<head>` of your page similar to:
+Adding too many files into prefetch could be counterproductive.
+Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
 <link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
-<link rel="prefetch" href="./_framework/dotnet.native.wasm" as="fetch" crossorigin="anonymous">
 ```
 
 See also [link rel prefetch on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/prefetch)
@@ -290,6 +293,24 @@ A WebAssembly application that works well on desktop PCs browser may take minute
 
 ### Shell environments - NodeJS & V8
 While our primary target is web browsers, we have partial support for Node.JS v14 sufficient to pass most of our automated tests. We also have partial support for the D8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
+
+#### NodeJS < 20
+Until node version 20, you may need to pass these arguments when running the application `--experimental-wasm-simd --experimental-wasm-eh`. When you run the application using `dotnet run`, you can add these to the runtimeconfig template
+
+```json
+"wasmHostProperties": {
+    "perHostConfig": [
+        {
+            "name": "node",
+            ...
+            "host-args": [
+                "--experimental-wasm-simd", // 👈 Enable SIMD support
+                "--experimental-wasm-eh" // 👈 Enable exception handling support
+            ]
+        }
+    ]
+}
+```
 
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
