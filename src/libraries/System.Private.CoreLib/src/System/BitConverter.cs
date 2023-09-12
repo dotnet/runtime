@@ -29,6 +29,7 @@ namespace System
         /// </summary>
         /// <param name="value">A Boolean value.</param>
         /// <returns>A byte array with length 1.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] GetBytes(bool value)
         {
             byte[] r = new byte[1];
