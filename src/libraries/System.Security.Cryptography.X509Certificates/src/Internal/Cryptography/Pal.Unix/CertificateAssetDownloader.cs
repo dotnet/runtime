@@ -15,6 +15,9 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CertificateAssetDownloader
     {
+        private const long DefaultAiaDownloadLimit = 100 * 1024 * 1024;
+
+        private static long AiaDownloadLimit { get; } = GetValue("System.Security.Cryptography.AiaDownloadLimit", DefaultAiaDownloadLimit);
         private static readonly Func<string, CancellationToken, byte[]?>? s_downloadBytes = CreateDownloadBytesFunc();
 
         internal static X509Certificate2? DownloadCertificate(string uri, TimeSpan downloadTimeout)
@@ -161,6 +164,7 @@ namespace Internal.Cryptography.Pal
                 PropertyInfo? requestUriProp = httpRequestMessageType.GetProperty("RequestUri");
                 ConstructorInfo? httpRequestMessageCtor = httpRequestMessageType.GetConstructor(Type.EmptyTypes);
                 MethodInfo? sendMethod = httpClientType.GetMethod("Send", new Type[] { httpRequestMessageType, typeof(CancellationToken) });
+                PropertyInfo? maxResponseContentBufferSizeProp = httpClientType.GetProperty("MaxResponseContentBufferSize");
                 PropertyInfo? responseContentProp = httpResponseMessageType.GetProperty("Content");
                 PropertyInfo? responseStatusCodeProp = httpResponseMessageType.GetProperty("StatusCode");
                 PropertyInfo? responseHeadersProp = httpResponseMessageType.GetProperty("Headers");
@@ -169,7 +173,7 @@ namespace Internal.Cryptography.Pal
 
                 if (socketsHttpHandlerCtor == null || pooledConnectionIdleTimeoutProp == null || allowAutoRedirectProp == null || httpClientCtor == null ||
                     requestUriProp == null || httpRequestMessageCtor == null || sendMethod == null || responseContentProp == null || responseStatusCodeProp == null ||
-                    responseHeadersProp == null || responseHeadersLocationProp == null || readAsStreamMethod == null)
+                    responseHeadersProp == null || responseHeadersLocationProp == null || readAsStreamMethod == null || maxResponseContentBufferSizeProp == null)
                 {
                     Debug.Fail("Unable to load required member.");
                     return null;
@@ -190,6 +194,7 @@ namespace Internal.Cryptography.Pal
                 pooledConnectionIdleTimeoutProp.SetValue(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
                 allowAutoRedirectProp.SetValue(socketsHttpHandler, false);
                 object? httpClient = httpClientCtor.Invoke(new object?[] { socketsHttpHandler });
+                maxResponseContentBufferSizeProp.SetValue(httpClient, AiaDownloadLimit);
 
                 return (string uriString, CancellationToken cancellationToken) =>
                 {
@@ -312,6 +317,25 @@ namespace Internal.Cryptography.Pal
         private static bool IsAllowedScheme(string scheme)
         {
             return string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static long GetValue(string name, long defaultValue)
+        {
+            object? data = AppContext.GetData(name);
+
+            if (data is null)
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return Convert.ToInt64(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }
