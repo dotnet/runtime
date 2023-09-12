@@ -236,50 +236,49 @@ namespace System.Data.Common
             }
             else
             {
-                Type valType = value.GetType();
-                if (_dataType == typeof(Guid) && valType == typeof(string))
+                if (_dataType == typeof(Guid) && value is string)
                 {
                     _values[recordNo] = new Guid((string)value);
                 }
                 else if (_dataType == typeof(byte[]))
                 {
-                    if (valType == typeof(bool))
+                    if (value is bool)
                     {
                         _values[recordNo] = BitConverter.GetBytes((bool)value);
                     }
-                    else if (valType == typeof(char))
+                    else if (value is char)
                     {
                         _values[recordNo] = BitConverter.GetBytes((char)value);
                     }
-                    else if (valType == typeof(short))
+                    else if (value is short)
                     {
                         _values[recordNo] = BitConverter.GetBytes((short)value);
                     }
-                    else if (valType == typeof(int))
+                    else if (value is int)
                     {
                         _values[recordNo] = BitConverter.GetBytes((int)value);
                     }
-                    else if (valType == typeof(long))
+                    else if (value is long)
                     {
                         _values[recordNo] = BitConverter.GetBytes((long)value);
                     }
-                    else if (valType == typeof(ushort))
+                    else if (value is ushort)
                     {
                         _values[recordNo] = BitConverter.GetBytes((ushort)value);
                     }
-                    else if (valType == typeof(uint))
+                    else if (value is uint)
                     {
                         _values[recordNo] = BitConverter.GetBytes((uint)value);
                     }
-                    else if (valType == typeof(ulong))
+                    else if (value is ulong)
                     {
                         _values[recordNo] = BitConverter.GetBytes((ulong)value);
                     }
-                    else if (valType == typeof(float))
+                    else if (value is float)
                     {
                         _values[recordNo] = BitConverter.GetBytes((float)value);
                     }
-                    else if (valType == typeof(double))
+                    else if (value is double)
                     {
                         _values[recordNo] = BitConverter.GetBytes((double)value);
                     }
