@@ -178,9 +178,9 @@ def generateClrEventPipeWriteEventsImpl(
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
-        " = " + createProviderFunc + "(SL(" +
+        " = " + createProviderFunc + "(" +
         providerPrettyName +
-        "Name), " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
+        "Name, " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
