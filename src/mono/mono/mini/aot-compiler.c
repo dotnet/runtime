@@ -14892,7 +14892,9 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
-		acfg->trimming_eligible_methods_outfile = fopen (acfg->aot_opts.trimming_eligible_methods_outfile, "w+, ccs=UTF-8");
+		// acfg->aot_opts.trimming_eligible_methods_outfile was passed in from c# code, where string is utf16 encoding.
+		char *filePath = g_utf16_to_utf8 ((gunichar2*)acfg->aot_opts.trimming_eligible_methods_outfile, -1, NULL, NULL, NULL);
+		acfg->trimming_eligible_methods_outfile = fopen (filePath, "w+");
 		if (!acfg->trimming_eligible_methods_outfile)
 			aot_printerrf (acfg, "Unable to open trimming-eligible-methods-outfile specified file %s\n", acfg->aot_opts.trimming_eligible_methods_outfile);
 		else {
