@@ -700,7 +700,7 @@ void emitter::emitIns_R_R_R(
     if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
-        (INS_feq_d <= ins && ins <= INS_fle_d))
+        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d))
     {
 #ifdef DEBUG
         switch (ins)
@@ -767,12 +767,37 @@ void emitter::emitIns_R_R_R(
             case INS_flt_d:
             case INS_fle_d:
 
+            case INS_lr_w:
+            case INS_lr_d:
+            case INS_sc_w:
+            case INS_sc_d:
+            case INS_amoswap_w:
+            case INS_amoswap_d:
+            case INS_amoadd_w:
+            case INS_amoadd_d:
+            case INS_amoxor_w:
+            case INS_amoxor_d:
+            case INS_amoand_w:
+            case INS_amoand_d:
+            case INS_amoor_w:
+            case INS_amoor_d:
+            case INS_amomin_w:
+            case INS_amomin_d:
+            case INS_amomax_w:
+            case INS_amomax_d:
+            case INS_amominu_w:
+            case INS_amominu_d:
+            case INS_amomaxu_w:
+            case INS_amomaxu_d:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
         }
 
 #endif
+        // Src/data register for load reserved should be empty
+        assert((ins != INS_lr_w && ins != INS_lr_d) || reg3 == REG_R0);
+
         code |= ((reg1 & 0x1f) << 7);
         code |= ((reg2 & 0x1f) << 15);
         code |= ((reg3 & 0x1f) << 20);
@@ -3657,6 +3682,45 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 NYI_RISCV64("illegal ins within emitDisInsName!");
             }
+            return;
+        }
+        case 0b0101111: // AMO - atomic memory operation
+        {
+            unsigned int funct5 = code >> 27;
+            const char* name =
+                funct5 == 0b00010 ? "lr" :
+                funct5 == 0b00011 ? "sc" :
+                funct5 == 0b00001 ? "amoswap" :
+                funct5 == 0b00000 ? "amoadd" :
+                funct5 == 0b00100 ? "amoxor" :
+                funct5 == 0b01100 ? "amoand" :
+                funct5 == 0b01000 ? "amoor" :
+                funct5 == 0b10000 ? "amomin" :
+                funct5 == 0b10100 ? "amomax" :
+                funct5 == 0b11000 ? "amominu" :
+                funct5 == 0b11100 ? "amomaxu" :
+                (assert(!"Illegal funct5 within atomic memory operation, emitDisInsName"), "?");
+
+            unsigned int funct3 = (code >> 12) & 0x7;
+            char width =
+                funct3 == 0b010 ? 'w' :
+                funct3 == 0b011 ? 'd' :
+                (assert(!"Illegal width tag within atomic memory operation, emitDisInsName"), '?');
+
+            const char* aq = code & (1 << 25) ? "a" : "";
+            const char* rl = code & (1 << 26) ? "r" : "";
+            int len = printf("%s.%c.%s%s", name, width, aq, rl);
+            if (len <= 0)
+            {
+                return;
+            }
+            assert(len <= 12);
+
+            const char* dest = RegNames[(code >>  7) & 0x1f];
+            const char* addr = RegNames[(code >> 15) & 0x1f];
+            const char* data = RegNames[(code >> 20) & 0x1f];
+
+            printf("%*s %s, %s, %s\n", 12 - len, "", dest, addr, data);
             return;
         }
         default:

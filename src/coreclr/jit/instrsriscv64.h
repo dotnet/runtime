@@ -241,6 +241,31 @@ INST(fcvt_d_l,      "fcvt.d.l",       0,   0xd2200053)
 INST(fcvt_d_lu,     "fcvt.d.lu",      0,   0xd2300053)
 INST(fmv_d_x,       "fmv.d.x",        0,   0xf2000053)
 
+// RV32A + RV64A (R_R_R)
+// For now all of them are seqentially consistent because the Interlocked.* APIs don't specify acquire/release ordering
+INST(lr_w,          "lr.w",           0,   (0b00010 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(lr_d,          "lr.d",           0,   (0b00010 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(sc_w,          "sc.w",           0,   (0b00011 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(sc_d,          "sc.d",           0,   (0b00011 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amoswap_w,     "amoswap.w",      0,   (0b00001 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amoswap_d,     "amoswap.d",      0,   (0b00001 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amoadd_w,      "amoadd.w",       0,   (0b00000 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amoadd_d,      "amoadd.d",       0,   (0b00000 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amoxor_w,      "amoxor.w",       0,   (0b00100 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amoxor_d,      "amoxor.d",       0,   (0b00100 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amoand_w,      "amoand.w",       0,   (0b01100 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amoand_d,      "amoand.d",       0,   (0b01100 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amoor_w,       "amoor.w",        0,   (0b01000 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amoor_d,       "amoor.d",        0,   (0b01000 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amomin_w,      "amomin.w",       0,   (0b10000 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amomin_d,      "amomin.d",       0,   (0b10000 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amomax_w,      "amomax.w",       0,   (0b10100 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amomax_d,      "amomax.d",       0,   (0b10100 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amominu_w,     "amominu.w",      0,   (0b11000 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amominu_d,     "amominu.d",      0,   (0b11000 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+INST(amomaxu_w,     "amomaxu.w",      0,   (0b11100 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
+INST(amomaxu_d,     "amomaxu.d",      0,   (0b11100 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
+
 // clang-format on
 /*****************************************************************************/
 #undef INST
