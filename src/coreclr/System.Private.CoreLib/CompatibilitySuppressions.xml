@@ -29,28 +29,4 @@
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Diagnostics.Tracing.EventSource.WriteEventWithRelatedActivityIdCore(System.Int32,System.Guid*,System.Int32,System.Diagnostics.Tracing.EventSource.EventData*):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
   </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Reflection.Assembly.GetType(System.String,System.Boolean,System.Boolean):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Reflection.Assembly.GetType(System.String,System.Boolean):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Reflection.Assembly.GetType(System.String):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Reflection.Module.GetType(System.String,System.Boolean,System.Boolean):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Reflection.Module.GetType(System.String,System.Boolean):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Reflection.Module.GetType(System.String):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
-  </Suppression>
 </Suppressions>
