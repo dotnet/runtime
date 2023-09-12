@@ -3175,7 +3175,7 @@ mono_riscv_emit_nop (guint8 *code)
 // Uses at most 16 bytes on RV32I and 24 bytes on RV64I.
 // length == 0 means the data size follows the XLEN
 guint8 *
-mono_riscv_emit_load (guint8 *code, int rd, int rs1, gint32 imm, int length)
+mono_riscv_emit_load (guint8 *code, int rd, int rs1, target_mgreg_t imm, int length)
 {
 	if (!RISCV_VALID_I_IMM (imm)) {
 		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
@@ -3215,7 +3215,7 @@ mono_riscv_emit_load (guint8 *code, int rd, int rs1, gint32 imm, int length)
 
 // Uses at most 16 bytes on RV32I and 24 bytes on RV64I.
 guint8 *
-mono_riscv_emit_loadu (guint8 *code, int rd, int rs1, gint32 imm, int length)
+mono_riscv_emit_loadu (guint8 *code, int rd, int rs1, target_mgreg_t imm, int length)
 {
 	if (!RISCV_VALID_I_IMM (imm)) {
 		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
@@ -3245,7 +3245,7 @@ mono_riscv_emit_loadu (guint8 *code, int rd, int rs1, gint32 imm, int length)
 
 // Uses at most 16 bytes on RV32D and 24 bytes on RV64D.
 guint8 *
-mono_riscv_emit_fload (guint8 *code, int rd, int rs1, gint32 imm, gboolean isSingle)
+mono_riscv_emit_fload (guint8 *code, int rd, int rs1, target_mgreg_t imm, gboolean isSingle)
 {
 	g_assert (riscv_stdext_d || (isSingle && riscv_stdext_f));
 	if (!RISCV_VALID_I_IMM (imm)) {
@@ -3266,7 +3266,7 @@ mono_riscv_emit_fload (guint8 *code, int rd, int rs1, gint32 imm, gboolean isSin
 // May clobber t0. Uses at most 16 bytes on RV32I and 24 bytes on RV64I.
 // length == 0 means the data size follows the XLEN
 guint8 *
-mono_riscv_emit_store (guint8 *code, int rs2, int rs1, gint32 imm, int length)
+mono_riscv_emit_store (guint8 *code, int rs2, int rs1, target_mgreg_t imm, int length)
 {
 	if (!RISCV_VALID_S_IMM (imm)) {
 		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
@@ -3306,7 +3306,7 @@ mono_riscv_emit_store (guint8 *code, int rs2, int rs1, gint32 imm, int length)
 
 // May clobber t0. Uses at most 16 bytes on RV32I and 24 bytes on RV64I.
 guint8 *
-mono_riscv_emit_fstore (guint8 *code, int rs2, int rs1, gint32 imm, gboolean isSingle)
+mono_riscv_emit_fstore (guint8 *code, int rs2, int rs1, target_mgreg_t imm, gboolean isSingle)
 {
 	g_assert (riscv_stdext_d || (isSingle && riscv_stdext_f));
 	if (!RISCV_VALID_I_IMM (imm)) {

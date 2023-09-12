@@ -305,19 +305,19 @@ __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_nop (guint8 *code);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_load (
-    guint8 *code, int rd, int rs1, gint32 imm, int length);
+    guint8 *code, int rd, int rs1, target_mgreg_t imm, int length);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_loadu (
-    guint8 *code, int rd, int rs1, gint32 imm, int length);
+    guint8 *code, int rd, int rs1, target_mgreg_t imm, int length);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_fload (
-    guint8 *code, int rd, int rs1, gint32 imm, gboolean isSingle);
+    guint8 *code, int rd, int rs1, target_mgreg_t imm, gboolean isSingle);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_store (
-    guint8 *code, int rs2, int rs1, gint32 imm, int length);
+    guint8 *code, int rs2, int rs1, target_mgreg_t imm, int length);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_fstore (
-    guint8 *code, int rs2, int rs1, gint32 imm, gboolean isSingle);
+    guint8 *code, int rs2, int rs1, target_mgreg_t imm, gboolean isSingle);
 
 __attribute__ ((__warn_unused_result__)) guint8 *mono_riscv_emit_destroy_frame (guint8 *code);
 
