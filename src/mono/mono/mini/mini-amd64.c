@@ -355,7 +355,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 		g_assert(info);
 		for (guint32 i = 0; i < info->num_fields; ++i) {
 			if (MONO_TYPE_ISSTRUCT (info->fields [i].field->type)) {
-				collect_field_info_nested (mono_class_from_mono_type_internal (info->fields [i].field->type), fields_array, info->fields [i].offset, pinvoke, unicode);
+				collect_field_info_nested (mono_class_from_mono_type_internal (info->fields [i].field->type), fields_array, (offset + info->fields [i].offset), pinvoke, unicode);
 			} else {
 				guint32 align;
 				StructFieldInfo f;
@@ -365,7 +365,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 															   info->fields [i].mspec,
 															   &align, TRUE, unicode);
 				f.offset = offset + info->fields [i].offset;
-				if (i == info->num_fields - 1 && f.size + f.offset < info->native_size) {
+				if ((i == info->num_fields - 1) && ((f.size + f.offset) < info->native_size)) {
 					/* This can happen with .pack directives eg. 'fixed' arrays */
 					if (MONO_TYPE_IS_PRIMITIVE (f.type)) {
 						/* Replicate the last field to fill out the remaining place, since the code in add_valuetype () needs type information */
