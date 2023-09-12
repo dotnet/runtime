@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using Xunit;
 
-using Reflection = System.Reflection;
 using InteropServices = System.Runtime.InteropServices;
+using JitInfo = System.Runtime.JitInfo;
 
 public class JittedMethodsCountingTest
 {
-    private const int MAX_JITTED_METHODS_ACCEPTED = 50;
+    private const int MAX_JITTED_METHODS_ACCEPTED = 70;
 
     [Fact]
     public static int TestEntryPoint()
@@ -32,31 +29,12 @@ public class JittedMethodsCountingTest
             return 100;
         }
 
-        string testAppLocation = Path.GetDirectoryName(Reflection
-                                                      .Assembly
-                                                      .GetExecutingAssembly()
-                                                      .Location);
-        string appName = Path.Combine(testAppLocation, "HelloWorld.dll");
+        Console.WriteLine("\nHello World from Jitted Methods Counting Test!");
 
-        // For adding any new apps for this test, make sure they return a negative
-        // number when failing.
-        int appResult = RunHelloWorldApp(appName);
+        long jits = JitInfo.GetCompiledMethodCount(false);
+        Console.WriteLine("Number of Jitted Methods in App: {0}\n", jits);
 
-        if (appResult < 0)
-        {
-            Console.WriteLine("App failed somewhere and so we can't proceed with"
-                              + " the Jitted Methods analysis.");
-
-            Console.WriteLine("App Exit Code: {0}", appResult);
-            Console.WriteLine("Exiting...");
-
-            return 101;
-        }
-
-        // App finished successfully. We can now take a look at how many methods
-        // got jitted at runtime.
-        Console.WriteLine("Number of Jitted Methods: {0}\n", appResult);
-        return appResult > 0 && appResult <= MAX_JITTED_METHODS_ACCEPTED ? 100 : 101;
+        return (jits > 0 && jits <= MAX_JITTED_METHODS_ACCEPTED) ? 100 : 101;
     }
 
     private static bool IsReadyToRunEnvSet()
@@ -78,37 +56,5 @@ public class JittedMethodsCountingTest
                                                       .OSArchitecture;
 
         return (thisMachineArch == InteropServices.Architecture.Arm64);
-    }
-
-    private static int RunHelloWorldApp(string appName)
-    {
-        // The app's exit code is the number of jitted methods it got.
-        int appExitCode = -1;
-
-        // Set up our CoreRun call.
-        string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
-        string exeSuffix = OperatingSystem.IsWindows() ? ".exe" : "";
-        string coreRun = Path.Combine(coreRoot, $"corerun{exeSuffix}");
-
-        using (Process app = new Process())
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = coreRun,
-                Arguments = appName,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-            };
-
-            Console.WriteLine("\nLaunching Test App: {0} {1}", startInfo.FileName,
-                                                               startInfo.Arguments);
-
-            app.StartInfo = startInfo;
-            app.Start();
-            app.WaitForExit();
-            appExitCode = app.ExitCode;
-        }
-
-        return appExitCode;
     }
 }

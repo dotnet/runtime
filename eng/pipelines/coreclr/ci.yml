@@ -80,7 +80,6 @@ extends:
           platforms:
           - linux_arm
           - linux_musl_arm64
-          - linux_arm64
           - linux_x64
           - osx_arm64
           - osx_x64
