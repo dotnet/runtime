@@ -1940,12 +1940,17 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 }
                 """);
 
-            StructWithNestedStructs.DeeplyNested obj = new();
 #pragma warning disable SYSLIB1103
+            StructWithNestedStructs.DeeplyNested obj = new();
             configuration.Bind(obj);
-#pragma warning restore SYSLIB1103
             Assert.Equal(0, obj.Int32);
             Assert.False(obj.Boolean);
+
+            StructWithNestedStructs.DeeplyNested? nullableObj = new();
+            configuration.Bind(nullableObj);
+            Assert.Equal(0, obj.Int32);
+            Assert.False(obj.Boolean);
+#pragma warning restore SYSLIB1103
         }
 
         [Fact]
@@ -2023,7 +2028,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         [Fact]
         public void ComplexObj_As_Enumerable_Element()
         {
-            var  configuration = TestHelpers.GetConfigurationFromJsonString("""{ "Enumerable": [{ "Latitude": 3, "Longitude": 4 }] }""")
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""{ "Enumerable": [{ "Latitude": 3, "Longitude": 4 }] }""")
                 .GetSection("Enumerable");
 
             Geolocation obj = configuration.Get<IList<Geolocation>>()[0];
@@ -2191,6 +2196,130 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configuration.Bind(location);
             configuration.Bind(location, _ => { });
             configuration.Bind("", location);
+        }
+
+        [Fact]
+        public void TestAbstractTypeAsNestedMemberForBinding()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/91324.
+
+            IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(
+                new KeyValuePair<string, string?>[]
+                {
+                     new KeyValuePair<string, string?>("ConfigBindRepro:EndPoints:0", "localhost"),
+                     new KeyValuePair<string, string?>("ConfigBindRepro:Property", "true")
+                })
+                .Build();
+
+            AClass settings = new();
+            configuration.GetSection("ConfigBindRepro").Bind(settings);
+
+            Assert.Empty(settings.EndPoints); // Need custom binding feature to map "localhost" string into Endpoint instance.
+            Assert.True(settings.Property);
+        }
+
+        [Fact]
+        public static void TestGettingAbstractType()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Value"":1}");
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<AbstractBase>());
+        }
+
+        [Fact]
+        public static void TestBindingAbstractInstance()
+        {
+            // Regression tests for https://github.com/dotnet/runtime/issues/90974.
+            // We only bind members on the declared binding type, i.e. AbstractBase, even
+            // though the actual instances are derived types that may have their own properties.
+
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Value"":1,""Value2"":2}");
+
+            AbstractBase d = new Derived();
+            configuration.Bind(d);
+            Assert.Equal(1, d.Value);
+
+            d = new DerivedWithAnotherProp();
+            configuration.Bind(d);
+            Assert.Equal(1, d.Value);
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Divergence from reflection impl: reflection binds using instance type,
+            // while src-gen can only use declared type (everything has to be known AOT).
+            // This could change if we add an explicit API to indicate the expected runtime type(s).
+            Assert.Equal(0, ((DerivedWithAnotherProp)d).Value2);
+#else
+            Assert.Equal(2, ((DerivedWithAnotherProp)d).Value2);
+#endif
+        }
+
+        [Fact]
+        public static void TestBindingAbstractMember_AsCtorParam()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{ ""AbstractProp"": {""Value"":1} }");
+            Assert.Throws<InvalidOperationException>(configuration.Get<ClassWithAbstractCtorParam>);
+            Assert.Throws<InvalidOperationException>(configuration.Get<ClassWithOptionalAbstractCtorParam>);
+        }
+
+        [Fact]
+        public void GetIConfigurationSection()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": "MyString",
+                }
+                """);
+
+            var obj = configuration.GetSection("value").Get<IConfigurationSection>();
+            Assert.Equal("MyString", obj.Value);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": [ "MyString", { "nested": "value" } ],
+                }
+                """);
+
+            var list = configuration.GetSection("value").Get<List<IConfigurationSection>>();
+            ValidateList(list);
+
+            var dict = configuration.Get<Dictionary<string, List<IConfigurationSection>>>();
+            Assert.Equal(1, dict.Count);
+            ValidateList(dict["vaLue"]);
+
+            static void ValidateList(List<IConfigurationSection> list)
+            {
+                Assert.Equal(2, list.Count);
+                Assert.Equal("0", list[0].Key);
+                Assert.Equal("MyString", list[0].Value);
+
+                Assert.Equal("1", list[1].Key);
+                var nestedSection = Assert.IsAssignableFrom<IConfigurationSection>(list[1].GetSection("nested"));
+                Assert.Equal("value", nestedSection.Value);
+            }
+        }
+
+        [Fact]
+        public void NullableDictKeys()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""{ "1": "MyString" }""");
+            var dict = configuration.Get<Dictionary<int?, string>>();
+            Assert.Empty(dict);
+        }
+
+        [Fact]
+        public void IConfigurationSectionAsCtorParam()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "MySection": "MySection",
+                    "MyObject": "MyObject",
+                    "MyString": "MyString",
+                }
+                """);
+
+            var obj = configuration.Get<ClassWith_DirectlyAssignable_CtorParams>();
+            Assert.Equal("MySection", obj.MySection.Value);
+            Assert.Equal("MyObject", obj.MyObject);
+            Assert.Equal("MyString", obj.MyString);
         }
     }
 }
