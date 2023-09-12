@@ -8,7 +8,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<KeyValuePair<TKey, int>> CountBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer = null) where TKey : notnull
+        public static IEnumerable<KeyValuePair<TKey, int>> CountBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
         {
             if (source is null)
             {
@@ -19,32 +19,39 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            return Core(source, keySelector, comparer);
+            return Core(source, keySelector, keyComparer);
 
-            static IEnumerable<KeyValuePair<TKey, int>> Core(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+            static IEnumerable<KeyValuePair<TKey, int>> Core(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer)
             {
-                Dictionary<TKey, int> countsBy = BuildCountDictionary(source, keySelector, comparer);
+                using IEnumerator<TSource> enumerator = source.GetEnumerator();
 
-                foreach (KeyValuePair<TKey, int> countBy in countsBy)
+                if (!enumerator.MoveNext())
+                {
+                    yield break;
+                }
+
+                foreach (KeyValuePair<TKey, int> countBy in BuildCountDictionary(enumerator, keySelector, keyComparer))
                 {
                     yield return countBy;
                 }
             }
 
-            static Dictionary<TKey, int> BuildCountDictionary(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+            static Dictionary<TKey, int> BuildCountDictionary(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer)
             {
-                Dictionary<TKey, int> countsBy = new(comparer);
+                Dictionary<TKey, int> countsBy = new(keyComparer);
 
-                foreach (TSource element in source)
+                do
                 {
-                    TKey currentKey = keySelector(element);
+                    TSource value = enumerator.Current;
+                    TKey key = keySelector(value);
 
-                    ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, currentKey, out _);
+                    ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, key, out _);
                     checked
                     {
                         currentCount++;
                     }
                 }
+                while (enumerator.MoveNext());
 
                 return countsBy;
             }
