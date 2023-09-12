@@ -74,6 +74,8 @@
 
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
     <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
+
+    <TrimmerRootAssembly Include="TestUtilities" />
   </ItemGroup>
 
   <ItemGroup>

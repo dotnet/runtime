@@ -70,7 +70,6 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x86
           - linux_x64
           - linux_arm
           - linux_arm64
@@ -79,7 +78,6 @@ extends:
           - linux_musl_arm64
           - linux_musl_x64
           - osx_arm64
-          - tizen_armel
           - windows_x86
           - windows_x64
           - windows_arm64
@@ -187,6 +185,48 @@ extends:
                 or(
                   eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
                   eq(variables['isRollingBuild'], true)))
+
+      #
+      # Build CoreCLR with no R2R
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: checked
+          runtimeFlavor: coreclr
+          platforms:
+          - linux_x86
+          jobParameters:
+            testScope: innerloop
+            nameSuffix: CoreCLR_NoR2R
+            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib -c $(_BuildConfig)
+            timeoutInMinutes: 120
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build CoreCLR as a non-portable build
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: checked
+          runtimeFlavor: coreclr
+          platforms:
+          - tizen_armel
+          jobParameters:
+            testScope: innerloop
+            nameSuffix: CoreCLR_NonPortable
+            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages -c $(_BuildConfig) /p:PortableBuild=false
+            timeoutInMinutes: 120
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT debug build and smoke tests

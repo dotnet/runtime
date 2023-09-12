@@ -1343,12 +1343,6 @@ public:
     void SetInternal(Thread *it);
     void ClearInternal();
 
-    INT32 GetManagedThreadId()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ManagedThreadId;
-    }
-
     void SetManagedThreadId(INT32 id)
     {
         LIMITED_METHOD_CONTRACT;

@@ -375,17 +375,14 @@ mono_ios_runtime_init (void)
     mono_set_crash_chaining (TRUE);
 
     if (wait_for_debugger) {
-        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
+        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556" };
         mono_jit_parse_options (1, options);
     }
 
     MonoDomain *domain = mono_jit_init_version ("dotnet.ios", "mobile");
     assert (domain);
 
-#if !FORCE_INTERPRETER && (!TARGET_OS_SIMULATOR || FORCE_AOT)
-    // device runtimes are configured to use lazy gc thread creation
     mono_gc_init_finalizer_thread ();
-#endif
 
     MonoAssembly *assembly = load_assembly (executable, NULL);
     assert (assembly);

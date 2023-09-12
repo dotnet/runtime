@@ -30,6 +30,7 @@ namespace Internal.JitInterface
         ARM64_Dczva = InstructionSet_ARM64.Dczva,
         ARM64_Rcpc = InstructionSet_ARM64.Rcpc,
         ARM64_VectorT128 = InstructionSet_ARM64.VectorT128,
+        ARM64_Rcpc2 = InstructionSet_ARM64.Rcpc2,
         ARM64_ArmBase_Arm64 = InstructionSet_ARM64.ArmBase_Arm64,
         ARM64_AdvSimd_Arm64 = InstructionSet_ARM64.AdvSimd_Arm64,
         ARM64_Aes_Arm64 = InstructionSet_ARM64.Aes_Arm64,
@@ -185,14 +186,15 @@ namespace Internal.JitInterface
         Dczva = 12,
         Rcpc = 13,
         VectorT128 = 14,
-        ArmBase_Arm64 = 15,
-        AdvSimd_Arm64 = 16,
-        Aes_Arm64 = 17,
-        Crc32_Arm64 = 18,
-        Dp_Arm64 = 19,
-        Rdm_Arm64 = 20,
-        Sha1_Arm64 = 21,
-        Sha256_Arm64 = 22,
+        Rcpc2 = 15,
+        ArmBase_Arm64 = 16,
+        AdvSimd_Arm64 = 17,
+        Aes_Arm64 = 18,
+        Crc32_Arm64 = 19,
+        Dp_Arm64 = 20,
+        Rdm_Arm64 = 21,
+        Sha1_Arm64 = 22,
+        Sha256_Arm64 = 23,
     }
 
     public enum InstructionSet_X64
@@ -1147,7 +1149,7 @@ namespace Internal.JitInterface
                 { ("armv8.1-a",  TargetArchitecture.ARM64), "armv8-a lse crc rdma" },
                 { ("armv8.2-a",  TargetArchitecture.ARM64), "armv8.1-a" },
                 { ("armv8.3-a",  TargetArchitecture.ARM64), "armv8.2-a rcpc" },
-                { ("armv8.4-a",  TargetArchitecture.ARM64), "armv8.3-a dotprod" },
+                { ("armv8.4-a",  TargetArchitecture.ARM64), "armv8.3-a dotprod rcpc2" },
                 { ("armv8.5-a",  TargetArchitecture.ARM64), "armv8.4-a" },
                 { ("armv8.6-a",  TargetArchitecture.ARM64), "armv8.5-a" },
                 { ("apple-m1",   TargetArchitecture.ARM64), "armv8.5-a" },
@@ -1195,6 +1197,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
                     yield return new InstructionSetInfo("rcpc", "", InstructionSet.ARM64_Rcpc, true);
                     yield return new InstructionSetInfo("vectort128", "VectorT128", InstructionSet.ARM64_VectorT128, true);
+                    yield return new InstructionSetInfo("rcpc2", "", InstructionSet.ARM64_Rcpc2, true);
                     break;
 
                 case TargetArchitecture.X64:

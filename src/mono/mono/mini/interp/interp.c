@@ -1212,27 +1212,6 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, gboolean safe)
 }
 
 static MonoException*
-ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSignature *sig, gboolean safe)
-{
-	MonoObject *o = sp->data.o;
-	MonoArray *ao = (MonoArray *) o;
-	MonoClass *ac = o->vtable->klass;
-
-	g_assert (m_class_get_rank (ac) >= 1);
-
-	gint32 pos = ves_array_calculate_index (ao, sp + 1, safe);
-	if (pos == -1)
-		return mono_get_exception_index_out_of_range ();
-
-	gint32 esize = mono_array_element_size (ac);
-	gconstpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
-
-	MonoType *mt = sig->ret;
-	stackval_from_data (mt, retval, ea, FALSE);
-	return NULL;
-}
-
-static MonoException*
 ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArray *ao, gpointer *ret, stackval *sp, gboolean needs_typecheck)
 {
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
