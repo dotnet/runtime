@@ -408,8 +408,6 @@
       <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent,log_dest</_MonoMinimal>
       <_MonoMinimal Condition="'$(Configuration)' == 'Release' and '$(MonoEnableAssertMessages)' != 'true'">$(_MonoMinimal),assert_messages</_MonoMinimal>
       <_MonoMinimal Condition="'$(MonoWasmThreads)' != 'true'">$(_MonoMinimal),threads</_MonoMinimal>
-      <_AppropriateWasmExceptionFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">-fexceptions</_AppropriateWasmExceptionFlags>
-      <_AppropriateWasmExceptionFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions</_AppropriateWasmExceptionFlags>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,interpreter,qcalls$(_MonoMinimal)"/>
@@ -418,10 +416,8 @@
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_WEBCIL=1"/>
-      <_MonoCFLAGS Include="$(_AppropriateWasmExceptionFlags)"/>
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-pthread"/>
       <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
-      <_MonoCXXFLAGS Include="$(_AppropriateWasmExceptionFlags)"/>
       <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-pthread"/>
       <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
     </ItemGroup>

@@ -359,7 +359,8 @@ export function mono_jiterp_do_jit_call_indirect(
             jiterpreter_allocate_tables(Module);
             // We successfully instantiated it so we can register it as the new do_jit_call handler
             const result = addWasmFunctionPointer(JiterpreterTable.DoJitCall, impl);
-            // mono_log_info("Installed do_jit_call_indirect");
+            if (getOptions().enableStats)
+                mono_log_info("Installed do_jit_call_indirect");
             cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             failed = false;
         } catch (exc) {
@@ -375,18 +376,21 @@ export function mono_jiterp_do_jit_call_indirect(
             // HACK: It's not safe to use Module.addFunction in a multithreaded scenario
             if (MonoWasmThreads) {
                 // Use mono_llvm_cpp_catch_exception instead
-                // mono_log_info("Installed mono_llvm_cpp_catch_exception");
+                if (getOptions().enableStats)
+                    mono_log_info("Installed mono_llvm_cpp_catch_exception");
                 cwraps.mono_jiterp_update_jit_call_dispatcher(0);
             } else {
                 // Use the JS helper function defined up above
-                // mono_log_info("Installed do_jit_call_indirect_js");
+                if (getOptions().enableStats)
+                    mono_log_info("Installed do_jit_call_indirect_js");
                 const result = Module.addFunction(do_jit_call_indirect_js, "viii");
                 cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             }
         } catch {
             // CSP policy or some other problem could break Module.addFunction, so in that case, pass 0
             // This will cause the runtime to use mono_llvm_cpp_catch_exception
-            // mono_log_info("Installed mono_llvm_cpp_catch_exception");
+            if (getOptions().enableStats)
+                mono_log_info("Installed mono_llvm_cpp_catch_exception");
             cwraps.mono_jiterp_update_jit_call_dispatcher(0);
         }
     }

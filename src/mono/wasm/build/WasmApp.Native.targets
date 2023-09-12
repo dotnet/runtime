@@ -26,6 +26,8 @@
       _ReadEmccProps
     </_BeforeWasmBuildAppDependsOn>
 
+    <_EmccDefaultFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">-fexceptions</_EmccDefaultFlags>
+    <_EmccDefaultFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions</_EmccDefaultFlags>
     <_EmccDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128</_EmccDefaultFlags>
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
