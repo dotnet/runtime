@@ -96,9 +96,9 @@ is_zero_const (const MonoInst* ins)
 	case OP_I8CONST:
 		return (0 == ins->inst_l);
 	case OP_R4CONST:
-		return (0.0f == *(const float*)(ins->inst_p0));
+		return (0 == *(const uint32_t*)(ins->inst_p0)); // Must be binary zero. -0.0f has a sign of 1.
 	case OP_R8CONST:
-		return (0.0 == *(const double*)(ins->inst_p0));
+		return (0 == *(const uint64_t*)(ins->inst_p0));
 	}
 	return FALSE;
 }
