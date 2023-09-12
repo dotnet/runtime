@@ -438,10 +438,16 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	int sregs [MONO_MAX_SRC_REGS];
 	char spec_dest = (char)0, spec_src1 = (char)0, spec_src2 = (char)0, spec_src3 = (char)0;
 
-	if (i != -1)
+	if (i != -1) {
+		#ifndef DISABLE_LOGGING
 		g_string_append_printf (sbuf, "\t%-2d %s", i, mono_inst_name (ins->opcode));
-	else
+		#endif
+	}
+	else {
+		#ifndef DISABLE_LOGGING
 		g_string_append_printf (sbuf, " %s", mono_inst_name (ins->opcode));
+		#endif
+	}
 	if (spec == (gpointer)MONO_ARCH_CPU_SPEC) {
 		/* This is a lowered opcode */
 		if (ins->dreg != -1) {
@@ -1153,12 +1159,21 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			spec = ins_get_spec (i);
 			ispec = INS_INFO (i);
 
-			if ((spec [MONO_INST_DEST] && (ispec [MONO_INST_DEST] == ' ')))
+			if ((spec [MONO_INST_DEST] && (ispec [MONO_INST_DEST] == ' '))) {
+				#ifndef DISABLE_LOGGING
 				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
-			if ((spec [MONO_INST_SRC1] && (ispec [MONO_INST_SRC1] == ' ')))
+				#endif
+			}
+			if ((spec [MONO_INST_SRC1] && (ispec [MONO_INST_SRC1] == ' '))) {
+				#ifndef DISABLE_LOGGING
 				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
-			if ((spec [MONO_INST_SRC2] && (ispec [MONO_INST_SRC2] == ' ')))
+				#endif
+			}
+			if ((spec [MONO_INST_SRC2] && (ispec [MONO_INST_SRC2] == ' '))) {
+				#ifndef DISABLE_LOGGING
 				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				#endif
+			}
 		}
 #endif
 	}
@@ -1243,7 +1258,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		spec_dest = spec [MONO_INST_DEST];
 
 		if (G_UNLIKELY (spec == (gpointer)/*FIXME*/MONO_ARCH_CPU_SPEC)) {
+			#ifndef DISABLE_LOGGING
 			g_error ("Opcode '%s' missing from machine description file.", mono_inst_name (ins->opcode));
+			#endif
 		}
 
 		DEBUG (mono_print_ins_index (i, ins));
@@ -2286,7 +2303,9 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_LGT_UN:
 		return CMP_GT_UN;
 	default:
+		#ifndef DISABLE_LOGGING
 		printf ("%s\n", mono_inst_name (opcode));
+		#endif
 		g_assert_not_reached ();
 		return (CompRelation)0;
 	}
@@ -2349,7 +2368,9 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 			return CMP_TYPE_L;
 		}
 	} else {
+		#ifndef DISABLE_LOGGING
 		g_error ("Unknown opcode '%s' in opcode_to_type", mono_inst_name (opcode));
+		#endif
 		return (CompType)0;
 	}
 }
