@@ -930,25 +930,4 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
     }
-
-    internal static class ParserExtensions
-    {
-        public static void RegisterCacheEntry<TKey, TValue, TEntry>(this Dictionary<TKey, TValue> cache, TKey key, TEntry entry)
-            where TKey : notnull
-            where TValue : ICollection<TEntry>, new()
-        {
-            if (!cache.TryGetValue(key, out TValue? entryCollection))
-            {
-                cache[key] = entryCollection = new TValue();
-            }
-
-            entryCollection.Add(entry);
-        }
-
-        public static void Deconstruct(this KeyValuePair<TypeSpec, List<InterceptorLocationInfo>> source, out ComplexTypeSpec Key, out List<InterceptorLocationInfo> Value)
-        {
-            Key = (ComplexTypeSpec)source.Key;
-            Value = source.Value;
-        }
-    }
 }

@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -15,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Namespace = type.ContainingNamespace?.ToDisplayString();
             DisplayString = type.ToMinimalDisplayString();
             Name = (Namespace is null ? string.Empty : Namespace + ".") + DisplayString.Replace(".", "+");
-            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring(useUniqueName: true);
+            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring(DisplayString);
             IsValueType = type.IsValueType;
         }
 
