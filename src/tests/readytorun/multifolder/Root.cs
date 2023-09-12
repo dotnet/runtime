@@ -5,10 +5,12 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
+using Xunit;
 
 public class RootClass
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string currentFolder = Path.GetDirectoryName(typeof(RootClass).Assembly.Location);
         string folderAPath = Path.Combine(currentFolder, "..", "FolderA", "FolderA", "FolderA.dll");

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CrossGenTest>false</CrossGenTest>
     <!-- https://github.com/dotnet/runtime/issues/73138 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>

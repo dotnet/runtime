@@ -2158,8 +2158,7 @@ public class Program
         return true;
     }
 
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         _passedTests = new List<string>();
         _failedTests = new List<string>();
@@ -2245,6 +2244,7 @@ public class Program
         if (_failedTests.Count == 0)
         {
             Console.WriteLine($@"All {_passedTests.Count} tests pass!");
+            return 100;
         }
         else
         {
@@ -2253,7 +2253,7 @@ public class Program
             {
                 Console.Error.WriteLine($@"    {testName}");
             }
-            throw new Exception($"{_failedTests.Count} test cases failed!");
+            return 101;
         }
     }
 
