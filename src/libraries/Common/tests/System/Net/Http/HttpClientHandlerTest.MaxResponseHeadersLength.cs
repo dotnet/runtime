@@ -68,6 +68,7 @@ namespace System.Net.Http.Functional.Tests
             server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74896")]
         [Theory]
         [InlineData(1)]
         [InlineData(15)]
