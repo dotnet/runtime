@@ -9,6 +9,9 @@ using Tracing.Tests.Common;
 
 namespace Tracing.Tests
 {
+    using Xunit;
+    using Assert = Tracing.Tests.Common.Assert;
+    
     public static class EventActivityIdControlTest
     {
         internal enum ActivityControlCode : uint
@@ -26,7 +29,7 @@ namespace Tracing.Tests
         private static MethodInfo s_EventActivityIdControl;
         private static bool s_FailureEncountered = false;
 
-        static int Main()
+        public static int Main()
         {
             if(!Initialize())
             {

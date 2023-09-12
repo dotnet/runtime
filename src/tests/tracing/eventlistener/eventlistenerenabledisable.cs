@@ -70,9 +70,9 @@ namespace Tracing.Tests
         }
     }
 
-    class EventListenerEnableDisableTest
+    public class EventListenerEnableDisableTest
     {
-        static int Main()
+        public static int Main()
         {
             bool pass = false;
             using(var source = new EnableDisableEventSource())

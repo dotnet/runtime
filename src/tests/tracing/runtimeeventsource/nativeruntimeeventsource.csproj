@@ -10,6 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NativeRuntimeEventSourceTest.cs" />
-    <ProjectReference Include="../common/common.csproj" />
+    <ProjectReference Include="../common/tracing_common.csproj" />
   </ItemGroup>
 </Project>

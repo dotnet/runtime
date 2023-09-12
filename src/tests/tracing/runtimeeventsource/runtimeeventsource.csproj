@@ -11,7 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RuntimeEventSourceTest.cs" />
-    <ProjectReference Include="../common/common.csproj" />
+    <ProjectReference Include="../common/tracing_common.csproj" />
     <RuntimeHostConfigurationOption Include="RuntimeHostConfigSwitch" Value="true" />
   </ItemGroup>
 </Project>

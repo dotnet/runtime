@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventActivityIdControl.cs" />
-    <ProjectReference Include="../common/common.csproj" />
+    <ProjectReference Include="../common/tracing_common.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <RdXmlFile Include="rd.xml" />
