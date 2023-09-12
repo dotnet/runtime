@@ -6,7 +6,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
@@ -24,6 +23,7 @@ namespace System.Buffers
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
+        /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
         public static SearchValues<byte> Create(ReadOnlySpan<byte> values)
         {
             if (values.IsEmpty)
@@ -66,6 +66,7 @@ namespace System.Buffers
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
+        /// /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
         public static SearchValues<char> Create(ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
@@ -155,22 +156,16 @@ namespace System.Buffers
                     : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(probabilisticValues);
             }
 
-            // We prefer using the ProbabilisticMap over Latin1CharSearchValues if the former is vectorized.
-            if (!(Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && maxInclusive < 256)
-            {
-                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported.
-                return new Latin1CharSearchValues(values);
-            }
-
             return new ProbabilisticCharSearchValues(probabilisticValues);
         }
 
         /// <summary>
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
-        /// <para>Only <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> may be used.</para>
         /// </summary>
         /// <param name="values">The set of values.</param>
         /// <param name="comparisonType">Specifies whether to use <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> search semantics.</param>
+        /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
+        /// <remarks>Only <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> may be used.</remarks>
         public static SearchValues<string> Create(ReadOnlySpan<string> values, StringComparison comparisonType)
         {
             if (comparisonType is not (StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase))

@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Options;
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
@@ -32,28 +33,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IServiceCollection extensions.
         /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
-        [InterceptsLocationAttribute(@"src-0.cs", 14, 18)]
-        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, IConfiguration configuration, Action<BinderOptions>? configureOptions) where TOptions : class
+        [InterceptsLocation(@"src-0.cs", 14, 18)]
+        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, IConfiguration config, Action<BinderOptions>? configureOptions) where TOptions : class
         {
-            return Configure<TOptions>(services, string.Empty, configuration, configureOptions);
+            return Configure<TOptions>(services, string.Empty, config, configureOptions);
         }
 
         /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
-        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, IConfiguration configuration, Action<BinderOptions>? configureOptions) where TOptions : class
+        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, IConfiguration config, Action<BinderOptions>? configureOptions) where TOptions : class
         {
             if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (configuration is null)
+            if (config is null)
             {
-                throw new ArgumentNullException(nameof(configuration));
+                throw new ArgumentNullException(nameof(config));
             }
 
             OptionsServiceCollectionExtensions.AddOptions(services);
-            services.AddSingleton<IOptionsChangeTokenSource<TOptions>>(new ConfigurationChangeTokenSource<TOptions>(name, configuration));
-            return services.AddSingleton<Microsoft.Extensions.Options.IConfigureOptions<TOptions>>(new Microsoft.Extensions.Options.ConfigureNamedOptions<TOptions>(name, obj => BindCoreMain(configuration, obj, typeof(TOptions)configureOptions)));
+            services.AddSingleton<IOptionsChangeTokenSource<TOptions>>(new ConfigurationChangeTokenSource<TOptions>(name, config));
+            return services.AddSingleton<IConfigureOptions<TOptions>>(new ConfigureNamedOptions<TOptions>(name, instance => BindCoreMain(config, instance, typeof(TOptions), configureOptions)));
         }
         #endregion IServiceCollection extensions.
 
@@ -61,16 +62,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass2 = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyInt" });
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList", "MyList2", "MyDictionary" });
 
-        public static void BindCoreMain(IConfiguration configuration, object obj, Type type, Action<BinderOptions>? configureOptions)
+        public static void BindCoreMain(IConfiguration configuration, object instance, Type type, Action<BinderOptions>? configureOptions)
         {
-            if (configuration is null)
+            if (instance is null)
             {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
+                return;
             }
 
             if (!HasValueOrChildren(configuration))
@@ -82,7 +78,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (type == typeof(Program.MyClass))
             {
-                var temp = (Program.MyClass)obj;
+                var temp = (Program.MyClass)instance;
                 BindCore(configuration, ref temp, binderOptions);
                 return;
             }
@@ -90,81 +86,81 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
-        public static void BindCore(IConfiguration configuration, ref List<int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref List<int> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj.Add(ParseInt(value, () => section.Path));
+                    instance.Add(ParseInt(value, () => section.Path));
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass2 obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass2 instance, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
             if (configuration["MyInt"] is string value1)
             {
-                obj.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref List<Program.MyClass2> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref List<Program.MyClass2> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 var value = new Program.MyClass2();
                 BindCore(section, ref value, binderOptions);
-                obj.Add(value);
+                instance.Add(value);
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, string> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Dictionary<string, string> instance, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj[section.Key] = value;
+                    instance[section.Key] = value;
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
-            obj.MyString = configuration["MyString"]!;
+            instance.MyString = configuration["MyString"]!;
 
             if (configuration["MyInt"] is string value4)
             {
-                obj.MyInt = ParseInt(value4, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value4, () => configuration.GetSection("MyInt").Path);
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section5)
             {
-                List<int>? temp7 = obj.MyList;
+                List<int>? temp7 = instance.MyList;
                 temp7 ??= new List<int>();
                 BindCore(section5, ref temp7, binderOptions);
-                obj.MyList = temp7;
+                instance.MyList = temp7;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList2")) is IConfigurationSection section8)
             {
-                List<Program.MyClass2>? temp10 = obj.MyList2;
+                List<Program.MyClass2>? temp10 = instance.MyList2;
                 temp10 ??= new List<Program.MyClass2>();
                 BindCore(section8, ref temp10, binderOptions);
-                obj.MyList2 = temp10;
+                instance.MyList2 = temp10;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section11)
             {
-                Dictionary<string, string>? temp13 = obj.MyDictionary;
+                Dictionary<string, string>? temp13 = instance.MyDictionary;
                 temp13 ??= new Dictionary<string, string>();
                 BindCore(section11, ref temp13, binderOptions);
-                obj.MyDictionary = temp13;
+                instance.MyDictionary = temp13;
             }
         }
 

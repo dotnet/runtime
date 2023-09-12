@@ -11,7 +11,7 @@ initTargetDistroRid()
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
-    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$__PortableBuild" "$passedRootfsDir"
+    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$passedRootfsDir"
 }
 
 setup_dirs()
@@ -311,7 +311,7 @@ while :; do
 
     lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
-        -\?|-h|--help)
+        -\?|-h|-help)
             usage
             exit 1
             ;;

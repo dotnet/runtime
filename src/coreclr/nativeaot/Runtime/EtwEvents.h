@@ -413,7 +413,7 @@ extern "C" __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUN
 #define FireEtXplatSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) (MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_DotNETRuntimeHandle, &SetGCHandle)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_SetGCHandle(Microsoft_Windows_DotNETRuntimeHandle, &SetGCHandle, HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) : 0
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_BulkType(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_BulkType(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[11];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -423,7 +423,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_BulkType(REGHANDLE RegHa
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_DestroyGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_DestroyGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, const void* HandleID, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &HandleID, sizeof(void*));
@@ -432,7 +432,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_DestroyGCHandle(REGHANDL
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Exception(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, LPCWSTR ExceptionType, LPCWSTR ExceptionMessage, void* ExceptionEIP, uint32_t ExceptionHRESULT, uint16_t ExceptionFlags, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Exception(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, LPCWSTR ExceptionType, LPCWSTR ExceptionMessage, const void* ExceptionEIP, uint32_t ExceptionHRESULT, uint16_t ExceptionFlags, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], (ExceptionType != NULL) ? ExceptionType : L"", (ExceptionType != NULL) ? (ULONG)((wcslen(ExceptionType) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L""));
@@ -484,7 +484,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCAllocationTick_V3(REGH
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -495,7 +495,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkEdge(REGHANDLE Reg
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkMovedObjectRanges(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkMovedObjectRanges(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[7];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -506,7 +506,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkMovedObjectRanges(
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkNode(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkNode(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[8];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -517,7 +517,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkNode(REGHANDLE Reg
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRCW(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRCW(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[9];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -527,7 +527,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRCW(REGHANDLE RegH
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootCCW(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootCCW(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[10];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -537,7 +537,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootCCW(REGHANDLE 
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootConditionalWeakTableElementEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootConditionalWeakTableElementEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[7];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -548,7 +548,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootConditionalWea
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[8];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -559,7 +559,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootEdge(REGHANDLE
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkSurvivingObjectRanges(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkSurvivingObjectRanges(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -608,7 +608,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCFreeSegment_V1(REGHAND
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCGenerationRange(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint8_t Generation, void* RangeStart, uint64_t RangeUsedLength, uint64_t RangeReservedLength, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCGenerationRange(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint8_t Generation, const void* RangeStart, uint64_t RangeUsedLength, uint64_t RangeReservedLength, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[5];
     EventDataDescCreate(&EventData[0], &Generation, sizeof(uint8_t));
@@ -697,7 +697,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(REGHANDLE R
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID, void* FreeListAllocated, void* FreeListRejected, void* EndOfSegAllocated, void* CondemnedAllocated, void* PinnedAllocated, void* PinnedAllocatedAdvance, uint32_t RunningFreeListEfficiency, uint32_t CondemnReasons0, uint32_t CondemnReasons1, uint32_t CompactMechanisms, uint32_t ExpandMechanisms, uint32_t HeapIndex, void* ExtraGen0Commit, uint32_t Count, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID, const void* FreeListAllocated, const void* FreeListRejected, const void* EndOfSegAllocated, const void* CondemnedAllocated, const void* PinnedAllocated, const void* PinnedAllocatedAdvance, uint32_t RunningFreeListEfficiency, uint32_t CondemnReasons0, uint32_t CondemnReasons1, uint32_t CompactMechanisms, uint32_t ExpandMechanisms, uint32_t HeapIndex, const void* ExtraGen0Commit, uint32_t Count, ULONG Values_Len_, const void* Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[26];
     EventDataDescCreate(&EventData[0], &ClrInstanceID, sizeof(uint16_t));
@@ -792,7 +792,7 @@ Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_ModuleLoadUnload_V2(REGH
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_SetGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, void* ObjectID, uint32_t Kind, uint32_t Generation, uint64_t AppDomainID, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_SetGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, const void* HandleID, const void* ObjectID, uint32_t Kind, uint32_t Generation, uint64_t AppDomainID, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], &HandleID, sizeof(void*));
@@ -853,5 +853,38 @@ TemplateEventDescriptor(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor
 #define FireEtXplatSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID)
 
 #endif // FEATURE_ETW
+
+#define FireEtXplatGCFinalizersEnd_V1(Count, ClrInstanceID) 0
+#define FireEtXplatGCHeapStats_V2(GenerationSize0,TotalPromotedSize0,GenerationSize1,TotalPromotedSize1,GenerationSize2,TotalPromotedSize2,GenerationSize3,TotalPromotedSize3,FinalizationPromotedSize,FinalizationPromotedCount,PinnedObjectCount,SinkBlockCount,GCHandleCount,ClrInstanceID,GenerationSize4,TotalPromotedSize4) 0
+#define  FireEtXplatGCSuspendEEEnd_V1(ClrInstanceID) 0
+#define  FireEtXplatGCAllocationTick_V4(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,Address,ObjectSize) 0
+#define  FireEtXplatGCFinalizersBegin_V1(ClrInstanceID) 0
+#define  FireEtXplatGCSampledObjectAllocationHigh(Address,TypeID,ObjectCountForTypeSample,TotalSizeForTypeSample,ClrInstanceID) 0
+#define  FireEtXplatFinalizeObject(TypeID,ObjectID,ClrInstanceID) 0
+#define  FireEtXplatGCSampledObjectAllocationLow(Address,TypeID,ObjectCountForTypeSample,TotalSizeForTypeSample,ClrInstanceID) 0
+#define  FireEtXplatPinObjectAtGCTime(HandleID,ObjectID,ObjectSize,TypeName,ClrInstanceID) 0
+#define  FireEtXplatGCBulkRootStaticVar(Count,AppDomainID,ClrInstanceID,Values_ElementSize, Values) 0
+#define  FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolWorkerThreadStop(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolWorkerThreadAdjustmentSample(Throughput,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput,NewWorkerThreadCount,Reason,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolWorkerThreadAdjustmentStats(Duration,Throughput,ThreadWave,ThroughputWave,ThroughputErrorEstimate,AverageThroughputErrorEstimate,ThroughputRatio,Confidence,NewControlSetting,NewThreadWaveMagnitude,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolWorkerThreadWait(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolMinMaxThreads(MinWorkerThreads,MaxWorkerThreads,MinIOCompletionThreads,MaxIOCompletionThreads,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolWorkingThreadCount(Count,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolIOEnqueue(NativeOverlapped,Overlapped,MultiDequeues,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolIODequeue(NativeOverlapped,Overlapped,ClrInstanceID) 0
+#define  FireEtXplatThreadPoolIOPack(NativeOverlapped,Overlapped,ClrInstanceID) 0
+#define  FireEtXplatContentionStart_V2(ContentionFlags,ClrInstanceID,LockID,AssociatedObjectID,LockOwnerThreadID) 0
+#define  FireEtXplatContentionStop_V1(ContentionFlags,ClrInstanceID,DurationNs) 0
+#define  FireEtXplatContentionLockCreated(LockID,AssociatedObjectID,ClrInstanceID) 0
+#define  FireEtXplatIncreaseMemoryPressure(BytesAllocated,ClrInstanceID) 0
+#define  FireEtXplatDecreaseMemoryPressure(BytesFreed,ClrInstanceID) 0
+#define  FireEtXplatGCGlobalHeapHistory_V4(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms,ClrInstanceID,PauseMode,MemoryPressure,CondemnReasons0,CondemnReasons1,Count,Values_ElementSize, Values) 0
+#define  FireEtXplatGenAwareBegin(Count,ClrInstanceID) 0
+#define  FireEtXplatGenAwareEnd(Count,ClrInstanceID) 0
+#define  FireEtXplatGCLOHCompact(ClrInstanceID,Count,Values_ElementSize, Values) 0
+#define  FireEtXplatGCFitBucketInfo(ClrInstanceID,BucketKind,TotalSize,Count,Values_ElementSize, Values) 0
+
 
 #endif // !__RH_ETW_DEFS_INCLUDED

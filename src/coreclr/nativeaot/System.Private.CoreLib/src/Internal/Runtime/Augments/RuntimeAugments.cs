@@ -811,7 +811,7 @@ namespace Internal.Runtime.Augments
             if (ip == IntPtr.Zero)
                 return null;
 
-            return callbacks.TryGetMethodNameFromStartAddress(ip);
+            return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
@@ -819,7 +819,7 @@ namespace Internal.Runtime.Augments
 
         public static object CreateThunksHeap(IntPtr commonStubAddress)
         {
-            object newHeap = RuntimeImports.RhCreateThunksHeap(commonStubAddress);
+            object? newHeap = ThunksHeap.CreateThunksHeap(commonStubAddress);
             if (newHeap == null)
                 throw new OutOfMemoryException();
             return newHeap;
@@ -827,7 +827,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr AllocateThunk(object thunksHeap)
         {
-            IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
+            IntPtr newThunk = ((ThunksHeap)thunksHeap).AllocateThunk();
             if (newThunk == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return newThunk;
@@ -835,22 +835,22 @@ namespace Internal.Runtime.Augments
 
         public static void FreeThunk(object thunksHeap, IntPtr thunkAddress)
         {
-            RuntimeImports.RhFreeThunk(thunksHeap, thunkAddress);
+            ((ThunksHeap)thunksHeap).FreeThunk(thunkAddress);
         }
 
         public static void SetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target)
         {
-            RuntimeImports.RhSetThunkData(thunksHeap, thunkAddress, context, target);
+            ((ThunksHeap)thunksHeap).SetThunkData(thunkAddress, context, target);
         }
 
         public static bool TryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target)
         {
-            return RuntimeImports.RhTryGetThunkData(thunksHeap, thunkAddress, out context, out target);
+            return ((ThunksHeap)thunksHeap).TryGetThunkData(thunkAddress, out context, out target);
         }
 
         public static int GetThunkSize()
         {
-            return RuntimeImports.RhGetThunkSize();
+            return RuntimeImports.RhpGetThunkSize();
         }
 
         public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)

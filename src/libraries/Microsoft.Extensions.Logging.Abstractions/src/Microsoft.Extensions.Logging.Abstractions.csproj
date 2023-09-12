@@ -4,8 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90357 -->
-    <NoWarn>$(NoWarn);AD0001</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
 

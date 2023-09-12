@@ -177,7 +177,7 @@ namespace HttpServer
             if (url == null)
                 return;
 
-            string path = url.LocalPath == "/" ? "index.html" : url.LocalPath;
+            string path = url.LocalPath.EndsWith("/") ? url.LocalPath + "index.html" : url.LocalPath;
             if (Verbose)
                 Console.WriteLine($"  serving: {path}");
 
@@ -340,6 +340,7 @@ namespace HttpServer
                     Console.WriteLine("  => not found");
 
                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                context.Response.Close();
             }
 
             if (Verbose)

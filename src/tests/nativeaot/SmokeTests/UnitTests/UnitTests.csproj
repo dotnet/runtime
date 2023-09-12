@@ -16,6 +16,7 @@
     <Compile Include="Generics.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Threading.cs" />
+    <Compile Include="StackTraces.cs" />
     <Compile Include="Main.cs" />
   </ItemGroup>
 </Project>

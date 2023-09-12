@@ -12,6 +12,7 @@
     <EmitCompilerGeneratedFiles Condition="'$(EmitCompilerGeneratedFiles)' == ''">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
+
   <ItemGroup>
     <!-- string.Concat("_", string.Copy("%(Filename)").Replace("-", "_").Replace(".", "_")) -->
     <MergedWrapperProjectReference Update="**" Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;).Replace(&quot;.&quot;,&quot;_&quot;))))" />

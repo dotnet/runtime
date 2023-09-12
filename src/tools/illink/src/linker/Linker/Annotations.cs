@@ -92,7 +92,7 @@ namespace Mono.Linker
 
 		internal HashSet<MethodDefinition> VirtualMethodsWithAnnotationsToValidate { get; }
 
-		TypeMapInfo TypeMapInfo { get; }
+		public TypeMapInfo TypeMapInfo { get; }
 
 		public MemberActionStore MemberActions { get; }
 

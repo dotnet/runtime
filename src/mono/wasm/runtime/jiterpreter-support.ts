@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
 import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -1947,11 +1947,12 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
     const wasmTable = getWasmFunctionTable();
     const firstIndex = base, lastIndex = firstIndex + size - 1;
     mono_assert(lastIndex < wasmTable.length, () => `Last index out of range: ${lastIndex} >= ${wasmTable.length}`);
+    // HACK: Always populate the first slot
+    wasmTable.set(firstIndex, fillValue);
     // In threaded builds we need to populate all the reserved slots with safe placeholder functions
     // This operation is expensive in v8, so avoid doing it in single-threaded builds (which SHOULD
     //  be safe, since it was previously not necessary)
     if (MonoWasmThreads) {
-        wasmTable.set(firstIndex, fillValue);
         // HACK: If possible, we want to copy any backing state associated with the first placeholder item,
         //  so that additional work doesn't have to be done by the runtime for the following table sets
         const preparedValue = wasmTable.get(firstIndex);
@@ -1976,9 +1977,11 @@ export function jiterpreter_allocate_tables(module: any) {
     // A partial solution would be to merge the tables based on argument count instead of exact type,
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
-    const tableSize = options.tableSize, interpEntryTableSize = options.aotTableSize,
+    const traceTableSize = options.tableSize,
+        jitCallTableSize = linkerRunAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
-        totalSize = (tableSize * 2) + (numInterpEntryTables * interpEntryTableSize) + 1,
+        totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable(module);
     let base = wasmTable.length;
     const beforeGrow = performance.now();
@@ -1986,10 +1989,10 @@ export function jiterpreter_allocate_tables(module: any) {
     const afterGrow = performance.now();
     if (options.enableStats)
         mono_log_info(`Allocated ${totalSize} function table entries for jiterpreter, bringing total table size to ${wasmTable.length}`);
-    base = jiterpreter_allocate_table(JiterpreterTable.Trace, base, tableSize, getRawCwrap("mono_jiterp_placeholder_trace"));
+    base = jiterpreter_allocate_table(JiterpreterTable.Trace, base, traceTableSize, getRawCwrap("mono_jiterp_placeholder_trace"));
     // FIXME: Install mono_jiterp_do_jit_call_indirect somehow.
     base = jiterpreter_allocate_table(JiterpreterTable.DoJitCall, base, 1, getRawCwrap("mono_llvm_cpp_catch_exception"));
-    base = jiterpreter_allocate_table(JiterpreterTable.JitCall, base, tableSize, getRawCwrap("mono_jiterp_placeholder_jit_call"));
+    base = jiterpreter_allocate_table(JiterpreterTable.JitCall, base, jitCallTableSize, getRawCwrap("mono_jiterp_placeholder_jit_call"));
     for (let table = JiterpreterTable.InterpEntryStatic0; table <= JiterpreterTable.LAST; table++)
         base = jiterpreter_allocate_table(table, base, interpEntryTableSize, wasmTable.get(cwraps.mono_jiterp_get_interp_entry_func(table)));
     const afterTables = performance.now();
