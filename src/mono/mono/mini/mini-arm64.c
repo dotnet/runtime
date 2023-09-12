@@ -3493,7 +3493,9 @@ opcode_to_armcond (int opcode)
 	case OP_COND_EXC_INO:
 		return ARMCOND_VC;
 	default:
+		#ifndef DISABLE_LOGGING
 		printf ("%s\n", mono_inst_name (opcode));
+		#endif
 		g_assert_not_reached ();
 		return -1;
 	}
@@ -5533,14 +5535,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		default:
+			#ifndef DISABLE_LOGGING
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+			#endif
 			g_assert_not_reached ();
 		}
 		
 	after_instruction_emit:
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
+			#ifndef DISABLE_LOGGING
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
+			#endif
 			g_assert_not_reached ();
 		
 		}
