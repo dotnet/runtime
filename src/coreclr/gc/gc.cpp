@@ -7086,12 +7086,12 @@ void gc_heap::gc_thread_function ()
             }
 #endif //DYNAMIC_HEAP_COUNT
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(wait_on_time_out_p ? wait_time : INFINITE, FALSE);
-            dprintf (6666, ("waiting for ee_suspend_event done res %d (timeout %d, %I64d ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
+            dprintf (9999, ("waiting for ee_suspend_event done res %d (timeout %d, %I64d ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
                 wait_result, wait_time, ((GetHighPrecisionTimeStamp() - last_suspended_end_time) / 1000),
                 dynamic_heap_count_data.should_change_heap_count, gradual_decommit_in_progress_p));
             if (wait_result == WAIT_TIMEOUT)
             {
-                dprintf (6666, ("timeout!"));
+                dprintf (9999, ("timeout!"));
 #ifdef DYNAMIC_HEAP_COUNT
                 if (dynamic_heap_count_data.should_change_heap_count)
                 {
@@ -7129,7 +7129,7 @@ void gc_heap::gc_thread_function ()
                 //gc_heap::ee_suspend_event.Set ();
             }
 
-            dprintf (6666, ("now checking if we need to wait for idle"));
+            dprintf (9999, ("now checking if we need to wait for idle"));
 
             // wait till the threads that should have gone idle at least reached the place where they are about to wait on the idle event.
             if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && 
@@ -7183,16 +7183,16 @@ void gc_heap::gc_thread_function ()
         }
         else
         {
-            dprintf (6666, ("GC thread %d waiting_for_gc_start(%d)(gc%Id)", heap_number, n_heaps, VolatileLoadWithoutBarrier(&settings.gc_index)));
+            dprintf (9999, ("GC thread %d waiting_for_gc_start(%d)(gc%Id)", heap_number, n_heaps, VolatileLoadWithoutBarrier(&settings.gc_index)));
             gc_start_event.Wait(INFINITE, FALSE);
 #ifdef DYNAMIC_HEAP_COUNT
-            dprintf (6666, ("GC thread %d waiting_done_gc_start(%d-%d)(i: %d)(gc%Id)",
+            dprintf (9999, ("GC thread %d waiting_done_gc_start(%d-%d)(i: %d)(gc%Id)",
                 heap_number, n_heaps, dynamic_heap_count_data.new_n_heaps, dynamic_heap_count_data.init_only_p, VolatileLoadWithoutBarrier (&settings.gc_index)));
 
             if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) &&
                 (dynamic_heap_count_data.new_n_heaps != n_heaps))
             {
-                dprintf (6666, ("changing heap count on non h0 thread!"));
+                dprintf (9999, ("changing heap count on non h0 thread!"));
                 // The reason why we need to do this is -
                 // + for threads that were participating, we need them to do work for change_heap_count
                 // + for threads that were not participating but will need to participate, we need to make sure they are woken now instead of
@@ -7219,7 +7219,7 @@ void gc_heap::gc_thread_function ()
                             dprintf (9999, ("GC thread %d wait_on_idle(%d < %d)(gc%Id), total idle %d", heap_number, old_n_heaps, new_n_heaps,
                                 VolatileLoadWithoutBarrier (&settings.gc_index), VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_thread_count)));
                             gc_idle_thread_event.Wait (INFINITE, FALSE);
-                            dprintf (6666, ("GC thread %d waking_from_idle(%d)(gc%Id) after doing change", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
+                            dprintf (9999, ("GC thread %d waking_from_idle(%d)(gc%Id) after doing change", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
                         }
                     }
                     else
@@ -25746,7 +25746,7 @@ bool gc_heap::prepare_to_change_heap_count (int new_n_heaps)
 
 bool gc_heap::change_heap_count (int new_n_heaps)
 {
-    dprintf (6666, ("BEG heap%d changing %d->%d", heap_number, n_heaps, new_n_heaps));
+    dprintf (9999, ("BEG heap%d changing %d->%d", heap_number, n_heaps, new_n_heaps));
 
     // use this variable for clarity - n_heaps will change during the transition
     int old_n_heaps = n_heaps;
@@ -25762,7 +25762,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
 #endif //BACKGROUND_GC
 
             dynamic_heap_count_data.init_only_p = false;
-            dprintf (6666, ("in change h%d resetting gc_start, update bgc join to %d heaps", heap_number, new_n_heaps));
+            dprintf (9999, ("in change h%d resetting gc_start, update bgc join to %d heaps", heap_number, new_n_heaps));
             gc_start_event.Reset();
             gc_t_join.restart ();
         }
@@ -26069,7 +26069,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         }
     }
 
-    dprintf (6666, ("END heap%d changed %d->%d", heap_number, n_heaps, new_n_heaps));
+    dprintf (9999, ("END heap%d changed %d->%d", heap_number, n_heaps, new_n_heaps));
     return true;
 }
 
@@ -50162,7 +50162,7 @@ void gc_heap::do_post_gc()
 #endif //DYNAMIC_HEAP_COUNT
 
 #if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
-    //flush_gc_log (false);
+    flush_gc_log (false);
 #endif //TRACE_GC && SIMPLE_DPRINTF
 
     // Now record the gc info.

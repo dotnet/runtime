@@ -157,7 +157,7 @@ inline void FATAL_GC_ERROR()
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 // can only change heap count with regions
 #define DYNAMIC_HEAP_COUNT
-#define STRESS_DYNAMIC_HEAP_COUNT
+//#define STRESS_DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS && MULTIPLE_HEAPS
 
 #ifdef USE_REGIONS
