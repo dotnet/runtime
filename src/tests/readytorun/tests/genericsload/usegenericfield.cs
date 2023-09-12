@@ -14,9 +14,9 @@ class Foo<T>
     }
 }
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         try
         {

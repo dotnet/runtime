@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>exe</OutputType>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CrossGenTest>false</CrossGenTest>
     <!-- https://github.com/dotnet/runtime/issues/73954 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>

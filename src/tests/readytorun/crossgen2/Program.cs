@@ -12,6 +12,7 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Xunit;
 
 internal class ClassWithStatic
 {
@@ -21,7 +22,7 @@ internal class ClassWithStatic
     public static int Static = StaticValue;
 }
 
-internal class Program
+public class Program
 {
     const int LineCountInitialValue = 0x12345678;
 
@@ -2157,7 +2158,8 @@ internal class Program
         return true;
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         _passedTests = new List<string>();
         _failedTests = new List<string>();
@@ -2243,16 +2245,15 @@ internal class Program
         if (_failedTests.Count == 0)
         {
             Console.WriteLine($@"All {_passedTests.Count} tests pass!");
-            return 100;
         }
         else
         {
-            Console.Error.WriteLine($@"{_failedTests.Count} test failed:");
+            Console.Error.WriteLine($@"{_failedTests.Count} tests failed:");
             foreach (string testName in _failedTests)
             {
                 Console.Error.WriteLine($@"    {testName}");
             }
-            return 1;
+            throw new Exception($"{_failedTests.Count} test cases failed!");
         }
     }
 
