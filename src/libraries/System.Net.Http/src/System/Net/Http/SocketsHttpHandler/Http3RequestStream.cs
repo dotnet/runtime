@@ -90,8 +90,24 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
+                // We aborted both sides, thus both task should unblock and should be finished before disposing the QuicStream.
+                WaitUnfinished(_sendRequestTask);
+                WaitUnfinished(_readResponseTask);
                 _stream.Dispose();
                 DisposeSyncHelper();
+            }
+
+            static void WaitUnfinished(Task? task)
+            {
+                if (task is not null && !task.IsCompleted)
+                {
+                    try
+                    {
+                        task.GetAwaiter().GetResult();
+                    }
+                    catch // Exceptions from both tasks are logged via _connection.LogException() in case they're not awaited in SendAsync, so the exception can be ignored here.
+                    { }
+                }
             }
         }
 
