@@ -1712,7 +1712,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			MonoInst *ins;
 
 			ins = emit_xzero (cfg, klass);
-			if (!is_zero_const (args [0]) {
+			if (!is_zero_const (args [0])) {
 				ins = emit_simd_ins (cfg, klass, type_to_insert_op (arg0_type), ins->dreg, args [0]->dreg);
 				ins->inst_c0 = 0;
 				ins->inst_c1 = arg0_type;
