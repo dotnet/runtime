@@ -105,8 +105,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 #if UPDATE_BASELINES
             if (!success)
             {
-                string? repoRootDir = Environment.GetEnvironmentVariable("RepoRootDir");
-                Assert.True(repoRootDir is not null, "To update baselines, specifiy the root runtime repo dir");
+                const string envVarName = "RepoRootDir"
+                string errMessage = $"To update baselines, specify a '{envVarName}' environment variable. See this assembly's README.md doc for more details."
+
+                string? repoRootDir = Environment.GetEnvironmentVariable(envVarName);
+                Assert.True(repoRootDir is not null, errMessage);
 
                 IEnumerable<string> lines = r[0].SourceText.Lines.Select(l => l.ToString());
                 string source = string.Join(Environment.NewLine, lines).TrimEnd(Environment.NewLine.ToCharArray()) + Environment.NewLine;
