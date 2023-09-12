@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 #if NATIVEAOT
 using Internal.Runtime;
 #else
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 #endif
 
