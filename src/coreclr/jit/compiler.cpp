@@ -5276,6 +5276,13 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;
     BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+    bool                   visitedLoopNum[BasicBlock::MAX_LOOP_NUM];
+    memset(visitedLoopNum, false, sizeof(visitedLoopNum));
+
+#ifdef DEBUG
+    int visitedBlockForLoopNum[BasicBlock::MAX_LOOP_NUM];
+    memset(visitedBlockForLoopNum, false, sizeof(visitedBlockForLoopNum));
+#endif
 
     if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
     {
@@ -5298,7 +5305,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is a unconditional jump (which is not part of callf/always pair)
+        // If there is an unconditional jump (which is not part of callf/always pair)
         if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
@@ -5352,12 +5359,19 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 madeChanges       = true;
                 unmarkedLoopAlign = true;
             }
-            else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+            else if (visitedLoopNum[loopTop->bbNatLoopNum])
             {
+#ifdef DEBUG
+                char buffer[50];
+                sprintf_s(buffer, 50, "loop block " FMT_BB " appears before top of loop",
+                          visitedBlockForLoopNum[loopTop->bbNatLoopNum]);
+#endif
+
                 // In some odd cases we may see blocks within the loop before we see the
                 // top block of the loop. Just bail on aligning such loops.
                 //
-                loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+
+                loopTop->unmarkLoopAlign(this DEBUG_ARG(buffer));
                 madeChanges       = true;
                 unmarkedLoopAlign = true;
             }
@@ -5391,6 +5405,20 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             {
                 break;
             }
+        }
+
+        if (block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+        {
+#ifdef DEBUG
+            if (!visitedLoopNum[block->bbNatLoopNum])
+            {
+                // Record the first block for which bbNatLoopNum was seen for
+                // debugging purpose.
+                visitedBlockForLoopNum[block->bbNatLoopNum] = block->bbNum;
+            }
+#endif
+            // If this block is part of loop, mark the loopNum as visited.
+            visitedLoopNum[block->bbNatLoopNum] = true;
         }
     }
 
