@@ -4,6 +4,10 @@
 #ifndef __GCENV_OBJECT_H__
 #define __GCENV_OBJECT_H__
 
+#ifdef BUILD_AS_STANDALONE
+extern bool g_oldMethodTableFlags;
+#endif
+
 // ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
 // Additionally the platform ABI requires these types and composite type containing them to be similarly
 // aligned when passed as arguments.
@@ -46,7 +50,7 @@ static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made b
 #define MTFlag_Category_ValueType       0x00040000
 #define MTFlag_Category_ValueType_Mask  0x000C0000
 #define MTFlag_ContainsPointers         0x01000000
-#define MTFlag_HasCriticalFinalizer     0x08000000
+#define MTFlag_HasCriticalFinalizer     0x00000002
 #define MTFlag_HasFinalizer             0x00100000
 #define MTFlag_IsArray                  0x00080000
 #define MTFlag_Collectible              0x10000000
@@ -127,12 +131,15 @@ public:
 
     bool HasCriticalFinalizer()
     {
-#ifdef FEATURE_NATIVEAOT
-        const int HasCriticalFinalizerFlag = 0x0002;
-        return (m_flags & HasCriticalFinalizerFlag) && !HasComponentSize();
-#else
-        return (m_flags & MTFlag_HasCriticalFinalizer) != 0;
+#ifdef BUILD_AS_STANDALONE
+        if (g_oldMethodTableFlags)
+        {
+            // This flag is used for .NET 8 or below
+            const int Old_MTFlag_HasCriticalFinalizer = 0x08000000;
+            return (m_flags & Old_MTFlag_HasCriticalFinalizer) != 0;
+        }
 #endif
+        return (m_flags & MTFlag_HasCriticalFinalizer) && !HasComponentSize();
     }
 
     bool IsArray()

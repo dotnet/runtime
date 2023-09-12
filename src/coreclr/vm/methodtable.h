@@ -2246,6 +2246,7 @@ public:
     void SetHasCriticalFinalizer()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!HasComponentSize());
         SetFlag(enum_flag_HasCriticalFinalizer);
     }
     // Does this class have non-trivial finalization requirements?
@@ -2259,7 +2260,7 @@ public:
     DWORD HasCriticalFinalizer() const
     {
         LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_HasCriticalFinalizer);
+        return !HasComponentSize() && GetFlag(enum_flag_HasCriticalFinalizer);
     }
 
     //-------------------------------------------------------------------
@@ -3292,12 +3293,12 @@ private:
 
         enum_flag_UNUSED_ComponentSize_1    = 0x00000001,
 
-        enum_flag_StaticsMask               = 0x00000006,
+        enum_flag_StaticsMask               = 0x00002004,
         enum_flag_StaticsMask_NonDynamic    = 0x00000000,
-        enum_flag_StaticsMask_Dynamic       = 0x00000002,   // dynamic statics (EnC, reflection.emit)
+        enum_flag_StaticsMask_Dynamic       = 0x00002000,   // dynamic statics (EnC, reflection.emit)
         enum_flag_StaticsMask_Generics      = 0x00000004,   // generics statics
-        enum_flag_StaticsMask_CrossModuleGenerics       = 0x00000006, // cross module generics statics (NGen)
-        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000002, // helper constant to get rid of unnecessary check
+        enum_flag_StaticsMask_CrossModuleGenerics       = 0x00002004, // cross module generics statics (NGen)
+        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00002000, // helper constant to get rid of unnecessary check
 
         enum_flag_NotInPZM                  = 0x00000008,   // True if this type is not in its PreferredZapModule
 
@@ -3330,7 +3331,6 @@ private:
 
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.
-        enum_flag_UNUSED_ComponentSize_5    = 0x00002000,
         enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
         enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
 
@@ -3401,7 +3401,7 @@ private:
 
         enum_flag_IsTrackedReferenceWithFinalizer   = 0x04000000,
 
-        enum_flag_HasCriticalFinalizer        = 0x08000000, // finalizer must be run on Appdomain Unload
+        enum_flag_HasCriticalFinalizer        = 0x00000002, // finalizer must be run on Appdomain Unload
         enum_flag_Collectible                 = 0x10000000,
         enum_flag_ContainsGenericVariables    = 0x20000000,   // we cache this flag to help detect these efficiently and
                                                               // to detect this condition when restoring
