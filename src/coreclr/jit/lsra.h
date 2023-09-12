@@ -1568,6 +1568,15 @@ private:
     // Map from tracked variable index to Interval*.
     Interval** localVarIntervals;
 
+    struct ExplicitParamIntervals
+    {
+        Interval* Intervals[MAX_ARG_REG_COUNT] = {};
+    };
+
+    ExplicitParamIntervals* explicitParamIntervals;
+
+    int getExplicitParamIntervalRegIndex(Interval* interval);
+
     // Set of blocks that have been visited.
     BlockSet bbVisitedSet;
     void markBlockVisited(BasicBlock* block)
@@ -1936,6 +1945,8 @@ private:
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
 
+    int BuildGetParamReg(GenTreeGetParamReg* tree);
+
     void UpdatePreferencesOfDyingLocal(Interval* interval);
     void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
@@ -2232,6 +2243,9 @@ public:
         return false;
     }
 #endif
+
+    // True if this interval is an explicit parameter interval.
+    bool isExplicitParam : 1;
 
     // True if this interval is associated with a lclVar that is written to memory at each definition.
     bool isWriteThru : 1;

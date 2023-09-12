@@ -4479,6 +4479,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_JMPTABLE:
         case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
+        case GT_GETPARAM_REG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:

@@ -1152,6 +1152,7 @@ protected:
     void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
 #endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
+    void genCodeForGetParamReg(GenTreeGetParamReg* tree);
     void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
     void genCodeForReuseVal(GenTree* treeNode);

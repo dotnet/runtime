@@ -6419,6 +6419,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_JMPTABLE:
         case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
+        case GT_GETPARAM_REG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
@@ -7253,6 +7254,12 @@ GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 {
     assert(genIsValidIntReg(reg) || (reg == REG_SPBASE));
     GenTree* result = new (this, GT_PHYSREG) GenTreePhysReg(reg, type);
+    return result;
+}
+
+GenTreeGetParamReg* Compiler::gtNewGetParamRegNode(unsigned lclNum, int regIndex, var_types type)
+{
+    GenTreeGetParamReg* result = new (this, GT_GETPARAM_REG) GenTreeGetParamReg(lclNum, regIndex, type);
     return result;
 }
 
@@ -8553,6 +8560,12 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
             divisor->gtFlags |= GTF_DONT_CSE;
         }
     }
+}
+
+regNumber GenTreeGetParamReg::GetArgReg(Compiler* comp)
+{
+    LclVarDsc* argDsc = comp->lvaGetDesc(gtArgNum);
+    return gtRegIndex == 0 ? argDsc->GetArgReg() : argDsc->GetOtherArgReg();
 }
 
 //------------------------------------------------------------------------
@@ -9878,6 +9891,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_JMPTABLE:
         case GT_CLS_VAR_ADDR:
         case GT_PHYSREG:
+        case GT_GETPARAM_REG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
@@ -11944,6 +11958,10 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_PHYSREG:
             printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg));
+            break;
+
+        case GT_GETPARAM_REG:
+            printf(" %s", getRegName(tree->AsGetParamReg()->GetArgReg(this)));
             break;
 
         case GT_IL_OFFSET:

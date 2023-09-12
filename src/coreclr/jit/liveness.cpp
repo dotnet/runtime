@@ -1998,6 +1998,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CNS_VEC:
             case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
+            case GT_GETPARAM_REG:
                 // These are all side-effect-free leaf nodes.
                 if (node->IsUnusedValue())
                 {

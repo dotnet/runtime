@@ -315,6 +315,7 @@ GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHI
 #if FEATURE_ARG_SPLIT
 GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in registers with stack (split struct in ARM32)
 #endif // FEATURE_ARG_SPLIT
+GTNODE(GETPARAM_REG     , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // use of parameter; only expected at the beginning of the first BB.
 GTNODE(SWAP             , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR) // op1 and op2 swap (registers)
 GTNODE(COPY             , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // Copies a variable from its current location to a register that satisfies
 GTNODE(RELOAD           , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // code generation constraints. The operand is the actual lclVar node.

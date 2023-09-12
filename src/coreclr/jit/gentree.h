@@ -3085,6 +3085,27 @@ struct GenTreePhysReg : public GenTree
 #endif
 };
 
+struct GenTreeGetParamReg : public GenTree
+{
+    unsigned gtArgNum;
+    int gtRegIndex;
+
+    GenTreeGetParamReg(unsigned argNum, int regIndex, var_types type)
+        : GenTree(GT_GETPARAM_REG, type)
+        , gtArgNum(argNum)
+        , gtRegIndex(regIndex)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeGetParamReg() : GenTree()
+    {
+    }
+#endif
+
+    regNumber GetArgReg(Compiler* comp);
+};
+
 /* gtIntCon -- integer constant (GT_CNS_INT) */
 struct GenTreeIntCon : public GenTreeIntConCommon
 {

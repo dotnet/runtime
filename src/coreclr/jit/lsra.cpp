@@ -2437,6 +2437,23 @@ void LinearScan::checkLastUses(BasicBlock* block)
 }
 #endif // DEBUG
 
+
+int LinearScan::getExplicitParamIntervalRegIndex(Interval* interval)
+{
+    assert(interval->isExplicitParam && (interval->varNum < compiler->info.compArgsCount));
+    assert(explicitParamIntervals != nullptr);
+    for (int i = 0; i < MAX_ARG_REG_COUNT; i++)
+    {
+        if (explicitParamIntervals[interval->varNum].Intervals[i] == interval)
+        {
+            return i;
+        }
+    }
+
+    noway_assert(!"expected to find explicit param interval reg index");
+    return -1;
+}
+
 //------------------------------------------------------------------------
 // findPredBlockForLiveIn: Determine which block should be used for the register locations of the live-in variables.
 //
@@ -5199,36 +5216,46 @@ void LinearScan::allocateRegisters()
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_ZERO_REF, currentInterval));
                 currentRefPosition.lastUse = true;
             }
-            LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
-            assert(varDsc != nullptr);
-            assert(!blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn || currentInterval->isWriteThru);
-            if (blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn ||
-                blockInfo[compiler->fgFirstBB->bbNum].hasEHPred)
+
+            if (currentInterval->isLocalVar)
             {
-                allocate = false;
+                LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
+                assert(varDsc != nullptr);
+                assert(!blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn || currentInterval->isWriteThru);
+                if (blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn ||
+                    blockInfo[compiler->fgFirstBB->bbNum].hasEHPred)
+                {
+                    allocate = false;
+                }
+                else if (refType == RefTypeParamDef && (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT) &&
+                    (!currentRefPosition.lastUse || (currentInterval->physReg == REG_STK)))
+                {
+                    // If this is a low ref-count parameter, and either it is used (def is not the last use) or it's
+                    // passed on the stack, don't allocate a register.
+                    // Note that if this is an unused register parameter we don't want to set allocate to false because that
+                    // will cause us to allocate stack space to spill it.
+                    allocate = false;
+                }
+                else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))
+                {
+                    // In the case of ABI mismatches, avoid allocating a register only to have to immediately move
+                    // it to a different register file.
+                    allocate = false;
+                }
+                else if ((currentInterval->isWriteThru) && (refType == RefTypeZeroInit))
+                {
+                    // For RefTypeZeroInit which is a write thru, there is no need to allocate register
+                    // right away. It can be assigned when actually definition occurs.
+                    // In future, see if avoiding allocation for RefTypeZeroInit gives any benefit in general.
+                    allocate = false;
+                }
             }
-            else if (refType == RefTypeParamDef && (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT) &&
-                     (!currentRefPosition.lastUse || (currentInterval->physReg == REG_STK)))
+            else
             {
-                // If this is a low ref-count parameter, and either it is used (def is not the last use) or it's
-                // passed on the stack, don't allocate a register.
-                // Note that if this is an unused register parameter we don't want to set allocate to false because that
-                // will cause us to allocate stack space to spill it.
-                allocate = false;
+                assert(currentInterval->isExplicitParam);
+                // always allocate these; fall through with allocate == true
             }
-            else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))
-            {
-                // In the case of ABI mismatches, avoid allocating a register only to have to immediately move
-                // it to a different register file.
-                allocate = false;
-            }
-            else if ((currentInterval->isWriteThru) && (refType == RefTypeZeroInit))
-            {
-                // For RefTypeZeroInit which is a write thru, there is no need to allocate register
-                // right away. It can be assigned when actually definition occurs.
-                // In future, see if avoiding allocation for RefTypeZeroInit gives any benefit in general.
-                allocate = false;
-            }
+
             if (!allocate)
             {
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
@@ -7143,21 +7170,29 @@ void           LinearScan::resolveRegisters()
             }
 
             Interval* interval = currentRefPosition->getInterval();
-            assert(interval != nullptr && interval->isLocalVar);
-            resolveLocalRef(nullptr, nullptr, currentRefPosition);
-            regNumber reg      = REG_STK;
-            int       varIndex = interval->getVarIndex(compiler);
+            assert(interval != nullptr);
 
-            if (!currentRefPosition->spillAfter && currentRefPosition->registerAssignment != RBM_NONE)
+            if (interval->isLocalVar)
             {
-                reg = currentRefPosition->assignedReg();
+                resolveLocalRef(nullptr, nullptr, currentRefPosition);
+                regNumber reg = REG_STK;
+                int       varIndex = interval->getVarIndex(compiler);
+
+                if (!currentRefPosition->spillAfter && currentRefPosition->registerAssignment != RBM_NONE)
+                {
+                    reg = currentRefPosition->assignedReg();
+                }
+                else
+                {
+                    reg = REG_STK;
+                    interval->isActive = false;
+                }
+                setVarReg(entryVarToRegMap, varIndex, reg);
             }
             else
             {
-                reg                = REG_STK;
-                interval->isActive = false;
+                assert(interval->isExplicitParam);
             }
-            setVarReg(entryVarToRegMap, varIndex, reg);
         }
     }
     else
@@ -9963,8 +9998,12 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
             }
 
             Interval* interval = currentRefPosition->getInterval();
-            assert(interval != nullptr && interval->isLocalVar);
-            printf(" V%02d", interval->varNum);
+            assert((interval != nullptr) && (interval->isLocalVar || interval->isExplicitParam));
+            if (interval->isLocalVar)
+                printf(" V%02d", interval->varNum);
+            else
+                printf(" V%02d,%d", interval->varNum, getExplicitParamIntervalRegIndex(interval));
+
             if (mode == LSRA_DUMP_POST)
             {
                 regNumber reg;
@@ -9976,12 +10015,23 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 {
                     reg = currentRefPosition->assignedReg();
                 }
-                const LclVarDsc* varDsc = compiler->lvaGetDesc(interval->varNum);
-                printf("(");
-                regNumber assignedReg = varDsc->GetRegNum();
-                regNumber argReg      = (varDsc->lvIsRegArg) ? varDsc->GetArgReg() : REG_STK;
 
-                assert(reg == assignedReg || varDsc->lvRegister == false);
+                regNumber argReg;
+
+                if (interval->isLocalVar)
+                {
+                    const LclVarDsc* varDsc = compiler->lvaGetDesc(interval->varNum);
+                    regNumber assignedReg = varDsc->GetRegNum();
+                    argReg = (varDsc->lvIsRegArg) ? varDsc->GetArgReg() : REG_STK;
+                    assert(reg == assignedReg || varDsc->lvRegister == false);
+                }
+                else
+                {
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(interval->varNum);
+                    argReg = getExplicitParamIntervalRegIndex(interval) == 0 ? varDsc->GetArgReg() : varDsc->GetOtherArgReg();
+                }
+
+                printf("(");
                 if (reg != argReg)
                 {
                     printf(getRegName(argReg));
@@ -10317,9 +10367,9 @@ void LinearScan::dumpLsraAllocationEvent(
             break;
 
         case LSRA_EVENT_ZERO_REF:
-            assert(interval != nullptr && interval->isLocalVar);
+            assert(interval != nullptr && (interval->isLocalVar || interval->isExplicitParam));
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("NoRef      ");
+            printf("NoRef         ");
             dumpRegRecords();
             break;
 

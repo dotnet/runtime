@@ -713,8 +713,11 @@ public:
         unsigned countReadBacks    = 0;
         weight_t countReadBacksWtd = 0;
         // For parameters or OSR locals we always need one read back.
-        if (lcl->lvIsParam || lcl->lvIsOSRLocal)
+        if ((lcl->lvIsParam && !lcl->lvIsRegArg) || lcl->lvIsOSRLocal) //
         {
+            // TODO-CQ: Fields in structs passed in registers can still have
+            // cost to extract out of the register if they do not map cleanly.
+
             countReadBacks++;
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
@@ -817,6 +820,8 @@ public:
         JITDUMP("  Disqualifying replacement\n\n");
         return false;
     }
+
+
 
     //------------------------------------------------------------------------
     // ClearInducedAccesses:

@@ -657,6 +657,8 @@ public:
 
     unsigned char lvRedefinedInEmbeddedStatement : 1; // Local has redefinitions inside embedded statements that
                                                       // disqualify it from local copy prop.
+
+    unsigned char lvExplicitParamInit : 1; // This parameter has explicit IR to initialize it from registers.
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
@@ -2476,6 +2478,8 @@ public:
     GenTreeIntCon* gtNewFalse();
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
+
+    GenTreeGetParamReg* gtNewGetParamRegNode(unsigned lclNum, int regIndex, var_types type);
 
     GenTree* gtNewJmpTableNode();
 
@@ -11182,6 +11186,7 @@ public:
             case GT_JMPTABLE:
             case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
+            case GT_GETPARAM_REG:
             case GT_EMITNOP:
             case GT_PINVOKE_PROLOG:
             case GT_PINVOKE_EPILOG:

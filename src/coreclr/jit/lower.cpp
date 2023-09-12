@@ -4121,7 +4121,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 
     JITDUMP("lowering GT_RETURN\n");
     DISPNODE(ret);
-    JITDUMP("============");
+    JITDUMP("============\n");
 
     GenTree* retVal = ret->gtGetOp1();
     // There are two kinds of retyping:
@@ -7106,6 +7106,11 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    if (comp->compEnregLocals())
+    {
+        LowerMultiregParams();
+    }
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -7556,6 +7561,168 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount)
 #endif // FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
 
     return canEnregisterAsSingleReg || canEnregisterAsMultiReg;
+}
+
+void Lowering::LowerMultiregParams()
+{
+#if FEATURE_MULTIREG_ARGS
+    if (comp->fgFirstBB->bbPreds != nullptr)
+    {
+        comp->fgEnsureFirstBBisScratch();
+    }
+
+    GenTree* insertAfter = nullptr;
+    LIR::Range& firstBBRange = LIR::AsRange(comp->fgFirstBB);
+
+    // Write (parts of) parameters passed in registers back to the local.
+    for (unsigned argNum = 0; argNum < comp->info.compArgsCount; argNum++)
+    {
+        LclVarDsc* argDsc = comp->lvaGetDesc(argNum);
+        JITDUMP("Checking arg V%02u for explicit IR init\n", argNum);
+
+        if (!argDsc->lvIsRegArg || argDsc->lvPromoted)
+        {
+            JITDUMP("  not a reg arg or promoted\n");
+            continue;
+        }
+
+        if (argDsc->TypeGet() != TYP_STRUCT)
+        {
+            JITDUMP("  not TYP_STRUCT\n");
+            continue;
+        }
+
+        regNumber argReg1 = argDsc->GetArgReg();
+        regNumber argReg2 = argDsc->GetOtherArgReg();
+        JITDUMP("  regs: %s %s\n", getRegName(argReg1), getRegName(argReg2));
+
+        if ((argReg1 == REG_NA) || !genIsValidIntReg(argReg1))
+        {
+            // TODO: Floating point on SysV can pass eightbytes in xmm0, e.g.
+            // struct { float X, float Y, float Z, int W } passes X, Y in xmm0
+            // and Z, W in rdi.
+            JITDUMP("  first reg is %s\n", getRegName(argReg1));
+            continue;
+        }
+
+        ClassLayout* layout = argDsc->GetLayout();
+        if (((layout->GetSize() % TARGET_POINTER_SIZE) != 0) && !isPow2(layout->GetSize() % TARGET_POINTER_SIZE))
+        {
+            JITDUMP("  remainder size %d is not a power of 2\n", layout->GetSize() % TARGET_POINTER_SIZE);
+            continue;
+        }
+
+        assert((argReg2 != REG_NA) == (layout->GetSize() > TARGET_POINTER_SIZE));
+
+        JITDUMP("Marking V%02u as an explicitly inited parameter\n", argNum);
+        argDsc->lvExplicitParamInit = 1;
+
+        auto getCanonType = [layout](unsigned offset) {
+            unsigned sizeLeft = (layout->GetSize() - offset) % TARGET_POINTER_SIZE;
+            if (sizeLeft >= TARGET_POINTER_SIZE)
+            {
+                return layout->GetGCPtrType(offset / TARGET_POINTER_SIZE);
+            }
+
+            if (sizeLeft > 4)
+            {
+                return TYP_LONG;
+            }
+
+            return TYP_INT;
+            };
+
+        GenTree* paramReg1 = comp->gtNewGetParamRegNode(argNum, 0, getCanonType(0));
+        GenTree* store1 = comp->gtNewStoreLclFldNode(argNum, paramReg1->TypeGet(), 0, paramReg1);
+        firstBBRange.InsertAfter(insertAfter, paramReg1, store1);
+
+        insertAfter = store1;
+
+        DISPTREERANGE(firstBBRange, store1);
+
+        if (argReg2 != REG_NA)
+        {
+            GenTree* paramReg2 = comp->gtNewGetParamRegNode(argNum, 1, getCanonType(TARGET_POINTER_SIZE));
+            GenTree* store2 = comp->gtNewStoreLclFldNode(argNum, paramReg2->TypeGet(), TARGET_POINTER_SIZE, paramReg2);
+            firstBBRange.InsertAfter(insertAfter, paramReg2, store2);
+
+            insertAfter = store2;
+
+            DISPTREERANGE(firstBBRange, store2);
+        }
+    }
+
+    for (GenTree* node : firstBBRange)
+    {
+        if (!node->OperIs(GT_LCL_FLD))
+        {
+            continue;
+        }
+
+        GenTreeLclFld* fld = node->AsLclFld();
+        if (fld->TypeIs(TYP_STRUCT))
+        {
+            continue;
+        }
+
+        LclVarDsc* dsc = comp->lvaGetDesc(fld);
+
+        if (!dsc->lvExplicitParamInit)
+        {
+            continue;
+        }
+
+        unsigned offs = fld->GetLclOffs();
+
+        regNumber reg1 = dsc->GetArgReg();
+        regNumber reg2 = dsc->GetOtherArgReg();
+
+        if (!genIsValidIntReg(reg1))
+        {
+            // TODO: Floating point on SysV can pass eightbytes in xmm0, e.g.
+            // struct { float X, float Y, float Z, int W } passes X, Y in xmm0
+            // and Z, W in rdi.
+            continue;
+        }
+
+        if ((reg2 != REG_NA) && !genIsValidIntReg(reg2))
+        {
+            continue;
+        }
+
+        unsigned reg2Offs = TARGET_POINTER_SIZE;
+
+        int regIndex;
+        if (offs == 0)
+        {
+            regIndex = 0;
+        }
+        else if (offs == reg2Offs)
+        {
+            regIndex = 1;
+        }
+        else
+        {
+            continue;
+        }
+
+        if (varTypeIsIntegralOrI(fld))
+        {
+            LIR::Use fldUse;
+            if (firstBBRange.TryGetUse(fld, &fldUse))
+            {
+                JITDUMP("[%06u] is a parameter register use, optimizing it into GETPARAM_REG\n", Compiler::dspTreeID(fld));
+                GenTree* newNode = comp->gtNewGetParamRegNode(fld->GetLclNum(), regIndex, fld->TypeGet());
+                fldUse.ReplaceWith(newNode);
+
+                firstBBRange.InsertAfter(fld, newNode);
+                firstBBRange.Remove(fld);
+
+                DISPTREERANGE(firstBBRange, fldUse.User());
+            }
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------

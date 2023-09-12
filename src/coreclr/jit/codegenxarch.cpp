@@ -2087,6 +2087,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
 
+        case GT_GETPARAM_REG:
+            genCodeForGetParamReg(treeNode->AsGetParamReg());
+            break;
+
         case GT_NULLCHECK:
             genCodeForNullCheck(treeNode->AsIndir());
             break;
@@ -4515,6 +4519,21 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 
     inst_Mov(targetType, targetReg, tree->gtSrcReg, /* canSkip */ true);
     genTransferRegGCState(targetReg, tree->gtSrcReg);
+
+    genProduceReg(tree);
+}
+
+void CodeGen::genCodeForGetParamReg(GenTreeGetParamReg* tree)
+{
+    assert(tree->OperIs(GT_GETPARAM_REG));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    regNumber srcReg = tree->GetArgReg(compiler);
+
+    inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
+    genTransferRegGCState(targetReg, srcReg);
 
     genProduceReg(tree);
 }

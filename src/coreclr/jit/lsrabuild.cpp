@@ -471,6 +471,16 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
                 rp->lastUse = (rp->refType != RefTypeExpUse) && (rp->refType != RefTypeParamDef) &&
                               (rp->refType != RefTypeZeroInit) && !extendLifetimes();
             }
+            else if (theInterval->isExplicitParam)
+            {
+                RefPosition* prevRP = theInterval->recentRefPosition;
+                if (prevRP != nullptr)
+                {
+                    prevRP->lastUse = false;
+                }
+
+                rp->lastUse = true;
+            }
             else if (rp->refType == RefTypeUse)
             {
                 checkConflictingDefUse(rp);
@@ -1890,7 +1900,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 }
 
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
-                    !interval->isLocalVar)
+                    !interval->isLocalVar && !interval->isExplicitParam)
                 {
 #ifdef TARGET_ARM64
                     RefPosition* defRefPos = interval->firstRefPosition;
@@ -2291,7 +2301,7 @@ void           LinearScan::buildIntervals()
     {
         LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
 
-        if (!argDsc->lvIsParam)
+        if (!argDsc->lvIsParam || argDsc->lvExplicitParamInit)
         {
             continue;
         }
@@ -2382,6 +2392,50 @@ void           LinearScan::buildIntervals()
                 updateRegStateForArg(argDsc);
             }
         }
+    }
+
+    explicitParamIntervals = nullptr; 
+    for (unsigned argNum = 0; argNum < compiler->info.compArgsCount; argNum++)
+    {
+        LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
+        if (!argDsc->lvExplicitParamInit)
+        {
+            continue;
+        }
+
+        if (explicitParamIntervals == nullptr)
+        {
+            explicitParamIntervals = new (compiler, CMK_LSRA_Interval) ExplicitParamIntervals[compiler->info.compArgsCount];
+        }
+
+        ExplicitParamIntervals& paramIntervals = explicitParamIntervals[argNum];
+        size_t index = 0;
+        assert((argDsc->GetArgReg() != REG_NA) && genIsValidIntReg(argDsc->GetArgReg()));
+        ClassLayout* layout = argDsc->GetLayout();
+
+        var_types reg1Type = layout->GetSize() >= TARGET_POINTER_SIZE ? layout->GetGCPtrType(0) : TYP_I_IMPL;
+        Interval* interval = newInterval(reg1Type);
+        interval->isExplicitParam = true;
+        interval->varNum = argNum;
+        assignPhysReg(argDsc->GetArgReg(), interval);
+        paramIntervals.Intervals[index++] = interval;
+        RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, genRegMask(argDsc->GetArgReg()));
+        pos->setRegOptional(true);
+
+        if (argDsc->GetOtherArgReg() != REG_NA)
+        {
+            var_types reg2Type = layout->GetSize() >= TARGET_POINTER_SIZE * 2 ? layout->GetGCPtrType(1) : TYP_I_IMPL;
+            interval = newInterval(reg2Type);
+            interval->isExplicitParam = true;
+            interval->varNum = argNum;
+            assignPhysReg(argDsc->GetOtherArgReg(), interval);
+            paramIntervals.Intervals[index++] = interval;
+
+            pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, genRegMask(argDsc->GetOtherArgReg()));
+            pos->setRegOptional(true);
+        }
+
+        assert(index <= ArrLen(paramIntervals.Intervals));
     }
 
     // If there is a secret stub param, it is also live in
@@ -4062,6 +4116,25 @@ int LinearScan::BuildReturn(GenTree* tree)
     }
 
     // No kills or defs.
+    return 0;
+}
+
+int LinearScan::BuildGetParamReg(GenTreeGetParamReg* tree)
+{
+    assert(tree->gtArgNum < compiler->info.compArgsCount);
+    assert(explicitParamIntervals != nullptr);
+    ExplicitParamIntervals& intervals = explicitParamIntervals[tree->gtArgNum];
+
+    assert((unsigned)tree->gtRegIndex < ArrLen(intervals.Intervals));
+    Interval* interval = intervals.Intervals[tree->gtRegIndex];
+
+    assert(!tree->isContained());
+
+    RefPosition* useRefPos = newRefPosition(interval, currentLoc, RefTypeUse, tree, RBM_NONE);
+    useRefPos->setRegOptional(tree->IsRegOptional());
+
+    BuildDef(tree);
+    // Consumes no defs.
     return 0;
 }
 
