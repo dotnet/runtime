@@ -80,7 +80,7 @@ namespace System
             }
         }
 
-        public enum RhFailFastReason
+        internal enum RhFailFastReason
         {
             Unknown = 0,
             InternalError = 1,                                   // "Runtime internal error"
@@ -94,7 +94,7 @@ namespace System
         // needs to cause the process to exit. It is the classlib's opportunity to customize the
         // termination behavior in whatever way necessary.
         [RuntimeExport("FailFast")]
-        public static void RuntimeFailFast(RhFailFastReason reason, Exception exception, IntPtr pExAddress, IntPtr pExContext)
+        internal static void RuntimeFailFast(RhFailFastReason reason, Exception exception, IntPtr pExAddress, IntPtr pExContext)
         {
             RuntimeImports.RhpFallbackFailFast();
         }
