@@ -4600,7 +4600,7 @@ static SimdIntrinsic x86base_methods [] = {
 	{SN_BitScanForward},
 	{SN_BitScanReverse},
 	{SN_DivRem},
-	{SN_Pause},
+	{SN_Pause, OP_XOP, INTRINS_SSE_PAUSE},
 	{SN_get_IsSupported}
 };
 
@@ -5290,10 +5290,6 @@ emit_x86_intrinsics (
 			EMIT_NEW_TEMPLOAD (cfg, ins, tuple->inst_c0);
 			return ins;
 			}
-		case SN_Pause:
-			if (!COMPILE_LLVM (cfg))
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP, INTRINS_SSE_PAUSE, arg0_type, fsig, args);
 		default:
 			g_assert_not_reached ();
 		}

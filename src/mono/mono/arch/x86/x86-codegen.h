@@ -2909,4 +2909,10 @@ typedef enum {
 #define x86_sse_lzcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xbd, (size))
 #define x86_sse_popcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xb8, (size))
 
+#define x86_pause(inst) do { \
+	x86_codegen_pre(&(inst), 2);	   \
+	x86_byte (inst, 0xF3); \
+	x86_byte (inst, 0x90); \
+} while (0)
+
 #endif // X86_H

@@ -6770,6 +6770,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XOP: {
+			switch (ins->inst_c0) {
+			case INTRINS_SSE_PAUSE:
+				amd64_pause (code);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_XOP_X_X_X: {
 			switch (ins->inst_c0) {
 			case INTRINS_SSE_PHADDW:
