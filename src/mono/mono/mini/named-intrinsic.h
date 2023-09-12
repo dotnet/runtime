@@ -16,6 +16,10 @@
 #include <../../../coreclr/jit/namedinitrinsiclist.h>
 // HKTN-TODO: include any intrinsics that might be Mono-specific
 
-static NamedIntrinsic lookup_named_intrinsic (const char* class_ns, const char* class_name, MonoMethod* method);
+MonoInst*
+emit_cross_platform_intrinsics_for_vector_classes (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, const char* class_ns, const char* class_name);
+
+MonoInst*
+emit_hw_intrinsics_for_vector_classes (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 
 #endif

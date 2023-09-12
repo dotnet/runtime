@@ -18,11 +18,25 @@
 static NamedIntrinsic 
 lookup_named_intrinsic (const char* class_ns, const char* class_name, MonoMethod* method)
 {
-  // We should be able to get class_ns and class_name for free - emit_intrinsics generates that.
+	// We should be able to get class_ns and class_name for free - emit_intrinsics generates that.
 
-  NamedIntrinsic ret = NamedIntrinsic.NI_Illegal;
-  // HKTN-TODO: https://github.com/dotnet/runtime/blob/559470195bec88d9c74e70ea440c8394a0a6cfdc/src/coreclr/jit/importercalls.cpp#L8487
-  // HKTN-TODO: Are we interested in automatically generating this search code? We could use some C# code to generate that perhaps.
+	NamedIntrinsic ret = NamedIntrinsic.NI_Illegal;
+	// HKTN-TODO: https://github.com/dotnet/runtime/blob/559470195bec88d9c74e70ea440c8394a0a6cfdc/src/coreclr/jit/importercalls.cpp#L8487
+	// HKTN-TODO: Are we interested in automatically generating this search code? We could use some C# code to generate that perhaps.
 
-  return ret;
+	return ret;
+}
+
+MonoInst*
+emit_cross_platform_intrinsics_for_vector_classes (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, const char* class_ns, const char* class_name)
+{
+	NamedIntrinsic ni = resolveNamedIntrinsic (class_ns, class_name);
+
+	return emit_hw_intrinsics_for_vector_classes (cfg, cmethod, fsig, args, ni);
+}
+
+MonoInst*
+emit_hw_intrinsics_for_vector_classes (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	//Copy over the content of emit_sri_vector and emit_vector64_vector128_t and merge them. Then update the case id with NamedIntrinsic enums
 }

@@ -18,6 +18,7 @@
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-hwcap.h>
+#include "named-intrinsic.h"
 
 #if defined (MONO_ARCH_SIMD_INTRINSICS)
 
@@ -5863,12 +5864,12 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector64"))
-			return emit_sri_vector (cfg, cmethod, fsig, args);
+			return emit_cross_platform_intrinsics_for_vector_classes (cfg, cmethod, fsig, args, class_ns, class_name);
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128`1") || !strcmp (class_name, "Vector64`1"))
-			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+			return emit_cross_platform_intrinsics_for_vector_classes (cfg, cmethod, fsig, args, class_ns, class_name);
 	}
 
 	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector")){
@@ -5895,12 +5896,12 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 {
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128"))
-			return emit_sri_vector (cfg, cmethod, fsig, args);
+			return emit_cross_platform_intrinsics_for_vector_classes (cfg, cmethod, fsig, args, class_ns, class_name);
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128`1"))
-			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+			return emit_cross_platform_intrinsics_for_vector_classes (cfg, cmethod, fsig, args, class_ns, class_name);
 	}
 
 	if (!strcmp (class_ns, "System.Numerics")) {
@@ -5927,7 +5928,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128"))
-			return emit_sri_vector (cfg, cmethod, fsig, args);
+			return emit_cross_platform_intrinsics_for_vector_classes (cfg, cmethod, fsig, args, class_ns, class_name);
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
@@ -5936,7 +5937,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	}
 
 	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector")){
-		return emit_sri_vector (cfg, cmethod, fsig, args);
+		return emit_cross_platform_intrinsics_for_vector_classes (cfg, cmethod, fsig, args, class_ns, class_name);
 	}
 
 	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector`1")){
