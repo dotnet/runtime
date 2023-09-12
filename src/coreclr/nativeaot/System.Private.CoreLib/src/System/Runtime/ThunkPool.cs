@@ -226,11 +226,11 @@ namespace System.Runtime
 
             IntPtr dataAddress = TryGetThunkDataAddress(thunkAddress);
             if (dataAddress == IntPtr.Zero)
-                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+                Environment.FailFast(null);
 
 #if DEBUG
             if (!IsThunkInHeap(thunkAddress))
-                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+                Environment.FailFast(null);
 
             // Debug flag indicating the thunk is no longer used
             *((IntPtr*)(dataAddress + IntPtr.Size)) = new IntPtr(-1);
@@ -319,11 +319,11 @@ namespace System.Runtime
         {
             IntPtr dataAddress = TryGetThunkDataAddress(thunkAddress);
             if (dataAddress == IntPtr.Zero)
-                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+                Environment.FailFast(null);
 
 #if DEBUG
             if (!IsThunkInHeap(thunkAddress))
-                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+                Environment.FailFast(null);
 #endif
 
             // Update the data that will be used by the thunk that was allocated
