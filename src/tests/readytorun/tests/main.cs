@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Reflection;
 using System.IO;
+using Xunit;
 
 class InstanceFieldTest : MyClass
 {
