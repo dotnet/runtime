@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+using Xunit;
 
 namespace Tracing.Tests.ProcessInfoValidation
 {
@@ -88,7 +89,8 @@ namespace Tracing.Tests.ProcessInfoValidation
             return normalizedCommandLine;
         }
 
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
 
             Process currentProcess = Process.GetCurrentProcess();

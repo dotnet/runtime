@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Tracing.Tests.Common;
+using Xunit;
 
 namespace Tracing.Tests
 {
@@ -29,7 +30,8 @@ namespace Tracing.Tests
         private static MethodInfo s_EventActivityIdControl;
         private static bool s_FailureEncountered = false;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if(!Initialize())
             {

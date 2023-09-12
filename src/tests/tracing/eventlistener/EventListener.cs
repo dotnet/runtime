@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+using Xunit;
 
 namespace Tracing.Tests
 {
@@ -70,7 +71,8 @@ namespace Tracing.Tests
         private static int messageIterations = 100;
         private static readonly DateTime ThePast = DateTime.UtcNow;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool pass = false;
             using(var listener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))

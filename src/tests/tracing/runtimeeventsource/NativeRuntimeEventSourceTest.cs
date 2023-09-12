@@ -16,12 +16,14 @@ using System.ComponentModel;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace Tracing.Tests
 {
     public sealed class NativeRuntimeEventSourceTest
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             // Access ArrayPool.Shared.Rent() before the test to avoid the deadlock reported
             // in https://github.com/dotnet/runtime/issues/86233. This is a real issue,
