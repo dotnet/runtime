@@ -9,7 +9,11 @@
 // When adding a new intrinsic that will use the GT_INTRINSIC node and can throw, make sure
 // to update the "OperMayThrow" and "fgValueNumberAddExceptionSet" methods to account for that.
 
+#ifdef MONO_RUNTIME
+enum NamedIntrinsic
+#else
 enum NamedIntrinsic : unsigned short
+#endif
 {
     NI_Illegal = 0,
 
