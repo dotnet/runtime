@@ -147,7 +147,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
+#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -2610,6 +2610,8 @@ private:
     // re-initialize a heap in preparation to putting it back into service
     PER_HEAP_METHOD void recommission_heap();
 
+    PER_HEAP_ISOLATED_METHOD int calculate_new_heap_count();
+
     // check if we should change the heap count
     PER_HEAP_METHOD void check_heap_count();
 
@@ -2617,6 +2619,10 @@ private:
     PER_HEAP_METHOD bool change_heap_count (int new_n_heaps);
 
     PER_HEAP_ISOLATED_METHOD size_t get_msl_wait_time();
+
+#ifdef BACKGROUND_GC
+    PER_HEAP_ISOLATED_METHOD bool add_bgc_duration_percent();
+#endif //BACKGROUND_GC
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -4175,9 +4181,18 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint8_t* gc_high; // high end of the highest region being condemned
 #endif //USE_REGIONS
 
+#ifdef DYNAMIC_HEAP_COUNT
+#ifdef BACKGROUND_GC
+#define BGC_DURATION_PCT_NEG_VALUE (-1.0)
+    // Since BGC end is executed while EE is not paused, we record this value and write to our
+    // gen2 sample array next time EE a GC is triggered.
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC float bgc_duration_percent;
+#endif //BACKGROUND_GC
+
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC int heaps_in_this_gc;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_HEAP_COUNT
 
     /**************************************************/
     // PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC fields //
@@ -4297,9 +4312,9 @@ private:
         // base on them individually.
         struct sample
         {
-            // these should all be size_t
-            uint64_t    elapsed_between_gcs;    // time between gcs in microseconds
-            uint64_t    gc_pause_time;          // time the gc took
+            // these should all be size_t.
+            uint64_t    elapsed_between_gcs;    // time between gcs in microseconds (this should really be between_pauses)
+            uint64_t    gc_pause_time;          // pause time for this GC
             uint64_t    msl_wait_time;
         };
 
@@ -4326,8 +4341,16 @@ private:
         VOLATILE(int32_t) idle_thread_count;
         bool            init_only_p;
 
+        bool            should_change_heap_count;
+        bool            changed_due_to_time_out;
+        int             heap_count_to_change_to;
         int             heap_count_change_count;
-        // number of times we tried to change but couldn't due to BGC
+        int             total_heap_count_no_check_bgc;
+        int             total_heap_count_changed_before_gc;
+        int             total_heap_count_no_change_before_gc;
+        // number of times we are suppposed to check if we should change the heap count but couldn't due to BGC
+        int             heap_count_no_check_bgc;
+        // number of times we are suppposed to change but couldn't due to BGC
         int             heap_count_no_change_bgc;
         // number of times we tried to change but couldn't due to failure in preparation
         int             heap_count_no_change_prepare;
@@ -4341,8 +4364,9 @@ private:
         }
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
-    // This is the end_gc_time for blocking GCs and the 2nd suspension end for BGC.
+    // This is the end_gc_time for blocking GCs and the 2nd suspension end for BGC, in us.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED GCEvent bgc_heap_count_change_event;
 #endif //DYNAMIC_HEAP_COUNT
 
     /****************************************************/
