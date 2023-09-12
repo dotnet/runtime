@@ -3,10 +3,12 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Assembly assembly = typeof(Class).GetTypeInfo().Assembly;
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(assembly) != null);

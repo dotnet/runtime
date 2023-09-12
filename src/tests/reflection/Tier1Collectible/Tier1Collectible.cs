@@ -6,10 +6,12 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public static class Program
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         PromoteToTier1AndRun(() =>
         {

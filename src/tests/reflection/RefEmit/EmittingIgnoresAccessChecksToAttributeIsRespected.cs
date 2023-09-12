@@ -5,13 +5,15 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Xunit;
 
 class BaseClass1 { }
 
 public class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
 {
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("testassembly"), AssemblyBuilderAccess.Run);
         ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("testmodule");

@@ -3,10 +3,12 @@
 
 using System;
 using System.Reflection;
+using Xunit;
 
 public class Program
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         {
             FieldInfo fi = typeof(IFoo<object>).GetField("O");
