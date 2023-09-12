@@ -470,7 +470,7 @@ namespace Microsoft.Extensions.Options.Generators
                     var validationAttr = new ValidationAttributeInfo(attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
                     validationAttrs.Add(validationAttr);
 
-                    ImmutableArray<IParameterSymbol> parameters = attribute.AttributeConstructor!.Parameters;
+                    ImmutableArray<IParameterSymbol> parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
                     bool lastParameterDeclaredWithParamsKeyword =  parameters.Length > 0 && parameters[parameters.Length - 1].IsParams;
 
                     ImmutableArray<TypedConstant> arguments = attribute.ConstructorArguments;
