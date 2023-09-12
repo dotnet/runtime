@@ -202,6 +202,11 @@ typedef struct {
 	} while (0)
 
 struct MonoLMF {
+	/*
+	 * The rsp field points to the stack location where the caller ip is saved.
+	 * If the second lowest bit is set, then this is a MonoLMFExt structure, and
+	 * the other fields are not valid.
+	 */
 	gpointer previous_lmf;
 	gpointer lmf_addr;
 	host_mgreg_t pc;
