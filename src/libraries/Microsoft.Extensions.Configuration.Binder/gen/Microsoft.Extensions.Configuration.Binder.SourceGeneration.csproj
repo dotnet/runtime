@@ -41,6 +41,7 @@
     <Compile Include="Helpers\Parser\BinderInvocation.cs" />
     <Compile Include="Helpers\Parser\ConfigurationBinder.cs" />
     <Compile Include="Helpers\Parser\Diagnostics.cs" />
+    <Compile Include="Helpers\Parser\Extensions.cs" />
     <Compile Include="Helpers\Parser\OptionsBuilderConfigurationExtensions.cs" />
     <Compile Include="Helpers\Parser\OptionsConfigurationServiceCollectionExtensions.cs" />
     <Compile Include="Model\CollectionSpec.cs" />

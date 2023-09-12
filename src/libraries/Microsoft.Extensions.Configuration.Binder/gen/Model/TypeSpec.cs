@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -10,12 +9,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public TypeSpec(ITypeSymbol type)
         {
-            IsValueType = type.IsValueType;
             Namespace = type.ContainingNamespace?.ToDisplayString();
             DisplayString = type.ToMinimalDisplayString();
-            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring(useUniqueName: true);
-            Name = Namespace + "." + DisplayString.Replace(".", "+");
-            IsInterface = type.TypeKind is TypeKind.Interface;
+            Name = (Namespace is null ? string.Empty : Namespace + ".") + DisplayString.Replace(".", "+");
+            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring(DisplayString);
+            IsValueType = type.IsValueType;
         }
 
         public string Name { get; }
@@ -39,8 +37,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public virtual bool NeedsMemberBinding { get; }
 
         public virtual TypeSpec EffectiveType => this;
-
-        public bool IsInterface { get; }
 
         protected bool CanInitComplexObject() => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
     }

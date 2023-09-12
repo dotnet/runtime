@@ -937,19 +937,4 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
     }
-
-    public static class ParserExtensions
-    {
-        public static void RegisterCacheEntry<TKey, TValue, TEntry>(this Dictionary<TKey, TValue> cache, TKey key, TEntry entry)
-            where TKey : notnull
-            where TValue : ICollection<TEntry>, new()
-        {
-            if (!cache.TryGetValue(key, out TValue? entryCollection))
-            {
-                cache[key] = entryCollection = new TValue();
-            }
-
-            entryCollection.Add(entry);
-        }
-    }
 }
