@@ -286,6 +286,7 @@ HRESULT CordbProcess::GetThread(DWORD dwThreadId, ICorDebugThread** ppThread)
         hr = E_INVALIDARG;
 
     *ppThread = thread;
+    thread->AddRef();
 
     return hr;
 }
