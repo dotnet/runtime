@@ -5,7 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
-    <CLRTestExitCode>-2146233082</CLRTestExitCode>
+    <CLRTestExitCode>134</CLRTestExitCode>
+    <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146233082</CLRTestExitCode>
+    <CLRTestPriority>1</CLRTestPriority>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
