@@ -31,6 +31,9 @@ add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
+
+# TODO, AndrewAu, rename
+
 add_library(Hello STATIC ${HELLO_SOURCES})
 add_library(World STATIC ${WORLD_SOURCES})
 
@@ -42,6 +45,7 @@ endif (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
 
 if (CLR_CMAKE_TARGET_WIN32)
+  # TODO, AndrewAu, rename
   add_library(Hello.GuardCF STATIC ${HELLO_SOURCES})
   set_target_properties(Hello.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
   add_library(World.GuardCF STATIC ${WORLD_SOURCES})
@@ -102,6 +106,7 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)
+# TODO, AndrewAu, rename
 install_static_library(Hello aotsdk nativeaot)
 install_static_library(World aotsdk nativeaot)
 if (CLR_CMAKE_TARGET_WIN32)
@@ -112,6 +117,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   endif (CLR_CMAKE_TARGET_ARCH_AMD64)
   install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
   add_dependencies(Runtime.ServerGC.GuardCF aot_eventing_headers)
+  # TODO, AndrewAu, rename
   install_static_library(Hello.GuardCF aotsdk nativeaot)
   install_static_library(World.GuardCF aotsdk nativeaot)
 endif (CLR_CMAKE_TARGET_WIN32)

@@ -8,6 +8,8 @@
 
 #include "gceventstatus.h"
 
+#include "RhConfig.h"
+
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
 
@@ -401,13 +403,14 @@ HRESULT InitializeStandaloneGC()
 
 HRESULT GCHeapUtilities::InitializeStandaloneGC()
 {
-    // TODO, andrewau, take the name from environment variables
-#ifdef TARGET_UNIX
-    auto moduleName = "libclrgc.so";
-#else
-    auto moduleName = "clrgc.dll";
-#endif
+    char* moduleName;
+    
+    if (!RhConfig::Environment::TryGetStringValue("GCName", &moduleName))
+    {
+        return GCHeapUtilities::InitializeDefaultGC();
+    }
 
+    // TODO, AndrewAu, append local path
     HANDLE hMod = PalLoadLibrary(moduleName);
     if (!hMod)
     {
