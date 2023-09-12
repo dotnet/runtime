@@ -1758,8 +1758,7 @@ namespace __OptionValidationStaticInstances
 }
 
 """;
-    Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
-
+        Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
     private static CSharpCompilation CreateCompilationForOptionsSource(string assemblyName, string source, string? refAssemblyPath = null)
