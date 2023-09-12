@@ -507,9 +507,9 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsGeneric);
                 if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<IatAwarePointer<MethodTable>>(EETypeField.ETF_GenericDefinition).Value;
+                    return GetField<Pointer<MethodTable>>(EETypeField.ETF_GenericDefinition).Value;
 
-                return GetField<IatAwareRelativePointer<MethodTable>>(EETypeField.ETF_GenericDefinition).Value;
+                return GetField<RelativePointer<MethodTable>>(EETypeField.ETF_GenericDefinition).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -1489,23 +1489,6 @@ namespace Internal.Runtime
         }
     }
 
-    // Wrapper around pointers that might be indirected through IAT
-    [StructLayout(LayoutKind.Sequential)]
-    internal readonly unsafe struct IatAwarePointer<T> where T : unmanaged
-    {
-        private readonly T* _value;
-
-        public T* Value
-        {
-            get
-            {
-                if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
-                    return _value;
-                return *(T**)((byte*)_value - IndirectionConstants.IndirectionCellPointer);
-            }
-        }
-    }
-
     // Wrapper around relative pointers
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct RelativePointer
@@ -1532,28 +1515,6 @@ namespace Internal.Runtime
             get
             {
                 return (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
-            }
-        }
-    }
-
-    // Wrapper around relative pointers that might be indirected through IAT
-    [StructLayout(LayoutKind.Sequential)]
-    internal readonly unsafe struct IatAwareRelativePointer<T> where T : unmanaged
-    {
-        private readonly int _value;
-
-        public T* Value
-        {
-            get
-            {
-                if ((_value & IndirectionConstants.IndirectionCellPointer) == 0)
-                {
-                    return (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
-                }
-                else
-                {
-                    return *(T**)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + (_value & ~IndirectionConstants.IndirectionCellPointer));
-                }
             }
         }
     }
