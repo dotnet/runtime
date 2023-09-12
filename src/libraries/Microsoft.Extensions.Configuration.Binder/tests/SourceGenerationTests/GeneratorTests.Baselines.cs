@@ -16,6 +16,74 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, extType: ExtensionClassType.ConfigurationBinder);
 
         [Fact]
+        public async Task Bind_NamedParameters()
+        {
+            string source = """
+                        using System.Collections.Generic;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+
+                                MyClass configObj = new();
+                                ConfigurationBinder.Bind(instance: configObj, configuration: config);
+                            }
+
+                            public class MyClass
+                            {
+                                public string MyString { get; set; }
+                                public int MyInt { get; set; }
+                                public List<int> MyList { get; set; }
+                                public Dictionary<string, string> MyDictionary { get; set; }
+                                public Dictionary<string, MyClass2> MyComplexDictionary { get; set; }
+                            }
+
+                            public class MyClass2 { }
+                        }
+                    """;
+
+            await VerifyAgainstBaselineUsingFile("Bind_NamedParameters.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        [Fact]
+        public async Task Get_TypeOf_NamedParameters()
+        {
+            string source = """
+                        using System.Collections.Generic;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+
+                                MyClass configObj = new();
+                                var obj = ConfigurationBinder.Get(type: typeof(MyClass), configuration: config);
+                            }
+
+                            public class MyClass
+                            {
+                                public string MyString { get; set; }
+                                public int MyInt { get; set; }
+                                public List<int> MyList { get; set; }
+                                public Dictionary<string, string> MyDictionary { get; set; }
+                                public Dictionary<string, MyClass2> MyComplexDictionary { get; set; }
+                            }
+
+                            public class MyClass2 { }
+                        }
+                    """;
+
+            await VerifyAgainstBaselineUsingFile("Get_TypeOf_NamedParameters.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        [Fact]
         public async Task Bind_Instance()
         {
             string source = """
