@@ -4,9 +4,9 @@
 using System;
 using System.Reflection;
 
-class Program
+public class Program
 {
-    static unsafe int Main()
+    public static unsafe int Main()
     {
         var baseClass = new BaseClass();
         var derivedClass = new DerivedClass();

@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Mine"), AssemblyBuilderAccess.Run);
         var modb = ab.DefineDynamicModule("Mine.dll");

@@ -9,10 +9,8 @@ using System.Threading;
 
 public static class Program
 {
-    private static int Main()
+    public static void Main()
     {
-        const int Pass = 100, Fail = 1;
-
         PromoteToTier1AndRun(() =>
         {
             CollectibleTestIteration();
@@ -20,8 +18,6 @@ public static class Program
             GC.WaitForPendingFinalizers();
             GC.WaitForPendingFinalizers();
         });
-
-        return Pass;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

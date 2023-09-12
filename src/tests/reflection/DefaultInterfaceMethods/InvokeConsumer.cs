@@ -4,9 +4,9 @@
 using System;
 using System.Reflection;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         if ((int)typeof(IFoo).GetMethod("StaticMethod").Invoke(null, new object[] { 1 }) != 31)
             return 1;

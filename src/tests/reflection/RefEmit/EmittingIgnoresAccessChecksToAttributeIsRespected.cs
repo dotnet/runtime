@@ -8,10 +8,10 @@ using System.Reflection.Emit;
 
 class BaseClass1 { }
 
-class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
+public class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
 {
 
-    public static int Main()
+    public static void Main()
     {
         AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("testassembly"), AssemblyBuilderAccess.Run);
         ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("testmodule");
@@ -31,7 +31,6 @@ class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
             typeBuilder.CreateType();
         }
         Console.WriteLine("PASS");
-        return 100;
     }
 
     static void AddInstanceOfIgnoresAccessChecksToAttribute(AssemblyBuilder assemblyBuilder, ConstructorInfo ignoreAccessChecksToAttributeCtor, Assembly assembly)

@@ -4,9 +4,9 @@
 using System;
 using System.Reflection;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static void Main()
     {
         {
             FieldInfo fi = typeof(IFoo<object>).GetField("O");
@@ -28,7 +28,5 @@ class Program
             if (!object.ReferenceEquals(val, typeof(string)))
                 throw new Exception();
         }
-
-        return 100;
     }
 }

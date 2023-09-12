@@ -4,9 +4,9 @@
 using System;
 using System.Reflection;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         bool failed = false;
 
