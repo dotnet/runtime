@@ -17,6 +17,11 @@ namespace System.Diagnostics.Metrics
         private Dictionary<string, List<Instrument>> _nonObservableInstrumentsCache = new();
         internal bool Disposed { get; private set; }
 
+        internal static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() =>
+            AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
+
         /// <summary>
         /// Initialize a new instance of the Meter using the <see cref="MeterOptions" />.
         /// </summary>
@@ -76,6 +81,11 @@ namespace System.Diagnostics.Metrics
                 Tags = tagList;
             }
             Scope = scope;
+
+            if (!IsSupported)
+            {
+                return;
+            }
 
             lock (Instrument.SyncObject)
             {
