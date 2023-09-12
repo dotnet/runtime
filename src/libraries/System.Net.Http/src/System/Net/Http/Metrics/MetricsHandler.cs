@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.Net.Http.HPack;
 using System.Threading;
 using System.Threading.Tasks;
 
