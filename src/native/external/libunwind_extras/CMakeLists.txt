@@ -123,7 +123,6 @@ if(CLR_CMAKE_HOST_WIN32)
     endif ()
 
     # Assume we are using default MSVC compiler
-    add_compile_options(/TC) # compile all files as C
     add_compile_options(/permissive-)
 
     # include paths
@@ -161,6 +160,10 @@ endif()
 
 include(configure.cmake)
 include(${CLR_SRC_NATIVE_DIR}/external/libunwind.cmake)
+
+if(CLR_CMAKE_HOST_WIN32)
+    set_source_files_properties(${LIBUNWIND_SOURCES} PROPERTIES COMPILE_FLAGS /TC) # compile all files as C
+endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_HOST_OSX)

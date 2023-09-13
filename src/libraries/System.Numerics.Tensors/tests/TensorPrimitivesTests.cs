@@ -3,6 +3,7 @@
 
 using Xunit;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0
@@ -11,9 +12,9 @@ namespace System.Numerics.Tensors.Tests
 {
     public static class TensorPrimitivesTests
     {
-        private const int TensorSize = 512;
-
-        private const int MismatchedTensorSize = 2;
+        public static IEnumerable<object[]> TensorLengths =>
+            from length in new[] { 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 15, 16, 17, 31, 32, 33, 100 }
+            select new object[] { length };
 
         private static readonly Random s_random = new Random(20230828);
 
@@ -46,588 +47,660 @@ namespace System.Numerics.Tensors.Tests
 #endif
         }
 
-        [Fact]
-        public static void AddTwoTensors()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensors(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Add(x, y, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] + y[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void AddTwoTensors_ThrowsForMismatchedLengths()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensors_ThrowsForMismatchedLengths(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(MismatchedTensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
         }
 
-        [Fact]
-        public static void AddTwoTensors_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensors_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(x, y, destination));
         }
 
-        [Fact]
-        public static void AddTensorAndScalar()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTensorAndScalar(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] destination = CreateTensor(TensorSize);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Add(x, y, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] + y), destination[i]);
             }
         }
 
-        [Fact]
-        public static void AddTensorAndScalar_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTensorAndScalar_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(x, y, destination));
         }
 
-        [Fact]
-        public static void SubtractTwoTensors()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SubtractTwoTensors(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Subtract(x, y, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] - y[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void SubtractTwoTensors_ThrowsForMismatchedLengths()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SubtractTwoTensors_ThrowsForMismatchedLengths(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(MismatchedTensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
         }
 
-        [Fact]
-        public static void SubtractTwoTensors_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SubtractTwoTensors_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(x, y, destination));
         }
 
-        [Fact]
-        public static void SubtractTensorAndScalar()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SubtractTensorAndScalar(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] destination = CreateTensor(TensorSize);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Subtract(x, y, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] - y), destination[i]);
             }
         }
 
-        [Fact]
-        public static void SubtractTensorAndScalar_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SubtractTensorAndScalar_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(x, y, destination));
         }
 
-        [Fact]
-        public static void MultiplyTwoTensors()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensors(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Multiply(x, y, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] * y[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void MultiplyTwoTensors_ThrowsForMismatchedLengths()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensors_ThrowsForMismatchedLengths(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(MismatchedTensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
         }
 
-        [Fact]
-        public static void MultiplyTwoTensors_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensors_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(x, y, destination));
         }
 
-        [Fact]
-        public static void MultiplyTensorAndScalar()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTensorAndScalar(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] destination = CreateTensor(TensorSize);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Multiply(x, y, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] * y), destination[i]);
             }
         }
 
-        [Fact]
-        public static void MultiplyTensorAndScalar_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTensorAndScalar_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(x, y, destination));
         }
 
-        [Fact]
-        public static void DivideTwoTensors()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void DivideTwoTensors(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Divide(x, y, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] / y[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void DivideTwoTensors_ThrowsForMismatchedLengths()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void DivideTwoTensors_ThrowsForMismatchedLengths(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(MismatchedTensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
         }
 
-        [Fact]
-        public static void DivideTwoTensors_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void DivideTwoTensors_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(x, y, destination));
         }
 
-        [Fact]
-        public static void DivideTensorAndScalar()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void DivideTensorAndScalar(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] destination = CreateTensor(TensorSize);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Divide(x, y, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] / y), destination[i]);
             }
         }
 
-        [Fact]
-        public static void DivideTensorAndScalar_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void DivideTensorAndScalar_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(x, y, destination));
         }
 
-        [Fact]
-        public static void NegateTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void NegateTensor(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Negate(x, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(-x[i], destination[i]);
             }
         }
 
-        [Fact]
-        public static void NegateTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void NegateTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Negate(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Negate(x, destination));
         }
 
-        [Fact]
-        public static void AddTwoTensorsAndMultiplyWithThirdTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensorsAndMultiplyWithThirdTensor(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] multiplier = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] multiplier = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.AddMultiply(x, y, multiplier, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] + y[i]) * multiplier[i], destination[i]);
             }
         }
 
-        [Fact]
-        public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForMismatchedLengths_x_y()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForMismatchedLengths_x_y(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(MismatchedTensorSize);
-            float[] multiplier = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+            float[] multiplier = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
-        [Fact]
-        public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForMismatchedLengths_x_multiplier()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForMismatchedLengths_x_multiplier(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] multiplier = CreateAndFillTensor(MismatchedTensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] multiplier = CreateAndFillTensor(tensorLength - 1);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
-        [Fact]
-        public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensorsAndMultiplyWithThirdTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] multiplier = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] multiplier = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
-        [Fact]
-        public static void AddTwoTensorsAndMultiplyWithScalar()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensorsAndMultiplyWithScalar(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
             float multiplier = NextSingle();
-            float[] destination = CreateTensor(TensorSize);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.AddMultiply(x, y, multiplier, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] + y[i]) * multiplier, destination[i]);
             }
         }
 
-        [Fact]
-        public static void AddTwoTensorsAndMultiplyWithScalar_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensorsAndMultiplyWithScalar_ThrowsForMismatchedLengths_x_y(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
             float multiplier = NextSingle();
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
-        [Fact]
-        public static void AddTensorAndScalarAndMultiplyWithTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTwoTensorsAndMultiplyWithScalar_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float multiplier = NextSingle();
+            float[] destination = CreateTensor(tensorLength - 1);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTensorAndScalarAndMultiplyWithTensor(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] multiplier = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] multiplier = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.AddMultiply(x, y, multiplier, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] + y) * multiplier[i], destination[i]);
             }
         }
 
-        [Fact]
-        public static void AddTensorAndScalarAndMultiplyWithTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTensorAndScalarAndMultiplyWithTensor_ThrowsForMismatchedLengths_x_z(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] multiplier = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] multiplier = CreateAndFillTensor(tensorLength - 1);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
-        [Fact]
-        public static void MultiplyTwoTensorsAndAddWithThirdTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void AddTensorAndScalarAndMultiplyWithTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] addend = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float y = NextSingle();
+            float[] multiplier = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensorsAndAddWithThirdTensor(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] addend = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.MultiplyAdd(x, y, addend, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] * y[i]) + addend[i], destination[i]);
             }
         }
 
-        [Fact]
-        public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForMismatchedLengths_x_y()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForMismatchedLengths_x_y(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(MismatchedTensorSize);
-            float[] addend = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+            float[] addend = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
-        [Fact]
-        public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForMismatchedLengths_x_multiplier()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForMismatchedLengths_x_multiplier(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] addend = CreateAndFillTensor(MismatchedTensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] addend = CreateAndFillTensor(tensorLength - 1);
+            float[] destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
-        [Fact]
-        public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensorsAndAddWithThirdTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
-            float[] addend = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+            float[] addend = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
-        [Fact]
-        public static void MultiplyTwoTensorsAndAddWithScalar()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensorsAndAddWithScalar(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
             float addend = NextSingle();
-            float[] destination = CreateTensor(TensorSize);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.MultiplyAdd(x, y, addend, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] * y[i]) + addend, destination[i]);
             }
         }
 
-        [Fact]
-        public static void MultiplyTwoTensorsAndAddWithScalar_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTwoTensorsAndAddWithScalar_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] y = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
             float addend = NextSingle();
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
-        [Fact]
-        public static void MultiplyTensorAndScalarAndAddWithTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTensorAndScalarAndAddWithTensor(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] addend = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] addend = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.MultiplyAdd(x, y, addend, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] * y) + addend[i], destination[i]);
             }
         }
 
-        [Fact]
-        public static void MultiplyTensorAndScalarAndAddWithTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MultiplyTensorAndScalarAndAddWithTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            float[] addend = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] addend = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
-        [Fact]
-        public static void ExpTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void ExpTensor(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Exp(x, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Exp(x[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void ExpTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void ExpTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Exp(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Exp(x, destination));
         }
 
-        [Fact]
-        public static void LogTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void LogTensor(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Log(x, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Log(x[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void LogTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void LogTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Log(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Log(x, destination));
         }
 
-        [Fact]
-        public static void CoshTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void CoshTensor(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Cosh(x, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Cosh(x[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void CoshTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void CoshTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Cosh(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Cosh(x, destination));
         }
 
-        [Fact]
-        public static void SinhTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SinhTensor(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Sinh(x, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Sinh(x[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void SinhTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SinhTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Sinh(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sinh(x, destination));
         }
 
-        [Fact]
-        public static void TanhTensor()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void TanhTensor(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(TensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Tanh(x, destination);
 
-            for (int i = 0; i < TensorSize; i++)
+            for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Tanh(x[i]), destination[i]);
             }
         }
 
-        [Fact]
-        public static void TanhTensor_ThrowsForTooShortDestination()
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void TanhTensor_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] x = CreateAndFillTensor(TensorSize);
-            float[] destination = CreateTensor(MismatchedTensorSize);
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Tanh(x, destination));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Tanh(x, destination));
         }
     }
 }
