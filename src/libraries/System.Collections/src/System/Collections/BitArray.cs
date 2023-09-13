@@ -142,10 +142,21 @@ namespace System.Collections
             // Instead, We compare with zeroes (== false) then negate the result to ensure compatibility.
 
             ref byte value = ref Unsafe.As<bool, byte>(ref MemoryMarshal.GetArrayDataReference<bool>(values));
-
-            if (Vector256.IsHardwareAccelerated)
+            if (Vector512.IsHardwareAccelerated)
             {
-                for (; (i + Vector256<byte>.Count) <= (uint)values.Length; i += (uint)Vector256<byte>.Count)
+                for (; i <= (uint)values.Length - Vector512<byte>.Count; i += (uint)Vector512<byte>.Count)
+                {
+                    Vector512<byte> vector = Vector512.LoadUnsafe(ref value, i);
+                    Vector512<byte> isFalse = Vector512.Equals(vector, Vector512<byte>.Zero);
+
+                    ulong result = isFalse.ExtractMostSignificantBits();
+                    m_array[i / 32u] = (int)(~result & 0x00000000FFFFFFFF);
+                    m_array[(i / 32u) + 1] = (int)((~result >> 32) & 0x00000000FFFFFFFF);
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i <= (uint)values.Length - Vector256<byte>.Count; i += (uint)Vector256<byte>.Count)
                 {
                     Vector256<byte> vector = Vector256.LoadUnsafe(ref value, i);
                     Vector256<byte> isFalse = Vector256.Equals(vector, Vector256<byte>.Zero);
@@ -156,7 +167,7 @@ namespace System.Collections
             }
             else if (Vector128.IsHardwareAccelerated)
             {
-                for (; (i + Vector128<byte>.Count * 2u) <= (uint)values.Length; i += (uint)Vector128<byte>.Count * 2u)
+                for (; i <= (uint)values.Length - Vector128<byte>.Count * 2u; i += (uint)Vector128<byte>.Count * 2u)
                 {
                     Vector128<byte> lowerVector = Vector128.LoadUnsafe(ref value, i);
                     Vector128<byte> lowerIsFalse = Vector128.Equals(lowerVector, Vector128<byte>.Zero);
