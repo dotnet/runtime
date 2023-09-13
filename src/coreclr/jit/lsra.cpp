@@ -3322,7 +3322,6 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
         // RefPosition for the Interval that was NOT a copyReg.
         if (assignedInterval->assignedReg == regRec)
         {
-            assignedInterval->dump(compiler);
             assert(assignedInterval->isActive == false);
             assignedInterval->physReg = REG_NA;
         }

@@ -7637,8 +7637,6 @@ void Lowering::LowerMultiregParams()
             continue;
         }
 
-        // if ( hasFixedRetBuffReg() && (argReg2 ==
-
         ClassLayout* layout = argDsc->GetLayout();
         if (((layout->GetSize() % TARGET_POINTER_SIZE) != 0) && !isPow2(layout->GetSize() % TARGET_POINTER_SIZE))
         {
