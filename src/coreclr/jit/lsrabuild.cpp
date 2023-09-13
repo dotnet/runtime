@@ -2840,7 +2840,7 @@ void           LinearScan::buildIntervals()
 void LinearScan::buildExplicitParamIntervals()
 {
 #if FEATURE_MULTIREG_ARGS
-    explicitParamIntervals = nullptr; 
+    explicitParamIntervals = nullptr;
     for (unsigned argNum = 0; argNum < compiler->info.compArgsCount; argNum++)
     {
         LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
@@ -2851,29 +2851,31 @@ void LinearScan::buildExplicitParamIntervals()
 
         if (explicitParamIntervals == nullptr)
         {
-            explicitParamIntervals = new (compiler, CMK_LSRA_Interval) ExplicitParamIntervals[compiler->info.compArgsCount];
+            explicitParamIntervals =
+                new (compiler, CMK_LSRA_Interval) ExplicitParamIntervals[compiler->info.compArgsCount];
         }
 
         ExplicitParamIntervals& paramIntervals = explicitParamIntervals[argNum];
-        size_t index = 0;
+        size_t                  index          = 0;
         assert((argDsc->GetArgReg() != REG_NA) && genIsValidIntReg(argDsc->GetArgReg()));
         ClassLayout* layout = argDsc->GetLayout();
 
-        var_types reg1Type = layout->GetSize() >= TARGET_POINTER_SIZE ? layout->GetGCPtrType(0) : TYP_I_IMPL;
-        Interval* interval = newInterval(reg1Type);
+        var_types reg1Type        = layout->GetSize() >= TARGET_POINTER_SIZE ? layout->GetGCPtrType(0) : TYP_I_IMPL;
+        Interval* interval        = newInterval(reg1Type);
         interval->isExplicitParam = true;
-        interval->varNum = argNum;
+        interval->varNum          = argNum;
         assignPhysReg(argDsc->GetArgReg(), interval);
         paramIntervals.Intervals[index++] = interval;
-        RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, genRegMask(argDsc->GetArgReg()));
+        RefPosition* pos =
+            newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, genRegMask(argDsc->GetArgReg()));
         pos->setRegOptional(true);
 
         if (argDsc->GetOtherArgReg() != REG_NA)
         {
             var_types reg2Type = layout->GetSize() >= TARGET_POINTER_SIZE * 2 ? layout->GetGCPtrType(1) : TYP_I_IMPL;
-            interval = newInterval(reg2Type);
+            interval           = newInterval(reg2Type);
             interval->isExplicitParam = true;
-            interval->varNum = argNum;
+            interval->varNum          = argNum;
             assignPhysReg(argDsc->GetOtherArgReg(), interval);
             paramIntervals.Intervals[index++] = interval;
 

@@ -250,7 +250,7 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
 
 CONFIG_INTEGER(JitExplicitParameterDefs, W("JitExplicitParameterDefs"), 1)
-#endif                                                                     // defined(DEBUG)
+#endif // defined(DEBUG)
 
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                // Print codegen for given methods
 CONFIG_INTEGER(JitDisasmTesting, W("JitDisasmTesting"), 0) // Display BEGIN METHOD/END METHOD anchors for disasm testing

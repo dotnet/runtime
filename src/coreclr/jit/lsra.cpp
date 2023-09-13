@@ -2437,7 +2437,6 @@ void LinearScan::checkLastUses(BasicBlock* block)
 }
 #endif // DEBUG
 
-
 int LinearScan::getExplicitParamIntervalRegIndex(Interval* interval)
 {
 #if FEATURE_MULTIREG_ARGS
@@ -3477,7 +3476,8 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
         // If not allocated a register, Lcl var def/use ref positions even if reg optional
         // should be marked as spillAfter. Note that if it is a WriteThru interval, the value is always
         // written to the stack, but the WriteThru indicates that the register is no longer live.
-        if (fromRefPosition->RegOptional() && ((!interval->isLocalVar && !interval->isExplicitParam) || !fromRefPosition->IsActualRef()))
+        if (fromRefPosition->RegOptional() &&
+            ((!interval->isLocalVar && !interval->isExplicitParam) || !fromRefPosition->IsActualRef()))
         {
             fromRefPosition->registerAssignment = RBM_NONE;
         }
@@ -5238,11 +5238,12 @@ void LinearScan::allocateRegisters()
                     allocate = false;
                 }
                 else if (refType == RefTypeParamDef && (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT) &&
-                    (!currentRefPosition.lastUse || (currentInterval->physReg == REG_STK)))
+                         (!currentRefPosition.lastUse || (currentInterval->physReg == REG_STK)))
                 {
                     // If this is a low ref-count parameter, and either it is used (def is not the last use) or it's
                     // passed on the stack, don't allocate a register.
-                    // Note that if this is an unused register parameter we don't want to set allocate to false because that
+                    // Note that if this is an unused register parameter we don't want to set allocate to false because
+                    // that
                     // will cause us to allocate stack space to spill it.
                     allocate = false;
                 }
@@ -7193,7 +7194,7 @@ void           LinearScan::resolveRegisters()
             if (interval->isLocalVar)
             {
                 resolveLocalRef(nullptr, nullptr, currentRefPosition);
-                regNumber reg = REG_STK;
+                regNumber reg      = REG_STK;
                 int       varIndex = interval->getVarIndex(compiler);
 
                 if (!currentRefPosition->spillAfter && currentRefPosition->registerAssignment != RBM_NONE)
@@ -7202,7 +7203,7 @@ void           LinearScan::resolveRegisters()
                 }
                 else
                 {
-                    reg = REG_STK;
+                    reg                = REG_STK;
                     interval->isActive = false;
                 }
                 setVarReg(entryVarToRegMap, varIndex, reg);
@@ -7215,15 +7216,18 @@ void           LinearScan::resolveRegisters()
                 {
                     LclVarDsc* argDsc = compiler->lvaGetDesc(interval->varNum);
 #if FEATURE_MULTIREG_ARGS
-                    assert(currentRefPosition->assignedReg() == (getExplicitParamIntervalRegIndex(interval) == 0 ? argDsc->GetArgReg() : argDsc->GetOtherArgReg()));
+                    assert(currentRefPosition->assignedReg() == (getExplicitParamIntervalRegIndex(interval) == 0
+                                                                     ? argDsc->GetArgReg()
+                                                                     : argDsc->GetOtherArgReg()));
 #endif
                 }
                 else
                 {
-                    //interval->isActive = false;
-                    //updateMaxSpill(currentRefPosition);
-                    //currentSpill[interval->registerType]++;
-                    //maxSpill[interval->registerType] = max(maxSpill[interval->registerType], currentSpill[interval->registerType]);
+                    // interval->isActive = false;
+                    // updateMaxSpill(currentRefPosition);
+                    // currentSpill[interval->registerType]++;
+                    // maxSpill[interval->registerType] = max(maxSpill[interval->registerType],
+                    // currentSpill[interval->registerType]);
                     unreached();
                 }
             }
@@ -10058,16 +10062,17 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
 
                 if (interval->isLocalVar)
                 {
-                    const LclVarDsc* varDsc = compiler->lvaGetDesc(interval->varNum);
-                    regNumber assignedReg = varDsc->GetRegNum();
-                    argReg = (varDsc->lvIsRegArg) ? varDsc->GetArgReg() : REG_STK;
+                    const LclVarDsc* varDsc      = compiler->lvaGetDesc(interval->varNum);
+                    regNumber        assignedReg = varDsc->GetRegNum();
+                    argReg                       = (varDsc->lvIsRegArg) ? varDsc->GetArgReg() : REG_STK;
                     assert(reg == assignedReg || varDsc->lvRegister == false);
                 }
 #if FEATURE_MULTIREG_ARGS
                 else
                 {
                     LclVarDsc* varDsc = compiler->lvaGetDesc(interval->varNum);
-                    argReg = getExplicitParamIntervalRegIndex(interval) == 0 ? varDsc->GetArgReg() : varDsc->GetOtherArgReg();
+                    argReg            = getExplicitParamIntervalRegIndex(interval) == 0 ? varDsc->GetArgReg()
+                                                                             : varDsc->GetOtherArgReg();
                 }
 #endif
 

@@ -7578,7 +7578,7 @@ void Lowering::LowerMultiregParams()
         comp->fgEnsureFirstBBisScratch();
     }
 
-    GenTree* insertAfter = nullptr;
+    GenTree*    insertAfter  = nullptr;
     LIR::Range& firstBBRange = LIR::AsRange(comp->fgFirstBB);
 
     // Write (parts of) parameters passed in registers back to the local.
@@ -7650,10 +7650,10 @@ void Lowering::LowerMultiregParams()
             }
 
             return TYP_INT;
-            };
+        };
 
         GenTree* paramReg1 = comp->gtNewGetParamRegNode(argNum, 0, getCanonType(0));
-        GenTree* store1 = comp->gtNewStoreLclFldNode(argNum, paramReg1->TypeGet(), 0, paramReg1);
+        GenTree* store1    = comp->gtNewStoreLclFldNode(argNum, paramReg1->TypeGet(), 0, paramReg1);
         firstBBRange.InsertAfter(insertAfter, paramReg1, store1);
 
         insertAfter = store1;

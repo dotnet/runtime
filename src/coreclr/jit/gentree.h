@@ -3088,12 +3088,10 @@ struct GenTreePhysReg : public GenTree
 struct GenTreeGetParamReg : public GenTree
 {
     unsigned gtArgNum;
-    int gtRegIndex;
+    int      gtRegIndex;
 
     GenTreeGetParamReg(unsigned argNum, int regIndex, var_types type)
-        : GenTree(GT_GETPARAM_REG, type)
-        , gtArgNum(argNum)
-        , gtRegIndex(regIndex)
+        : GenTree(GT_GETPARAM_REG, type), gtArgNum(argNum), gtRegIndex(regIndex)
     {
     }
 

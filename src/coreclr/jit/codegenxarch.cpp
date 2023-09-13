@@ -4523,7 +4523,7 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     genProduceReg(tree);
 }
 
-//void CodeGen::genCodeForGetParamReg(GenTreeGetParamReg* tree)
+// void CodeGen::genCodeForGetParamReg(GenTreeGetParamReg* tree)
 //{
 //    assert(tree->OperIs(GT_GETPARAM_REG));
 //

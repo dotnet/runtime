@@ -620,8 +620,8 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-    case GT_GETPARAM_REG:
-        return 0;
+        case GT_GETPARAM_REG:
+            return 0;
 
     } // end switch (tree->OperGet())
 
