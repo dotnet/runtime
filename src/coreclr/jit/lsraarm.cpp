@@ -734,6 +734,9 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_GETPARAM_REG:
+            return 0;
+
         default:
 #ifdef DEBUG
             char message[256];

@@ -1283,6 +1283,9 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildSelect(tree->AsOp());
             break;
 
+        case GT_GETPARAM_REG:
+            return 0;
+
     } // end switch (tree->OperGet())
 
     if (tree->IsUnusedValue() && (dstCount != 0))

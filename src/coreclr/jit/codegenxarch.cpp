@@ -4523,21 +4523,6 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     genProduceReg(tree);
 }
 
-// void CodeGen::genCodeForGetParamReg(GenTreeGetParamReg* tree)
-//{
-//    assert(tree->OperIs(GT_GETPARAM_REG));
-//
-//    var_types targetType = tree->TypeGet();
-//    regNumber targetReg  = tree->GetRegNum();
-//
-//    regNumber srcReg = tree->GetArgReg(compiler);
-//
-//    inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
-//    genTransferRegGCState(targetReg, srcReg);
-//
-//    genProduceReg(tree);
-//}
-
 //---------------------------------------------------------------------
 // genCodeForNullCheck - generate code for a GT_NULLCHECK node
 //

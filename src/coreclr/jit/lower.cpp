@@ -7573,6 +7573,10 @@ void Lowering::LowerMultiregParams()
     }
 #endif
 
+#ifdef TARGET_ARM
+    return;
+#endif
+
     if (comp->fgFirstBB->bbPreds != nullptr)
     {
         comp->fgEnsureFirstBBisScratch();
@@ -7624,6 +7628,16 @@ void Lowering::LowerMultiregParams()
             JITDUMP("  second reg is %s\n", getRegName(argReg2));
             continue;
         }
+
+        // Hacky fix for bad GetOtherArgReg() in case of arg split to x7, stack on win-arm64.
+        // We should fix this.
+        if (compFeatureArgSplit() && hasFixedRetBuffReg() && (argReg2 == theFixedRetBuffReg()))
+        {
+            JITDUMP("  second reg is %s\n", getRegName(argReg2));
+            continue;
+        }
+
+        // if ( hasFixedRetBuffReg() && (argReg2 ==
 
         ClassLayout* layout = argDsc->GetLayout();
         if (((layout->GetSize() % TARGET_POINTER_SIZE) != 0) && !isPow2(layout->GetSize() % TARGET_POINTER_SIZE))

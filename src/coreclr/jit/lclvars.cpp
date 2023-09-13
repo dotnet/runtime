@@ -1163,6 +1163,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                                                                                     // registers and stack
                         {
                             printf(" stack slots:%d", cSlots - ix);
+                            JITDUMP("%s\n is reg arg: %s\n", getRegName(varDsc->GetOtherArgReg()),
+                                    varDsc->lvIsRegArg ? "yes" : "no");
                             break;
                         }
 
