@@ -358,7 +358,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
             break;
 
         case INS_ldr:
-            assert((size == EA_4BYTE) || (size == EA_8BYTE));
+            assert((size == EA_4BYTE) || (size == EA_8BYTE) || (size == EA_16BYTE));
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
