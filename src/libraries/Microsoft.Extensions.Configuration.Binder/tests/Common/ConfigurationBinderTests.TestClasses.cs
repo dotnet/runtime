@@ -567,6 +567,47 @@ namespace Microsoft.Extensions
             }
         }
 
+        public struct StructWithNestedStructAndSetterLogic
+        {
+            private string _string;
+            private int _int32;
+
+            public string String
+            {
+                get => _string;
+                // Setter should not be called for missing values.
+                set { _string = string.IsNullOrEmpty(value) ? "Hello" : value; }
+            }
+
+            public int Int32
+            {
+                get => _int32;
+                set { _int32 = value == 0 ? 42 : value; }
+            }
+
+            public Nested NestedStruct;
+            public Nested[] NestedStructs;
+
+            public struct Nested
+            {
+                private string _string;
+                private int _int32;
+
+                public string String
+                {
+                    get => _string;
+                    // Setter should not be called for missing values.
+                    set { _string = string.IsNullOrEmpty(value) ? "Hello2" : value; }
+                }
+
+                public int Int32
+                {
+                    get => _int32;
+                    set { _int32 = value == 0 ? 43 : value; }
+                }
+            }
+        }
+
         public class BaseClassWithVirtualProperty
         {
             private string? PrivateProperty { get; set; }
