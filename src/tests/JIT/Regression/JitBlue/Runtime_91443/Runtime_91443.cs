@@ -1,22 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Runtime_91062
+public class Runtime_91443
 {
     [Fact]
     public static void TestEntryPoint()
     {
-        Foo(default, default);
+        new Runtime_91443().Method0();
     }
+    
+    static Vector3 s;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector2 Foo(Vector128<float> v1, Vector128<float> v2)
+    private void Method0()
     {
-        return Vector2.Lerp(default, default, Vector128.Dot(v1, v2));
+        Vector3.Cross(s, s);
     }
 }

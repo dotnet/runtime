@@ -24,11 +24,13 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class TypeMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MetadataType _type;
+        private readonly bool _includeCustomAttributes;
 
-        public TypeMetadataNode(MetadataType type)
+        public TypeMetadataNode(MetadataType type, bool includeCustomAttributes)
         {
             Debug.Assert(type.IsTypeDefinition);
             _type = type;
+            _includeCustomAttributes = includeCustomAttributes;
         }
 
         public MetadataType Type => _type;
@@ -37,13 +39,21 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
+            if (_includeCustomAttributes)
+                CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
 
             DefType containingType = _type.ContainingType;
             if (containingType != null)
-                dependencies.Add(factory.TypeMetadata((MetadataType)containingType), "Containing type of a reflectable type");
+            {
+                TypeMetadataNode metadataNode = _includeCustomAttributes
+                    ? factory.TypeMetadata((MetadataType)containingType)
+                    : factory.TypeMetadataWithoutCustomAttributes((MetadataType)containingType);
+                dependencies.Add(metadataNode, "Containing type of a reflectable type");
+            }
             else
+            {
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
+            }
 
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
 
@@ -100,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Decomposes a constructed type into individual <see cref="TypeMetadataNode"/> units that will be needed to
         /// express the constructed type in metadata.
         /// </summary>
-        public static void GetMetadataDependencies(ref DependencyList dependencies, NodeFactory nodeFactory, TypeDesc type, string reason)
+        public static void GetMetadataDependencies(ref DependencyList dependencies, NodeFactory nodeFactory, TypeDesc type, string reason, bool isFullType = true)
         {
             MetadataManager mdManager = nodeFactory.MetadataManager;
 
@@ -110,13 +120,13 @@ namespace ILCompiler.DependencyAnalysis
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
-                    GetMetadataDependencies(ref dependencies, nodeFactory, ((ParameterizedType)type).ParameterType, reason);
+                    GetMetadataDependencies(ref dependencies, nodeFactory, ((ParameterizedType)type).ParameterType, reason, isFullType);
                     break;
                 case TypeFlags.FunctionPointer:
                     var pointerType = (FunctionPointerType)type;
-                    GetMetadataDependencies(ref dependencies, nodeFactory, pointerType.Signature.ReturnType, reason);
+                    GetMetadataDependencies(ref dependencies, nodeFactory, pointerType.Signature.ReturnType, reason, isFullType);
                     foreach (TypeDesc paramType in pointerType.Signature)
-                        GetMetadataDependencies(ref dependencies, nodeFactory, paramType, reason);
+                        GetMetadataDependencies(ref dependencies, nodeFactory, paramType, reason, isFullType);
                     break;
 
                 case TypeFlags.SignatureMethodVariable:
@@ -126,27 +136,22 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     Debug.Assert(type.IsDefType);
 
-                    TypeDesc typeDefinition = type.GetTypeDefinition();
+                    var typeDefinition = (MetadataType)type.GetTypeDefinition();
                     if (typeDefinition != type)
                     {
-                        if (mdManager.CanGenerateMetadata((MetadataType)typeDefinition))
-                        {
-                            dependencies ??= new DependencyList();
-                            dependencies.Add(nodeFactory.TypeMetadata((MetadataType)typeDefinition), reason);
-                        }
-
                         foreach (TypeDesc typeArg in type.Instantiation)
                         {
-                            GetMetadataDependencies(ref dependencies, nodeFactory, typeArg, reason);
+                            GetMetadataDependencies(ref dependencies, nodeFactory, typeArg, reason, isFullType);
                         }
                     }
-                    else
+
+                    if (mdManager.CanGenerateMetadata(typeDefinition))
                     {
-                        if (mdManager.CanGenerateMetadata((MetadataType)type))
-                        {
-                            dependencies ??= new DependencyList();
-                            dependencies.Add(nodeFactory.TypeMetadata((MetadataType)type), reason);
-                        }
+                        dependencies ??= new DependencyList();
+                        TypeMetadataNode node = isFullType
+                            ? nodeFactory.TypeMetadata(typeDefinition)
+                            : nodeFactory.TypeMetadataWithoutCustomAttributes(typeDefinition);
+                        dependencies.Add(node, reason);
                     }
                     break;
             }
@@ -154,7 +159,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable type: " + _type.ToString();
+            return $"Reflectable type: {_type}{(!_includeCustomAttributes ? " (No custom attributes)" : "")}";
         }
 
         protected override void OnMarked(NodeFactory factory)
