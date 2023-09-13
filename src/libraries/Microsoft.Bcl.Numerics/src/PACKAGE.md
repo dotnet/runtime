@@ -10,7 +10,22 @@ As of .NET Core 2.0 and .NET Standard 2.1, the C# language has support for math 
 
 ## How to Use
 
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+```C#
+using System;
+using System.MathF.
+
+internal static class Program
+{
+    private static async Task Main()
+    {
+        Console.WriteLine("Starting...");
+        
+        Console.WriteLine(MathF.Max(1f, 5f)); // returns 5f
+
+        Console.WriteLine("Finished!");
+    }
+}
+```
 
 ```C#
 using System;
