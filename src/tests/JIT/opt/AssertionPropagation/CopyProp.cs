@@ -22,6 +22,21 @@ public class Sample2
         return (sbyte)res;
     }
 
+    [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static int func(int y)
+    {
+        int sum = 0;
+        int x = y;
+        y = 4;
+        for (int i = 0; i < x; i++)
+            sum++;
+        use(x);
+        return sum;
+    }
+
+    [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void use(int x) { }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -31,6 +46,8 @@ public class Sample2
         if (func(3, 2) != +1)
             failed = true;
         if (func(2, 2) != 0)
+            failed = true;
+        if (func(2) != 2)
             failed = true;
         if (failed)
         {

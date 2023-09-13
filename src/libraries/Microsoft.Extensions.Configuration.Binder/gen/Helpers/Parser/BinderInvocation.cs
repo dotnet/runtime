@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
@@ -8,43 +9,30 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record BinderInvocation
+    internal sealed record BinderInvocation(IInvocationOperation Operation, Location Location)
     {
-        public IInvocationOperation Operation { get; private set; }
-        public Location? Location { get; private set; }
-
         public static BinderInvocation? Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
         {
-            if (!IsCandidateInvocationExpressionSyntax(context.Node, out InvocationExpressionSyntax? invocationSyntax) ||
-                context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is not IInvocationOperation operation ||
-                !IsCandidateInvocation(operation))
-            {
-                return null;
-            }
+            Debug.Assert(IsCandidateSyntaxNode(context.Node));
+            InvocationExpressionSyntax invocationSyntax = (InvocationExpressionSyntax)context.Node;
 
-            return new BinderInvocation()
-            {
-                Operation = operation,
-                Location = invocationSyntax.GetLocation()
-            };
+            return context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is IInvocationOperation operation &&
+                IsBindingOperation(operation)
+                ? new BinderInvocation(operation, invocationSyntax.GetLocation())
+                : null;
         }
 
-        private static bool IsCandidateInvocationExpressionSyntax(SyntaxNode node, out InvocationExpressionSyntax? invocationSyntax)
+        public static bool IsCandidateSyntaxNode(SyntaxNode node)
         {
-            if (node is InvocationExpressionSyntax
-                {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name.Identifier.ValueText: string memberName
-                    }
-                } syntax && IsCandidateBindingMethodName(memberName))
+            return node is InvocationExpressionSyntax
             {
-                invocationSyntax = syntax;
-                return true;
-            }
-
-            invocationSyntax = null;
-            return false;
+                // TODO: drill further into this evaluation for a declaring-type name check.
+                // https://github.com/dotnet/runtime/issues/90687.
+                Expression: MemberAccessExpressionSyntax
+                {
+                    Name.Identifier.ValueText: string memberName,
+                }
+            } && IsCandidateBindingMethodName(memberName);
 
             static bool IsCandidateBindingMethodName(string name) =>
                 IsCandidateMethodName_ConfigurationBinder(name) ||
@@ -52,22 +40,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 IsValidMethodName_OptionsConfigurationServiceCollectionExtensions(name);
         }
 
-        private static bool IsCandidateInvocation(IInvocationOperation operation)
+        public static bool IsBindingOperation(IInvocationOperation operation)
         {
             if (operation.TargetMethod is not IMethodSymbol
                 {
                     IsExtensionMethod: true,
                     Name: string methodName,
-                    ContainingType: ITypeSymbol
+                    ContainingType: INamedTypeSymbol
                     {
                         Name: string containingTypeName,
-                        ContainingNamespace: INamespaceSymbol { } containingNamespace,
-                    } containingType
-                } method ||
-                containingNamespace.ToDisplayString() is not string containingNamespaceName)
+                        ContainingNamespace: INamespaceSymbol containingNamespace,
+                    }
+                })
             {
                 return false;
             }
+
+            string containingNamespaceName = containingNamespace.ToDisplayString();
 
             return (containingTypeName) switch
             {

@@ -48,7 +48,8 @@ namespace Mono.Linker
 		readonly List<MemoryMappedViewStream> _viewStreams = new ();
 		readonly ReaderParameters _defaultReaderParameters;
 
-		HashSet<string>? _unresolvedAssemblies;
+		readonly HashSet<string> _unresolvedAssembliesProbing = new ();
+		readonly HashSet<string> _unresolvedAssemblies = new ();
 		HashSet<string>? _reportedUnresolvedAssemblies;
 
 		public AssemblyResolver (LinkContext context)
@@ -68,6 +69,16 @@ namespace Mono.Linker
 
 			throw new InternalErrorException ($"Assembly '{assembly}' was not loaded using ILLink resolver");
 		}
+
+		/// <summary>
+		/// We need to track unresolved assemblies separately when probing vs not probing.
+		///
+		/// This prevents a TryResolve call that fails to resolve an assembly from silencing a later Resolve call that fails to resolve the same
+		/// assembly when SkipUnresolved is false.
+		/// </summary>
+		/// <param name="probing"></param>
+		/// <returns>The known unresolved assemblies for probing mode or non probing mode</returns>
+		HashSet<string> GetUnresolvedAssemblies (bool probing) => probing ? _unresolvedAssembliesProbing : _unresolvedAssemblies;
 
 		AssemblyDefinition? ResolveFromReferences (AssemblyNameReference name)
 		{
@@ -92,7 +103,8 @@ namespace Mono.Linker
 			if (AssemblyCache.TryGetValue (name.Name, out AssemblyDefinition? asm))
 				return asm;
 
-			if (_unresolvedAssemblies?.Contains (name.Name) == true) {
+			var unresolvedAssemblies = GetUnresolvedAssemblies (probing);
+			if (unresolvedAssemblies.Contains (name.Name)) {
 				if (!probing)
 					ReportUnresolvedAssembly (name);
 				return null;
@@ -104,12 +116,10 @@ namespace Mono.Linker
 			asm ??= SearchDirectory (name);
 
 			if (asm == null) {
-				_unresolvedAssemblies ??= new HashSet<string> ();
-
 				if (!probing)
 					ReportUnresolvedAssembly (name);
 
-				_unresolvedAssemblies.Add (name.Name);
+				unresolvedAssemblies.Add (name.Name);
 				return null;
 			}
 
@@ -167,7 +177,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public AssemblyDefinition? Resolve (AssemblyNameReference name)
+		public virtual AssemblyDefinition? Resolve (AssemblyNameReference name)
 		{
 			return Resolve (name, probing: false);
 		}
@@ -236,7 +246,8 @@ namespace Mono.Linker
 			}
 
 			AssemblyCache.Clear ();
-			_unresolvedAssemblies?.Clear ();
+			_unresolvedAssemblies.Clear ();
+			_unresolvedAssembliesProbing.Clear ();
 
 			_reportedUnresolvedAssemblies?.Clear ();
 

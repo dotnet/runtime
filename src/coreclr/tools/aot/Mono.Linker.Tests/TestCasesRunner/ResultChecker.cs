@@ -45,22 +45,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_linkedReaderParameters = linkedReaderParameters;
 		}
 
-		private static bool ShouldValidateIL (AssemblyDefinition inputAssembly)
-		{
-			if (HasAttribute (inputAssembly, nameof (SkipPeVerifyAttribute)))
-				return false;
-
-			var caaIsUnsafeFlag = (CustomAttributeArgument caa) =>
-				(caa.Type.Name == "String" && caa.Type.Namespace == "System")
-				&& (string) caa.Value == "/unsafe";
-			var customAttributeHasUnsafeFlag = (CustomAttribute ca) => ca.ConstructorArguments.Any (caaIsUnsafeFlag);
-			if (GetCustomAttributes (inputAssembly, nameof (SetupCompileArgumentAttribute))
-				.Any (customAttributeHasUnsafeFlag))
-				return false;
-
-			return true;
-		}
-
 		public virtual void Check (ILCompilerTestCaseResult testResult)
 		{
 			InitializeResolvers (testResult);

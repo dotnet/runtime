@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -59,13 +60,10 @@ namespace Microsoft.Interop
                 (string managedIdentifier, _) = context.GetIdentifiers(info);
 
                 // Marshal.ThrowExceptionForHR(<managed>);
-                yield return ExpressionStatement(
-                    InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
-                            IdentifierName("ThrowExceptionForHR")),
-                        ArgumentList(
-                            SingletonSeparatedList(Argument(IdentifierName(managedIdentifier))))));
+                yield return MethodInvocationStatement(
+                                TypeSyntaxes.System_Runtime_InteropServices_Marshal,
+                                IdentifierName("ThrowExceptionForHR"),
+                                Argument(IdentifierName(managedIdentifier)));
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;

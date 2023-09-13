@@ -271,7 +271,7 @@ namespace System.Runtime
 
         slowPath:
             // fall through to the slow helper
-            object objRet = ChekCastAny_NoCacheLookup(pTargetType, obj);
+            object objRet = CheckCastAny_NoCacheLookup(pTargetType, obj);
             // Make sure that the fast helper have not lied
             Debug.Assert(result != CastResult.CannotCast);
             return objRet;
@@ -1232,7 +1232,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe object ChekCastAny_NoCacheLookup(MethodTable* pTargetType, object obj)
+        private static unsafe object CheckCastAny_NoCacheLookup(MethodTable* pTargetType, object obj)
         {
             MethodTable* pSourceType = obj.GetMethodTable();
             if (pTargetType->IsArray)
