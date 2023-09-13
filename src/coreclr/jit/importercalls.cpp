@@ -3227,13 +3227,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-#ifdef TARGET_ARM64
-            // Intrinsify Interlocked.Or and Interlocked.And only for arm64-v8.1 (and newer)
+#if defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+            // Intrinsify Interlocked.Or and Interlocked.And only for arm64-v8.1 (and newer) and for RV64A
             // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                ARM64_ONLY(if (compOpportunisticallyDependsOn(InstructionSet_Atomics)))
                 {
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
@@ -3244,9 +3244,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
                 break;
             }
-#endif // TARGET_ARM64
+#endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#ifndef TARGET_RISCV64
             // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
             case NI_System_Threading_Interlocked_CompareExchange:
             {
@@ -3278,7 +3279,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 retNode = node;
                 break;
             }
-
+#endif // !TARGET_RISCV64
             case NI_System_Threading_Interlocked_Exchange:
             case NI_System_Threading_Interlocked_ExchangeAdd:
             {
@@ -3314,13 +3315,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // want to make this *not* make the var address-taken -- but atomic instructions
                 // on a local are probably pretty useless anyway, so we probably don't care.
 
-                op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
-                                    genActualType(callType), op1, op2);
+                genTreeOps oper = (ni == NI_System_Threading_Interlocked_ExchangeAdd) ? GT_XADD : GT_XCHG;
+                op1 = gtNewOperNode(oper, genActualType(callType), op1, op2);
                 op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
                 retNode = op1;
                 break;
             }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:

@@ -373,12 +373,29 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_LOCKADD:
+            assert(!"-----unimplemented on RISCV64----");
+            break;
+
         case GT_XORR:
         case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {
-            NYI_RISCV64("-----unimplemented on RISCV64 yet----");
+            assert(dstCount == (tree->TypeGet() == TYP_VOID) ? 0 : 1);
+            GenTree* addr = tree->gtGetOp1();
+            GenTree* data = tree->gtGetOp2();
+            assert(!addr->isContained() && !data->isContained());
+            srcCount = 2;
+
+            buildInternalIntRegisterDefForNode(tree);
+
+            BuildUse(addr);
+            BuildUse(data);
+            buildInternalRegisterUses();
+            if (dstCount == 1)
+            {
+                BuildDef(tree);
+            }
         }
         break;
 

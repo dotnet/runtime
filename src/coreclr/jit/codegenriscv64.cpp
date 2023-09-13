@@ -2609,14 +2609,40 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genLockedInstructions: Generate code for a GT_XADD or GT_XCHG node.
+// genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XORR or GT_XCHG node.
 //
 // Arguments:
-//    treeNode - the GT_XADD/XCHG node
+//    treeNode - the GT_XADD/XAND/XORR/XCHG node
 //
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
-    NYI_RISCV64("genLockedInstructions-----unimplemented/unused on RISCV64 yet----");
+    GenTree* data = treeNode->AsOp()->gtOp2;
+    GenTree* addr = treeNode->AsOp()->gtOp1;
+    regNumber dataReg = data->GetRegNum();
+    regNumber addrReg = addr->GetRegNum();
+    regNumber targetReg = treeNode->GetRegNum();
+    if (targetReg == REG_NA)
+    {
+        targetReg = REG_R0;
+    }
+
+    genConsumeAddress(addr);
+    genConsumeRegs(data);
+
+    emitAttr dataSize = emitActualTypeSize(data);
+    bool is4 = (dataSize == EA_4BYTE);
+
+    assert(!data->isContainedIntOrIImmed());
+
+    genTreeOps op = treeNode->gtOper;
+    instruction ins =
+        op == GT_XORR ? (is4 ? INS_amoor_w   : INS_amoor_d) :
+        op == GT_XAND ? (is4 ? INS_amoand_w  : INS_amoand_d) :
+        op == GT_XCHG ? (is4 ? INS_amoswap_w : INS_amoswap_d) :
+        op == GT_XADD ? (is4 ? INS_amoadd_w  : INS_amoadd_d) :
+        (assert(!"Unexpected treeNode->gtOper"), INS_none);
+
+    GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
 }
 
 //------------------------------------------------------------------------
@@ -4643,6 +4669,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_XCHG:
         case GT_XADD:
+        case GT_XORR:
+        case GT_XAND:
             genLockedInstructions(treeNode->AsOp());
             break;
 
