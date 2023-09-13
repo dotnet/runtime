@@ -1031,6 +1031,7 @@ typedef enum {
 
 G_ENUM_FUNCTIONS (GFileTest)
 
+FILE *     g_fopen (const char *path, const char *mode);
 gboolean   g_file_set_contents (const gchar *filename, const gchar *contents, gssize length, GError **gerror);
 gboolean   g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **gerror);
 GFileError g_file_error_from_errno (gint err_no);
@@ -1070,7 +1071,6 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #define g_read(fd, buffer, buffer_size) (int)read(fd, buffer, buffer_size)
 #endif
 
-#define g_fopen fopen
 #define g_lstat lstat
 #define g_rmdir rmdir
 #define g_mkstemp mkstemp
