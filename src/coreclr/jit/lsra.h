@@ -1570,14 +1570,12 @@ private:
     // Map from tracked variable index to Interval*.
     Interval** localVarIntervals;
 
-#if FEATURE_MULTIREG_ARGS
     struct ExplicitParamIntervals
     {
         Interval* Intervals[MAX_ARG_REG_COUNT] = {};
     };
 
     ExplicitParamIntervals* explicitParamIntervals;
-#endif
 
     int getExplicitParamIntervalRegIndex(Interval* interval);
 

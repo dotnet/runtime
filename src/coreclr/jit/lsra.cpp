@@ -1752,7 +1752,7 @@ void           LinearScan::identifyCandidates()
         VarSetOps::AssignNoCopy(compiler, splitOrSpilledVars, VarSetOps::MakeEmpty(compiler));
 
         // We set enregisterLocalVars to true only if there are tracked lclVars
-        assert(compiler->lvaCount != 0);
+        assert(compiler->lvaCount != 0 || (explicitParamIntervals != nullptr));
     }
     else if (compiler->lvaCount == 0)
     {
