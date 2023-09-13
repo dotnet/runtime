@@ -33,17 +33,6 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Hello World!");
         }
 
-        private void CheckFileSigned(string path)
-        {
-            // Check if the file is signed (it should have been signed by the bundler)
-            Command.Create("codesign", $"-v {path}")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass();
-        }
-
         private string MakeUniversalBinary(string path, string rid)
         {
             string fatApp = path + ".fat";
@@ -74,10 +63,6 @@ namespace Microsoft.NET.HostModel.Tests
 
             // check that the file structure is understood by codesign
             var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
-            if (targetOS == OSPlatform.OSX)
-            {
-                CheckFileSigned(singleFile);
-            }
 
             // Run the extracted app
             RunTheApp(singleFile);

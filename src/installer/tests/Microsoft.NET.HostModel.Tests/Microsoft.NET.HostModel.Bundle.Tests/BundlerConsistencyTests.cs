@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using FluentAssertions;
+using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
 using Xunit;
@@ -23,8 +24,8 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         private static string BundlerHostName = Binaries.GetExeFileNameForCurrentPlatform(SharedTestState.AppName);
-        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null)
-            => new Bundler(BundlerHostName, SharedFramework.CalculateUniqueTestDirectory($"{sharedTestState.App.Location}-bundle"), bundleOptions, targetFrameworkVersion: version);
+        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true)
+            => new Bundler(BundlerHostName, SharedFramework.CalculateUniqueTestDirectory($"{sharedTestState.App.Location}-bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -307,6 +308,40 @@ namespace Microsoft.NET.HostModel.Tests
             var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : 16;
             bundler.BundleManifest.Files.ForEach(file =>
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void Codesign(bool shouldCodesign)
+        {
+            TestApp app = sharedTestState.App;
+            FileSpec[] fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
+                new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
+                new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
+            };
+
+            Bundler bundler = CreateBundlerInstance(macosCodesign: shouldCodesign);
+            string bundledApp = bundler.GenerateBundle(fileSpecs);
+
+            // Check if the file is signed
+            CommandResult result = Command.Create("codesign", $"-v {bundledApp}")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute(expectedToFail: !shouldCodesign);
+
+            if (shouldCodesign)
+            {
+                result.Should().Pass();
+            }
+            else
+            {
+                result.Should().Fail();
+            }
         }
 
         public class SharedTestState : IDisposable
