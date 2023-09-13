@@ -17,6 +17,11 @@ namespace Internal.Runtime
 
             return EETypePtr.EETypePtrOf<Array>().ToPointer();
         }
+
+        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
+        {
+            return mt1 == mt2;
+        }
 #endif
     }
 }

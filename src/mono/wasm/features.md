@@ -424,4 +424,4 @@ We have initial implementation of diagnostic server and [event pipe](https://lea
 
 At the moment it requires multi-threaded build of the runtime.
 
-For more details see [diagnostic-server.md](runtime\diagnostics\diagnostic-server.md)
+For more details see [diagnostic-server.md](runtime/diagnostics/diagnostic-server.md)
