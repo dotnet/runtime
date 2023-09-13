@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (type == typeof(Program.MyClass))
             {
                 var temp = (Program.MyClass)instance;
-                BindCore(configuration, ref temp, true, binderOptions);
+                BindCore(configuration, ref temp, false, binderOptions);
                 return;
             }
 
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 var value = new Program.MyClass2();
-                BindCore(section, ref value, true, binderOptions);
+                BindCore(section, ref value, false, binderOptions);
                 instance.Add(value);
             }
         }
@@ -148,7 +148,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 List<int>? temp7 = instance.MyList;
                 temp7 ??= new List<int>();
-                BindCore(section5, ref temp7, true, binderOptions);
+                BindCore(section5, ref temp7, false, binderOptions);
                 instance.MyList = temp7;
             }
 
@@ -156,7 +156,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 List<Program.MyClass2>? temp10 = instance.MyList2;
                 temp10 ??= new List<Program.MyClass2>();
-                BindCore(section8, ref temp10, true, binderOptions);
+                BindCore(section8, ref temp10, false, binderOptions);
                 instance.MyList2 = temp10;
             }
 
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Dictionary<string, string>? temp13 = instance.MyDictionary;
                 temp13 ??= new Dictionary<string, string>();
-                BindCore(section11, ref temp13, true, binderOptions);
+                BindCore(section11, ref temp13, false, binderOptions);
                 instance.MyDictionary = temp13;
             }
         }

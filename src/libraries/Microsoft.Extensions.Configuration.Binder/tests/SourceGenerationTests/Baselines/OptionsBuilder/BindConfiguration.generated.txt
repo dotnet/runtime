@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (type == typeof(Program.MyClass))
             {
                 var temp = (Program.MyClass)instance;
-                BindCore(configuration, ref temp, true, binderOptions);
+                BindCore(configuration, ref temp, false, binderOptions);
                 return;
             }
 
@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 List<int>? temp5 = instance.MyList;
                 temp5 ??= new List<int>();
-                BindCore(section3, ref temp5, true, binderOptions);
+                BindCore(section3, ref temp5, false, binderOptions);
                 instance.MyList = temp5;
             }
         }

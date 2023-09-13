@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"return {parsedValueExpr};"),
                                     checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue,
-                                    useDefaultValueIfSectionValueIsNull : false,
+                                    useDefaultValueIfSectionValueIsNull: false,
                                     useIncrementalStringValueIdentifier: false);
                             }
                             break;
@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 if (complexType.CanInstantiate)
                                 {
-                                    EmitBindingLogic(complexType, Identifier.instance, Identifier.configuration, InitializationKind.Declaration);
+                                    EmitBindingLogic(complexType, Identifier.instance, Identifier.configuration, InitializationKind.Declaration, ValueDefaulting.CallSetter);
                                     _writer.WriteLine($"return {Identifier.instance};");
                                 }
                                 else if (type is ObjectSpec { InitExceptionMessage: string exMsg })
@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.DisplayString}))");
                     _writer.WriteLine($"var {Identifier.temp} = ({effectiveType.DisplayString}){Identifier.instance};");
-                    EmitBindingLogic(type, Identifier.temp, Identifier.configuration, InitializationKind.None);
+                    EmitBindingLogic(type, Identifier.temp, Identifier.configuration, InitializationKind.None, ValueDefaulting.None);
                     _writer.WriteLine($"return;");
                     EmitEndBlock();
                 }
@@ -258,7 +258,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    EmitBindCoreImplForObject((ObjectSpec)effectiveType);
+                    EmitBindCoreImplForObject((ObjectSpec)effectiveType, ValueDefaulting.None);
                 }
 
                 EmitEndBlock();
@@ -384,7 +384,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         parsedMemberAssignmentLhsExpr,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
                         canSet: true,
-                        firstTimeInitialization: true);
+                        firstTimeInitialization: true,
+                        ValueDefaulting.None);
 
                     if (canBindToMember)
                     {
@@ -640,7 +641,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 // Create list and bind elements.
                 string tempIdentifier = GetIncrementalIdentifier(Identifier.temp);
-                EmitBindingLogic(typeToInstantiate, tempIdentifier, Identifier.configuration, InitializationKind.Declaration);
+                EmitBindingLogic(typeToInstantiate, tempIdentifier, Identifier.configuration, InitializationKind.Declaration, ValueDefaulting.None);
 
                 // Resize array and add binded elements.
                 _writer.WriteLine($$"""
@@ -679,7 +680,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         break;
                     case ComplexTypeSpec { CanInstantiate: true } complexType:
                         {
-                            EmitBindingLogic(complexType, Identifier.value, Identifier.section, InitializationKind.Declaration);
+                            EmitBindingLogic(complexType, Identifier.value, Identifier.section, InitializationKind.Declaration, ValueDefaulting.None);
                             _writer.WriteLine($"{addExpr}({Identifier.value});");
                         }
                         break;
@@ -756,7 +757,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 EmitObjectInit(complexElementType, Identifier.element, InitializationKind.SimpleAssignment, Identifier.section);
                                 EmitEndBlock();
 
-                                EmitBindingLogic(complexElementType, Identifier.element, Identifier.section, InitializationKind.None);
+                                EmitBindingLogic(complexElementType, Identifier.element, Identifier.section, InitializationKind.None, ValueDefaulting.None);
                                 _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
                             }
                             break;
@@ -766,7 +767,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitEndBlock();
             }
 
-            private void EmitBindCoreImplForObject(ObjectSpec type)
+            private void EmitBindCoreImplForObject(ObjectSpec type, ValueDefaulting valueDefaulting)
             {
                 Debug.Assert(type.HasBindableMembers);
 
@@ -785,7 +786,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             memberAccessExpr: $"{containingTypeRef}.{property.Name}",
                             GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
                             canSet: property.CanSet,
-                            firstTimeInitialization: false);
+                            firstTimeInitialization: false,
+                            valueDefaulting);
                     }
                 }
             }
@@ -795,7 +797,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string memberAccessExpr,
                 string sectionPathExpr,
                 bool canSet,
-                bool firstTimeInitialization)
+                bool firstTimeInitialization,
+                ValueDefaulting valueDefaulting)
             {
                 TypeSpec effectiveMemberType = member.Type.EffectiveType;
 
@@ -842,7 +845,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                             EmitBlankLineIfRequired();
                             EmitStartBlock($"if ({sectionValidationCall} is {Identifier.IConfigurationSection} {sectionIdentifier})");
-                            EmitBindingLogicForComplexMember(member, memberAccessExpr, sectionIdentifier, canSet);
+                            EmitBindingLogicForComplexMember(member, memberAccessExpr, sectionIdentifier, canSet, valueDefaulting);
                             EmitEndBlock();
 
                             return complexType.CanInstantiate;
@@ -856,7 +859,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 MemberSpec member,
                 string memberAccessExpr,
                 string configArgExpr,
-                bool canSet)
+                bool canSet,
+                ValueDefaulting valueDefaulting)
             {
 
                 TypeSpec memberType = member.Type;
@@ -919,7 +923,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     targetObjAccessExpr,
                     configArgExpr,
                     initKind,
-                    writeOnSuccess);
+                    valueDefaulting,
+                    writeOnSuccess
+                    );
             }
 
             private void EmitBindingLogic(
@@ -927,6 +933,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string memberAccessExpr,
                 string configArgExpr,
                 InitializationKind initKind,
+                ValueDefaulting valueDefaulting,
                 Action<string>? writeOnSuccess = null)
             {
                 if (!type.HasBindableMembers)
@@ -965,7 +972,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind)
                 {
-                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, true, {Identifier.binderOptions});";
+                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions});";
 
                     if (type.CanInstantiate)
                     {
@@ -997,6 +1004,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine(bindCoreCall);
                         writeOnSuccess?.Invoke(instanceToBindExpr);
                     }
+
+                    string FormatDefaultValueIfNotFound() => valueDefaulting == ValueDefaulting.CallSetter ? "true" : "false";
                 }
             }
 
