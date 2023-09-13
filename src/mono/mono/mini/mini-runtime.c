@@ -5557,7 +5557,7 @@ mono_invoke_runtime_init_callback (void)
 }
 
 gboolean
-jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
+mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
 {
 	if (sig->param_count > 10)
 		return FALSE;

@@ -660,7 +660,7 @@ gboolean
 mono_is_addr_implicit_null_check (void *addr);
 
 gboolean
-jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only);
+mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only);
 
 /*
  * Signal handling
