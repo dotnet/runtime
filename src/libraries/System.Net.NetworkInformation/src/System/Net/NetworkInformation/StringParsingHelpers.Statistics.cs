@@ -407,15 +407,15 @@ namespace System.Net.NetworkInformation
             {
                 sr.ReadLine();
                 sr.ReadLine();
-                int index = 0;
                 while (!sr.EndOfStream)
                 {
                     string line = sr.ReadLine()!;
                     if (line.Contains(name))
                     {
-                        Span<Range> pieces = stackalloc Range[18]; // [0] skipped, [1]-[16] used, +1 to ensure any additional segment goes into [17]
+                        Span<Range> pieces = stackalloc Range[18]; // [0]-[16] used, +1 to ensure any additional segment goes into [17]
                         ReadOnlySpan<char> lineSpan = line;
                         pieces = pieces.Slice(0, lineSpan.SplitAny(pieces, " :", StringSplitOptions.RemoveEmptyEntries));
+                        if (pieces[0] != name) continue; // Ensure the name 100% matches
 
                         return new IPInterfaceStatisticsTable()
                         {
@@ -438,7 +438,6 @@ namespace System.Net.NetworkInformation
                             CompressedPacketsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[16]]),
                         };
                     }
-                    index += 1;
                 }
 
                 throw ExceptionHelper.CreateForParseFailure();
