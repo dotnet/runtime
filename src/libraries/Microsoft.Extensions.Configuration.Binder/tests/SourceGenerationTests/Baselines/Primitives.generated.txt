@@ -45,14 +45,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             var typedObj = (Program.MyClass)instance;
-            BindCore(configuration, ref typedObj, binderOptions: null);
+            BindCore(configuration, ref typedObj, false, binderOptions: null);
         }
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop7", "Prop11", "Prop12", "Prop18", "Prop22", "Prop28", "Prop29", "Prop30" });
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop0 = ParseBool(value0, () => configuration.GetSection("Prop0").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop0 = default;
             }
@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop1 = ParseByte(value1, () => configuration.GetSection("Prop1").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop1 = default;
             }
@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop2 = ParseSbyte(value2, () => configuration.GetSection("Prop2").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop2 = default;
             }
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop3 = ParseChar(value3, () => configuration.GetSection("Prop3").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop3 = default;
             }
@@ -96,7 +96,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop4 = ParseDouble(value4, () => configuration.GetSection("Prop4").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop4 = default;
             }
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop6 = ParseInt(value6, () => configuration.GetSection("Prop6").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop6 = default;
             }
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop8 = ParseShort(value7, () => configuration.GetSection("Prop8").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop8 = default;
             }
@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop9 = ParseLong(value8, () => configuration.GetSection("Prop9").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop9 = default;
             }
@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop10 = ParseFloat(value9, () => configuration.GetSection("Prop10").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop10 = default;
             }
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop13 = ParseUshort(value10, () => configuration.GetSection("Prop13").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop13 = default;
             }
@@ -155,7 +155,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop14 = ParseUint(value11, () => configuration.GetSection("Prop14").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop14 = default;
             }
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop15 = ParseUlong(value12, () => configuration.GetSection("Prop15").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop15 = default;
             }
@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop19 = ParseDateTime(value15, () => configuration.GetSection("Prop19").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop19 = default;
             }
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop20 = ParseDateTimeOffset(value16, () => configuration.GetSection("Prop20").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop20 = default;
             }
@@ -201,7 +201,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop21 = ParseDecimal(value17, () => configuration.GetSection("Prop21").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop21 = default;
             }
@@ -210,7 +210,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop23 = ParseTimeSpan(value18, () => configuration.GetSection("Prop23").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop23 = default;
             }
@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop24 = ParseGuid(value19, () => configuration.GetSection("Prop24").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop24 = default;
             }
@@ -238,7 +238,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop27 = ParseEnum<DayOfWeek>(value22, () => configuration.GetSection("Prop27").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop27 = default;
             }
@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop7 = ParseInt128(value23, () => configuration.GetSection("Prop7").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop7 = default;
             }
@@ -256,7 +256,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop11 = ParseHalf(value24, () => configuration.GetSection("Prop11").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop11 = default;
             }
@@ -265,7 +265,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop12 = ParseUInt128(value25, () => configuration.GetSection("Prop12").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop12 = default;
             }
@@ -274,7 +274,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop18 = ParseDateOnly(value26, () => configuration.GetSection("Prop18").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop18 = default;
             }
@@ -283,7 +283,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop22 = ParseTimeOnly(value27, () => configuration.GetSection("Prop22").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop22 = default;
             }
@@ -297,7 +297,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop29 = ParseInt(value29, () => configuration.GetSection("Prop29").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop29 = default;
             }
@@ -306,7 +306,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop30 = ParseDateTime(value30, () => configuration.GetSection("Prop30").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 instance.Prop30 = default;
             }

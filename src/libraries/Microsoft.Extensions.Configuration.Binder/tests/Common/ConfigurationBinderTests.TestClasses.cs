@@ -470,7 +470,7 @@ namespace Microsoft.Extensions
                 set => _otherCode = value == 0 ? 2 : value;
             }
 
-            // These do not have any match in the configuration, and the setters should not be called  during the binding:
+            // These do not have any match in the configuration, and the setters should not be called during the binding:
             public int? OtherCodeNullable
             {
                 get => _otherCodeNullable;
@@ -818,5 +818,27 @@ namespace Microsoft.Extensions
             public ClassWith_DirectlyAssignable_CtorParams(IConfigurationSection mySection, object myObject, string myString) =>
                 (MySection, MyObject, MyString) = (mySection, myObject, myString);
         }
+
+        public class SharedChildInstance_Class
+        {
+            public string? ConnectionString { get; set; }
+        }
+
+        public class ClassThatThrowsOnSetters
+        {
+            private int _myIntProperty;
+
+            public ClassThatThrowsOnSetters()
+            {
+                _myIntProperty = 42;
+            }
+
+            public int MyIntProperty
+            {
+                get => _myIntProperty;
+                set => throw new InvalidOperationException("Not expected");
+            }
+        }
+
     }
 }

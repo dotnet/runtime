@@ -1712,12 +1712,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(2, options.ParsedBlacklist.Count); // should be initialized when calling the options.Blacklist setter.
 
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
-            Assert.Equal(2, options.OtherCode); // doesn't exist in configuration. the setter sets default value '2'
 
-            // These don't exist in configuration and setters are not called.
+            // This doesn't exist in configuration but the setter should be called which defaults the to '2' from input of '0'.
+            Assert.Equal(2, options.OtherCode);
+
+            // These don't exist in configuration and setters are not called since they are nullable.
             Assert.Equal(0, options.OtherCodeNullable);
             Assert.Null(options.OtherCodeNull);
             Assert.Null(options.OtherCodeUri);            
+        }
+
+        [Fact]
+        public void EnsureNotCallingThePropertySetterOnBindWhenNoOwningConfig()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[] { });
+            var config = builder.Build();
+
+            ClassThatThrowsOnSetters instance = new();
+
+            // The setter for MyIntProperty throws.
+            config.GetSection("Dmy").Bind(instance);
+            Assert.Equal(42, instance.MyIntProperty);
         }
 
         [Fact]
@@ -2319,6 +2335,26 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("MySection", obj.MySection.Value);
             Assert.Equal("MyObject", obj.MyObject);
             Assert.Equal("MyString", obj.MyString);
+        }
+
+        [Fact]
+        public void SharedChildInstance()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[]
+            {
+                new("A:B:ConnectionString", "localhost"),
+            });
+
+            var config = builder.Build();
+
+            SharedChildInstance_Class instance = new();
+            config.GetSection("A:B").Bind(instance);
+            Assert.Equal("localhost", instance.ConnectionString);
+
+            // Binding to a new section should not set the value to null.
+            config.GetSection("A").Bind(instance);
+            Assert.Equal("localhost", instance.ConnectionString);
         }
     }
 }

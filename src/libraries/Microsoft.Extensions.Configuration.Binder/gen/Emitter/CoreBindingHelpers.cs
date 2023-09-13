@@ -237,7 +237,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitBindCoreMethod(ComplexTypeSpec type)
             {
                 string objParameterExpression = $"ref {type.DisplayString} {Identifier.instance}";
-                EmitStartBlock(@$"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCore)}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
+                EmitStartBlock(@$"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCore)}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, bool defaultValueIfNotFound, {Identifier.BinderOptions}? {Identifier.binderOptions})");
 
                 ComplexTypeSpec effectiveType = (ComplexTypeSpec)type.EffectiveType;
                 if (effectiveType is EnumerableSpec enumerable)
@@ -383,7 +383,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         member,
                         parsedMemberAssignmentLhsExpr,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
-                        canSet: true);
+                        canSet: true,
+                        firstTimeInitialization: true);
 
                     if (canBindToMember)
                     {
@@ -783,7 +784,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             property,
                             memberAccessExpr: $"{containingTypeRef}.{property.Name}",
                             GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
-                            canSet: property.CanSet);
+                            canSet: property.CanSet,
+                            firstTimeInitialization: false);
                     }
                 }
             }
@@ -792,7 +794,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 MemberSpec member,
                 string memberAccessExpr,
                 string sectionPathExpr,
-                bool canSet)
+                bool canSet,
+                bool firstTimeInitialization)
             {
                 TypeSpec effectiveMemberType = member.Type.EffectiveType;
 
@@ -805,8 +808,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             if (canSet)
                             {
                                 string nullBangExpr = member.Type.IsValueType ? string.Empty : "!";
-                                bool useDefaultValueIfSectionValueIsNull = member is PropertySpec &&
-                                    //stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue &&
+                                bool useDefaultValueIfSectionValueIsNull = !firstTimeInitialization &&
+                                    member is PropertySpec &&
                                     member.Type.IsValueType &&
                                     member.Type.SpecKind is not TypeSpecKind.Nullable;
 
@@ -963,7 +966,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind)
                 {
-                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, {Identifier.binderOptions});";
+                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, true, {Identifier.binderOptions});";
 
                     if (type.CanInstantiate)
                     {
@@ -1033,7 +1036,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (useDefaultValueIfSectionValueIsNull)
                 {
                     parsedValueExpr = $"default";
-                    EmitStartBlock($"else");
+                    EmitStartBlock($"else if (defaultValueIfNotFound)");
                     InvokeWriteOnSuccess();
                     EmitEndBlock();
                 }
