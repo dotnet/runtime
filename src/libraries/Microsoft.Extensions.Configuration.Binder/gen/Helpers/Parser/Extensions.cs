@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using SourceGenerators;
@@ -11,10 +10,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal static class ParserExtensions
     {
-        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
+        private static readonly SymbolDisplayFormat s_identifierCompatibleFormat = new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
             typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
-            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            genericsOptions: SymbolDisplayGenericsOptions.None,
             miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
         public static void RegisterCacheEntry<TKey, TValue, TEntry>(this Dictionary<TKey, TValue> cache, TKey key, TEntry entry)
@@ -29,9 +28,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             entryCollection.Add(entry);
         }
 
-        public static string ToMinimalDisplayString(this ITypeSymbol type) => type.ToDisplayString(s_minimalDisplayFormat);
-
-        public static string ToIdentifierCompatibleSubstring(this ITypeSymbol type, string? displayString = null)
+        public static string ToIdentifierCompatibleSubstring(this ITypeSymbol type)
         {
             if (type is IArrayTypeSymbol arrayType)
             {
@@ -40,40 +37,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return ToIdentifierCompatibleSubstring(arrayType.ElementType) + suffix;
             }
 
-            displayString ??= type.ToMinimalDisplayString();
-            StringBuilder? sb = null;
+            string displayString = type.ContainingType is null
+                ? type.Name
+                : type.ToDisplayString(s_identifierCompatibleFormat).Replace(".", string.Empty);
 
-            foreach (char c in displayString)
-            {
-                if (c is '[')
-                {
-                    GetSb().Append("Array");
-                }
-                else if (c is ',')
-                {
-                    GetSb().Append("Comma");
-                }
-                else if (char.IsLetterOrDigit(c))
-                {
-                    GetSb().Append(c);
-                }
-
-                StringBuilder GetSb() => sb ??= new();
-            }
-
-            displayString = sb?.ToString() ?? displayString;
-
-            if (type is not INamedTypeSymbol namedType || !namedType.IsGenericType)
+            if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
             {
                 return displayString;
             }
 
-            if (sb is null)
-            {
-                (sb = new()).Append(displayString);
-            }
-
-            Debug.Assert(sb.Length > 0);
+            StringBuilder sb = new(displayString);
 
             if (namedType.GetAllTypeArgumentsInScope() is List<ITypeSymbol> typeArgsInScope)
             {
