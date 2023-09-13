@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+c// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
@@ -406,7 +406,7 @@ namespace System.Tests.Types
 
     public abstract class InterfaceTypeTestBase : TypePropertyTestBase
     {
-        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.ClassSemanticsMask | TypeAttributes.Abstract;
+        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.ClassSemanticsMask | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit;
 
         public override Type BaseType => null;
     }
