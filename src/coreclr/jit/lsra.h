@@ -2458,7 +2458,7 @@ public:
 #endif // TARGET_ARM64
 
     // Last Use - this may be true for multiple RefPositions in the same Interval
-    unsigned char lastUse;
+    unsigned char lastUse : 1;
 
     // Spill and Copy info
     //   reload indicates that the value was spilled, and must be reloaded here.
