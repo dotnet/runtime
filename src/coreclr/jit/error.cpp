@@ -110,8 +110,7 @@ void DECLSPEC_NORETURN noWayAssertBody()
 
 inline static bool ShouldThrowOnNoway()
 {
-    return JitTls::GetCompiler() == nullptr ||
-           JitTls::GetCompiler()->compShouldThrowOnNoway();
+    return JitTls::GetCompiler() == nullptr || JitTls::GetCompiler()->compShouldThrowOnNoway();
 }
 
 /*****************************************************************************/
