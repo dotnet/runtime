@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 #pragma warning disable 1717
 #pragma warning disable 0219
@@ -384,7 +385,8 @@ public struct BB
 
 public class App
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {

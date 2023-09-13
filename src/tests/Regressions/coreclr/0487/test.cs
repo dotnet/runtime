@@ -6,6 +6,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public delegate T D<T>(T t);
     
@@ -69,7 +70,8 @@ public class Test_test
         }
     }
     
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         
         Gen<object>.Init();

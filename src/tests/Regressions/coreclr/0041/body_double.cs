@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Security;
+using Xunit;
 
 [SecuritySafeCritical]
 public class TestApp {
@@ -311,7 +312,8 @@ public class TestApp {
     }
 
     //***** MAIN CODE *****
-    public static unsafe int Main() {
+    [Fact]
+    public static unsafe int TestEntryPoint() {
         AA.reset();
         if (test_0_0(100, new AA(100), new AA(0)) != 100) {
             Console.WriteLine("test_0_0() failed.");
