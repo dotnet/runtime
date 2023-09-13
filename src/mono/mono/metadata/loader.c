@@ -1652,7 +1652,10 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 
 			if (flags & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL && sequence <= signature->param_count) {
 				const char *tp;
-				tp = mono_metadata_get_marshal_info (klass_image, i + 1, FALSE);
+				uint32_t tok;
+				if (!md_cursor_to_token (p, &tok))
+					g_assert_not_reached ();
+				tp = mono_metadata_get_marshal_info (klass_image, mono_metadata_token_index (tok), FALSE);
 				g_assert (tp);
 				mspecs [sequence]= mono_metadata_parse_marshal_spec (klass_image, tp);
 			}
