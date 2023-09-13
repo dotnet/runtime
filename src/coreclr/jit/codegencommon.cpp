@@ -2942,10 +2942,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         if (varDsc->lvExplicitParamInit)
         {
             regState->rsCalleeRegArgMaskLiveIn &= ~genRegMask(varDsc->GetArgReg());
+#if FEATURE_MULTIREG_ARGS
             if (varDsc->GetOtherArgReg() != REG_NA)
             {
                 regState->rsCalleeRegArgMaskLiveIn &= ~genRegMask(varDsc->GetOtherArgReg());
             }
+#endif
             continue;
         }
 

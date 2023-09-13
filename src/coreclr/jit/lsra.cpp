@@ -1353,7 +1353,7 @@ PhaseStatus LinearScan::doLinearScan()
     // We initialize this in the constructor based on opt settings,
     // but we don't want to spend time on the lclVar parts of LinearScan
     // if we have no tracked locals.
-    if (enregisterLocalVars && (compiler->lvaTrackedCount == 0))
+    if (enregisterLocalVars && (compiler->lvaTrackedCount == 0) && (explicitParamIntervals == nullptr))
     {
         enregisterLocalVars = false;
     }
@@ -7214,14 +7214,17 @@ void           LinearScan::resolveRegisters()
                 if (!currentRefPosition->spillAfter && (currentRefPosition->registerAssignment != RBM_NONE))
                 {
                     LclVarDsc* argDsc = compiler->lvaGetDesc(interval->varNum);
+#if FEATURE_MULTIREG_ARGS
                     assert(currentRefPosition->assignedReg() == (getExplicitParamIntervalRegIndex(interval) == 0 ? argDsc->GetArgReg() : argDsc->GetOtherArgReg()));
+#endif
                 }
                 else
                 {
-                    interval->isActive = false;
+                    //interval->isActive = false;
                     //updateMaxSpill(currentRefPosition);
-                    currentSpill[interval->registerType]++;
-                    maxSpill[interval->registerType] = max(maxSpill[interval->registerType], currentSpill[interval->registerType]);
+                    //currentSpill[interval->registerType]++;
+                    //maxSpill[interval->registerType] = max(maxSpill[interval->registerType], currentSpill[interval->registerType]);
+                    unreached();
                 }
             }
         }

@@ -2152,6 +2152,7 @@ public:
         , isUpperVector(false)
         , isPartiallySpilled(false)
 #endif
+        , isExplicitParam(false)
         , isWriteThru(false)
         , isSingleDef(false)
 #ifdef DEBUG
@@ -2457,7 +2458,7 @@ public:
 #endif // TARGET_ARM64
 
     // Last Use - this may be true for multiple RefPositions in the same Interval
-    unsigned char lastUse : 1;
+    unsigned char lastUse;
 
     // Spill and Copy info
     //   reload indicates that the value was spilled, and must be reloaded here.

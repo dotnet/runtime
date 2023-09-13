@@ -7618,6 +7618,13 @@ void Lowering::LowerMultiregParams()
             continue;
         }
 
+        // We support no second reg or a GPR second reg.
+        if ((argReg2 != REG_NA) && !genIsValidIntReg(argReg2))
+        {
+            JITDUMP("  second reg is %s\n", getRegName(argReg2));
+            continue;
+        }
+
         ClassLayout* layout = argDsc->GetLayout();
         if (((layout->GetSize() % TARGET_POINTER_SIZE) != 0) && !isPow2(layout->GetSize() % TARGET_POINTER_SIZE))
         {

@@ -174,7 +174,6 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
 // Notes:
 //    This is used to create RefPositions for both RegRecords and Intervals,
 //    so it does only the common initialization.
-//
 RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
 {
     refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
