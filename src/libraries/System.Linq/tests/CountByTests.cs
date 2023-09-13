@@ -27,6 +27,36 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.CountBy(keySelector, new AnagramEqualityComparer()));
         }
 
+        [Fact]
+        public void CountBy_SourceThrowsOnGetEnumerator()
+        {
+            IEnumerable<int> source = new ThrowsOnGetEnumerator();
+
+            var enumerator = source.CountBy(x => x).GetEnumerator();
+
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void CountBy_SourceThrowsOnMoveNext()
+        {
+            IEnumerable<int> source = new ThrowsOnMoveNext();
+
+            var enumerator = source.CountBy(x => x).GetEnumerator();
+
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void CountBy_SourceThrowsOnCurrent()
+        {
+            IEnumerable<int> source = new ThrowsOnCurrentEnumerator();
+
+            var enumerator = source.CountBy(x => x).GetEnumerator();
+
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+        }
+
         [Theory]
         [MemberData(nameof(CountBy_TestData))]
         public static void CountBy_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<KeyValuePair<TKey, int>> expected)
