@@ -145,6 +145,9 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
     steps:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
+
     - checkout: self
       clean: true
       # If running in source build mode, a git stash will be used for the inner clone. Avoid setting a fetch depth,
