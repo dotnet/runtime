@@ -6775,10 +6775,6 @@ protected:
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
 protected:
-    //  The following is the upper limit on how many expressions we'll keep track
-    //  of for the CSE analysis.
-    //
-    static const unsigned MAX_CSE_CNT = EXPSET_SZ;
 
     static const int MIN_CSE_COST = 2;
 
@@ -6805,16 +6801,16 @@ protected:
     // CSE uses, and negative values indicate CSE defs. The caller must pass a non-zero positive value, as from
     // GET_CSE_INDEX().
     //
-    static unsigned genCSEnum2bit(unsigned CSEnum)
+    unsigned genCSEnum2bit(unsigned CSEnum)
     {
-        assert((CSEnum > 0) && (CSEnum <= MAX_CSE_CNT));
+        assert((CSEnum > 0) && (CSEnum <= optCSECandidateCount));
         return CSEnum - 1;
     }
 
     //-----------------------------------------------------------------------------------------------------------------
     // getCSEAvailBit: Return the bit used by CSE dataflow sets (bbCseGen, etc.) for the availability bit for a CSE.
     //
-    static unsigned getCSEAvailBit(unsigned CSEnum)
+    unsigned getCSEAvailBit(unsigned CSEnum)
     {
         return genCSEnum2bit(CSEnum) * 2;
     }
@@ -6823,7 +6819,7 @@ protected:
     // getCSEAvailCrossCallBit: Return the bit used by CSE dataflow sets (bbCseGen, etc.) for the availability bit
     // for a CSE considering calls as killing availability bit (see description above).
     //
-    static unsigned getCSEAvailCrossCallBit(unsigned CSEnum)
+    unsigned getCSEAvailCrossCallBit(unsigned CSEnum)
     {
         return getCSEAvailBit(CSEnum) + 1;
     }

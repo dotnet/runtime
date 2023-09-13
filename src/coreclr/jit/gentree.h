@@ -723,8 +723,7 @@ struct GenTree
 #define GET_CSE_INDEX(x) (((x) > 0) ? x : -(x))
 #define TO_CSE_DEF(x) (-(x))
 
-    signed char gtCSEnum; // 0 or the CSE index (negated if def)
-                          // valid only for CSE expressions
+    int gtCSEnum; // 0 or the CSE index (negated if def)
 
     unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 

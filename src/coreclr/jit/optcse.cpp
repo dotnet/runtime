@@ -192,7 +192,7 @@ void Compiler::optCSE_GetMaskData(GenTree* tree, optCSE_MaskData* pMaskData)
             {
                 unsigned cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
                 // Note that we DO NOT use getCSEAvailBit() here, for the CSE_defMask/CSE_useMask
-                unsigned cseBit = genCSEnum2bit(cseIndex);
+                unsigned cseBit = m_compiler->genCSEnum2bit(cseIndex);
                 if (IS_CSE_DEF(tree->gtCSEnum))
                 {
                     BitVecOps::AddElemD(m_compiler->cseMaskTraits, m_maskData->CSE_defMask, cseBit);
@@ -382,7 +382,7 @@ unsigned optCSEKeyToHashIndex(size_t key, size_t optCSEhashSize)
 
 //---------------------------------------------------------------------------
 // optValnumCSE_Index:
-//               - Returns the CSE index to use for this tree,
+//               - Returns the initial CSE index to use for this tree,
 //                 or zero if this expression is not currently a CSE.
 //
 // Arguments:
@@ -574,111 +574,95 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                 break;
             }
 
-            assert(FitsIn<signed char>(hashDsc->csdIndex));
-            tree->gtCSEnum = ((signed char)hashDsc->csdIndex);
+            // assert(FitsIn<signed char>(hashDsc->csdIndex));
+            tree->gtCSEnum = hashDsc->csdIndex;
             return hashDsc->csdIndex;
         }
     }
 
     if (!newCSE)
     {
-        /* Not found, create a new entry (unless we have too many already) */
-
-        if (optCSECandidateCount < MAX_CSE_CNT)
+        // Not found, create a new entry.
+        //
+        if (optCSEhashCount == optCSEhashMaxCountBeforeResize)
         {
-            if (optCSEhashCount == optCSEhashMaxCountBeforeResize)
+            size_t   newOptCSEhashSize = optCSEhashSize * s_optCSEhashGrowthFactor;
+            CSEdsc** newOptCSEhash     = new (this, CMK_CSE) CSEdsc*[newOptCSEhashSize]();
+
+            // Iterate through each existing entry, moving to the new table
+            CSEdsc** ptr;
+            CSEdsc*  dsc;
+            size_t   cnt;
+            for (cnt = optCSEhashSize, ptr = optCSEhash; cnt; cnt--, ptr++)
             {
-                size_t   newOptCSEhashSize = optCSEhashSize * s_optCSEhashGrowthFactor;
-                CSEdsc** newOptCSEhash     = new (this, CMK_CSE) CSEdsc*[newOptCSEhashSize]();
-
-                // Iterate through each existing entry, moving to the new table
-                CSEdsc** ptr;
-                CSEdsc*  dsc;
-                size_t   cnt;
-                for (cnt = optCSEhashSize, ptr = optCSEhash; cnt; cnt--, ptr++)
+                for (dsc = *ptr; dsc;)
                 {
-                    for (dsc = *ptr; dsc;)
-                    {
-                        CSEdsc* nextDsc = dsc->csdNextInBucket;
+                    CSEdsc* nextDsc = dsc->csdNextInBucket;
 
-                        size_t newHval = optCSEKeyToHashIndex(dsc->csdHashKey, newOptCSEhashSize);
+                    size_t newHval = optCSEKeyToHashIndex(dsc->csdHashKey, newOptCSEhashSize);
 
-                        // Move CSEdsc to bucket in enlarged table
-                        dsc->csdNextInBucket   = newOptCSEhash[newHval];
-                        newOptCSEhash[newHval] = dsc;
+                    // Move CSEdsc to bucket in enlarged table
+                    dsc->csdNextInBucket   = newOptCSEhash[newHval];
+                    newOptCSEhash[newHval] = dsc;
 
-                        dsc = nextDsc;
-                    }
+                    dsc = nextDsc;
                 }
-
-                hval                           = optCSEKeyToHashIndex(key, newOptCSEhashSize);
-                optCSEhash                     = newOptCSEhash;
-                optCSEhashSize                 = newOptCSEhashSize;
-                optCSEhashMaxCountBeforeResize = optCSEhashMaxCountBeforeResize * s_optCSEhashGrowthFactor;
             }
 
-            ++optCSEhashCount;
-            hashDsc = new (this, CMK_CSE) CSEdsc;
-
-            hashDsc->csdHashKey        = key;
-            hashDsc->csdConstDefValue  = 0;
-            hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
-            hashDsc->csdIndex          = 0;
-            hashDsc->csdIsSharedConst  = false;
-            hashDsc->csdLiveAcrossCall = false;
-            hashDsc->csdDefCount       = 0;
-            hashDsc->csdUseCount       = 0;
-            hashDsc->csdDefWtCnt       = 0;
-            hashDsc->csdUseWtCnt       = 0;
-            hashDsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
-            hashDsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
-            hashDsc->defConservNormVN  = vnStore->VNForNull(); // uninit value
-
-            hashDsc->csdTree     = tree;
-            hashDsc->csdStmt     = stmt;
-            hashDsc->csdBlock    = compCurBB;
-            hashDsc->csdTreeList = nullptr;
-
-            /* Append the entry to the hash bucket */
-
-            hashDsc->csdNextInBucket = optCSEhash[hval];
-            optCSEhash[hval]         = hashDsc;
+            hval                           = optCSEKeyToHashIndex(key, newOptCSEhashSize);
+            optCSEhash                     = newOptCSEhash;
+            optCSEhashSize                 = newOptCSEhashSize;
+            optCSEhashMaxCountBeforeResize = optCSEhashMaxCountBeforeResize * s_optCSEhashGrowthFactor;
         }
+
+        ++optCSEhashCount;
+        hashDsc = new (this, CMK_CSE) CSEdsc;
+
+        hashDsc->csdHashKey        = key;
+        hashDsc->csdConstDefValue  = 0;
+        hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
+        hashDsc->csdIndex          = 0;
+        hashDsc->csdIsSharedConst  = false;
+        hashDsc->csdLiveAcrossCall = false;
+        hashDsc->csdDefCount       = 0;
+        hashDsc->csdUseCount       = 0;
+        hashDsc->csdDefWtCnt       = 0;
+        hashDsc->csdUseWtCnt       = 0;
+        hashDsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
+        hashDsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
+        hashDsc->defConservNormVN  = vnStore->VNForNull(); // uninit value
+
+        hashDsc->csdTree     = tree;
+        hashDsc->csdStmt     = stmt;
+        hashDsc->csdBlock    = compCurBB;
+        hashDsc->csdTreeList = nullptr;
+
+        /* Append the entry to the hash bucket */
+
+        hashDsc->csdNextInBucket = optCSEhash[hval];
+        optCSEhash[hval]         = hashDsc;
+
+        // Not yet a CSE... just one occurence of this VN so far.
+        //
         return 0;
     }
     else // newCSE is true
     {
         /* We get here only after finding a matching CSE */
 
-        /* Create a new CSE (unless we have the maximum already) */
-
-        if (optCSECandidateCount == MAX_CSE_CNT)
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Exceeded the MAX_CSE_CNT, not using tree:\n");
-                gtDispTree(tree);
-            }
-#endif // DEBUG
-            return 0;
-        }
-
-        C_ASSERT((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
-
-        unsigned CSEindex = ++optCSECandidateCount;
+        const unsigned CSEindex = ++optCSECandidateCount;
 
         /* Record the new CSE index in the hashDsc */
         hashDsc->csdIndex = CSEindex;
 
         /* Update the gtCSEnum field in the original tree */
         noway_assert(hashDsc->csdTreeList->tslTree->gtCSEnum == 0);
-        assert(FitsIn<signed char>(CSEindex));
+        // assert(FitsIn<signed char>(CSEindex));
 
-        hashDsc->csdTreeList->tslTree->gtCSEnum = ((signed char)CSEindex);
+        hashDsc->csdTreeList->tslTree->gtCSEnum = CSEindex;
         noway_assert(((unsigned)hashDsc->csdTreeList->tslTree->gtCSEnum) == CSEindex);
 
-        tree->gtCSEnum = ((signed char)CSEindex);
+        tree->gtCSEnum = CSEindex;
 
 #ifdef DEBUG
         if (verbose)
