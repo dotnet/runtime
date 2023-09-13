@@ -79,7 +79,8 @@ namespace
 
             mdhandle_ptr md_ptr{ mdhandle };
 
-            dncp::com_ptr<ControllingIUnknown> obj { new (std::nothrow) ControllingIUnknown() };
+            dncp::com_ptr<ControllingIUnknown> obj;
+            obj.Attach(new (std::nothrow) ControllingIUnknown());
             if (obj == nullptr)
                 return E_OUTOFMEMORY;
 

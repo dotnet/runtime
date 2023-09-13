@@ -22,18 +22,20 @@ struct IDNMDOwner : IUnknown
 // We use a reference wrapper around the handle to allow the handle to be swapped out.
 // We plan to use swapping to implement table sorting as DNMD itself does not support
 // sorting tables or remapping tokens.
+// This is explitly a non-owning view as this view will be passed to other tear-offs of the same object,
+// which would otherwise lead to memory leaks.
 class mdhandle_view final
 {
 private:
-    dncp::com_ptr<IDNMDOwner> _owner;
+    IDNMDOwner* _owner;
 public:
-    mdhandle_view(dncp::com_ptr<IDNMDOwner> owner)
-        : _owner{ owner.p }
+    mdhandle_view(IDNMDOwner* owner)
+        : _owner{ owner }
     {
     }
 
     mdhandle_view(mdhandle_view const& other)
-        : _owner{ other._owner.p }
+        : _owner{ other._owner }
     {
     }
 
@@ -41,7 +43,7 @@ public:
 
     mdhandle_view& operator=(mdhandle_view const& other)
     {
-        _owner = dncp::com_ptr<IDNMDOwner>{ other._owner.p };
+        _owner = other._owner;
         return *this;
     }
 
