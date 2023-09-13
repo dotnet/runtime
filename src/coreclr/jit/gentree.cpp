@@ -8564,8 +8564,13 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 
 regNumber GenTreeGetParamReg::GetArgReg(Compiler* comp)
 {
+#if FEATURE_MULTIREG_ARGS
     LclVarDsc* argDsc = comp->lvaGetDesc(gtArgNum);
     return gtRegIndex == 0 ? argDsc->GetArgReg() : argDsc->GetOtherArgReg();
+#endif
+
+    unreached();
+    return REG_NA;
 }
 
 //------------------------------------------------------------------------

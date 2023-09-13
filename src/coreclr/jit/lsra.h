@@ -637,6 +637,8 @@ public:
     template <bool localVarsEnregistered>
     void           buildIntervals();
 
+    void buildExplicitParamIntervals();
+
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
     template <bool hasConsecutiveRegister = false>
@@ -1568,12 +1570,14 @@ private:
     // Map from tracked variable index to Interval*.
     Interval** localVarIntervals;
 
+#if FEATURE_MULTIREG_ARGS
     struct ExplicitParamIntervals
     {
         Interval* Intervals[MAX_ARG_REG_COUNT] = {};
     };
 
     ExplicitParamIntervals* explicitParamIntervals;
+#endif
 
     int getExplicitParamIntervalRegIndex(Interval* interval);
 
@@ -1944,8 +1948,6 @@ private:
     // This is the main entry point for building the RefPositions for a node.
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
-
-    int BuildGetParamReg(GenTreeGetParamReg* tree);
 
     void UpdatePreferencesOfDyingLocal(Interval* interval);
     void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);

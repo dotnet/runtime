@@ -2387,56 +2387,14 @@ void           LinearScan::buildIntervals()
         else
         {
             noway_assert(argDsc->lvIsParam);
-            if (!argDsc->lvTracked && argDsc->lvIsRegArg)
+            if ((!argDsc->lvTracked || argDsc->lvExplicitParamInit) && argDsc->lvIsRegArg)
             {
                 updateRegStateForArg(argDsc);
             }
         }
     }
 
-    explicitParamIntervals = nullptr; 
-    for (unsigned argNum = 0; argNum < compiler->info.compArgsCount; argNum++)
-    {
-        LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
-        if (!argDsc->lvExplicitParamInit)
-        {
-            continue;
-        }
-
-        if (explicitParamIntervals == nullptr)
-        {
-            explicitParamIntervals = new (compiler, CMK_LSRA_Interval) ExplicitParamIntervals[compiler->info.compArgsCount];
-        }
-
-        ExplicitParamIntervals& paramIntervals = explicitParamIntervals[argNum];
-        size_t index = 0;
-        assert((argDsc->GetArgReg() != REG_NA) && genIsValidIntReg(argDsc->GetArgReg()));
-        ClassLayout* layout = argDsc->GetLayout();
-
-        var_types reg1Type = layout->GetSize() >= TARGET_POINTER_SIZE ? layout->GetGCPtrType(0) : TYP_I_IMPL;
-        Interval* interval = newInterval(reg1Type);
-        interval->isExplicitParam = true;
-        interval->varNum = argNum;
-        assignPhysReg(argDsc->GetArgReg(), interval);
-        paramIntervals.Intervals[index++] = interval;
-        RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, genRegMask(argDsc->GetArgReg()));
-        pos->setRegOptional(true);
-
-        if (argDsc->GetOtherArgReg() != REG_NA)
-        {
-            var_types reg2Type = layout->GetSize() >= TARGET_POINTER_SIZE * 2 ? layout->GetGCPtrType(1) : TYP_I_IMPL;
-            interval = newInterval(reg2Type);
-            interval->isExplicitParam = true;
-            interval->varNum = argNum;
-            assignPhysReg(argDsc->GetOtherArgReg(), interval);
-            paramIntervals.Intervals[index++] = interval;
-
-            pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, genRegMask(argDsc->GetOtherArgReg()));
-            pos->setRegOptional(true);
-        }
-
-        assert(index <= ArrLen(paramIntervals.Intervals));
-    }
+    buildExplicitParamIntervals();
 
     // If there is a secret stub param, it is also live in
     if (compiler->info.compPublishStubParam)
@@ -2880,6 +2838,55 @@ void           LinearScan::buildIntervals()
 #endif // DEBUG
 }
 
+void LinearScan::buildExplicitParamIntervals()
+{
+#if FEATURE_MULTIREG_ARGS
+    explicitParamIntervals = nullptr; 
+    for (unsigned argNum = 0; argNum < compiler->info.compArgsCount; argNum++)
+    {
+        LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
+        if (!argDsc->lvExplicitParamInit)
+        {
+            continue;
+        }
+
+        if (explicitParamIntervals == nullptr)
+        {
+            explicitParamIntervals = new (compiler, CMK_LSRA_Interval) ExplicitParamIntervals[compiler->info.compArgsCount];
+        }
+
+        ExplicitParamIntervals& paramIntervals = explicitParamIntervals[argNum];
+        size_t index = 0;
+        assert((argDsc->GetArgReg() != REG_NA) && genIsValidIntReg(argDsc->GetArgReg()));
+        ClassLayout* layout = argDsc->GetLayout();
+
+        var_types reg1Type = layout->GetSize() >= TARGET_POINTER_SIZE ? layout->GetGCPtrType(0) : TYP_I_IMPL;
+        Interval* interval = newInterval(reg1Type);
+        interval->isExplicitParam = true;
+        interval->varNum = argNum;
+        assignPhysReg(argDsc->GetArgReg(), interval);
+        paramIntervals.Intervals[index++] = interval;
+        RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, genRegMask(argDsc->GetArgReg()));
+        pos->setRegOptional(true);
+
+        if (argDsc->GetOtherArgReg() != REG_NA)
+        {
+            var_types reg2Type = layout->GetSize() >= TARGET_POINTER_SIZE * 2 ? layout->GetGCPtrType(1) : TYP_I_IMPL;
+            interval = newInterval(reg2Type);
+            interval->isExplicitParam = true;
+            interval->varNum = argNum;
+            assignPhysReg(argDsc->GetOtherArgReg(), interval);
+            paramIntervals.Intervals[index++] = interval;
+
+            pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, genRegMask(argDsc->GetOtherArgReg()));
+            pos->setRegOptional(true);
+        }
+
+        assert(index <= ArrLen(paramIntervals.Intervals));
+    }
+#endif
+}
+
 #ifdef DEBUG
 //------------------------------------------------------------------------
 // validateIntervals: A DEBUG-only method that checks that:
@@ -3297,6 +3304,18 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
         buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true, (unsigned)multiRegIdx);
 #endif
     }
+#if FEATURE_MULTIREG_ARGS
+    else if (operand->OperIs(GT_GETPARAM_REG))
+    {
+        GenTreeGetParamReg* gpr = operand->AsGetParamReg();
+        assert(gpr->gtArgNum < compiler->info.compArgsCount);
+        assert(explicitParamIntervals != nullptr);
+        ExplicitParamIntervals& intervals = explicitParamIntervals[gpr->gtArgNum];
+
+        assert((unsigned)gpr->gtRegIndex < ArrLen(intervals.Intervals));
+        interval = intervals.Intervals[gpr->gtRegIndex];
+    }
+#endif
     else
     {
         RefInfoListNode* refInfo   = defList.removeListNode(operand, multiRegIdx);
@@ -4116,25 +4135,6 @@ int LinearScan::BuildReturn(GenTree* tree)
     }
 
     // No kills or defs.
-    return 0;
-}
-
-int LinearScan::BuildGetParamReg(GenTreeGetParamReg* tree)
-{
-    assert(tree->gtArgNum < compiler->info.compArgsCount);
-    assert(explicitParamIntervals != nullptr);
-    ExplicitParamIntervals& intervals = explicitParamIntervals[tree->gtArgNum];
-
-    assert((unsigned)tree->gtRegIndex < ArrLen(intervals.Intervals));
-    Interval* interval = intervals.Intervals[tree->gtRegIndex];
-
-    assert(!tree->isContained());
-
-    RefPosition* useRefPos = newRefPosition(interval, currentLoc, RefTypeUse, tree, RBM_NONE);
-    useRefPos->setRegOptional(tree->IsRegOptional());
-
-    BuildDef(tree);
-    // Consumes no defs.
     return 0;
 }
 

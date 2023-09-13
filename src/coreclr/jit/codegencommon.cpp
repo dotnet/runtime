@@ -2939,6 +2939,16 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             continue;
         }
 
+        if (varDsc->lvExplicitParamInit)
+        {
+            regState->rsCalleeRegArgMaskLiveIn &= ~genRegMask(varDsc->GetArgReg());
+            if (varDsc->GetOtherArgReg() != REG_NA)
+            {
+                regState->rsCalleeRegArgMaskLiveIn &= ~genRegMask(varDsc->GetOtherArgReg());
+            }
+            continue;
+        }
+
         // When we have a promoted struct we have two possible LclVars that can represent the incoming argument
         // in the regArgTab[], either the original TYP_STRUCT argument or the introduced lvStructField.
         // We will use the lvStructField if we have a TYPE_INDEPENDENT promoted struct field otherwise

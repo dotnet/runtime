@@ -1512,6 +1512,15 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
             inst_Mov(regType, tree->GetRegNum(), varDsc->GetRegNum(), /* canSkip */ true);
         }
     }
+    else if (tree->OperIs(GT_GETPARAM_REG))
+    {
+        var_types targetType = tree->TypeGet();
+        regNumber targetReg  = tree->GetRegNum();
+
+        regNumber srcReg = tree->AsGetParamReg()->GetArgReg(compiler);
+
+        inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
+    }
 
     genUnspillRegIfNeeded(tree);
 

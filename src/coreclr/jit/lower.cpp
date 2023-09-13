@@ -7566,6 +7566,13 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount)
 void Lowering::LowerMultiregParams()
 {
 #if FEATURE_MULTIREG_ARGS
+#ifdef DEBUG
+    if (JitConfig.JitExplicitParameterDefs() == 0)
+    {
+        return;
+    }
+#endif
+
     if (comp->fgFirstBB->bbPreds != nullptr)
     {
         comp->fgEnsureFirstBBisScratch();
@@ -7589,6 +7596,12 @@ void Lowering::LowerMultiregParams()
         if (argDsc->TypeGet() != TYP_STRUCT)
         {
             JITDUMP("  not TYP_STRUCT\n");
+            continue;
+        }
+
+        if (!argDsc->lvDoNotEnregister)
+        {
+            JITDUMP("  may be enregistered\n");
             continue;
         }
 
@@ -7618,7 +7631,7 @@ void Lowering::LowerMultiregParams()
         argDsc->lvExplicitParamInit = 1;
 
         auto getCanonType = [layout](unsigned offset) {
-            unsigned sizeLeft = (layout->GetSize() - offset) % TARGET_POINTER_SIZE;
+            unsigned sizeLeft = layout->GetSize() - offset;
             if (sizeLeft >= TARGET_POINTER_SIZE)
             {
                 return layout->GetGCPtrType(offset / TARGET_POINTER_SIZE);
@@ -7652,15 +7665,23 @@ void Lowering::LowerMultiregParams()
         }
     }
 
-    for (GenTree* node : firstBBRange)
+    GenTree* next = nullptr;
+    for (GenTree* cur = firstBBRange.FirstNode(); cur != nullptr; cur = next)
     {
-        if (!node->OperIs(GT_LCL_FLD))
+        next = cur->gtNext;
+
+        if (!cur->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_GETPARAM_REG))
+        {
+            break;
+        }
+
+        if (!cur->OperIs(GT_LCL_FLD))
         {
             continue;
         }
 
-        GenTreeLclFld* fld = node->AsLclFld();
-        if (fld->TypeIs(TYP_STRUCT))
+        GenTreeLclFld* fld = cur->AsLclFld();
+        if (!varTypeIsIntegralOrI(fld))
         {
             continue;
         }
@@ -7706,20 +7727,17 @@ void Lowering::LowerMultiregParams()
             continue;
         }
 
-        if (varTypeIsIntegralOrI(fld))
+        LIR::Use fldUse;
+        if (firstBBRange.TryGetUse(fld, &fldUse))
         {
-            LIR::Use fldUse;
-            if (firstBBRange.TryGetUse(fld, &fldUse))
-            {
-                JITDUMP("[%06u] is a parameter register use, optimizing it into GETPARAM_REG\n", Compiler::dspTreeID(fld));
-                GenTree* newNode = comp->gtNewGetParamRegNode(fld->GetLclNum(), regIndex, fld->TypeGet());
-                fldUse.ReplaceWith(newNode);
+            JITDUMP("[%06u] is a parameter register use, optimizing it into GETPARAM_REG\n", Compiler::dspTreeID(fld));
+            GenTree* newNode = comp->gtNewGetParamRegNode(fld->GetLclNum(), regIndex, fld->TypeGet());
+            fldUse.ReplaceWith(newNode);
 
-                firstBBRange.InsertAfter(fld, newNode);
-                firstBBRange.Remove(fld);
+            firstBBRange.InsertAfter(fld, newNode);
+            firstBBRange.Remove(fld);
 
-                DISPTREERANGE(firstBBRange, fldUse.User());
-            }
+            DISPTREERANGE(firstBBRange, fldUse.User());
         }
     }
 #endif

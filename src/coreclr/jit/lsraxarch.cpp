@@ -621,8 +621,7 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
     case GT_GETPARAM_REG:
-        srcCount = BuildGetParamReg(tree->AsGetParamReg());
-        break;
+        return 0;
 
     } // end switch (tree->OperGet())
 

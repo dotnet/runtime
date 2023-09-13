@@ -2440,6 +2440,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
 int LinearScan::getExplicitParamIntervalRegIndex(Interval* interval)
 {
+#if FEATURE_MULTIREG_ARGS
     assert(interval->isExplicitParam && (interval->varNum < compiler->info.compArgsCount));
     assert(explicitParamIntervals != nullptr);
     for (int i = 0; i < MAX_ARG_REG_COUNT; i++)
@@ -2449,6 +2450,7 @@ int LinearScan::getExplicitParamIntervalRegIndex(Interval* interval)
             return i;
         }
     }
+#endif
 
     noway_assert(!"expected to find explicit param interval reg index");
     return -1;
@@ -3475,7 +3477,7 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
         // If not allocated a register, Lcl var def/use ref positions even if reg optional
         // should be marked as spillAfter. Note that if it is a WriteThru interval, the value is always
         // written to the stack, but the WriteThru indicates that the register is no longer live.
-        if (fromRefPosition->RegOptional() && !(interval->isLocalVar && fromRefPosition->IsActualRef()))
+        if (fromRefPosition->RegOptional() && ((!interval->isLocalVar && !interval->isExplicitParam) || !fromRefPosition->IsActualRef()))
         {
             fromRefPosition->registerAssignment = RBM_NONE;
         }
@@ -3516,9 +3518,17 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
     // on entry to this block.
     if (fromRefPosition->nodeLocation <= curBBStartLocation)
     {
-        // This must be a lclVar interval
-        assert(interval->isLocalVar);
-        setInVarRegForBB(curBBNum, interval->varNum, REG_STK);
+        if (interval->isLocalVar)
+        {
+            setInVarRegForBB(curBBNum, interval->varNum, REG_STK);
+        }
+        else
+        {
+            assert(interval->isExplicitParam);
+            // this requires a lookaside data structure to tell prolog generation which temp to spill into.
+            // This would be necessary if we didn't limit the IR patterns for GETPARAM_REG.
+            unreached();
+        }
     }
 }
 
@@ -7041,14 +7051,6 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
         Interval* interval = refPosition->getInterval();
         if (!interval->isLocalVar)
         {
-            GenTree* treeNode = refPosition->treeNode;
-            if (treeNode == nullptr)
-            {
-                assert(RefTypeIsUse(refType));
-                treeNode = interval->firstRefPosition->treeNode;
-            }
-            assert(treeNode != nullptr);
-
             // The tmp allocation logic 'normalizes' types to a small number of
             // types that need distinct stack locations from each other.
             // Those types are currently gc refs, byrefs, <= 4 byte non-GC items,
@@ -7056,13 +7058,29 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             // LSRA is agnostic to those choices but needs
             // to know what they are here.
             var_types type;
-            if (!treeNode->IsMultiRegNode())
+
+            if (interval->isExplicitParam)
             {
-                type = getDefType(treeNode);
+                type = interval->registerType;
             }
             else
             {
-                type = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
+                GenTree* treeNode = refPosition->treeNode;
+                if (treeNode == nullptr)
+                {
+                    assert(RefTypeIsUse(refType));
+                    treeNode = interval->firstRefPosition->treeNode;
+                }
+                assert(treeNode != nullptr);
+
+                if (!treeNode->IsMultiRegNode())
+                {
+                    type = getDefType(treeNode);
+                }
+                else
+                {
+                    type = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
+                }
             }
 
             type = RegSet::tmpNormalizeType(type);
@@ -7192,6 +7210,19 @@ void           LinearScan::resolveRegisters()
             else
             {
                 assert(interval->isExplicitParam);
+                // TODO-ExplicitParamDefs: spilling requires a data structure on the side
+                if (!currentRefPosition->spillAfter && (currentRefPosition->registerAssignment != RBM_NONE))
+                {
+                    LclVarDsc* argDsc = compiler->lvaGetDesc(interval->varNum);
+                    assert(currentRefPosition->assignedReg() == (getExplicitParamIntervalRegIndex(interval) == 0 ? argDsc->GetArgReg() : argDsc->GetOtherArgReg()));
+                }
+                else
+                {
+                    interval->isActive = false;
+                    //updateMaxSpill(currentRefPosition);
+                    currentSpill[interval->registerType]++;
+                    maxSpill[interval->registerType] = max(maxSpill[interval->registerType], currentSpill[interval->registerType]);
+                }
             }
         }
     }
@@ -10000,9 +10031,13 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
             Interval* interval = currentRefPosition->getInterval();
             assert((interval != nullptr) && (interval->isLocalVar || interval->isExplicitParam));
             if (interval->isLocalVar)
+            {
                 printf(" V%02d", interval->varNum);
+            }
             else
+            {
                 printf(" V%02d,%d", interval->varNum, getExplicitParamIntervalRegIndex(interval));
+            }
 
             if (mode == LSRA_DUMP_POST)
             {
@@ -10016,7 +10051,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                     reg = currentRefPosition->assignedReg();
                 }
 
-                regNumber argReg;
+                regNumber argReg = REG_NA;
 
                 if (interval->isLocalVar)
                 {
@@ -10025,11 +10060,13 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                     argReg = (varDsc->lvIsRegArg) ? varDsc->GetArgReg() : REG_STK;
                     assert(reg == assignedReg || varDsc->lvRegister == false);
                 }
+#if FEATURE_MULTIREG_ARGS
                 else
                 {
                     LclVarDsc* varDsc = compiler->lvaGetDesc(interval->varNum);
                     argReg = getExplicitParamIntervalRegIndex(interval) == 0 ? varDsc->GetArgReg() : varDsc->GetOtherArgReg();
                 }
+#endif
 
                 printf("(");
                 if (reg != argReg)

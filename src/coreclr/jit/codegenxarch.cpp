@@ -1918,6 +1918,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreLclVar(treeNode->AsLclVar());
             break;
 
+        case GT_GETPARAM_REG:
+            // Handled in genConsumeReg.
+            break;
+
         case GT_RETFILT:
         case GT_RETURN:
             genReturn(treeNode);
@@ -2085,10 +2089,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_PHYSREG:
             genCodeForPhysReg(treeNode->AsPhysReg());
-            break;
-
-        case GT_GETPARAM_REG:
-            genCodeForGetParamReg(treeNode->AsGetParamReg());
             break;
 
         case GT_NULLCHECK:
@@ -4523,20 +4523,20 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     genProduceReg(tree);
 }
 
-void CodeGen::genCodeForGetParamReg(GenTreeGetParamReg* tree)
-{
-    assert(tree->OperIs(GT_GETPARAM_REG));
-
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
-
-    regNumber srcReg = tree->GetArgReg(compiler);
-
-    inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
-    genTransferRegGCState(targetReg, srcReg);
-
-    genProduceReg(tree);
-}
+//void CodeGen::genCodeForGetParamReg(GenTreeGetParamReg* tree)
+//{
+//    assert(tree->OperIs(GT_GETPARAM_REG));
+//
+//    var_types targetType = tree->TypeGet();
+//    regNumber targetReg  = tree->GetRegNum();
+//
+//    regNumber srcReg = tree->GetArgReg(compiler);
+//
+//    inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
+//    genTransferRegGCState(targetReg, srcReg);
+//
+//    genProduceReg(tree);
+//}
 
 //---------------------------------------------------------------------
 // genCodeForNullCheck - generate code for a GT_NULLCHECK node
