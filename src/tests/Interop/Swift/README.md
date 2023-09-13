@@ -34,6 +34,7 @@ Here's the planned flow for invoking a Swift function from .NET if a developer u
     - Which types are not supported for automatic marshalling?
 3. A thunk should be emitted to handle a different calling convention, especially for instance functions and for functions with error handling.
     - Implement calling convention using thunks to handle errors, self, etc.
+    - Is it possible to test instance functions with P/Invoke or COM Interop is required?
 4. The result should be retrieved from the register or stack or indirectly.
 5. Error registers should be checked and if set, an error should be thrown.
 6. Cleanup may be required?
@@ -160,17 +161,21 @@ deinit {
 
 Build the runtime:
 ```sh
-./build.sh mono+libs
+./build.sh mono+libs+clr.hosts
 ```
-Build the native library:
+Build the coreroot:
 ```sh
-swiftc -emit-library ./src/tests/Interop/Swift/MathLibrary.swift -o ./src/tests/Interop/Swift/libMathLibrary.dylib
+./src/tests/build.sh -mono debug generatelayoutonly /p:LibrariesConfiguration=Debug
 ```
 Build the tests:
 ```sh
-./src/tests/build.sh -mono osx arm64 Debug -test:Interop/Swift/SwiftInterop.csproj /p:LibrariesConfiguration=Debug
+./src/tests/build.sh -mono Debug -test:Interop/Swift/SwiftInterop.csproj /p:LibrariesConfiguration=Debug
+```
+Build the native library:
+```sh
+swiftc -emit-library ./src/tests/Interop/Swift/MathLibrary.swift -o $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/libMathLibrary.dylib
 ```
 Run the tests:
 ```
-sh
+bash $PWD/artifacts/tests/coreclr/osx.arm64.Debug/Interop/Swift/SwiftInterop/SwiftInterop.sh -coreroot=$PWD/artifacts/tests/coreclr/osx.arm64.Debug/Tests/Core_Root/
 ```
