@@ -177,7 +177,7 @@ namespace HttpServer
             if (url == null)
                 return;
 
-            string path = url.LocalPath == "/" ? "index.html" : url.LocalPath;
+            string path = url.LocalPath.EndsWith("/") ? url.LocalPath + "index.html" : url.LocalPath;
             if (Verbose)
                 Console.WriteLine($"  serving: {path}");
 

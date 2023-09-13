@@ -31,7 +31,7 @@ typedef gssize host_mgreg_t;
 typedef gsize host_umgreg_t;
 #endif
 
-#ifdef ENABLE_CHECKED_CASTS
+#ifdef ENABLE_CHECKED_BUILD_CASTS
 __CAST_STYPE_TO_STYPE(host_mgreg_t, gint32, INT32_MIN, INT32_MAX)
 __CAST_STYPE_TO_UTYPE(host_mgreg_t, guint32, UINT32_MAX)
 __CAST_STYPE_TO_STYPE(host_mgreg_t, gint16, INT16_MIN, INT16_MAX)
@@ -69,7 +69,7 @@ typedef gint32 target_mgreg_t;
 typedef gint64 target_mgreg_t;
 #endif
 
-#ifdef ENABLE_CHECKED_CASTS
+#ifdef ENABLE_CHECKED_BUILD_CASTS
 __CAST_STYPE_TO_STYPE(target_mgreg_t, gint32, INT32_MIN, INT32_MAX)
 __CAST_STYPE_TO_UTYPE(target_mgreg_t, guint32, UINT32_MAX)
 __CAST_STYPE_TO_STYPE(target_mgreg_t, gint16, INT16_MIN, INT16_MAX)

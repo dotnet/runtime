@@ -1239,7 +1239,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
-		return hash | GPOINTER_TO_UINT (ji->data.target);
+		return hash | GCONSTPOINTER_TO_UINT (ji->data.target);
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return hash | GPOINTER_TO_UINT (ji->data.gsharedvt->method);
 	case MONO_PATCH_INFO_RGCTX_FETCH:

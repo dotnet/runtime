@@ -91,7 +91,7 @@ bool NearDiffer::InitAsmDiff()
         coreDisToolsLibrary = coreCLRLoadedPath;
 #endif // TARGET_UNIX
 
-        HMODULE hCoreDisToolsLib = ::LoadLibraryW(coreDisToolsLibrary);
+        HMODULE hCoreDisToolsLib = ::LoadLibraryExW(coreDisToolsLibrary, NULL, 0);
         if (hCoreDisToolsLib == 0)
         {
             LogError("LoadLibrary(%s) failed (0x%08x)", MAKEDLLNAME_A("coredistools"), ::GetLastError());
@@ -1247,28 +1247,29 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
     // is a sum of their sizes. The following is to adjust their sizes and the roDataBlock_{1,2} pointers.
     if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64)
     {
-        BYTE*        nativeEntry_1;
-        ULONG        nativeSizeOfCode_1;
-        CorJitResult jitResult_1;
+        if (hotCodeSize_1 > 0)
+        {
+            BYTE* nativeEntry_1;
+            ULONG        nativeSizeOfCode_1;
+            CorJitResult jitResult_1;
+            cr1->repCompileMethod(&nativeEntry_1, &nativeSizeOfCode_1, &jitResult_1);
+            roDataSize_1 = hotCodeSize_1 - nativeSizeOfCode_1;
+            roDataBlock_1 = hotCodeBlock_1 + nativeSizeOfCode_1;
+            orig_roDataBlock_1 = (void*)((size_t)orig_hotCodeBlock_1 + nativeSizeOfCode_1);
+            hotCodeSize_1 = nativeSizeOfCode_1;
+        }
 
-        BYTE*        nativeEntry_2;
-        ULONG        nativeSizeOfCode_2;
-        CorJitResult jitResult_2;
-
-        cr1->repCompileMethod(&nativeEntry_1, &nativeSizeOfCode_1, &jitResult_1);
-        cr2->repCompileMethod(&nativeEntry_2, &nativeSizeOfCode_2, &jitResult_2);
-
-        roDataSize_1 = hotCodeSize_1 - nativeSizeOfCode_1;
-        roDataSize_2 = hotCodeSize_2 - nativeSizeOfCode_2;
-
-        roDataBlock_1 = hotCodeBlock_1 + nativeSizeOfCode_1;
-        roDataBlock_2 = hotCodeBlock_2 + nativeSizeOfCode_2;
-
-        orig_roDataBlock_1 = (void*)((size_t)orig_hotCodeBlock_1 + nativeSizeOfCode_1);
-        orig_roDataBlock_2 = (void*)((size_t)orig_hotCodeBlock_2 + nativeSizeOfCode_2);
-
-        hotCodeSize_1 = nativeSizeOfCode_1;
-        hotCodeSize_2 = nativeSizeOfCode_2;
+        if (hotCodeSize_2 > 0)
+        {
+            BYTE* nativeEntry_2;
+            ULONG        nativeSizeOfCode_2;
+            CorJitResult jitResult_2;
+            cr2->repCompileMethod(&nativeEntry_2, &nativeSizeOfCode_2, &jitResult_2);
+            roDataSize_2 = hotCodeSize_2 - nativeSizeOfCode_2;
+            roDataBlock_2 = hotCodeBlock_2 + nativeSizeOfCode_2;
+            orig_roDataBlock_2 = (void*)((size_t)orig_hotCodeBlock_2 + nativeSizeOfCode_2);
+            hotCodeSize_2 = nativeSizeOfCode_2;
+        }
 
         auto rewriteUnsupportedInstrs = [](unsigned char* bytes, size_t numBytes) {
             for (size_t i = 0; i < numBytes; i += 4)
@@ -1296,6 +1297,14 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
             }
             };
 
+        // As of 2023-09-13, our coredistools does not support stlur/ldapur
+        // instructions, so we rewrite them into supported stur/ldur
+        // instructions before passing them to the near differ. This means we
+        // will miss diffs when changing stlur<->stur and ldapur<->ldur,
+        // but this is better than the decode failure that otherwise results
+        // (which shows up as a zero-sized diff unconditionally).
+        // This code should be removed once a new coredistools is compiled that
+        // supports new instructions.
         rewriteUnsupportedInstrs(hotCodeBlock_1, hotCodeSize_1);
         rewriteUnsupportedInstrs(coldCodeBlock_1, coldCodeSize_1);
         rewriteUnsupportedInstrs(hotCodeBlock_2, hotCodeSize_2);

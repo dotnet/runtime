@@ -550,8 +550,6 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
             _fetchResponse.ThrowIfDisposed();
-            cancellationToken.ThrowIfCancellationRequested();
-
 #if FEATURE_WASM_THREADS
             return await _fetchResponse.FetchResponse!.SynchronizationContext.Send(() => Impl(this, buffer, cancellationToken)).ConfigureAwait(true);
 #else

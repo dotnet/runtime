@@ -9200,8 +9200,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 if (strcmp(className, "Interlocked") == 0)
                 {
-#ifndef TARGET_ARM64
-                    // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
                     if (strcmp(methodName, "And") == 0)
                     {
                         result = NI_System_Threading_Interlocked_And;
@@ -9210,9 +9208,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     {
                         result = NI_System_Threading_Interlocked_Or;
                     }
-                    else
-#endif
-                        if (strcmp(methodName, "CompareExchange") == 0)
+                    else if (strcmp(methodName, "CompareExchange") == 0)
                     {
                         result = NI_System_Threading_Interlocked_CompareExchange;
                     }

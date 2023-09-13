@@ -3979,7 +3979,7 @@ fire_gc_event_bulk_root_edge (
 			break;
 		case MONO_ROOT_SOURCE_GC_HANDLE :
 			root_kind = GC_ROOT_KIND_HANDLE;
-			root_flags = GPOINTER_TO_INT (gc_root->key) != 0 ? GC_ROOT_FLAGS_PINNING : GC_ROOT_FLAGS_NONE;
+			root_flags = GCONSTPOINTER_TO_INT (gc_root->key) != 0 ? GC_ROOT_FLAGS_PINNING : GC_ROOT_FLAGS_NONE;
 			root_id = address;
 			break;
 		case MONO_ROOT_SOURCE_HANDLE :

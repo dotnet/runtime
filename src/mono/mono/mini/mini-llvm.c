@@ -5640,6 +5640,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	LLVMBuilderRef builder;
 	gboolean has_terminator;
 	LLVMValueRef lhs, rhs, arg3;
+	LLVMValueRef last_divrem = NULL;
 	int nins = 0;
 
 	cbb = get_end_bb (ctx, bb);
@@ -6636,6 +6637,44 @@ MONO_RESTORE_WARNING
 			LLVMValueRef width = ins->opcode == OP_X86_BSR32 ? const_int32 (31) : const_int64 (63);
 			LLVMValueRef tz = call_intrins (ctx, op, args, "");
 			values [ins->dreg] = LLVMBuildXor (builder, tz, width, dname);
+			break;
+		}
+		case OP_X86_IDIVREM:
+		case OP_X86_LDIVREM: {
+			const LLVMTypeRef part_type = ins->opcode==OP_X86_IDIVREM ? LLVMInt32Type () : LLVMInt64Type ();
+			const LLVMTypeRef full_type = ins->opcode==OP_X86_IDIVREM ? LLVMInt64Type () : LLVMInt128Type ();
+			const LLVMValueRef shift_amount =  ins->opcode==OP_X86_IDIVREM ? const_int32 (32) : const_int32 (64);
+
+			LLVMValueRef dividend_low = LLVMBuildZExt (builder, convert (ctx, lhs, part_type), full_type, "");
+			LLVMValueRef dividend_high = LLVMBuildSExt (builder, convert (ctx, rhs, part_type), full_type, "");
+			LLVMValueRef dividend = LLVMBuildOr (builder, dividend_low,
+				LLVMBuildShl (builder, dividend_high, shift_amount, ""), "");
+			LLVMValueRef divisor = LLVMBuildSExt (builder, convert (ctx, arg3, part_type), full_type, "");
+			// LLVM should fuse the individual Div and Rem instructions into one DIV/IDIV on x86
+			values [ins->dreg] = LLVMBuildTrunc (builder, LLVMBuildSDiv (builder, dividend, divisor, ""), part_type, "");
+			last_divrem = LLVMBuildTrunc (builder, LLVMBuildSRem (builder, dividend, divisor, ""), part_type, "");
+			break;	
+		}
+		case OP_X86_IDIVREMU:
+		case OP_X86_LDIVREMU: {
+			const LLVMTypeRef part_type = ins->opcode==OP_X86_IDIVREMU ? LLVMInt32Type () : LLVMInt64Type ();
+			const LLVMTypeRef full_type = ins->opcode==OP_X86_IDIVREMU ? LLVMInt64Type () : LLVMInt128Type ();
+			const LLVMValueRef shift_amount =  ins->opcode==OP_X86_IDIVREMU ? const_int32 (32) : const_int32 (64);
+
+			LLVMValueRef dividend_low = LLVMBuildZExt (builder, convert (ctx, lhs, part_type), full_type, "");
+			LLVMValueRef dividend_high = LLVMBuildZExt (builder, convert (ctx, rhs, part_type), full_type, "");
+			LLVMValueRef dividend = LLVMBuildOr (builder, dividend_low,
+				LLVMBuildShl (builder, dividend_high, shift_amount, ""), "");
+			LLVMValueRef divisor = LLVMBuildZExt (builder, convert (ctx, arg3, part_type), full_type, "");
+			values [ins->dreg] = LLVMBuildTrunc (builder, LLVMBuildUDiv (builder, dividend, divisor, ""), part_type, "");
+			last_divrem = LLVMBuildTrunc (builder, LLVMBuildURem (builder, dividend, divisor, ""), part_type, "");
+			break;	
+		}
+		case OP_X86_IDIVREM2:
+		case OP_X86_LDIVREM2: {
+			g_assert (last_divrem);
+			values [ins->dreg] = last_divrem;
+			last_divrem = NULL;
 			break;
 		}
 #endif
@@ -12042,6 +12081,8 @@ MONO_RESTORE_WARNING
 #endif
 		}
 	}
+
+	g_assert (last_divrem == NULL);
 
 	if (!ctx_ok (ctx))
 		return;

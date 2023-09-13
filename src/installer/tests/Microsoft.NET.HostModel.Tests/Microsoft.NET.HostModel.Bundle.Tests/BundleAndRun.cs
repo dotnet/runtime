@@ -8,6 +8,7 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using BundleTests.Helpers;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -118,6 +119,27 @@ namespace Microsoft.NET.HostModel.Tests
             var fixture = sharedTestState.TestFixture.Copy();
             string publishDir = RelativePath(BundleHelper.GetPublishPath(fixture)) + Path.DirectorySeparatorChar;
             BundleRun(fixture, publishDir);
+        }
+
+        [Fact]
+        public void TestWithAdditionalContentAfterBundleMetadata()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            string singleFile = BundleHelper.BundleApp(fixture);
+
+            using (var file = File.OpenWrite(singleFile))
+            {
+                file.Position = file.Length;
+                var blob = Encoding.UTF8.GetBytes("Mock signature at the end of the bundle");
+                file.Write(blob, 0, blob.Length);
+            }
+
+            Command.Create(singleFile)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World!");
         }
 
         public class SharedTestState : IDisposable

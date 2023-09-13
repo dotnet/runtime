@@ -1044,8 +1044,8 @@ int LinearScan::BuildNode(GenTree* tree)
                     }
                     setInternalRegsDelayFree = true;
                 }
-                buildInternalRegisterUses();
             }
+            buildInternalRegisterUses();
             if (dstCount == 1)
             {
                 BuildDef(tree);
