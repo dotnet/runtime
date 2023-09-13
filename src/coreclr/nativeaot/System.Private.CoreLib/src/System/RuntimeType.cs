@@ -4,13 +4,14 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace System
 {
-    // Base class for runtime implemented Type
-    public abstract class RuntimeType : TypeInfo
+    // Runtime implemented Type
+    public sealed class RuntimeType : TypeInfo, ICloneable
     {
-        public sealed override string? GetEnumName(object value)
+        public override string? GetEnumName(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -27,7 +28,7 @@ namespace System
             return Enum.GetName(this, rawValue);
         }
 
-        public sealed override string[] GetEnumNames()
+        public override string[] GetEnumNames()
         {
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
@@ -38,7 +39,7 @@ namespace System
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
-        public sealed override Type GetEnumUnderlyingType()
+        public override Type GetEnumUnderlyingType()
         {
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
@@ -46,7 +47,7 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
-        public sealed override bool IsEnumDefined(object value)
+        public override bool IsEnumDefined(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -91,7 +92,7 @@ namespace System
         }
 
         [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
-        public sealed override Array GetEnumValues()
+        public override Array GetEnumValues()
         {
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
@@ -110,7 +111,7 @@ namespace System
             return result;
         }
 
-        public sealed override Array GetEnumValuesAsUnderlyingType()
+        public override Array GetEnumValuesAsUnderlyingType()
         {
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
@@ -120,5 +121,59 @@ namespace System
 
         internal bool IsActualEnum
             => TryGetEEType(out EETypePtr eeType) && eeType.IsEnum;
+
+        object ICloneable.Clone()
+            => this;
+
+        public override bool IsSecurityCritical => true;
+        public override bool IsSecuritySafeCritical => false;
+        public override bool IsSecurityTransparent => false;
+
+        protected override bool IsArrayImpl() => throw new NotImplementedException();
+        protected override bool IsByRefImpl() => throw new NotImplementedException();
+        protected override bool IsPointerImpl() => throw new NotImplementedException();
+        protected override bool HasElementTypeImpl() => throw new NotImplementedException();
+        public override Type? GetElementType() => throw new NotImplementedException();
+        protected override TypeAttributes GetAttributeFlagsImpl() => throw new NotImplementedException();
+        protected override bool IsCOMObjectImpl() => throw new NotImplementedException();
+        protected override bool IsPrimitiveImpl() => throw new NotImplementedException();
+        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) => throw new NotImplementedException();
+        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override EventInfo[] GetEvents(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override FieldInfo[] GetFields(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotImplementedException();
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotImplementedException();
+        public override MethodInfo[] GetMethods(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override Type[] GetNestedTypes(BindingFlags bindingAttr) => throw new NotImplementedException();
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) => throw new NotImplementedException();
+        public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotImplementedException();
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        public override Type? GetInterface(string name, bool ignoreCase) => throw new NotImplementedException();
+        public override Type[] GetInterfaces() => throw new NotImplementedException();
+        public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
+        public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
+
+        public override string? Namespace => throw new NotImplementedException();
+
+        public override string? AssemblyQualifiedName => throw new NotImplementedException();
+
+        public override string? FullName => throw new NotImplementedException();
+
+        public override Assembly Assembly => throw new NotImplementedException();
+
+        public override Module Module => throw new NotImplementedException();
+
+        public override Type UnderlyingSystemType => throw new NotImplementedException();
+
+        public override Guid GUID => throw new NotImplementedException();
+
+        public override Type? BaseType => throw new NotImplementedException();
+
+        public override string Name => throw new NotImplementedException();
     }
 }

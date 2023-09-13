@@ -10,18 +10,18 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        [DynamicallyAccessedMembers(GetAllMembers)]
-        public sealed override MemberInfo[] GetMembers(BindingFlags bindingAttr) => GetMemberImpl(null, MemberTypes.All, bindingAttr);
+        [DynamicallyAccessedMembers(Type.GetAllMembers)]
+        public MemberInfo[] GetMembers(BindingFlags bindingAttr) => GetMemberImpl(null, MemberTypes.All, bindingAttr);
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
-        public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
+        [DynamicallyAccessedMembers(Type.GetAllMembers)]
+        public MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, MemberTypes.All, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
-        public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
+        [DynamicallyAccessedMembers(Type.GetAllMembers)]
+        public MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, type, bindingAttr);
@@ -116,10 +116,11 @@ namespace System.Reflection.Runtime.TypeInfos
             return null;
         }
 
-        public sealed override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+        public MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
             ArgumentNullException.ThrowIfNull(member);
 
+#if false // TODO
             // Need to walk up the inheritance chain if member is not found
             // Leverage the existing cache mechanism on per type to store members
             RuntimeTypeInfo? runtimeType = this;
@@ -130,6 +131,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     return result;
                 runtimeType = runtimeType.BaseType as RuntimeTypeInfo;
             }
+#endif
             throw new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, member.Name), nameof(member));
         }
 

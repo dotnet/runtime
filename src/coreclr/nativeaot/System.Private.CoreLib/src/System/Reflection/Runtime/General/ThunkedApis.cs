@@ -152,7 +152,7 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        public sealed override Type[] GetGenericArguments()
+        public Type[] GetGenericArguments()
         {
             if (IsConstructedGenericType)
                 return GenericTypeArguments;
@@ -161,21 +161,16 @@ namespace System.Reflection.Runtime.TypeInfos
             return Array.Empty<Type>();
         }
 
-        public sealed override bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
+        public bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public sealed override Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
-
-        // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
-        public sealed override bool IsSecurityCritical => true;
-        public sealed override bool IsSecuritySafeCritical => false;
-        public sealed override bool IsSecurityTransparent => false;
+        public Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:UnrecognizedReflectionPattern",
             Justification = "The returned interface is one of the interfaces implemented by this type and does have DynamicallyAccessedMemberTypes.Interfaces")]
-        public sealed override Type? GetInterface(string name, bool ignoreCase)
+        public Type? GetInterface(string name, bool ignoreCase)
         {
             ArgumentNullException.ThrowIfNull(name, "fullname" /* Yep, CoreCLR names this different than the ref assembly */);
 

@@ -11,10 +11,10 @@ namespace System.Reflection.Runtime.TypeInfos
     internal abstract partial class RuntimeTypeInfo
     {
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(ConstructorPolicies.Instance, bindingAttr).ToArray();
+        public ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(ConstructorPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        protected sealed override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             Debug.Assert(types != null);
 
@@ -46,28 +46,28 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) => Query<EventInfo>(EventPolicies.Instance, bindingAttr).ToArray();
+        public EventInfo[] GetEvents(BindingFlags bindingAttr) => Query<EventInfo>(EventPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public sealed override EventInfo GetEvent(string name, BindingFlags bindingAttr) => Query<EventInfo>(EventPolicies.Instance, name, bindingAttr).Disambiguate();
+        public EventInfo GetEvent(string name, BindingFlags bindingAttr) => Query<EventInfo>(EventPolicies.Instance, name, bindingAttr).Disambiguate();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public sealed override FieldInfo[] GetFields(BindingFlags bindingAttr) => Query<FieldInfo>(FieldPolicies.Instance, bindingAttr).ToArray();
+        public FieldInfo[] GetFields(BindingFlags bindingAttr) => Query<FieldInfo>(FieldPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) => Query<FieldInfo>(FieldPolicies.Instance, name, bindingAttr).Disambiguate();
+        public FieldInfo GetField(string name, BindingFlags bindingAttr) => Query<FieldInfo>(FieldPolicies.Instance, name, bindingAttr).Disambiguate();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public sealed override MethodInfo[] GetMethods(BindingFlags bindingAttr) => Query<MethodInfo>(MethodPolicies.Instance, bindingAttr).ToArray();
+        public MethodInfo[] GetMethods(BindingFlags bindingAttr) => Query<MethodInfo>(MethodPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             return GetMethodImplCommon(name, GenericParameterCountAny, bindingAttr, binder, callConvention, types, modifiers);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        protected sealed override MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             return GetMethodImplCommon(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -113,16 +113,16 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => Query<Type>(NestedTypePolicies.Instance, bindingAttr).ToArray();
+        public Type[] GetNestedTypes(BindingFlags bindingAttr) => Query<Type>(NestedTypePolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => Query<Type>(NestedTypePolicies.Instance, name, bindingAttr).Disambiguate();
+        public Type GetNestedType(string name, BindingFlags bindingAttr) => Query<Type>(NestedTypePolicies.Instance, name, bindingAttr).Disambiguate();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => Query<PropertyInfo>(PropertyPolicies.Instance, bindingAttr).ToArray();
+        public PropertyInfo[] GetProperties(BindingFlags bindingAttr) => Query<PropertyInfo>(PropertyPolicies.Instance, bindingAttr).ToArray();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
             Debug.Assert(name != null);
 
