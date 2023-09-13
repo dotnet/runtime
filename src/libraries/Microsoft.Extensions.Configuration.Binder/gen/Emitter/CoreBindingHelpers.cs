@@ -807,7 +807,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             if (canSet)
                             {
-                                string nullBangExpr = member.Type.IsValueType ? string.Empty : "!";
                                 bool useDefaultValueIfSectionValueIsNull = !firstTimeInitialization &&
                                     member is PropertySpec &&
                                     member.Type.IsValueType &&
@@ -818,7 +817,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     stringParsableType,
                                     $@"{Identifier.configuration}[""{member.ConfigurationKeyName}""]",
                                     sectionPathExpr,
-                                    writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr}{nullBangExpr};"),
+                                    writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr};"),
                                     checkForNullSectionValue: true,
                                     useDefaultValueIfSectionValueIsNull,
                                     useIncrementalStringValueIdentifier: true);

@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop5"] is string value5)
             {
-                instance.Prop5 = value5!;
+                instance.Prop5 = value5;
             }
 
             if (configuration["Prop6"] is string value6)
@@ -171,12 +171,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop16"] is string value13)
             {
-                instance.Prop16 = value13!;
+                instance.Prop16 = value13;
             }
 
             if (configuration["Prop17"] is string value14)
             {
-                instance.Prop17 = ParseCultureInfo(value14, () => configuration.GetSection("Prop17").Path)!;
+                instance.Prop17 = ParseCultureInfo(value14, () => configuration.GetSection("Prop17").Path);
             }
 
             if (configuration["Prop19"] is string value15)
@@ -226,12 +226,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop25"] is string value20)
             {
-                instance.Prop25 = ParseUri(value20, () => configuration.GetSection("Prop25").Path)!;
+                instance.Prop25 = ParseUri(value20, () => configuration.GetSection("Prop25").Path);
             }
 
             if (configuration["Prop26"] is string value21)
             {
-                instance.Prop26 = ParseVersion(value21, () => configuration.GetSection("Prop26").Path)!;
+                instance.Prop26 = ParseVersion(value21, () => configuration.GetSection("Prop26").Path);
             }
 
             if (configuration["Prop27"] is string value22)
@@ -290,7 +290,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop28"] is string value28)
             {
-                instance.Prop28 = ParseByteArray(value28, () => configuration.GetSection("Prop28").Path)!;
+                instance.Prop28 = ParseByteArray(value28, () => configuration.GetSection("Prop28").Path);
             }
 
             if (configuration["Prop29"] is string value29)

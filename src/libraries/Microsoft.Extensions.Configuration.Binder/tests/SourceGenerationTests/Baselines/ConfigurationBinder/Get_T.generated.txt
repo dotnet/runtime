@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["MyString"] is string value3)
             {
-                instance.MyString = value3!;
+                instance.MyString = value3;
             }
 
             if (configuration["MyInt"] is string value4)
