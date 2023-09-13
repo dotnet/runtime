@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GlobalFunctions.cs" />
+    <Compile Include="DefaultParams.cs" />
+    <Compile Include="Varargs.cs" />
+    <Compile Include="ClosureFunctions.cs" />
+
+    <!-- TODO: Add missing tests from the library -->
+  </ItemGroup>
+</Project>
