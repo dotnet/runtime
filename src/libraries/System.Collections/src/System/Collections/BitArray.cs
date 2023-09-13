@@ -8,6 +8,14 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using System;
+
+using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Numerics;
+using System.Text;
 
 namespace System.Collections
 {
@@ -841,8 +849,8 @@ namespace System.Collections
                     {
                         for (; (i + Vector512<byte>.Count) <= (uint)m_length; i += (uint)Vector512<byte>.Count)
                         {
-                            long bits = m_array[i / (uint)BitsPerInt32] + (m_array[(i / (uint)BitsPerInt32) + 1] << BitsPerInt32);
-                            Vector512<long> scalar = Vector512.Create(bits);
+                            ulong bits = (ulong)(uint)m_array[i / (uint)BitsPerInt32] + ((ulong)m_array[(i / (uint)BitsPerInt32) + 1] << BitsPerInt32);
+                            Vector512<ulong> scalar = Vector512.Create(bits);
                             Vector512<byte> shuffled = Avx512BW.Shuffle(scalar.AsByte(), shuffleMask);
                             Vector512<byte> extracted = Avx512F.And(shuffled, bitMask);
 
@@ -857,6 +865,7 @@ namespace System.Collections
                 {
                     Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
+                    //Internal.Console.WriteLine(bitMask);
                     Vector256<byte> ones = Vector256.Create((byte)1);
 
                     fixed (bool* destination = &boolArray[index])
