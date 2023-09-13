@@ -1,20 +1,32 @@
 ## About
 
-<!-- A description of the package and where one can find more documentation -->
-
-
+As of .NET Core 2.0 and .NET Standard 2.1, the C# language has support for math (System.MathF) functions with floats. This library provides the necessary definitions of those types to support these language features on .NET Framework and on .NET Standard 2.0. This library is not necessary nor recommended when targeting versions of .NET that include the relevant support.
 
 ## Key Features
 
 <!-- The key features of this package -->
 
-*
-*
-*
+* Enables the use of MathF on older .NET platforms
+
 
 ## How to Use
 
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+```C#
+using System;
+using System.MathF.
+
+internal static class Program
+{
+    private static async Task Main()
+    {
+        Console.WriteLine("Starting...");
+        
+        Console.WriteLine(MathF.Max(1f, 5f)); // returns 5f
+
+        Console.WriteLine("Finished!");
+    }
+}
+```
 
 ## Main Types
 
@@ -22,20 +34,13 @@
 
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `System.MathF`
 
 ## Additional Documentation
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/**LIBRARYNAME**/overview)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/**LIBRARYNAME**)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
+* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.mathf)
 
 ## Feedback & Contributing
 
