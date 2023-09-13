@@ -53,7 +53,7 @@ static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made b
 #define MTFlag_HasCriticalFinalizer     0x00000002
 #define MTFlag_HasFinalizer             0x00100000
 #define MTFlag_IsArray                  0x00080000
-#define MTFlag_Collectible              0x10000000
+#define MTFlag_Collectible              0x00200000
 #define MTFlag_HasComponentSize         0x80000000
 
 class MethodTable
@@ -89,6 +89,14 @@ public:
 
     bool Collectible()
     {
+#ifdef BUILD_AS_STANDALONE
+        if (g_oldMethodTableFlags)
+        {
+            // This flag is used for .NET 8 or below
+            const int Old_MTFlag_Collectible = 0x10000000;
+            return (m_flags & Old_MTFlag_Collectible) != 0;
+        }
+#endif
         return (m_flags & MTFlag_Collectible) != 0;
     }
 
@@ -140,17 +148,6 @@ public:
         }
 #endif
         return (m_flags & MTFlag_HasCriticalFinalizer) && !HasComponentSize();
-    }
-
-    bool IsArray()
-    {
-        return (m_flags & MTFlag_IsArray) != 0;
-    }
-
-    MethodTable * GetParent()
-    {
-        _ASSERTE(!IsArray());
-        return m_pRelatedType;
     }
 
     bool SanityCheck()

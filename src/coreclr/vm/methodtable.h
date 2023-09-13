@@ -3342,6 +3342,7 @@ private:
         // As you change the flags in WFLAGS_LOW_ENUM you also need to change this
         // to be up to date to reflect the default values of those flags for the
         // case where this MethodTable is for a String or Array
+        // TODO, AndrewAu, this looks important, do it!
         enum_flag_StringArrayValues = SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
                                       SET_FALSE(enum_flag_NotInPZM) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
@@ -3387,9 +3388,10 @@ private:
         enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask
 
 
+        // GC depends on this bit
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-        enum_flag_IDynamicInterfaceCastable   = 0x00200000, // class implements IDynamicInterfaceCastable interface
+        enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
@@ -3401,8 +3403,11 @@ private:
 
         enum_flag_IsTrackedReferenceWithFinalizer   = 0x04000000,
 
+        // TODO, andrewau, move fields to reflect value changes
+        // GC depends on this bit
         enum_flag_HasCriticalFinalizer        = 0x00000002, // finalizer must be run on Appdomain Unload
-        enum_flag_Collectible                 = 0x10000000,
+        // GC depends on this bit
+        enum_flag_Collectible                 = 0x00200000,
         enum_flag_ContainsGenericVariables    = 0x20000000,   // we cache this flag to help detect these efficiently and
                                                               // to detect this condition when restoring
 
