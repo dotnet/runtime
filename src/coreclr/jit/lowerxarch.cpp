@@ -97,9 +97,10 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     }
 
 #if defined(FEATURE_HW_INTRINSICS)
-    if(comp->IsBaselineVector512IsaSupportedOpportunistically() && node->Data()->OperIs(GT_CNS_VEC) && node->Data()->AsVecCon()->TypeIs(TYP_SIMD64))
+    if (comp->IsBaselineVector512IsaSupportedOpportunistically() && node->Data()->OperIs(GT_CNS_VEC) &&
+        node->Data()->AsVecCon()->TypeIs(TYP_SIMD64))
     {
-        if(!node->Data()->AsVecCon()->IsAllBitsSet() && !node->Data()->AsVecCon()->IsZero())
+        if (!node->Data()->AsVecCon()->IsAllBitsSet() && !node->Data()->AsVecCon()->IsZero())
         {
             // To avoid some unexpected regression, this optimization only applies to non-all 1/0 constant vectors.
             TryCompressConstVecData(node);
@@ -7674,7 +7675,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             {
                 case NI_AVX512F_BroadcastVector128ToVector512:
                 {
-                    if(parentNode->OperIsMemoryLoad())
+                    if (parentNode->OperIsMemoryLoad())
                     {
                         supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
                         break;
@@ -8550,18 +8551,20 @@ bool Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
     assert(node->Data()->OperIs(GT_CNS_VEC));
     GenTreeVecCon* vecCon = node->Data()->AsVecCon();
     // Try use broadcasti128
-    if(vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[1] &&
-       vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[2] &&
-       vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[3])
+    if (vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[1] &&
+        vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[2] &&
+        vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[3])
     {
-        simd16_t simd16Val = {};
-        simd16Val.f64[0] = vecCon->gtSimd64Val.f64[0];
-        simd16Val.f64[1] = vecCon->gtSimd64Val.f64[1];
+        simd16_t simd16Val              = {};
+        simd16Val.f64[0]                = vecCon->gtSimd64Val.f64[0];
+        simd16Val.f64[1]                = vecCon->gtSimd64Val.f64[1];
         GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD16);
         memcpy(&compressedVecCon->gtSimdVal, &simd16Val, sizeof(simd16_t));
         BlockRange().InsertBefore(node->Data(), compressedVecCon);
         BlockRange().Remove(vecCon);
-        GenTreeHWIntrinsic* broadcast128 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector128ToVector512, CORINFO_TYPE_UINT, 64);
+        GenTreeHWIntrinsic* broadcast128 =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector128ToVector512,
+                                           CORINFO_TYPE_UINT, 64);
         BlockRange().InsertBefore(node, broadcast128);
         node->Data() = broadcast128;
         LowerNode(broadcast128);
@@ -8768,7 +8771,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     case NI_AVX512F_BroadcastVector128ToVector512:
                     {
-                        if(node->OperIsMemoryLoad())
+                        if (node->OperIsMemoryLoad())
                         {
                             ContainCheckHWIntrinsicAddr(node, op1);
                             return;
@@ -8838,7 +8841,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 assert(!node->OperIsMemoryLoad());
                 bool supportsRegOptional = false;
-                
+
                 if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                 {
                     MakeSrcContained(node, op1);
