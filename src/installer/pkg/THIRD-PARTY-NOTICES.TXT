@@ -1820,28 +1820,3 @@ Algorithms
 
 Aspects of Date/Time processing based on algorithm described in "Euclidean Affine Functions and Applications to Calendar
 Algorithms", Cassio Neri and Lorenz Schneider. https://arxiv.org/pdf/2102.06959.pdf
-
-Notice for Library of Congress
---------------------------------
-
-https://www.loc.gov/item/00694320/
-
-Library of Congress, Motion Picture, Broadcasting and Recorded Sound Division.
-
-
-The Library of Congress is providing access to these materials for educational and research purposes and makes no
-warranty with regard to their use for other purposes. The written permission of the copyright owners and/or other
-rights holders (such as holders of publicity and/or privacy rights) is required for distribution, reproduction,
-or other use of protected items beyond that allowed by fair use or other statutory exemptions.
-
-While the Library is not aware of any U.S. copyright protection (see Title 17, U.S.C.) or any other restrictions in
-the materials in America at Work, America at Leisure: Motion Pictures from 1894-1915, there may be content protected
-as "works for hire" (copyright may be held by the party that commissioned the original work) and/or under the copyright
-or neighboring-rights laws of other nations. The Library is eager to hear from individuals or institutions that have
-information about these materials or know of their history.
-
-Responsibility for making an independent legal assessment of an item and securing any necessary permissions ultimately
-rests with persons desiring to use the item. Users should consult the catalog information that accompanies each item
-for specific information. This catalog data provides the details known to the Library of Congress regarding the
-corresponding item and may assist users in making independent assessments of the legal status of these items as related
-to their desired uses.
