@@ -625,8 +625,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Ask the metadata manager
             // if we have any dependencies due to presence of the EEType.
-            bool isFullType = factory.MaximallyConstructableType(_type) == this;
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type, isFullType);
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
 
             if (_type is MetadataType mdType)
                 ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
