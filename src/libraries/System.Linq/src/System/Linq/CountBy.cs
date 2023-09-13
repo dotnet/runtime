@@ -19,42 +19,42 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            return Core(source, keySelector, keyComparer);
+            return CountByIterator(source, keySelector, keyComparer);
+        }
 
-            static IEnumerable<KeyValuePair<TKey, int>> Core(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer)
+        private static IEnumerable<KeyValuePair<TKey, int>> CountByIterator<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
+        {
+            using IEnumerator<TSource> enumerator = source.GetEnumerator();
+
+            if (!enumerator.MoveNext())
             {
-                using IEnumerator<TSource> enumerator = source.GetEnumerator();
-
-                if (!enumerator.MoveNext())
-                {
-                    yield break;
-                }
-
-                foreach (KeyValuePair<TKey, int> countBy in BuildCountDictionary(enumerator, keySelector, keyComparer))
-                {
-                    yield return countBy;
-                }
+                yield break;
             }
 
-            static Dictionary<TKey, int> BuildCountDictionary(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer)
+            foreach (KeyValuePair<TKey, int> countBy in BuildCountDictionary(enumerator, keySelector, keyComparer))
             {
-                Dictionary<TKey, int> countsBy = new(keyComparer);
-
-                do
-                {
-                    TSource value = enumerator.Current;
-                    TKey key = keySelector(value);
-
-                    ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, key, out _);
-                    checked
-                    {
-                        currentCount++;
-                    }
-                }
-                while (enumerator.MoveNext());
-
-                return countsBy;
+                yield return countBy;
             }
+        }
+
+        private static Dictionary<TKey, int> BuildCountDictionary<TSource, TKey>(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
+        {
+            Dictionary<TKey, int> countsBy = new(keyComparer);
+
+            do
+            {
+                TSource value = enumerator.Current;
+                TKey key = keySelector(value);
+
+                ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, key, out _);
+                checked
+                {
+                    currentCount++;
+                }
+            }
+            while (enumerator.MoveNext());
+
+            return countsBy;
         }
     }
 }
