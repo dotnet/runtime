@@ -309,8 +309,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         trimmedAssemblyItem.SetMetadata("TrimmedAssemblyFileName", trimmedAssemblyFilePath);
         _trimmedAssemblies.Add(trimmedAssemblyItem);
 
-		// Set the timestamp of trimmed assemblies to be the same as original assemblies.
-		// To avoid undesired re-AOT compilation, during app rebuilding process.
+        // Set the timestamp of trimmed assemblies to be the same as original assemblies.
+        // To avoid undesired re-AOT compilation, during app rebuilding process.
         FileInfo fileInfo = new FileInfo(assemblyFilePath);
         DateTime lastModified = fileInfo.LastWriteTime;
         File.SetLastWriteTime(trimmedAssemblyFilePath, lastModified);
