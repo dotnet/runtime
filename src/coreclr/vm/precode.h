@@ -36,8 +36,8 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #elif defined(TARGET_ARM)
 
-#define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
-#define OFFSETOF_PRECODE_TYPE       3
+#define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN * 2
+#define OFFSETOF_PRECODE_TYPE       7
 
 #elif defined(TARGET_LOONGARCH64)
 
@@ -100,7 +100,7 @@ struct StubPrecode
     static const int Type = 0x4A;
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_ARM)
-    static const int Type = 0xCF;
+    static const int Type = 0xFF;
     static const SIZE_T CodeSize = 12;
 #elif defined(TARGET_LOONGARCH64)
     static const int Type = 0x4;
@@ -237,7 +237,7 @@ struct FixupPrecode
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 8;
 #elif defined(TARGET_ARM)
-    static const int Type = 0xFF;
+    static const int Type = 0xCF;
     static const SIZE_T CodeSize = 12;
     static const int FixupCodeOffset = 4 + THUMB_CODE;
 #elif defined(TARGET_LOONGARCH64)
@@ -607,11 +607,27 @@ public:
 };
 
 // Verify that the type for each precode is different
-static_assert_no_msg(StubPrecode::Type != NDirectImportPrecode::Type);
-static_assert_no_msg(StubPrecode::Type != FixupPrecode::Type);
-static_assert_no_msg(StubPrecode::Type != ThisPtrRetBufPrecode::Type);
-static_assert_no_msg(FixupPrecode::Type != NDirectImportPrecode::Type);
-static_assert_no_msg(FixupPrecode::Type != ThisPtrRetBufPrecode::Type);
-static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 
+#if defined(HAS_NDIRECT_IMPORT_PRECODE) && defined(HAS_FIXUP_PRECODE)
+static_assert_no_msg(FixupPrecode::Type != NDirectImportPrecode::Type);
+#endif
+#if defined(HAS_THISPTR_RETBUF_PRECODE) && defined(HAS_FIXUP_PRECODE)
+static_assert_no_msg(FixupPrecode::Type != ThisPtrRetBufPrecode::Type);
+#endif
+#if defined(HAS_NDIRECT_IMPORT_PRECODE) && defined(HAS_FIXUP_PRECODE)
+static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
+#endif
+
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+static_assert_no_msg(StubPrecode::Type != NDirectImportPrecode::Type);
+static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
+#endif
+#ifdef HAS_FIXUP_PRECODE
+static_assert_no_msg(StubPrecode::Type != FixupPrecode::Type);
+static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
+#endif
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+static_assert_no_msg(StubPrecode::Type != ThisPtrRetBufPrecode::Type);
+static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+#endif
 #endif // __PRECODE_H__
