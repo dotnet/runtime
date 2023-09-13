@@ -14,9 +14,8 @@ public struct S0
 
 public class Program
 {
-    public static int Main()
+    public static void Main()
     {
         GC.KeepAlive(new S0[,] { { new S0(new object()) } });
-        return 100;
     }
 }

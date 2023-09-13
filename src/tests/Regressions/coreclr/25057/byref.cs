@@ -12,7 +12,7 @@ ref struct InvalidRefStruct
     public Span<int> Y;
 }
 
-class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Type LoadInvalidRefStruct()
@@ -20,7 +20,7 @@ class Program
         return typeof(InvalidRefStruct);
     }
 
-    static int Main()
+    public static int Main()
     {
         try
         {

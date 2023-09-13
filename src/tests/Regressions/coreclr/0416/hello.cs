@@ -4,12 +4,11 @@ using System;
 
 public class Hello
 {
-	public static int Main()
-	{
-		Console.WriteLine("Make sure to set the following env vars:");
-		Console.WriteLine("  DOTNET_LogEnable=1");
-		Console.WriteLine("  DOTNET_LogToConsole=1");
-		Console.WriteLine("This test ensures that logging is working");
-		return 100;
-	}
+    public static void Main()
+    {
+        Console.WriteLine("Make sure to set the following env vars:");
+        Console.WriteLine("  DOTNET_LogEnable=1");
+        Console.WriteLine("  DOTNET_LogToConsole=1");
+        Console.WriteLine("This test ensures that logging is working");
+    }
 }

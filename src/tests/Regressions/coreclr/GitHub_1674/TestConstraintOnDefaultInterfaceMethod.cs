@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace TestConstraint
 {
-    class TestConstraintOnDefaultInterfaceMethod
+    public class TestConstraintOnDefaultInterfaceMethod
     {
-        static int Main()
+        public static int Main()
         {
             IAuditTrail<IRaftLogEntry> auditTrail = new AuditTrail();
             // This should not fail per C# specs here:

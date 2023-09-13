@@ -6,7 +6,7 @@ using System.Reflection;
 
 public class test88113
 {
-    public static int Main()
+    public static void Main()
     {
         try
         {
@@ -24,7 +24,5 @@ public class test88113
                 Console.WriteLine($"2: {ex3}");
             }
         }
-
-        return 100;
     }
 }

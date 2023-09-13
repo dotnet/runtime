@@ -28,12 +28,10 @@ public class A { }
 
 public class B : A { }
 
-class Program
+public class Program
 {
-    static int Main()
+    public static void Main()
     {
         System.Console.WriteLine((new TB() as T<A>).GetA().GetType().FullName);
-
-        return 100;
     }
 }

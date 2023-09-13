@@ -4,9 +4,8 @@ namespace InterfaceMain
 {
     interface Program
     {
-        static int Main()
+        static void Main()
         {
-            return 100;
         }
     }
 }

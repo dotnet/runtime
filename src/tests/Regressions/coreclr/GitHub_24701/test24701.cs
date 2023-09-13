@@ -81,7 +81,7 @@ public class Program
         return 0;
     }
         
-    static int Main()
+    public static int Main()
     {
         int numFailures = 0;
         var foo = new StructAPITest<string>(); foo._id = "ABC";

@@ -4,11 +4,11 @@
 using System.Runtime.InteropServices;
 
 [StructLayout(LayoutKind.Auto, Size = 16)]
-struct Foo
+public struct Foo
 {
     private int _field;
 
-    static unsafe int Main()
+    public static unsafe int Main()
     {
         return sizeof(Foo) == 4 ? 100 : -1;
     }
