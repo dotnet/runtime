@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return fileSpecs;
         }
 
-        public string Bundle(BundleOptions options, Version? bundleVersion = null)
+        public string Bundle(BundleOptions options = BundleOptions.None, Version? bundleVersion = null)
         {
             return Bundle(options, out _, bundleVersion);
         }
