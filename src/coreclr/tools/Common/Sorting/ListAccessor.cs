@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 
+#nullable disable
+
 namespace ILCompiler.Sorting.Implementation
 {
     internal struct ListAccessor<T> : ISortableDataStructureAccessor<T, List<T>>

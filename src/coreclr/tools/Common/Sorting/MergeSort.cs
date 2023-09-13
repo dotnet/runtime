@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using ILCompiler.Sorting.Implementation;
 
+#nullable disable
+
 namespace ILCompiler
 {
     public static class MergeSortApi

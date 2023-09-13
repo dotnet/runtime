@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+#nullable disable
+
 namespace ILCompiler.Sorting.Implementation
 {
     internal static class MergeSortCore<T, TDataStructure, TDataStructureAccessor, TComparer, TCompareAsEqualAction>

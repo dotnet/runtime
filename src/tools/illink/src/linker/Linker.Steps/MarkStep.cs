@@ -38,6 +38,7 @@ using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using ILCompiler.DependencyAnalysisFramework;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -412,14 +413,60 @@ namespace Mono.Linker.Steps
 
 		void Process ()
 		{
-			while (ProcessPrimaryQueue () ||
+			var analyzer = new DependencyAnalyzer<NoLogStrategy<MarkStepNodeFactory>, MarkStepNodeFactory> (new MarkStepNodeFactory(this), null);
+			analyzer.ComputeDependencyRoutine += (List<DependencyNodeCore<MarkStepNodeFactory>> nodes) => {
+				foreach (DependencyNodeCore<MarkStepNodeFactory> node in nodes) {
+					if (node is ProcessCallbackDependencyNode processNode)
+						processNode.Process ();
+				}
+			};
+			analyzer.AddRoot (new ProcessCallbackDependencyNode (ProcessAllPendingItems), "start");
+			analyzer.ComputeMarkedNodes ();
+
+			ProcessPendingTypeChecks ();
+
+			bool ProcessAllPendingItems ()
+				=> ProcessPrimaryQueue () ||
 				ProcessMarkedPending () ||
 				ProcessLazyAttributes () ||
 				ProcessLateMarkedAttributes () ||
 				MarkFullyPreservedAssemblies () ||
-				ProcessInternalsVisibleAttributes ()) ;
+				ProcessInternalsVisibleAttributes ();
+		}
 
-			ProcessPendingTypeChecks ();
+		public class MarkStepNodeFactory (MarkStep markStep)
+		{
+			public MarkStep MarkStep { get; } = markStep;
+		}
+
+		sealed class ProcessCallbackDependencyNode : DependencyNodeCore<MarkStepNodeFactory>
+		{
+			Func<bool> _processAction;
+			DependencyList? _dependencies;
+
+			public ProcessCallbackDependencyNode (Func<bool> action) => _processAction = action;
+
+			public void Process()
+			{
+				_dependencies = new DependencyList ();
+				if (_processAction ()) {
+					_dependencies.Add (new ProcessCallbackDependencyNode (_processAction), "Some processing was done, continuation required");
+				}
+			}
+
+			public override bool InterestingForDynamicDependencyAnalysis => false;
+
+			public override bool HasDynamicDependencies => false;
+
+			public override bool HasConditionalStaticDependencies => false;
+
+			public override bool StaticDependenciesAreComputed => _dependencies != null;
+
+			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (MarkStepNodeFactory context) => _dependencies;
+
+			public override IEnumerable<CombinedDependencyListEntry>? GetConditionalStaticDependencies (MarkStepNodeFactory context) => null;
+			public override IEnumerable<CombinedDependencyListEntry>? SearchDynamicDependencies (List<DependencyNodeCore<MarkStepNodeFactory>> markedNodes, int firstNode, MarkStepNodeFactory context) => null;
+			protected override string GetName (MarkStepNodeFactory context) => "Process";
 		}
 
 		static bool IsFullyPreservedAction (AssemblyAction action) => action == AssemblyAction.Copy || action == AssemblyAction.Save;

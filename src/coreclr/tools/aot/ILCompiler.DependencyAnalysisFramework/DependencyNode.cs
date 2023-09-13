@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 
+#nullable disable
+
 namespace ILCompiler.DependencyAnalysisFramework
 {
     public abstract class DependencyNode : IDependencyNode

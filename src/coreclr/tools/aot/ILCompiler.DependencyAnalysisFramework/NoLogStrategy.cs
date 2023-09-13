@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 
+#nullable disable
+
 namespace ILCompiler.DependencyAnalysisFramework
 {
     /// <summary>

@@ -3,6 +3,8 @@
 
 using System;
 
+#nullable disable
+
 namespace ILCompiler.DependencyAnalysisFramework
 {
     public interface IDependencyAnalyzerLogNodeVisitor<DependencyContextType>

@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#nullable disable
+
 namespace ILCompiler.DependencyAnalysisFramework
 {
     public abstract class ComputedStaticDependencyNode<DependencyContextType> : DependencyNodeCore<DependencyContextType>

@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 
+#nullable disable
+
 namespace ILCompiler.DependencyAnalysisFramework
 {
     public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode, IDependencyNode<DependencyContextType>
