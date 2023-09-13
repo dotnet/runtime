@@ -15,13 +15,11 @@ namespace Internal.Runtime
         internal MethodTable* GetArrayEEType()
         {
 #if INPLACE_RUNTIME
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
+            return MethodTable.Of<Array>();
 #else
-            fixed (MethodTable* pThis = &this)
-            {
-                void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(new IntPtr(pThis), ClassLibFunctionId.GetSystemArrayEEType);
-                return ((delegate* <MethodTable*>)pGetArrayEEType)();
-            }
+            MethodTable* pThis = (MethodTable*)Unsafe.Pointer(ref this);
+            void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(new IntPtr(pThis), ClassLibFunctionId.GetSystemArrayEEType);
+            return ((delegate* <MethodTable*>)pGetArrayEEType)();
 #endif
         }
 
