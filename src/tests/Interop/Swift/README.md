@@ -42,7 +42,7 @@ Here's the planned flow for invoking a Swift function from .NET if a developer u
 
 ## Template
 
-Templates are used to set the definition of done (DoD) and contain of a set of unit tests that must be implemented. Each unit test is designed to cover a specific invocation type using different input types. The tests should be expanded with all Swift types.
+Template is used to set the definition of done (DoD) and contains of a set of unit tests that must be implemented. Each unit test is designed to cover a specific invocation type using different input types. The tests should be expanded with all Swift types.
 
 ### Global/Static functions
 
