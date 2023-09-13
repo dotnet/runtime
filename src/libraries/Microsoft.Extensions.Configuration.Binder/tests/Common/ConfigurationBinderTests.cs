@@ -1723,7 +1723,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void EnsureNotCallingThePropertySetterOnBindWhenNoOwningConfig()
+        public void EnsureNotCallingSettersWhenGivenExistingInstanceNotInConfig()
         {
             var builder = new ConfigurationBuilder();
             builder.AddInMemoryCollection(new KeyValuePair<string, string?>[] { });
@@ -1731,7 +1731,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             ClassThatThrowsOnSetters instance = new();
 
-            // The setter for MyIntProperty throws.
+            // The setter for MyIntProperty throws, so this verifies that the setter is not called.
             config.GetSection("Dmy").Bind(instance);
             Assert.Equal(42, instance.MyIntProperty);
         }
