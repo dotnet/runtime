@@ -16,9 +16,6 @@
 #include "strongnameinternal.h"
 #include "sstring.h"
 
-#define COM_RUNTIME_LIBRARY "ComRuntimeLibrary"
-
-
 //*******************************************************************************
 // Find the MethodSpec by Method and Instantiation
 //*******************************************************************************
@@ -2477,7 +2474,6 @@ ImportHelper::ImportTypeDef(
     LPCUTF8     szModuleImport;
     mdToken     tkOuterRes = mdTokenNil;
     HRESULT     hr = S_OK;
-    BOOL        bBCL = false;
 
     _ASSERTE(pMiniMdEmit && pCommonImport && ptkType);
     _ASSERTE(TypeFromToken(tdImport) == mdtTypeDef && tdImport != mdTypeDefNil);
@@ -2494,43 +2490,7 @@ ImportHelper::ImportTypeDef(
     }
     IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdEmit)->CommonGetScopeProps(0, &MvidEmit));
 
-    if (pCommonAssemImport == NULL && strcmp(szModuleImport, COM_RUNTIME_LIBRARY) == 0)
-    {
-        const BYTE      *pBlob;                 // Blob with dispid.
-        ULONG           cbBlob;                 // Length of blob.
-        WCHAR           wzBlob[40];             // Wide char format of guid.
-        int             ix;                     // Loop control.
-
-        hr = pCommonImport->CommonGetCustomAttributeByName(1, INTEROP_GUID_TYPE, (const void **)&pBlob, &cbBlob);
-        if (hr != S_FALSE)
-        {
-            // Should be in format.  Total length == 41
-            // <0x0001><0x24>01234567-0123-0123-0123-001122334455<0x0000>
-            if ((cbBlob == 41) || (GET_UNALIGNED_VAL16(pBlob) == 1))
-            {
-                for (ix=1; ix<=36; ++ix)
-                    wzBlob[ix] = pBlob[ix+2];
-                wzBlob[0] = '{';
-                wzBlob[37] = '}';
-                wzBlob[38] = 0;
-                // It's ok that we ignore the hr here. It's not needed, but I
-                // don't want to remove it in case a code analysis tool will complain
-                // about not capturing return codes.
-                hr = LPCWSTRToGuid(wzBlob, &GuidImport) ? S_OK : E_FAIL;
-            }
-        }
-        bBCL = (GuidImport == LIBID_ComPlusRuntime);
-    }
-
-    // Compute the ResolutionScope for the imported type.
-    if (bBCL)
-    {
-        // This is the case that we are referring to SPCL but client does not provide the manifest for
-        // SPCL!! Do not generate ModuleRef to the SPCL. But instead we should just leave the
-        // ResolutionScope empty
-        tkOuterRes = mdTokenNil;
-    }
-    else if (MvidAssemImport == MvidAssemEmit && MvidImport == MvidEmit)
+    if (MvidAssemImport == MvidAssemEmit && MvidImport == MvidEmit)
     {
         // The TypeDef is in the same Assembly and the Same scope.
         if (bReturnTd)
@@ -2978,9 +2938,6 @@ HRESULT ImportHelper::CreateModuleRefFromScope( // S_OK or error.
             IfFailGo(pMiniMdEmit->AddModuleRefRecord(&pRecordEmit, &iRecordEmit));
             *ptkModuleRef = TokenFromRid(iRecordEmit, mdtModuleRef);
             IfFailGo(pMiniMdEmit->UpdateENCLog(*ptkModuleRef));
-
-            // It is a bug to create an ModuleRef to SPCL
-            _ASSERTE(strcmp(szName, COM_RUNTIME_LIBRARY) != 0);
 
             // Set the name of ModuleRef.
             IfFailGo(pMiniMdEmit->PutString(TBL_ModuleRef, ModuleRefRec::COL_Name,
