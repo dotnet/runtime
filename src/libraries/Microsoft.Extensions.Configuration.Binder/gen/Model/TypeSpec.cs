@@ -15,16 +15,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public TypeSpec(ITypeSymbol type)
         {
-            IsValueType = type.IsValueType;
             Namespace = type.ContainingNamespace?.ToDisplayString();
             DisplayString = type.ToDisplayString(s_minimalDisplayFormat);
-            Name = Namespace + "." + DisplayString.Replace(".", "+");
-            IsInterface = type.TypeKind is TypeKind.Interface;
+            Name = (Namespace is null ? string.Empty : Namespace + ".") + DisplayString.Replace(".", "+");
+            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring();
+            IsValueType = type.IsValueType;
         }
 
         public string Name { get; }
 
         public string DisplayString { get; }
+
+        public string IdentifierCompatibleSubstring { get; }
 
         public string? Namespace { get; }
 
@@ -41,8 +43,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public virtual bool NeedsMemberBinding { get; }
 
         public virtual TypeSpec EffectiveType => this;
-
-        public bool IsInterface { get; }
 
         protected bool CanInitComplexObject() => InitializationStrategy is not InitializationStrategy.None && InitExceptionMessage is null;
     }
