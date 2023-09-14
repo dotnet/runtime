@@ -800,10 +800,15 @@ int fx_muxer_t::initialize_for_runtime_config(
     if (already_initialized)
     {
         std::unordered_map<pal::string_t, pal::string_t> config_properties;
-        rc = get_init_info_for_secondary_component(host_info, mode, runtime_config, existing_context, config_properties);
-        if (rc != StatusCode::Success)
-            return rc;
 
+        // If runtime is already initialized then we can be more permissive with the config.
+        // It is missing then assume it is the same as the existing one.
+        if (pal::file_exists(runtime_config))
+        {
+            rc = get_init_info_for_secondary_component(host_info, mode, runtime_config, existing_context, config_properties);
+            if (rc != StatusCode::Success)
+                return rc;
+        }
         rc = host_context_t::create_secondary(existing_context->hostpolicy_contract, config_properties, initialization_options, context);
     }
     else
