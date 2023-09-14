@@ -51,7 +51,7 @@ In order to simplify the testing we can use mangled name as the entry point. Thi
 
 The P/Invoke thunks should simplify register juggling by using predefined set of registers for `self` and `error` cases. We should explore possibilities and limitations of P/Invoke with instance functions. Additionally, we should consider using COM Interop for instance functions as well.
 
-## Type marshalling
+### Type marshalling
 
 Type marshalling should ideally be automated, with an initial focus on supporting blittable types. Later, we can extend support to include non-blittable types.
 
