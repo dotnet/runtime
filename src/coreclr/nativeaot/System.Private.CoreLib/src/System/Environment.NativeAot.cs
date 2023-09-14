@@ -9,8 +9,6 @@ using System.Threading;
 using Internal.DeveloperExperience;
 using System.Runtime;
 
-using RhFailFastReason = System.RuntimeExceptionHelpers.RhFailFastReason;
-
 namespace System
 {
     public static partial class Environment

@@ -80,16 +80,6 @@ namespace System
             }
         }
 
-        internal enum RhFailFastReason
-        {
-            Unknown = 0,
-            InternalError = 1,                                   // "Runtime internal error"
-            UnhandledException = 2,                              // "unhandled exception"
-            UnhandledExceptionFromPInvoke = 3,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
-            EnvironmentFailFast = 4,
-            AssertionFailure = 5,
-        }
-
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
         // needs to cause the process to exit. It is the classlib's opportunity to customize the
         // termination behavior in whatever way necessary.

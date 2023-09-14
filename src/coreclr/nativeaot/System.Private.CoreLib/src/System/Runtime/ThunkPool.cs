@@ -225,12 +225,10 @@ namespace System.Runtime
             // or at least change it to a per-heap lock instead of a global lock.
 
             IntPtr dataAddress = TryGetThunkDataAddress(thunkAddress);
-            if (dataAddress == IntPtr.Zero)
-                Environment.FailFast(null);
+            Debug.Assert(dataAddress != IntPtr.Zero);
 
 #if DEBUG
-            if (!IsThunkInHeap(thunkAddress))
-                Environment.FailFast(null);
+            Debug.Assert(IsThunkInHeap(thunkAddress));
 
             // Debug flag indicating the thunk is no longer used
             *((IntPtr*)(dataAddress + IntPtr.Size)) = new IntPtr(-1);
@@ -318,13 +316,8 @@ namespace System.Runtime
         public unsafe void SetThunkData(IntPtr thunkAddress, IntPtr context, IntPtr target)
         {
             IntPtr dataAddress = TryGetThunkDataAddress(thunkAddress);
-            if (dataAddress == IntPtr.Zero)
-                Environment.FailFast(null);
-
-#if DEBUG
-            if (!IsThunkInHeap(thunkAddress))
-                Environment.FailFast(null);
-#endif
+            Debug.Assert(dataAddress != IntPtr.Zero);
+            Debug.Assert(IsThunkInHeap(thunkAddress));
 
             // Update the data that will be used by the thunk that was allocated
             *((IntPtr*)(dataAddress)) = context;

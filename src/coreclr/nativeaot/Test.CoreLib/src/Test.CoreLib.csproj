@@ -91,6 +91,9 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MethodTable.Constants.cs">
       <Link>System\Runtime\MethodTable.Constants.cs</Link>
     </Compile>
+    <Compile Include="$(AotCommonPath)\System\Runtime\RhFailFastReason.cs">
+      <Link>System\Runtime\RhFailFastReason.cs</Link>
+    </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
       <Link>System\Runtime\MethodTable.cs</Link>
     </Compile>

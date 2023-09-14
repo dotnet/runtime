@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Internal.DeveloperExperience;
 
-using RhFailFastReason = System.RuntimeExceptionHelpers.RhFailFastReason;
-
 namespace System
 {
     internal unsafe struct CrashInfo
