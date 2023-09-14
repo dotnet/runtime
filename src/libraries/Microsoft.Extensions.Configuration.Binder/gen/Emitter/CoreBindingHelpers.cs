@@ -258,7 +258,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    EmitBindCoreImplForObject((ObjectSpec)effectiveType, ValueDefaulting.None);
+                    EmitBindCoreImplForObject((ObjectSpec)effectiveType);
                 }
 
                 EmitEndBlock();
@@ -384,8 +384,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         parsedMemberAssignmentLhsExpr,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
                         canSet: true,
-                        firstTimeInitialization: true,
-                        ValueDefaulting.None);
+                        firstTimeInitialization: true);
 
                     if (canBindToMember)
                     {
@@ -767,7 +766,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitEndBlock();
             }
 
-            private void EmitBindCoreImplForObject(ObjectSpec type, ValueDefaulting valueDefaulting)
+            private void EmitBindCoreImplForObject(ObjectSpec type)
             {
                 Debug.Assert(type.HasBindableMembers);
 
@@ -786,8 +785,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             memberAccessExpr: $"{containingTypeRef}.{property.Name}",
                             GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
                             canSet: property.CanSet,
-                            firstTimeInitialization: false,
-                            valueDefaulting);
+                            firstTimeInitialization: false);
                     }
                 }
             }
@@ -797,8 +795,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string memberAccessExpr,
                 string sectionPathExpr,
                 bool canSet,
-                bool firstTimeInitialization,
-                ValueDefaulting valueDefaulting)
+                bool firstTimeInitialization)
             {
                 TypeSpec effectiveMemberType = member.Type.EffectiveType;
 
@@ -845,7 +842,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                             EmitBlankLineIfRequired();
                             EmitStartBlock($"if ({sectionValidationCall} is {Identifier.IConfigurationSection} {sectionIdentifier})");
-                            EmitBindingLogicForComplexMember(member, memberAccessExpr, sectionIdentifier, canSet, valueDefaulting);
+                            EmitBindingLogicForComplexMember(member, memberAccessExpr, sectionIdentifier, canSet);
                             EmitEndBlock();
 
                             return complexType.CanInstantiate;
@@ -859,8 +856,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 MemberSpec member,
                 string memberAccessExpr,
                 string configArgExpr,
-                bool canSet,
-                ValueDefaulting valueDefaulting)
+                bool canSet)
             {
 
                 TypeSpec memberType = member.Type;
@@ -923,7 +919,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     targetObjAccessExpr,
                     configArgExpr,
                     initKind,
-                    valueDefaulting,
+                    ValueDefaulting.None,
                     writeOnSuccess
                     );
             }

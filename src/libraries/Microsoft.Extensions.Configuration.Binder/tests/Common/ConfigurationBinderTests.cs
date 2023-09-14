@@ -1604,6 +1604,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             ConfigurationBuilder configurationBuilder = new();
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
+                // An empty value will not trigger defaulting.
             });
 
             IConfiguration config = configurationBuilder.Build();
@@ -1764,6 +1765,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             // These don't exist in configuration and setters are not called since they are nullable.
             Assert.Equal(0, options.OtherCodeNullable);
+            Assert.Equal("default", options.OtherCodeString);
             Assert.Null(options.OtherCodeNull);
             Assert.Null(options.OtherCodeUri);            
         }
