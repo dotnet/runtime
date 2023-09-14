@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <inheritdoc cref="ComWrappers.ComputeVtables" />
         protected sealed override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
         {
-            if (GetOrCreateInterfaceDetailsStrategy().GetComExposedTypeDetails(obj.GetType().TypeHandle))
+            if (GetOrCreateInterfaceDetailsStrategy().GetComExposedTypeDetails(obj.GetType().TypeHandle) is { } details)
             {
                 return details.GetComInterfaceEntries(out count);
             }
