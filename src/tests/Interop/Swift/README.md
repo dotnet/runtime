@@ -14,8 +14,6 @@ Swift's default function types are `thick` meaning they have an optional context
 
 Swift uses mangling for generating unique names. This process can change in different major versions (i.e. Swift 4 vs Swift 5). The Swift compiler puts mangled names in binary images to encode type references for runtime instantiation and reflection. In a binary, these mangled names may contain pointers to runtime data structures to represent locally-defined types more efficiently. When calling in from .NET, it is necessary to mangle the name during the runtime or AOT compilation.
 
-In order to simplify the testing we can use mangled name as the entry point. This provides a number of advantages, specifically for functions that have name overlap (i.e. functions with the same name that return different types) for which we cannot disambiguate from C#. The `Binding Tools for Swift` reads the dylib, pulls the public symbols and demangles them.
-
 ## Memory management
 
 In Swift, memory management is handled by [Automatic Reference Counting](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/automaticreferencecounting/).
@@ -26,20 +24,36 @@ Interop should handle various types when calling from .NET, including blittable 
 
 Reference: https://github.com/xamarin/binding-tools-for-swift/blob/main/docs/ValueTypeModeling.md
 
-Initially, we should focus on blittable types. Later, we may introduce support for other non-blittable types.
+## An example of direct P/Invoke
 
-## Flow for invoking a Swift function from .NET
-
-Here's the planned flow for invoking a Swift function from .NET if a developer uses a direct P/Invoke and demangled name:
-1. A function name should be mangled using the `Binding Tools for Swift` due to limitations for functions that have name overlap. Alternative option is to mangle entry points during the runtime or AOT compilation. In this case, it may slow down the compiler for non-Swift interops and have limitations for functions that have name overlap.
+Here's the flow for invoking a Swift function from .NET if a developer uses a direct P/Invoke and demangled name:
+1. An entry point name should be mangled using the `Binding Tools for Swift`. It creates function wrappers which could be invoked using demangled names.
 2. Function parameters should be automatically marshalled without any wrappers.
 3. A thunk should be emitted to handle the different calling convention, especially for instance functions and functions with error handling.
-    - Implement calling convention using thunks to handle self, errors, etc.
-    - Is it possible to test instance functions with P/Invoke or COM Interop is required?
-4. The result should be retrieved from the register or stack or indirectly.
-5. Error registers should be checked and if set, an error should be thrown.
-6. Cleanup may be required?
+4. The result should be retrieved from the register, stack, or indirectly.
+5. An error should be thrown if an error register is set.
+6. Cleanup may be required.
 
+## Tasks
+
+The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. Ideally, we want to eliminate extra wrappers.
+Outcome of this experiment should be a document with limitations and list of tasks that needs to be done in order to officially support .NET Swift Interop.
+
+### Update Binding Tools for Swift to work with latest version of Mono runtime
+
+We should update the Binding Tools for Swift to be compatible with the latest version of the Mono runtime and Xcode.
+
+### Name mangling
+
+In order to simplify the testing we can use mangled name as the entry point. This provides a number of advantages, specifically for functions that have name overlap (i.e. functions with the same name that return different types) for which we cannot disambiguate from C#. The `Binding Tools for Swift` reads the dylib, pulls the public symbols and demangles them. However, we should discover in which cases extra wrappers may not be required and possibility to perform entry point mangling within the runtime. In this case, it may slow down the compiler for non-Swift interops and have limitations for functions that have name overlap.
+
+### P/Invoke thunks
+
+The P/Invoke thunks should simplify register juggling by using predefined set of registers for `self` and `error` cases. We should explore possibilities and limitations of P/Invoke with instance functions. Additionally, we should consider using COM Interop for instance functions as well.
+
+## Type marshalling
+
+Type marshalling should ideally be automated, with an initial focus on supporting blittable types. Later, we can extend support to include non-blittable types.
 
 ## Template
 
