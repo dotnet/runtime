@@ -43,7 +43,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			CapturingLocalFunctionInsideIterator<int> ();
 			LambdaInsideAsync<int> ();
 			LocalFunctionInsideAsync<int> ();
-			NestedStaticLambda.Test ();
+			NestedStaticLambda.Test<int> ();
 		}
 
 		private static void UseIterator ()
@@ -356,14 +356,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class NestedStaticLambda
 		{
-			public static class Container<T> {
-				public static Func<Func<T, T>, Func<T, T>> M =
-					(Func<T, T> x) => v => x(x(v));
+			public static class Container<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> {
+				public static Func<Func<T, T>, Func<T, T>> NestedLambda =
+					(Func<T, T> x) => v => x(v);
 			}
 
-			public static void Test ()
+			[ExpectedWarning ("IL2091", "T", nameof (Container<T>), nameof (DynamicallyAccessedMemberTypes.PublicMethods))]
+			public static void Test<T> ()
 			{
-				Container<int>.M ((int i) => i) (1);
+				Container<T>.NestedLambda ((T t) => t) (default (T));
 			}
 		}
 	}
