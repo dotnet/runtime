@@ -7,6 +7,7 @@
 #include "ir-emit.h"
 #include "llvm-intrinsics-types.h"
 #include "cross-platform-intrinsics.h"
+#include "intrinsics-helper.h"
 #ifdef ENABLE_LLVM
 #include "mini-llvm.h"
 #include "mini-llvm-cpp.h"
