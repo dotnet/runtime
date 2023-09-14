@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Net.Http.Metrics;
@@ -20,8 +18,6 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods = new();
-
         private readonly HttpMessageHandler? _nativeHandler;
         private IMeterFactory? _nativeMeterFactory;
         private MetricsHandler? _nativeMetricsHandler;
@@ -139,7 +135,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetUseCookies();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetUseCookies(_nativeHandler!);
                 }
                 else
                 {
@@ -150,7 +147,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetUseCookies(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetUseCookies(_nativeHandler!, value);
                 }
                 else
                 {
@@ -166,7 +164,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetCookieContainer();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetCookieContainer(_nativeHandler!);
                 }
                 else
                 {
@@ -179,7 +178,8 @@ namespace System.Net.Http
 
                 if (IsNativeHandlerEnabled)
                 {
-                    SetCookieContainer(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetCookieContainer(_nativeHandler!, value);
                 }
                 else
                 {
@@ -195,7 +195,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetDefaultProxyCredentials();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetDefaultProxyCredentials(_nativeHandler!);
                 }
                 else
                 {
@@ -206,7 +207,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetDefaultProxyCredentials(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetDefaultProxyCredentials(_nativeHandler!, value);
                 }
                 else
                 {
@@ -226,7 +228,8 @@ namespace System.Net.Http
                 ICredentials? creds;
                 if (IsNativeHandlerEnabled)
                 {
-                    creds = GetCredentials();
+                    Debug.Assert(_nativeHandler is not null);
+                    creds = GetCredentials(_nativeHandler!);
                 }
                 else
                 {
@@ -241,7 +244,8 @@ namespace System.Net.Http
                 {
                     if (IsNativeHandlerEnabled)
                     {
-                        SetCredentials(CredentialCache.DefaultCredentials);
+                        Debug.Assert(_nativeHandler is not null);
+                        SetCredentials(_nativeHandler!, CredentialCache.DefaultCredentials);
                     }
                     else
                     {
@@ -252,11 +256,12 @@ namespace System.Net.Http
                 {
                     if (IsNativeHandlerEnabled)
                     {
-                        ICredentials? creds = GetCredentials();
+                        Debug.Assert(_nativeHandler is not null);
+                        ICredentials? creds = GetCredentials(_nativeHandler!);
 
                         if (creds == CredentialCache.DefaultCredentials)
                         {
-                            SetCredentials(null!);
+                            SetCredentials(_nativeHandler!, null!);
                         }
                     }
                     else
@@ -277,7 +282,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetCredentials();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetCredentials(_nativeHandler!);
                 }
                 else
                 {
@@ -289,7 +295,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetCredentials(value!);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetCredentials(_nativeHandler!, value!);
                 }
                 else
                 {
@@ -304,7 +311,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetAllowAutoRedirect();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetAllowAutoRedirect(_nativeHandler!);
                 }
                 else
                 {
@@ -315,7 +323,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetAllowAutoRedirect(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetAllowAutoRedirect(_nativeHandler!, value);
                 }
                 else
                 {
@@ -331,7 +340,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetMaxConnectionsPerServer();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetMaxConnectionsPerServer(_nativeHandler!);
                 }
                 else
                 {
@@ -342,7 +352,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetMaxConnectionsPerServer(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetMaxConnectionsPerServer(_nativeHandler!, value);
                 }
                 else
                 {
@@ -388,7 +399,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetMaxResponseHeadersLength();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetMaxResponseHeadersLength(_nativeHandler!);
                 }
                 else
                 {
@@ -399,7 +411,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetMaxResponseHeadersLength(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetMaxResponseHeadersLength(_nativeHandler!, value);
                 }
                 else
                 {
@@ -414,7 +427,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetClientCertificateOptions();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetClientCertificateOptions(_nativeHandler!);
                 }
                 else
                 {
@@ -425,7 +439,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetClientCertificateOptions(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetClientCertificateOptions(_nativeHandler!, value);
                 }
                 else
                 {
@@ -457,7 +472,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetClientCertificates();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetClientCertificates(_nativeHandler!);
                 }
                 else
                 {
@@ -479,7 +495,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetServerCertificateCustomValidationCallback();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetServerCertificateCustomValidationCallback(_nativeHandler!);
                 }
                 else
                 {
@@ -490,7 +507,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetServerCertificateCustomValidationCallback(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetServerCertificateCustomValidationCallback(_nativeHandler!, value);
                 }
                 else
                 {
@@ -509,7 +527,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetCheckCertificateRevocationList();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetCheckCertificateRevocationList(_nativeHandler!);
                 }
                 else
                 {
@@ -520,7 +539,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetCheckCertificateRevocationList(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetCheckCertificateRevocationList(_nativeHandler!, value);
                 }
                 else
                 {
@@ -537,7 +557,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetSslProtocols();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetSslProtocols(_nativeHandler!);
                 }
                 else
                 {
@@ -548,7 +569,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetSslProtocols(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetSslProtocols(_nativeHandler!, value);
                 }
                 else
                 {
@@ -564,7 +586,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetProperties();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetProperties(_nativeHandler!);
                 }
                 else
                 {
@@ -579,7 +602,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetSupportsAutomaticDecompression();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetSupportsAutomaticDecompression(_nativeHandler!);
                 }
                 else
                 {
@@ -594,7 +618,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetSupportsProxy();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetSupportsProxy(_nativeHandler!);
                 }
                 else
                 {
@@ -609,7 +634,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetSupportsRedirectConfiguration();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetSupportsRedirectConfiguration(_nativeHandler!);
                 }
                 else
                 {
@@ -625,7 +651,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetAutomaticDecompression();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetAutomaticDecompression(_nativeHandler!);
                 }
                 else
                 {
@@ -636,7 +663,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetAutomaticDecompression(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetAutomaticDecompression(_nativeHandler!, value);
                 }
                 else
                 {
@@ -652,7 +680,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetUseProxy();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetUseProxy(_nativeHandler!);
                 }
                 else
                 {
@@ -663,7 +692,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetUseProxy(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetUseProxy(_nativeHandler!, value);
                 }
                 else
                 {
@@ -681,7 +711,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetProxy();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetProxy(_nativeHandler!);
                 }
                 else
                 {
@@ -692,7 +723,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetProxy(value!);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetProxy(_nativeHandler!, value!);
                 }
                 else
                 {
@@ -708,7 +740,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetPreAuthenticate();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetPreAuthenticate(_nativeHandler!);
                 }
                 else
                 {
@@ -719,7 +752,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetPreAuthenticate(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetPreAuthenticate(_nativeHandler!, value);
                 }
                 else
                 {
@@ -735,7 +769,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    return GetMaxAutomaticRedirections();
+                    Debug.Assert(_nativeHandler is not null);
+                    return GetMaxAutomaticRedirections(_nativeHandler!);
                 }
                 else
                 {
@@ -746,7 +781,8 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    SetMaxAutomaticRedirections(value);
+                    Debug.Assert(_nativeHandler is not null);
+                    SetMaxAutomaticRedirections(_nativeHandler!, value);
                 }
                 else
                 {
