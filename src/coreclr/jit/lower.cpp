@@ -7655,7 +7655,7 @@ void Lowering::LowerMultiregParams()
         JITDUMP("Marking V%02u as an explicitly inited parameter\n", argNum);
         argDsc->lvExplicitParamInit = 1;
 
-        auto getCanonType = [layout, argDsc](unsigned offset) {
+        auto getCanonType = [=](unsigned offset) {
             unsigned structSizeLeft = layout->GetSize() - offset;
             if (structSizeLeft >= TARGET_POINTER_SIZE)
             {
