@@ -444,6 +444,7 @@ namespace Microsoft.Extensions
         {
             private int _otherCode;
             private int _otherCodeNullable;
+            private string _otherCodeString = "default";
             private object _otherCodeNull;
             private Uri _otherCodeUri;
             private ICollection<string> blacklist = new HashSet<string>();
@@ -475,6 +476,12 @@ namespace Microsoft.Extensions
             {
                 get => _otherCodeNullable;
                 set => _otherCodeNullable = !value.HasValue ? 3 : value.Value;
+            }
+
+            public string OtherCodeString
+            {
+                get => _otherCodeString;
+                set => _otherCodeString = value;
             }
 
             public object? OtherCodeNull
