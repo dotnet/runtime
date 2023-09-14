@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.Runtime;
-using System.Runtime.InteropServices;
 
 namespace Internal.Runtime
 {
@@ -15,12 +12,7 @@ namespace Internal.Runtime
         internal static MethodTable* GetArrayEEType()
         {
 
-            return MethodTable.Of<Array>();
-        }
-
-        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
-        {
-            return mt1 == mt2;
+            return EETypePtr.EETypePtrOf<Array>().ToPointer();
         }
 #endif
     }
