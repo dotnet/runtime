@@ -241,8 +241,8 @@ INST(fcvt_d_l,      "fcvt.d.l",       0,   0xd2200053)
 INST(fcvt_d_lu,     "fcvt.d.lu",      0,   0xd2300053)
 INST(fmv_d_x,       "fmv.d.x",        0,   0xf2000053)
 
-// RV32A + RV64A (R_R_R)
-// For now all of them are seqentially consistent because the Interlocked.* APIs don't specify acquire/release ordering
+// RV32A + RV64A (R-type, R_R_R)
+// For now all of them are seqentially consistent because the Interlocked.* APIs don't expose acquire/release ordering
 INST(lr_w,          "lr.w",           0,   (0b00010 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)
 INST(lr_d,          "lr.d",           0,   (0b00010 << 27) | (0b11 << 25) | (0b011 << 12) | 0b0101111)
 INST(sc_w,          "sc.w",           0,   (0b00011 << 27) | (0b11 << 25) | (0b010 << 12) | 0b0101111)

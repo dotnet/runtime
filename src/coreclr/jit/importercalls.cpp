@@ -3247,7 +3247,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-#ifndef TARGET_RISCV64
             // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
             case NI_System_Threading_Interlocked_CompareExchange:
             {
@@ -3279,7 +3278,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 retNode = node;
                 break;
             }
-#endif // !TARGET_RISCV64
+
             case NI_System_Threading_Interlocked_Exchange:
             case NI_System_Threading_Interlocked_ExchangeAdd:
             {

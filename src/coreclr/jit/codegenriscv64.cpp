@@ -2653,7 +2653,62 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
-    NYI_RISCV64("genCodeForCmpXchg-----unimplemented/unused on RISCV64 yet----");
+    assert(treeNode->OperIs(GT_CMPXCHG));
+
+    GenTree* locOp = treeNode->gtOpLocation;
+    GenTree* valOp = treeNode->gtOpValue;
+    GenTree* comparandOp = treeNode->gtOpComparand;
+
+    regNumber target = treeNode->GetRegNum();
+    regNumber loc = locOp->GetRegNum();
+    regNumber val = valOp->GetRegNum();
+    regNumber comparand = comparandOp->GetRegNum();
+    regNumber storeErr = treeNode->ExtractTempReg(RBM_ALLINT);
+
+    // Register allocator should have extended the lifetimes of all input and internal registers
+    // They should all be different
+    noway_assert(target != loc);
+    noway_assert(target != val);
+    noway_assert(target != comparand);
+    noway_assert(target != storeErr);
+    noway_assert(loc != val);
+    noway_assert(loc != comparand);
+    noway_assert(loc != storeErr);
+    noway_assert(val != comparand);
+    noway_assert(val != storeErr);
+    noway_assert(comparand != storeErr);
+    noway_assert(target != REG_NA);
+    noway_assert(storeErr != REG_NA);
+
+    assert(locOp->isUsedFromReg());
+    assert(valOp->isUsedFromReg());
+    assert(!comparandOp->isUsedFromMemory());
+
+    genConsumeAddress(locOp);
+    genConsumeRegs(valOp);
+    genConsumeRegs(comparandOp);
+
+    // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
+    // registers die at the first generated instruction. However, here the input registers are reused,
+    // so mark the location register as a GC pointer until code generation for this node is finished.
+    gcInfo.gcMarkRegPtrVal(loc, locOp->TypeGet());
+
+    BasicBlock* retry = genCreateTempLabel();
+    BasicBlock* fail  = genCreateTempLabel();
+
+    emitter* e = GetEmitter();
+    emitAttr size = emitActualTypeSize(valOp);
+    bool is4 = (size == EA_4BYTE);
+
+    genDefineTempLabel(retry);
+    e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0);  // load original value
+    e->emitIns_J_cond_la(INS_bne, fail, target, comparand);  // fail if doesn’t match
+    e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
+    e->emitIns_J(INS_bnez, retry, storeErr);  // retry if update failed
+    genDefineTempLabel(fail);
+
+    gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask());
+    genProduceReg(treeNode);
 }
 
 static inline bool isImmed(GenTree* treeNode)
