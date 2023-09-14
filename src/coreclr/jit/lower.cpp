@@ -7756,10 +7756,16 @@ void Lowering::LowerMultiregParams()
         if (firstBBRange.TryGetUse(fld, &fldUse))
         {
             JITDUMP("[%06u] is a parameter register use, optimizing it into GETPARAM_REG\n", Compiler::dspTreeID(fld));
-            GenTree* newNode = comp->gtNewGetParamRegNode(fld->GetLclNum(), regIndex, fld->TypeGet());
-            fldUse.ReplaceWith(newNode);
+            GenTree* newNode = comp->gtNewGetParamRegNode(fld->GetLclNum(), regIndex, genActualType(fld));
+            firstBBRange.InsertBefore(fld, newNode);
 
-            firstBBRange.InsertAfter(fld, newNode);
+            if (varTypeIsSmall(fld))
+            {
+                newNode = comp->gtNewCastNode(genActualType(fld), newNode, false, fld->TypeGet());
+                firstBBRange.InsertBefore(fld, newNode);
+            }
+
+            fldUse.ReplaceWith(newNode);
             firstBBRange.Remove(fld);
 
             DISPTREERANGE(firstBBRange, fldUse.User());
