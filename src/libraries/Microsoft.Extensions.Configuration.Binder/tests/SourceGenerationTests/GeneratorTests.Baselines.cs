@@ -39,14 +39,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 public int MyInt { get; set; }
                                 public List<int> MyList { get; set; }
                                 public Dictionary<string, string> MyDictionary { get; set; }
-                                public Dictionary<string, MyClass2> MyComplexDictionary { get; set; }
                             }
-
-                            public class MyClass2 { }
                         }
                     """;
 
-            await VerifyAgainstBaselineUsingFile("Bind_NamedParameters.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            var (d, r) = await RunGenerator(source);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.Equal(151, r[0].SourceText.Lines.Count); // No need to check line by line, other tests already doing that. 
         }
 
         [Fact]
@@ -73,14 +73,47 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 public int MyInt { get; set; }
                                 public List<int> MyList { get; set; }
                                 public Dictionary<string, string> MyDictionary { get; set; }
-                                public Dictionary<string, MyClass2> MyComplexDictionary { get; set; }
                             }
-
-                            public class MyClass2 { }
                         }
                     """;
 
-            await VerifyAgainstBaselineUsingFile("Get_TypeOf_NamedParameters.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+            var (d, r) = await RunGenerator(source);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.Equal(188, r[0].SourceText.Lines.Count);
+        }
+
+        [Fact]
+        public async Task GetValue_NamedParameters()
+        {
+            string source = """
+                        using System.Collections.Generic;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+
+                                var str = ConfigurationBinder.GetValue(key: "key", configuration: config, type: typeof(string));
+                            }
+
+                            public class MyClass
+                            {
+                                public string MyString { get; set; }
+                                public int MyInt { get; set; }
+                                public List<int> MyList { get; set; }
+                                public Dictionary<string, string> MyDictionary { get; set; }
+                            }
+                        }
+                    """;
+
+            var (d, r) = await RunGenerator(source);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.Equal(62, r[0].SourceText.Lines.Count);
         }
 
         [Fact]
