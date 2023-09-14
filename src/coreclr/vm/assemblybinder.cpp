@@ -212,7 +212,7 @@ void AssemblyBinder::GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ S
     _ASSERTE(spec != nullptr);
 
     AppDomain* domain = spec->GetAppDomain();
-    AssemblyBinder* binder = spec->GetBinder();
+    AssemblyBinder* binder = /* spec->GetBinder() */ NULL;
     if (binder == nullptr)
         binder = spec->GetBinderFromParentAssembly(domain);
 

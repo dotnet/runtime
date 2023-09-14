@@ -26,7 +26,7 @@ protected:
     DWORD                       m_cbPublicKeyOrToken;
     DWORD                       m_dwFlags;             // CorAssemblyFlags
     int                         m_ownedFlags;
-    AssemblyBinder             *m_pBinder;
+    OBJECTHANDLE                m_pBinder;
 
 public:
     enum
@@ -60,14 +60,14 @@ public:
     VOID    CloneFields();
     VOID    CloneFieldsToLoaderHeap(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
 
-    inline void SetBinder(AssemblyBinder *pBinder)
+    inline void SetBinder(OBJECTHANDLE pBinder)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_pBinder = pBinder;
     }
 
-    inline AssemblyBinder* GetBinder()
+    inline OBJECTHANDLE GetBinder()
     {
         LIMITED_METHOD_CONTRACT;
 

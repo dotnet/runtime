@@ -2838,7 +2838,7 @@ Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pMDImportOverride,  // = NULL
     BOOL                fDoNotUtilizeExtraChecks, // = FALSE
-    AssemblyBinder      *pBinderForLoadedAssembly // = NULL
+    OBJECTHANDLE        pBinderForLoadedAssembly // = NULL
 )
 {
     CONTRACT(Assembly *)
@@ -3023,20 +3023,22 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
-        AssemblyBinder *pBinder = pPEAssembly->GetAssemblyBinder();
+        GCX_COOP();
+        ASSEMBLYBINDERREF pBinder = pPEAssembly->GetAssemblyBinder();
         if (pBinder != NULL)
         {
-            spec.SetBinder(pBinder);
+            spec.SetBinder(GetDomain()->CreateHandle(pBinder));
         }
         pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
     }
 
     if (pDomainAssembly != NULL)
     {
+        GCX_COOP();
         _ASSERTE(
             pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, GetDomain()->CreateHandle(((BINDERASSEMBLYREF)ObjectFromHandle(pDomainAssembly->GetPEAssembly()->GetHostAssembly()))->m_binder)) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
         if (pDomainAssembly->GetAssembly() != NULL)
         {

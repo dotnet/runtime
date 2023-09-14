@@ -2662,16 +2662,18 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
         Exception* pEx = GET_EXCEPTION();
         if (!pEx->IsTransient())
         {
+            GCX_COOP();
+
             // Setup the binder reference in AssemblySpec from the PEAssembly if one is not already set.
-            AssemblyBinder* pCurrentBinder = pSpec->GetBinder();
-            AssemblyBinder* pBinderFromPEAssembly = pPEAssembly->GetAssemblyBinder();
+            ASSEMBLYBINDERREF pCurrentBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(pSpec->GetBinder());
+            ASSEMBLYBINDERREF pBinderFromPEAssembly = pPEAssembly->GetAssemblyBinder();
 
             if (pCurrentBinder == NULL)
             {
                 // Set the binding context we got from the PEAssembly if AssemblySpec does not
                 // have that information
                 _ASSERTE(pBinderFromPEAssembly != NULL);
-                pSpec->SetBinder(pBinderFromPEAssembly);
+                pSpec->SetBinder(CreateHandle(pBinderFromPEAssembly));
             }
 #if defined(_DEBUG)
             else
@@ -2729,15 +2731,32 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
     if (result == NULL)
     {
+
         LoaderAllocator *pLoaderAllocator = NULL;
 
-        AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
-        // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
-        // marked as collectible
-        pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
-        if (pLoaderAllocator == NULL)
         {
-            pLoaderAllocator = this->GetLoaderAllocator();
+            GCX_COOP();
+            ASSEMBLYBINDERREF pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
+
+            // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
+            // marked as collectible
+
+            MethodDescCallSite methGetLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR);
+            ARG_SLOT args[1] =
+            {
+                ObjToArgSlot(pAssemblyBinder)
+            };
+
+            LOADERALLOCATORREF pManagedLA = (LOADERALLOCATORREF)methGetLoaderAllocator.Call_RetOBJECTREF(args);
+            if (pManagedLA != NULL)
+            {
+                pLoaderAllocator = pManagedLA->GetNativeLoaderAllocator();
+            }
+
+            if (pLoaderAllocator == NULL)
+            {
+                pLoaderAllocator = this->GetLoaderAllocator();
+            }
         }
 
         // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
@@ -2790,7 +2809,15 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         if (registerNewAssembly)
         {
-            pPEAssembly->GetAssemblyBinder()->AddLoadedAssembly(pDomainAssembly->GetAssembly());
+            GCX_COOP();
+
+            MethodDescCallSite methAddLoadedAssem(METHOD__BINDER_ASSEMBLYBINDER__ADDLOADEDASSEMBLY);
+            ARG_SLOT args[2] =
+            {
+                ObjToArgSlot(pPEAssembly->GetAssemblyBinder()),
+                PtrToArgSlot(pDomainAssembly->GetAssembly())
+            };
+            methAddLoadedAssem.Call(args);
         }
     }
     else
