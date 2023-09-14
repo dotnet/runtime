@@ -21,6 +21,10 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="ILLink/ILLink.Substitutions.Shared.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="System\Diagnostics\Activity.cs" />
     <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
     <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />
