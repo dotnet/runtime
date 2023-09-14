@@ -63,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public Type value;
 		}
 
-		// Currently tracking og annotations on inline array values is not implemented
+		// Currently tracking of annotations on inline array values is not implemented
 		[ExpectedWarning("IL2065", "GetProperty", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void AccessAnnotatedTypeArray ()
 		{
