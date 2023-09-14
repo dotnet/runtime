@@ -532,10 +532,6 @@ async function mono_wasm_before_memory_snapshot() {
         else
             throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
     }
-    if (runtimeHelpers.config.startupMemoryCache) {
-        // disable the trampoline for now, we will re-enable it after we stored the snapshot
-        cwraps.mono_jiterp_update_jit_call_dispatcher(0);
-    }
     if (runtimeHelpers.config.runtimeOptions)
         mono_wasm_set_runtime_options(runtimeHelpers.config.runtimeOptions);
 
@@ -560,8 +556,6 @@ async function mono_wasm_before_memory_snapshot() {
 
     // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
     if (runtimeHelpers.config.startupMemoryCache) {
-        // this would install the mono_jiterp_do_jit_call_indirect
-        cwraps.mono_jiterp_update_jit_call_dispatcher(-1);
         await storeMemorySnapshot(localHeapViewU8().buffer);
         runtimeHelpers.storeMemorySnapshotPending = false;
     }

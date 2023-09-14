@@ -7,6 +7,7 @@ import {
 
 export let doJitCallBuilder : WasmBuilder | undefined = undefined;
 
+// FIXME: We no longer actually use this function, it only serves as a feature check at this point.
 export function compileDoJitCall () : WebAssembly.Module | undefined {
     doJitCallBuilder = new WasmBuilder(0);
     if (doJitCallBuilder.getExceptionTag() === undefined)

@@ -2032,8 +2032,6 @@ export function jiterpreter_allocate_tables(module: any) {
     if (options.enableStats)
         mono_log_info(`Allocated ${totalSize} function table entries for jiterpreter, bringing total table size to ${wasmTable.length}`);
     base = jiterpreter_allocate_table(JiterpreterTable.Trace, base, traceTableSize, getRawCwrap("mono_jiterp_placeholder_trace"));
-    // FIXME: Install mono_jiterp_do_jit_call_indirect somehow.
-    base = jiterpreter_allocate_table(JiterpreterTable.DoJitCall, base, 1, getRawCwrap("mono_llvm_cpp_catch_exception"));
     base = jiterpreter_allocate_table(JiterpreterTable.JitCall, base, jitCallTableSize, getRawCwrap("mono_jiterp_placeholder_jit_call"));
     for (let table = JiterpreterTable.InterpEntryStatic0; table <= JiterpreterTable.LAST; table++)
         base = jiterpreter_allocate_table(table, base, interpEntryTableSize, wasmTable.get(cwraps.mono_jiterp_get_interp_entry_func(table)));
