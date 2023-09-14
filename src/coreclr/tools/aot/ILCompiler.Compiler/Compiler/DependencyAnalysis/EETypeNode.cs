@@ -1144,9 +1144,9 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
                     if (factory.Target.SupportsRelativePointers)
-                        objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
+                        objData.EmitReloc(typeDefNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                     else
-                        objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
+                        objData.EmitPointerReloc(typeDefNode);
 
                     ISymbolNode compositionNode = _type.Instantiation.Length > 1
                         ? factory.GenericComposition(_type.Instantiation)
