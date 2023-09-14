@@ -3537,7 +3537,8 @@ namespace Mono.Linker.Steps
 
 		protected internal void MarkProperty (PropertyDefinition prop, in DependencyInfo reason)
 		{
-			Tracer.AddDirectDependency (prop, reason, marked: false);
+			if (!Annotations.MarkProcessed (prop, reason))
+				return;
 
 			using var propertyScope = ScopeStack.PushScope (new MessageOrigin (prop));
 
