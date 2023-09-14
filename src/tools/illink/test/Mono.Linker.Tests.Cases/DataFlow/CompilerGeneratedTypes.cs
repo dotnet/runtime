@@ -43,6 +43,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			CapturingLocalFunctionInsideIterator<int> ();
 			LambdaInsideAsync<int> ();
 			LocalFunctionInsideAsync<int> ();
+			NestedStaticLambda.Test ();
 		}
 
 		private static void UseIterator ()
@@ -351,6 +352,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			void LocalFunction () => typeof (T).GetMethods ();
 			await Task.Delay (0);
 			LocalFunction ();
+		}
+
+		class NestedStaticLambda
+		{
+			public static class Container<T> {
+				public static Func<Func<T, T>, Func<T, T>> M =
+					(Func<T, T> x) => v => x(x(v));
+			}
+
+			public static void Test ()
+			{
+				Container<int>.M ((int i) => i) (1);
+			}
 		}
 	}
 }
