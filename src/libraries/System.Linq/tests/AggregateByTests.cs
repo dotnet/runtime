@@ -139,7 +139,13 @@ namespace System.Linq.Tests
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
                 null,
-                expected: new string[] { "Bob", "bob", "tim", "Tim" }.ToDictionary(x => x, x => x == "Bob" ? "BobBob" : x));
+                expected: new Dictionary<string, string>
+                {
+                    { "Bob", "BobBob" },
+                    { "bob", "bob" },
+                    { "tim", "tim" },
+                    { "Tim", "Tim" },
+                });
 
             yield return WrapArgs(
                 source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
@@ -147,23 +153,36 @@ namespace System.Linq.Tests
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
                 StringComparer.OrdinalIgnoreCase,
-                expected: new string[] { "Bob", "tim" }.ToDictionary(x => x, x => x == "Bob" ? "BobbobBob" : "timTim"));
+                expected: new Dictionary<string, string>
+                {
+                    { "Bob", "BobbobBob" },
+                    { "tim", "timTim" }
+                });
 
             yield return WrapArgs(
                 source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40) },
                 keySelector: x => x.Age,
-                seedSelector: x => "I am ",
+                seedSelector: x => $"I am {x} and my name is ",
                 func: (x, y) => x + y.Name,
                 comparer: null,
-                expected: new int[] { 20, 30, 40 }.ToDictionary(x => x, x => x == 20 ? "I am Tom" : x == 30 ? "I am Dick" : "I am Harry"));
+                expected: new Dictionary<int, string>
+                {
+                    { 20, "I am 20 and my name is Tom" },
+                    { 30, "I am 30 and my name is Dick" },
+                    { 40, "I am 40 and my name is Harry" }
+                });
 
             yield return WrapArgs(
                 source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 20), ("Harry", 40) },
                 keySelector: x => x.Age,
-                seedSelector: x => string.Empty,
-                func: (x, y) => x + y.Name,
+                seedSelector: x => $"I am {x} and my name is ",
+                func: (x, y) => $"{x} or {y.Name}",
                 comparer: null,
-                expected: new int[] { 20, 40 }.ToDictionary(x => x, x => x == 20 ? "TomDick" : "Harry"));
+                expected: new Dictionary<int, string>
+                {
+                    { 20, "I am 20 and my name is Tom or Dick" },
+                    { 40, "I am 40 and my name is Harry" }
+                });
 
             yield return WrapArgs(
                 source: new (string Name, int Age)[] { ("Bob", 20), ("bob", 20), ("Harry", 20) },
@@ -179,7 +198,11 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y.Age,
                 comparer: StringComparer.OrdinalIgnoreCase,
-                expected: new string[] { "Bob", "Harry" }.ToDictionary(x => x, x => x == "Bob" ? 50 : 40));
+                expected: new Dictionary<string, int>
+                {
+                    { "Bob", 50 },
+                    { "Harry", 40 }
+                });
 
             object[] WrapArgs<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? comparer, IEnumerable<KeyValuePair<TKey, TAccumulate>> expected)
                 => new object[] { source, keySelector, seedSelector, func, comparer, expected };
