@@ -9870,7 +9870,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			// When that happens, interpreter needs to have the capability to call the AOT'ed version of that method, since the method body has already been trimmed.
 			gboolean skip_trim = FALSE;
 			if (acfg->aot_opts.interp) {
-				skip_trim = !mono_jit_call_can_be_supported_by_interp (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only);
+				skip_trim = (!mono_jit_call_can_be_supported_by_interp (method, mono_method_signature_internal (method), acfg->aot_opts.llvm_only) || (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED));
 			}
 			if (!skip_trim)
 				fprintf (acfg->trimming_eligible_methods_outfile, "%x\n", method->token);
