@@ -3318,9 +3318,21 @@ namespace Mono.Linker.Steps
 			if (type?.HasFields != true)
 				return;
 
-			// keep fields for types with explicit layout and for enums
-			if (!type.IsAutoLayout || type.IsEnum)
+			// keep fields for types with explicit layout, for enums and for InlineArray types
+			if (!type.IsAutoLayout || type.IsEnum || TypeIsInlineArrayType(type))
 				MarkFields (type, includeStatic: type.IsEnum, reason: new DependencyInfo (DependencyKind.MemberOfType, type));
+		}
+
+		static bool TypeIsInlineArrayType(TypeDefinition type)
+		{
+			if (!type.IsValueType)
+				return false;
+
+			foreach (var customAttribute in type.CustomAttributes)
+				if (customAttribute.AttributeType.IsTypeOf ("System.Runtime.CompilerServices", "InlineArrayAttribute"))
+					return true;
+
+			return false;
 		}
 
 		protected virtual void MarkRequirementsForInstantiatedTypes (TypeDefinition type)
