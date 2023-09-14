@@ -7609,6 +7609,12 @@ void Lowering::LowerMultiregParams()
             continue;
         }
 
+        if (argDsc->lvIsOSRLocal)
+        {
+            JITDUMP("  is an OSR local\n");
+            continue;
+        }
+
         regNumber argReg1 = argDsc->GetArgReg();
         regNumber argReg2 = argDsc->GetOtherArgReg();
         JITDUMP("  regs: %s %s\n", getRegName(argReg1), getRegName(argReg2));
@@ -7649,19 +7655,18 @@ void Lowering::LowerMultiregParams()
         JITDUMP("Marking V%02u as an explicitly inited parameter\n", argNum);
         argDsc->lvExplicitParamInit = 1;
 
-        auto getCanonType = [layout](unsigned offset) {
-            unsigned sizeLeft = layout->GetSize() - offset;
-            if (sizeLeft >= TARGET_POINTER_SIZE)
+        auto getCanonType = [layout, argDsc](unsigned offset) {
+            unsigned structSizeLeft = layout->GetSize() - offset;
+            if (structSizeLeft >= TARGET_POINTER_SIZE)
             {
                 return layout->GetGCPtrType(offset / TARGET_POINTER_SIZE);
             }
 
-            if (sizeLeft > 4)
-            {
-                return TYP_LONG;
-            }
-
-            return TYP_INT;
+            // Structs are always pointer size aligned on the frame, so we can
+            // always store the full register (allowing e.g. str,str -> stp
+            // optimization).
+            assert((argDsc->lvSize() - offset) >= TARGET_POINTER_SIZE);
+            return TYP_I_IMPL;
         };
 
         GenTree* paramReg1 = comp->gtNewGetParamRegNode(argNum, 0, getCanonType(0));
@@ -7689,7 +7694,8 @@ void Lowering::LowerMultiregParams()
     {
         next = cur->gtNext;
 
-        if (!cur->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_GETPARAM_REG))
+        if (!cur->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_GETPARAM_REG, GT_IL_OFFSET,
+                         GT_NOP))
         {
             break;
         }
