@@ -13176,6 +13176,8 @@ compile_asm (MonoAotCompile *acfg)
 
 #ifdef TARGET_WIN32_MSVC
 #define AS_OPTIONS "--target=x86_64-pc-windows-msvc -c -x assembler"
+#elif defined(TARGET_LINUX)
+#define AS_OPTIONS "-c -x assembler"
 #elif defined(TARGET_AMD64) && !defined(TARGET_MACH)
 #define AS_OPTIONS "--64"
 #elif defined(TARGET_POWERPC64)
@@ -13194,6 +13196,8 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_NAME "clang"
 #elif defined(TARGET_WIN32_MSVC)
 #define AS_NAME "clang.exe"
+#elif defined(TARGET_LINUX)
+#define AS_NAME "clang"
 #else
 #define AS_NAME "as"
 #endif
@@ -13207,6 +13211,9 @@ compile_asm (MonoAotCompile *acfg)
 #if defined(__ppc__) && defined(TARGET_MACH)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-dynamiclib -Wl,-Bsymbolic"
+#elif defined(TARGET_LINUX)
+#define LD_NAME "clang"
+#define LD_OPTIONS "-fuse-ld=lld --shared"
 #elif defined(TARGET_AMD64) && defined(TARGET_MACH)
 #define LD_NAME "clang"
 #define LD_OPTIONS "--shared"
