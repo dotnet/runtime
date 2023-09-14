@@ -189,7 +189,7 @@ typedef DPTR(StubPrecode) PTR_StubPrecode;
 // (This is fake precode. VTable slot does not point to it.)
 struct NDirectImportPrecode : StubPrecode
 {
-    static const int Type = 0x02;
+    static const int Type = 0x05;
 
     void Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
