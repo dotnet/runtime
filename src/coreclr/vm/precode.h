@@ -607,27 +607,15 @@ public:
 };
 
 // Verify that the type for each precode is different
-
-#if defined(HAS_NDIRECT_IMPORT_PRECODE) && defined(HAS_FIXUP_PRECODE)
-static_assert_no_msg(FixupPrecode::Type != NDirectImportPrecode::Type);
-#endif
-#if defined(HAS_THISPTR_RETBUF_PRECODE) && defined(HAS_FIXUP_PRECODE)
-static_assert_no_msg(FixupPrecode::Type != ThisPtrRetBufPrecode::Type);
-#endif
-#if defined(HAS_NDIRECT_IMPORT_PRECODE) && defined(HAS_FIXUP_PRECODE)
-static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
-#endif
-
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
 static_assert_no_msg(StubPrecode::Type != NDirectImportPrecode::Type);
-static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
-#endif
-#ifdef HAS_FIXUP_PRECODE
 static_assert_no_msg(StubPrecode::Type != FixupPrecode::Type);
-static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
-#endif
-#ifdef HAS_THISPTR_RETBUF_PRECODE
 static_assert_no_msg(StubPrecode::Type != ThisPtrRetBufPrecode::Type);
+static_assert_no_msg(FixupPrecode::Type != NDirectImportPrecode::Type);
+static_assert_no_msg(FixupPrecode::Type != ThisPtrRetBufPrecode::Type);
+static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
+
+// Verify that the base type for each precode fits into each specific precode type
+static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
+static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
-#endif
 #endif // __PRECODE_H__
