@@ -3143,7 +3143,7 @@ void emitter::emitSplit(emitLocation*         startLoc,
     } // end for loop
 
     splitIfNecessary();
-    assert(curSize < maxSplitSize);
+    assert(curSize < UW_MAX_FRAGMENT_SIZE_BYTES);
 }
 
 /*****************************************************************************
