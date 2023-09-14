@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (type == typeof(Program.MyClass2))
             {
                 var instance = new Program.MyClass2();
-                BindCore(configuration, ref instance, true, binderOptions);
+                BindCore(configuration, ref instance, defaultValueIfNotFound: true, binderOptions);
                 return instance;
             }
 

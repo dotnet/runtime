@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             var typedObj = (Program.MyClass)instance;
-            BindCore(configuration, ref typedObj, false, binderOptions: null);
+            BindCore(configuration, ref typedObj, defaultValueIfNotFound: false, binderOptions: null);
         }
         #endregion IConfiguration extensions.
 
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 List<int>? temp4 = instance.MyList;
                 temp4 ??= new List<int>();
-                BindCore(section2, ref temp4, false, binderOptions);
+                BindCore(section2, ref temp4, defaultValueIfNotFound: false, binderOptions);
                 instance.MyList = temp4;
             }
 
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Dictionary<string, string>? temp7 = instance.MyDictionary;
                 temp7 ??= new Dictionary<string, string>();
-                BindCore(section5, ref temp7, false, binderOptions);
+                BindCore(section5, ref temp7, defaultValueIfNotFound: false, binderOptions);
                 instance.MyDictionary = temp7;
             }
 
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Dictionary<string, Program.MyClass2>? temp10 = instance.MyComplexDictionary;
                 temp10 ??= new Dictionary<string, Program.MyClass2>();
-                BindCore(section8, ref temp10, false, binderOptions);
+                BindCore(section8, ref temp10, defaultValueIfNotFound: false, binderOptions);
                 instance.MyComplexDictionary = temp10;
             }
         }

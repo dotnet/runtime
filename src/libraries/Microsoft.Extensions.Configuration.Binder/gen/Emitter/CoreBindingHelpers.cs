@@ -309,10 +309,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (property.ShouldBindTo && property.MatchingCtorParam is null)
                     {
-                        // Currently properties don't have an 'else' failure case. Doing that may collide with the
-                        // feature to set properties to their default values if they don't exist in the config section.
-                        Debug.Assert(property.ErrorOnFailedBinding == false);
-
                         EmitBindImplForMember(property);
                     }
                 }
@@ -340,8 +336,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 void EmitBindImplForMember(MemberSpec member)
                 {
                     TypeSpec memberType = member.Type;
-                    bool errorOnFailedBinding = member.ErrorOnFailedBinding;
-
                     string parsedMemberDeclarationLhs = $"{memberType.DisplayString} {member.Name}";
                     string configKeyName = member.ConfigurationKeyName;
                     string parsedMemberAssignmentLhsExpr;
@@ -350,7 +344,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         case ParsableFromStringSpec { StringParsableTypeKind: StringParsableTypeKind.AssignFromSectionValue }:
                             {
-                                if (errorOnFailedBinding)
+                                if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                                 {
                                     string condition = $@"if ({Identifier.configuration}[""{configKeyName}""] is not {parsedMemberDeclarationLhs})";
                                     EmitThrowBlock(condition);
@@ -384,11 +378,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         parsedMemberAssignmentLhsExpr,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
                         canSet: true,
-                        firstTimeInitialization: true);
+                        InitializationKind.None);
 
                     if (canBindToMember)
                     {
-                        if (errorOnFailedBinding)
+                        if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                         {
                             // Add exception logic for parameter ctors; must be present in configuration object.
                             EmitThrowBlock(condition: "else");
@@ -785,7 +779,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             memberAccessExpr: $"{containingTypeRef}.{property.Name}",
                             GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
                             canSet: property.CanSet,
-                            firstTimeInitialization: false);
+                            InitializationKind.Declaration);
                     }
                 }
             }
@@ -795,7 +789,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string memberAccessExpr,
                 string sectionPathExpr,
                 bool canSet,
-                bool firstTimeInitialization)
+                InitializationKind initializationKind)
             {
                 TypeSpec effectiveMemberType = member.Type.EffectiveType;
 
@@ -807,7 +801,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             if (canSet)
                             {
-                                bool useDefaultValueIfSectionValueIsNull = !firstTimeInitialization &&
+                                bool useDefaultValueIfSectionValueIsNull =
+                                    initializationKind == InitializationKind.Declaration &&
                                     member is PropertySpec &&
                                     member.Type.IsValueType &&
                                     member.Type.SpecKind is not TypeSpecKind.Nullable;
@@ -968,7 +963,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind)
                 {
-                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions});";
+                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions});";
 
                     if (type.CanInstantiate)
                     {
