@@ -929,8 +929,12 @@ int32_t
 ep_rt_system_get_alloc_granularity (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // return static_cast<int32_t>(g_SystemInfo.dwAllocationGranularity);
+#ifdef TARGET_WINDOWS
     return 0x10000;
+#else
+    extern int32_t ep_rt_aot_get_os_page_size (void);
+    return ep_rt_aot_get_os_page_size();
+#endif
 }
 
 static

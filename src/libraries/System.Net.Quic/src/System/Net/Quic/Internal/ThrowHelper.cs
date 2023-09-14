@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Authentication;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
 using System.Net.Sockets;
-using static Microsoft.Quic.MsQuic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Security.Authentication;
+using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
 

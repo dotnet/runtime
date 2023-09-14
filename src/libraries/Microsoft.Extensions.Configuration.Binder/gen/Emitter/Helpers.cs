@@ -12,9 +12,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Emitter
         {
-            private string? _emittedExtsTargetType;
-
             internal static readonly AssemblyName s_assemblyName = typeof(ConfigurationBindingGenerator).Assembly.GetName();
+
+            private string? _emittedExtsTargetType;
 
             private enum InitializationKind
             {
@@ -23,6 +23,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 AssignmentWithNullCheck = 2,
                 Declaration = 3,
             }
+
             private static class Expression
             {
                 public const string configurationGetSection = "configuration.GetSection";
@@ -227,19 +228,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
 
                 _writer.WriteLine();
-            }
-
-            private bool EmitInitException(TypeSpec type)
-            {
-                Debug.Assert(type.InitializationStrategy is not InitializationStrategy.None);
-
-                if (!type.CanInitialize)
-                {
-                    _writer.WriteLine($@"throw new {Identifier.InvalidOperationException}(""{type.InitExceptionMessage}"");");
-                    return true;
-                }
-
-                return false;
             }
 
             private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";

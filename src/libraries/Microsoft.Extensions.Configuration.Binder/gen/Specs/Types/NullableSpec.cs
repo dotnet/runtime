@@ -9,10 +9,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private readonly TypeSpec _underlyingType;
 
-        public NullableSpec(ITypeSymbol type, TypeSpec underlyingType) : base(type)
-        {
-            _underlyingType = underlyingType;
-        }
+        public NullableSpec(ITypeSymbol type, TypeSpec underlyingType) : base(type) => _underlyingType = underlyingType;
+
+        public override bool CanBindTo => _underlyingType.CanBindTo;
+
+        public override bool CanInstantiate => _underlyingType.CanInstantiate;
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Nullable;
 

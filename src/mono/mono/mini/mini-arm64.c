@@ -94,6 +94,13 @@ MONO_DISABLE_WARNING(4334)
 #define FP_TEMP_REG2 ARMREG_D17
 #define NEON_TMP_REG FP_TEMP_REG
 
+#define STPX_MIN_OFFSET (-512)
+#define STPX_MAX_OFFSET (504)
+#define STPW_MIN_OFFSET (-256)
+#define STPW_MAX_OFFSET (252)
+
+#define IS_VALID_STPX_OFFSET(o) ((o) >= STPX_MIN_OFFSET && (o) <= (STPX_MAX_OFFSET))
+
 #define THUNK_SIZE (4 * 4)
 
 /* The single step trampoline */
@@ -3546,8 +3553,16 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 		/* Load the destination address */
 		g_assert (loc && loc->opcode == OP_REGOFFSET);
 		code = emit_ldrx (code, ARMREG_LR, loc->inst_basereg, GTMREG_TO_INT (loc->inst_offset));
-		for (i = 0; i < cinfo->ret.nregs; ++i)
-			arm_strx (code, cinfo->ret.reg + i, ARMREG_LR, i * 8);
+		for (i = 0; i < cinfo->ret.nregs; ++i) {
+			int offs = i * 8;
+			// emit a pair of str as one stp
+			if (i+1 < cinfo->ret.nregs && IS_VALID_STPX_OFFSET (offs)) {
+				arm_stpx (code, cinfo->ret.reg + i, cinfo->ret.reg + i + 1, ARMREG_LR, offs);
+				i++;
+			} else {
+				arm_strx (code, cinfo->ret.reg + i, ARMREG_LR, offs);
+			}
+		}
 		break;
 	}
 	case ArgHFA: {
@@ -5677,7 +5692,13 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 			}
 			case ArgVtypeInIRegs:
 				for (part = 0; part < ainfo->nregs; part ++) {
-					code = emit_strx (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + (part * 8)));
+					int offs = GTMREG_TO_INT (ins->inst_offset + (part * 8));
+					if (part + 1 < ainfo->nregs && IS_VALID_STPX_OFFSET (offs)) {
+						arm_stpx (code, ainfo->reg + part, ainfo->reg + part + 1, ins->inst_basereg, offs);
+						part++;
+						continue;
+					}
+					code = emit_strx (code, ainfo->reg + part, ins->inst_basereg, offs);
 				}
 				break;
 			case ArgHFA:
@@ -5714,6 +5735,7 @@ emit_store_regarray (guint8 *code, guint64 regs, int basereg, int offset)
 
 	for (i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
+			// FIXME: use IS_VALID_STPX_OFFSET before doing STPX
 			if (i + 1 < 32 && (regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_stpx (code, i, i + 1, basereg, offset + (i * 8));
 				i++;
@@ -5742,9 +5764,9 @@ emit_load_regarray (guint8 *code, guint64 regs, int basereg, int offset)
 	for (i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
 			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
-				if (offset + (i * 8) < 500)
+				if (IS_VALID_STPX_OFFSET (offset + (i * 8))) {
 					arm_ldpx (code, i, i + 1, basereg, offset + (i * 8));
-				else {
+				} else {
 					code = emit_ldrx (code, i, basereg, offset + (i * 8));
 					code = emit_ldrx (code, i + 1, basereg, offset + ((i + 1) * 8));
 				}
@@ -5773,6 +5795,7 @@ emit_store_regset (guint8 *code, guint64 regs, int basereg, int offset)
 	pos = 0;
 	for (i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
+			// FIXME: check IS_VALID_STPX_OFFSET before doing STPX
 			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_stpx (code, i, i + 1, basereg, offset + (pos * 8));
 				i++;
@@ -5849,7 +5872,7 @@ emit_store_regset_cfa (MonoCompile *cfg, guint8 *code, guint64 regs, int basereg
 		nregs = 1;
 		if (regs & (1 << i)) {
 			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
-				if (offset < 256) {
+				if (IS_VALID_STPX_OFFSET (offset + (pos * 8))) {
 					arm_stpx (code, i, i + 1, basereg, offset + (pos * 8));
 				} else {
 					code = emit_strx (code, i, basereg, offset + (pos * 8));
@@ -6063,8 +6086,15 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	case ArgVtypeInIRegs: {
 		MonoInst *ins = cfg->ret;
 
-		for (i = 0; i < cinfo->ret.nregs; ++i)
-			code = emit_ldrx (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + (i * 8)));
+		for (i = 0; i < cinfo->ret.nregs; ++i) {
+			int offs = GTMREG_TO_INT (ins->inst_offset + (i * 8));
+			if (i + 1 < cinfo->ret.nregs && IS_VALID_STPX_OFFSET (offs)) {
+				arm_ldpx (code, cinfo->ret.reg + i, cinfo->ret.reg + i + 1, ins->inst_basereg, offs);
+				i++;
+			} else { 
+				code = emit_ldrx (code, cinfo->ret.reg + i, ins->inst_basereg, offs);
+			}
+		}
 		break;
 	}
 	case ArgHFA: {

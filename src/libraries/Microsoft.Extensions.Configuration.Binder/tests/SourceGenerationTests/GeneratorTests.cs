@@ -177,60 +177,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         [Fact]
-        public async Task BindCanParseMethodParam()
-        {
-            string source = """
-                using System;
-                using Microsoft.AspNetCore.Builder;
-                using Microsoft.Extensions.Configuration;
-                using Microsoft.Extensions.DependencyInjection;
-
-                public class Program
-                {
-                    public static void Main()
-                    {
-                        ConfigurationBuilder configurationBuilder = new();
-                        IConfiguration config = configurationBuilder.Build();
-
-                        BindOptions(config, new MyClass0());
-                        BindOptions(config, new MyClass1(), (_) => { });
-                        BindOptions(config, "", new MyClass2());
-                    }
-
-                    private void BindOptions(IConfiguration config, MyClass0 instance)
-                    {
-                        config.Bind(instance);
-                    }
-
-                    private void BindOptions(IConfiguration config, MyClass1 instance, Action<BinderOptions>? configureOptions)
-                    {
-                        config.Bind(instance, configureOptions);
-                    }
-
-                    private void BindOptions(IConfiguration config, string path, MyClass2 instance)
-                    {
-                        config.Bind(path, instance);
-                    }
-
-                    public class MyClass0 { }
-                    public class MyClass1 { }
-                    public class MyClass2 { }
-                }
-                """;
-
-            var (d, r) = await RunGenerator(source);
-            Assert.Single(r);
-
-            string generatedSource = string.Join('\n', r[0].SourceText.Lines.Select(x => x.ToString()));
-            Assert.Contains("public static void Bind_ProgramMyClass0(this IConfiguration configuration, object? instance)", generatedSource);
-            Assert.Contains("public static void Bind_ProgramMyClass1(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)", generatedSource);
-            Assert.Contains("public static void Bind_ProgramMyClass2(this IConfiguration configuration, string key, object? instance)", generatedSource);
-
-            Assert.Empty(d);
-        }
-
-        [Fact]
-        public async Task SucceedForMinimalInput()
+        public async Task SucceedWhenGivenMinimumRequiredReferences()
         {
             string source = """
                 using System;
@@ -337,8 +284,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             var (d, r) = await RunGenerator(source, references: GetAssemblyRefsWithAdditional(typeof(ImmutableArray<>), typeof(Encoding), typeof(JsonSerializer)));
             Assert.Single(r);
-            Assert.Equal(12, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
-            Assert.Equal(10, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
+            Assert.Equal(47, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+            Assert.Equal(44, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
         }
     }
 }

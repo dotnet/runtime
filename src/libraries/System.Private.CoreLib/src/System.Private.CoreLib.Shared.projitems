@@ -337,7 +337,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Nls.cs" />
@@ -434,7 +434,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\RangeByteSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\RangeCharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticCharSearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Latin1CharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SearchValues.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SearchValuesDebugView.cs" />
@@ -1306,7 +1305,7 @@
     <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Interop.CompareInfo.cs</Link>
     </Compile>
-     <Compile Include="$(CommonPath)Interop\Browser\Interop.Calendar.cs" Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Calendar.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Locale.cs" Condition="'$(TargetsBrowser)' == 'true'">

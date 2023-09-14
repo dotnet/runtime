@@ -4359,7 +4359,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
 
     LPCWSTR pEmptyString = W("");
-    SString moduleName = SString::Empty();
+    SString moduleName{ SString::Empty() };
 
     if(!bIsDynamicAssembly)
     {

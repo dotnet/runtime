@@ -131,7 +131,7 @@ NativeImage *NativeImage::Open(
         }
     }
 
-    SString path = componentModule->GetPath();
+    SString path{ componentModule->GetPath() };
     SString::Iterator lastPathSeparatorIter = path.End();
     size_t pathDirLength = 0;
     if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))

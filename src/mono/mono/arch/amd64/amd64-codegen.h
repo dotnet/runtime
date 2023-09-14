@@ -1581,4 +1581,6 @@ typedef union {
 #define amd64_prolog(inst,frame,reg_mask) amd64_prolog_size(inst,frame,reg_mask,8)
 #define amd64_epilog(inst,reg_mask) amd64_epilog_size(inst,reg_mask,8)
 
+#define amd64_pause(inst) do { x86_pause ((inst)); } while (0)
+
 #endif // AMD64_H

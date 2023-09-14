@@ -129,7 +129,7 @@ struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
     {                                                                             \
         s_GlobalEntries[currentGlobalPos] = { #Name, Name };                      \
         ++currentGlobalPos;                                                       \
-        ASSERT(currentGlobalPos <= GlobalEntriesArraySize)                        \
+        ASSERT(currentGlobalPos <= GlobalEntriesArraySize);                       \
     } while(0)                                                                    \
 
 extern "C" void PopulateDebugHeaders()

@@ -52,7 +52,7 @@ namespace System
         [RuntimeExport("GetSystemArrayEEType")]
         private static unsafe MethodTable* GetSystemArrayEEType()
         {
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
+            return MethodTable.Of<Array>();
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]

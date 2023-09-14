@@ -15,7 +15,12 @@ namespace Internal.Runtime
         internal static MethodTable* GetArrayEEType()
         {
 
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
+            return MethodTable.Of<Array>();
+        }
+
+        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
+        {
+            return mt1 == mt2;
         }
 #endif
     }
