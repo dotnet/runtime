@@ -226,72 +226,89 @@ namespace System.Data.Common
         public override void Set(int recordNo, object value)
         {
             Debug.Assert(null != value, "null value");
+
             if (_nullValue == value)
             {
                 _values[recordNo] = null;
+                return;
             }
-            else if (_dataType == typeof(object) || _dataType.IsInstanceOfType(value))
+
+            if (_dataType == typeof(object) || value.GetType() == typeof(object))
             {
                 _values[recordNo] = value;
+                return;
             }
-            else
+
+            if (_dataType == typeof(Guid) && value.GetType() == typeof(string))
             {
-                if (_dataType == typeof(Guid) && value is string)
+                _values[recordNo] = new Guid((string)value);
+                return;
+            }
+
+            if (_dataType == typeof(byte[]))
+            {
+                if (value.GetType() == typeof(bool))
                 {
-                    _values[recordNo] = new Guid((string)value);
+                    _values[recordNo] = BitConverter.GetBytes((bool)value);
+                    return;
                 }
-                else if (_dataType == typeof(byte[]))
+
+                if (value.GetType() == typeof(char))
                 {
-                    if (value is bool)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((bool)value);
-                    }
-                    else if (value is char)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((char)value);
-                    }
-                    else if (value is short)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((short)value);
-                    }
-                    else if (value is int)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((int)value);
-                    }
-                    else if (value is long)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((long)value);
-                    }
-                    else if (value is ushort)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((ushort)value);
-                    }
-                    else if (value is uint)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((uint)value);
-                    }
-                    else if (value is ulong)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((ulong)value);
-                    }
-                    else if (value is float)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((float)value);
-                    }
-                    else if (value is double)
-                    {
-                        _values[recordNo] = BitConverter.GetBytes((double)value);
-                    }
-                    else
-                    {
-                        throw ExceptionBuilder.StorageSetFailed();
-                    }
+                    _values[recordNo] = BitConverter.GetBytes((char)value);
+                    return;
                 }
-                else
+
+                if (value.GetType() == typeof(short))
                 {
-                    throw ExceptionBuilder.StorageSetFailed();
+                    _values[recordNo] = BitConverter.GetBytes((short)value);
+                    return;
+                }
+
+                if (value.GetType() == typeof(int))
+                {
+                    _values[recordNo] = BitConverter.GetBytes((int)value);
+                    return;
+                }
+
+                if (value.GetType() == typeof(long))
+                {
+                    _values[recordNo] = BitConverter.GetBytes((long)value);
+                    return;
+                }
+
+                if (value.GetType() == typeof(ushort))
+                {
+                    _values[recordNo] = BitConverter.GetBytes((ushort)value);
+                    return;
+                }
+
+                if (value.GetType() == typeof(uint))
+                {
+                    _values[recordNo] = BitConverter.GetBytes((uint)value);
+                    return;
+                }
+
+                if (value.GetType() == typeof(ulong))
+                {
+                    _values[recordNo] = BitConverter.GetBytes((ulong)value);
+                    return;
+                }
+
+                if (value.GetType() == typeof(float))
+                {
+                    _values[recordNo] = BitConverter.GetBytes((float)value);
+                    return;
+                }
+
+                if (value.GetType() == typeof(double))
+                {
+                    _values[recordNo] = BitConverter.GetBytes((double)value);
+                    return;
                 }
             }
+
+            throw ExceptionBuilder.StorageSetFailed();
         }
 
         public override void SetCapacity(int capacity)
