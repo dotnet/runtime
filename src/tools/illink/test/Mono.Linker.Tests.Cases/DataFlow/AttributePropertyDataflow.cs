@@ -26,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
 			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+			RecursivePropertyDataFlow.Test ();
 		}
 
 		[Kept]
@@ -116,6 +117,41 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[field: Kept]
 			[Kept]
 			public Type[] Types { get; [Kept] set; }
+		}
+
+		[Kept]
+		class RecursivePropertyDataFlow
+		{
+			[Kept]
+			[KeptBaseType (typeof (Attribute))]
+			class AttributePropertyRequiresPropertiesAttribute : Attribute
+			{
+				[Kept]
+				public AttributePropertyRequiresPropertiesAttribute ()
+				{
+				}
+
+				[Kept]
+				[field: Kept]
+				[KeptAttributeAttribute (typeof (AttributePropertyRequiresPropertiesAttribute))]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[ExpectedWarning ("IL2111", nameof (AttributePropertyRequiresPropertiesAttribute) + "." + nameof (RequiresPublicProperties), ProducedBy = Tool.Trimmer)]
+				[AttributePropertyRequiresProperties (RequiresPublicProperties = typeof (AttributePropertyRequiresPropertiesAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+				public Type RequiresPublicProperties {
+					[Kept]
+					get;
+					[Kept]
+					set;
+				}
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (AttributePropertyRequiresPropertiesAttribute))]
+			[AttributePropertyRequiresProperties (RequiresPublicProperties = typeof (int))]
+			public static void Test ()
+			{
+			}
 		}
 	}
 }
