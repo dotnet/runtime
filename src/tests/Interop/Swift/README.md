@@ -14,6 +14,8 @@ Swift's default function types are `thick` meaning they have an optional context
 
 Swift uses mangling for generating unique names. This process can change in different major versions (i.e. Swift 4 vs Swift 5). The Swift compiler puts mangled names in binary images to encode type references for runtime instantiation and reflection. In a binary, these mangled names may contain pointers to runtime data structures to represent locally-defined types more efficiently. When calling in from .NET, it is necessary to mangle the name during the runtime or AOT compilation.
 
+In order to simplify the testing we can use mangled name as the entry point. This provides a number of advantages, specifically for functions that have name overlap (i.e. functions with the same name that return different types) for which we cannot disambiguate from C#. The `Binding Tools for Swift` reads the dylib, pulls the public symbols and demangles them.
+
 ## Memory management
 
 In Swift, memory management is handled by [Automatic Reference Counting](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/automaticreferencecounting/).
@@ -24,16 +26,15 @@ Interop should handle various types when calling from .NET, including blittable 
 
 Reference: https://github.com/xamarin/binding-tools-for-swift/blob/main/docs/ValueTypeModeling.md
 
+Initially, we should focus on blittable types. Later, we may introduce support for other non-blittable types.
+
 ## Flow for invoking a Swift function from .NET
 
 Here's the planned flow for invoking a Swift function from .NET if a developer uses a direct P/Invoke and demangled name:
-1. A function name should be mangled during runtime or AOT compilation to resolve the entry point. This is necessary for Swift interop but not needed otherwise, as it may slow down the compiler.
-    - How to mangle name efficiently? 
-    - How to detect the Swift Interop?
+1. A function name should be mangled using the `Binding Tools for Swift` due to limitations for functions that have name overlap. Alternative option is to mangle entry points during the runtime or AOT compilation. In this case, it may slow down the compiler for non-Swift interops and have limitations for functions that have name overlap.
 2. Function parameters should be automatically marshalled without any wrappers.
-    - Which types are not supported for automatic marshalling?
-3. A thunk should be emitted to handle a different calling convention, especially for instance functions and for functions with error handling.
-    - Implement calling convention using thunks to handle errors, self, etc.
+3. A thunk should be emitted to handle the different calling convention, especially for instance functions and functions with error handling.
+    - Implement calling convention using thunks to handle self, errors, etc.
     - Is it possible to test instance functions with P/Invoke or COM Interop is required?
 4. The result should be retrieved from the register or stack or indirectly.
 5. Error registers should be checked and if set, an error should be thrown.
