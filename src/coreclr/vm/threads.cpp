@@ -369,7 +369,7 @@ void SetThread(Thread* t)
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
-        EnsureTlsDestructionMonitor();
+        EnsureTlsDestructionMonitor(t);
     }
 }
 

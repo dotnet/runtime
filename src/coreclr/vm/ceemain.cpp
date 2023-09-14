@@ -1720,47 +1720,62 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
 struct TlsDestructionMonitor
 {
-    bool m_activated = false;
+    SIZE_T m_activatedOrThreadId = 0;
 
-    void Activate()
+    void Activate(Thread *thread)
     {
-        m_activated = true;
+#ifdef TARGET_UNIX
+        // The thread ID is checked in the destructor
+        m_activatedOrThreadId = thread->GetOSThreadId64();
+#else // !TARGET_UNIX
+        m_activatedOrThreadId = 1;
+#endif // TARGET_UNIX
     }
 
     void Deactivate()
     {
-        m_activated = false;
+        m_activatedOrThreadId = 0;
     }
 
     ~TlsDestructionMonitor()
     {
-        if (m_activated)
+        if (m_activatedOrThreadId == 0)
         {
-            Thread* thread = GetThreadNULLOk();
-            if (thread)
-            {
-#ifdef FEATURE_COMINTEROP
-                // reset the CoInitialize state
-                // so we don't call CoUninitialize during thread detach
-                thread->ResetCoInitialized();
-#endif // FEATURE_COMINTEROP
-                // For case where thread calls ExitThread directly, we need to reset the
-                // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-                // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-                if (thread->m_pFrame != FRAME_TOP)
-                {
-#ifdef _DEBUG
-                    thread->m_GCOnTransitionsOK = FALSE;
-#endif
-                    GCX_COOP_NO_DTOR();
-                    thread->m_pFrame = FRAME_TOP;
-                    GCX_COOP_NO_DTOR_END();
-                }
-                thread->DetachThread(TRUE);
-            }
-
-            ThreadDetaching();
+            return;
         }
+
+#ifdef TARGET_UNIX
+        // Some Linux toolset versions call thread-local destructors during shutdown on a wrong thread.
+        if (PAL_GetCurrentOSThreadId() != m_activatedOrThreadId)
+        {
+            return;
+        }
+#endif // TARGET_UNIX
+
+        Thread* thread = GetThreadNULLOk();
+        if (thread)
+        {
+#ifdef FEATURE_COMINTEROP
+            // reset the CoInitialize state
+            // so we don't call CoUninitialize during thread detach
+            thread->ResetCoInitialized();
+#endif // FEATURE_COMINTEROP
+            // For case where thread calls ExitThread directly, we need to reset the
+            // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+            // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+            if (thread->m_pFrame != FRAME_TOP)
+            {
+#ifdef _DEBUG
+                thread->m_GCOnTransitionsOK = FALSE;
+#endif
+                GCX_COOP_NO_DTOR();
+                thread->m_pFrame = FRAME_TOP;
+                GCX_COOP_NO_DTOR_END();
+            }
+            thread->DetachThread(TRUE);
+        }
+
+        ThreadDetaching();
     }
 };
 
@@ -1768,9 +1783,9 @@ struct TlsDestructionMonitor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
 
-void EnsureTlsDestructionMonitor()
+void EnsureTlsDestructionMonitor(Thread *thread)
 {
-    tls_destructionMonitor.Activate();
+    tls_destructionMonitor.Activate(thread);
 }
 
 void DeactivateTlsDestructionMonitor()

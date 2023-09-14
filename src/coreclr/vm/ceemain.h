@@ -17,6 +17,7 @@
 #include <windef.h> // for HFILE, HANDLE, HMODULE
 
 class EEDbgInterfaceImpl;
+class Thread;
 
 // Ensure the EE is started up.
 HRESULT EnsureEEStarted();
@@ -45,7 +46,7 @@ void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownCom
 // Notification of a DLL_THREAD_DETACH or a Thread Terminate.
 void ThreadDetaching();
 
-void EnsureTlsDestructionMonitor();
+void EnsureTlsDestructionMonitor(Thread *thread);
 void DeactivateTlsDestructionMonitor();
 
 void SetLatchedExitCode (INT32 code);
