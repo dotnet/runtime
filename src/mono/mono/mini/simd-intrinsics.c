@@ -18,7 +18,7 @@
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-hwcap.h>
-#include "named-intrinsic.h"
+#include "cross-platform-intrinsics.h"
 
 #if defined (MONO_ARCH_SIMD_INTRINSICS)
 
