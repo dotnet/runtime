@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             var typedObj = (TypeWithNoMembers_Wrapper)instance;
-            BindCore(configuration, ref typedObj, false, binderOptions: null);
+            BindCore(configuration, ref typedObj, defaultValueIfNotFound: false, binderOptions: null);
         }
         #endregion IConfiguration extensions.
 
