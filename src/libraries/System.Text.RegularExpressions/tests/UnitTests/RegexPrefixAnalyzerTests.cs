@@ -74,8 +74,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("abc|def", new[] { "abc", "def" })]
         [InlineData("abc|def|(ghi|jklm)", new[] { "abc", "def", "ghi", "jklm" })]
         [InlineData("abc[def]ghi", new[] { "abcdghi", "abceghi", "abcfghi" })]
-        [InlineData("abc[def]ghi|[jkl]", new[] { "abcdghi", "abceghi", "abcfghi", "j", "k", "l" })]
-        [InlineData("abcdefg|h", new[] { "abcdefg", "h" })]
+        [InlineData("abc[def]ghi|[jkl]m", new[] { "abcdghi", "abceghi", "abcfghi", "jm", "km", "lm" })]
         [InlineData("agggtaaa|tttaccct", new[] { "agggtaaa", "tttaccct" })]
         [InlineData("[cgt]gggtaaa|tttaccc[acg]", new[] { "cgggtaaa", "ggggtaaa", "tgggtaaa", "tttaccca", "tttacccc", "tttacccg" })]
         [InlineData("a[act]ggtaaa|tttacc[agt]t", new[] { "aaggtaaa", "acggtaaa", "atggtaaa", "tttaccat", "tttaccgt", "tttacctt" })]
@@ -83,6 +82,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("agg[act]taaa|ttta[agt]cct", new[] { "aggataaa", "aggctaaa", "aggttaaa", "tttaacct", "tttagcct", "tttatcct" })]
         [InlineData("\b(abc|def)\b", new[] { "abc", "def" })]
         [InlineData("^(abc|def)$", new[] { "abc", "def" })]
+        [InlineData("abcdefg|h", null)]
+        [InlineData("abc[def]ghi|[jkl]", null)]
         public void FindPrefixes(string pattern, string[] expectedSet)
         {
             RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, CultureInfo.InvariantCulture);

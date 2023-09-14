@@ -142,7 +142,7 @@ namespace System.Text.RegularExpressions
             // If there are multiple leading strings, we can search for any of them.
             if (compiled)
             {
-                if (RegexPrefixAnalyzer.FindPrefixes(root) is { Length: > 1 and < 8 } prefixes)
+                if (RegexPrefixAnalyzer.FindPrefixes(root) is { Length: > 1 } prefixes)
                 {
                     LeadingPrefixes = prefixes;
                     FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
