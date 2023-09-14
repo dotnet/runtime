@@ -327,19 +327,38 @@ bool CodeGen::genInstrWithConstant(instruction ins,
             break;
 
         case INS_strb:
+            assert(size == EA_1BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_1BYTE);
+            break;
+
         case INS_strh:
+            assert(size == EA_2BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_2BYTE);
+            break;
+
         case INS_str:
             // reg1 is a source register for store instructions
             assert(tmpReg != reg1); // regTmp can not match any source register
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
-        case INS_ldrsb:
-        case INS_ldrsh:
-        case INS_ldrsw:
         case INS_ldrb:
+        case INS_ldrsb:
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_1BYTE);
+            break;
+
         case INS_ldrh:
+        case INS_ldrsh:
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_2BYTE);
+            break;
+
+        case INS_ldrsw:
+            assert(size == EA_4BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_4BYTE);
+            break;
+
         case INS_ldr:
+            assert((size == EA_4BYTE) || (size == EA_8BYTE) || (size == EA_16BYTE));
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 

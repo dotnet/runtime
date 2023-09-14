@@ -480,8 +480,8 @@ Foundation, Inc., Hewlett-Packard Company, Microsoft, nor Digital
 Equipment Corporation makes any representations about the
 suitability of this software for any purpose."
 
-License notice for The LLVM Compiler Infrastructure
----------------------------------------------------
+License notice for The LLVM Compiler Infrastructure (Legacy License)
+--------------------------------------------------------------------
 
 Developed by:
 
@@ -986,8 +986,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-License for remote stack unwind (https://github.com/llvm/llvm-project/blob/main/lldb/source/Symbol/CompactUnwindInfo.cpp)
---------------------------------------
+License notice for The LLVM Project
+-----------------------------------
 
 Copyright 2019 LLVM Project
 
