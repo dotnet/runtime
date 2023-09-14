@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, CrossGenTest -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>exe</OutputType>
     <!-- Disabled for GCStress due to test failure tracked by https://github.com/dotnet/runtime/issues/58699 -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>

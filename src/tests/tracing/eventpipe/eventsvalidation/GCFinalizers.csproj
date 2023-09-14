@@ -3,7 +3,6 @@
     <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
