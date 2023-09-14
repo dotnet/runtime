@@ -297,6 +297,10 @@ static void UninitDLL()
 Thread* g_threadPerformingShutdown = NULL;
 #endif
 
+#if defined(_WIN32) && defined(FEATURE_PERFTRACING)
+bool g_safeToShutdownTracing;
+#endif
+
 static void __cdecl OnProcessExit()
 {
 #ifdef _WIN32
@@ -309,8 +313,16 @@ static void __cdecl OnProcessExit()
 #endif
 
 #ifdef FEATURE_PERFTRACING
-    EventPipe_Shutdown();
-    DiagnosticServer_Shutdown();
+#ifdef _WIN32
+    // We forgo shutting down event pipe if it wouldn't be safe and could lead to a hang.
+    // If there was an active trace session, the trace will likely be corrupted without
+    // orderly shutdown. See https://github.com/dotnet/runtime/issues/89346.
+    if (g_safeToShutdownTracing)
+#endif
+    {
+        EventPipe_Shutdown();
+        DiagnosticServer_Shutdown();
+    }
 #endif
 }
 
@@ -348,13 +360,17 @@ void RuntimeThreadShutdown(void* thread)
 #endif
 }
 
-extern "C" bool RhInitialize()
+extern "C" bool RhInitialize(bool isDll)
 {
     if (!PalInit())
         return false;
 
 #if defined(_WIN32) || defined(FEATURE_PERFTRACING)
     atexit(&OnProcessExit);
+#endif
+
+#if defined(_WIN32) && defined(FEATURE_PERFTRACING)
+    g_safeToShutdownTracing = !isDll;
 #endif
 
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
