@@ -7705,6 +7705,11 @@ void Lowering::LowerMultiregParams()
             continue;
         }
 
+        if (cur->isContained())
+        {
+            continue;
+        }
+
         GenTreeLclFld* fld = cur->AsLclFld();
         if (!varTypeIsIntegralOrI(fld))
         {
@@ -7761,8 +7766,25 @@ void Lowering::LowerMultiregParams()
 
             if (varTypeIsSmall(fld))
             {
-                newNode = comp->gtNewCastNode(genActualType(fld), newNode, false, fld->TypeGet());
-                firstBBRange.InsertBefore(fld, newNode);
+                // Hacky: compares on XARCH are special and do not need the cast (and can assert if we insert it here).
+                GenTree* user = fldUse.User();
+                bool isSmallCmp = false;
+#ifdef TARGET_XARCH
+                if (user->OperIsCompare() || user->OperIs(GT_CMP, GT_TEST))
+                {
+                    if (user->gtGetOp1()->TypeGet() == user->gtGetOp2()->TypeGet())
+                    {
+                        isSmallCmp = true;
+                        newNode->gtType = fld->TypeGet();
+                    }
+                }
+#endif
+
+                if (!isSmallCmp)
+                {
+                    newNode = comp->gtNewCastNode(genActualType(fld), newNode, false, fld->TypeGet());
+                    firstBBRange.InsertBefore(fld, newNode);
+                }
             }
 
             fldUse.ReplaceWith(newNode);
