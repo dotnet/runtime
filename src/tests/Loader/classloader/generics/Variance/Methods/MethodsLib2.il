@@ -11,7 +11,7 @@
            83 95 73 F7 )                                     // ..s.
   .ver 2:0:3600:0
 }
-.assembly Lib2
+.assembly MethodsLib2
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -22,7 +22,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Lib2.dll
 // MVID: {90D94B96-3C0E-4A14-8E27-8AD41717FB3D}
 .imagebase 0x00400000
 .file alignment 0x00000200
