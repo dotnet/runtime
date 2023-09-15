@@ -7,28 +7,17 @@ using System.Text;
 
 namespace ConsoleApplication3
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        public static void Main()
         {
-	    try{
-	            Repro<Program>(null);
-	    }
-	    catch (Exception e)
-	    {
-		Console.WriteLine(e.Message);
-		Console.WriteLine("FAIL");
-		return 99;
-	    }
-	    Console.WriteLine("PASS");
-	    return 100;
+            Repro<Program>(null);
         }
 
         static void Repro<T>(B<T> b)
             where T : Program
         {
         }
-
     }
 
     class A<T> { }

@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-class SelfRecursiveGenerics
+public class SelfRecursiveGenerics
 {
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -13,7 +13,7 @@ class SelfRecursiveGenerics
     {
         Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsAutoNonLoadable<int, byte>());
     }
-    static int Main()
+    public static void Main()
     {
         Console.WriteLine(new SelfReferentialStructWithNoFieldsAuto());
         Console.WriteLine(new SelfReferentialStructWithNoFieldsSequential());
@@ -39,8 +39,6 @@ class SelfRecursiveGenerics
         {
             Console.WriteLine("Hit TLE" + tle.ToString());
         }
-
-        return 100;
     }
 
     public class Container<T> {

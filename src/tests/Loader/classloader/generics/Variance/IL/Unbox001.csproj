@@ -8,6 +8,6 @@
     <Compile Include="Unbox001.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Lib.ilproj" />
+    <ProjectReference Include="ILLib.ilproj" />
   </ItemGroup>
 </Project>

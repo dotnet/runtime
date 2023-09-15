@@ -10,7 +10,7 @@
            18 FF 1F D7 ) 
   .ver 2:0:3600:0
 }
-.assembly Lib
+.assembly DelegatesLib
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -21,7 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Lib.exe
 // MVID: {75BA810B-D357-475C-83C1-8C098D3CB2C3}
 .imagebase 0x00400000
 .file alignment 0x00000200

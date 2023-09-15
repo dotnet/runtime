@@ -9,21 +9,19 @@ using System;
 
 public class GenType1<T>
 {
-	static readonly int s_i = 0;
+    static readonly int s_i = 0;
 
-	public static bool foo()
-	{
-		return s_i == 0;
-	}
-	
+    public static bool foo()
+    {
+        return s_i == 0;
+    }
+    
 }
 
 public class Test_b448208
 {
-	public static int Main()
-	{
-		GenType1<int>.foo();
-		Console.WriteLine("PASS");
-		return 100;
-	}
+    public static void Main()
+    {
+        GenType1<int>.foo();
+    }
 }

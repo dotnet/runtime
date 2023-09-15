@@ -3,6 +3,6 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Lib.il" />
+    <Compile Include="InterfacesLib.il" />
   </ItemGroup>
 </Project>

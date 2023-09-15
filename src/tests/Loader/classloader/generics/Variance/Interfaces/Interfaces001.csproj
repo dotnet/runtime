@@ -8,6 +8,6 @@
     <Compile Include="Interfaces001.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Lib.ilproj" />
+    <ProjectReference Include="InterfacesLib.ilproj" />
   </ItemGroup>
 </Project>

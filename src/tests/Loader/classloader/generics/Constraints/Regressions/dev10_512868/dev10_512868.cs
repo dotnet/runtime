@@ -83,14 +83,13 @@ public abstract class InternalContainerServices<TContainer, TItem> : ExternalCon
     }
 }
 
-class Test
+public class Test
 {
-    static int Main()
+    public static void Main()
     {
         ItemX treeItem = new ItemX();
 
-        Console.WriteLine("Pass");
-        return 100;
+        Console.WriteLine("Item: {0}", treeItem);
     }
 }
 

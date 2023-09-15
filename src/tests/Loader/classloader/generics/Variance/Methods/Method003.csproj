@@ -8,6 +8,6 @@
     <Compile Include="Method003.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Lib2.ilproj" />
+    <ProjectReference Include="MethodsLib2.ilproj" />
   </ItemGroup>
 </Project>

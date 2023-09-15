@@ -8,6 +8,6 @@
     <Compile Include="IsInst004.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Lib.ilproj" />
+    <ProjectReference Include="ILLib.ilproj" />
   </ItemGroup>
 </Project>
