@@ -129,17 +129,12 @@
 
   <!-- Properties used by runsettings.targets -->
   <PropertyGroup>
-    <_withoutCategories>$(_withoutCategories);failing</_withoutCategories>
     <RunSettingsDotNetHostPath>$(DotNetTool)</RunSettingsDotNetHostPath>
     <RunSettingsTestCaseFilter>$(TestCaseFilter)</RunSettingsTestCaseFilter>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets"
           Condition="'$(IsTestProject)' == 'true' and '$(ContinuousIntegrationBuild)' != 'true'" />
-
-  <!-- GenerateRunSettingsFile target depends on SetupCoverageFilter. These tests don't actually care to enable coverage / determine filters,
-       so just create an empty target -->
-  <Target Name="SetupCoverageFilter" />
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>
