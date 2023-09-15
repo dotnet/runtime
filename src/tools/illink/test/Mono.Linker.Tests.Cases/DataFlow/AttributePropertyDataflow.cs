@@ -64,7 +64,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[Kept]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--",
+				// https://github.com/dotnet/runtime/issues/92131
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
 			static bool field;
 
@@ -90,7 +92,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[field: Kept]
 			[Kept]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--",
+				// https://github.com/dotnet/runtime/issues/92131
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
 			static bool Property { get; [Kept] set; }
 
@@ -118,8 +122,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)] // Duplicate warnings from events!
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--",
+				// https://github.com/dotnet/runtime/issues/92131
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--",
+				// Trimmer can produce duplicate warnings for events https://github.com/dotnet/runtime/issues/83581
+				ProducedBy = Tool.Trimmer)]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
 			static event EventHandler Event;
 
