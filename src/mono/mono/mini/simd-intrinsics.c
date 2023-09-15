@@ -367,24 +367,6 @@ support_probe_complete:
 	return custom_emit (cfg, fsig, args, klass, intrin_group, info, id, arg0_type, is_64bit);
 }
 
-static MonoInst *
-emit_vector_create_elementwise (
-	MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *vtype,
-	MonoTypeEnum type, MonoInst **args)
-{
-	int op = type_to_insert_op (type);
-	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
-	MonoInst *ins = emit_xzero (cfg, vklass);
-	for (int i = 0; i < fsig->param_count; ++i) {
-		if (!is_zero_const (args [i])) {
-			ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
-			ins->inst_c0 = i;
-			ins->inst_c1 = type;
-		}
-	}
-	return ins;
-}
-
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 static guint16 sri_vector_methods [] = {
