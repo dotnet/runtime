@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 
 interface IType<T0>
@@ -44,7 +45,8 @@ struct VType3<T0> : IType<VType3<int>>
 
 public class Program
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         RType2<int> rtype2      = new RType2<int>();                // type loads
         RType3<DateTime> rtype3 = new RType3<DateTime>();           // type loads

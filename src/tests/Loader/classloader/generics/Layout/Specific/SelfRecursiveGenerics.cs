@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class SelfRecursiveGenerics
 {
@@ -13,7 +14,8 @@ public class SelfRecursiveGenerics
     {
         Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsAutoNonLoadable<int, byte>());
     }
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine(new SelfReferentialStructWithNoFieldsAuto());
         Console.WriteLine(new SelfReferentialStructWithNoFieldsSequential());

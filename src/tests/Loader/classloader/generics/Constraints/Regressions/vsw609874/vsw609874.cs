@@ -4,12 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace ConsoleApplication3
 {
     public class Program
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Repro<Program>(null);
         }

@@ -7,6 +7,7 @@
 // constraint and the child has recursion in inheritance.
 
 using System;
+using Xunit;
 
 public class Test1
 {
@@ -100,7 +101,8 @@ public class RunTests
 
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         pass = true;
 

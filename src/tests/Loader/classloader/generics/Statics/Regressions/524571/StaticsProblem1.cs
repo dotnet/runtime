@@ -46,7 +46,8 @@ public class SystemMap<a>
 
 public class Test
 {
-    public static void Main() 
+    [Fact]
+    public static void TestEntryPoint() 
     { 
         Console.WriteLine("-------------------------------------------------------------------");
             SystemMap<string> y1 = new SystemMap<string> ("S");

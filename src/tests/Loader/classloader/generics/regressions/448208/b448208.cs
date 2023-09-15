@@ -6,6 +6,7 @@
 
 
 using System;
+using Xunit;
 
 public class GenType1<T>
 {
@@ -20,7 +21,8 @@ public class GenType1<T>
 
 public class Test_b448208
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         GenType1<int>.foo();
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class C { }
 
@@ -27,7 +28,8 @@ public class cs1
 {
     public int m_i;
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
 #if ADD_STRUCT_CONSTRAINT
         GenType<S> g = new GenType<S>();

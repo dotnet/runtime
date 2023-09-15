@@ -144,7 +144,7 @@ public class Test8
 }
 
 
-class RecursiveConstraints
+public class RecursiveConstraints
 {
     static bool pass;
 
@@ -167,7 +167,8 @@ class RecursiveConstraints
         }
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         pass = true;
 

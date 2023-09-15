@@ -5,10 +5,12 @@
 // we were getting an assert failure due to using non-ASCII characters.
 
 using System;
+using Xunit;
 
 public class Test
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Hello<string> mystr = new Hello<string>("PASS");
 

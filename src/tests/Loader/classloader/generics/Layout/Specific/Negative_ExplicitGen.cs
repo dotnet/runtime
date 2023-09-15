@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit)]
 public class Gen1<T>
@@ -72,7 +73,7 @@ public class Gen7<T>
     [FieldOffset(0)] public T t;    
 }
 
-class Test
+public class Test
 {
     public static void goGen1()
     {
@@ -130,7 +131,8 @@ class Test
         Console.WriteLine("Gen7: FAIL");
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = true;
 

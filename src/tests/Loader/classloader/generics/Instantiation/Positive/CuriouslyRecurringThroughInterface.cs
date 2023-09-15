@@ -1,4 +1,5 @@
 using System;
+using Xunit;
 
 namespace CuriouslyRecurringPatternThroughInterface
 {
@@ -15,7 +16,8 @@ namespace CuriouslyRecurringPatternThroughInterface
     public class Program
     {
         static object _o;
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             // Test that the a generic using a variant of the curiously recurring pattern involving an interface can be loaded.
             _o = typeof(CuriouslyRecurringThroughInterface<int>);

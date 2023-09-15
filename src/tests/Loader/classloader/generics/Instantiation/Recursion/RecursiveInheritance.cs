@@ -7,6 +7,7 @@
 // see REAMDE2.txt for more info.
 
 using System;
+using Xunit;
 
 
 
@@ -7345,7 +7346,8 @@ public class Test999
 
 public class Test_RecursiveInheritance
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Test770.Test_RecursiveInheritance();
         Test771.Test_RecursiveInheritance();

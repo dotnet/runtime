@@ -54,7 +54,8 @@ public class SystemMap<a>
 
 public class Test
 {
-    public static void Main() 
+    [Fact]
+    public static void TestEntryPoint() 
     { 
         Console.WriteLine("-------------------------------------------------------------------");
         SystemMap<Int32>  y1 = new SystemMap<Int32> (5);
