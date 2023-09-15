@@ -382,7 +382,7 @@ inline COUNT_T SBuffer::GetAllocation() const
     RETURN m_allocation;
 }
 
-inline void SBuffer::Preallocate(COUNT_T allocation) const
+inline void SBuffer::Preallocate(COUNT_T allocation)
 {
     CONTRACT_VOID
     {
@@ -396,12 +396,12 @@ inline void SBuffer::Preallocate(COUNT_T allocation) const
     CONTRACT_END;
 
     if (allocation > m_allocation)
-        const_cast<SBuffer *>(this)->ReallocateBuffer(allocation, PRESERVE);
+        ReallocateBuffer(allocation, PRESERVE);
 
     RETURN;
 }
 
-inline void SBuffer::Trim() const
+inline void SBuffer::Trim()
 {
     CONTRACT_VOID
     {
@@ -412,7 +412,7 @@ inline void SBuffer::Trim() const
     CONTRACT_END;
 
     if (!IsImmutable())
-        const_cast<SBuffer *>(this)->ReallocateBuffer(m_size, PRESERVE);
+        ReallocateBuffer(m_size, PRESERVE);
 
     RETURN;
 }

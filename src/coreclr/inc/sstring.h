@@ -302,10 +302,10 @@ private:
     void Replace(const Iterator &i, COUNT_T length, const SString &s);
 
     // Make sure that string buffer has room to grow
-    void Preallocate(COUNT_T characters) const;
+    void Preallocate(COUNT_T characters);
 
     // Shrink buffer size as much as possible (reallocate if necessary.)
-    void Trim() const;
+    void Trim();
 
     // ------------------------------------------------------------------
     // Iterators:

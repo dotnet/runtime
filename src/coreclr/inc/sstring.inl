@@ -1097,7 +1097,7 @@ inline void SString::Delete(const Iterator &i, COUNT_T length)
 }
 
 // Preallocate some space for the string buffer
-inline void SString::Preallocate(COUNT_T characters) const
+inline void SString::Preallocate(COUNT_T characters)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1106,14 +1106,14 @@ inline void SString::Preallocate(COUNT_T characters) const
 }
 
 // Trim unused space from the buffer
-inline void SString::Trim() const
+inline void SString::Trim()
 {
     WRAPPER_NO_CONTRACT;
 
     if (GetRawCount() == 0)
     {
         // Share the global empty string buffer.
-        const_cast<SString *>(this)->SBuffer::SetImmutable(s_EmptyBuffer, sizeof(s_EmptyBuffer));
+        SBuffer::SetImmutable(s_EmptyBuffer, sizeof(s_EmptyBuffer));
     }
     else
     {
