@@ -233,7 +233,7 @@ namespace System.Data.Common
                 return;
             }
 
-            if (_dataType == typeof(object) || value.GetType() == typeof(object))
+            if (_dataType == typeof(object) || _dataType.IsInstanceOfType(value))
             {
                 _values[recordNo] = value;
                 return;
