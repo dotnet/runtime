@@ -46,37 +46,22 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         #endregion IServiceCollection extensions.
 
         #region OptionsBuilder<T> extensions.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+
+        [Fact]
         public async Task Configure_T() =>
-            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Configure_T.generated.txt"), GetConfigureSource("section"));
+            await VerifyAgainstBaselineUsingFile("Configure_T.generated.txt", GetConfigureSource("section"), extType: ExtensionClassType.ServiceCollection);
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
-        public async Task Configure_T_NetFwk() =>
-            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Configure_T.generated.txt"), GetConfigureSource("section"));
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         public async Task Configure_T_name() =>
-            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Configure_T_name.generated.txt"), GetConfigureSource(@""""", section"));
+            await VerifyAgainstBaselineUsingFile("Configure_T_name.generated.txt", GetConfigureSource(@""""", section"), extType: ExtensionClassType.ServiceCollection);
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
-        public async Task Configure_T_name_NetFwk() =>
-            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Configure_T_name.generated.txt"), GetConfigureSource(@""""", section"));
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         public async Task Configure_T_BinderOptions() =>
-            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Configure_T_BinderOptions.generated.txt"), GetConfigureSource("section, _ => { }"));
+            await VerifyAgainstBaselineUsingFile("Configure_T_BinderOptions.generated.txt", GetConfigureSource("section, _ => { }"), extType: ExtensionClassType.ServiceCollection);
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
-        public async Task Configure_T_BinderOptions_NetFwk() =>
-            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Configure_T_BinderOptions.generated.txt"), GetConfigureSource("section, _ => { }"));
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         public async Task Configure_T_name_BinderOptions() =>
-            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Configure_T_name_BinderOptions.generated.txt"), GetConfigureSource(@""""", section, _ => { }"));
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
-        public async Task Configure_T_name_BinderOptions_NetFwk() =>
-            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Configure_T_name_BinderOptions.generated.txt"), GetConfigureSource(@""""", section, _ => { }"));
+            await VerifyAgainstBaselineUsingFile("Configure_T_name_BinderOptions.generated.txt", GetConfigureSource(@""""", section, _ => { }"), extType: ExtensionClassType.ServiceCollection);
 
         private string GetBindSource(string? configureActions = null) => $$"""
             using System.Collections.Generic;
@@ -105,28 +90,16 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
             """;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         public async Task Bind_T()
         {
-            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Bind_T.generated.txt"), GetBindSource());
+            await VerifyAgainstBaselineUsingFile("Bind_T.generated.txt", GetBindSource(), extType: ExtensionClassType.OptionsBuilder);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
-        public async Task Bind_T_NetFwk()
-        {
-            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Bind_T.generated.txt"), GetBindSource());
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         public async Task Bind_T_BinderOptions()
         {
-            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "Bind_T_BinderOptions.generated.txt"), GetBindSource(", _ => { }"));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
-        public async Task Bind_T_BinderOptions_NetFwk()
-        {
-            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "Bind_T_BinderOptions.generated.txt"), GetBindSource(", _ => { }"));
+            await VerifyAgainstBaselineUsingFile("Bind_T_BinderOptions.generated.txt", GetBindSource(", _ => { }"), extType: ExtensionClassType.OptionsBuilder);
         }
 
         string GetBindConfigurationSource(string? configureActions = null) => $$"""
@@ -153,18 +126,35 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         public async Task BindConfiguration()
         {
-            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "BindConfiguration.generated.txt"), GetBindConfigurationSource());
-            await VerifyAgainstBaselineUsingFile(Path.Combine("netcoreapp", "BindConfiguration.generated.txt"), GetBindConfigurationSource(@", _ => { }"));
-        }
+            string GetSource(string? configureActions = null) => $$"""
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.DependencyInjection;
+                using Microsoft.Extensions.Options;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
-        public async Task BindConfigurationNetFwk()
-        {
-            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "BindConfiguration.generated.txt"), GetBindConfigurationSource());
-            await VerifyAgainstBaselineUsingFile(Path.Combine("net462", "BindConfiguration.generated.txt"), GetBindConfigurationSource(@", _ => { }"));
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        var services = new ServiceCollection();
+                        OptionsBuilder<MyClass> optionsBuilder = new(services, Options.DefaultName);
+                        optionsBuilder.BindConfiguration(""{{configureActions}});
+                    }
+
+                    public class MyClass
+                    {
+                        public string MyString { get; set; }
+                        public int MyInt { get; set; }
+                        public List<int> MyList { get; set; }
+                    }
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile("BindConfiguration.generated.txt", GetSource(), extType: ExtensionClassType.OptionsBuilder);
+            await VerifyAgainstBaselineUsingFile("BindConfiguration.generated.txt", GetSource(@", _ => { }"), extType: ExtensionClassType.OptionsBuilder);
         }
         #endregion OptionsBuilder<T> extensions.
     }

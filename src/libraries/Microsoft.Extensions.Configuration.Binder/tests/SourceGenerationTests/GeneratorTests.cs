@@ -376,9 +376,20 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string filename,
             string testSourceCode,
             LanguageVersion languageVersion = LanguageVersion.Preview,
-            Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null)
+            Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null,
+            ExtensionClassType extType = ExtensionClassType.None)
         {
-            string path = Path.Combine("Baselines", filename);
+            string environmentSubFolder =
+#if NETCOREAPP
+    "netcoreapp"
+#else
+    "net462"
+#endif
+            ;
+            string path = extType is ExtensionClassType.None
+                ? Path.Combine("Baselines", environmentSubFolder, filename)
+                : Path.Combine("Baselines", environmentSubFolder, extType.ToString(), filename);
+
             string baseline = LineEndingsHelper.Normalize(File.ReadAllText(path));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
