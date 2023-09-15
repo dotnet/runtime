@@ -207,5 +207,88 @@ namespace System.Linq.Tests
             object[] WrapArgs<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? comparer, IEnumerable<KeyValuePair<TKey, TAccumulate>> expected)
                 => new object[] { source, keySelector, seedSelector, func, comparer, expected };
         }
+
+        [Fact]
+        public void GroupBy()
+        {
+            static IEnumerable<KeyValuePair<TKey, List<TSource>>> GroupBy<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
+                source.AggregateBy(
+                    keySelector,
+                    seedSelector: _ => new List<TSource>(),
+                    (group, element) => { group.Add(element); return group; });
+
+            IEnumerable<KeyValuePair<bool, List<int>>> oddsEvens = GroupBy(
+                new int[] { 1, 2, 3, 4 },
+                i => i % 2 == 0);
+
+            var e = oddsEvens.GetEnumerator();
+
+            Assert.True(e.MoveNext());
+            KeyValuePair<bool, List<int>> oddsItem = e.Current;
+            Assert.False(oddsItem.Key);
+            List<int> odds = oddsItem.Value;
+            Assert.True(odds.Contains(1));
+            Assert.True(odds.Contains(3));
+            Assert.False(odds.Contains(2));
+            Assert.False(odds.Contains(4));
+
+            Assert.True(e.MoveNext());
+            KeyValuePair<bool, List<int>> evensItem = e.Current;
+            Assert.True(evensItem.Key);
+            List<int> evens = evensItem.Value;
+            Assert.True(evens.Contains(2));
+            Assert.True(evens.Contains(4));
+            Assert.False(evens.Contains(1));
+            Assert.False(evens.Contains(3));
+        }
+
+        [Fact]
+        public void LongCountBy()
+        {
+            static IEnumerable<KeyValuePair<TKey, long>> LongCountBy<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
+                source.AggregateBy(
+                    keySelector,
+                    seed: 0L,
+                    (count, _) => ++count);
+
+            IEnumerable<KeyValuePair<bool, long>> oddsEvens = LongCountBy(
+                new int[] { 1, 2, 3, 4 },
+                i => i % 2 == 0);
+
+            var e = oddsEvens.GetEnumerator();
+
+            Assert.True(e.MoveNext());
+            KeyValuePair<bool, long> oddsItem = e.Current;
+            Assert.False(oddsItem.Key);
+            Assert.Equal(2, oddsItem.Value);
+
+            Assert.True(e.MoveNext());
+            KeyValuePair<bool, long> evensItem = e.Current;
+            Assert.True(evensItem.Key);
+            Assert.Equal(2, oddsItem.Value);
+        }
+
+        [Fact]
+        public void Score()
+        {
+            var data = new (string id, int score)[]
+            {
+                ("0", 42),
+                ("1", 5),
+                ("2", 4),
+                ("1", 10),
+                ("0", 25),
+            };
+
+            var scores = data.AggregateBy(
+                keySelector: entry => entry.id,
+                seed: 0,
+                (totalScore, curr) => totalScore + curr.score)
+                .ToDictionary();
+
+            Assert.Equal(67, scores["0"]);
+            Assert.Equal(15, scores["1"]);
+            Assert.Equal( 4, scores["2"]);
+        }
     }
 }
