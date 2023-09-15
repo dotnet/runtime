@@ -60,6 +60,85 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         public async Task Configure_T_name_BinderOptions() =>
             await VerifyAgainstBaselineUsingFile("Configure_T_name_BinderOptions.generated.txt", GetConfigureSource(@""""", section, _ => { }"), extType: ExtensionClassType.ServiceCollection);
 
+        [Fact]
+        public async Task Configure_T_NamedParameters_OutOfOrder()
+        {
+            string source = """
+                    using System.Collections.Generic;
+                    using Microsoft.Extensions.Configuration;
+                    using Microsoft.Extensions.DependencyInjection;
+                    
+                    public class Program
+                    {
+                        public static void Main()
+                        {
+                            ConfigurationBuilder configurationBuilder = new();
+                            IConfiguration config = configurationBuilder.Build();
+                            IConfigurationSection section = config.GetSection("MySection");
+                            ServiceCollection services = new();
+
+                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(config: section, services: services);
+                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(name: "", config: section, services: services);
+                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(configureBinder: _ => { }, config: section, services: services);
+                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(configureBinder: _ => { }, config: section, name: "", services: services);
+                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(name: "", services: services, configureBinder: _ => { }, config: section);
+                        }
+                    
+                        public class MyClass
+                        {
+                            public string MyString { get; set; }
+                            public int MyInt { get; set; }
+                            public List<int> MyList { get; set; }
+                            public Dictionary<string, string> MyDictionary { get; set; }
+                        }
+                    }
+                    """;
+
+            var (d, r) = await RunGenerator(source);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.Equal(227, r[0].SourceText.Lines.Count);
+        }
+
+        [Fact]
+        public async Task Bind_T_NamedParameters_OutOfOrder()
+        {
+            string source = """
+                    using System.Collections.Generic;
+                    using Microsoft.Extensions.Configuration;
+                    using Microsoft.Extensions.DependencyInjection;
+                    using Microsoft.Extensions.Options;
+                    
+                    public class Program
+                    {
+                        public static void Main()
+                        {
+                            ConfigurationBuilder configurationBuilder = new();
+                            IConfiguration config = configurationBuilder.Build();
+                            var services = new ServiceCollection();
+                            OptionsBuilder<MyClass> optionsBuilder = new(services, "");
+
+                            OptionsBuilderConfigurationExtensions.Bind(config: config, optionsBuilder: optionsBuilder);
+                            OptionsBuilderConfigurationExtensions.Bind(configureBinder: _ => { }, config: config, optionsBuilder: optionsBuilder);
+                            OptionsBuilderConfigurationExtensions.Bind(config: config, configureBinder: _ => { }, optionsBuilder: optionsBuilder);
+                        }
+                    
+                        public class MyClass
+                        {
+                            public string MyString { get; set; }
+                            public int MyInt { get; set; }
+                            public List<int> MyList { get; set; }
+                            public Dictionary<string, string> MyDictionary { get; set; }
+                        }
+                    }
+                    """;
+
+            var (d, r) = await RunGenerator(source);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.Equal(227, r[0].SourceText.Lines.Count);
+        }
+
         private string GetBindSource(string? configureActions = null) => $$"""
             using System.Collections.Generic;
             using Microsoft.Extensions.Configuration;

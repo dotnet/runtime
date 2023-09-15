@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, extType: ExtensionClassType.ConfigurationBinder);
 
         [Fact]
-        public async Task Bind_NamedParameters()
+        public async Task Bind_NamedParameters_OutOfOrder()
         {
             string source = """
                         using System.Collections.Generic;
@@ -31,6 +31,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                                 MyClass configObj = new();
                                 ConfigurationBinder.Bind(instance: configObj, configuration: config);
+                                ConfigurationBinder.Bind(key: "", instance: configObj, configuration: config);
+                                ConfigurationBinder.Bind(instance: configObj, key: "", configuration: config);
+                                ConfigurationBinder.Bind(configureOptions: _ => { }, configuration: config, instance: configObj);
+                                ConfigurationBinder.Bind( configuration: config, configureOptions: _ => { }, instance: configObj);
                             }
 
                             public class MyClass
@@ -46,11 +50,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(source);
             Assert.Equal(1, r.Length);
             Assert.Empty(d);
-            Assert.Equal(151, r[0].SourceText.Lines.Count); // No need to check line by line, other tests already doing that. 
+            Assert.Equal(207, r[0].SourceText.Lines.Count); // No need to check line by line, other tests already doing that. 
         }
 
         [Fact]
-        public async Task Get_TypeOf_NamedParameters()
+        public async Task Get_TypeOf_NamedParametersOutOfOrder()
         {
             string source = """
                         using System.Collections.Generic;
@@ -65,6 +69,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                                 MyClass configObj = new();
                                 var obj = ConfigurationBinder.Get(type: typeof(MyClass), configuration: config);
+                                obj = ConfigurationBinder.Get<MyClass>(configureOptions: _ => { }, configuration: config);
+                                obj = ConfigurationBinder.Get(configureOptions: _ => { }, type: typeof(MyClass), configuration: config);
+                                obj = ConfigurationBinder.Get(type: typeof(MyClass), configureOptions: _ => { }, configuration: config);
                             }
 
                             public class MyClass
@@ -80,11 +87,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(source);
             Assert.Equal(1, r.Length);
             Assert.Empty(d);
-            Assert.Equal(188, r[0].SourceText.Lines.Count);
+            Assert.Equal(197, r[0].SourceText.Lines.Count);
         }
 
         [Fact]
-        public async Task GetValue_NamedParameters()
+        public async Task GetValue_NamedParametersOutOfOrder()
         {
             string source = """
                         using System.Collections.Generic;
@@ -98,6 +105,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 IConfigurationRoot config = configurationBuilder.Build();
 
                                 var str = ConfigurationBinder.GetValue(key: "key", configuration: config, type: typeof(string));
+                                str = ConfigurationBinder.GetValue<string>(key: "key", configuration: config);
+                                str = ConfigurationBinder.GetValue<string>(key: "key", defaultValue: "default", configuration: config);
+                                str = ConfigurationBinder.GetValue<string>(configuration: config, key: "key", defaultValue: "default");
+                                str = ConfigurationBinder.GetValue(defaultValue: "default", key: "key", configuration: config, type: typeof(string));
+                                str = ConfigurationBinder.GetValue(defaultValue: "default", type: typeof(string), key: "key", configuration: config);
                             }
 
                             public class MyClass
@@ -113,7 +125,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(source);
             Assert.Equal(1, r.Length);
             Assert.Empty(d);
-            Assert.Equal(62, r[0].SourceText.Lines.Count);
+            Assert.Equal(76, r[0].SourceText.Lines.Count);
         }
 
         [Fact]
