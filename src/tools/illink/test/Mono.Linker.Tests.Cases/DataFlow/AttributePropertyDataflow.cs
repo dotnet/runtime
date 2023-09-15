@@ -20,6 +20,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AttributesOnEvent.Test ();
 			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
 			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+			RecursivePropertyDataFlow.Test ();
+			RecursiveMethodDataFlow.Test ();
+			RecursiveEventDataFlow.Test ();
+			RecursiveFieldDataFlow.Test ();
 		}
 
 		class AttributesOnMethod
@@ -221,6 +225,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		[KeptBaseType (typeof (Attribute))]
+		class KeepsPublicPropertiesAttribute : Attribute
+		{
+			[Kept]
+			public KeepsPublicPropertiesAttribute ()
+			{
+			}
+
+			[field: Kept]
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+			public Type Type { get; [Kept] set; }
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (Attribute))]
+		class KeepsPublicEventsAttribute : Attribute
+		{
+			[Kept]
+			public KeepsPublicEventsAttribute ()
+			{
+			}
+
+			[field: Kept]
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents)]
+			public Type Type { get; [Kept] set; }
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (Attribute))]
 		class TypeArrayAttribute : Attribute
 		{
 			[Kept]
@@ -231,6 +267,74 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[field: Kept]
 			[Kept]
 			public Type[] Types { get; [Kept] set; }
+		}
+
+		[Kept]
+		class RecursivePropertyDataFlow
+		{
+			[field: Kept]
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicPropertiesAttribute))]
+			[KeepsPublicProperties (Type = typeof (RecursivePropertyDataFlow))]
+			public static int Property { [Kept] get; [Kept] set; }
+
+			[Kept]
+			public static void Test ()
+			{
+				typeof (RecursivePropertyDataFlow).GetProperty (nameof (Property)).GetCustomAttribute (typeof (KeepsPublicPropertiesAttribute));
+				Property = 0;
+			}
+		}
+
+		[Kept]
+		class RecursiveEventDataFlow
+		{
+			[field: Kept]
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[KeptAttributeAttribute (typeof (KeepsPublicEventsAttribute))]
+			[KeepsPublicEvents (Type = typeof (RecursiveEventDataFlow))]
+			public static event EventHandler Event;
+
+			[Kept]
+			public static void Test ()
+			{
+				typeof (RecursiveEventDataFlow).GetEvent (nameof (Event)).GetCustomAttribute (typeof (KeepsPublicEventsAttribute));
+				Event += (sender, e) => { };
+			}
+		}
+
+		[Kept]
+		class RecursiveFieldDataFlow
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicFieldsAttribute))]
+			[KeepsPublicFields (Type = typeof (RecursiveFieldDataFlow))]
+			public static int field;
+
+			[Kept]
+			public static void Test ()
+			{
+				typeof (RecursiveMethodDataFlow).GetField (nameof (field)).GetCustomAttribute (typeof (KeepsPublicFieldsAttribute));
+				field = 0;
+			}
+		}
+
+		[Kept]
+		class RecursiveMethodDataFlow
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+			[KeepsPublicMethods (Type = typeof (RecursiveMethodDataFlow))]
+			public static void Method () { }
+
+			[Kept]
+			public static void Test ()
+			{
+				typeof (RecursiveMethodDataFlow).GetMethod (nameof (Method)).GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+				Method ();
+			}
 		}
 	}
 }
