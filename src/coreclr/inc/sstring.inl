@@ -636,7 +636,7 @@ inline const UTF8 *SString::GetUTF8() const
 }
 
 // Normalize the string to unicode.  This will make many operations nonfailing.
-inline void SString::Normalize() const
+inline void SString::Normalize()
 {
     SS_CONTRACT_VOID
     {

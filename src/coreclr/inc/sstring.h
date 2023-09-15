@@ -193,7 +193,7 @@ private:
 
     // Normalizes the string representation to unicode.  This can be used to
     // make basic read-only operations non-failing.
-    void Normalize() const;
+    void Normalize();
 
     // Return the number of characters in the string (excluding the terminating NULL).
     COUNT_T GetCount() const;
