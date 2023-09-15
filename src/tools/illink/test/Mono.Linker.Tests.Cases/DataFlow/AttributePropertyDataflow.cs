@@ -136,6 +136,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[KeptAttributeAttribute (typeof (AttributePropertyRequiresPropertiesAttribute))]
 				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 				[ExpectedWarning ("IL2111", nameof (AttributePropertyRequiresPropertiesAttribute) + "." + nameof (RequiresPublicProperties),
+					// https://github.com/dotnet/runtime/issues/92131
 					ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 				[AttributePropertyRequiresProperties (RequiresPublicProperties = typeof (AttributePropertyRequiresPropertiesAttribute))]
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
