@@ -15177,16 +15177,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<sbyte> VectorTableLookupExtension(Vector64<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   A64: ST2 Qt1, Qt2, [Xn]
-        /// </summary>
-        public static unsafe void StoreVector128x2(uint* address, (Vector128<int> Value1, Vector128<int> Value2) value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   A64: ST2 Qt1, Qt2, [Xn]
-        /// </summary>
-        public static unsafe void StoreVector128x2(uint* address, (Vector128<int> Value1, Vector128<int> Value2) value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// uint8x8_t veor_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VEOR Dd, Dn, Dm
         ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
