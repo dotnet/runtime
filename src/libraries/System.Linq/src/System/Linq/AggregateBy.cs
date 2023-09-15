@@ -14,7 +14,22 @@ namespace System.Linq
             TAccumulate seed,
             Func<TAccumulate, TSource, TAccumulate> func,
             IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
-            => AggregateBy(source, keySelector, _ => seed, func, keyComparer);
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+            if (keySelector is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
+            if (func is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
+            }
+
+            return AggregateByIterator(source, keySelector, _ => seed, func, keyComparer);
+        }
 
         public static IEnumerable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(
             this IEnumerable<TSource> source,
@@ -43,6 +58,38 @@ namespace System.Linq
             return AggregateByIterator(source, keySelector, seedSelector, func, keyComparer);
         }
 
+        private static IEnumerable<KeyValuePair<TKey, TAccumulate>> AggregateByIterator<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, TAccumulate seed, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
+        {
+            using IEnumerator<TSource> enumerator = source.GetEnumerator();
+
+            if (!enumerator.MoveNext())
+            {
+                yield break;
+            }
+
+            foreach (KeyValuePair<TKey, TAccumulate> countBy in PopulateDictionary(enumerator, keySelector, seed, func, keyComparer))
+            {
+                yield return countBy;
+            }
+
+            static Dictionary<TKey, TAccumulate> PopulateDictionary(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, TAccumulate seed, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? keyComparer)
+            {
+                Dictionary<TKey, TAccumulate> dict = new(keyComparer);
+
+                do
+                {
+                    TSource value = enumerator.Current;
+                    TKey key = keySelector(value);
+
+                    ref TAccumulate? acc = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out bool exists);
+                    acc = func(exists ? acc! : seed, value);
+                }
+                while (enumerator.MoveNext());
+
+                return dict;
+            }
+        }
+
         private static IEnumerable<KeyValuePair<TKey, TAccumulate>> AggregateByIterator<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
             using IEnumerator<TSource> enumerator = source.GetEnumerator();
@@ -52,27 +99,27 @@ namespace System.Linq
                 yield break;
             }
 
-            foreach (KeyValuePair<TKey, TAccumulate> countBy in PopulateDictionary<TSource, TKey, TAccumulate>(enumerator, keySelector, seedSelector, func, keyComparer))
+            foreach (KeyValuePair<TKey, TAccumulate> countBy in PopulateDictionary(enumerator, keySelector, seedSelector, func, keyComparer))
             {
                 yield return countBy;
             }
-        }
 
-        private static Dictionary<TKey, TAccumulate> PopulateDictionary<TSource, TKey, TAccumulate>(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
-        {
-            Dictionary<TKey, TAccumulate> dict = new(keyComparer);
-
-            do
+            static Dictionary<TKey, TAccumulate> PopulateDictionary(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? keyComparer)
             {
-                TSource value = enumerator.Current;
-                TKey key = keySelector(value);
+                Dictionary<TKey, TAccumulate> dict = new(keyComparer);
 
-                ref TAccumulate? acc = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out bool exists);
-                acc = func(exists ? acc! : seedSelector(key), value);
+                do
+                {
+                    TSource value = enumerator.Current;
+                    TKey key = keySelector(value);
+
+                    ref TAccumulate? acc = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out bool exists);
+                    acc = func(exists ? acc! : seedSelector(key), value);
+                }
+                while (enumerator.MoveNext());
+
+                return dict;
             }
-            while (enumerator.MoveNext());
-
-            return dict;
         }
     }
 }
