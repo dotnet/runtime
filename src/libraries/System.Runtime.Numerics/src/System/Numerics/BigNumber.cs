@@ -523,12 +523,10 @@ namespace System.Numerics
                 return ParsingStatus.Failed;
             }
 
-            const int DigitsPerBlock = 32;
-
             int totalDigitCount = number.digits.Length - 1;   // Ignore trailing '\0'
             int partialDigitCount;
 
-            (int blockCount, int remainder) = int.DivRem(totalDigitCount, DigitsPerBlock);
+            (int blockCount, int remainder) = int.DivRem(totalDigitCount, BigInteger.kcbitUint);
             if (remainder == 0)
             {
                 partialDigitCount = 0;
@@ -536,7 +534,7 @@ namespace System.Numerics
             else
             {
                 blockCount++;
-                partialDigitCount = DigitsPerBlock - remainder;
+                partialDigitCount = BigInteger.kcbitUint - remainder;
             }
 
             Debug.Assert(number.digits[0] is '0' or '1');
@@ -567,7 +565,7 @@ namespace System.Numerics
                         currentBlock = (currentBlock << 1) | (uint)(digitChar - '0');
                         partialDigitCount++;
 
-                        if (partialDigitCount == DigitsPerBlock)
+                        if (partialDigitCount == BigInteger.kcbitUint)
                         {
                             buffer[bufferPos--] = currentBlock;
                             partialDigitCount = 0;
