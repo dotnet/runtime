@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(source);
             Assert.Equal(1, r.Length);
             Assert.Empty(d);
-            Assert.Equal(227, r[0].SourceText.Lines.Count);
+            Assert.Equal(234, r[0].SourceText.Lines.Count);
         }
 
         [Fact]
@@ -136,7 +136,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(source);
             Assert.Equal(1, r.Length);
             Assert.Empty(d);
-            Assert.Equal(227, r[0].SourceText.Lines.Count);
+            Assert.Equal(234, r[0].SourceText.Lines.Count);
         }
 
         private string GetBindSource(string? configureActions = null) => $$"""
