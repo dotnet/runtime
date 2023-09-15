@@ -24,8 +24,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void Main ()
 		{
-			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
-			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+			typeof (AttributePropertyDataflow).GetMethod (nameof (Main)).GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
+			typeof (AttributePropertyDataflow).GetMethod (nameof (Main)).GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 			RecursivePropertyDataFlow.Test ();
 			RecursiveEventDataFlow.Test ();
 			RecursiveFieldDataFlow.Test ();
@@ -172,6 +172,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void Test ()
 			{
+				typeof (RecursivePropertyDataFlow).GetProperty (nameof (Property)).GetCustomAttribute (typeof (KeepsPublicPropertiesAttribute));
 				Property = 0;
 			}
 		}
@@ -190,6 +191,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void Test ()
 			{
+				typeof (RecursiveEventDataFlow).GetEvent (nameof (Event)).GetCustomAttribute (typeof (KeepsPublicEventsAttribute));
 				Event += (sender, e) => { };
 			}
 		}
@@ -205,6 +207,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void Test ()
 			{
+				typeof (RecursiveMethodDataFlow).GetField (nameof (field)).GetCustomAttribute (typeof (KeepsPublicFieldsAttribute));
 				field = 0;
 			}
 		}
@@ -220,6 +223,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void Test ()
 			{
+				typeof (RecursiveMethodDataFlow).GetMethod (nameof (Method)).GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 				Method ();
 			}
 		}
