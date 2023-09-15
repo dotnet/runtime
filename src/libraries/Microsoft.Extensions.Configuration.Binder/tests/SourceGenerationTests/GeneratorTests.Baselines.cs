@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(source);
             Assert.Equal(1, r.Length);
             Assert.Empty(d);
-            Assert.Equal(207, r[0].SourceText.Lines.Count); // No need to check line by line, other tests already doing that. 
+            Assert.Equal(214, r[0].SourceText.Lines.Count); // No need to check line by line, other tests already doing that. 
         }
 
         [Fact]
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var (d, r) = await RunGenerator(source);
             Assert.Equal(1, r.Length);
             Assert.Empty(d);
-            Assert.Equal(197, r[0].SourceText.Lines.Count);
+            Assert.Equal(204, r[0].SourceText.Lines.Count);
         }
 
         [Fact]
