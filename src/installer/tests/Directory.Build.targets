@@ -134,7 +134,7 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets"
-          Condition="'$(IsTestProject)' == 'true' and '$(ContinuousIntegrationBuild)' != 'true'" />
+          Condition="'$(IsTestProject)' == 'true'" />
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>
