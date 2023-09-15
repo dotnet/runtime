@@ -594,7 +594,6 @@ public:
     operator const WCHAR * () const { WRAPPER_NO_CONTRACT; return GetUnicode(); }
 
     WCHAR operator[](int index) { WRAPPER_NO_CONTRACT; return Begin()[index]; }
-    WCHAR operator[](int index) const { WRAPPER_NO_CONTRACT; return Begin()[index]; }
 
     SString &operator= (const SString &s) { WRAPPER_NO_CONTRACT; Set(s); return *this; }
 
