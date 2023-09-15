@@ -8,6 +8,12 @@ namespace System.Text.Json.Serialization
     /// </summary>
     public sealed class BinaryDataJsonConverter : JsonConverter<BinaryData>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryDataJsonConverter"/>.
+        /// </summary>
+        public BinaryDataJsonConverter()
+        { }
+
         /// <inheritdoc/>
         public override BinaryData? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

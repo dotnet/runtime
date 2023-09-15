@@ -32,6 +32,11 @@ namespace System.Text.Json.Serialization;
 public sealed class JsonObjectCreationHandlingAttribute : JsonAttribute
 {
     /// <summary>
+    /// Initializes a new instance of <see cref="JsonObjectCreationHandlingAttribute"/>.
+    /// </summary>
+    public JsonObjectCreationHandlingAttribute() { }
+
+    /// <summary>
     /// Indicates what configuration should be used when deserializing members.
     /// </summary>
     public JsonObjectCreationHandling Handling { get; }

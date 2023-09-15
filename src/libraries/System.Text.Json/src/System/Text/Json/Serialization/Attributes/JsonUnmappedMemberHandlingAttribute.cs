@@ -14,6 +14,11 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Initializes a new instance of <see cref="JsonUnmappedMemberHandlingAttribute"/>.
         /// </summary>
+        public JsonUnmappedMemberHandlingAttribute() { }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="JsonUnmappedMemberHandlingAttribute"/>.
+        /// </summary>
         public JsonUnmappedMemberHandlingAttribute(JsonUnmappedMemberHandling unmappedMemberHandling)
         {
             UnmappedMemberHandling = unmappedMemberHandling;
