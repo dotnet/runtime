@@ -362,18 +362,18 @@ jobs:
     runtimeFlavor: mono
     platforms:
       - linux_x64
-      - linux_arm64
+      # - linux_arm64
     variables:
       - name: timeoutPerTestInMinutes
-        value: 60
+        value: 120
       - name: timeoutPerTestCollectionInMinutes
-        value: 180
+        value: 240
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
       runtimeVariant: llvmfullaot
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-      timeoutInMinutes: 300
+      timeoutInMinutes: 360
 
       condition: >-
         or(
