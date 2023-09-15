@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
@@ -251,6 +253,137 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = MathF.Tanh(x[i]);
+            }
+        }
+
+        /// <summary>Computes the cosine similarity between two non-zero vectors.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <returns>The cosine similarity between the two vectors.</returns>
+        public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            var dotprod = 0f;
+            var magx = 0f;
+            var magy = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                dotprod += x[i] * y[i];
+                magx += MathF.Pow(x[i], 2);
+                magy += MathF.Pow(y[i], 2);
+            }
+
+            return dotprod / (MathF.Sqrt(magx) * MathF.Sqrt(magy));
+        }
+
+        /// <summary>
+        /// Compute the distance between two points in Euclidean space.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <returns>The Euclidean distance.</returns>
+        public static float Distance(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            var distance = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                distance += MathF.Pow(x[i] - y[i], 2);
+            }
+
+            return MathF.Sqrt(distance);
+        }
+
+        /// <summary>
+        /// A mathematical operation that takes two vectors and returns a scalar.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <returns>The dot product.</returns>
+        public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y) // BLAS1: dot
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            var dotprod = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                dotprod += x[i] * y[i];
+            }
+
+            return dotprod;
+        }
+
+        /// <summary>
+        /// A mathematical operation that takes a vector and returns the L2 norm.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <returns>The L2 norm.</returns>
+        public static float Normalize(ReadOnlySpan<float> x) // BLAS1: nrm2
+        {
+            var magx = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                magx += MathF.Pow(x[i], 2);
+            }
+
+            return MathF.Sqrt(magx);
+        }
+
+        /// <summary>
+        /// A function that takes a collection of real numbers and returns a probability distribution.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor.</param>
+        public static void SoftMax(ReadOnlySpan<float> x, Span<float> destination)
+        {
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            var expSum = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                expSum += MathF.Pow((float)Math.E, x[i]);
+            }
+
+            for (int i = 0; i < destination.Length; i++)
+            {
+                destination[i] = MathF.Exp(x[i]) / expSum;
+            }
+        }
+
+        /// <summary>
+        /// A function that takes a real number and returns a value between 0 and 1.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor.</param>
+        public static void Sigmoid(ReadOnlySpan<float> x, Span<float> destination)
+        {
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                destination[i] = 1f / (1 + MathF.Exp(-x[i]));
             }
         }
     }
