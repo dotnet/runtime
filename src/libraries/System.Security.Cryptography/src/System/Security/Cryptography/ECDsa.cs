@@ -990,17 +990,17 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm => "ECDsa";
 
         protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
+            CryptographicOperations.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
         protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            HashOneShotHelpers.HashData(hashAlgorithm, data);
+            CryptographicOperations.HashData(hashAlgorithm, data);
 
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             // If this is an algorithm that we ship, then we can use the hash one-shot.
             if (this is IRuntimeAlgorithm)
             {
-                return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
+                return CryptographicOperations.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
             }
 
             // If this is not our algorithm implementation, for compatibility purposes we need to
