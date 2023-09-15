@@ -175,13 +175,13 @@ namespace System.Linq.Tests
             yield return WrapArgs(
                 source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 20), ("Harry", 40) },
                 keySelector: x => x.Age,
-                seedSelector: x => $"I am {x} and my name is ",
-                func: (x, y) => $"{x} or {y.Name}",
+                seedSelector: x => $"I am {x} and my name is",
+                func: (x, y) => $"{x} maybe {y.Name}",
                 comparer: null,
                 expected: new Dictionary<int, string>
                 {
-                    { 20, "I am 20 and my name is Tom or Dick" },
-                    { 40, "I am 40 and my name is Harry" }
+                    { 20, "I am 20 and my name is maybe Tom maybe Dick" },
+                    { 40, "I am 40 and my name is maybe Harry" }
                 });
 
             yield return WrapArgs(
