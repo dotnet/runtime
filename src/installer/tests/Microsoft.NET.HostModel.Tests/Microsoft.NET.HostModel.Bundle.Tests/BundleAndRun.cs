@@ -8,6 +8,7 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using BundleTests.Helpers;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -20,33 +21,21 @@ namespace Microsoft.NET.HostModel.Tests
             sharedTestState = fixture;
         }
 
-        private void RunTheApp(string path)
+        private void RunTheApp(string path, bool selfContained)
         {
             Command.Create(path)
                 .CaptureStdErr()
                 .CaptureStdOut()
+                .DotNetRoot(selfContained ? null : RepoDirectoriesProvider.Default.BuiltDotnet)
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Hello World!");
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World!");
         }
 
-        private void CheckFileSigned(string path)
-        {
-            // Check if the file is signed (it should have been signed by the bundler)
-            Command.Create("codesign", $"-v {path}")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass();
-        }
-
-        private string MakeUniversalBinary(string path, string rid)
+        private string MakeUniversalBinary(string path, Architecture architecture)
         {
             string fatApp = path + ".fat";
-            string arch = BundleHelper.GetTargetArch(rid) == Architecture.Arm64 ? "arm64" : "x86_64";
+            string arch = architecture == Architecture.Arm64 ? "arm64" : "x86_64";
 
             // We will create a universal binary with just one arch slice and run it.
             // It is enough for testing purposes. The code that finds the releavant slice
@@ -61,86 +50,62 @@ namespace Microsoft.NET.HostModel.Tests
             return fatApp;
         }
 
-        private void BundleRun(TestProjectFixture fixture, string publishPath)
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        private void RunApp(bool selfContained)
         {
-            var hostName = BundleHelper.GetHostName(fixture);
-
-            // Run the App normally
-            RunTheApp(Path.Combine(publishPath, hostName));
-
             // Bundle to a single-file
-            string singleFile = BundleHelper.BundleApp(fixture);
+            string singleFile = selfContained
+                ? sharedTestState.SelfContainedApp.Bundle()
+                : sharedTestState.FrameworkDependentApp.Bundle();
 
-            // check that the file structure is understood by codesign
-            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
-            if (targetOS == OSPlatform.OSX)
+            // Run the bundled app
+            RunTheApp(singleFile, selfContained);
+
+            if (OperatingSystem.IsMacOS())
             {
-                CheckFileSigned(singleFile);
-            }
-
-            // Run the extracted app
-            RunTheApp(singleFile);
-
-            if (targetOS == OSPlatform.OSX)
-            {
-                string fatApp = MakeUniversalBinary(singleFile, fixture.CurrentRid);
+                string fatApp = MakeUniversalBinary(singleFile, RuntimeInformation.OSArchitecture);
 
                 // Run the fat app
-                RunTheApp(fatApp);
+                RunTheApp(fatApp, selfContained);
             }
         }
 
-        private string RelativePath(string path)
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AdditionalContentAfterBundleMetadata(bool selfContained)
         {
-            return Path.GetRelativePath(Directory.GetCurrentDirectory(), path)
-                       .TrimEnd(Path.DirectorySeparatorChar);
-        }
+            string singleFile = selfContained
+                ? sharedTestState.SelfContainedApp.Bundle()
+                : sharedTestState.FrameworkDependentApp.Bundle();
 
-        [Fact]
-        public void TestWithAbsolutePaths()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string publishDir = BundleHelper.GetPublishPath(fixture);
-            BundleRun(fixture, publishDir);
-        }
+            using (var file = File.OpenWrite(singleFile))
+            {
+                file.Position = file.Length;
+                var blob = Encoding.UTF8.GetBytes("Mock signature at the end of the bundle");
+                file.Write(blob, 0, blob.Length);
+            }
 
-        [Fact]
-        public void TestWithRelativePaths()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string publishDir = RelativePath(BundleHelper.GetPublishPath(fixture));
-            BundleRun(fixture, publishDir);
-        }
-
-        [Fact]
-        public void TestWithRelativePathsDirSeparator()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string publishDir = RelativePath(BundleHelper.GetPublishPath(fixture)) + Path.DirectorySeparatorChar;
-            BundleRun(fixture, publishDir);
+            RunTheApp(singleFile, selfContained);
         }
 
         public class SharedTestState : IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
-            public TestProjectFixture LegacyFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
+            public SingleFileTestApp FrameworkDependentApp { get; }
+            public SingleFileTestApp SelfContainedApp { get; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-
-                TestFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid)
-                    .PublishProject(runtime: TestFixture.CurrentRid,
-                                    selfContained: true,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                FrameworkDependentApp = SingleFileTestApp.CreateFrameworkDependent("HelloWorld");
+                SelfContainedApp = SingleFileTestApp.CreateSelfContained("HelloWorld");
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                FrameworkDependentApp.Dispose();
+                SelfContainedApp.Dispose();
             }
         }
     }
