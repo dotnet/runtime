@@ -244,6 +244,53 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
     return start <= value && value <= end;
 }
 
+#define HISTOGRAM_MAX_SIZE_COUNT 64
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+
+class Dumpable
+{
+public:
+    virtual void dump(FILE* output) = 0;
+};
+
+class Histogram : public Dumpable
+{
+public:
+    Histogram(const unsigned* const sizeTable);
+
+    void dump(FILE* output);
+    void record(unsigned size);
+
+private:
+    unsigned              m_sizeCount;
+    const unsigned* const m_sizeTable;
+    unsigned              m_counts[HISTOGRAM_MAX_SIZE_COUNT];
+};
+
+class NodeCounts : public Dumpable
+{
+public:
+    NodeCounts() : m_counts()
+    {
+    }
+
+    void dump(FILE* output);
+    void record(genTreeOps oper);
+
+private:
+    unsigned m_counts[GT_COUNT];
+};
+
+class DumpOnShutdown
+{
+public:
+    DumpOnShutdown(const char* name, Dumpable* histogram);
+    static void DumpAll(FILE* output);
+};
+
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+
 /******************************************************************************************
  * Return the EH descriptor for the given region index.
  */

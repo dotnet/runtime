@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "opcode.h"
+#include "jitstd/algorithm.h"
 
 /*****************************************************************************/
 
@@ -997,6 +998,90 @@ void Histogram::record(unsigned size)
     }
 
     m_counts[i]++;
+}
+
+void NodeCounts::dump(FILE* output)
+{
+    struct Entry
+    {
+        genTreeOps oper;
+        unsigned   count;
+    };
+
+    Entry sorted[GT_COUNT];
+    for (int i = 0; i < GT_COUNT; i++)
+    {
+        sorted[i].oper  = static_cast<genTreeOps>(i);
+        sorted[i].count = m_counts[i];
+    }
+
+    jitstd::sort(sorted, sorted + ArrLen(sorted), [](const Entry& lhs, const Entry& rhs) {
+        if (lhs.count > rhs.count)
+        {
+            return true;
+        }
+
+        if (lhs.count < rhs.count)
+        {
+            return false;
+        }
+
+        return static_cast<unsigned>(lhs.oper) < static_cast<unsigned>(rhs.oper);
+    });
+
+    for (const Entry& entry : sorted)
+    {
+        if (entry.count == 0)
+        {
+            break;
+        }
+
+        fprintf(output, "%-20s : %7u\n", GenTree::OpName(entry.oper), entry.count);
+    }
+}
+
+void NodeCounts::record(genTreeOps oper)
+{
+    assert(oper < GT_COUNT);
+    m_counts[oper]++;
+}
+
+struct DumpOnShutdownEntry
+{
+    const char* Name;
+    Dumpable*   Dumpable;
+};
+
+static DumpOnShutdownEntry s_dumpOnShutdown[16];
+
+DumpOnShutdown::DumpOnShutdown(const char* name, Dumpable* dumpable)
+{
+    for (DumpOnShutdownEntry& entry : s_dumpOnShutdown)
+    {
+        if ((entry.Name == nullptr) && (entry.Dumpable == nullptr))
+        {
+            entry.Name     = name;
+            entry.Dumpable = dumpable;
+            break;
+        }
+    }
+}
+
+void DumpOnShutdown::DumpAll(FILE* fout)
+{
+    for (const DumpOnShutdownEntry& entry : s_dumpOnShutdown)
+    {
+        if (entry.Name != nullptr)
+        {
+            fprintf(fout, "%s\n", entry.Name);
+        }
+
+        if (entry.Dumpable != nullptr)
+        {
+            entry.Dumpable->dump(fout);
+            fprintf(fout, "\n");
+        }
+    }
 }
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE

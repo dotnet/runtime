@@ -1746,6 +1746,10 @@ void Compiler::compShutdown()
 #endif // DEBUG
     fprintf(fout, "   NYI:                 %u\n", fatal_NYI);
 #endif // MEASURE_FATAL
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+    DumpOnShutdown::DumpAll(fout);
+#endif
 }
 
 /*****************************************************************************
