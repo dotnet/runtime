@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
-
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
@@ -260,22 +258,28 @@ namespace System.Numerics.Tensors
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <returns>The cosine similarity between the two vectors.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        /// <exception cref="ArgumentException">'<paramref name="x" />' and '<paramref name="y" />' must not be empty.</exception>
         public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             if (x.Length != y.Length)
             {
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
+            if (x.Length == 0 || y.Length == 0)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
 
-            var dotprod = 0f;
-            var magx = 0f;
-            var magy = 0f;
+            float dotprod = 0f;
+            float magx = 0f;
+            float magy = 0f;
 
             for (int i = 0; i < x.Length; i++)
             {
                 dotprod += x[i] * y[i];
-                magx += MathF.Pow(x[i], 2);
-                magy += MathF.Pow(y[i], 2);
+                magx += x[i] * x[i];
+                magy += y[i] * y[i];
             }
 
             return dotprod / (MathF.Sqrt(magx) * MathF.Sqrt(magy));
@@ -287,18 +291,25 @@ namespace System.Numerics.Tensors
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <returns>The Euclidean distance.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        /// <exception cref="ArgumentException">'<paramref name="x" />' and '<paramref name="y" />' must not be empty.</exception>
         public static float Distance(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             if (x.Length != y.Length)
             {
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
+            if (x.Length == 0 || y.Length == 0)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
 
-            var distance = 0f;
+            float distance = 0f;
 
             for (int i = 0; i < x.Length; i++)
             {
-                distance += MathF.Pow(x[i] - y[i], 2);
+                float dist = x[i] - y[i];
+                distance += dist * dist;
             }
 
             return MathF.Sqrt(distance);
@@ -310,6 +321,7 @@ namespace System.Numerics.Tensors
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <returns>The dot product.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
         public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y) // BLAS1: dot
         {
             if (x.Length != y.Length)
@@ -317,7 +329,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            var dotprod = 0f;
+            float dotprod = 0f;
 
             for (int i = 0; i < x.Length; i++)
             {
@@ -332,13 +344,13 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <returns>The L2 norm.</returns>
-        public static float Normalize(ReadOnlySpan<float> x) // BLAS1: nrm2
+        public static float L2Normalize(ReadOnlySpan<float> x) // BLAS1: nrm2
         {
-            var magx = 0f;
+            float magx = 0f;
 
             for (int i = 0; i < x.Length; i++)
             {
-                magx += MathF.Pow(x[i], 2);
+                magx += x[i] * x[i];
             }
 
             return MathF.Sqrt(magx);
@@ -349,21 +361,27 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException">'<paramref name="x" />' must not be empty.</exception>
         public static void SoftMax(ReadOnlySpan<float> x, Span<float> destination)
         {
             if (x.Length > destination.Length)
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+            if (x.Length == 0)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
 
-            var expSum = 0f;
+            float expSum = 0f;
 
             for (int i = 0; i < x.Length; i++)
             {
                 expSum += MathF.Pow((float)Math.E, x[i]);
             }
 
-            for (int i = 0; i < destination.Length; i++)
+            for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = MathF.Exp(x[i]) / expSum;
             }
@@ -374,11 +392,17 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException">'<paramref name="x" />' must not be empty.</exception>
         public static void Sigmoid(ReadOnlySpan<float> x, Span<float> destination)
         {
             if (x.Length > destination.Length)
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+            if (x.Length == 0)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
             for (int i = 0; i < x.Length; i++)

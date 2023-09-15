@@ -20,6 +20,7 @@ namespace System.Numerics.Tensors
         public static void Divide(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { }
         public static float Dot(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y) { throw null; }
         public static void Exp(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static float L2Normalize(System.ReadOnlySpan<float> x) { throw null; }
         public static void Log(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
         public static void Multiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { }
         public static void Multiply(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { }
@@ -27,7 +28,6 @@ namespace System.Numerics.Tensors
         public static void MultiplyAdd(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, float addend, System.Span<float> destination) { }
         public static void MultiplyAdd(System.ReadOnlySpan<float> x, float y, System.ReadOnlySpan<float> addend, System.Span<float> destination) { }
         public static void Negate(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
-        public static float Normalize(System.ReadOnlySpan<float> x) { throw null; }
         public static void Sigmoid(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
         public static void Sinh(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
         public static void SoftMax(System.ReadOnlySpan<float> x, System.Span<float> destination) { }

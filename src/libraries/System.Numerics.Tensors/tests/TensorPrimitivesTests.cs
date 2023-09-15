@@ -713,12 +713,30 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(x, y));
         }
 
+        [Fact]
+        public static void CosineSimilarity_ThrowsForEmpty_x_y()
+        {
+            float[] x = [];
+            float[] y = [];
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(x, y));
+        }
+
         [Theory]
         [InlineData(new float[] { 3, 2, 0, 5 }, new float[] { 1, 0, 0, 0 }, 0.49f)]
         [InlineData(new float[] { 1, 1, 1, 1, 1, 0 }, new float[] { 1, 1, 1, 1, 0, 1 }, 0.80f)]
         public static void CosineSimilarity(float[] x, float[] y, float expectedResult)
         {
             Assert.Equal(expectedResult, TensorPrimitives.CosineSimilarity(x, y), .01f);
+        }
+
+        [Fact]
+        public static void Distance_ThrowsForEmpty_x_y()
+        {
+            float[] x = [];
+            float[] y = [];
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(x, y));
         }
 
         [Theory]
@@ -755,6 +773,7 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { 1, 3, -5 }, new float[] { 4, -2, -1 }, 3)]
         [InlineData(new float[] { 1, 2, 3 }, new float[] { 4, 5, 6 }, 32)]
         [InlineData(new float[] { 1, 2, 3, 10, 8 }, new float[] { 4, 5, 6, -2, 7 }, 68)]
+        [InlineData(new float[] { }, new float[] { }, 0)]
         public static void Dot(float[] x, float[] y, float expectedResult)
         {
             Assert.Equal(expectedResult, TensorPrimitives.Dot(x, y), .001f);
@@ -765,9 +784,10 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { 3, 4 }, 5)]
         [InlineData(new float[] { 3 }, 3)]
         [InlineData(new float[] { 3, 4, 1, 2 }, 5.477)]
-        public static void Normalize(float[] x, float expectedResult)
+        [InlineData(new float[] { }, 0f)]
+        public static void L2Normalize(float[] x, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.Normalize(x), .001f);
+            Assert.Equal(expectedResult, TensorPrimitives.L2Normalize(x), .001f);
         }
 
         [Theory]
@@ -790,10 +810,33 @@ namespace System.Numerics.Tensors.Tests
             var dest = new float[x.Length];
             TensorPrimitives.SoftMax(x, dest);
 
-            for (int i = 0; i < dest.Length; i++)
+            for (int i = 0; i < x.Length; i++)
             {
                 Assert.Equal(expectedResult[i], dest[i], .001f);
             }
+        }
+
+        [Fact]
+        public static void SoftMax_DestinationLongerThanSource()
+        {
+            var x = new float[] { 3, 1, .2f };
+            var expectedResult = new float[] { 0.8360188f, 0.11314284f, 0.05083836f };
+            var dest = new float[x.Length + 1];
+            TensorPrimitives.SoftMax(x, dest);
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                Assert.Equal(expectedResult[i], dest[i], .001f);
+            }
+        }
+
+        [Fact]
+        public static void SoftMax_ThrowsForEmpty_x_y()
+        {
+            var x = new float[] { };
+            var dest = new float[x.Length];
+
+            AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.SoftMax(x, dest));
         }
 
         [Theory]
@@ -815,10 +858,33 @@ namespace System.Numerics.Tensors.Tests
             var dest = new float[x.Length];
             TensorPrimitives.Sigmoid(x, dest);
 
-            for (int i = 0; i < dest.Length; i++)
+            for (int i = 0; i < x.Length; i++)
             {
                 Assert.Equal(expectedResult[i], dest[i], .001f);
             }
+        }
+
+        [Fact]
+        public static void Sigmoid_DestinationLongerThanSource()
+        {
+            var x = new float[] { -5, -4.5f, -4 };
+            var expectedResult = new float[] { 0.0066f, 0.0109f, 0.0179f };
+            var dest = new float[x.Length + 1];
+            TensorPrimitives.Sigmoid(x, dest);
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                Assert.Equal(expectedResult[i], dest[i], .001f);
+            }
+        }
+
+        [Fact]
+        public static void Sigmoid_ThrowsForEmpty_x_y()
+        {
+            var x = new float[] { };
+            var dest = new float[x.Length];
+
+            AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.Sigmoid(x, dest));
         }
     }
 }
