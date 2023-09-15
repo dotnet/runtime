@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 ConfigurationBinder.Bind(key: "", instance: configObj, configuration: config);
                                 ConfigurationBinder.Bind(instance: configObj, key: "", configuration: config);
                                 ConfigurationBinder.Bind(configureOptions: _ => { }, configuration: config, instance: configObj);
-                                ConfigurationBinder.Bind( configuration: config, configureOptions: _ => { }, instance: configObj);
+                                ConfigurationBinder.Bind(configuration: config, configureOptions: _ => { }, instance: configObj);
                             }
 
                             public class MyClass
@@ -47,10 +47,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         }
                     """;
 
-            var (d, r) = await RunGenerator(source);
-            Assert.Equal(1, r.Length);
-            Assert.Empty(d);
-            Assert.Equal(214, r[0].SourceText.Lines.Count); // No need to check line by line, other tests already doing that. 
+            await VerifyThatSourceGenerated(source);
         }
 
         [Fact]
@@ -84,10 +81,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         }
                     """;
 
-            var (d, r) = await RunGenerator(source);
-            Assert.Equal(1, r.Length);
-            Assert.Empty(d);
-            Assert.Equal(204, r[0].SourceText.Lines.Count);
+            await VerifyThatSourceGenerated(source);
         }
 
         [Fact]
@@ -122,10 +116,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         }
                     """;
 
-            var (d, r) = await RunGenerator(source);
-            Assert.Equal(1, r.Length);
-            Assert.Empty(d);
-            Assert.Equal(76, r[0].SourceText.Lines.Count);
+            await VerifyThatSourceGenerated(source);
         }
 
         [Fact]
