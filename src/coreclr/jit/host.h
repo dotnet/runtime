@@ -55,7 +55,7 @@ void jitprintf(const char* fmt, ...);
 #define _HOST_H_
 /*****************************************************************************/
 
-extern FILE* jitstdout;
+FILE* jitstdout();
 
 inline FILE* procstdout()
 {

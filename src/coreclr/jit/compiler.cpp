@@ -155,7 +155,7 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
     if (verbose)
     {
         va_start(args, fmt);
-        vflogf(jitstdout, fmt, args);
+        vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 
@@ -1230,13 +1230,14 @@ void DisplayNowayAssertMap()
             fout = _wfopen(strJitMeasureNowayAssertFile, W("a"));
             if (fout == nullptr)
             {
-                fprintf(jitstdout, "Failed to open JitMeasureNowayAssertFile \"%ws\"\n", strJitMeasureNowayAssertFile);
+                fprintf(jitstdout(), "Failed to open JitMeasureNowayAssertFile \"%ws\"\n",
+                        strJitMeasureNowayAssertFile);
                 return;
             }
         }
         else
         {
-            fout = jitstdout;
+            fout = jitstdout();
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
@@ -1253,7 +1254,7 @@ void DisplayNowayAssertMap()
 
         jitstd::sort(nacp, nacp + count, NowayAssertCountMap::compare());
 
-        if (fout == jitstdout)
+        if (fout == jitstdout())
         {
             // Don't output the header if writing to a file, since we'll be appending to existing dumps in that case.
             fprintf(fout, "\nnoway_assert counts:\n");
@@ -1266,7 +1267,7 @@ void DisplayNowayAssertMap()
                     nacp[i].fl.m_condStr);
         }
 
-        if (fout != jitstdout)
+        if (fout != jitstdout())
         {
             fclose(fout);
             fout = nullptr;
@@ -1331,7 +1332,7 @@ void Compiler::compStartup()
     // Static vars of ValueNumStore
     ValueNumStore::ValidateValueNumStoreStatics();
 
-    compDisplayStaticSizes(jitstdout);
+    compDisplayStaticSizes(jitstdout());
 }
 
 /*****************************************************************************
@@ -1389,11 +1390,11 @@ void Compiler::compShutdown()
 #endif
 
 #if NODEBASH_STATS
-    GenTree::ReportOperBashing(jitstdout);
+    GenTree::ReportOperBashing(jitstdout());
 #endif
 
     // Where should we write our statistics output?
-    FILE* fout = jitstdout;
+    FILE* fout = jitstdout();
 
 #ifdef FEATURE_JIT_METHOD_PERF
     if (compJitTimeLogFilename != nullptr)
@@ -1662,10 +1663,10 @@ void Compiler::compShutdown()
     if (s_dspMemStats)
     {
         fprintf(fout, "\nAll allocations:\n");
-        ArenaAllocator::dumpAggregateMemStats(jitstdout);
+        ArenaAllocator::dumpAggregateMemStats(jitstdout());
 
         fprintf(fout, "\nLargest method:\n");
-        ArenaAllocator::dumpMaxMemStats(jitstdout);
+        ArenaAllocator::dumpMaxMemStats(jitstdout());
 
         fprintf(fout, "\n");
         fprintf(fout, "---------------------------------------------------\n");
@@ -1685,7 +1686,7 @@ void Compiler::compShutdown()
     if (JitConfig.DisplayLoopHoistStats() != 0)
 #endif // DEBUG
     {
-        PrintAggregateLoopHoistStats(jitstdout);
+        PrintAggregateLoopHoistStats(jitstdout());
     }
 #endif // LOOP_HOIST_STATS
 
@@ -5177,7 +5178,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if TRACK_LSRA_STATS
     if (JitConfig.DisplayLsraStats() == 2)
     {
-        m_pLinearScan->dumpLsraStatsCsv(jitstdout);
+        m_pLinearScan->dumpLsraStatsCsv(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
 
@@ -5879,7 +5880,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
 #endif // FUNC_INFO_LOGGING
 
-    // if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
+    // if (s_compMethodsCount==0) setvbuf(jitstdout(), NULL, _IONBF, 0);
 
     if (compIsForInlining())
     {
@@ -6363,7 +6364,7 @@ void Compiler::compCompileFinish()
     if (s_dspMemStats || verbose)
     {
         printf("\nAllocations for %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
-        compArenaAllocator->dumpMemStats(jitstdout);
+        compArenaAllocator->dumpMemStats(jitstdout());
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
