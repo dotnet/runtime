@@ -2297,7 +2297,7 @@ void SetupMono(Mode mode)
 {
     g_Mode = mode;
 #if defined(_DEBUG)
-    std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Release/net8.0/coreclr-test.dll");
+    std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Debug/net8.0/coreclr-test.dll");
 #else
     std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Release/net8.0/coreclr-test.dll");
 #endif
@@ -2335,8 +2335,8 @@ void SetupMono(Mode mode)
 #elif defined(WIN32)
 #if defined(_DEBUG)
 #ifdef _M_AMD64
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Release/runtimes/win-x64/lib/net8.0");
-        g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Release/runtimes/win-x64/native/coreclr.dll");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Debug/runtimes/win-x64/lib/net8.0");
+        g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Debug/runtimes/win-x64/native/coreclr.dll");
 #else
         monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Debug/runtimes/win-x86/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Debug/runtimes/win-x86/native/coreclr.dll");
