@@ -365,15 +365,15 @@ jobs:
       # - linux_arm64
     variables:
       - name: timeoutPerTestInMinutes
-        value: 120
+        value: 60
       - name: timeoutPerTestCollectionInMinutes
-        value: 240
+        value: 180
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
       runtimeVariant: llvmfullaot
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-      timeoutInMinutes: 360
+      timeoutInMinutes: 300
 
       condition: >-
         or(
