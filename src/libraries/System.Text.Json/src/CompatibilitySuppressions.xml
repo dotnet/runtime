@@ -58,54 +58,6 @@
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute.#ctor</Target>
-    <Left>ref/net462/System.Text.Json.dll</Left>
-    <Right>lib/net462/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute.#ctor</Target>
-    <Left>ref/net462/System.Text.Json.dll</Left>
-    <Right>lib/net462/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute.#ctor</Target>
-    <Left>ref/net8.0/System.Text.Json.dll</Left>
-    <Right>lib/net8.0/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute.#ctor</Target>
-    <Left>ref/net8.0/System.Text.Json.dll</Left>
-    <Right>lib/net8.0/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute.#ctor</Target>
-    <Left>ref/net9.0/System.Text.Json.dll</Left>
-    <Right>lib/net9.0/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute.#ctor</Target>
-    <Left>ref/net9.0/System.Text.Json.dll</Left>
-    <Right>lib/net9.0/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute.#ctor</Target>
-    <Left>ref/netstandard2.0/System.Text.Json.dll</Left>
-    <Right>lib/netstandard2.0/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute.#ctor</Target>
-    <Left>ref/netstandard2.0/System.Text.Json.dll</Left>
-    <Right>lib/netstandard2.0/System.Text.Json.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Text.Json.JsonSerializerOptions.AddContext``1:[T:System.ObsoleteAttribute]</Target>
     <Left>lib/net6.0/System.Text.Json.dll</Left>
