@@ -492,7 +492,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
                 var result = sut!.GetService("simple");
 
                 // Assert
-                //result.Should().BeOfType<SimpleService>();
                 Assert.True(result.GetType() == typeof(SimpleService));
             }
 

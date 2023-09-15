@@ -326,9 +326,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool hasDefaultValue, object? key)
         {
-            object? service = key == null
-                ? sp.GetService(type)
-                : GetKeyedService(sp, type, key);
+            object? service = key == null ? sp.GetService(type) : GetKeyedService(sp, type, key);
             if (service is null && !hasDefaultValue)
             {
                 ThrowHelperUnableToResolveService(type, requiredBy);
