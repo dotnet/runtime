@@ -3687,6 +3687,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0b0101111: // AMO - atomic memory operation
         {
             unsigned int funct5 = code >> 27;
+            // clang-format off
             const char* name =
                 funct5 == 0b00010 ? "lr" :
                 funct5 == 0b00011 ? "sc" :
@@ -3700,15 +3701,19 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 funct5 == 0b11000 ? "amominu" :
                 funct5 == 0b11100 ? "amomaxu" :
                 (assert(!"Illegal funct5 within atomic memory operation, emitDisInsName"), "?");
+            // clang-format on
 
             unsigned int funct3 = (code >> 12) & 0x7;
+            // clang-format off
             char width =
                 funct3 == 0b010 ? 'w' :
                 funct3 == 0b011 ? 'd' :
                 (assert(!"Illegal width tag within atomic memory operation, emitDisInsName"), '?');
+            // clang-format on
 
             const char* aq = code & (1 << 25) ? "a" : "";
             const char* rl = code & (1 << 26) ? "r" : "";
+
             int len = printf("%s.%c.%s%s", name, width, aq, rl);
             if (len <= 0)
             {
@@ -3716,7 +3721,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             assert(len <= 12);
 
-            const char* dest = RegNames[(code >>  7) & 0x1f];
+            const char* dest = RegNames[(code >> 7) & 0x1f];
             const char* addr = RegNames[(code >> 15) & 0x1f];
             const char* data = RegNames[(code >> 20) & 0x1f];
 

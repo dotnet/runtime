@@ -2616,10 +2616,10 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 //
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
-    GenTree* data = treeNode->AsOp()->gtOp2;
-    GenTree* addr = treeNode->AsOp()->gtOp1;
-    regNumber dataReg = data->GetRegNum();
-    regNumber addrReg = addr->GetRegNum();
+    GenTree*  data      = treeNode->AsOp()->gtOp2;
+    GenTree*  addr      = treeNode->AsOp()->gtOp1;
+    regNumber dataReg   = data->GetRegNum();
+    regNumber addrReg   = addr->GetRegNum();
     regNumber targetReg = treeNode->GetRegNum();
     if (targetReg == REG_NA)
     {
@@ -2630,18 +2630,19 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     genConsumeRegs(data);
 
     emitAttr dataSize = emitActualTypeSize(data);
-    bool is4 = (dataSize == EA_4BYTE);
+    bool     is4      = (dataSize == EA_4BYTE);
 
     assert(!data->isContainedIntOrIImmed());
 
     genTreeOps op = treeNode->gtOper;
+    // clang-format off
     instruction ins =
         op == GT_XORR ? (is4 ? INS_amoor_w   : INS_amoor_d) :
         op == GT_XAND ? (is4 ? INS_amoand_w  : INS_amoand_d) :
         op == GT_XCHG ? (is4 ? INS_amoswap_w : INS_amoswap_d) :
         op == GT_XADD ? (is4 ? INS_amoadd_w  : INS_amoadd_d) :
         (assert(!"Unexpected treeNode->gtOper"), INS_none);
-
+    // clang-format on
     GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
 }
 
@@ -2655,15 +2656,15 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
     assert(treeNode->OperIs(GT_CMPXCHG));
 
-    GenTree* locOp = treeNode->gtOpLocation;
-    GenTree* valOp = treeNode->gtOpValue;
+    GenTree* locOp       = treeNode->gtOpLocation;
+    GenTree* valOp       = treeNode->gtOpValue;
     GenTree* comparandOp = treeNode->gtOpComparand;
 
-    regNumber target = treeNode->GetRegNum();
-    regNumber loc = locOp->GetRegNum();
-    regNumber val = valOp->GetRegNum();
+    regNumber target    = treeNode->GetRegNum();
+    regNumber loc       = locOp->GetRegNum();
+    regNumber val       = valOp->GetRegNum();
     regNumber comparand = comparandOp->GetRegNum();
-    regNumber storeErr = treeNode->ExtractTempReg(RBM_ALLINT);
+    regNumber storeErr  = treeNode->ExtractTempReg(RBM_ALLINT);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
     // They should all be different
@@ -2696,15 +2697,15 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     BasicBlock* retry = genCreateTempLabel();
     BasicBlock* fail  = genCreateTempLabel();
 
-    emitter* e = GetEmitter();
+    emitter* e    = GetEmitter();
     emitAttr size = emitActualTypeSize(valOp);
-    bool is4 = (size == EA_4BYTE);
+    bool     is4  = (size == EA_4BYTE);
 
     genDefineTempLabel(retry);
-    e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0);  // load original value
-    e->emitIns_J_cond_la(INS_bne, fail, target, comparand);  // fail if doesn’t match
+    e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0); // load original value
+    e->emitIns_J_cond_la(INS_bne, fail, target, comparand);                 // fail if doesn’t match
     e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
-    e->emitIns_J(INS_bnez, retry, storeErr);  // retry if update failed
+    e->emitIns_J(INS_bnez, retry, storeErr);                                // retry if update failed
     genDefineTempLabel(fail);
 
     gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask());
