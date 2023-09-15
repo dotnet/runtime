@@ -12,20 +12,132 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[ExpectedNoWarnings]
 	class AttributePropertyDataflow
 	{
-		[KeptAttributeAttribute (typeof (KeepsPublicConstructorsAttribute))]
-		[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-		[KeptAttributeAttribute (typeof (KeepsPublicFieldsAttribute))]
-		[KeptAttributeAttribute (typeof (TypeArrayAttribute))]
-		[KeepsPublicConstructors (Type = typeof (ClassWithKeptPublicConstructor))]
-		[KeepsPublicMethods (Type = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+ClassWithKeptPublicMethods")]
-		[KeepsPublicFields (Type = null, TypeName = null)]
-		[TypeArray (Types = new Type[] { typeof (AttributePropertyDataflow) })]
-		// Trimmer only for now - https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		public static void Main ()
 		{
+			AttributesOnMethod.Test ();
+			AttributesOnProperty.Test ();
+			AttributesOnField.Test ();
+			AttributesOnEvent.Test ();
 			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
 			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+		}
+
+		class AttributesOnMethod
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicConstructorsAttribute))]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+			[KeptAttributeAttribute (typeof (KeepsPublicFieldsAttribute))]
+			[KeptAttributeAttribute (typeof (TypeArrayAttribute))]
+			[KeepsPublicConstructors (Type = typeof (ClassWithKeptPublicConstructor))]
+			[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributesOnMethod+ClassWithKeptPublicMethods")]
+			[KeepsPublicFields (Type = null, TypeName = null)]
+			[TypeArray (Types = new Type[] { typeof (AttributePropertyDataflow) })]
+			// Trimmer only for now - https://github.com/dotnet/linker/issues/2273
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			public static void Test () {
+			}
+
+			[Kept]
+			class ClassWithKeptPublicConstructor
+			{
+				[Kept]
+				public ClassWithKeptPublicConstructor (int unused) { }
+
+				private ClassWithKeptPublicConstructor (short unused) { }
+
+				public void Method () { }
+			}
+
+			[Kept]
+			class ClassWithKeptPublicMethods
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
+				public static void KeptMethod () { }
+				static void Method () { }
+			}
+		}
+
+		class AttributesOnField
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
+			static bool field;
+
+			[Kept]
+			public static void Test ()
+			{
+				field = true;
+			}
+
+			[Kept]
+			class ClassWithKeptPublicMethods
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
+				public static void KeptMethod () { }
+				static void Method () { }
+			}
+		}
+
+		class AttributesOnProperty
+		{
+			[field: Kept]
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
+			static bool Property { get; [Kept] set; }
+
+			[Kept]
+			public static void Test ()
+			{
+				Property = true;
+			}
+
+			[Kept]
+			class ClassWithKeptPublicMethods
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
+				public static void KeptMethod () { }
+				static void Method () { }
+			}
+		}
+
+		class AttributesOnEvent
+		{
+			[field: Kept]
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)] // Duplicate warnings from events!
+			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
+			static event EventHandler Event;
+
+			[Kept]
+			public static void Test ()
+			{
+				Event += (sender, args) => { };
+			}
+
+			[Kept]
+			class ClassWithKeptPublicMethods
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
+				public static void KeptMethod () { }
+				static void Method () { }
+			}
 		}
 
 		[Kept]
@@ -57,7 +169,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			public string Type { get; [Kept] set; }
+			public Type Type { get; [Kept] set; }
+
+			[field: Kept]
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			public string TypeName { get; [Kept] set; }
 		}
 
 		// Used to test null values
@@ -81,27 +199,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 			public string TypeName { get; [Kept] set; }
-		}
-
-		[Kept]
-		class ClassWithKeptPublicConstructor
-		{
-			[Kept]
-			public ClassWithKeptPublicConstructor (int unused) { }
-
-			private ClassWithKeptPublicConstructor (short unused) { }
-
-			public void Method () { }
-		}
-
-		[Kept]
-		class ClassWithKeptPublicMethods
-		{
-			[Kept]
-			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-			[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
-			public static void KeptMethod () { }
-			static void Method () { }
 		}
 
 		[Kept]
