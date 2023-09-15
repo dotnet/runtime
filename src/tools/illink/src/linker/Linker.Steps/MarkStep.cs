@@ -3549,7 +3549,8 @@ namespace Mono.Linker.Steps
 
 		protected internal void MarkProperty (PropertyDefinition prop, in DependencyInfo reason)
 		{
-			Tracer.AddDirectDependency (prop, reason, marked: false);
+			if (!Annotations.MarkProcessed (prop, reason))
+				return;
 
 			using var propertyScope = ScopeStack.PushScope (new MessageOrigin (prop));
 
@@ -3560,8 +3561,8 @@ namespace Mono.Linker.Steps
 
 		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason)
 		{
-			// Record the event without marking it in Annotations.
-			Tracer.AddDirectDependency (evt, reason, marked: false);
+			if (!Annotations.MarkProcessed (evt, reason))
+				return;
 
 			using var eventScope = ScopeStack.PushScope (new MessageOrigin (evt));
 
