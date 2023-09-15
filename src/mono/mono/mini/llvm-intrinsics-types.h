@@ -13,6 +13,13 @@ typedef enum {
 #define INTRINS_OVR_3_ARG(id, llvm_id, arch, ty1, ty2, ty3) INTRINS_ ## id,
 #define INTRINS_OVR_TAG(id, ...) INTRINS_ ## id,
 #define INTRINS_OVR_TAG_KIND(id, ...) INTRINS_ ## id,
+
+#define INTRINS_CLR(clrid, id, llvm_id, arch) INTRINS_ ## id,
+#define INTRINS_OVR_CLR(clrid, id, llvm_id, arch, ty) INTRINS_ ## id,
+#define INTRINS_OVR_2_ARG_CLR(clrid, id, llvm_id, arch, ty1, ty2) INTRINS_ ## id,
+#define INTRINS_OVR_3_ARG_CLR(clrid, id, llvm_id, arch, ty1, ty2, ty3) INTRINS_ ## id,
+#define INTRINS_OVR_TAG_CLR(clrid, id, ...) INTRINS_ ## id,
+#define INTRINS_OVR_TAG_KIND_CLR(clrid, id, ...) INTRINS_ ## id,
 #include "llvm-intrinsics.h"
 	INTRINS_NUM
 } IntrinsicId;

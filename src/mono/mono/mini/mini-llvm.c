@@ -394,6 +394,12 @@ static const llvm_ovr_tag_t intrin_arm64_ovr [] = {
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
 	#define INTRINS_OVR_TAG(sym, _, arch, spec) spec,
 	#define INTRINS_OVR_TAG_KIND(sym, _, kind, arch, spec) spec,
+	#define INTRINS_CLR(clrid, sym, ...) 0,
+	#define INTRINS_OVR_CLR(clrid, sym, ...) 0,
+	#define INTRINS_OVR_2_ARG_CLR(clrid, sym, ...) 0,
+	#define INTRINS_OVR_3_ARG_CLR(clrid, sym, ...) 0,
+	#define INTRINS_OVR_TAG_CLR(clrid, sym, _, arch, spec) spec,
+	#define INTRINS_OVR_TAG_KIND_CLR(clrid, sym, _, kind, arch, spec) spec,
 	#include "llvm-intrinsics.h"
 };
 
@@ -412,8 +418,35 @@ static const uint8_t intrin_kind [] = {
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
 	#define INTRINS_OVR_TAG(sym, _, arch, spec) 0,
 	#define INTRINS_OVR_TAG_KIND(sym, _, arch, kind, spec) kind,
+	#define INTRINS_CLR(clrid, sym, ...) 0,
+	#define INTRINS_OVR_CLR(clrid, sym, ...) 0,
+	#define INTRINS_OVR_2_ARG_CLR(clrid, sym, ...) 0,
+	#define INTRINS_OVR_3_ARG_CLR(clrid, sym, ...) 0,
+	#define INTRINS_OVR_TAG_CLR(clrid, sym, _, arch, spec) 0,
+	#define INTRINS_OVR_TAG_KIND_CLR(clrid, sym, _, arch, kind, spec) kind,
 	#include "llvm-intrinsics.h"
 };
+
+static IntrinsicId
+interpret_clr_intrinsic_id (int clr_id)
+{
+	switch (clr_id) {
+		#define INTRINS(sym, ...)
+		#define INTRINS_OVR(sym, ...)
+		#define INTRINS_OVR_2_ARG(sym, ...)
+		#define INTRINS_OVR_3_ARG(sym, ...)
+		#define INTRINS_OVR_TAG(sym, ...)
+		#define INTRINS_OVR_TAG_KIND(sym, ...)
+		#define INTRINS_CLR(clrid, sym, ...) case clrid: return sym;
+		#define INTRINS_OVR_CLR(clrid, sym, ...) case clrid: return sym;
+		#define INTRINS_OVR_2_ARG_CLR(clrid, sym, ...) case clrid: return sym;
+		#define INTRINS_OVR_3_ARG_CLR(clrid, sym, ...) case clrid: return sym;
+		#define INTRINS_OVR_TAG_CLR(clrid, sym, ...) case clrid: return sym;
+		#define INTRINS_OVR_TAG_KIND_CLR(clrid, sym, ...) case clrid: return sym;
+		#include "llvm-intrinsics.h"
+	}
+	return -1;
+}
 
 static inline llvm_ovr_tag_t
 ovr_tag_force_scalar (llvm_ovr_tag_t tag)
@@ -13393,6 +13426,12 @@ add_intrinsic (EmitContext *ctx, int id)
 	#define INTRINS_OVR_3_ARG(intrin_name, llvm_id, arch, llvm_type1, llvm_type2, llvm_type3) case INTRINS_ ## intrin_name: intrins = add_intrins3(module, id, llvm_type1, llvm_type2, llvm_type3, &intrins_type); break;
 	#define INTRINS_OVR_TAG(...)
 	#define INTRINS_OVR_TAG_KIND(...)
+	#define INTRINS_CLR(clrid, intrin_name, llvm_id, arch)
+	#define INTRINS_OVR_CLR(clrid, intrin_name, llvm_id, arch, llvm_type) case INTRINS_ ## intrin_name: intrins = add_intrins1(module, id, llvm_type, &intrins_type); break;
+	#define INTRINS_OVR_2_ARG_CLR(clrid, intrin_name, llvm_id, arch, llvm_type1, llvm_type2) case INTRINS_ ## intrin_name: intrins = add_intrins2(module, id, llvm_type1, llvm_type2, &intrins_type); break;
+	#define INTRINS_OVR_3_ARG_CLR(clrid, intrin_name, llvm_id, arch, llvm_type1, llvm_type2, llvm_type3) case INTRINS_ ## intrin_name: intrins = add_intrins3(module, id, llvm_type1, llvm_type2, llvm_type3, &intrins_type); break;
+	#define INTRINS_OVR_TAG_CLR(...)
+	#define INTRINS_OVR_TAG_KIND_CLR(...)
 	#include "llvm-intrinsics.h"
 
 	default:

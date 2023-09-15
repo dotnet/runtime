@@ -699,12 +699,47 @@ get_intrins_id (IntrinsicId id)
 #define Arm64 AARCH64Intrinsics
 #define Wasm WASMIntrinsics
 #define INTRINS(id, llvm_id, arch) case INTRINS_ ## id: intrins_id = Intrinsic::arch::llvm_id; break;
+#define INTRINS_CLR(clrid, id, llvm_id, arch) case INTRINS_ ## id: intrins_id = Intrinsic::arch::llvm_id; break;
 
 #define INTRINS_OVR(id, llvm_id, arch, ty) INTRINS(id, llvm_id, arch)
 #define INTRINS_OVR_2_ARG(id, llvm_id, arch, ty1, ty2) INTRINS(id, llvm_id, arch)
 #define INTRINS_OVR_3_ARG(id, llvm_id, arch, ty1, ty2, ty3) INTRINS(id, llvm_id, arch)
 #define INTRINS_OVR_TAG(id, llvm_id, arch, ...) INTRINS(id, llvm_id, arch)
 #define INTRINS_OVR_TAG_KIND(id, llvm_id, arch, ...) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_CLR(clrid, id, llvm_id, arch, ty) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_2_ARG_CLR(clrid, id, llvm_id, arch, ty1, ty2) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_3_ARG_CLR(clrid, id, llvm_id, arch, ty1, ty2, ty3) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_TAG_CLR(clrid, id, llvm_id, arch, ...) INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR_TAG_KIND_CLR(clrid, id, llvm_id, arch, ...) INTRINS(id, llvm_id, arch)
+#include "llvm-intrinsics.h"
+	default:
+		break;
+	}
+	return intrins_id;
+}
+
+static Intrinsic::ID
+get_intrins_clrid (int id)
+{
+	Intrinsic::ID intrins_id = not_intrinsic;
+	switch (id) {
+#define Generic IndependentIntrinsics
+#define X86 X86Intrinsics
+#define Arm64 AARCH64Intrinsics
+#define Wasm WASMIntrinsics
+#define INTRINS(id, llvm_id, arch)
+#define INTRINS_OVR(id, llvm_id, arch, ty)
+#define INTRINS_OVR_2_ARG(id, llvm_id, arch, ty1, ty2)
+#define INTRINS_OVR_3_ARG(id, llvm_id, arch, ty1, ty2, ty3)
+#define INTRINS_OVR_TAG(id, llvm_id, arch, ...)
+#define INTRINS_OVR_TAG_KIND(id, llvm_id, arch, ...)
+
+#define INTRINS_CLR(clrid, llvm_id, arch) case INTRINS_ ## id: intrins_id = Intrinsic::arch::llvm_id; break;
+#define INTRINS_OVR_CLR(clrid, id, llvm_id, arch, ty) INTRINS_CLR(clrid, id, llvm_id, arch)
+#define INTRINS_OVR_2_ARG_CLR(clrid, id, llvm_id, arch, ty1, ty2) INTRINS_CLR(clrid, id, llvm_id, arch)
+#define INTRINS_OVR_3_ARG_CLR(clrid, id, llvm_id, arch, ty1, ty2, ty3) INTRINS_CLR(clrid, id, llvm_id, arch)
+#define INTRINS_OVR_TAG_CLR(clrid, id, llvm_id, arch, ...) INTRINS_CLR(clrid, id, llvm_id, arch)
+#define INTRINS_OVR_TAG_KIND_CLR(clrid, id, llvm_id, arch, ...) INTRINS_CLR(clrid, id, llvm_id, arch)
 #include "llvm-intrinsics.h"
 	default:
 		break;
@@ -722,6 +757,12 @@ is_overloaded_intrins (IntrinsicId id)
 #define INTRINS_OVR_3_ARG(id, llvm_id, arch, ty1, ty2, ty3) case INTRINS_ ## id: return true;
 #define INTRINS_OVR_TAG(id, llvm_id, arch, ...) case INTRINS_ ## id: return true;
 #define INTRINS_OVR_TAG_KIND(id, llvm_id, arch, ...) case INTRINS_ ## id: return true;
+#define INTRINS_CLR(clrid, id, llvm_id, arch)
+#define INTRINS_OVR_CLR(clrid, id, llvm_id, arch, ty) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_2_ARG_CLR(clrid, id, llvm_id, arch, ty1, ty2) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_3_ARG_CLR(clrid, id, llvm_id, arch, ty1, ty2, ty3) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_TAG_CLR(clrid, id, llvm_id, arch, ...) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_TAG_KIND_CLR(clrid, id, llvm_id, arch, ...) case INTRINS_ ## id: return true;
 #include "llvm-intrinsics.h"
 	default:
 		break;
