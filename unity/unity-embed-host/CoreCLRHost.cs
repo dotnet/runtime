@@ -737,6 +737,6 @@ static unsafe partial class CoreCLRHost
     {
         // Return raw object pointer for now with the NullGC.
         // This will become a GCHandle in the future.
-        return Unsafe.As<string, StringPtr>(ref s);
+        return s.ToNativeRepresentation();
     }
 }
