@@ -5359,11 +5359,11 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 madeChanges       = true;
                 unmarkedLoopAlign = true;
             }
-            else if ((loopTop->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (visitedLoopNum[loopTop->bbNatLoopNum]))
+            else if ((loopTop->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && visitedLoopNum[loopTop->bbNatLoopNum])
             {
 #ifdef DEBUG
                 char buffer[100];
-                sprintf_s(buffer, 80, "loop block " FMT_BB " appears before top of loop",
+                sprintf_s(buffer, 100, "loop block " FMT_BB " appears before top of loop",
                           visitedBlockForLoopNum[loopTop->bbNatLoopNum]);
 #endif
 
