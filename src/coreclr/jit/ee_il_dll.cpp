@@ -161,7 +161,7 @@ void jitShutdown(bool processIsTerminating)
 
     Compiler::compShutdown();
 
-    if (s_jitstdout != procstdout())
+    if ((s_jitstdout != nullptr) && (s_jitstdout != procstdout()))
     {
         // When the process is terminating, the fclose call is unnecessary and is also prone to
         // crashing since the UCRT itself often frees the backing memory earlier on in the
