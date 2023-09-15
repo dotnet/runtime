@@ -1569,6 +1569,27 @@ namespace System.Linq
                     source.Expression, Expression.Quote(predicate)));
         }
 
+        /// <summary>Returns the count of each element from a sequence according to a specified key selector function.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TKey">The type of key to distinguish elements by.</typeparam>
+        /// <param name="source">The sequence to count elements from.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{TKey}" /> to compare keys.</param>
+        /// <returns>An <see cref="IQueryable{T}" /> that contains count for each distinct elements from the source sequence as a <see cref="KeyValuePair{TKey, TValue}"/> object.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        [DynamicDependency("CountBy`2", typeof(Enumerable))]
+        public static IQueryable<KeyValuePair<TKey, int>> CountBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer = null) where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return source.Provider.CreateQuery<KeyValuePair<TKey, int>>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IEqualityComparer<TKey>, IQueryable<KeyValuePair<TKey, int>>>(CountBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+        }
+
         [DynamicDependency("LongCount`1", typeof(Enumerable))]
         public static long LongCount<TSource>(this IQueryable<TSource> source)
         {

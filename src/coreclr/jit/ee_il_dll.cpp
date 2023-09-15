@@ -112,9 +112,6 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
         jitstdout = procstdout();
     }
 
-#ifdef FEATURE_TRACELOGGING
-    JitTelemetry::NotifyDllProcessAttach();
-#endif
     Compiler::compStartup();
 
     g_jitInitialized = true;
@@ -149,10 +146,6 @@ void jitShutdown(bool processIsTerminating)
             fclose(jitstdout);
         }
     }
-
-#ifdef FEATURE_TRACELOGGING
-    JitTelemetry::NotifyDllProcessDetach();
-#endif
 
     g_jitInitialized = false;
 }

@@ -5001,8 +5001,47 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		LLVMPositionBuilderAtEnd (builder, catch_bb);
 
 		LLVMValueRef catchpad_args [1];
-		catchpad_args [0] = LLVMConstNull (pointer_type (LLVMInt8Type ()));
+		catchpad_args [0] = ctx->module->sentinel_exception;
 		catchpad = LLVMBuildCatchPad (builder, lpad, catchpad_args, 1, "");
+
+		// The ifdef is needed because of INTRINS_WASM
+#ifdef TARGET_WASM
+		// LLVM seems to require at least the following code sequence
+		// %7 = catchpad within %5 [ptr @typeinfo for int*]
+		// %8 = tail call ptr @llvm.wasm.get.exception(token %7)
+		// %9 = tail call i32 @llvm.wasm.get.ehselector(token %7)
+
+		LLVMValueRef args [] = { catchpad };
+		LLVMValueRef call = call_intrins (ctx, INTRINS_WASM_GET_EXCEPTION, args, "");
+		LLVMSetTailCall (call, TRUE);
+		LLVMValueRef sel_call = call_intrins (ctx, INTRINS_WASM_GET_EHSELECTOR, args, "");
+		LLVMSetTailCall (sel_call, TRUE);
+
+		//%10 = tail call i32 @llvm.eh.typeid.for(ptr nonnull @typeinfo for int*) #5, !dbg !31
+		//%11 = icmp eq i32 %9, %10, !dbg !31
+		//br i1 %11, label %12, label %14, !dbg !31
+
+		LLVMValueRef typeid_args [] = { ctx->module->sentinel_exception };
+		LLVMValueRef typeid = call_intrins (ctx, INTRINS_EH_TYPEID_FOR, typeid_args, "");
+		LLVMSetTailCall (typeid, TRUE);
+
+		LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntEQ, sel_call, typeid, "");
+
+		LLVMBasicBlockRef ex_bb = gen_bb (ctx, "CATCH_BB");
+		LLVMBasicBlockRef noex_bb = gen_bb (ctx, "NOCATCH_BB");
+
+		LLVMBuildCondBr (ctx->builder, cmp, ex_bb, noex_bb);
+
+		/* No catch case */
+		//call void @llvm.wasm.rethrow() #3 [ "funclet"(token %7) ], !dbg !34
+		//unreachable, !dbg !34
+		LLVMPositionBuilderAtEnd (builder, noex_bb);
+		call_intrins (ctx, INTRINS_WASM_RETHROW, args, "");
+		LLVMBuildUnreachable (builder);
+
+		/* Catch case */
+		LLVMPositionBuilderAtEnd (builder, ex_bb);
+#endif
 	} else {
 		MonoBasicBlock *handler_bb = cfg->cil_offset_to_bb [CLAUSE_START (group_start)];
 		g_assert (handler_bb);
