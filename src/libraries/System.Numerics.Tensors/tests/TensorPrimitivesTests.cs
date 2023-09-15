@@ -5,13 +5,16 @@ using Xunit;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0
 
 namespace System.Numerics.Tensors.Tests
 {
-    public static class TensorPrimitivesTests
+    public static partial class TensorPrimitivesTests
     {
+        private const double Tolerance = 0.00001;
+
         public static IEnumerable<object[]> TensorLengths =>
             from length in new[] { 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 15, 16, 17, 31, 32, 33, 100 }
             select new object[] { length };
@@ -885,6 +888,536 @@ namespace System.Numerics.Tensors.Tests
             var dest = new float[x.Length];
 
             AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.Sigmoid(x, dest));
+        }
+
+        [Fact]
+        public static void IndexOfMax_ReturnsNegative1OnEmpty()
+        {
+            Assert.Equal(-1, TensorPrimitives.IndexOfMax(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void IndexOfMax(int tensorLength)
+        {
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                float[] x = CreateAndFillTensor(tensorLength);
+                x[expected] = Enumerable.Max(x) + 1;
+                Assert.Equal(expected, TensorPrimitives.IndexOfMax(x));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void IndexOfMax_FirstNaNReturned(int tensorLength)
+        {
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                float[] x = CreateAndFillTensor(tensorLength);
+                x[expected] = float.NaN;
+                x[tensorLength - 1] = float.NaN;
+                Assert.Equal(expected, TensorPrimitives.IndexOfMax(x));
+            }
+        }
+
+        [Fact]
+        public static void IndexOfMax_Negative0LesserThanPositive0()
+        {
+            Assert.Equal(1, TensorPrimitives.IndexOfMax([-0.0f, +0.0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMax([+0.0f, -0.0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMax([-1, -0.0f]));
+            Assert.Equal(2, TensorPrimitives.IndexOfMax([-1, -0.0f, 1]));
+        }
+
+        [Fact]
+        public static void IndexOfMin_ReturnsNegative1OnEmpty()
+        {
+            Assert.Equal(-1, TensorPrimitives.IndexOfMin(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void IndexOfMin(int tensorLength)
+        {
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                float[] x = CreateAndFillTensor(tensorLength);
+                x[expected] = Enumerable.Min(x) - 1;
+                Assert.Equal(expected, TensorPrimitives.IndexOfMin(x));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void IndexOfMin_FirstNaNReturned(int tensorLength)
+        {
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                float[] x = CreateAndFillTensor(tensorLength);
+                x[expected] = float.NaN;
+                x[tensorLength - 1] = float.NaN;
+                Assert.Equal(expected, TensorPrimitives.IndexOfMin(x));
+            }
+        }
+
+        [Fact]
+        public static void IndexOfMin_Negative0LesserThanPositive0()
+        {
+            Assert.Equal(0, TensorPrimitives.IndexOfMin([-0.0f, +0.0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMin([+0.0f, -0.0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMin([-1, -0.0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMin([-1, -0.0f, 1]));
+        }
+
+        [Fact]
+        public static void IndexOfMaxMagnitude_ReturnsNegative1OnEmpty()
+        {
+            Assert.Equal(-1, TensorPrimitives.IndexOfMaxMagnitude(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void IndexOfMaxMagnitude(int tensorLength)
+        {
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                float[] x = CreateAndFillTensor(tensorLength);
+                x[expected] = x.Max(Math.Abs) + 1;
+                Assert.Equal(expected, TensorPrimitives.IndexOfMaxMagnitude(x));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void IndexOfMaxMagnitude_FirstNaNReturned(int tensorLength)
+        {
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                float[] x = CreateAndFillTensor(tensorLength);
+                x[expected] = float.NaN;
+                x[tensorLength - 1] = float.NaN;
+                Assert.Equal(expected, TensorPrimitives.IndexOfMaxMagnitude(x));
+            }
+        }
+
+        [Fact]
+        public static void IndexOfMaxMagnitude_Negative0LesserThanPositive0()
+        {
+            Assert.Equal(1, TensorPrimitives.IndexOfMaxMagnitude([-0.0f, +0.0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([+0.0f, -0.0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([-1, -0.0f]));
+            Assert.Equal(2, TensorPrimitives.IndexOfMaxMagnitude([-1, -0.0f, 1]));
+        }
+
+        [Fact]
+        public static void IndexOfMinMagnitude_ReturnsNegative1OnEmpty()
+        {
+            Assert.Equal(-1, TensorPrimitives.IndexOfMinMagnitude(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void IndexOfMinMagnitude(int tensorLength)
+        {
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                float[] x = new float[tensorLength];
+                for (int i = 0; i < x.Length; i++)
+                {
+                    x[i] = i % 2 == 0 ? 42 : -42;
+                }
+
+                x[expected] = -41;
+
+                Assert.Equal(expected, TensorPrimitives.IndexOfMinMagnitude(x));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void IndexOfMinMagnitude_FirstNaNReturned(int tensorLength)
+        {
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                float[] x = CreateAndFillTensor(tensorLength);
+                x[expected] = float.NaN;
+                x[tensorLength - 1] = float.NaN;
+                Assert.Equal(expected, TensorPrimitives.IndexOfMinMagnitude(x));
+            }
+        }
+
+        [Fact]
+        public static void IndexOfMinMagnitude_Negative0LesserThanPositive0()
+        {
+            Assert.Equal(0, TensorPrimitives.IndexOfMinMagnitude([-0.0f, +0.0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([+0.0f, -0.0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([-1, -0.0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([-1, -0.0f, 1]));
+        }
+
+        [Fact]
+        public static void Max_ThrowsForEmpty()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Max(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Max(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            Assert.Equal(Enumerable.Max(x), TensorPrimitives.Max(x));
+
+            float max = float.NegativeInfinity;
+            foreach (float f in x)
+            {
+                max = Math.Max(max, f);
+            }
+            Assert.Equal(max, TensorPrimitives.Max(x));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Max_NanReturned(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                x[expected] = float.NaN;
+                Assert.Equal(float.NaN, TensorPrimitives.Max(x));
+            }
+        }
+
+        [Fact]
+        public static void Max_Negative0LesserThanPositive0()
+        {
+            Assert.Equal(+0.0f, TensorPrimitives.Max([-0.0f, +0.0f]));
+            Assert.Equal(+0.0f, TensorPrimitives.Max([+0.0f, -0.0f]));
+            Assert.Equal(-0.0f, TensorPrimitives.Max([-1, -0.0f]));
+            Assert.Equal(1, TensorPrimitives.Max([-1, -0.0f, 1]));
+        }
+
+        [Fact]
+        public static void MaxMagnitude_ThrowsForEmpty()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.MaxMagnitude(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MaxMagnitude(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            Assert.Equal(x.Max(MathF.Abs), TensorPrimitives.MaxMagnitude(x));
+
+            float max = 0;
+            foreach (float f in x)
+            {
+                max = Math.Max(max, MathF.Abs(f));
+            }
+            Assert.Equal(max, TensorPrimitives.MaxMagnitude(x));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MaxMagnitude_NanReturned(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                x[expected] = float.NaN;
+                Assert.Equal(float.NaN, TensorPrimitives.MaxMagnitude(x));
+            }
+        }
+
+        [Fact]
+        public static void MaxMagnitude_Negative0LesserThanPositive0()
+        {
+            Assert.Equal(+0.0f, TensorPrimitives.MaxMagnitude([-0.0f, +0.0f]));
+            Assert.Equal(+0.0f, TensorPrimitives.MaxMagnitude([+0.0f, -0.0f]));
+            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-1, -0.0f]));
+            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-1, -0.0f, 1]));
+            Assert.Equal(0.0f, TensorPrimitives.MaxMagnitude([-0.0f, -0.0f, -0.0f, -0.0f, -0.0f, 0.0f]));
+            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-0.0f, -0.0f, -0.0f, -0.0f, -1, -0.0f, 0.0f, 1]));
+        }
+
+        [Fact]
+        public static void Min_ThrowsForEmpty()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Min(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Min(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            Assert.Equal(Enumerable.Min(x), TensorPrimitives.Min(x));
+
+            float min = float.PositiveInfinity;
+            foreach (float f in x)
+            {
+                min = Math.Min(min, f);
+            }
+            Assert.Equal(min, TensorPrimitives.Min(x));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Min_NanReturned(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                x[expected] = float.NaN;
+                Assert.Equal(float.NaN, TensorPrimitives.Min(x));
+            }
+        }
+
+        [Fact]
+        public static void Min_Negative0LesserThanPositive0()
+        {
+            Assert.Equal(-0.0f, TensorPrimitives.Min([-0.0f, +0.0f]));
+            Assert.Equal(-0.0f, TensorPrimitives.Min([+0.0f, -0.0f]));
+            Assert.Equal(-1, TensorPrimitives.Min([-1, -0.0f]));
+            Assert.Equal(-1, TensorPrimitives.Min([-1, -0.0f, 1]));
+        }
+
+        [Fact]
+        public static void MinMagnitude_ThrowsForEmpty()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.MinMagnitude(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MinMagnitude(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            Assert.Equal(x.Min(MathF.Abs), TensorPrimitives.MinMagnitude(x));
+
+            float min = float.PositiveInfinity;
+            foreach (float f in x)
+            {
+                min = Math.Min(min, MathF.Abs(f));
+            }
+            Assert.Equal(min, TensorPrimitives.MinMagnitude(x));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MinMagnitude_NanReturned(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                x[expected] = float.NaN;
+                Assert.Equal(float.NaN, TensorPrimitives.MinMagnitude(x));
+            }
+        }
+
+        [Fact]
+        public static void MinMagnitude_Negative0LesserThanPositive0()
+        {
+            Assert.Equal(0, TensorPrimitives.MinMagnitude([-0.0f, +0.0f]));
+            Assert.Equal(0, TensorPrimitives.MinMagnitude([+0.0f, -0.0f]));
+            Assert.Equal(0, TensorPrimitives.MinMagnitude([-1, -0.0f]));
+            Assert.Equal(0, TensorPrimitives.MinMagnitude([-1, -0.0f, 1]));
+        }
+
+        [Fact]
+        public static void Product_ThrowsForEmpty()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Product(ReadOnlySpan<float>.Empty));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Product(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            float f = x[0];
+            for (int i = 1; i < x.Length; i++)
+            {
+                f *= x[i];
+            }
+
+            Assert.Equal(f, TensorPrimitives.Product(x), Tolerance);
+        }
+
+        [Fact]
+        public static void Product_KnownValues()
+        {
+            Assert.Equal(1, TensorPrimitives.Product([1]));
+            Assert.Equal(-2, TensorPrimitives.Product([1, -2]));
+            Assert.Equal(-6, TensorPrimitives.Product([1, -2, 3]));
+            Assert.Equal(24, TensorPrimitives.Product([1, -2, 3, -4]));
+            Assert.Equal(120, TensorPrimitives.Product([1, -2, 3, -4, 5]));
+            Assert.Equal(-720, TensorPrimitives.Product([1, -2, 3, -4, 5, -6]));
+            Assert.Equal(0, TensorPrimitives.Product([1, -2, 3, -4, 5, -6, 0]));
+            Assert.Equal(0, TensorPrimitives.Product([0, 1, -2, 3, -4, 5, -6]));
+            Assert.Equal(0, TensorPrimitives.Product([1, -2, 3, 0, -4, 5, -6]));
+            Assert.Equal(float.NaN, TensorPrimitives.Product([1, -2, 3, float.NaN, -4, 5, -6]));
+        }
+
+        [Fact]
+        public static void ProductOfDifferences_ThrowsForEmptyAndMismatchedLengths()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(ReadOnlySpan<float>.Empty, ReadOnlySpan<float>.Empty));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(ReadOnlySpan<float>.Empty, new float[1]));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(new float[1], ReadOnlySpan<float>.Empty));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(new float[44], new float[43]));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(new float[43], new float[44]));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void ProductOfDifferences(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+
+            float f = x[0] - y[0];
+            for (int i = 1; i < x.Length; i++)
+            {
+                f *= x[i] - y[i];
+            }
+            Assert.Equal(f, TensorPrimitives.ProductOfDifferences(x, y), Tolerance);
+        }
+
+        [Fact]
+        public static void ProductOfDifferences_KnownValues()
+        {
+            Assert.Equal(0, TensorPrimitives.ProductOfDifferences([0], [0]));
+            Assert.Equal(0, TensorPrimitives.ProductOfDifferences([1], [1]));
+            Assert.Equal(1, TensorPrimitives.ProductOfDifferences([1], [0]));
+            Assert.Equal(-1, TensorPrimitives.ProductOfDifferences([0], [1]));
+            Assert.Equal(-1, TensorPrimitives.ProductOfDifferences([1, 2, 3, 4, 5], [2, 3, 4, 5, 6]));
+            Assert.Equal(120, TensorPrimitives.ProductOfDifferences([1, 2, 3, 4, 5], [0, 0, 0, 0, 0]));
+            Assert.Equal(-120, TensorPrimitives.ProductOfDifferences([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]));
+            Assert.Equal(float.NaN, TensorPrimitives.ProductOfDifferences([1, 2, float.NaN, 4, 5], [0, 0, 0, 0, 0]));
+        }
+
+        [Fact]
+        public static void ProductOfSums_ThrowsForEmptyAndMismatchedLengths()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(ReadOnlySpan<float>.Empty, ReadOnlySpan<float>.Empty));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(ReadOnlySpan<float>.Empty, new float[1]));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(new float[1], ReadOnlySpan<float>.Empty));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(new float[44], new float[43]));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(new float[43], new float[44]));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void ProductOfSums(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+
+            float f = x[0] + y[0];
+            for (int i = 1; i < x.Length; i++)
+            {
+                f *= x[i] + y[i];
+            }
+            Assert.Equal(f, TensorPrimitives.ProductOfSums(x, y), Tolerance);
+        }
+
+        [Fact]
+        public static void ProductOfSums_KnownValues()
+        {
+            Assert.Equal(0, TensorPrimitives.ProductOfSums([0], [0]));
+            Assert.Equal(1, TensorPrimitives.ProductOfSums([0], [1]));
+            Assert.Equal(1, TensorPrimitives.ProductOfSums([1], [0]));
+            Assert.Equal(2, TensorPrimitives.ProductOfSums([1], [1]));
+            Assert.Equal(10395, TensorPrimitives.ProductOfSums([1, 2, 3, 4, 5], [2, 3, 4, 5, 6]));
+            Assert.Equal(120, TensorPrimitives.ProductOfSums([1, 2, 3, 4, 5], [0, 0, 0, 0, 0]));
+            Assert.Equal(120, TensorPrimitives.ProductOfSums([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]));
+            Assert.Equal(float.NaN, TensorPrimitives.ProductOfSums([1, 2, float.NaN, 4, 5], [0, 0, 0, 0, 0]));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Sum(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            Assert.Equal(Enumerable.Sum(x), TensorPrimitives.Sum(x), Tolerance);
+
+            float sum = 0;
+            foreach (float f in x)
+            {
+                sum += f;
+            }
+            Assert.Equal(sum, TensorPrimitives.Sum(x), Tolerance);
+        }
+
+        [Fact]
+        public static void Sum_KnownValues()
+        {
+            Assert.Equal(0, TensorPrimitives.Sum([0]));
+            Assert.Equal(1, TensorPrimitives.Sum([0, 1]));
+            Assert.Equal(6, TensorPrimitives.Sum([1, 2, 3]));
+            Assert.Equal(0, TensorPrimitives.Sum([-3, 0, 3]));
+            Assert.Equal(float.NaN, TensorPrimitives.Sum([-3, float.NaN, 3]));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SumOfSquares(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            Assert.Equal(Enumerable.Sum(x, v => v * v), TensorPrimitives.SumOfSquares(x), Tolerance);
+
+            float sum = 0;
+            foreach (float f in x)
+            {
+                sum += f * f;
+            }
+            Assert.Equal(sum, TensorPrimitives.SumOfSquares(x), Tolerance);
+        }
+
+        [Fact]
+        public static void SumOfSquares_KnownValues()
+        {
+            Assert.Equal(0, TensorPrimitives.SumOfSquares([0]));
+            Assert.Equal(1, TensorPrimitives.SumOfSquares([0, 1]));
+            Assert.Equal(14, TensorPrimitives.SumOfSquares([1, 2, 3]));
+            Assert.Equal(18, TensorPrimitives.SumOfSquares([-3, 0, 3]));
+            Assert.Equal(float.NaN, TensorPrimitives.SumOfSquares([-3, float.NaN, 3]));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SumOfMagnitudes(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            Assert.Equal(Enumerable.Sum(x, MathF.Abs), TensorPrimitives.SumOfMagnitudes(x), Tolerance);
+
+            float sum = 0;
+            foreach (float f in x)
+            {
+                sum += MathF.Abs(f);
+            }
+            Assert.Equal(sum, TensorPrimitives.SumOfMagnitudes(x), Tolerance);
+        }
+
+        [Fact]
+        public static void SumOfMagnitudes_KnownValues()
+        {
+            Assert.Equal(0, TensorPrimitives.SumOfMagnitudes([0]));
+            Assert.Equal(1, TensorPrimitives.SumOfMagnitudes([0, 1]));
+            Assert.Equal(6, TensorPrimitives.SumOfMagnitudes([1, 2, 3]));
+            Assert.Equal(6, TensorPrimitives.SumOfMagnitudes([-3, 0, 3]));
+            Assert.Equal(float.NaN, TensorPrimitives.SumOfMagnitudes([-3, float.NaN, 3]));
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,6 +9,98 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
+        private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
+
+        private static float Aggregate<TLoad, TAggregate>(
+            float identityValue, ReadOnlySpan<float> x, TLoad load = default, TAggregate aggregate = default)
+            where TLoad : IUnaryOperator
+            where TAggregate : IBinaryOperator
+        {
+            // Initialize the result to the identity value
+            float result = identityValue;
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count * 2)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+
+                // Load the first vector as the initial set of results
+                Vector<float> resultVector = load.Invoke(AsVector(ref xRef, 0));
+                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+
+                // Aggregate additional vectors into the result as long as there's at
+                // least one full vector left to process.
+                i = Vector<float>.Count;
+                do
+                {
+                    resultVector = aggregate.Invoke(resultVector, load.Invoke(AsVector(ref xRef, i)));
+                    i += Vector<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // Aggregate the lanes in the vector back into the scalar result
+                for (int f = 0; f < Vector<float>.Count; f++)
+                {
+                    result = aggregate.Invoke(result, resultVector[f]);
+                }
+            }
+
+            // Aggregate the remaining items in the input span.
+            for (; (uint)i < (uint)x.Length; i++)
+            {
+                result = aggregate.Invoke(result, load.Invoke(x[i]));
+            }
+
+            return result;
+        }
+
+        private static float Aggregate<TBinary, TAggregate>(
+            float identityValue, ReadOnlySpan<float> x, ReadOnlySpan<float> y, TBinary binary = default, TAggregate aggregate = default)
+            where TBinary : IBinaryOperator
+            where TAggregate : IBinaryOperator
+        {
+            Debug.Assert(!x.IsEmpty);
+            Debug.Assert(x.Length == y.Length);
+
+            // Initialize the result to the identity value
+            float result = identityValue;
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count * 2)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+                ref float yRef = ref MemoryMarshal.GetReference(y);
+
+                // Load the first vector as the initial set of results
+                Vector<float> resultVector = binary.Invoke(AsVector(ref xRef, 0), AsVector(ref yRef, 0));
+                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+
+                // Aggregate additional vectors into the result as long as there's at
+                // least one full vector left to process.
+                i = Vector<float>.Count;
+                do
+                {
+                    resultVector = aggregate.Invoke(resultVector, binary.Invoke(AsVector(ref xRef, i), AsVector(ref yRef, i)));
+                    i += Vector<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // Aggregate the lanes in the vector back into the scalar result
+                for (int f = 0; f < Vector<float>.Count; f++)
+                {
+                    result = aggregate.Invoke(result, resultVector[f]);
+                }
+            }
+
+            // Aggregate the remaining items in the input span.
+            for (; (uint)i < (uint)x.Length; i++)
+            {
+                result = aggregate.Invoke(result, binary.Invoke(x[i], y[i]));
+            }
+
+            return result;
+        }
+
         private static void InvokeSpanIntoSpan<TUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination, TUnaryOperator op = default)
             where TUnaryOperator : IUnaryOperator
@@ -388,6 +481,30 @@ namespace System.Numerics.Tensors
         {
             public float Invoke(float x, float y, float z) => (x * y) + z;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y, Vector<float> z) => (x * y) + z;
+        }
+
+        private readonly struct LoadIdentity : IUnaryOperator
+        {
+            public float Invoke(float x) => x;
+            public Vector<float> Invoke(Vector<float> x) => x;
+        }
+
+        private readonly struct LoadSquared : IUnaryOperator
+        {
+            public float Invoke(float x) => x * x;
+            public Vector<float> Invoke(Vector<float> x) => x * x;
+        }
+
+        private readonly struct LoadAbsolute : IUnaryOperator
+        {
+            public float Invoke(float x) => MathF.Abs(x);
+
+            public Vector<float> Invoke(Vector<float> x)
+            {
+                Vector<uint> raw = Vector.AsVectorUInt32(x);
+                Vector<uint> mask = new Vector<uint>(0x7FFFFFFF);
+                return Vector.AsVectorSingle(raw & mask);
+            }
         }
 
         private interface IUnaryOperator
