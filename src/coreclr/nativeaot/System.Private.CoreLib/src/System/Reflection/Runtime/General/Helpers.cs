@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
@@ -23,6 +24,8 @@ namespace System.Reflection.Runtime.General
 {
     internal static partial class Helpers
     {
+        private static readonly SearchValues<char> s_charsToEscape = SearchValues.Create("\\[]+*&,");
+
         // This helper helps reduce the temptation to write "h == default(RuntimeTypeHandle)" which causes boxing.
         public static bool IsNull(this RuntimeTypeHandle h)
         {
@@ -109,12 +112,12 @@ namespace System.Reflection.Runtime.General
         public static string EscapeTypeNameIdentifier(this string identifier)
         {
             // Some characters in a type name need to be escaped
-            if (identifier != null && identifier.IndexOfAny(s_charsToEscape) != -1)
+            if (identifier != null && identifier.AsSpan().ContainsAny(s_charsToEscape))
             {
                 StringBuilder sbEscapedName = new StringBuilder(identifier.Length);
                 foreach (char c in identifier)
                 {
-                    if (c.NeedsEscapingInTypeName())
+                    if (s_charsToEscape.Contains(c))
                         sbEscapedName.Append('\\');
 
                     sbEscapedName.Append(c);
@@ -123,13 +126,6 @@ namespace System.Reflection.Runtime.General
             }
             return identifier;
         }
-
-        public static bool NeedsEscapingInTypeName(this char c)
-        {
-            return Array.IndexOf(s_charsToEscape, c) >= 0;
-        }
-
-        private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Delegates always generate metadata for the Invoke method")]
