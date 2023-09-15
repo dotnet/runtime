@@ -3560,8 +3560,8 @@ namespace Mono.Linker.Steps
 
 		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason)
 		{
-			// Record the event without marking it in Annotations.
-			Tracer.AddDirectDependency (evt, reason, marked: false);
+			if (!Annotations.MarkProcessed (evt, reason))
+				return;
 
 			using var eventScope = ScopeStack.PushScope (new MessageOrigin (evt));
 
