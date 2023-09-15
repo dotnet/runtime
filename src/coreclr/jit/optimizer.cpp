@@ -8888,9 +8888,15 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     }
 #endif
 
-    // Extract side effects
+    // TODO-Bug: We really should be extracting all side effects from the
+    // length and index here, but the length typically involves a GT_ARR_LENGTH
+    // that we would preserve. Usually, as part of proving that the range check
+    // passes, we have also proven that the ARR_LENGTH is non-faulting. We need
+    // a good way to communicate to this function that it is ok to ignore side
+    // effects of the ARR_LENGTH.
     GenTree* sideEffList = nullptr;
-    gtExtractSideEffList(check, &sideEffList, GTF_ASG);
+    gtExtractSideEffList(check->GetArrayLength(), &sideEffList, GTF_ASG);
+    gtExtractSideEffList(check->GetIndex(), &sideEffList);
 
     if (sideEffList != nullptr)
     {
