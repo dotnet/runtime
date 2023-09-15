@@ -123,9 +123,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptEventRemoveMethod]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--",
-				// Trimmer can produce duplicate warnings for events https://github.com/dotnet/runtime/issues/83581
-				ProducedBy = Tool.Trimmer)]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
 			static event EventHandler Event_FieldSyntax;
 
@@ -135,9 +132,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptEventRemoveMethod]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--",
-				// Trimmer can produce duplicate warnings for events
-				ProducedBy = Tool.Trimmer)]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
 			static event EventHandler Event_PropertySyntax {
 				add { }
