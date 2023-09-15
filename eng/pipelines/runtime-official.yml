@@ -239,9 +239,11 @@ extends:
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
+            - mono_wasi_offsets
             monoCrossAOTTargetOS:
             - android
             - browser
+            - wasi
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             extraStepsParameters:
@@ -262,9 +264,11 @@ extends:
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
+            - mono_wasi_offsets
             monoCrossAOTTargetOS:
             - android
             - browser
+            - wasi
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             extraStepsParameters:
@@ -286,12 +290,14 @@ extends:
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
+            - mono_wasi_offsets
             - mono_tvos_offsets
             - mono_ios_offsets
             - mono_maccatalyst_offsets
             monoCrossAOTTargetOS:
             - android
             - browser
+            - wasi
             - tvos
             - ios
             - maccatalyst
