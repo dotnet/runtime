@@ -5,7 +5,6 @@ import { wrap_as_cancelable_promise } from "./cancelable-promise";
 import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
 import type { VoidPtr } from "./types/emscripten";
-import { ControllablePromise, PromiseController } from "./types/internal";
 
 
 function verifyEnvironment() {
@@ -77,32 +76,30 @@ export function http_wasm_transform_stream_write(ts: TransformStreamExtension, b
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
     return wrap_as_cancelable_promise(async () => {
-        mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
+        mono_assert(ts.__fetch_promise, "expected fetch promise");
         // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
-        await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
-        await Promise.race([ts.__writer.write(copy), ts.__fetch_promise_control.promise]);
+        await Promise.race([ts.__writer.ready, ts.__fetch_promise]);
+        await Promise.race([ts.__writer.write(copy), ts.__fetch_promise]);
     });
 }
 
 export function http_wasm_transform_stream_close(ts: TransformStreamExtension): Promise<void> {
     return wrap_as_cancelable_promise(async () => {
-        mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
+        mono_assert(ts.__fetch_promise, "expected fetch promise");
         // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
-        await Promise.race([ts.__writer.ready, ts.__fetch_promise_control.promise]);
-        await Promise.race([ts.__writer.close(), ts.__fetch_promise_control.promise]);
+        await Promise.race([ts.__writer.ready, ts.__fetch_promise]);
+        await Promise.race([ts.__writer.close(), ts.__fetch_promise]);
     });
 }
 
-export function http_wasm_transform_stream_abort(ts: TransformStreamExtension, error: Error): void {
-    mono_assert(ts.__fetch_promise_control, "expected fetch promise control");
-    ts.__fetch_promise_control.reject(error);
-    ts.__writer.abort(error);
+export function http_wasm_transform_stream_abort(ts: TransformStreamExtension): void {
+    ts.__writer.abort();
 }
 
 export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: TransformStreamExtension): Promise<ResponseExtension> {
-    const cancelable_promise = http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, body.readable);
-    body.__fetch_promise_control = loaderHelpers.getPromiseController(cancelable_promise);
-    return cancelable_promise;
+    const fetch_promise = http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, body.readable);
+    body.__fetch_promise = fetch_promise;
+    return fetch_promise;
 }
 
 export function http_wasm_fetch_bytes(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, bodyPtr: VoidPtr, bodyLength: number): Promise<ResponseExtension> {
@@ -112,7 +109,7 @@ export function http_wasm_fetch_bytes(url: string, header_names: string[], heade
     return http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, copy);
 }
 
-export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: Uint8Array | ReadableStream | null): ControllablePromise<ResponseExtension> {
+export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: Uint8Array | ReadableStream | null): Promise<ResponseExtension> {
     verifyEnvironment();
     mono_assert(url && typeof url === "string", "expected url string");
     mono_assert(header_names && header_values && Array.isArray(header_names) && Array.isArray(header_values) && header_names.length === header_values.length, "expected headerNames and headerValues arrays");
@@ -218,7 +215,7 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
 
 interface TransformStreamExtension extends TransformStream<Uint8Array, Uint8Array> {
     __writer: WritableStreamDefaultWriter<Uint8Array>
-    __fetch_promise_control?: PromiseController<ResponseExtension>
+    __fetch_promise?: Promise<ResponseExtension>
 }
 
 interface ResponseExtension extends Response {

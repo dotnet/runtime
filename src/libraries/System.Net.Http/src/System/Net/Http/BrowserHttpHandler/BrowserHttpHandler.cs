@@ -133,7 +133,7 @@ namespace System.Net.Http
             List<string> headerNames = new List<string>(headerCount);
             List<string> headerValues = new List<string>(headerCount);
             JSObject abortController = BrowserHttpInterop.CreateAbortController();
-            CancellationTokenRegistration? abortRegistration = cancellationToken.Register(static s =>
+            CancellationTokenRegistration abortRegistration = cancellationToken.Register(static s =>
             {
                 JSObject _abortController = (JSObject)s!;
 #if FEATURE_WASM_THREADS
@@ -234,10 +234,23 @@ namespace System.Net.Http
                                     Task closePromise = BrowserHttpInterop.TransformStreamClose(transformStream);
                                     await BrowserHttpInterop.CancelationHelper(closePromise, cancellationToken).ConfigureAwait(true);
                                 }
-                                catch (Exception ex)
+                                catch (Exception)
                                 {
-                                    BrowserHttpInterop.TransformStreamAbort(transformStream, ex);
-                                    // don't rethrow, prefer exceptions from fetch
+                                    BrowserHttpInterop.TransformStreamAbort(transformStream);
+                                    if (!abortController.IsDisposed)
+                                    {
+                                        BrowserHttpInterop.AbortRequest(abortController);
+                                    }
+                                    try
+                                    {
+                                        using (fetchResponse = await fetchTask.ConfigureAwait(true)) // observe exception
+                                        {
+                                            BrowserHttpInterop.AbortResponse(fetchResponse);
+                                        }
+                                    }
+                                    catch { /* ignore */ }
+                                    cancellationToken.ThrowIfCancellationRequested();
+                                    throw;
                                 }
                             }
 
@@ -259,17 +272,16 @@ namespace System.Net.Http
                     fetchResponse = await BrowserHttpInterop.CancelationHelper(fetchPromise, cancellationToken).ConfigureAwait(true);
                 }
 
-                return new WasmFetchResponse(fetchResponse, abortController, abortRegistration.Value);
+                return new WasmFetchResponse(fetchResponse, abortController, abortRegistration);
             }
-            catch (JSException jse)
+            catch (Exception ex)
             {
-                throw new HttpRequestException(jse.Message, jse);
-            }
-            catch (Exception)
-            {
-                // this would also trigger abort
-                abortRegistration?.Dispose();
-                abortController?.Dispose();
+                abortRegistration.Dispose();
+                abortController.Dispose();
+                if (ex is JSException jse)
+                {
+                    throw new HttpRequestException(jse.Message, jse);
+                }
                 throw;
             }
         }
