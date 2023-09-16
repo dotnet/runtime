@@ -108,8 +108,8 @@
 #pragma warning(disable:4477)
 #endif //_MSC_VER
 
-#define TRACE_GC
-#define SIMPLE_DPRINTF
+//#define TRACE_GC
+//#define SIMPLE_DPRINTF
 
 #if defined(TRACE_GC) && defined(SIMPLE_DPRINTF)
 void flush_gc_log (bool);
@@ -147,7 +147,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -363,8 +363,7 @@ const int policy_expand  = 2;
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
-//#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
-#define dprintf(l,x) {if ((l == 1) || (l == 6666)) {GCLog x;}}
+#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 #ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
@@ -1158,10 +1157,6 @@ public:
 
     // Updated at the end of a GC, if that GC condemns this generation.
     size_t    gc_elapsed_time;  // time it took for the gc to complete
-    // This is only used for gen2 GCs! For ephemeral GCs it can be incorrect for FGCs. If a BGC just updated
-    // its previous_time_clock we'd be adding that with the gc_elapsed_time of whatever GC that just got
-    // finished which is incorrect. But it is correct for gen2 GCs as they cannot overlap.
-    uint64_t  previous_gc_end_time; // previous_time_clock + previous gc's elapsed time
 
     //
     // The following fields (and fields in sdata) are initialized during GC init time and do not change.
@@ -2610,6 +2605,8 @@ private:
     // re-initialize a heap in preparation to putting it back into service
     PER_HEAP_METHOD void recommission_heap();
 
+    PER_HEAP_ISOLATED_METHOD size_t get_num_completed_gcs();
+
     PER_HEAP_ISOLATED_METHOD int calculate_new_heap_count();
 
     // check if we should change the heap count
@@ -2619,10 +2616,6 @@ private:
     PER_HEAP_METHOD bool change_heap_count (int new_n_heaps);
 
     PER_HEAP_ISOLATED_METHOD size_t get_msl_wait_time();
-
-#ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED_METHOD bool add_bgc_duration_percent();
-#endif //BACKGROUND_GC
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -4181,18 +4174,9 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint8_t* gc_high; // high end of the highest region being condemned
 #endif //USE_REGIONS
 
-#ifdef DYNAMIC_HEAP_COUNT
-#ifdef BACKGROUND_GC
-#define BGC_DURATION_PCT_NEG_VALUE (-1.0)
-    // Since BGC end is executed while EE is not paused, we record this value and write to our
-    // gen2 sample array next time EE a GC is triggered.
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC float bgc_duration_percent;
-#endif //BACKGROUND_GC
-
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC int heaps_in_this_gc;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
-#endif //DYNAMIC_HEAP_COUNT
 
     /**************************************************/
     // PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC fields //
@@ -4298,21 +4282,14 @@ private:
     // throughput cost percentage. We will also be using the wait time and the GC pause duration separately
     // for other purposes in the future.
     //
-    // For BGCs the way we attribute the msl wait time to the FGC if any is happening, otherwise we attribute
-    // it to the BGC in each pause. This means the msl wait happening during BGC sweep will be attributed to
-    // the next BGC or blocking GC.
-    // 
     // For all gen2 GCs we also keep a separate array currently just for the GC cost. This serves as a backstop
     // to smooth out the situation when we rarely pick the gen2 GCs in the first array.
     struct dynamic_heap_count_data_t
     {
         static const int sample_size = 3;
 
-        // should record wait time and GC duration separately because we will make different decisions
-        // base on them individually.
         struct sample
         {
-            // these should all be size_t.
             uint64_t    elapsed_between_gcs;    // time between gcs in microseconds (this should really be between_pauses)
             uint64_t    gc_pause_time;          // pause time for this GC
             uint64_t    msl_wait_time;
@@ -4320,7 +4297,7 @@ private:
 
         uint32_t        sample_index;
         sample          samples[sample_size];
-        size_t          prev_gc_index;
+        size_t          prev_num_completed_gcs;
 
         uint32_t        gen2_sample_index;
         // This is (gc_elapsed_time / time inbetween this and the last gen2 GC)
@@ -4328,11 +4305,11 @@ private:
 
         float median_throughput_cost_percent;          // estimated overhead of allocator + gc
         float smoothed_median_throughput_cost_percent; // exponentially smoothed version
-        float percent_heap_space_cost_per_heap; // percent space cost of adding a heap
-        float tcp_reduction_per_step_up;   // throughput cost percent effect of increasing heap count
-        float tcp_increase_per_step_down;  // throughput cost percent effect of decreasing heap count
-        float scp_increase_per_step_up;  // space cost percent effect of increasing heap count
-        float scp_decrease_per_step_down;// space cost percent effect of decreasing heap count
+        float percent_heap_space_cost_per_heap;        // percent space cost of adding a heap
+        float tcp_reduction_per_step_up;               // throughput cost percent effect of increasing heap count
+        float tcp_increase_per_step_down;              // throughput cost percent effect of decreasing heap count
+        float scp_increase_per_step_up;                // space cost percent effect of increasing heap count
+        float scp_decrease_per_step_down;              // space cost percent effect of decreasing heap count
 
         int             new_n_heaps;
         // the heap count we changed from
@@ -4342,18 +4319,8 @@ private:
         bool            init_only_p;
 
         bool            should_change_heap_count;
-        bool            changed_due_to_time_out;
         int             heap_count_to_change_to;
         int             heap_count_change_count;
-        int             total_heap_count_no_check_bgc;
-        int             total_heap_count_changed_before_gc;
-        int             total_heap_count_no_change_before_gc;
-        // number of times we are suppposed to check if we should change the heap count but couldn't due to BGC
-        int             heap_count_no_check_bgc;
-        // number of times we are suppposed to change but couldn't due to BGC
-        int             heap_count_no_change_bgc;
-        // number of times we tried to change but couldn't due to failure in preparation
-        int             heap_count_no_change_prepare;
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
         int             lowest_heap_with_msl_uoh;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
@@ -4364,9 +4331,10 @@ private:
         }
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
-    // This is the end_gc_time for blocking GCs and the 2nd suspension end for BGC, in us.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED GCEvent bgc_heap_count_change_event;
+    // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
+    // when the BGC ended.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t gc_index_full_gc_end;
 #endif //DYNAMIC_HEAP_COUNT
 
     /****************************************************/
@@ -4958,12 +4926,6 @@ inline
 size_t& dd_gc_elapsed_time (dynamic_data* inst)
 {
     return inst->gc_elapsed_time;
-}
-
-inline
-uint64_t& dd_previous_gc_end_time (dynamic_data* inst)
-{
-    return inst->previous_gc_end_time;
 }
 
 inline
