@@ -262,13 +262,13 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">'<paramref name="x" />' and '<paramref name="y" />' must not be empty.</exception>
         public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
             if (x.Length != y.Length)
             {
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-            if (x.Length == 0 || y.Length == 0)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
             float dotprod = 0f;
@@ -295,24 +295,16 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">'<paramref name="x" />' and '<paramref name="y" />' must not be empty.</exception>
         public static float Distance(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
             if (x.Length != y.Length)
             {
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
-            if (x.Length == 0 || y.Length == 0)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
 
-            float distance = 0f;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                float dist = x[i] - y[i];
-                distance += dist * dist;
-            }
-
-            return MathF.Sqrt(distance);
+            return MathF.Sqrt(Aggregate<SubtractSquaredOperator, AddOperator>(0f, x, y));
         }
 
         /// <summary>
@@ -329,14 +321,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            float dotprod = 0f;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                dotprod += x[i] * y[i];
-            }
-
-            return dotprod;
+            return Aggregate<MultiplyOperator, AddOperator>(0f, x, y);
         }
 
         /// <summary>
@@ -346,14 +331,7 @@ namespace System.Numerics.Tensors
         /// <returns>The L2 norm.</returns>
         public static float L2Normalize(ReadOnlySpan<float> x) // BLAS1: nrm2
         {
-            float magx = 0f;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                magx += x[i] * x[i];
-            }
-
-            return MathF.Sqrt(magx);
+            return MathF.Sqrt(Aggregate<LoadSquared, AddOperator>(0f, x));
         }
 
         /// <summary>
@@ -365,13 +343,13 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">'<paramref name="x" />' must not be empty.</exception>
         public static void SoftMax(ReadOnlySpan<float> x, Span<float> destination)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
             if (x.Length > destination.Length)
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-            if (x.Length == 0)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
             float expSum = 0f;
@@ -396,19 +374,462 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">'<paramref name="x" />' must not be empty.</exception>
         public static void Sigmoid(ReadOnlySpan<float> x, Span<float> destination)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
             if (x.Length > destination.Length)
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-            if (x.Length == 0)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
             for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = 1f / (1 + MathF.Exp(-x[i]));
             }
+        }
+
+        /// <summary>Computes the maximum element in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The maximum element in <paramref name="x"/>.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
+        public static float Max(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            float result = float.NegativeInfinity;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                // This matches the IEEE 754:2019 `maximum` function.
+                // It propagates NaN inputs back to the caller and
+                // otherwise returns the greater of the inputs.
+                // It treats +0 as greater than -0 as per the specification.
+
+                float current = x[i];
+
+                if (current != result)
+                {
+                    if (float.IsNaN(current))
+                    {
+                        return current;
+                    }
+
+                    if (result < current)
+                    {
+                        result = current;
+                    }
+                }
+                else if (IsNegative(result))
+                {
+                    result = current;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the minimum element in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The minimum element in <paramref name="x"/>.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
+        public static float Min(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            float result = float.PositiveInfinity;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                // This matches the IEEE 754:2019 `minimum` function
+                // It propagates NaN inputs back to the caller and
+                // otherwise returns the lesser of the inputs.
+                // It treats +0 as greater than -0 as per the specification.
+
+                float current = x[i];
+
+                if (current != result)
+                {
+                    if (float.IsNaN(current))
+                    {
+                        return current;
+                    }
+
+                    if (current < result)
+                    {
+                        result = current;
+                    }
+                }
+                else if (IsNegative(current))
+                {
+                    result = current;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the maximum magnitude of any element in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The maximum magnitude of any element in <paramref name="x"/>.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
+        public static float MaxMagnitude(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            float result = float.NegativeInfinity;
+            float resultMag = float.NegativeInfinity;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                // This matches the IEEE 754:2019 `maximumMagnitude` function.
+                // It propagates NaN inputs back to the caller and
+                // otherwise returns the input with a greater magnitude.
+                // It treats +0 as greater than -0 as per the specification.
+
+                float current = x[i];
+                float currentMag = Math.Abs(current);
+
+                if (currentMag != resultMag)
+                {
+                    if (float.IsNaN(currentMag))
+                    {
+                        return currentMag;
+                    }
+
+                    if (resultMag < currentMag)
+                    {
+                        result = current;
+                        resultMag = currentMag;
+                    }
+                }
+                else if (IsNegative(result))
+                {
+                    result = current;
+                    resultMag = currentMag;
+                }
+            }
+
+            return resultMag;
+        }
+
+        /// <summary>Computes the minimum magnitude of any element in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The minimum magnitude of any element in <paramref name="x"/>.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
+        public static float MinMagnitude(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            float resultMag = float.PositiveInfinity;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                // This matches the IEEE 754:2019 `minimumMagnitude` function.
+                // It propagates NaN inputs back to the caller and
+                // otherwise returns the input with a lesser magnitude.
+                // It treats +0 as greater than -0 as per the specification.
+
+                float current = x[i];
+                float currentMag = Math.Abs(current);
+
+                if (currentMag != resultMag)
+                {
+                    if (float.IsNaN(currentMag))
+                    {
+                        return currentMag;
+                    }
+
+                    if (currentMag < resultMag)
+                    {
+                        resultMag = currentMag;
+                    }
+                }
+                else if (IsNegative(current))
+                {
+                    resultMag = currentMag;
+                }
+            }
+
+            return resultMag;
+        }
+
+        /// <summary>Computes the index of the maximum element in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The index of the maximum element in <paramref name="x"/>, or -1 if <paramref name="x"/> is empty.</returns>
+        public static unsafe int IndexOfMax(ReadOnlySpan<float> x)
+        {
+            int result = -1;
+
+            if (!x.IsEmpty)
+            {
+                float max = float.NegativeInfinity;
+
+                for (int i = 0; i < x.Length; i++)
+                {
+                    // This matches the IEEE 754:2019 `maximum` function.
+                    // It propagates NaN inputs back to the caller and
+                    // otherwise returns the greater of the inputs.
+                    // It treats +0 as greater than -0 as per the specification.
+
+                    float current = x[i];
+
+                    if (current != max)
+                    {
+                        if (float.IsNaN(current))
+                        {
+                            return i;
+                        }
+
+                        if (max < current)
+                        {
+                            result = i;
+                            max = current;
+                        }
+                    }
+                    else if (IsNegative(max) && !IsNegative(current))
+                    {
+                        result = i;
+                        max = current;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the index of the minimum element in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The index of the minimum element in <paramref name="x"/>, or -1 if <paramref name="x"/> is empty.</returns>
+        public static unsafe int IndexOfMin(ReadOnlySpan<float> x)
+        {
+            int result = -1;
+
+            if (!x.IsEmpty)
+            {
+                float min = float.PositiveInfinity;
+
+                for (int i = 0; i < x.Length; i++)
+                {
+                    // This matches the IEEE 754:2019 `minimum` function.
+                    // It propagates NaN inputs back to the caller and
+                    // otherwise returns the lesser of the inputs.
+                    // It treats +0 as greater than -0 as per the specification.
+
+                    float current = x[i];
+
+                    if (current != min)
+                    {
+                        if (float.IsNaN(current))
+                        {
+                            return i;
+                        }
+
+                        if (current < min)
+                        {
+                            result = i;
+                            min = current;
+                        }
+                    }
+                    else if (IsNegative(current) && !IsNegative(min))
+                    {
+                        result = i;
+                        min = current;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the index of the element in <paramref name="x"/> with the maximum magnitude.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The index of the element with the maximum magnitude, or -1 if <paramref name="x"/> is empty.</returns>
+        /// <remarks>This method corresponds to the <c>iamax</c> method defined by <c>BLAS1</c>.</remarks>
+        public static unsafe int IndexOfMaxMagnitude(ReadOnlySpan<float> x)
+        {
+            int result = -1;
+
+            if (!x.IsEmpty)
+            {
+                float max = float.NegativeInfinity;
+                float maxMag = float.NegativeInfinity;
+
+                for (int i = 0; i < x.Length; i++)
+                {
+                    // This matches the IEEE 754:2019 `maximumMagnitude` function.
+                    // It propagates NaN inputs back to the caller and
+                    // otherwise returns the input with a greater magnitude.
+                    // It treats +0 as greater than -0 as per the specification.
+
+                    float current = x[i];
+                    float currentMag = Math.Abs(current);
+
+                    if (currentMag != maxMag)
+                    {
+                        if (float.IsNaN(currentMag))
+                        {
+                            return i;
+                        }
+
+                        if (maxMag < currentMag)
+                        {
+                            result = i;
+                            max = current;
+                            maxMag = currentMag;
+                        }
+                    }
+                    else if (IsNegative(max) && !IsNegative(current))
+                    {
+                        result = i;
+                        max = current;
+                        maxMag = currentMag;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the index of the element in <paramref name="x"/> with the minimum magnitude.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The index of the element with the minimum magnitude, or -1 if <paramref name="x"/> is empty.</returns>
+        public static unsafe int IndexOfMinMagnitude(ReadOnlySpan<float> x)
+        {
+            int result = -1;
+
+            if (!x.IsEmpty)
+            {
+                float min = float.PositiveInfinity;
+                float minMag = float.PositiveInfinity;
+
+                for (int i = 0; i < x.Length; i++)
+                {
+                    // This matches the IEEE 754:2019 `minimumMagnitude` function
+                    // It propagates NaN inputs back to the caller and
+                    // otherwise returns the input with a lesser magnitude.
+                    // It treats +0 as greater than -0 as per the specification.
+
+                    float current = x[i];
+                    float currentMag = Math.Abs(current);
+
+                    if (currentMag != minMag)
+                    {
+                        if (float.IsNaN(currentMag))
+                        {
+                            return i;
+                        }
+
+                        if (currentMag < minMag)
+                        {
+                            result = i;
+                            min = current;
+                            minMag = currentMag;
+                        }
+                    }
+                    else if (IsNegative(current) && !IsNegative(min))
+                    {
+                        result = i;
+                        min = current;
+                        minMag = currentMag;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the sum of all elements in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The result of adding all elements in <paramref name="x"/>, or zero if <paramref name="x"/> is empty.</returns>
+        public static float Sum(ReadOnlySpan<float> x) =>
+            Aggregate<LoadIdentity, AddOperator>(0f, x);
+
+        /// <summary>Computes the sum of the squares of every element in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The result of adding every element in <paramref name="x"/> multiplied by itself, or zero if <paramref name="x"/> is empty.</returns>
+        /// <remarks>This method effectively does <c><see cref="TensorPrimitives" />.Sum(<see cref="TensorPrimitives" />.Multiply(<paramref name="x" />, <paramref name="x" />))</c>.</remarks>
+        public static float SumOfSquares(ReadOnlySpan<float> x) =>
+            Aggregate<LoadSquared, AddOperator>(0f, x);
+
+        /// <summary>Computes the sum of the absolute values of every element in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The result of adding the absolute value of every element in <paramref name="x"/>, or zero if <paramref name="x"/> is empty.</returns>
+        /// <remarks>
+        ///     <para>This method effectively does <c><see cref="TensorPrimitives" />.Sum(<see cref="TensorPrimitives" />.Abs(<paramref name="x" />))</c>.</para>
+        ///     <para>This method corresponds to the <c>asum</c> method defined by <c>BLAS1</c>.</para>
+        /// </remarks>
+        public static float SumOfMagnitudes(ReadOnlySpan<float> x) =>
+            Aggregate<LoadAbsolute, AddOperator>(0f, x);
+
+        /// <summary>Computes the product of all elements in <paramref name="x"/>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The result of multiplying all elements in <paramref name="x"/>.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
+        public static float Product(ReadOnlySpan<float> x)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            return Aggregate<LoadIdentity, MultiplyOperator>(1.0f, x);
+        }
+
+        /// <summary>Computes the product of the element-wise result of: <c><paramref name="x" /> + <paramref name="y" /></c>.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <returns>The result of multiplying the element-wise additions of the elements in each tensor.</returns>
+        /// <exception cref="ArgumentException">Length of both input spans must be greater than zero.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="y"/> must have the same length.</exception>
+        /// <remarks>This method effectively does <c><see cref="TensorPrimitives" />.Product(<see cref="TensorPrimitives" />.Add(<paramref name="x" />, <paramref name="y" />))</c>.</remarks>
+        public static float ProductOfSums(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            return Aggregate<AddOperator, MultiplyOperator>(1.0f, x, y);
+        }
+
+        /// <summary>Computes the product of the element-wise result of: <c><paramref name="x" /> - <paramref name="y" /></c>.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <returns>The result of multiplying the element-wise subtraction of the elements in the second tensor from the first tensor.</returns>
+        /// <exception cref="ArgumentException">Length of both input spans must be greater than zero.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="y"/> must have the same length.</exception>
+        /// <remarks>This method effectively does <c><see cref="TensorPrimitives" />.Product(<see cref="TensorPrimitives" />.Subtract(<paramref name="x" />, <paramref name="y" />))</c>.</remarks>
+        public static float ProductOfDifferences(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            return Aggregate<SubtractOperator, MultiplyOperator>(1.0f, x, y);
         }
     }
 }
