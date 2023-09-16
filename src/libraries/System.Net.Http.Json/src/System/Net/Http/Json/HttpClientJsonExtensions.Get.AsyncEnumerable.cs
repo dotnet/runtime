@@ -135,6 +135,11 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+            
             return Core(client, requestUri, options, cancellationToken);
 
             static async IAsyncEnumerable<TValue?> Core(
