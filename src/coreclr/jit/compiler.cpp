@@ -5254,8 +5254,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
     memset(visitedLoopNum, false, sizeof(visitedLoopNum));
 
 #ifdef DEBUG
-    int visitedBlockForLoopNum[BasicBlock::MAX_LOOP_NUM];
-    memset(visitedBlockForLoopNum, false, sizeof(visitedBlockForLoopNum));
+    unsigned visitedBlockForLoopNum[BasicBlock::MAX_LOOP_NUM];
+    memset(visitedBlockForLoopNum, 0, sizeof(visitedBlockForLoopNum));
 #endif
 
     if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
@@ -5333,11 +5333,11 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 madeChanges       = true;
                 unmarkedLoopAlign = true;
             }
-            else if (visitedLoopNum[loopTop->bbNatLoopNum])
+            else if ((loopTop->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && visitedLoopNum[loopTop->bbNatLoopNum])
             {
 #ifdef DEBUG
-                char buffer[50];
-                sprintf_s(buffer, 50, "loop block " FMT_BB " appears before top of loop",
+                char buffer[100];
+                sprintf_s(buffer, 100, "loop block " FMT_BB " appears before top of loop",
                           visitedBlockForLoopNum[loopTop->bbNatLoopNum]);
 #endif
 
