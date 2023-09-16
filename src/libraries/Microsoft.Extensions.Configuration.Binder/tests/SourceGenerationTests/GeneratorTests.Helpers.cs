@@ -145,7 +145,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             if (validateOutputCompDiags)
             {
-                Assert.False(outputCompilation.GetDiagnostics().Any(d => d.Severity > DiagnosticSeverity.Info));
+                ImmutableArray<Diagnostic> diagnostics = outputCompilation.GetDiagnostics();
+                Assert.False(diagnostics.Any(d => d.Severity > DiagnosticSeverity.Info));
             }
 
             return (runResult.Results[0].Diagnostics, runResult.Results[0].GeneratedSources);
