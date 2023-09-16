@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
-        <target state="new">Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</target>
+        <target state="translated">バインダー呼び出しのバインド ロジックが生成されませんでした。サポートされていない入力パターンには、ジェネリック呼び出し、ボックス化されたオブジェクトの受け渡し、および 'public' または 'internal' ではない型の受け渡しが含まれます。</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
