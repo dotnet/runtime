@@ -6,6 +6,10 @@ else
 DOTNET_Q_ARGS=--nologo -bl
 endif
 
+ifneq ($(AOT),)
+override MSBUILD_ARGS+=/p:RunAOTCompilation=true /p:EnableAggressiveTrimming=true
+endif
+
 CONFIG?=Release
 
 WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=wasi /p:Configuration=$(CONFIG)
@@ -24,4 +28,7 @@ clean:
 	rm -rf bin $(TOP)/artifacts/obj/mono/$(PROJECT_NAME:%.csproj=%)
 
 run-console:
-	cd bin/wasi-wasm/AppBundle && PATH=${WASMTIME_PROV_DIR}:${PATH} ./run-wasmtime.sh $(ARGS)
+	cd bin/wasi-wasm/AppBundle && PATH="${WASMTIME_PROV_DIR}:${PATH}" ./run-wasmtime.sh $(ARGS)
+
+run-node:
+	cd bin/wasi-wasm/AppBundle && ./run-node.sh $(ARGS)
