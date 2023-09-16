@@ -63,7 +63,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                _sourceGenSpec.EmitThrowIfNullMethod = _typeSymbols.ArgumentNullException is not null && _typeSymbols.ArgumentNullException.GetMembers("ThrowIfNull").IsEmpty is false;
+                if (_typeSymbols.ArgumentNullException is not null)
+                {
+                    var throwIfNullMethods = _typeSymbols.ArgumentNullException.GetMembers("ThrowIfNull");
+
+                    foreach (var throwIfNullMethod in throwIfNullMethods)
+                    {
+                        if (throwIfNullMethod is IMethodSymbol throwIfNullMethodSymbol && throwIfNullMethodSymbol.IsStatic && throwIfNullMethodSymbol.Parameters.Length == 2)
+                        {
+                            var parameters = throwIfNullMethodSymbol.Parameters;
+                            var firstParam = parameters[0];
+                            var secondParam = parameters[1];
+
+                            if (firstParam.Name == "argument" && firstParam.Type.Equals(_typeSymbols.Object, SymbolEqualityComparer.Default)
+                                && secondParam.Name == "paramName" && secondParam.Type.Equals(_typeSymbols.String, SymbolEqualityComparer.Default))
+                            {
+                                _sourceGenSpec.EmitThrowIfNullMethod = true;
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 return _sourceGenSpec;
             }

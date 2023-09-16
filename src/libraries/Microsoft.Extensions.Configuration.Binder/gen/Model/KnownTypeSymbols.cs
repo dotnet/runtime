@@ -56,6 +56,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? List { get; }
         public INamedTypeSymbol Enum { get; }
         public INamedTypeSymbol? ArgumentNullException { get; }
+        public INamedTypeSymbol Object { get; }
 
         public KnownTypeSymbols(CSharpCompilation compilation)
         {
@@ -114,6 +115,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             // needed to be able to know if a member exist inside the compilation unit
             Enum = compilation.GetSpecialType(SpecialType.System_Enum);
             ArgumentNullException = compilation.GetBestTypeByMetadataName(typeof(ArgumentNullException));
+
+            Object = compilation.GetBestTypeByMetadataName(typeof(object));
+            String = compilation.GetBestTypeByMetadataName(typeof(string));
         }
     }
 }
