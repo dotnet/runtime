@@ -580,6 +580,25 @@ namespace System.Net.Http.Json.Functional.Tests
                 await Task.Delay(TimeSpan.FromMilliseconds(10));
             }
         }
+
+        [Fact]
+        public async Task GetFromJsonAsAsyncEnumerable_SerializerCaseInsensitiveTest()
+        {
+            using var client = new HttpClient(new CustomResponseHandler((r, c) =>
+            {
+                string json = """[{"value":1},{"value":2}]""";
+                HttpResponseMessage response = new()
+                {
+                    Content = new StringContent(json)
+                };
+                return Task.FromResult(response);
+            }));
+
+            await foreach (var m in client.GetFromJsonAsAsyncEnumerable<TestModel>("http://dummyUrl"))
+            {
+                Assert.True(m.Value > 0);
+            }
+        }
     }
 }
 
@@ -592,4 +611,9 @@ file sealed class CustomResponseHandler : HttpMessageHandler
 
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken) => _func(request, cancellationToken);
+}
+
+file sealed class TestModel
+{
+    public int Value { get; set; }
 }
