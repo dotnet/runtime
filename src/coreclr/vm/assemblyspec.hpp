@@ -171,7 +171,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     HRESULT Bind(
         AppDomain* pAppDomain,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDERASSEMBLYREF* ppAssembly);
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);

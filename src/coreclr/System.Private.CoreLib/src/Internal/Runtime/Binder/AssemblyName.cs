@@ -165,20 +165,20 @@ namespace Internal.Runtime.Binder
             }
         }
 
-        public AssemblyName(in AssemblyNameData data)
+        public unsafe AssemblyName(AssemblyNameData* data)
         {
-            AssemblyIdentityFlags flags = data.IdentityFlags;
-            SimpleName = new MdUtf8String(data.Name).ToString();
+            AssemblyIdentityFlags flags = data->IdentityFlags;
+            SimpleName = new MdUtf8String(data->Name).ToString();
             Version = new AssemblyVersion
             {
-                Major = data.MajorVersion,
-                Minor = data.MinorVersion,
-                Build = data.BuildNumber,
-                Revision = data.RevisionNumber
+                Major = data->MajorVersion,
+                Minor = data->MinorVersion,
+                Build = data->BuildNumber,
+                Revision = data->RevisionNumber
             };
-            CultureOrLanguage = new MdUtf8String(data.Culture).ToString();
+            CultureOrLanguage = new MdUtf8String(data->Culture).ToString();
 
-            PublicKeyOrTokenBLOB = new ReadOnlySpan<byte>(data.PublicKeyOrToken, data.PublicKeyOrTokenLength).ToArray();
+            PublicKeyOrTokenBLOB = new ReadOnlySpan<byte>(data->PublicKeyOrToken, data->PublicKeyOrTokenLength).ToArray();
             if ((flags & AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY) != 0)
             {
                 // Convert public key to token
@@ -191,8 +191,8 @@ namespace Internal.Runtime.Binder
                 flags |= AssemblyIdentityFlags.IDENTITY_FLAG_PUBLIC_KEY_TOKEN;
             }
 
-            ProcessorArchitecture = data.ProcessorArchitecture;
-            ContentType = data.ContentType;
+            ProcessorArchitecture = data->ProcessorArchitecture;
+            ContentType = data->ContentType;
             IdentityFlags = flags;
         }
 

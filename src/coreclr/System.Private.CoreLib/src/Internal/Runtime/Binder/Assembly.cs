@@ -15,6 +15,7 @@ namespace Internal.Runtime.Binder
         public IntPtr PEImage;
         private IntPtr m_pDomainAssembly;
         private AssemblyBinder? m_binder;
+        private bool m_isCoreLib;
 #pragma warning restore CA1823, 414, 169
 
         public AssemblyBinder? Binder
@@ -35,6 +36,8 @@ namespace Internal.Runtime.Binder
             {
                 IsDefinition = true
             };
+
+            m_isCoreLib = AssemblyName.IsCoreLib;
 
             // validate architecture
             if (!AssemblyBinderCommon.IsValidArchitecture(AssemblyName.ProcessorArchitecture))

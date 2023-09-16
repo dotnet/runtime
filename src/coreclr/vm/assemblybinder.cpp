@@ -213,10 +213,10 @@ void AssemblyBinder::GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ S
 
     AppDomain* domain = spec->GetAppDomain();
     AssemblyBinder* binder = /* spec->GetBinder() */ NULL;
-    if (binder == nullptr)
-        binder = spec->GetBinderFromParentAssembly(domain);
+    //if (binder == nullptr)
+    //    binder = spec->GetBinderFromParentAssembly(domain);
 
-    binder->GetNameForDiagnostics(alcName);
+    //binder->GetNameForDiagnostics(alcName);
 }
 
 #endif  //DACCESS_COMPILE

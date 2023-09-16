@@ -31,9 +31,9 @@ namespace Internal.Runtime.Binder
 
     internal abstract class AssemblyBinder
     {
-        public int BindAssemblyByName(in AssemblyNameData pAssemblyNameData, out Assembly? assembly)
+        public unsafe int BindAssemblyByName(void* pAssemblyNameData, out Assembly? assembly)
         {
-            return BindUsingAssemblyName(new AssemblyName(pAssemblyNameData), out assembly);
+            return BindUsingAssemblyName(new AssemblyName((AssemblyNameData*)pAssemblyNameData), out assembly);
         }
 
         public abstract int BindUsingPEImage(IntPtr pPEImage, bool excludeAppPaths, out Assembly? assembly);

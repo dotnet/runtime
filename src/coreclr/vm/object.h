@@ -1461,6 +1461,7 @@ public:
     PEImage* m_PEImage;
     DomainAssembly* m_pDomainAssembly;
     OBJECTREF m_binder;
+    CLR_BOOL m_isCoreLib;
 };
 
 // AssemblyLoadContextBaseObject

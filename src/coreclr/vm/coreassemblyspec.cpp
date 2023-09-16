@@ -28,7 +28,7 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
+HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly)
 {
     CONTRACTL
     {
@@ -43,9 +43,9 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     HRESULT hr=S_OK;
 
     // Have a default binding context setup
-    AssemblyBinder *pBinder = GetBinderFromParentAssembly(pAppDomain);
+    ASSEMBLYBINDERREF pBinder = GetBinderFromParentAssembly(pAppDomain);
 
-    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
+    BINDERASSEMBLYREF pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
     if (IsCoreLibSatellite())
@@ -64,13 +64,22 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     {
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
-        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
+
+        MethodDescCallSite methBindAssemblyByName(METHOD__BINDER_ASSEMBLYBINDER__BINDASSEMBLYBYNAME);
+        ARG_SLOT args[3] =
+        {
+            ObjToArgSlot(pBinder),
+            PtrToArgSlot(&assemblyNameData),
+            PtrToArgSlot(&pPrivAsm)
+        };
+
+        hr = methBindAssemblyByName.Call_RetHR(args);
     }
 
     if (SUCCEEDED(hr))
     {
-        _ASSERTE(pPrivAsm != nullptr);
-        *ppAssembly = pPrivAsm.Extract();
+        _ASSERTE(pPrivAsm != NULL);
+        *ppAssembly = pPrivAsm;
     }
 
     return hr;

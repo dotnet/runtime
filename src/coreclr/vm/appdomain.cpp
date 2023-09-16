@@ -3561,12 +3561,12 @@ PEAssembly * AppDomain::BindAssemblySpec(
         {
 
             {
-                ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
+                BINDERASSEMBLYREF boundAssembly;
                 hrBindResult = pSpec->Bind(this, &boundAssembly);
 
-                if (boundAssembly)
+                if (boundAssembly != NULL)
                 {
-                    if (SystemDomain::SystemPEAssembly() && boundAssembly->GetAssemblyName()->IsCoreLib())
+                    if (SystemDomain::SystemPEAssembly() && boundAssembly->m_isCoreLib)
                     {
                         // Avoid rebinding to another copy of CoreLib
                         result = SystemDomain::SystemPEAssembly();
@@ -3579,9 +3579,9 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
-                    AssemblyBinder* pBinder = result->GetAssemblyBinder();
+                    ASSEMBLYBINDERREF pBinder = result->GetAssemblyBinder();
                     _ASSERTE(pBinder != NULL);
-                    pSpec->SetBinder(pBinder);
+                    pSpec->SetBinder(CreateHandle(pBinder));
 
                     // Failure to add simply means someone else beat us to it. In that case
                     // the FindCachedFile call below (after catch block) will update result
