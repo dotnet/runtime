@@ -8,13 +8,41 @@
 
 <!-- The key features of this package -->
 
-*
-*
-*
+* In-memory configuration provider
+* Chained configuration provider for chaining multiple confiugration providers together.
+* Base types that implement configuration abstraction interfaces that can be used when implementing other configuration providers.
 
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+```C#
+using Microsoft.Extensions.Configuration;
+
+var configurationBuilder = new ConfigurationBuilder();
+
+configurationBuilder.AddInMemoryCollection(
+    new Dictionary<string, string?>
+    {
+        ["Setting1"] = "value",
+        ["MyOptions:Enabled"] = bool.TrueString,
+    });
+
+configurationBuilder.AddInMemoryCollection(
+    new Dictionary<string, string?>
+    {
+        ["Setting2"] = "value2",
+        ["MyOptions:Enabled"] = bool.FalseString,
+    });
+
+var config = configurationBuilder.Build();
+
+// note case-insensitive
+Console.WriteLine(config["setting1"]);
+Console.WriteLine(config["setting2"]);
+
+// note last in wins
+Console.WriteLine(config["MyOptions:Enabled"]);
+```
 
 ## Main Types
 
@@ -22,9 +50,10 @@
 
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `Microsoft.Extensions.Configuration.ConfigurationBuilder`
+* `Microsoft.Extensions.Configuration.ConfigurationManager`
+* `Microsoft.Extensions.Configuration.ConfigurationRoot`
+* `Microsoft.Extensions.Configuration.ConfigurationSection`
 
 ## Additional Documentation
 
@@ -36,6 +65,15 @@ The main types provided by this library are:
 ## Related Packages
 
 <!-- The related packages associated with this package -->
+* [Microsoft.Extensions.Configuration.Binder](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Binder)
+* [Microsoft.Extensions.Configuration.CommandLine](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.CommandLine)
+* [Microsoft.Extensions.Configuration.EnvironmentVariables](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.EnvironmentVariables)
+* [Microsoft.Extensions.Configuration.FileExtensions](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.FileExtensions)
+* [Microsoft.Extensions.Configuration.Ini](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Ini)
+* [Microsoft.Extensions.Configuration.Json](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Json)
+* [Microsoft.Extensions.Configuration.UserSecrets](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.UserSecrets)
+* [Microsoft.Extensions.Configuration.Xml](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Xml)
+
 
 ## Feedback & Contributing
 
