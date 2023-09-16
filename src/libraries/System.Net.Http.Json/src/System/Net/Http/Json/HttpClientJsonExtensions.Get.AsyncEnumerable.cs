@@ -134,13 +134,25 @@ namespace System.Net.Http.Json
             Uri? requestUri,
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
-        {
-            options ??= JsonSerializerOptions.Default;
-            options.MakeReadOnly();
+        {        
+            return Core(client, requestUri, options, cancellationToken);
 
-            var jsonTypeInfo = (JsonTypeInfo<TValue>)options.GetTypeInfo(typeof(TValue));
+            static async IAsyncEnumerable<TValue?> Core(
+                HttpClient client,
+                Uri? requestUri,
+                JsonSerializerOptions? options,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                using HttpResponseMessage response = await client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                    .ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
 
-            return FromJsonStreamAsyncCore(client, requestUri, jsonTypeInfo, cancellationToken);
+                await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
+                    options, cancellationToken).ConfigureAwait(false))
+                {
+                    yield return value;
+                }
+            }
         }
 
         private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(
@@ -166,11 +178,8 @@ namespace System.Net.Http.Json
                     .ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 
-                using Stream readStream = await GetHttpResponseStreamAsync(client, response, false, cancellationToken)
-                    .ConfigureAwait(false);
-
-                await foreach (TValue? value in JsonSerializer.DeserializeAsyncEnumerable<TValue>(
-                    readStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false))
+                await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
+                    jsonTypeInfo, cancellationToken).ConfigureAwait(false))
                 {
                     yield return value;
                 }
