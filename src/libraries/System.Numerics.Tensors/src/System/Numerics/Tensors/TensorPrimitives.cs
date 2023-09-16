@@ -262,13 +262,13 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">'<paramref name="x" />' and '<paramref name="y" />' must not be empty.</exception>
         public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
             if (x.Length != y.Length)
             {
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-            if (x.Length == 0 || y.Length == 0)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
             float dotprod = 0f;
@@ -295,24 +295,16 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">'<paramref name="x" />' and '<paramref name="y" />' must not be empty.</exception>
         public static float Distance(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
             if (x.Length != y.Length)
             {
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
-            if (x.Length == 0 || y.Length == 0)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
 
-            float distance = 0f;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                float dist = x[i] - y[i];
-                distance += dist * dist;
-            }
-
-            return MathF.Sqrt(distance);
+            return MathF.Sqrt(Aggregate<SubtractSquaredOperator, AddOperator>(0f, x, y));
         }
 
         /// <summary>
@@ -329,14 +321,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            float dotprod = 0f;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                dotprod += x[i] * y[i];
-            }
-
-            return dotprod;
+            return Aggregate<MultiplyOperator, AddOperator>(0f, x, y);
         }
 
         /// <summary>
@@ -346,14 +331,7 @@ namespace System.Numerics.Tensors
         /// <returns>The L2 norm.</returns>
         public static float L2Normalize(ReadOnlySpan<float> x) // BLAS1: nrm2
         {
-            float magx = 0f;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                magx += x[i] * x[i];
-            }
-
-            return MathF.Sqrt(magx);
+            return MathF.Sqrt(Aggregate<LoadSquared, AddOperator>(0f, x));
         }
 
         /// <summary>
@@ -365,13 +343,13 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">'<paramref name="x" />' must not be empty.</exception>
         public static void SoftMax(ReadOnlySpan<float> x, Span<float> destination)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
             if (x.Length > destination.Length)
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-            if (x.Length == 0)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
             float expSum = 0f;
@@ -396,13 +374,13 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">'<paramref name="x" />' must not be empty.</exception>
         public static void Sigmoid(ReadOnlySpan<float> x, Span<float> destination)
         {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
             if (x.Length > destination.Length)
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-            if (x.Length == 0)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
             for (int i = 0; i < x.Length; i++)
@@ -497,7 +475,7 @@ namespace System.Numerics.Tensors
             return result;
         }
 
-        /// <summary>Computes the maximum magntude of any element in <paramref name="x"/>.</summary>
+        /// <summary>Computes the maximum magnitude of any element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The maximum magnitude of any element in <paramref name="x"/>.</returns>
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
@@ -544,7 +522,7 @@ namespace System.Numerics.Tensors
             return resultMag;
         }
 
-        /// <summary>Computes the minimum magntude of any element in <paramref name="x"/>.</summary>
+        /// <summary>Computes the minimum magnitude of any element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The minimum magnitude of any element in <paramref name="x"/>.</returns>
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
@@ -624,7 +602,7 @@ namespace System.Numerics.Tensors
                             max = current;
                         }
                     }
-                    else if (IsNegative(max))
+                    else if (IsNegative(max) && !IsNegative(current))
                     {
                         result = i;
                         max = current;
@@ -668,7 +646,7 @@ namespace System.Numerics.Tensors
                             min = current;
                         }
                     }
-                    else if (IsNegative(current))
+                    else if (IsNegative(current) && !IsNegative(min))
                     {
                         result = i;
                         min = current;
@@ -716,7 +694,7 @@ namespace System.Numerics.Tensors
                             maxMag = currentMag;
                         }
                     }
-                    else if (IsNegative(max))
+                    else if (IsNegative(max) && !IsNegative(current))
                     {
                         result = i;
                         max = current;
@@ -737,6 +715,7 @@ namespace System.Numerics.Tensors
 
             if (!x.IsEmpty)
             {
+                float min = float.PositiveInfinity;
                 float minMag = float.PositiveInfinity;
 
                 for (int i = 0; i < x.Length; i++)
@@ -759,12 +738,14 @@ namespace System.Numerics.Tensors
                         if (currentMag < minMag)
                         {
                             result = i;
+                            min = current;
                             minMag = currentMag;
                         }
                     }
-                    else if (IsNegative(current))
+                    else if (IsNegative(current) && !IsNegative(min))
                     {
                         result = i;
+                        min = current;
                         minMag = currentMag;
                     }
                 }
@@ -777,14 +758,14 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The result of adding all elements in <paramref name="x"/>, or zero if <paramref name="x"/> is empty.</returns>
         public static float Sum(ReadOnlySpan<float> x) =>
-            Aggregate<LoadIdentity, AddOperator>(0.0f, x);
+            Aggregate<LoadIdentity, AddOperator>(0f, x);
 
         /// <summary>Computes the sum of the squares of every element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The result of adding every element in <paramref name="x"/> multiplied by itself, or zero if <paramref name="x"/> is empty.</returns>
         /// <remarks>This method effectively does <c><see cref="TensorPrimitives" />.Sum(<see cref="TensorPrimitives" />.Multiply(<paramref name="x" />, <paramref name="x" />))</c>.</remarks>
         public static float SumOfSquares(ReadOnlySpan<float> x) =>
-            Aggregate<LoadSquared, AddOperator>(0.0f, x);
+            Aggregate<LoadSquared, AddOperator>(0f, x);
 
         /// <summary>Computes the sum of the absolute values of every element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -794,7 +775,7 @@ namespace System.Numerics.Tensors
         ///     <para>This method corresponds to the <c>asum</c> method defined by <c>BLAS1</c>.</para>
         /// </remarks>
         public static float SumOfMagnitudes(ReadOnlySpan<float> x) =>
-            Aggregate<LoadAbsolute, AddOperator>(0.0f, x);
+            Aggregate<LoadAbsolute, AddOperator>(0f, x);
 
         /// <summary>Computes the product of all elements in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>

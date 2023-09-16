@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -10,6 +9,63 @@ namespace System.Numerics.Tensors
     public static partial class TensorPrimitives
     {
         private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
+
+        private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+        {
+            // Compute the same as:
+            // TensorPrimitives.Dot(x, y) / (Math.Sqrt(TensorPrimitives.SumOfSquares(x)) * Math.Sqrt(TensorPrimitives.SumOfSquares(y)))
+            // but only looping over each span once.
+
+            float dotProduct = 0f;
+            float xSumOfSquares = 0f;
+            float ySumOfSquares = 0f;
+
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+                ref float yRef = ref MemoryMarshal.GetReference(y);
+
+                Vector<float> dotProductVector = Vector<float>.Zero;
+                Vector<float> xSumOfSquaresVector = Vector<float>.Zero;
+                Vector<float> ySumOfSquaresVector = Vector<float>.Zero;
+
+                // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
+                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                do
+                {
+                    Vector<float> xVec = AsVector(ref xRef, i);
+                    Vector<float> yVec = AsVector(ref yRef, i);
+
+                    dotProductVector += xVec * yVec;
+                    xSumOfSquaresVector += xVec * xVec;
+                    ySumOfSquaresVector += yVec * yVec;
+
+                    i += Vector<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // Sum the vector lanes into the scalar result.
+                for (int e = 0; e < Vector<float>.Count; e++)
+                {
+                    dotProduct += dotProductVector[e];
+                    xSumOfSquares += xSumOfSquaresVector[e];
+                    ySumOfSquares += ySumOfSquaresVector[e];
+                }
+            }
+
+            // Process any remaining elements past the last vector.
+            for (; (uint)i < (uint)x.Length; i++)
+            {
+                dotProduct += x[i] * y[i];
+                xSumOfSquares += x[i] * x[i];
+                ySumOfSquares += y[i] * y[i];
+            }
+
+            // Sum(X * Y) / (|X| * |Y|)
+            return dotProduct / (MathF.Sqrt(xSumOfSquares) * MathF.Sqrt(ySumOfSquares));
+        }
 
         private static float Aggregate<TLoad, TAggregate>(
             float identityValue, ReadOnlySpan<float> x, TLoad load = default, TAggregate aggregate = default)
@@ -59,9 +115,6 @@ namespace System.Numerics.Tensors
             where TBinary : IBinaryOperator
             where TAggregate : IBinaryOperator
         {
-            Debug.Assert(!x.IsEmpty);
-            Debug.Assert(x.Length == y.Length);
-
             // Initialize the result to the identity value
             float result = identityValue;
             int i = 0;
@@ -451,6 +504,21 @@ namespace System.Numerics.Tensors
         {
             public float Invoke(float x, float y) => x - y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x - y;
+        }
+
+        private readonly struct SubtractSquaredOperator : IBinaryOperator
+        {
+            public float Invoke(float x, float y)
+            {
+                float tmp = x - y;
+                return tmp * tmp;
+            }
+
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y)
+            {
+                Vector<float> tmp = x - y;
+                return tmp * tmp;
+            }
         }
 
         private readonly struct MultiplyOperator : IBinaryOperator

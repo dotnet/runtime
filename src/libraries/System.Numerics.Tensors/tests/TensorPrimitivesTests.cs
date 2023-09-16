@@ -4,8 +4,6 @@
 using Xunit;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Diagnostics;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0
 
@@ -13,18 +11,15 @@ namespace System.Numerics.Tensors.Tests
 {
     public static partial class TensorPrimitivesTests
     {
-        private const double Tolerance = 0.00001;
+        private const double Tolerance = 0.0001;
 
         public static IEnumerable<object[]> TensorLengths =>
-            from length in new[] { 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 15, 16, 17, 31, 32, 33, 100 }
+            from length in Enumerable.Range(1, 128)
             select new object[] { length };
 
         private static readonly Random s_random = new Random(20230828);
 
-        private static float[] CreateTensor(int size)
-        {
-            return new float[size];
-        }
+        private static float[] CreateTensor(int size) => new float[size];
 
         private static float[] CreateAndFillTensor(int size)
         {
@@ -719,27 +714,43 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void CosineSimilarity_ThrowsForEmpty_x_y()
         {
-            float[] x = [];
-            float[] y = [];
-
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(x, y));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(ReadOnlySpan<float>.Empty, ReadOnlySpan<float>.Empty));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(ReadOnlySpan<float>.Empty, CreateTensor(1)));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(CreateTensor(1), ReadOnlySpan<float>.Empty));
         }
 
         [Theory]
-        [InlineData(new float[] { 3, 2, 0, 5 }, new float[] { 1, 0, 0, 0 }, 0.49f)]
+        [InlineData(new float[] { 3, 2, 0, 5 }, new float[] { 1, 0, 0, 0 }, 0.48666f)]
         [InlineData(new float[] { 1, 1, 1, 1, 1, 0 }, new float[] { 1, 1, 1, 1, 0, 1 }, 0.80f)]
-        public static void CosineSimilarity(float[] x, float[] y, float expectedResult)
+        public static void CosineSimilarity_KnownValues(float[] x, float[] y, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.CosineSimilarity(x, y), .01f);
+            Assert.Equal(expectedResult, TensorPrimitives.CosineSimilarity(x, y), Tolerance);
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void CosineSimilarity(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+
+            float dot = 0f, squareX = 0f, squareY = 0f;
+            for (int i = 0; i < x.Length; i++)
+            {
+                dot += x[i] * y[i];
+                squareX += x[i] * x[i];
+                squareY += y[i] * y[i];
+            }
+
+            Assert.Equal(dot / (Math.Sqrt(squareX) * Math.Sqrt(squareY)), TensorPrimitives.CosineSimilarity(x, y), Tolerance);
         }
 
         [Fact]
         public static void Distance_ThrowsForEmpty_x_y()
         {
-            float[] x = [];
-            float[] y = [];
-
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(x, y));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(ReadOnlySpan<float>.Empty, ReadOnlySpan<float>.Empty));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(ReadOnlySpan<float>.Empty, CreateTensor(1)));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(CreateTensor(1), ReadOnlySpan<float>.Empty));
         }
 
         [Theory]
@@ -757,9 +768,25 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { 0, 4 }, new float[] { 6, 2 }, 6.3245f)]
         [InlineData(new float[] { 1, 2, 3 }, new float[] { 4, 5, 6 }, 5.1961f)]
         [InlineData(new float[] { 5, 1, 6, 10 }, new float[] { 7, 2, 8, 4 }, 6.7082f)]
-        public static void Distance(float[] x, float[] y, float expectedResult)
+        public static void Distance_KnownValues(float[] x, float[] y, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.Distance(x, y), .001f);
+            Assert.Equal(expectedResult, TensorPrimitives.Distance(x, y), Tolerance);
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Distance(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+
+            float distance = 0f;
+            for (int i = 0; i < x.Length; i++)
+            {
+                distance += (x[i] - y[i]) * (x[i] - y[i]);
+            }
+
+            Assert.Equal(Math.Sqrt(distance), TensorPrimitives.Distance(x, y), Tolerance);
         }
 
         [Theory]
@@ -777,20 +804,51 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { 1, 2, 3 }, new float[] { 4, 5, 6 }, 32)]
         [InlineData(new float[] { 1, 2, 3, 10, 8 }, new float[] { 4, 5, 6, -2, 7 }, 68)]
         [InlineData(new float[] { }, new float[] { }, 0)]
-        public static void Dot(float[] x, float[] y, float expectedResult)
+        public static void Dot_KnownValues(float[] x, float[] y, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.Dot(x, y), .001f);
+            Assert.Equal(expectedResult, TensorPrimitives.Dot(x, y), Tolerance);
         }
 
         [Theory]
-        [InlineData(new float[] { 1, 2, 3 }, 3.7416)]
+        [MemberData(nameof(TensorLengths))]
+        public static void Dot(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength);
+
+            float dot = 0f;
+            for (int i = 0; i < x.Length; i++)
+            {
+                dot += x[i] * y[i];
+            }
+
+            Assert.Equal(dot, TensorPrimitives.Dot(x, y), Tolerance);
+        }
+
+        [Theory]
+        [InlineData(new float[] { 1, 2, 3 }, 3.7416575f)]
         [InlineData(new float[] { 3, 4 }, 5)]
         [InlineData(new float[] { 3 }, 3)]
-        [InlineData(new float[] { 3, 4, 1, 2 }, 5.477)]
+        [InlineData(new float[] { 3, 4, 1, 2 }, 5.477226)]
         [InlineData(new float[] { }, 0f)]
-        public static void L2Normalize(float[] x, float expectedResult)
+        public static void L2Normalize_KnownValues(float[] x, float expectedResult)
         {
-            Assert.Equal(expectedResult, TensorPrimitives.L2Normalize(x), .001f);
+            Assert.Equal(expectedResult, TensorPrimitives.L2Normalize(x), Tolerance);
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void L2Normalize(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+
+            float sumOfSquares = 0f;
+            for (int i = 0; i < x.Length; i++)
+            {
+                sumOfSquares += x[i] * x[i];
+            }
+
+            Assert.Equal(Math.Sqrt(sumOfSquares), TensorPrimitives.L2Normalize(x), Tolerance);
         }
 
         [Theory]
@@ -805,41 +863,38 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [InlineData(new float[] { 3, 1, .2f }, new float[] { 0.8360188f, 0.11314284f, 0.05083836f })]
-        [InlineData(new float[] { 3, 4, 1 }, new float[] { 0.2594f, 0.7052f, 0.0351f })]
+        [InlineData(new float[] { 3, 4, 1 }, new float[] { 0.2594f, 0.705384f, 0.0351f })]
         [InlineData(new float[] { 5, 3 }, new float[] { 0.8807f, 0.1192f })]
         [InlineData(new float[] { 4, 2, 1, 9 }, new float[] { 0.0066f, 9.04658e-4f, 3.32805e-4f, 0.9920f})]
         public static void SoftMax(float[] x, float[] expectedResult)
         {
-            var dest = new float[x.Length];
+            float[] dest = CreateTensor(x.Length);
             TensorPrimitives.SoftMax(x, dest);
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(expectedResult[i], dest[i], .001f);
+                Assert.Equal(expectedResult[i], dest[i], Tolerance);
             }
         }
 
         [Fact]
         public static void SoftMax_DestinationLongerThanSource()
         {
-            var x = new float[] { 3, 1, .2f };
-            var expectedResult = new float[] { 0.8360188f, 0.11314284f, 0.05083836f };
-            var dest = new float[x.Length + 1];
+            float[] x = [3, 1, .2f];
+            float[] expectedResult = [0.8360188f, 0.11314284f, 0.05083836f];
+            float[] dest = CreateTensor(x.Length + 1);
             TensorPrimitives.SoftMax(x, dest);
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(expectedResult[i], dest[i], .001f);
+                Assert.Equal(expectedResult[i], dest[i], Tolerance);
             }
         }
 
         [Fact]
-        public static void SoftMax_ThrowsForEmpty_x_y()
+        public static void SoftMax_ThrowsForEmptyInput()
         {
-            var x = new float[] { };
-            var dest = new float[x.Length];
-
-            AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.SoftMax(x, dest));
+            AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.SoftMax(ReadOnlySpan<float>.Empty, CreateTensor(1)));
         }
 
         [Theory]
@@ -858,36 +913,35 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { 0, -3, 3, .5f }, new float[] { 0.5f, 0.0474f, 0.9525f, 0.6224f })]
         public static void Sigmoid(float[] x, float[] expectedResult)
         {
-            var dest = new float[x.Length];
+            float[] dest = CreateTensor(x.Length);
             TensorPrimitives.Sigmoid(x, dest);
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(expectedResult[i], dest[i], .001f);
+                Assert.Equal(expectedResult[i], dest[i], Tolerance);
             }
         }
 
         [Fact]
         public static void Sigmoid_DestinationLongerThanSource()
         {
-            var x = new float[] { -5, -4.5f, -4 };
-            var expectedResult = new float[] { 0.0066f, 0.0109f, 0.0179f };
-            var dest = new float[x.Length + 1];
+            float[] x = [-5, -4.5f, -4];
+            float[] expectedResult = [0.0066f, 0.0109f, 0.0179f];
+            float[] dest = CreateTensor(x.Length + 1);
+
             TensorPrimitives.Sigmoid(x, dest);
 
             for (int i = 0; i < x.Length; i++)
             {
-                Assert.Equal(expectedResult[i], dest[i], .001f);
+                Assert.Equal(expectedResult[i], dest[i], Tolerance);
             }
+            Assert.Equal(0f, dest[dest.Length - 1]);
         }
 
         [Fact]
-        public static void Sigmoid_ThrowsForEmpty_x_y()
+        public static void Sigmoid_ThrowsForEmptyInput()
         {
-            var x = new float[] { };
-            var dest = new float[x.Length];
-
-            AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.Sigmoid(x, dest));
+            AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.Sigmoid(ReadOnlySpan<float>.Empty, CreateTensor(1)));
         }
 
         [Fact]
@@ -924,10 +978,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void IndexOfMax_Negative0LesserThanPositive0()
         {
-            Assert.Equal(1, TensorPrimitives.IndexOfMax([-0.0f, +0.0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMax([+0.0f, -0.0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMax([-1, -0.0f]));
-            Assert.Equal(2, TensorPrimitives.IndexOfMax([-1, -0.0f, 1]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMax([-0f, +0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMax([-0f, -0f, -0f, -0f]));
+            Assert.Equal(4, TensorPrimitives.IndexOfMax([-0f, -0f, -0f, -0f, +0f, +0f, +0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMax([+0f, -0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMax([-1, -0f]));
+            Assert.Equal(2, TensorPrimitives.IndexOfMax([-1, -0f, 1]));
         }
 
         [Fact]
@@ -964,10 +1020,11 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void IndexOfMin_Negative0LesserThanPositive0()
         {
-            Assert.Equal(0, TensorPrimitives.IndexOfMin([-0.0f, +0.0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMin([+0.0f, -0.0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMin([-1, -0.0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMin([-1, -0.0f, 1]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMin([-0f, +0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMin([+0f, -0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMin([+0f, -0f, -0f, -0f, -0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMin([-1, -0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMin([-1, -0f, 1]));
         }
 
         [Fact]
@@ -1004,10 +1061,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void IndexOfMaxMagnitude_Negative0LesserThanPositive0()
         {
-            Assert.Equal(1, TensorPrimitives.IndexOfMaxMagnitude([-0.0f, +0.0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([+0.0f, -0.0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([-1, -0.0f]));
-            Assert.Equal(2, TensorPrimitives.IndexOfMaxMagnitude([-1, -0.0f, 1]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([-0f, -0f, -0f, -0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMaxMagnitude([-0f, +0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMaxMagnitude([-0f, +0f, +0f, +0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([+0f, -0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([-1, -0f]));
+            Assert.Equal(2, TensorPrimitives.IndexOfMaxMagnitude([-1, -0f, 1]));
         }
 
         [Fact]
@@ -1022,7 +1081,7 @@ namespace System.Numerics.Tensors.Tests
         {
             foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
             {
-                float[] x = new float[tensorLength];
+                float[] x = CreateTensor(tensorLength);
                 for (int i = 0; i < x.Length; i++)
                 {
                     x[i] = i % 2 == 0 ? 42 : -42;
@@ -1050,10 +1109,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void IndexOfMinMagnitude_Negative0LesserThanPositive0()
         {
-            Assert.Equal(0, TensorPrimitives.IndexOfMinMagnitude([-0.0f, +0.0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([+0.0f, -0.0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([-1, -0.0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([-1, -0.0f, 1]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMinMagnitude([-0f, -0f, -0f, -0f]));
+            Assert.Equal(0, TensorPrimitives.IndexOfMinMagnitude([-0f, +0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([+0f, -0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([+0f, -0f, -0f, -0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([-1, -0f]));
+            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([-1, -0f, 1]));
         }
 
         [Fact]
@@ -1093,10 +1154,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void Max_Negative0LesserThanPositive0()
         {
-            Assert.Equal(+0.0f, TensorPrimitives.Max([-0.0f, +0.0f]));
-            Assert.Equal(+0.0f, TensorPrimitives.Max([+0.0f, -0.0f]));
-            Assert.Equal(-0.0f, TensorPrimitives.Max([-1, -0.0f]));
-            Assert.Equal(1, TensorPrimitives.Max([-1, -0.0f, 1]));
+            Assert.Equal(+0f, TensorPrimitives.Max([-0f, +0f]));
+            Assert.Equal(+0f, TensorPrimitives.Max([+0f, -0f]));
+            Assert.Equal(-0f, TensorPrimitives.Max([-1, -0f]));
+            Assert.Equal(1, TensorPrimitives.Max([-1, -0f, 1]));
         }
 
         [Fact]
@@ -1136,12 +1197,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MaxMagnitude_Negative0LesserThanPositive0()
         {
-            Assert.Equal(+0.0f, TensorPrimitives.MaxMagnitude([-0.0f, +0.0f]));
-            Assert.Equal(+0.0f, TensorPrimitives.MaxMagnitude([+0.0f, -0.0f]));
-            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-1, -0.0f]));
-            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-1, -0.0f, 1]));
-            Assert.Equal(0.0f, TensorPrimitives.MaxMagnitude([-0.0f, -0.0f, -0.0f, -0.0f, -0.0f, 0.0f]));
-            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-0.0f, -0.0f, -0.0f, -0.0f, -1, -0.0f, 0.0f, 1]));
+            Assert.Equal(+0f, TensorPrimitives.MaxMagnitude([-0f, +0f]));
+            Assert.Equal(+0f, TensorPrimitives.MaxMagnitude([+0f, -0f]));
+            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-1, -0f]));
+            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-1, -0f, 1]));
+            Assert.Equal(0f, TensorPrimitives.MaxMagnitude([-0f, -0f, -0f, -0f, -0f, 0f]));
+            Assert.Equal(1, TensorPrimitives.MaxMagnitude([-0f, -0f, -0f, -0f, -1, -0f, 0f, 1]));
         }
 
         [Fact]
@@ -1181,10 +1242,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void Min_Negative0LesserThanPositive0()
         {
-            Assert.Equal(-0.0f, TensorPrimitives.Min([-0.0f, +0.0f]));
-            Assert.Equal(-0.0f, TensorPrimitives.Min([+0.0f, -0.0f]));
-            Assert.Equal(-1, TensorPrimitives.Min([-1, -0.0f]));
-            Assert.Equal(-1, TensorPrimitives.Min([-1, -0.0f, 1]));
+            Assert.Equal(-0f, TensorPrimitives.Min([-0f, +0f]));
+            Assert.Equal(-0f, TensorPrimitives.Min([+0f, -0f]));
+            Assert.Equal(-1, TensorPrimitives.Min([-1, -0f]));
+            Assert.Equal(-1, TensorPrimitives.Min([-1, -0f, 1]));
         }
 
         [Fact]
@@ -1224,10 +1285,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void MinMagnitude_Negative0LesserThanPositive0()
         {
-            Assert.Equal(0, TensorPrimitives.MinMagnitude([-0.0f, +0.0f]));
-            Assert.Equal(0, TensorPrimitives.MinMagnitude([+0.0f, -0.0f]));
-            Assert.Equal(0, TensorPrimitives.MinMagnitude([-1, -0.0f]));
-            Assert.Equal(0, TensorPrimitives.MinMagnitude([-1, -0.0f, 1]));
+            Assert.Equal(0, TensorPrimitives.MinMagnitude([-0f, +0f]));
+            Assert.Equal(0, TensorPrimitives.MinMagnitude([+0f, -0f]));
+            Assert.Equal(0, TensorPrimitives.MinMagnitude([-1, -0f]));
+            Assert.Equal(0, TensorPrimitives.MinMagnitude([-1, -0f, 1]));
         }
 
         [Fact]
@@ -1270,10 +1331,10 @@ namespace System.Numerics.Tensors.Tests
         public static void ProductOfDifferences_ThrowsForEmptyAndMismatchedLengths()
         {
             Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(ReadOnlySpan<float>.Empty, ReadOnlySpan<float>.Empty));
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(ReadOnlySpan<float>.Empty, new float[1]));
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(new float[1], ReadOnlySpan<float>.Empty));
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(new float[44], new float[43]));
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(new float[43], new float[44]));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(ReadOnlySpan<float>.Empty, CreateTensor(1)));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(CreateTensor(1), ReadOnlySpan<float>.Empty));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(CreateTensor(44), CreateTensor(43)));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfDifferences(CreateTensor(43), CreateTensor(44)));
         }
 
         [Theory]
@@ -1308,10 +1369,10 @@ namespace System.Numerics.Tensors.Tests
         public static void ProductOfSums_ThrowsForEmptyAndMismatchedLengths()
         {
             Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(ReadOnlySpan<float>.Empty, ReadOnlySpan<float>.Empty));
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(ReadOnlySpan<float>.Empty, new float[1]));
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(new float[1], ReadOnlySpan<float>.Empty));
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(new float[44], new float[43]));
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(new float[43], new float[44]));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(ReadOnlySpan<float>.Empty, CreateTensor(1)));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(CreateTensor(1), ReadOnlySpan<float>.Empty));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(CreateTensor(44), CreateTensor(43)));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.ProductOfSums(CreateTensor(43), CreateTensor(44)));
         }
 
         [Theory]

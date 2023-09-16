@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -51,6 +50,121 @@ namespace System.Numerics.Tensors
         }
 
         private static bool IsNegative(float f) => float.IsNegative(f);
+
+        private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+        {
+            // Compute the same as:
+            // TensorPrimitives.Dot(x, y) / (Math.Sqrt(TensorPrimitives.SumOfSquares(x)) * Math.Sqrt(TensorPrimitives.SumOfSquares(y)))
+            // but only looping over each span once.
+
+            float dotProduct = 0f;
+            float xSumOfSquares = 0f;
+            float ySumOfSquares = 0f;
+
+            int i = 0;
+
+#if NET8_0_OR_GREATER
+            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+                ref float yRef = ref MemoryMarshal.GetReference(y);
+
+                Vector512<float> dotProductVector = Vector512<float>.Zero;
+                Vector512<float> xSumOfSquaresVector = Vector512<float>.Zero;
+                Vector512<float> ySumOfSquaresVector = Vector512<float>.Zero;
+
+                // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
+                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                do
+                {
+                    Vector512<float> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
+                    Vector512<float> yVec = Vector512.LoadUnsafe(ref yRef, (uint)i);
+
+                    dotProductVector += xVec * yVec;
+                    xSumOfSquaresVector += xVec * xVec;
+                    ySumOfSquaresVector += yVec * yVec;
+
+                    i += Vector512<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // Sum the vector lanes into the scalar result.
+                dotProduct += Vector512.Sum(dotProductVector);
+                xSumOfSquares += Vector512.Sum(xSumOfSquaresVector);
+                ySumOfSquares += Vector512.Sum(ySumOfSquaresVector);
+            }
+            else
+#endif
+            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+                ref float yRef = ref MemoryMarshal.GetReference(y);
+
+                Vector256<float> dotProductVector = Vector256<float>.Zero;
+                Vector256<float> xSumOfSquaresVector = Vector256<float>.Zero;
+                Vector256<float> ySumOfSquaresVector = Vector256<float>.Zero;
+
+                // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
+                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                do
+                {
+                    Vector256<float> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
+                    Vector256<float> yVec = Vector256.LoadUnsafe(ref yRef, (uint)i);
+
+                    dotProductVector += (xVec * yVec);
+                    xSumOfSquaresVector += (xVec * xVec);
+                    ySumOfSquaresVector += (yVec * yVec);
+
+                    i += Vector256<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // Sum the vector lanes into the scalar result.
+                dotProduct += Vector256.Sum(dotProductVector);
+                xSumOfSquares += Vector256.Sum(xSumOfSquaresVector);
+                ySumOfSquares += Vector256.Sum(ySumOfSquaresVector);
+            }
+            else if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+                ref float yRef = ref MemoryMarshal.GetReference(y);
+
+                Vector128<float> dotProductVector = Vector128<float>.Zero;
+                Vector128<float> xSumOfSquaresVector = Vector128<float>.Zero;
+                Vector128<float> ySumOfSquaresVector = Vector128<float>.Zero;
+
+                // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
+                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                do
+                {
+                    Vector128<float> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
+                    Vector128<float> yVec = Vector128.LoadUnsafe(ref yRef, (uint)i);
+
+                    dotProductVector += (xVec * yVec);
+                    xSumOfSquaresVector += (xVec * xVec);
+                    ySumOfSquaresVector += (yVec * yVec);
+
+                    i += Vector128<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // Sum the vector lanes into the scalar result.
+                dotProduct += Vector128.Sum(dotProductVector);
+                xSumOfSquares += Vector128.Sum(xSumOfSquaresVector);
+                ySumOfSquares += Vector128.Sum(ySumOfSquaresVector);
+            }
+
+            // Process any remaining elements past the last vector.
+            for (; (uint)i < (uint)x.Length; i++)
+            {
+                dotProduct += x[i] * y[i];
+                xSumOfSquares += x[i] * x[i];
+                ySumOfSquares += y[i] * y[i];
+            }
+
+            // Sum(X * Y) / (|X| * |Y|)
+            return dotProduct / (MathF.Sqrt(xSumOfSquares) * MathF.Sqrt(ySumOfSquares));
+        }
 
         private static float Aggregate<TLoad, TAggregate>(
             float identityValue, ReadOnlySpan<float> x)
@@ -142,9 +256,6 @@ namespace System.Numerics.Tensors
             where TBinary : IBinaryOperator
             where TAggregate : IBinaryOperator
         {
-            Debug.Assert(!x.IsEmpty);
-            Debug.Assert(x.Length == y.Length);
-
             // Initialize the result to the identity value
             float result = identityValue;
             int i = 0;
@@ -938,6 +1049,41 @@ namespace System.Numerics.Tensors
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) => x - y;
 #if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x - y;
+#endif
+
+            public static float Invoke(Vector128<float> x) => throw new NotSupportedException();
+            public static float Invoke(Vector256<float> x) => throw new NotSupportedException();
+#if NET8_0_OR_GREATER
+            public static float Invoke(Vector512<float> x) => throw new NotSupportedException();
+#endif
+        }
+
+        private readonly struct SubtractSquaredOperator : IBinaryOperator
+        {
+            public static float Invoke(float x, float y)
+            {
+                float tmp = x - y;
+                return tmp * tmp;
+            }
+
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                Vector128<float> tmp = x - y;
+                return tmp * tmp;
+            }
+
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y)
+            {
+                Vector256<float> tmp = x - y;
+                return tmp * tmp;
+            }
+
+#if NET8_0_OR_GREATER
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
+            {
+                Vector512<float> tmp = x - y;
+                return tmp * tmp;
+            }
 #endif
 
             public static float Invoke(Vector128<float> x) => throw new NotSupportedException();
