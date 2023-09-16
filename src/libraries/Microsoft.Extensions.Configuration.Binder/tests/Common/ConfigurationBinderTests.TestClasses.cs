@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
-using System.Text.Json;
 using System.Linq;
+using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -729,6 +731,70 @@ namespace Microsoft.Extensions
         public record OidcProviderOptions
         {
             public string? Authority { get; set; }
+        }
+
+        public class AClass
+        {
+            public EndPointCollection EndPoints { get; init; } = new EndPointCollection();
+
+            public bool Property { get; set; } = false;
+        }
+
+        public sealed class EndPointCollection : Collection<EndPoint>, IEnumerable<EndPoint>
+        {
+            public EndPointCollection() { }
+
+            public void Add(string hostAndPort)
+            {
+                EndPoint? endpoint;
+
+                if (IPAddress.TryParse(hostAndPort, out IPAddress? address))
+                {
+                    endpoint = new IPEndPoint(address, 0);
+                }
+                else
+                {
+                    endpoint = new DnsEndPoint(hostAndPort, 0);
+                }
+
+                Add(endpoint);
+            }
+        }
+
+        internal abstract class AbstractBase
+        {
+            public int Value { get; set; }
+        }
+
+        internal sealed class Derived : AbstractBase { }
+
+        internal sealed class DerivedWithAnotherProp : AbstractBase
+        {
+            public int Value2 { get; set; }
+        }
+
+        internal class ClassWithAbstractCtorParam
+        {
+            public AbstractBase AbstractProp { get; }
+
+            public ClassWithAbstractCtorParam(AbstractBase abstractProp) => AbstractProp = abstractProp;
+        }
+
+        internal class ClassWithOptionalAbstractCtorParam
+        {
+            public AbstractBase AbstractProp { get; }
+
+            public ClassWithOptionalAbstractCtorParam(AbstractBase? abstractProp = null) => AbstractProp = abstractProp;
+        }
+
+        internal class ClassWith_DirectlyAssignable_CtorParams
+        {
+            public IConfigurationSection MySection { get; }
+            public object MyObject { get; }
+            public string MyString { get; }
+
+            public ClassWith_DirectlyAssignable_CtorParams(IConfigurationSection mySection, object myObject, string myString) =>
+                (MySection, MyObject, MyString) = (mySection, myObject, myString);
         }
     }
 }

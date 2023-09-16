@@ -6,7 +6,25 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record ParsableFromStringSpec : TypeSpec
+    internal abstract record SimpleTypeSpec : TypeSpec
+    {
+        public SimpleTypeSpec(ITypeSymbol type) : base(type) { }
+
+        public sealed override bool CanBindTo => true;
+
+        public sealed override TypeSpec EffectiveType => this;
+
+        public sealed override bool CanInstantiate => true;
+    }
+
+    internal sealed record ConfigurationSectionSpec : SimpleTypeSpec
+    {
+        public ConfigurationSectionSpec(ITypeSymbol type) : base(type) { }
+
+        public override TypeSpecKind SpecKind => TypeSpecKind.IConfigurationSection;
+    }
+
+    internal sealed record ParsableFromStringSpec : SimpleTypeSpec
     {
         public ParsableFromStringSpec(ITypeSymbol type) : base(type) { }
 

@@ -28,6 +28,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             entryCollection.Add(entry);
         }
 
+        public static void Deconstruct(this KeyValuePair<TypeSpec, List<InterceptorLocationInfo>> source, out ComplexTypeSpec Key, out List<InterceptorLocationInfo> Value)
+        {
+            Key = (ComplexTypeSpec)source.Key;
+            Value = source.Value;
+        }
+
         public static string ToIdentifierCompatibleSubstring(this ITypeSymbol type)
         {
             if (type is IArrayTypeSymbol arrayType)
