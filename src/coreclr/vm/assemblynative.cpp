@@ -99,7 +99,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     // If so, then use it to set the fallback load context binder.
     if (pBinder != NULL)
     {
-        spec.SetFallbackBinderForRequestingAssembly(pBinder);
+        spec.SetFallbackBinderForRequestingAssembly(GetAppDomain()->CreateHandle(pBinder));
         spec.SetPreferFallbackBinder();
     }
     else if (pRefAssembly != NULL)
@@ -1307,12 +1307,14 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
 
     _ASSERTE(pAssembly != NULL);
 
-    AssemblyBinder* pAssemblyBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+    GCX_COOP();
 
-    if (!pAssemblyBinder->IsDefault())
+    ASSEMBLYBINDERREF pAssemblyBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+
+    if (!pAssemblyBinder->m_isDefault)
     {
         // Fetch the managed binder reference from the native binder instance
-        ptrManagedAssemblyLoadContext = pAssemblyBinder->GetManagedAssemblyLoadContext();
+        ptrManagedAssemblyLoadContext = pAssemblyBinder->m_managedALC;
         _ASSERTE(ptrManagedAssemblyLoadContext != NULL);
     }
 

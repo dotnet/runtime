@@ -31,6 +31,15 @@ namespace Internal.Runtime.Binder
 
     internal abstract class AssemblyBinder
     {
+        // fields used by VM
+        private GCHandle m_managedALC;
+        private bool m_isDefault;
+
+        protected AssemblyBinder()
+        {
+            m_isDefault = IsDefault;
+        }
+
         public unsafe int BindAssemblyByName(void* pAssemblyNameData, out Assembly? assembly)
         {
             return BindUsingAssemblyName(new AssemblyName((AssemblyNameData*)pAssemblyNameData), out assembly);
@@ -51,7 +60,7 @@ namespace Internal.Runtime.Binder
 
         // A GC handle to the managed AssemblyLoadContext.
         // It is a long weak handle for collectible AssemblyLoadContexts and strong handle for non-collectible ones.
-        public GCHandle ManagedAssemblyLoadContext { get; set; }
+        public GCHandle ManagedAssemblyLoadContext { get => m_managedALC; set => m_managedALC = value; }
 
         // NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
 
