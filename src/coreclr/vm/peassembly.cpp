@@ -127,10 +127,10 @@ BOOL PEAssembly::Equals(PEAssembly *pPEAssembly)
     {
         GCX_COOP();
 
-        ASSEMBLYBINDERREF otherBinder = ((BINDERASSEMBLYREF)ObjectFromHandle(pPEAssembly->GetHostAssembly()))->m_binder;
-        ASSEMBLYBINDERREF thisBinder = ((BINDERASSEMBLYREF)ObjectFromHandle(this->GetHostAssembly()))->m_binder;
+        BINDERASSEMBLYREF otherAssembly = (BINDERASSEMBLYREF)ObjectFromHandle(pPEAssembly->GetHostAssembly());
+        BINDERASSEMBLYREF thisAssembly = (BINDERASSEMBLYREF)ObjectFromHandle(this->GetHostAssembly());
 
-        if (otherBinder != thisBinder || otherBinder == NULL)
+        if (otherAssembly->m_binder != thisAssembly->m_binder || otherAssembly->m_binder == NULL)
             return FALSE;
     }
 
