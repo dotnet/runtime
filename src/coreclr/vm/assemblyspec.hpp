@@ -75,7 +75,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     DomainAssembly* GetParentAssembly();
 
-    AssemblyBinder* GetBinderFromParentAssembly(AppDomain *pDomain);
+    ASSEMBLYBINDERREF GetBinderFromParentAssembly(AppDomain *pDomain);
 
     bool HasParentAssembly()
     { WRAPPER_NO_CONTRACT; return GetParentAssembly() != NULL; }

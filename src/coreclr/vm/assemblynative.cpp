@@ -122,19 +122,19 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 }
 
 /* static */
-Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths)
+Assembly* AssemblyNative::LoadFromPEImage(ASSEMBLYBINDERREF pBinder, PEImage *pImage, bool excludeAppPaths)
 {
     CONTRACT(Assembly*)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pBinder));
+        PRECONDITION(pBinder != NULL);
         PRECONDITION(pImage != NULL);
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
     Assembly *pLoadedAssembly = NULL;
-    ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
+    BINDERASSEMBLYREF pAssembly;
 
     // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
@@ -142,13 +142,22 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     // Initialize the AssemblySpec
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(1, mdtAssembly), pImage->GetMDImport(), pCallersAssembly);
-    spec.SetBinder(pBinder);
+    spec.SetBinder(GetAppDomain()->CreateHandle(pBinder));
 
     BinderTracing::AssemblyBindOperation bindOperation(&spec, pImage->GetPath());
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly);
+
+    MethodDescCallSite methBind(METHOD__BINDER_ASSEMBLYBINDER__BINDUSINGPEIMAGE);
+    ARG_SLOT args[4] =
+    {
+        ObjToArgSlot(pBinder),
+        PtrToArgSlot(pImage),
+        BoolToArgSlot(excludeAppPaths),
+        PtrToArgSlot(&pAssembly)
+    };
+    hr = methBind.Call_RetHR(args);
 
     if (hr != S_OK)
     {
@@ -170,13 +179,14 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         }
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->m_PEImage, pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
     RETURN pDomainAssembly->GetAssembly();
 }
 
+// unused
 extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
@@ -211,7 +221,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
         }
     }
 
-    Assembly *pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
+    Assembly *pLoadedAssembly = /*AssemblyNative::LoadFromPEImage(pBinder, pILImage)*/ NULL;
 
     {
         GCX_COOP();
@@ -226,6 +236,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 }
 
 /*static */
+// unused
 extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssemblyBinder, INT_PTR ptrAssemblyArray,
                                               INT32 cbAssemblyArrayLength, INT_PTR ptrSymbolArray, INT32 cbSymbolArrayLength,
                                               QCall::ObjectHandleOnStack retLoadedAssembly)
@@ -256,7 +267,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     }
 
     // Pass the stream based assembly as IL in an attempt to bind and load it
-    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
+    Assembly* pLoadedAssembly = /*AssemblyNative::LoadFromPEImage(pBinder, pILImage)*/ NULL;
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
@@ -292,6 +303,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
 
 #ifdef TARGET_WINDOWS
 /*static */
+// unused
 extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyBinder, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
@@ -312,7 +324,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativ
     AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyBinder);
 
     // Pass the in memory module as IL in an attempt to bind and load it
-    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
+    Assembly* pLoadedAssembly = /*AssemblyNative::LoadFromPEImage(pBinder, pILImage)*/ NULL;
     {
         GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
@@ -1179,7 +1191,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyH
 }
 
 /*static*/
-
+// unused
 extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PTR ptrManagedAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible)
 {
     QCALL_CONTRACT;
@@ -1194,7 +1206,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
 
     // Initialize the assembly binder instance in the VM
     PTR_AppDomain pCurDomain = AppDomain::GetCurrentDomain();
-    DefaultAssemblyBinder *pDefaultBinder = pCurDomain->GetDefaultBinder();
+    DefaultAssemblyBinder *pDefaultBinder = /*pCurDomain->GetDefaultBinder()*/ NULL;
     if (!fRepresentsTPALoadContext)
     {
         // Initialize a custom assembly binder

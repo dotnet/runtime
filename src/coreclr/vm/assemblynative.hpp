@@ -25,7 +25,7 @@ class AssemblyNative
 
 public:
 
-    static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths = false);
+    static Assembly* LoadFromPEImage(ASSEMBLYBINDERREF pBinder, PEImage *pImage, bool excludeAppPaths = false);
 
     // static FCALLs
     static FCDECL0(FC_BOOL_RET, IsTracingEnabled);

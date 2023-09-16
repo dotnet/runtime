@@ -365,7 +365,7 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFil
     return pDomainAssembly->GetAssembly();
 }
 
-AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
+ASSEMBLYBINDERREF AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 {
     CONTRACTL
     {
@@ -376,7 +376,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     }
     CONTRACTL_END;
 
-    AssemblyBinder *pParentAssemblyBinder = NULL;
+    ASSEMBLYBINDERREF pParentAssemblyBinder = NULL;
     DomainAssembly *pParentDomainAssembly = GetParentAssembly();
 
     if(pParentDomainAssembly != NULL)
@@ -408,7 +408,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
         //
         // For (3), fetch the fallback load context binder reference.
 
-        pParentAssemblyBinder = GetFallbackBinderForRequestingAssembly();
+        pParentAssemblyBinder = ObjectFromHandle(GetFallbackBinderForRequestingAssembly());
     }
 
     if (!pParentAssemblyBinder)
@@ -418,7 +418,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetDefaultBinder());
+        pParentAssemblyBinder = ObjectFromHandle(pDomain->GetDefaultBinder());
     }
 
     return pParentAssemblyBinder;

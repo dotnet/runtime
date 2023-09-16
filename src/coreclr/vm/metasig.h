@@ -617,6 +617,7 @@ DEFINE_METASIG(SM(Str_RetPtrByte, s, P(b)))
 DEFINE_METASIG(SM(PtrByte_RetVoid, P(b), v))
 
 DEFINE_METASIG(IM(PtrChar_PtrChar_PtrChar_RetVoid, P(u) P(u) P(u), v))
+DEFINE_METASIG(IM(IntPtr_Bool_RefObj_RetInt, I F r(j), i))
 
 // Undefine macros in case we include the file again in the compilation unit
 

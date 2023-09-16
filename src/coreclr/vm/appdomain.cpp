@@ -2735,22 +2735,25 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         LoaderAllocator *pLoaderAllocator = NULL;
 
         {
-            GCX_COOP();
-            ASSEMBLYBINDERREF pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
-
-            // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
-            // marked as collectible
-
-            MethodDescCallSite methGetLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR);
-            ARG_SLOT args[1] =
+            if (!pPEAssembly->IsSystem())
             {
-                ObjToArgSlot(pAssemblyBinder)
-            };
+                GCX_COOP();
+                ASSEMBLYBINDERREF pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
 
-            LOADERALLOCATORREF pManagedLA = (LOADERALLOCATORREF)methGetLoaderAllocator.Call_RetOBJECTREF(args);
-            if (pManagedLA != NULL)
-            {
-                pLoaderAllocator = pManagedLA->GetNativeLoaderAllocator();
+                // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
+                // marked as collectible
+
+                MethodDescCallSite methGetLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR);
+                ARG_SLOT args[1] =
+                {
+                    ObjToArgSlot(pAssemblyBinder)
+                };
+
+                LOADERALLOCATORREF pManagedLA = (LOADERALLOCATORREF)methGetLoaderAllocator.Call_RetOBJECTREF(args);
+                if (pManagedLA != NULL)
+                {
+                    pLoaderAllocator = pManagedLA->GetNativeLoaderAllocator();
+                }
             }
 
             if (pLoaderAllocator == NULL)

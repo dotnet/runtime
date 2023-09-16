@@ -841,9 +841,10 @@ PEAssembly *PEAssembly::DoOpenSystem()
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
-    IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
+    IfFailThrow(((DefaultAssemblyBinder*)NULL)->BindToSystem(&pBoundAssembly));
 
-    RETURN new PEAssembly(pBoundAssembly, NULL, TRUE);
+    // TODO: Is HostAssembly ever used for CoreLib?
+    RETURN new PEAssembly(NULL, NULL, TRUE);
 }
 
 PEAssembly* PEAssembly::Open(BINDERASSEMBLYREF pManagedBindResult)
