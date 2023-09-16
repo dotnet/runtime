@@ -702,5 +702,189 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Tanh(x, destination));
         }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void CosineSimilarity_ThrowsForMismatchedLengths_x_y(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(x, y));
+        }
+
+        [Fact]
+        public static void CosineSimilarity_ThrowsForEmpty_x_y()
+        {
+            float[] x = [];
+            float[] y = [];
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(x, y));
+        }
+
+        [Theory]
+        [InlineData(new float[] { 3, 2, 0, 5 }, new float[] { 1, 0, 0, 0 }, 0.49f)]
+        [InlineData(new float[] { 1, 1, 1, 1, 1, 0 }, new float[] { 1, 1, 1, 1, 0, 1 }, 0.80f)]
+        public static void CosineSimilarity(float[] x, float[] y, float expectedResult)
+        {
+            Assert.Equal(expectedResult, TensorPrimitives.CosineSimilarity(x, y), .01f);
+        }
+
+        [Fact]
+        public static void Distance_ThrowsForEmpty_x_y()
+        {
+            float[] x = [];
+            float[] y = [];
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(x, y));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Distance_ThrowsForMismatchedLengths_x_y(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(x, y));
+        }
+
+        [Theory]
+        [InlineData(new float[] { 3, 2 }, new float[] { 4, 1 }, 1.4142f)]
+        [InlineData(new float[] { 0, 4 }, new float[] { 6, 2 }, 6.3245f)]
+        [InlineData(new float[] { 1, 2, 3 }, new float[] { 4, 5, 6 }, 5.1961f)]
+        [InlineData(new float[] { 5, 1, 6, 10 }, new float[] { 7, 2, 8, 4 }, 6.7082f)]
+        public static void Distance(float[] x, float[] y, float expectedResult)
+        {
+            Assert.Equal(expectedResult, TensorPrimitives.Distance(x, y), .001f);
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Dot_ThrowsForMismatchedLengths_x_y(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] y = CreateAndFillTensor(tensorLength - 1);
+
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Dot(x, y));
+        }
+
+        [Theory]
+        [InlineData(new float[] { 1, 3, -5 }, new float[] { 4, -2, -1 }, 3)]
+        [InlineData(new float[] { 1, 2, 3 }, new float[] { 4, 5, 6 }, 32)]
+        [InlineData(new float[] { 1, 2, 3, 10, 8 }, new float[] { 4, 5, 6, -2, 7 }, 68)]
+        [InlineData(new float[] { }, new float[] { }, 0)]
+        public static void Dot(float[] x, float[] y, float expectedResult)
+        {
+            Assert.Equal(expectedResult, TensorPrimitives.Dot(x, y), .001f);
+        }
+
+        [Theory]
+        [InlineData(new float[] { 1, 2, 3 }, 3.7416)]
+        [InlineData(new float[] { 3, 4 }, 5)]
+        [InlineData(new float[] { 3 }, 3)]
+        [InlineData(new float[] { 3, 4, 1, 2 }, 5.477)]
+        [InlineData(new float[] { }, 0f)]
+        public static void L2Normalize(float[] x, float expectedResult)
+        {
+            Assert.Equal(expectedResult, TensorPrimitives.L2Normalize(x), .001f);
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SoftMax_ThrowsForTooShortDestination(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.SoftMax(x, destination));
+        }
+
+        [Theory]
+        [InlineData(new float[] { 3, 1, .2f }, new float[] { 0.8360188f, 0.11314284f, 0.05083836f })]
+        [InlineData(new float[] { 3, 4, 1 }, new float[] { 0.2594f, 0.7052f, 0.0351f })]
+        [InlineData(new float[] { 5, 3 }, new float[] { 0.8807f, 0.1192f })]
+        [InlineData(new float[] { 4, 2, 1, 9 }, new float[] { 0.0066f, 9.04658e-4f, 3.32805e-4f, 0.9920f})]
+        public static void SoftMax(float[] x, float[] expectedResult)
+        {
+            var dest = new float[x.Length];
+            TensorPrimitives.SoftMax(x, dest);
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                Assert.Equal(expectedResult[i], dest[i], .001f);
+            }
+        }
+
+        [Fact]
+        public static void SoftMax_DestinationLongerThanSource()
+        {
+            var x = new float[] { 3, 1, .2f };
+            var expectedResult = new float[] { 0.8360188f, 0.11314284f, 0.05083836f };
+            var dest = new float[x.Length + 1];
+            TensorPrimitives.SoftMax(x, dest);
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                Assert.Equal(expectedResult[i], dest[i], .001f);
+            }
+        }
+
+        [Fact]
+        public static void SoftMax_ThrowsForEmpty_x_y()
+        {
+            var x = new float[] { };
+            var dest = new float[x.Length];
+
+            AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.SoftMax(x, dest));
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Sigmoid_ThrowsForTooShortDestination(int tensorLength)
+        {
+            float[] x = CreateAndFillTensor(tensorLength);
+            float[] destination = CreateTensor(tensorLength - 1);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sigmoid(x, destination));
+        }
+
+        [Theory]
+        [InlineData(new float[] { -5, -4.5f, -4 }, new float[] { 0.0066f, 0.0109f, 0.0179f })]
+        [InlineData(new float[] { 4.5f, 5 }, new float[] { 0.9890f, 0.9933f })]
+        [InlineData(new float[] { 0, -3, 3, .5f }, new float[] { 0.5f, 0.0474f, 0.9525f, 0.6224f })]
+        public static void Sigmoid(float[] x, float[] expectedResult)
+        {
+            var dest = new float[x.Length];
+            TensorPrimitives.Sigmoid(x, dest);
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                Assert.Equal(expectedResult[i], dest[i], .001f);
+            }
+        }
+
+        [Fact]
+        public static void Sigmoid_DestinationLongerThanSource()
+        {
+            var x = new float[] { -5, -4.5f, -4 };
+            var expectedResult = new float[] { 0.0066f, 0.0109f, 0.0179f };
+            var dest = new float[x.Length + 1];
+            TensorPrimitives.Sigmoid(x, dest);
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                Assert.Equal(expectedResult[i], dest[i], .001f);
+            }
+        }
+
+        [Fact]
+        public static void Sigmoid_ThrowsForEmpty_x_y()
+        {
+            var x = new float[] { };
+            var dest = new float[x.Length];
+
+            AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.Sigmoid(x, dest));
+        }
     }
 }
