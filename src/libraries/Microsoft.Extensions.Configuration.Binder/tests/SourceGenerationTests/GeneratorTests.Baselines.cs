@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             {
                 public int MyInt { get; set; }
             }
-        }"; ;
+        }";
 
             await VerifyAgainstBaselineUsingFile("Get.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }

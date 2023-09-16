@@ -46,7 +46,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         #endregion IServiceCollection extensions.
 
         #region OptionsBuilder<T> extensions.
-
         [Fact]
         public async Task Configure_T() =>
             await VerifyAgainstBaselineUsingFile("Configure_T.generated.txt", GetConfigureSource("section"), extType: ExtensionClassType.ServiceCollection);
@@ -101,30 +100,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             await VerifyAgainstBaselineUsingFile("Bind_T_BinderOptions.generated.txt", GetBindSource(", _ => { }"), extType: ExtensionClassType.OptionsBuilder);
         }
-
-        string GetBindConfigurationSource(string? configureActions = null) => $$"""
-                using System.Collections.Generic;
-                using Microsoft.Extensions.Configuration;
-                using Microsoft.Extensions.DependencyInjection;
-                using Microsoft.Extensions.Options;
-
-                public class Program
-                {
-                    public static void Main()
-                    {
-                        var services = new ServiceCollection();
-                        OptionsBuilder<MyClass> optionsBuilder = new(services, Options.DefaultName);
-                        optionsBuilder.BindConfiguration(""{{configureActions}});
-                    }
-
-                    public class MyClass
-                    {
-                        public string MyString { get; set; }
-                        public int MyInt { get; set; }
-                        public List<int> MyList { get; set; }
-                    }
-                }
-                """;
 
         [Fact]
         public async Task BindConfiguration()

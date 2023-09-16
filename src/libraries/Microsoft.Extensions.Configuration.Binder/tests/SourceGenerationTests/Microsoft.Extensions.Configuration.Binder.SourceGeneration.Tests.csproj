@@ -60,51 +60,6 @@
     <Compile Include="GeneratorTests.Baselines.Options.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="Baselines\net462\ConfigurationBinder\Bind.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\Bind_Instance.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\Bind_Instance_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\Bind_Key_Instance.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\Get.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\GetValue.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\GetValue_TypeOf_Key.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\GetValue_TypeOf_Key_DefaultValue.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\GetValue_T_Key.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\GetValue_T_Key_DefaultValue.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\Get_T.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\Get_TypeOf.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\Get_TypeOf_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\ConfigurationBinder\Get_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\OptionsBuilder\BindConfiguration.generated.txt" />
-    <Content Include="Baselines\net462\OptionsBuilder\Bind_T.generated.txt" />
-    <Content Include="Baselines\net462\OptionsBuilder\Bind_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\ServiceCollection\Configure_T.generated.txt" />
-    <Content Include="Baselines\net462\ServiceCollection\Configure_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\net462\ServiceCollection\Configure_T_name.generated.txt" />
-    <Content Include="Baselines\net462\ServiceCollection\Configure_T_name_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Bind.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Bind_Instance.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Bind_Instance_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Bind_Key_Instance.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Get.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\GetValue.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\GetValue_TypeOf_Key.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\GetValue_TypeOf_Key_DefaultValue.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\GetValue_T_Key.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\GetValue_T_Key_DefaultValue.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Get_T.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Get_TypeOf.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Get_TypeOf_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ConfigurationBinder\Get_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\OptionsBuilder\BindConfiguration.generated.txt" />
-    <Content Include="Baselines\netcoreapp\OptionsBuilder\Bind_T.generated.txt" />
-    <Content Include="Baselines\netcoreapp\OptionsBuilder\Bind_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ServiceCollection\Configure_T.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ServiceCollection\Configure_T_BinderOptions.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ServiceCollection\Configure_T_name.generated.txt" />
-    <Content Include="Baselines\netcoreapp\ServiceCollection\Configure_T_name_BinderOptions.generated.txt" />
-  </ItemGroup>
-
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
     <ItemGroup>
       <CustomAdditionalCompileInputs Include="@(Analyzer)" />
