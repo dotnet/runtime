@@ -139,7 +139,7 @@ namespace System.Net.Http.Json
             {
                 throw new ArgumentNullException(nameof(client));
             }
-            
+
             return Core(client, requestUri, options, cancellationToken);
 
             static async IAsyncEnumerable<TValue?> Core(
