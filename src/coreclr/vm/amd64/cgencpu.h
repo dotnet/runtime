@@ -277,7 +277,47 @@ struct EHContext {
 
 #include "stublinkeramd64.h"
 
+//**********************************************************************
+// Profiling
+//**********************************************************************
 
+#ifdef PROFILING_SUPPORTED
+
+#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE 16
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    FunctionID  functionId;
+    void       *rbp;
+    void       *probeRsp;
+    void       *ip;
+    void       *profiledRsp;
+    UINT64      rax;
+    LPVOID      hiddenArg;
+    UINT64      flt0;   // floats stored as doubles
+    UINT64      flt1;
+    UINT64      flt2;
+    UINT64      flt3;
+#if defined(UNIX_AMD64_ABI)
+    UINT64      flt4;
+    UINT64      flt5;
+    UINT64      flt6;
+    UINT64      flt7;
+    UINT64      rdi;
+    UINT64      rsi;
+    UINT64      rdx;
+    UINT64      rcx;
+    UINT64      r8;
+    UINT64      r9;
+#endif
+    UINT32      flags;
+#if defined(UNIX_AMD64_ABI)
+    // A buffer to copy structs in to so they are sequential for GetFunctionEnter3Info.
+    UINT64      buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
+#endif
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling

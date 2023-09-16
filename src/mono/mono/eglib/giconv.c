@@ -237,8 +237,6 @@ g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 static FORCE_INLINE (int)
 g_unichar_to_utf16_endian (gunichar c, gunichar2 *outbuf, unsigned endian)
 {
-	gunichar c2;
-
 	if (c < 0xd800) {
 		if (outbuf)
 			*outbuf = (gunichar2) (endian == G_BIG_ENDIAN ? GUINT16_TO_BE(c) : GUINT16_TO_LE(c));
@@ -253,7 +251,7 @@ g_unichar_to_utf16_endian (gunichar c, gunichar2 *outbuf, unsigned endian)
 		return 1;
 	} else if (c < 0x110000) {
 		if (outbuf) {
-			c2 = c - 0x10000;
+			gunichar2 c2 = (gunichar2)(c - 0x10000);
 
 			gunichar2 part1 = (c2 >> 10) + 0xd800;
 			gunichar2 part2 = (c2 & 0x3ff) + 0xdc00;
@@ -350,7 +348,7 @@ g_utf8_to_utf16_impl (const gchar *str, glong len, glong *items_read, glong *ite
 	if (ret <= 0)
 		return NULL;
 
-	lpDestStr = malloc((ret + 1) * sizeof(gunichar2));
+	lpDestStr = g_malloc ((ret + 1) * sizeof(gunichar2));
 	ret = (glong)minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
 	lpDestStr[ret] = '\0';
 

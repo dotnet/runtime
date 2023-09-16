@@ -137,7 +137,6 @@ set( JIT_SOURCES
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
-  jittelemetry.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
@@ -335,7 +334,6 @@ set( JIT_HEADERS
   jithashtable.h
   jitpch.h
   jitstd.h
-  jittelemetry.h
   lir.h
   loopcloning.h
   loopcloningopts.h

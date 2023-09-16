@@ -141,7 +141,6 @@ public:
     static void ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext);
     static void ScanStackRoots(Thread *pThread, GcScanRootFunction pfnScanCallback, void *pContext);
     static void ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext);
-    static void ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext);
 
     // Returns size GCDesc. Used by type cloning.
     static uint32_t GetGCDescSize(void * pType);

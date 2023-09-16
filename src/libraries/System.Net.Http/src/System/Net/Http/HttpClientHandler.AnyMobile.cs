@@ -4,12 +4,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -794,27 +794,6 @@ namespace System.Net.Http
             // Hack to trigger an InvalidOperationException if a property that's stored on
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _socketHandler!.SslOptions = _socketHandler!.SslOptions;
-        }
-
-        private object InvokeNativeHandlerMethod(string name, params object?[] parameters)
-        {
-            MethodInfo? method;
-
-            if (!s_cachedMethods.TryGetValue(name, out method))
-            {
-                method = _nativeHandler!.GetType()!.GetMethod(name);
-                s_cachedMethods[name] = method;
-            }
-
-            try
-            {
-                return method!.Invoke(_nativeHandler, parameters)!;
-            }
-            catch (TargetInvocationException e)
-            {
-                ExceptionDispatchInfo.Capture(e.InnerException!).Throw();
-                throw;
-            }
         }
 
         private static bool IsNativeHandlerEnabled => RuntimeSettingParser.QueryRuntimeSettingSwitch(

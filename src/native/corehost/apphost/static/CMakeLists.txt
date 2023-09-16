@@ -46,7 +46,7 @@ include(../../hostcommon/files.cmake)
 
 if(MSVC)
     # Host components don't try to handle asynchronous exceptions
-    add_compile_options(/EHsc)
+    set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     # Prevents libc from calling pthread_cond_destroy on static objects in
     # dlopen()'ed library which we dlclose() in pal::unload_library.

@@ -4,7 +4,7 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossBuild: false
-  framework: 'net8.0'
+  framework: 'net9.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''
@@ -24,6 +24,7 @@ parameters:
   pool: ''
   runTests: false
   pgoType: ''
+  SuperPmiCollect: false
 
 jobs:
   - template: /eng/common/templates/job/job.yml
@@ -48,6 +49,7 @@ jobs:
       variables:
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
 
         - _buildScriptFileName: build
 
@@ -135,5 +137,23 @@ jobs:
             artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
             artifactName: '$(_runtimeArtifactName)'
             displayName: '$(runtimeFlavorName) build drop'
+
+      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - task: Bash@3
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+              arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - task: PowerShell@2
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+              arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
       - ${{ parameters.steps }}

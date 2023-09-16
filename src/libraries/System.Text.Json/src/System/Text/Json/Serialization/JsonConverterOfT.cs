@@ -498,6 +498,7 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
+        /// <inheritdoc/>
         public sealed override Type Type { get; } = typeof(T);
 
         internal void VerifyRead(JsonTokenType tokenType, int depth, long bytesConsumed, bool isValueConverter, ref Utf8JsonReader reader)

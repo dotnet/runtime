@@ -25468,6 +25468,54 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
         }
     }
 }
+
+//------------------------------------------------------------------------------
+// HWOperGet : Returns Oper based on the HWIntrinsicId
+//
+genTreeOps GenTreeHWIntrinsic::HWOperGet()
+{
+    switch (GetHWIntrinsicId())
+    {
+#if defined(TARGET_XARCH)
+        case NI_SSE_And:
+        case NI_SSE2_And:
+        case NI_AVX_And:
+        case NI_AVX2_And:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_And:
+#endif
+        {
+            return GT_AND;
+        }
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_Not:
+        {
+            return GT_NOT;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_Xor:
+        case NI_SSE2_Xor:
+        case NI_AVX_Xor:
+        case NI_AVX2_Xor:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_Xor:
+#endif
+        {
+            return GT_XOR;
+        }
+
+        // TODO: Handle other cases
+
+        default:
+        {
+            return GT_NONE;
+        }
+    }
+}
+
 #endif // FEATURE_HW_INTRINSICS
 
 //---------------------------------------------------------------------------------------

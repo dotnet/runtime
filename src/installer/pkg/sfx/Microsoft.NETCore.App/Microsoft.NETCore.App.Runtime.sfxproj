@@ -12,6 +12,7 @@
     <SymbolsArchiveName>dotnet-runtime-symbols</SymbolsArchiveName>
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <UseRidGraph>true</UseRidGraph>
   </PropertyGroup>
 
   <PropertyGroup>

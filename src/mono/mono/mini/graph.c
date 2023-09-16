@@ -203,7 +203,6 @@ mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 #endif
 	const char *fn;
 	FILE *fp;
-	int _i G_GNUC_UNUSED;
 
 	fn = "/tmp/minidtree.graph";
 	fp = fopen (fn, "w+");
@@ -228,6 +227,7 @@ mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 #ifdef HAVE_SYSTEM
 	//com = g_strdup_printf ("dot %s -Tpng -o %s.png; eog %s.png", fn, fn, fn);
 	com = g_strdup_printf ("dot %s -Tps -o %s.ps;gv %s.ps", fn, fn, fn);
+	int _i G_GNUC_UNUSED;
 	_i = system (com);
 	g_free (com);
 #else
