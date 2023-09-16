@@ -8,6 +8,7 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Loader;
 using Internal.Runtime.Binder.Tracing;
 
@@ -247,7 +248,37 @@ namespace Internal.Runtime.Binder
 
         // Skipped - the managed binder can't bootstrap CoreLib
         // static Assembly? BindToSystem(string systemDirectory);
-        // static Assembly? BindToSystemSatellite(string systemDirectory, string simpleName, string cultureName);
+
+        private static unsafe int BindToSystemSatellite(char* systemDirectory, char* simpleName, char* cultureName, out Assembly? assembly)
+        {
+            // Satellite assembly's relative path
+
+            // append culture name
+
+            // append satellite assembly's simple name
+
+            // append extension
+            string relativePath = (string.IsNullOrEmpty(new string(cultureName)) ? new string(simpleName) : new string(cultureName)) + ".dll";
+
+            // Satellite assembly's path:
+            //   * Absolute path when looking for a file on disk
+            //   * Bundle-relative path when looking within the single-file bundle.
+
+            // PathSource pathSource = PathSource.Bundle;
+            // BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true);
+            PathSource pathSource = PathSource.ApplicationAssemblies;
+            string sCoreLibSatellite = new string(systemDirectory) + relativePath;
+
+            int hr = GetAssembly(sCoreLibSatellite, isInTPA: true, out assembly, default);
+            if (hr < 0)
+            {
+                assembly = null;
+            }
+
+            NativeRuntimeEventSource.Log.KnownPathProbed(sCoreLibSatellite, (ushort)pathSource, hr);
+
+            return hr;
+        }
 
         private static int BindByName(
             ApplicationContext applicationContext,

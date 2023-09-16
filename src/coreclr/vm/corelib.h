@@ -1208,6 +1208,9 @@ DEFINE_METHOD(BINDER_DEFAULTASSEMBLYBINDER, SETUP_BINDING_PATHS, SetupBindingPat
 DEFINE_CLASS(BINDER_ASSEMBLY, InternalLoader, Assembly)
 DEFINE_METHOD(BINDER_ASSEMBLY, ISCORELIB, get_IsCoreLib, IM_RetBool)
 
+DEFINE_CLASS(BINDER_ASSEMBLYBINDERCOMMON, InternalLoader, AssemblyBinderCommon)
+DEFINE_METHOD(BINDER_ASSEMBLYBINDERCOMMON, BINDTOSYSTEMSATELLITE, BindToSystemSatellite, SM_PtrChar_PtrChar_PtrChar_RefObj_RetInt)
+
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
 DEFINE_FIELD_U(_totalAvailableMemoryBytes, GCMemoryInfoData, totalAvailableMemoryBytes)

@@ -58,7 +58,16 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
         if (m_context.szLocale != NULL)
             SString(SString::Utf8Literal, m_context.szLocale).ConvertToUnicode(sCultureName);
 
-        hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
+        MethodDescCallSite methSatellite(METHOD__BINDER_ASSEMBLYBINDERCOMMON__BINDTOSYSTEMSATELLITE);
+        ARG_SLOT args[4] =
+        {
+            PtrToArgSlot(sSystemDirectory.GetUnicode()),
+            PtrToArgSlot(sSimpleName.GetUnicode()),
+            PtrToArgSlot(sCultureName.GetUnicode()),
+            PtrToArgSlot(&pPrivAsm)
+        };
+
+        hr = methSatellite.Call_RetHR(args);
     }
     else
     {
