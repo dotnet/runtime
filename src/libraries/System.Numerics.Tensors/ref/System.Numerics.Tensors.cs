@@ -6,27 +6,33 @@
 
 namespace System.Numerics.Tensors
 {
-    public static class TensorPrimitives
+    public static partial class TensorPrimitives
     {
-        public static void Add(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { throw null; }
-        public static void Add(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { throw null; }
-        public static void AddMultiply(System.ReadOnlySpan<float> x, float y, System.ReadOnlySpan<float> multiplier, System.Span<float> destination) { throw null; }
-        public static void AddMultiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, float multiplier, System.Span<float> destination) { throw null; }
-        public static void AddMultiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.ReadOnlySpan<float> multiplier, System.Span<float> destination) { throw null; }
-        public static void Cosh(System.ReadOnlySpan<float> x, System.Span<float> destination) { throw null; }
-        public static void Divide(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { throw null; }
-        public static void Divide(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { throw null; }
-        public static void Exp(System.ReadOnlySpan<float> x, System.Span<float> destination) { throw null; }
-        public static void Log(System.ReadOnlySpan<float> x, System.Span<float> destination) { throw null; }
-        public static void Multiply(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { throw null; }
-        public static void Multiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { throw null; }
-        public static void MultiplyAdd(System.ReadOnlySpan<float> x, float y, System.ReadOnlySpan<float> addend, System.Span<float> destination) { throw null; }
-        public static void MultiplyAdd(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, float addend, System.Span<float> destination) { throw null; }
-        public static void MultiplyAdd(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.ReadOnlySpan<float> addend, System.Span<float> destination) { throw null; }
-        public static void Negate(System.ReadOnlySpan<float> x, System.Span<float> destination) { throw null; }
-        public static void Subtract(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { throw null; }
-        public static void Subtract(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { throw null; }
-        public static void Sinh(System.ReadOnlySpan<float> x, System.Span<float> destination) { throw null; }
-        public static void Tanh(System.ReadOnlySpan<float> x, System.Span<float> destination) { throw null; }
+        public static void Add(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { }
+        public static void Add(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { }
+        public static void AddMultiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.ReadOnlySpan<float> multiplier, System.Span<float> destination) { }
+        public static void AddMultiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, float multiplier, System.Span<float> destination) { }
+        public static void AddMultiply(System.ReadOnlySpan<float> x, float y, System.ReadOnlySpan<float> multiplier, System.Span<float> destination) { }
+        public static void Cosh(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static float CosineSimilarity(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y) { throw null; }
+        public static float Distance(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y) { throw null; }
+        public static void Divide(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { }
+        public static void Divide(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { }
+        public static float Dot(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y) { throw null; }
+        public static void Exp(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static float L2Normalize(System.ReadOnlySpan<float> x) { throw null; }
+        public static void Log(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static void Multiply(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { }
+        public static void Multiply(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { }
+        public static void MultiplyAdd(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.ReadOnlySpan<float> addend, System.Span<float> destination) { }
+        public static void MultiplyAdd(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, float addend, System.Span<float> destination) { }
+        public static void MultiplyAdd(System.ReadOnlySpan<float> x, float y, System.ReadOnlySpan<float> addend, System.Span<float> destination) { }
+        public static void Negate(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static void Sigmoid(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static void Sinh(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static void SoftMax(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
+        public static void Subtract(System.ReadOnlySpan<float> x, System.ReadOnlySpan<float> y, System.Span<float> destination) { }
+        public static void Subtract(System.ReadOnlySpan<float> x, float y, System.Span<float> destination) { }
+        public static void Tanh(System.ReadOnlySpan<float> x, System.Span<float> destination) { }
     }
 }

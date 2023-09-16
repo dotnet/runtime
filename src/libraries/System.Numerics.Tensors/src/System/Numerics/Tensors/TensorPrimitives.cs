@@ -253,5 +253,162 @@ namespace System.Numerics.Tensors
                 destination[i] = MathF.Tanh(x[i]);
             }
         }
+
+        /// <summary>Computes the cosine similarity between two non-zero vectors.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <returns>The cosine similarity between the two vectors.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        /// <exception cref="ArgumentException">'<paramref name="x" />' and '<paramref name="y" />' must not be empty.</exception>
+        public static float CosineSimilarity(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+            if (x.Length == 0 || y.Length == 0)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            float dotprod = 0f;
+            float magx = 0f;
+            float magy = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                dotprod += x[i] * y[i];
+                magx += x[i] * x[i];
+                magy += y[i] * y[i];
+            }
+
+            return dotprod / (MathF.Sqrt(magx) * MathF.Sqrt(magy));
+        }
+
+        /// <summary>
+        /// Compute the distance between two points in Euclidean space.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <returns>The Euclidean distance.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        /// <exception cref="ArgumentException">'<paramref name="x" />' and '<paramref name="y" />' must not be empty.</exception>
+        public static float Distance(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+            if (x.Length == 0 || y.Length == 0)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            float distance = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                float dist = x[i] - y[i];
+                distance += dist * dist;
+            }
+
+            return MathF.Sqrt(distance);
+        }
+
+        /// <summary>
+        /// A mathematical operation that takes two vectors and returns a scalar.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <returns>The dot product.</returns>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y) // BLAS1: dot
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            float dotprod = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                dotprod += x[i] * y[i];
+            }
+
+            return dotprod;
+        }
+
+        /// <summary>
+        /// A mathematical operation that takes a vector and returns the L2 norm.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <returns>The L2 norm.</returns>
+        public static float L2Normalize(ReadOnlySpan<float> x) // BLAS1: nrm2
+        {
+            float magx = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                magx += x[i] * x[i];
+            }
+
+            return MathF.Sqrt(magx);
+        }
+
+        /// <summary>
+        /// A function that takes a collection of real numbers and returns a probability distribution.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException">'<paramref name="x" />' must not be empty.</exception>
+        public static void SoftMax(ReadOnlySpan<float> x, Span<float> destination)
+        {
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+            if (x.Length == 0)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            float expSum = 0f;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                expSum += MathF.Pow((float)Math.E, x[i]);
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                destination[i] = MathF.Exp(x[i]) / expSum;
+            }
+        }
+
+        /// <summary>
+        /// A function that takes a real number and returns a value between 0 and 1.
+        /// </summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException">'<paramref name="x" />' must not be empty.</exception>
+        public static void Sigmoid(ReadOnlySpan<float> x, Span<float> destination)
+        {
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+            if (x.Length == 0)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                destination[i] = 1f / (1 + MathF.Exp(-x[i]));
+            }
+        }
     }
 }
