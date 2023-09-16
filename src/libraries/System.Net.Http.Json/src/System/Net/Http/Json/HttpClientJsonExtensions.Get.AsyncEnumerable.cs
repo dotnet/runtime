@@ -134,7 +134,7 @@ namespace System.Net.Http.Json
             Uri? requestUri,
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
-        {        
+        {
             return Core(client, requestUri, options, cancellationToken);
 
             static async IAsyncEnumerable<TValue?> Core(
