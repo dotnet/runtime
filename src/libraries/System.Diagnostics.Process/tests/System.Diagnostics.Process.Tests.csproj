@@ -63,6 +63,12 @@
     <Compile Include="ProcessThreadTests.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs"
              Link="System\PasteArguments.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
+             Link="Common\Interop\OSX\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs"
+             Link="Common\Interop\OSX\Interop.libproc.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libSystem.cs"
+             Link="Common\Interop\OSX\Interop.libSystem.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />

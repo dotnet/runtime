@@ -10,6 +10,7 @@ namespace System.Diagnostics
     public partial class Process
     {
         private const int NanosecondsTo100NanosecondsFactor = 100;
+        private static readonly Interop.libSystem.mach_timebase_info_data_t timeBase = GetTimeBase();
 
         private const int MicrosecondsToSecondsFactor = 1_000_000;
 
@@ -23,7 +24,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64(info.ri_system_time / NanosecondsTo100NanosecondsFactor));
+                return new TimeSpan(Convert.ToInt64(info.ri_system_time * timeBase.numer / timeBase.denom / NanosecondsTo100NanosecondsFactor));
             }
         }
 
@@ -65,7 +66,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64((info.ri_system_time + info.ri_user_time) / NanosecondsTo100NanosecondsFactor));
+                return new TimeSpan(Convert.ToInt64((info.ri_system_time + info.ri_user_time) * timeBase.numer / timeBase.denom / NanosecondsTo100NanosecondsFactor));
             }
         }
 
@@ -82,7 +83,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64(info.ri_user_time / NanosecondsTo100NanosecondsFactor));
+                return new TimeSpan(Convert.ToInt64(info.ri_user_time * timeBase.numer / timeBase.denom / NanosecondsTo100NanosecondsFactor));
             }
         }
 
@@ -108,6 +109,17 @@ namespace System.Diagnostics
         private static Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
         {
             return Interop.libproc.proc_pid_rusage(Environment.ProcessId);
+        }
+
+        private static unsafe Interop.libSystem.mach_timebase_info_data_t GetTimeBase()
+        {
+            Interop.libSystem.mach_timebase_info_data_t timeBase = default;
+            var returnCode = Interop.libSystem.mach_timebase_info(&timeBase);
+            if (returnCode != 0)
+            {
+                throw new Win32Exception(returnCode);
+            }
+            return timeBase;
         }
     }
 }
