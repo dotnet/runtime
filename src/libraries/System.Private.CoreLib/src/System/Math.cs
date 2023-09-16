@@ -1033,7 +1033,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the lesser of the inputs. It
-            // treats +0 as lesser than -0 as per the specification.
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -1091,7 +1091,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the lesser of the inputs. It
-            // treats +0 as lesser than -0 as per the specification.
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -1145,7 +1145,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the input with a lesser magnitude.
-            // It treats +0 as lesser than -0 as per the specification.
+            // It treats +0 as greater than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);
