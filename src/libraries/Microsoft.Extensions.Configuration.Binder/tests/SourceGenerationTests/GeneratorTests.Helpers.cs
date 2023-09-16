@@ -92,12 +92,19 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ExtensionClassType extType = ExtensionClassType.None,
             bool validateOutputCompDiags = true)
         {
+            string environmentSubFolder =
+#if NETCOREAPP
+    "netcoreapp"
+#else
+    "net462"
+#endif
+            ;
             string path = extType is ExtensionClassType.None
-                ? Path.Combine("Baselines", filename)
-                : Path.Combine("Baselines", extType.ToString(), filename);
-            string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(path).ConfigureAwait(false));
+                ? Path.Combine("Baselines", environmentSubFolder, filename)
+                : Path.Combine("Baselines", environmentSubFolder, extType.ToString(), filename);
+            string baseline = LineEndingsHelper.Normalize(File.ReadAllText(path));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
-                                             .Split(Environment.NewLine);
+                                             .Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
             var (d, r) = await RunGenerator(testSourceCode, validateOutputCompDiags);
             bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out string errorMessage);

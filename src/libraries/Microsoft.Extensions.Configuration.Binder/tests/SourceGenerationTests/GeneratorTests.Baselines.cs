@@ -655,9 +655,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 public Uri Prop25 { get; set; }
                                 public Version Prop26 { get; set; }
                                 public DayOfWeek Prop27 { get; set; }
-                                public byte[] Prop22 { get; set; }
-                                public int Prop23 { get; set; }
-                                public DateTime Prop24 { get; set; }
+                                public byte[] Prop28 { get; set; }
+                                public int Prop29 { get; set; }
+                                public DateTime Prop30 { get; set; }
                             }
                         }
                         """;

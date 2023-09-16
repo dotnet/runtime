@@ -233,7 +233,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task IssueDiagnosticsForAllOffendingCallsites()
         {
             string source = """
