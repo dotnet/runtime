@@ -74,7 +74,7 @@ namespace System.Numerics.Tensors
                 Vector512<float> ySumOfSquaresVector = Vector512<float>.Zero;
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
-                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                int oneVectorFromEnd = x.Length - Vector512<float>.Count;
                 do
                 {
                     Vector512<float> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
@@ -105,15 +105,15 @@ namespace System.Numerics.Tensors
                 Vector256<float> ySumOfSquaresVector = Vector256<float>.Zero;
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
-                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                int oneVectorFromEnd = x.Length - Vector256<float>.Count;
                 do
                 {
                     Vector256<float> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
                     Vector256<float> yVec = Vector256.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector += (xVec * yVec);
-                    xSumOfSquaresVector += (xVec * xVec);
-                    ySumOfSquaresVector += (yVec * yVec);
+                    dotProductVector += xVec * yVec;
+                    xSumOfSquaresVector += xVec * xVec;
+                    ySumOfSquaresVector += yVec * yVec;
 
                     i += Vector256<float>.Count;
                 }
@@ -134,15 +134,15 @@ namespace System.Numerics.Tensors
                 Vector128<float> ySumOfSquaresVector = Vector128<float>.Zero;
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
-                int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                int oneVectorFromEnd = x.Length - Vector128<float>.Count;
                 do
                 {
                     Vector128<float> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
                     Vector128<float> yVec = Vector128.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector += (xVec * yVec);
-                    xSumOfSquaresVector += (xVec * xVec);
-                    ySumOfSquaresVector += (yVec * yVec);
+                    dotProductVector += xVec * yVec;
+                    xSumOfSquaresVector += xVec * xVec;
+                    ySumOfSquaresVector += yVec * yVec;
 
                     i += Vector128<float>.Count;
                 }

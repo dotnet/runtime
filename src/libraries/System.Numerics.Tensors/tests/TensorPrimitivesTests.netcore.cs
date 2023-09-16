@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using Xunit;
 
 namespace System.Numerics.Tensors.Tests
@@ -12,7 +13,7 @@ namespace System.Numerics.Tensors.Tests
         [MemberData(nameof(TensorLengths))]
         public static void ConvertToHalf(int tensorLength)
         {
-            float[] source = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> source = CreateAndFillTensor(tensorLength);
             foreach (int destLength in new[] { source.Length, source.Length + 1 })
             {
                 Half[] destination = new Half[destLength];
@@ -38,7 +39,7 @@ namespace System.Numerics.Tensors.Tests
         [MemberData(nameof(TensorLengths))]
         public static void ConvertToHalf_ThrowsForTooShortDestination(int tensorLength)
         {
-            float[] source = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> source = CreateAndFillTensor(tensorLength);
             Half[] destination = new Half[source.Length - 1];
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertToHalf(source, destination));
@@ -57,7 +58,8 @@ namespace System.Numerics.Tensors.Tests
 
             foreach (int destLength in new[] { source.Length, source.Length + 1 })
             {
-                float[] destination = new float[destLength];
+                using BoundedMemory<float> destination = CreateTensor(destLength);
+                destination.Span.Fill(0f);
 
                 TensorPrimitives.ConvertToSingle(source, destination);
 
@@ -81,7 +83,7 @@ namespace System.Numerics.Tensors.Tests
         public static void ConvertToSingle_ThrowsForTooShortDestination(int tensorLength)
         {
             Half[] source = new Half[tensorLength];
-            float[] destination = new float[source.Length - 1];
+            using BoundedMemory<float> destination = CreateTensor(source.Length - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertToSingle(source, destination));
         }

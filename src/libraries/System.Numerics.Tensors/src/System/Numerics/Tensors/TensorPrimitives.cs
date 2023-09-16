@@ -533,7 +533,6 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            float result = float.PositiveInfinity;
             float resultMag = float.PositiveInfinity;
 
             for (int i = 0; i < x.Length; i++)
@@ -555,18 +554,16 @@ namespace System.Numerics.Tensors
 
                     if (currentMag < resultMag)
                     {
-                        result = current;
                         resultMag = currentMag;
                     }
                 }
                 else if (IsNegative(current))
                 {
-                    result = current;
                     resultMag = currentMag;
                 }
             }
 
-            return result;
+            return resultMag;
         }
 
         /// <summary>Computes the index of the maximum element in <paramref name="x"/>.</summary>
