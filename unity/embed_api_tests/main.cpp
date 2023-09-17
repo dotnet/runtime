@@ -997,13 +997,13 @@ TEST(mono_field_get_offset_retrieves_field_offset_from_struct)
     size_t field1_offset = mono_field_get_offset(field1);
     GET_AND_CHECK(obj, mono_object_new(g_domain, klass));
     GET_AND_CHECK(method, mono_class_get_method_from_name(klass, "SetupFields", 0));
-    auto structInObject = (MonoObject*)((char*)obj + field0_offset);
+    auto structInObject = (MonoObject*)((char*)ExtractManagedFromHandle(obj) + field0_offset);
     if (g_Mode == CoreCLR)
-        mono_runtime_invoke_with_nested_object(method, structInObject, obj, nullptr, nullptr);
+        mono_runtime_invoke_with_nested_object(method, structInObject, ExtractManagedFromHandle(obj), nullptr, nullptr);
     else
         mono_runtime_invoke(method, structInObject, nullptr, nullptr);
-    CHECK_EQUAL(123, *(int*)((char*)obj + field0_offset));
-    CHECK_EQUAL(456, *(int*)((char*)obj + field1_offset));
+    CHECK_EQUAL(123, *(int*)((char*)ExtractManagedFromHandle(obj) + field0_offset));
+    CHECK_EQUAL(456, *(int*)((char*)ExtractManagedFromHandle(obj) + field1_offset));
 }
 
 TEST(mono_field_get_flags_works)
