@@ -135,29 +135,9 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
+            var jsonTypeInfo = (JsonTypeInfo<TValue>)JsonHelpers.GetJsonTypeInfo(typeof(TValue), options);
 
-            return Core(client, requestUri, options, cancellationToken);
-
-            static async IAsyncEnumerable<TValue?> Core(
-                HttpClient client,
-                Uri? requestUri,
-                JsonSerializerOptions? options,
-                [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                using HttpResponseMessage response = await client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-                    .ConfigureAwait(false);
-                response.EnsureSuccessStatusCode();
-
-                await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
-                    options, cancellationToken).ConfigureAwait(false))
-                {
-                    yield return value;
-                }
-            }
+            return FromJsonStreamAsyncCore(client, requestUri, jsonTypeInfo, cancellationToken);
         }
 
         private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(
@@ -183,8 +163,11 @@ namespace System.Net.Http.Json
                     .ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 
-                await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
-                    jsonTypeInfo, cancellationToken).ConfigureAwait(false))
+                using Stream readStream = await GetHttpResponseStreamAsync(client, response, false, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await foreach (TValue? value in JsonSerializer.DeserializeAsyncEnumerable<TValue>(
+                    readStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false))
                 {
                     yield return value;
                 }
