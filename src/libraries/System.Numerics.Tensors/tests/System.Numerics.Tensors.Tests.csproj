@@ -8,6 +8,10 @@
   <ItemGroup>
     <Compile Include="TensorPrimitivesTests.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="TensorPrimitivesTests.netcore.cs" />
+  </ItemGroup>
   
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
