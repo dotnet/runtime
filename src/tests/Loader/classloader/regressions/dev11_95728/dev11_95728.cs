@@ -26,14 +26,13 @@ namespace StaticFieldBug
         }
     }
         
-    class Program
+    public class Program
     {
-        static int Main()
+        public static void Main()
         {
             Foo<string>("Run me to crash LINQ...");
             
             Console.WriteLine("PASS (we didn't crash)!");
-            return 100;
         }
         public static void Foo<T>(T value)
         {

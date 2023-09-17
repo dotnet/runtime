@@ -24,14 +24,11 @@ class Problem : Base<object>, Interface<object>
     public override B<object> Func() { return new B<object>(); }
 }
 
-class Test_dev10_794943
+public class Test_dev10_794943
 {
-    static int Main()
+    public static void Main()
     {
         C<Problem, object>.CallFunc(new Problem());
         C<Problem, object>.CallInterfaceFunc(new Problem());
-		
-		Console.WriteLine("Pass");
-		return 100;
     }
 }

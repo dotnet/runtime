@@ -20,12 +20,10 @@ public class MyDerived : MyBase, I
 
 class MyTest
 {
-    public static int Main()
+    public static void Main()
     {
         I I1 = new MyDerived();
 
         System.Console.WriteLine("I1.Print<object>: " + I1.Print<object>());
-
-        return 100;
     }
 }

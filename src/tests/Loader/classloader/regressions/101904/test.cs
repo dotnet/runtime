@@ -16,11 +16,12 @@ public class MyBaseType<T> : IFoo<T>{
 public class MyType<S,T> : MyBaseType<S>, IFoo<T>{
 }
 
-public class CMain{
-    public static int Main(){
+public class CMain
+{
+    public static void Main()
+    {
         MyType<string,int> mt = new MyType<string,int>();
         IFoo<int> f = mt;
-        Console.WriteLine("PASS"); // if we make this far, we passed.
-        return 100;
+        Console.WriteLine("Found interface: {0}", f);
     }
 }

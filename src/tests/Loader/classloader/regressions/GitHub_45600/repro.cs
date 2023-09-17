@@ -90,13 +90,12 @@ public class G
     }
 }
 
-class Program
+public class Program
 {
-    static int Main()
+    public static void Main()
     {
         var container = new G();
         container.RegisterNamedObjectType<B>();
         container.Register<B, D>();
-        return 100;
     }
 }

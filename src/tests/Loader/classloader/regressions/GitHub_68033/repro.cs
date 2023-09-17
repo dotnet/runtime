@@ -21,9 +21,8 @@ public sealed class Bar : Foo
 
 public class Program
 {
-        public static int Main ()
-        {
-                new Bar(); // should not throw a TLE due circular reference to Bar in IComparable<Bar>
-                return 100;
-        }
+    public static void Main()
+    {
+        new Bar(); // should not throw a TLE due circular reference to Bar in IComparable<Bar>
+    }
 }

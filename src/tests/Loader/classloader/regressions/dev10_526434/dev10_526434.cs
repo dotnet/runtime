@@ -5,14 +5,13 @@
 
 using System;
 
-class HelloWorld
+public class HelloWorld
 {
-    static int Main()
+    public static void Main()
     {
         C<object> c = new C<object>();
 
-        Console.WriteLine("Pass");
-        return 100;
+        Console.WriteLine("Pass: {0}", c);
     }
 }
 

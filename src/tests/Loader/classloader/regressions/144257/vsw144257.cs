@@ -8,34 +8,24 @@ using System;
 
 interface I
 {
-	void meth();
+    void meth();
 }
 
-class A
+public class A
 {
-	public void meth(){}
+    public void meth(){}
 }
 
-class B : A
+public class B : A
 {
-	new private void meth(){}
+    new private void meth(){}
 }
 
-class C : B, I
+public class C : B, I
 {
-	public static int Main()
-	{
-		try
-		{
-			C c = new C();
-			Console.WriteLine("PASS");
-			return 100;
-		}
-		catch (Exception e)
-		{
-			Console.WriteLine("Caught unexpected exception: " + e);
-			return 101;
-		}
-
-	}
+    public static void Main()
+    {
+        C c = new C();
+        Console.WriteLine("PASS");
+    }
 }
