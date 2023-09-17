@@ -582,7 +582,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
-        public async Task GetFromJsonAsAsyncEnumerable_SerializerCaseInsensitiveTest()
+        public async Task GetFromJsonAsAsyncEnumerable_SerializerUsesCamelCase()
         {
             using var client = new HttpClient(new CustomResponseHandler((r, c) =>
             {
