@@ -35,8 +35,8 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
     AssemblyBinder* binder = /* componentModule->GetPEAssembly()->GetAssemblyBinder() */ NULL;
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
-    bool isNewNativeImage;
-    NativeImage* nativeImage = NativeImage::Open(componentModule, nativeImageName, binder, moduleLoaderAllocator, &isNewNativeImage);
+    // bool isNewNativeImage;
+    NativeImage* nativeImage = /*NativeImage::Open(componentModule, nativeImageName, binder, moduleLoaderAllocator, &isNewNativeImage)*/ NULL;
 
     return nativeImage;
 }

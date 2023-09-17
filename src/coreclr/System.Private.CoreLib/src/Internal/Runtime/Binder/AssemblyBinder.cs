@@ -112,6 +112,10 @@ namespace Internal.Runtime.Binder
             Environment.FailFast(message);
         }
 
+        // used by vm
+        internal unsafe void DeclareDependencyOnMvid(byte* simpleName, in Guid mvid, bool compositeComponent, byte* imageName)
+            => DeclareDependencyOnMvid(new MdUtf8String(simpleName).ToString(), mvid, compositeComponent, new MdUtf8String(imageName).ToString());
+
         // Must be called under the LoadLock
         public void DeclareDependencyOnMvid(string simpleName, Guid mvid, bool compositeComponent, string imageName)
         {

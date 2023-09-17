@@ -620,6 +620,7 @@ DEFINE_METASIG(IM(PtrChar_PtrChar_PtrChar_RetVoid, P(u) P(u) P(u), v))
 DEFINE_METASIG(IM(IntPtr_Bool_RefObj_RetInt, I F r(j), i))
 DEFINE_METASIG(IM(PtrVoid_RefObj_RetInt, P(v) r(j), i))
 DEFINE_METASIG(SM(PtrChar_PtrChar_PtrChar_RefObj_RetInt, P(u) P(u) P(u) r(j), i))
+DEFINE_METASIG_T(IM(PtrByte_RefGuid_Bool_PtrByte_RetVoid, P(b) r(g(GUID)) F P(b), v))
 
 // Undefine macros in case we include the file again in the compilation unit
 
