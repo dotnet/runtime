@@ -6325,8 +6325,10 @@ private:
 
 public:
     PhaseStatus optOptimizeBools();
+    PhaseStatus optSwitchRecognition();
+    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
 
-public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
