@@ -74,7 +74,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     g_jitInitialized = true;
 }
 
-static FILE* s_jitstdout;
+static FILE* volatile s_jitstdout;
 
 static FILE* jitstdoutInit()
 {
@@ -134,9 +134,10 @@ static FILE* jitstdoutInit()
 
 FILE* jitstdout()
 {
-    if (s_jitstdout != nullptr)
+    FILE* file = s_jitstdout;
+    if (file != nullptr)
     {
-        return s_jitstdout;
+        return file;
     }
 
     return jitstdoutInit();
