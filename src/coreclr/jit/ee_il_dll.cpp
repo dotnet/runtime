@@ -166,14 +166,15 @@ void jitShutdown(bool processIsTerminating)
 
     Compiler::compShutdown();
 
-    if ((s_jitstdout != nullptr) && (s_jitstdout != procstdout()))
+    FILE* file = s_jitstdout;
+    if ((file != nullptr) && (file != procstdout()))
     {
         // When the process is terminating, the fclose call is unnecessary and is also prone to
         // crashing since the UCRT itself often frees the backing memory earlier on in the
         // termination sequence.
         if (!processIsTerminating)
         {
-            fclose(s_jitstdout);
+            fclose(file);
         }
     }
 
