@@ -60,7 +60,25 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
-        public string Bundle(BundleOptions options, Version? bundleVersion = null)
+        public static IReadOnlyList<FileSpec> GetRuntimeFilesToBundle()
+        {
+            var runtimeAssemblies = Binaries.GetRuntimeFiles().Assemblies;
+            List<FileSpec> fileSpecs = new List<FileSpec>();
+            foreach (var asset in runtimeAssemblies)
+            {
+                fileSpecs.Add(new FileSpec(asset, Path.GetFileName(asset)));
+            }
+
+            fileSpecs.Sort((a, b) => string.CompareOrdinal(a.BundleRelativePath, b.BundleRelativePath));
+            return fileSpecs;
+        }
+
+        public string Bundle(BundleOptions options = BundleOptions.None, Version? bundleVersion = null)
+        {
+            return Bundle(options, out _, bundleVersion);
+        }
+
+        public string Bundle(BundleOptions options, out Manifest manifest, Version? bundleVersion = null)
         {
             string bundleDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(Location, "bundle"));
             var bundler = new Bundler(
@@ -81,11 +99,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             // If this is a self-contained app, add the runtime assemblies to the bundle
             if (selfContained)
             {
-                var runtimeAssemblies = Binaries.GetRuntimeFiles().Assemblies;
-                foreach (var asset in runtimeAssemblies)
-                {
-                    fileSpecs.Add(new FileSpec(asset, Path.GetFileName(asset)));
-                }
+                fileSpecs.AddRange(GetRuntimeFilesToBundle());
             }
 
             // Sort the file specs to keep the bundle construction deterministic.
@@ -104,7 +118,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 File.Copy(spec.SourcePath, outputFilePath, true);
             }
 
+            manifest = bundler.BundleManifest;
             return singleFile;
+        }
+
+        public string GetNewExtractionRootPath()
+        {
+            return SharedFramework.CalculateUniqueTestDirectory(Path.Combine(Location, "extract"));
+        }
+
+        public DirectoryInfo GetExtractionDir(string root, Manifest manifest)
+        {
+            return new DirectoryInfo(Path.Combine(root, Name, manifest.BundleID));
         }
 
         private void PopulateBuiltAppDirectory()

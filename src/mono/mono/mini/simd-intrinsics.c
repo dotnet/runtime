@@ -87,6 +87,22 @@ mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *ad
 	return NULL;
 }
 
+static gboolean
+is_zero_const (const MonoInst* ins)
+{
+	switch (ins->opcode) {
+	case OP_ICONST:
+		return (0 == GTMREG_TO_INT (ins->inst_c0));
+	case OP_I8CONST:
+		return (0 == ins->inst_l);
+	case OP_R4CONST:
+		return (0 == *(const uint32_t*)(ins->inst_p0)); // Must be binary zero. -0.0f has a sign of 1.
+	case OP_R8CONST:
+		return (0 == *(const uint64_t*)(ins->inst_p0));
+	}
+	return FALSE;
+}
+
 static int
 simd_intrinsic_compare_by_name (const void *key, const void *value)
 {
@@ -1061,9 +1077,11 @@ emit_vector_create_elementwise (
 	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
 	MonoInst *ins = emit_xzero (cfg, vklass);
 	for (int i = 0; i < fsig->param_count; ++i) {
-		ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
-		ins->inst_c0 = i;
-		ins->inst_c1 = type;
+		if (!is_zero_const (args [i])) {
+			ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
+			ins->inst_c0 = i;
+			ins->inst_c1 = type;
+		}
 	}
 	return ins;
 }
@@ -1694,9 +1712,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			MonoInst *ins;
 
 			ins = emit_xzero (cfg, klass);
-			ins = emit_simd_ins (cfg, klass, type_to_insert_op (arg0_type), ins->dreg, args [0]->dreg);
-			ins->inst_c0 = 0;
-			ins->inst_c1 = arg0_type;
+			if (!is_zero_const (args [0])) {
+				ins = emit_simd_ins (cfg, klass, type_to_insert_op (arg0_type), ins->dreg, args [0]->dreg);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = arg0_type;
+			}
 			return ins;
 #else
 			if (type_enum_is_float (arg0_type)) {
@@ -4600,7 +4620,7 @@ static SimdIntrinsic x86base_methods [] = {
 	{SN_BitScanForward},
 	{SN_BitScanReverse},
 	{SN_DivRem},
-	{SN_Pause},
+	{SN_Pause, OP_XOP, INTRINS_SSE_PAUSE},
 	{SN_get_IsSupported}
 };
 
@@ -5290,10 +5310,6 @@ emit_x86_intrinsics (
 			EMIT_NEW_TEMPLOAD (cfg, ins, tuple->inst_c0);
 			return ins;
 			}
-		case SN_Pause:
-			if (!COMPILE_LLVM (cfg))
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP, INTRINS_SSE_PAUSE, arg0_type, fsig, args);
 		default:
 			g_assert_not_reached ();
 		}

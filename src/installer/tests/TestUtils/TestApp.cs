@@ -50,6 +50,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
+        public static TestApp CreateFromBuiltAssets(string appName)
+        {
+            TestApp app = CreateEmpty(appName);
+            TestArtifact.CopyRecursive(
+                Path.Combine(RepoDirectoriesProvider.Default.TestAssetsOutput, appName),
+                app.Location);
+            return app;
+        }
+
         public void PopulateFrameworkDependent(string fxName, string fxVersion, Action<NetCoreAppBuilder> customizer = null)
         {
             var builder = NetCoreAppBuilder.PortableForNETCoreApp(this);

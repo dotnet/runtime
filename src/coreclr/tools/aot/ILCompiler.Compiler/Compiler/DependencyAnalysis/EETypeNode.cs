@@ -625,8 +625,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Ask the metadata manager
             // if we have any dependencies due to presence of the EEType.
-            bool isFullType = factory.MaximallyConstructableType(_type) == this;
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type, isFullType);
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
 
             if (_type is MetadataType mdType)
                 ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
@@ -1145,9 +1144,9 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
                     if (factory.Target.SupportsRelativePointers)
-                        objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
+                        objData.EmitReloc(typeDefNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                     else
-                        objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
+                        objData.EmitPointerReloc(typeDefNode);
 
                     ISymbolNode compositionNode = _type.Instantiation.Length > 1
                         ? factory.GenericComposition(_type.Instantiation)

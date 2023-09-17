@@ -81,6 +81,8 @@ namespace System.Buffers
 
             public override bool IsReadonly => (Protection != VirtualAllocProtection.PAGE_READWRITE);
 
+            public override int Length => _elementCount;
+
             internal VirtualAllocProtection Protection
             {
                 get
@@ -189,10 +191,7 @@ namespace System.Buffers
                     // no-op; the handle will be disposed separately
                 }
 
-                public override Span<T> GetSpan()
-                {
-                    throw new NotImplementedException();
-                }
+                public override Span<T> GetSpan() => _impl.Span;
 
                 public override MemoryHandle Pin(int elementIndex)
                 {
