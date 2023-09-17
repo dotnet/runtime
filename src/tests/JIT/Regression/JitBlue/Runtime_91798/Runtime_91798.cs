@@ -23,8 +23,11 @@ public class TestClass_91798
     [Fact]
     public static void TestEntryPoint()
     {
-        TestClass_91798 obj = new TestClass_91798();
-        obj.Method0();
+        if (Sse41.IsSupported)
+        {
+            TestClass_91798 obj = new TestClass_91798();
+            obj.Method0();
+        }
     }
 }
 /*
