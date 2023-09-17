@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 			var foo = new Foo ();
 			var bar = new Bar ();
 			var baz = new Baz ();
+			var fooBaz = new FooBaz ();
 		}
 
 		[Kept]
@@ -38,6 +39,14 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 		[DebuggerDisplay (null)]
 		class Baz
 		{
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		[DebuggerDisplay ("_", Name="{Property}")]
+		class FooBaz
+		{
+			public int Property { get; set; }
 		}
 	}
 }
