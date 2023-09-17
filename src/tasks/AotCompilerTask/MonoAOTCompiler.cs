@@ -227,6 +227,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? LLVMPath { get; set; }
 
     /// <summary>
+    /// Set to false if the the AOT compiler doesn't need LLVM binaries (opt and llc)
+    /// </summary>
+    public bool UseLLVMBinaries { get; set; } = true;
+
+    /// <summary>
     /// Prepends a prefix to the name of tools ran by the AOT compiler, i.e. 'as'/'ld'.
     /// </summary>
     public string? ToolPrefix { get; set; }
@@ -358,7 +363,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (UseLLVM)
+        if (UseLLVM && UseLLVMBinaries)
         {
             if (string.IsNullOrEmpty(LLVMPath))
                 // prevent using some random llc/opt from PATH (installed with clang)
@@ -682,7 +687,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (!string.IsNullOrEmpty(LLVMDebug))
                 aotArgs.Add(LLVMDebug);
 
-            aotArgs.Add($"llvm-path={LLVMPath}");
+            if (UseLLVMBinaries)
+                aotArgs.Add($"llvm-path={LLVMPath}");
         }
         else
         {
