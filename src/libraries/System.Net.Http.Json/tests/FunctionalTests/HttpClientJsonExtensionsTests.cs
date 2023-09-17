@@ -599,6 +599,24 @@ namespace System.Net.Http.Json.Functional.Tests
                 Assert.True(m.Value > 0);
             }
         }
+
+        [Fact]
+        public async Task GetFromJsonAsAsyncEnumerable_CustomSerializerOptions()
+        {
+            using var client = new HttpClient(new CustomResponseHandler((r, c) =>
+            {
+                string json = """[{"Value":1},{"Value":2}]""";
+                HttpResponseMessage response = new()
+                {
+                    Content = new StringContent(json)
+                };
+                return Task.FromResult(response);
+            }));
+            await foreach (var m in client.GetFromJsonAsAsyncEnumerable<TestModel>("http://dummyUrl", JsonSerializerOptions.Default))
+            {
+                Assert.True(m.Value > 0);
+            }
+        }
     }
 }
 
