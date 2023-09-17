@@ -1,4 +1,5 @@
 using System;
+using Xunit;
 
 public abstract class Foo : IComparable<Foo>, IComparable<Bar>
 {
@@ -21,7 +22,8 @@ public sealed class Bar : Foo
 
 public class Program
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         new Bar(); // should not throw a TLE due circular reference to Bar in IComparable<Bar>
     }

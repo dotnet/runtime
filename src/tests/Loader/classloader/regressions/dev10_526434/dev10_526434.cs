@@ -4,10 +4,12 @@
 //This pattern of interface implementation caused a buffer overflow and caused an AV (see bug DEV10_526434)
 
 using System;
+using Xunit;
 
 public class HelloWorld
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         C<object> c = new C<object>();
 

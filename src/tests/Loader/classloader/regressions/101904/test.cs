@@ -6,6 +6,7 @@
 // as IFoo<string>, and second directly as IFoo<int>.
 // In the end, a MyType<string,int> should be assignable to an IFoo<string> or an IFoo<int>.
 using System;
+using Xunit;
 
 public interface IFoo<T>{
 }
@@ -18,7 +19,8 @@ public class MyType<S,T> : MyBaseType<S>, IFoo<T>{
 
 public class CMain
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         MyType<string,int> mt = new MyType<string,int>();
         IFoo<int> f = mt;

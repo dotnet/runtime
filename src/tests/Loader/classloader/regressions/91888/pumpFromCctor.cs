@@ -6,6 +6,7 @@
 
 
 using System;
+using Xunit;
 
 public class MyWaitForPendingFinalizersClass
 {
@@ -40,7 +41,8 @@ public class Test_pumpFromCctor
     // post-finalization work to be done.
     const int maxIterations = 10;
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         MyFinalizeObject mfo;
 

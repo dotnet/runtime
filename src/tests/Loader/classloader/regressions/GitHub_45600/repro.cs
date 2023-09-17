@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 public abstract class A { }
 
@@ -92,7 +93,8 @@ public class G
 
 public class Program
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         var container = new G();
         container.RegisterNamedObjectType<B>();

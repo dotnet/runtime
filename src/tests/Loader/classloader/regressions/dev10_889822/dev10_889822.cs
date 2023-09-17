@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using Xunit;
 
 interface IFoo {
     void foo();
@@ -10,7 +11,8 @@ interface IFoo {
 
 public class My
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try {
            IFoo s = null;

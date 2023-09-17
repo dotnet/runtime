@@ -6,6 +6,7 @@
  * Change description: Store the callee saved registers more often in hand generated assembly helper.
 */
 using System;
+using Xunit;
 
 #pragma warning disable 169
 struct MyStruct
@@ -21,7 +22,8 @@ public class My
         s[0, 1] = s[1, 0];
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Object o1 = new Object();
         Object o2 = new Object();

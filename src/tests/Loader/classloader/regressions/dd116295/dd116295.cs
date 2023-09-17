@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ConsoleApplication1
 {
@@ -24,7 +25,8 @@ namespace ConsoleApplication1
             public B[] b;
         }
 
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             M();
         }

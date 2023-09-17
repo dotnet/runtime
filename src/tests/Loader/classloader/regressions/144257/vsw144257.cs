@@ -5,6 +5,7 @@
 // Loading type C resulted in TypeLoadException
 
 using System;
+using Xunit;
 
 interface I
 {
@@ -23,7 +24,8 @@ public class B : A
 
 public class C : B, I
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         C c = new C();
         Console.WriteLine("PASS");

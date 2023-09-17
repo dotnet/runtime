@@ -24,7 +24,8 @@ class M
 
 public class Test_bug
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         M obj = new M();
         MyStruct myStruct = new MyStruct("obj", 787980);

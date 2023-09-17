@@ -12,15 +12,17 @@
 
 
 using System;
+using Xunit;
 
 
 public class MyDerived : MyBase, I
 {
 }
 
-class MyTest
+public class MyTest
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         I I1 = new MyDerived();
 

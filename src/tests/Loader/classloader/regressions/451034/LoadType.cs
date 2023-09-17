@@ -5,10 +5,12 @@
 // ngening the assembly and running it resulted in AV
 
 using System;
+using Xunit;
 
 public class Test_LoadType
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         S s = CReloc5<char>.s;
             

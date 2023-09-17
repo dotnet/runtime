@@ -149,7 +149,8 @@ public class Test_dev10_724989
     }
 
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         NestedClassesTest();
         Console.WriteLine();

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 struct A<T> { }
 struct B<T> { }
@@ -26,7 +27,8 @@ class Problem : Base<object>, Interface<object>
 
 public class Test_dev10_794943
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         C<Problem, object>.CallFunc(new Problem());
         C<Problem, object>.CallInterfaceFunc(new Problem());
