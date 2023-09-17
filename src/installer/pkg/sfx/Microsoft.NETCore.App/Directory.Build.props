@@ -194,6 +194,7 @@
     <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-wasm-eh-stub.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-simd.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-nosimd.a" IsNative="true" />
     <PlatformManifestFileEntry Include="wasm-bundled-timezones.a" IsNative="true" />

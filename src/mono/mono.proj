@@ -437,6 +437,7 @@
       use $(CrossToolchainFile) and eng/common/cross/toolchain.cmake ? 
       sockets,eventpipe, DENABLE_LLVM_RUNTIME
       -->
+      <_MonoCMakeArgs Include="-DENABLE_LLVM_RUNTIME=1"/>
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include').Replace('\','/'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'mono-include').Replace('\','/'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public').Replace('\','/'))$(EscapedQuoteW)"/>
@@ -1068,8 +1069,11 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-eh-js.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-eh-js.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-eh-wasm.a">
+      <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'"  Include="$(MonoObjDir)out\lib\libmono-wasm-eh-wasm.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-eh-wasm.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="('$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'"  Include="$(MonoObjDir)out\lib\libmono-wasm-eh-stub.a">
+        <Destination>$(RuntimeBinDir)libmono-wasm-eh-stub.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-simd.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-simd.a</Destination>
