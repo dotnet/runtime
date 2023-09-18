@@ -36,7 +36,8 @@ public struct InnerStruct
     public int Low;
 }
 
-public class Test_NestedStructsWithExplicitLayout_Case01 {
+public class Test_NestedStructsWithExplicitLayout_Case01
+{
     private ComplexStruct currentCount = default;
 
     private void IncrementCount()
@@ -46,7 +47,7 @@ public class Test_NestedStructsWithExplicitLayout_Case01 {
         currentCount = x;
     }
 
-    public static int Main ()
+    public static int Main()
     {
         try
         {

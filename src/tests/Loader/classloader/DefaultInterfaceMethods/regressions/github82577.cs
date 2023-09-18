@@ -3,9 +3,9 @@
 using System;
 
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
        int ret;
        ret = (new TestClass() as ITestInterface).PublicInterfaceProtectedVirtualClass();

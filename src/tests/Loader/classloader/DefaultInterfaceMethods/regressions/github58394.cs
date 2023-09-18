@@ -6,9 +6,9 @@ using System.Runtime.CompilerServices;
 
 namespace GenericDimValuetypeBug
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             if (RunOne() != 17)
                 return 1;

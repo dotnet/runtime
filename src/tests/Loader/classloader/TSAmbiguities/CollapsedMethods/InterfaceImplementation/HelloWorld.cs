@@ -5,9 +5,9 @@ using System;
 
 #pragma warning disable 1956 //this is exactly what this is testing.
 
-class HelloWorld
+public class HelloWorld
 {
-    static int Main()
+    public static int Main()
     {
         I i = (I)new A2_IntInt();
         string res1 = i.Print(1);

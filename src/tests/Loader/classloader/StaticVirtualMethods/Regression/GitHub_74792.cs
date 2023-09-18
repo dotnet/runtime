@@ -14,13 +14,12 @@ using System;
 // Apparently it was failing in an older version of the CoreCLR
 // runtime, as of now (around .NET 7 RC1 timeframe) the test passes.
 
-class Program
+public class Program
 {
-    public static int Main()
+    public static void Main()
     {
         new G<L1>().Test();
         new G<L2>().Test();
-        return 100;
     }
 }
 

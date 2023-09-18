@@ -18,9 +18,9 @@ using System;
 // regression that caused Mono to incorrectly instantiate generic
 // interfaces that appeared in the MethodImpl table
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         int result = new TestClass().DoTest();
         if (result != 100)

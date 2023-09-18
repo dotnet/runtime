@@ -9,9 +9,9 @@ using Xunit;
 
 namespace VariantStaticInterfaceDispatchRegressionTest
 {
-    class Test
+    public class Test
     {
-        static int Main()
+        public static void Main()
         {
             Console.WriteLine("Test cases");
 
@@ -68,7 +68,6 @@ namespace VariantStaticInterfaceDispatchRegressionTest
             TestTheBarString<FooBarBazBoz2, Base>("IBoz");
             TestTheBarString<FooBarBazBoz2, Mid>("IBaz");
             TestTheBarString<FooBarBazBoz2, Derived>("IBoz");
-            return 100;
         }
 
         static string GetTheFooString<T, U>() where T : IFoo<U> { try { return T.GetString(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }

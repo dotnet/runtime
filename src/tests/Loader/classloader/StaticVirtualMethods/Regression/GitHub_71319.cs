@@ -18,12 +18,12 @@ class Fooer<T> : IFoo2<T>
     public static string DoStatic() => typeof(T).ToString();
 }
 
-class Program : IFoo<object>
+public class Program : IFoo<object>
 {
     static string CallStatic<T, U>() where T : IFoo<U> => T.DoStatic();
     static string CallStatic2<T, U>() where T : IFoo2<U> => T.DoStatic();
 
-    static int Main()
+    public static int Main()
     {
         string staticResult1 = CallStatic<Program, string>();
         Console.WriteLine("SVM call result #1: {0} (System.Object expected - using default interface implementation)", staticResult1);

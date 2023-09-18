@@ -7,10 +7,10 @@ using System;
 // on a derived type is not found when there is a re-abstraction of the same method
 // higher in inheritance hierarchy.
 
-class Test1 : I2
+public class Test1 : I2
 {
 
-    static int Main()
+    public static int Main()
     {
         string result = Test<Test1>();
         const string expectedResult = "Test1.M1";

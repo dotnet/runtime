@@ -3,15 +3,14 @@
 
 using System;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static void Main()
     {
         Console.WriteLine("Start");
         SomeClass someInstance = new();
         CalledMethod();
         Console.WriteLine("Done");
-        return 100;
     }
 
     static void CalledMethod()

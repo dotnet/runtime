@@ -49,7 +49,8 @@ public struct ThirdLevel
     public int Low;
 }
 
-public class Test_NestedStructsWithExplicitLayout_Case02 {
+public class Test_NestedStructsWithExplicitLayout_Case02
+{
     private int Run(int value)
     {
         var x = new FirstLevel();
@@ -57,7 +58,7 @@ public class Test_NestedStructsWithExplicitLayout_Case02 {
         return x.SecondLevel.ThirdLevel.Low;
     }
 
-    public static int Main ()
+    public static int Main()
     {
         try
         {

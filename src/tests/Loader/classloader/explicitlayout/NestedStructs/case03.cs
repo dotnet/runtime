@@ -31,14 +31,15 @@ public struct ThirdLevel
     public long ConflictingValueTypeField;
 }
 
-public class Test_NestedStructsWithExplicitLayout_Case06 {
+public class Test_NestedStructsWithExplicitLayout_Case06
+{
     private void Run()
     {
         var x = new FirstLevel();
         x.ConflictingObjectField = new object();
     }
 
-    public static int Main ()
+    public static int Main()
     {
         try
         {

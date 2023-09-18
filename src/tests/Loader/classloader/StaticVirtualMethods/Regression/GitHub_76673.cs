@@ -12,12 +12,12 @@ interface I1
     static abstract int M2();
 }
 
-class Test1 : Test2, I1
+public class Test1 : Test2, I1
 {
     static public int M1() { return 0; }
     static public ref int M2() { throw null; }
 
-    static int Main()
+    public static int Main()
     {
         System.Console.WriteLine("Testing Test2");
         bool ok2 = Test<Test2>();
@@ -36,7 +36,7 @@ class Test1 : Test2, I1
 
 }
 
-class Test2 : I1
+public class Test2 : I1
 {
     static string I1.M1()
     {

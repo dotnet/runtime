@@ -30,11 +30,10 @@ public struct Test : ITestInterface<Test>
     }
 }
 
-internal class Program
+public class Program
 {
-    public static int Main(string[] args)
+    public static void Main()
     {
         new Test(null);
-        return 100;
     }
 }

@@ -37,6 +37,6 @@ namespace StaticVirtualsAndMethodConstraintsAndDefaultImplementation
             where TRequest : IStaticInterfaceBase<T, TRequest> =>
             TRequest.TryInvoke((ITestItem<T>) null!, request);
 
-        public static int Main(string[] args) => Invoke<object, Request>(new Request());
+        public static int Main() => Invoke<object, Request>(new Request());
     }
 }

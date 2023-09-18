@@ -111,10 +111,9 @@ public class ProgramBase<TT> : TestItf4<TT>
 
 public class Program : ProgramBase<InputData>, TestItf2<InputData>
 {
-    static int Main()
+    public static void Main()
     {
         new Program().Start();
-        return 100;
     }
 
     public void Start()

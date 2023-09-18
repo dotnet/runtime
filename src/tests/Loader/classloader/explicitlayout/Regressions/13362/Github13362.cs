@@ -31,9 +31,9 @@ namespace ClrIssueRepro
         public string _sstring1 = "string1";
     }
 
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        public static int Main()
         {
             // If you comment this line out, you get
             //    Unhandled exception. System.TypeLoadException: 
