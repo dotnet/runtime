@@ -359,7 +359,10 @@ namespace System.Security.Cryptography
             // In such a case, we can grab a bunch of random bytes in one call.
             if (BitOperations.IsPow2(choices.Length) && choices.Length <= 256)
             {
-                Span<byte> randomBytes = stackalloc byte[512]; // arbitrary size, a balance between stack consumed and number of random calls required
+                // Get stack space to store random bytes. This size was chosen to balance between
+                // stack consumed and number of random calls required.
+                Span<byte> randomBytes = stackalloc byte[512];
+
                 while (!destination.IsEmpty)
                 {
                     if (destination.Length < randomBytes.Length)
