@@ -1,6 +1,7 @@
 ## About
 
 <!-- A description of the package and where one can find more documentation -->
+
 `Microsoft.Extensions.Logging` is combined with a core logging abstraction under `Microsoft.Extensions.Logging.Abstractions`. This abstraction is available in our basic built-in implementations like console, event log, and debug (Debug.WriteLine) logging.
 
 ## Key Features

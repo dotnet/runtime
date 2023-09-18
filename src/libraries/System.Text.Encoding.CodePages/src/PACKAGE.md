@@ -8,7 +8,7 @@
 
 ## How to Use
 
-```csharp
+```C#
 using System.Text;
 
 // Register the CodePages encoding provider at application startup to enable using single and double byte encodings.

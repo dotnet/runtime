@@ -11,9 +11,11 @@ Allows access to ODBC data sources.
 This is a basic example of retrieving the results of a query using an [OdbcDataReader](https://learn.microsoft.com/dotnet/api/system.data.odbc.odbcdatareader). For examples of using an [OdbcDataAdapter](https://learn.microsoft.com/dotnet/api/system.data.odbc.odbcdataadapter), and of updating an ODBC data source, please see the documentation.
 
 ```cs
+using System.Data.Odbc;
+
 string queryString = "SELECT DISTINCT CustomerID FROM Orders";
 
-using OdbcConnection connection = new OdbcConnection(connectionString);
+using OdbcConnection connection = new OdbcConnection(queryString);
 using OdbcCommand command = new OdbcCommand(queryString, connection);
 
 connection.Open();

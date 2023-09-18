@@ -3,7 +3,6 @@
 <!-- A description of the package and where one can find more documentation -->
 `Microsoft.Extensions.Logging.Debug` provides a Debug output logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a debugger monitor by writing messages with `System.Diagnostics.Debug.WriteLine()`.
 
-
 ## Key Features
 
 <!-- The key features of this package -->

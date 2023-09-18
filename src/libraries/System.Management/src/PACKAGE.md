@@ -1,6 +1,7 @@
 ## About
 
 <!-- A description of the package and where one can find more documentation -->
+
 Provides access to a rich set of management information and management events about the system, devices, and applications instrumented to the Windows Management Instrumentation (WMI) infrastructure. Not supported on other platforms.
 
 ## Key Features
