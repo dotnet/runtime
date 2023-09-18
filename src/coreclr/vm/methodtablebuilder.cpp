@@ -1026,6 +1026,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
+      m_asyncThunkType(AsyncThunkType::NotAThunk),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -1051,6 +1052,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
     DWORD dwImplAttrs,
     DWORD dwRVA,
     Signature sig,
+    AsyncThunkType thunkType,
     MethodClassification type,
     METHOD_IMPL_TYPE implType)
     : m_pOwningType(pOwningType),
@@ -1058,6 +1060,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
+      m_asyncThunkType(thunkType),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -3544,11 +3547,18 @@ MethodTableBuilder::EnumerateClassMethods()
             else
             {
                 ULONG cAsyncThunkMemberSignature = cMemberSignature;
+                AsyncThunkType thunkType;
 
                 if (asyncMethodType == AsyncTaskMethod::Async2Method)
+                {
                     cAsyncThunkMemberSignature += 1;
+                    thunkType = AsyncThunkType::AsyncToTask;
+                }
                 else
+                {
                     cAsyncThunkMemberSignature -= 1;
+                    thunkType = AsyncThunkType::TaskToAsync;
+                }
 
                 BYTE* pNewMemberSignature = AllocateFromHighFrequencyHeap(S_SIZE_T(cAsyncThunkMemberSignature));
                 ULONG tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + 1]);
@@ -3577,6 +3587,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwImplFlags,
                     dwMethodRVA,
                     newMemberSig,
+                    thunkType,
                     type,
                     implType);
             }

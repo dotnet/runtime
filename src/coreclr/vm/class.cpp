@@ -816,7 +816,8 @@ HRESULT EEClass::AddMethodDesc(
                                 0,      // RVA - non-zero only for NDirect
                                 pImport,
                                 NULL,
-                                Signature()
+                                Signature(),
+                                AsyncThunkType::NotAThunk
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
