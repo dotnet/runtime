@@ -801,7 +801,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             StackSString ss;
             AppendType(ss, retAndArgTypes[0], format);
 
-            ss.Append(SL("("));
+            ss.Append(W("("));
 
             SString ssComma(SString::Literal, ", ");
             DWORD cArgs = fnPtr->GetNumArgs();
@@ -818,10 +818,10 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
                 if (cArgs)
                     ss.Append(ssComma);
 
-                ss.Append(SL("..."));
+                ss.Append(W("..."));
             }
 
-            ss.Append(SL(")"));
+            ss.Append(W(")"));
 
             tnb.AddNameNoEscaping(ss);
         }
