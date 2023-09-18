@@ -72,4 +72,4 @@ The main types provided by this library are:
 
 <!-- How to provide feedback on this package and contribute to it -->
 
-**System.DirectoryServices.AccountManagement** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+System.DirectoryServices.AccountManagement is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).

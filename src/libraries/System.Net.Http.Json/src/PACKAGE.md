@@ -47,4 +47,4 @@ The main types provided by this library are:
 
 ## Feedback & Contributing
 
-**System.Net.Http.Json** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+System.Net.Http.Json is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).

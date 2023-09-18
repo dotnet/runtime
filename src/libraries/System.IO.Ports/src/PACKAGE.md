@@ -55,4 +55,4 @@ The main type provided by this library is:
 
 <!-- How to provide feedback on this package and contribute to it -->
 
-**System.IO.Ports** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+System.IO.Ports is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).

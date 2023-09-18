@@ -84,4 +84,4 @@ Under the [`System.Diagnostics.Eventing.Reader`](https://learn.microsoft.com/en-
 
 <!-- How to provide feedback on this package and contribute to it -->
 
-**System.Diagnostics.EventLog** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+System.Diagnostics.EventLog is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).

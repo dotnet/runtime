@@ -220,4 +220,4 @@ Under the [`System.Diagnostics.PerformanceData`](https://learn.microsoft.com/en-
 
 <!-- How to provide feedback on this package and contribute to it -->
 
-**System.Diagnostics.PerformanceCounter** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+System.Diagnostics.PerformanceCounter is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
