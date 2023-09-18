@@ -81,17 +81,20 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
+        /// Code options for codegen in this context.
+        /// These options are used for providing optional optimizations depending on available APIs.
+        /// </summary>
+        /// <param name="UnsafeSkipInit"></param>
+        public record struct CodeOptions(bool UnsafeSkipInit);
+
+        public CodeOptions CodeEmitOptions { get; init; } = new(UnsafeSkipInit: true);
+
+        /// <summary>
         /// The current stage being generated.
         /// </summary>
         public Stage CurrentStage { get; init; } = Stage.Invalid;
 
         public MarshalDirection Direction { get; init; } = MarshalDirection.ManagedToUnmanaged;
-
-        /// <summary>
-        /// Gets the currently targeted framework and version for stub code generation.
-        /// </summary>
-        /// <returns>A framework value and version.</returns>
-        public abstract (TargetFramework framework, Version version) GetTargetFramework();
 
         /// <summary>
         /// The stub emits code that runs in a single stack frame and the frame spans over the native context.

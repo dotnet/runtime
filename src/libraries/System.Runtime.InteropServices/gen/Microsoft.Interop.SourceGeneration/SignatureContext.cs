@@ -165,7 +165,7 @@ namespace Microsoft.Interop
 
         private static bool MethodIsSkipLocalsInit(StubEnvironment env, IMethodSymbol method)
         {
-            if (env.ModuleSkipLocalsInit)
+            if (env.EnvironmentFlags.HasFlag(EnvironmentFlags.SkipLocalsInit))
             {
                 return true;
             }

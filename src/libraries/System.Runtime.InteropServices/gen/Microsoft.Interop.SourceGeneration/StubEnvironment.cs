@@ -6,11 +6,19 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    [Flags]
+    public enum EnvironmentFlags
+    {
+        None = 0,
+        SkipLocalsInit = 0x1,
+        DisableRuntimeMarshalling = 0x2,
+    }
+
     public sealed record StubEnvironment(
         Compilation Compilation,
         TargetFramework TargetFramework,
         Version TargetFrameworkVersion,
-        bool ModuleSkipLocalsInit)
+        EnvironmentFlags EnvironmentFlags)
     {
         private Optional<INamedTypeSymbol?> _lcidConversionAttrType;
         public INamedTypeSymbol? LcidConversionAttrType

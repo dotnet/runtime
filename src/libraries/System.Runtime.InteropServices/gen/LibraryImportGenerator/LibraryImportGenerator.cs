@@ -329,12 +329,11 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new PInvokeStubCodeGenerator(
-                pinvokeStub.GeneratorFactoryKey.Key.TargetFramework,
-                pinvokeStub.GeneratorFactoryKey.Key.Version,
                 pinvokeStub.SignatureContext.ElementTypeInformation,
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 diagnostics,
-                pinvokeStub.GeneratorFactoryKey.GeneratorFactory);
+                pinvokeStub.GeneratorFactoryKey.GeneratorFactory,
+                new StubCodeContext.CodeOptions(UnsafeSkipInit: pinvokeStub.GeneratorFactoryKey.Key.TargetFramework == TargetFramework.Net));
 
             // Check if the generator should produce a forwarder stub - regular DllImport.
             // This is done if the signature is blittable or the target framework is not supported.

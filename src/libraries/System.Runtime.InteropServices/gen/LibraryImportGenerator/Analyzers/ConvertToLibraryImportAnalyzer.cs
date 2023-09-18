@@ -62,7 +62,7 @@ namespace Microsoft.Interop.Analyzers
                         context.Compilation,
                         targetFramework.TargetFramework,
                         targetFramework.Version,
-                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+                        context.Compilation.GetEnvironmentFlags());
 
                     context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType, env), SymbolKind.Method);
                 });
@@ -121,7 +121,7 @@ namespace Microsoft.Interop.Analyzers
             bool mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
             bool anyExplicitlyUnsupportedInfo = false;
 
-            var stubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
+            var stubCodeContext = new ManagedToNativeStubCodeContext("return", "nativeReturn");
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
