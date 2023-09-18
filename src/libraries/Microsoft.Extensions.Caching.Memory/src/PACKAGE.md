@@ -73,7 +73,7 @@ The main types provided by this library are:
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
 * [Conceptual documentation](https://learn.microsoft.com/dotnet/core/extensions/caching)
-* [Cache in-memory in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/memory)
+* [Cache in-memory in ASP.NET Core](https://learn.microsoft.com/aspnet/core/performance/caching/memory)
 * [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.caching.memory)
 
 ## Related Packages

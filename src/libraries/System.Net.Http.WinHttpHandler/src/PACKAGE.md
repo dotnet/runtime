@@ -1,6 +1,6 @@
 ## About
 
-This package provides an [`HttpMessageHandler`](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpmessagehandler) implementation backed by [Windows HTTP Services (WinHTTP)](https://learn.microsoft.com/en-us/windows/win32/winhttp/winhttp-start-page).
+This package provides an [`HttpMessageHandler`](https://learn.microsoft.com/dotnet/api/system.net.http.httpmessagehandler) implementation backed by [Windows HTTP Services (WinHTTP)](https://learn.microsoft.com/windows/win32/winhttp/winhttp-start-page).
 While the use of the default `HttpClientHandler` is highly recommended for applications targeting modern .NET, `WinHttpHandler` might help migration scenarios by providing an alternative HTTP backend for Windows that works consistently accross .NET Framework and modern .NET.
 
 ## Key Features
@@ -41,7 +41,7 @@ The main types provided by this library are:
 
 ## Additional Documentation
 
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.winhttphandler)
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.net.http.winhttphandler)
 
 ## Feedback & Contributing
 

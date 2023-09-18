@@ -57,7 +57,7 @@ The main types provided by this library are:
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
 * Conceptual documentations:
-  - [System.DirectoryServices.AccountManagement Namespace Overview](https://learn.microsoft.com/en-us/previous-versions/bb384379(v=vs.90))
+  - [System.DirectoryServices.AccountManagement Namespace Overview](https://learn.microsoft.com/previous-versions/bb384379(v=vs.90))
   - [About System.DirectoryServices.AccountManagement](https://learn.microsoft.com//previous-versions/bb384375(v=vs.90))
   - [Using System.DirectoryServices.AccountManagement](https://learn.microsoft.com/previous-versions/bb384384(v=vs.90))
 * API documentation

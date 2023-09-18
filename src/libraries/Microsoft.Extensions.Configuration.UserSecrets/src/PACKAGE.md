@@ -32,7 +32,7 @@ The main types provided by this library are:
 
 * [Configuration in .NET](https://learn.microsoft.com/dotnet/core/extensions/configuration)
 * [Safe storage of app secrets in development in ASP.NET Core](https://learn.microsoft.com/aspnet/core/security/app-secrets)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.configuration.usersecrets)
+* [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.usersecrets)
 
 ## Related Packages
 

@@ -31,7 +31,7 @@ The main types provided by this library are:
 <!-- Links to further documentation -->
 
 * [INI configuration provider](https://learn.microsoft.com/dotnet/core/extensions/configuration-providers#ini-configuration-provider)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.configuration.ini)
+* [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.ini)
 
 ## Related Packages
 

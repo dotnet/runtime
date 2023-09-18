@@ -86,8 +86,8 @@ The main types provided by this library are:
 
 <!-- Links to further documentation -->
 
-* [JSON configuration provider](https://learn.microsoft.com/en-us/dotnet/core/extensions/configuration-providers#json-configuration-provider)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.configuration.json)
+* [JSON configuration provider](https://learn.microsoft.com/dotnet/core/extensions/configuration-providers#json-configuration-provider)
+* [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.json)
 
 ## Related Packages
 

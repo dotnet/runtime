@@ -34,7 +34,7 @@ while (reader.Read())
 
 ## Additional Documentation
 
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.data.oledb)
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.data.oledb)
 
 ## Related Packages
 

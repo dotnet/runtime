@@ -43,8 +43,8 @@ The main type provided by this library is:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [SerialPort class documentation](https://learn.microsoft.com/en-us/dotnet/api/system.io.ports.serialport?view=dotnet-plat-ext-7.0)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/System.IO.Ports)
+* [SerialPort class documentation](https://learn.microsoft.com/dotnet/api/system.io.ports.serialport?view=dotnet-plat-ext-7.0)
+* [API documentation](https://learn.microsoft.com/dotnet/api/System.IO.Ports)
 
 ## Related Packages
 
