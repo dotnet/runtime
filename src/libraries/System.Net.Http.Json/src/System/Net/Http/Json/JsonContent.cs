@@ -68,7 +68,7 @@ namespace System.Net.Http.Json
         /// </summary>
         /// <typeparam name="T">The type of the value to serialize.</typeparam>
         /// <param name="inputValue">The value to serialize.</param>
-        /// <param name="jsonTypeInfo">Source generated JsonTypeInfo to control the behavior during serialization.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the serialization behavior.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
         /// <returns>A <see cref="JsonContent"/> instance.</returns>
         public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
@@ -82,7 +82,7 @@ namespace System.Net.Http.Json
         /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
         /// </summary>
         /// <param name="inputValue">The value to serialize.</param>
-        /// <param name="jsonTypeInfo">Source generated JsonTypeInfo to control the behavior during serialization.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the serialization behavior.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
         /// <returns>A <see cref="JsonContent"/> instance.</returns>
         public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)

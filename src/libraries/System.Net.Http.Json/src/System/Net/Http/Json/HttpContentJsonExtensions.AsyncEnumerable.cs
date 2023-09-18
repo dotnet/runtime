@@ -66,7 +66,7 @@ namespace System.Net.Http.Json
         /// </summary>
         /// <typeparam name="TValue">The target type to deserialize to.</typeparam>
         /// <param name="content">The content to read from.</param>
-        /// <param name="jsonTypeInfo">Source generated JsonTypeInfo to control the behavior during deserialization.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the deserialization behavior.</param>
         /// <param name="cancellationToken"></param>
         /// <returns>An <see cref="IAsyncEnumerable{TValue}"/> that represents the deserialized response body.</returns>
         /// <exception cref="ArgumentNullException">
