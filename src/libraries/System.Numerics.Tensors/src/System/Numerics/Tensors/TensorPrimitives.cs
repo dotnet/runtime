@@ -271,18 +271,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            float dotprod = 0f;
-            float magx = 0f;
-            float magy = 0f;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                dotprod += x[i] * y[i];
-                magx += x[i] * x[i];
-                magy += y[i] * y[i];
-            }
-
-            return dotprod / (MathF.Sqrt(magx) * MathF.Sqrt(magy));
+            return CosineSimilarityCore(x, y);
         }
 
         /// <summary>
