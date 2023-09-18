@@ -30,7 +30,7 @@ foreach (ManagementObject managementObject in managementClass.GetInstances())
 }
 ```
 
-### Query management information via the SelectQuery type 
+### Query management information via the SelectQuery type
 ```C#
 using System.Management;
 
