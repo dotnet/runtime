@@ -83,9 +83,11 @@ class Program
 
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `System.Reflection.Metadata.MetadataReader`
+* `System.Reflection.PortableExecutable.PEReader`
+* `System.Reflection.Metadata.Ecma335.MetadataBuilder`
+* `System.Reflection.PortableExecutable.PEBuilder`
+* `System.Reflection.PortableExecutable.ManagedPEBuilder`
 
 ## Additional Documentation
 
@@ -96,10 +98,6 @@ The main types provided by this library are:
 * [System.Reflection.Metadata.Ecma335.MetadataBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder)
 * [System.Reflection.PortableExecutable.PEBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.pebuilder)
 * [System.Reflection.PortableExecutable.ManagedPEBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.managedpebuilder)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
 
 ## Feedback & Contributing
 
