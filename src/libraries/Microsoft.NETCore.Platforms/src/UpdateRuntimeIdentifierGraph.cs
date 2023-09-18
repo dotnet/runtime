@@ -34,6 +34,12 @@ namespace Microsoft.NETCore.Platforms
             JObject runtimes = (JObject)json["runtimes"]!;
             foreach (ITaskItem rid in AdditionalRuntimeIdentifiers!)
             {
+                // Skip the RID if it's already in the graph
+                if (runtimes.ContainsKey(rid.ItemSpec))
+                {
+                    continue;
+                }
+
                 string[] importedRids = rid.GetMetadata("Imports").Split(';');
                 runtimes.Add(rid.ItemSpec, new JObject(new JProperty("#import", new JArray(importedRids))));
             }
