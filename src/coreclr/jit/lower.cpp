@@ -1558,7 +1558,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
             // the assert below.
 
             assert((jitIntrinsic->GetSimdSize() == 12) || (jitIntrinsic->GetSimdSize() == 16) ||
-                   (jitIntrinsic->GetSimdSize() == 32));
+                   (jitIntrinsic->GetSimdSize() == 32) || (jitIntrinsic->GetSimdSize() == 64));
 
             if (jitIntrinsic->GetSimdSize() == 12)
             {
