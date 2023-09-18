@@ -75,7 +75,6 @@ The main types provided by this library are:
 * [Microsoft.Extensions.Configuration.UserSecrets](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.UserSecrets)
 * [Microsoft.Extensions.Configuration.Xml](https://www.nuget.org/packages/Microsoft.Extensions.Configuration.Xml)
 
-
 ## Feedback & Contributing
 
 <!-- How to provide feedback on this package and contribute to it -->

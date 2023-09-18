@@ -69,7 +69,6 @@ The main types provided by this library are:
 * [Active Directory Service Interfaces](https://learn.microsoft.com/windows/win32/adsi/active-directory-service-interfaces-adsi)
 * [Lightweight Directory Access Protocol (LDAP)](https://learn.microsoft.com/previous-versions/windows/desktop/ldap/lightweight-directory-access-protocol-ldap-api)
 
-
 ## Related Packages
 
 * [System.DirectoryServices.AccountManagement](https://learn.microsoft.com/dotnet/api/system.directoryservices.accountmanagement)

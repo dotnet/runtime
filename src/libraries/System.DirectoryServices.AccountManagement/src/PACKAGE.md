@@ -67,7 +67,6 @@ The main types provided by this library are:
 
 [System.DirectoryServices](https://learn.microsoft.com/dotnet/api/system.directoryservices)
 
-
 ## Feedback & Contributing
 
 <!-- How to provide feedback on this package and contribute to it -->

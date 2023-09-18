@@ -11,6 +11,9 @@ Allows access to legacy OLE DB data sources.
 This is a basic example of retrieving the results of a query using an [OleDbDataReader](https://learn.microsoft.com/dotnet/api/system.data.oledb.oledbdatareader). For examples of using an [OleDbDataAdapter](https://learn.microsoft.com/dotnet/api/system.data.oledb.oledbdataadapter), and of updating an OLE DB data source, please see the documentation.
 
 ```cs
+using System.Data.OleDb;
+
+string connectionString = "";
 string queryString = "SELECT OrderID, CustomerID FROM Orders";
 
 using OleDbConnection connection = new OleDbConnection(connectionString);

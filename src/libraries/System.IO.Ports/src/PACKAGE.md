@@ -1,6 +1,7 @@
 ## About
 
 <!-- A description of the package and where one can find more documentation -->
+
 [System.IO.Ports](https://www.nuget.org/packages/System.IO.Ports) package provides synchronous serial port file resource. Additionally, the functionality of this class can be wrapped in an internal `Stream` object, accessible through the `BaseStream` property, and passed to classes that wrap or use streams.
 
 ## Key Features
