@@ -674,7 +674,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
     else if (strcmp(filename, "stdout") == 0)
     {
-        fgxFile      = jitstdout;
+        fgxFile      = jitstdout();
         *wbDontClose = true;
     }
     else if (strcmp(filename, "stderr") == 0)
