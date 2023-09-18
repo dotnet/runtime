@@ -1443,7 +1443,7 @@ void Compiler::compShutdown()
         unsigned countLarge = 0;
         unsigned countSmall = 0;
 
-        printf("\nGenTree operator counts (approximate):\n\n");
+        jitprintf("\nGenTree operator counts (approximate):\n\n");
 
         for (OperInfo oper : opers)
         {

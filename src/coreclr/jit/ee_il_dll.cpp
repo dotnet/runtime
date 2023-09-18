@@ -147,6 +147,7 @@ FILE* jitstdout()
     return jitstdoutInit();
 }
 
+// Like printf/logf, but only outputs to jitstdout -- skips call back into EE.
 void jitprintf(const char* fmt, ...)
 {
     va_list vl;
