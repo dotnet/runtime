@@ -115,7 +115,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // lsraAssignRegToTree: Assign the given reg to tree node.
 //
 // Arguments:
-//    tree    -    Gentree node
+//    tree    -    GenTree node
 //    reg     -    register to be assigned
 //    regIdx  -    register idx, if tree is a multi-reg call node.
 //                 regIdx will be zero for single-reg result producing tree nodes.
@@ -3416,8 +3416,12 @@ void LinearScan::setIntervalAsSpilled(Interval* interval)
             regNumber reg       = interval->physReg;
             spillCost[reg]      = getSpillWeight(getRegisterRecord(reg));
         }
+
+        // REVIEW: we fall into the code below which duplicates some of the above work: it will also add to
+        // `splitOrSpilledVars` as well as unconditionally set `interval->isSpilled = true`.
     }
 #endif
+
     if (interval->isLocalVar)
     {
         unsigned varIndex = interval->getVarIndex(compiler);
@@ -3434,7 +3438,7 @@ void LinearScan::setIntervalAsSpilled(Interval* interval)
 }
 
 //------------------------------------------------------------------------
-// spill: Spill the "interval" starting from "fromRefPosition" (upto "toRefPosition")
+// spillInterval: Spill the "interval" starting from "fromRefPosition" (up to "toRefPosition")
 //
 // Arguments:
 //    interval        - The interval that contains the RefPosition to be spilled
@@ -3480,8 +3484,6 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
         // then perform this optimization.
         interval->firstRefPosition->singleDefSpill = true;
     }
-
-    assert(toRefPosition != nullptr);
 
 #ifdef DEBUG
     if (VERBOSE)
@@ -3693,20 +3695,20 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     }
     makeRegAvailable(regToUnassign, assignedInterval->registerType);
 
-    RefPosition* nextRefPosition = nullptr;
-    if (spillRefPosition != nullptr)
-    {
-        nextRefPosition = spillRefPosition->nextRefPosition;
-    }
-
     if (!intervalIsAssigned && assignedInterval->physReg != REG_NA)
     {
         // This must have been a temporary copy reg, but we can't assert that because there
         // may have been intervening RefPositions that were not copyRegs.
 
-        // reg->assignedInterval has already been set to nullptr by checkAndClearInterval()
+        // regRec->assignedInterval has already been set to nullptr by checkAndClearInterval()
         assert(regRec->assignedInterval == nullptr);
         return;
+    }
+
+    RefPosition* nextRefPosition = nullptr;
+    if (spillRefPosition != nullptr)
+    {
+        nextRefPosition = spillRefPosition->nextRefPosition;
     }
 
     // regNumber victimAssignedReg = assignedInterval->physReg;
@@ -3739,6 +3741,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
             }
         }
 #endif // 0
+
 #ifdef DEBUG
         // With JitStressRegs == 0x80 (LSRA_EXTEND_LIFETIMES), we may have a RefPosition
         // that is not marked lastUse even though the treeNode is a lastUse.  In that case
@@ -3777,6 +3780,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
             spillInterval(assignedInterval, spillRefPosition DEBUGARG(nextRefPosition));
         }
     }
+
     // Maintain the association with the interval, if it has more references.
     // Or, if we "remembered" an interval assigned to this register, restore it.
     if (nextRefPosition != nullptr)
@@ -5885,7 +5889,7 @@ void LinearScan::allocateRegisters()
                         }
                     }
                 }
-                if (currentRefPosition.lastUse || currentRefPosition.nextRefPosition == nullptr)
+                if (currentRefPosition.lastUse || (currentRefPosition.nextRefPosition == nullptr))
                 {
                     assert(currentRefPosition.isIntervalRef());
                     // If this isn't a final use, we'll mark the register as available, but keep the association.
@@ -6356,9 +6360,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
     }
 
-    bool reload     = currentRefPosition->reload;
-    bool spillAfter = currentRefPosition->spillAfter;
-    bool writeThru  = currentRefPosition->writeThru;
+    const bool reload     = currentRefPosition->reload;
+    const bool spillAfter = currentRefPosition->spillAfter;
+    const bool writeThru  = currentRefPosition->writeThru;
 
     // In the reload case we either:
     // - Set the register to REG_STK if it will be referenced only from the home location, or
@@ -6707,11 +6711,11 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
 //                        not preserved).
 //
 // Arguments:
-//    tree              - This is the node before which we will insert the Save.
-//                        It will be a call or some node that turns into a call.
-//    refPosition       - The RefTypeUpperVectorSave RefPosition.
-//    upperInterval     - The Interval for the upper half of the large vector lclVar.
-//    block             - the BasicBlock containing the call.
+//    tree                - This is the node before which we will insert the Save.
+//                          It will be a call or some node that turns into a call.
+//    refPosition         - The RefTypeUpperVectorSave RefPosition.
+//    upperVectorInterval - The Interval for the upper half of the large vector lclVar.
+//    block               - the BasicBlock containing the call.
 //
 void LinearScan::insertUpperVectorSave(GenTree*     tree,
                                        RefPosition* refPosition,
@@ -6788,6 +6792,7 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
 //    tree                - This is the node for which we will insert the Restore.
 //                          If non-null, it will be a use of the large vector lclVar.
 //                          If null, the Restore will be added to the end of the block.
+//    refPosition         - The RefTypeUpperVectorRestore RefPosition.
 //    upperVectorInterval - The Interval for the upper vector for the lclVar.
 //    block               - the BasicBlock into which we will be inserting the code.
 //
@@ -6984,7 +6989,7 @@ void LinearScan::recordMaxSpill()
 //    This is called for each "real" RefPosition during the writeback
 //    phase of LSRA.  It keeps track of how many concurrently-live
 //    spills there are, and the largest number seen so far.
-
+//
 void LinearScan::updateMaxSpill(RefPosition* refPosition)
 {
     RefType refType = refPosition->refType;
@@ -7008,6 +7013,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
         return;
     }
 #endif // !FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
     if (refPosition->spillAfter || refPosition->reload ||
         (refPosition->RegOptional() && refPosition->assignedReg() == REG_NA))
     {
@@ -7424,7 +7430,7 @@ void           LinearScan::resolveRegisters()
                             }
                             // UpperVector intervals may have unique assignments at each reference.
                             if (!currentInterval->isUpperVector)
-#endif
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                             {
                                 if (nextRefPosition->assignedReg() != REG_NA)
                                 {
@@ -7663,13 +7669,13 @@ void           LinearScan::resolveRegisters()
     // compiler->BashUnusedStructLocals();
 }
 
-//
 //------------------------------------------------------------------------
 // insertMove: Insert a move of a lclVar with the given lclNum into the given block.
 //
 // Arguments:
 //    block          - the BasicBlock into which the move will be inserted.
-//    insertionPoint - the instruction before which to insert the move
+//    insertionPoint - If non-nullptr, insert the move before this instruction,
+//                     Otherwise, insert "near" the end (prior to the branch, if any).
 //    lclNum         - the lclNum of the var to be moved
 //    fromReg        - the register from which the var is moving
 //    toReg          - the register to which the var is moving
@@ -7678,10 +7684,8 @@ void           LinearScan::resolveRegisters()
 //    None.
 //
 // Notes:
-//    If insertionPoint is non-NULL, insert before that instruction;
-//    otherwise, insert "near" the end (prior to the branch, if any).
 //    If fromReg or toReg is REG_STK, then move from/to memory, respectively.
-
+//
 void LinearScan::insertMove(
     BasicBlock* block, GenTree* insertionPoint, unsigned lclNum, regNumber fromReg, regNumber toReg)
 {
@@ -10370,7 +10374,7 @@ void LinearScan::dumpLsraAllocationEvent(
             dumpRefPositionShort(activeRefPosition, currentBlock);
             if (allocationPassComplete || (registerScore == 0))
             {
-                printf("Reuse     %-4s ", getRegName(reg));
+                printf("Reuse    %-4s ", getRegName(reg));
             }
             else
             {
@@ -10473,6 +10477,7 @@ void LinearScan::dumpRegRecordHeader()
         regColumnWidth = 4;
     }
     sprintf_s(intervalNameFormat, MAX_FORMAT_CHARS, "%%c%%-%dd", regColumnWidth - 2);
+    sprintf_s(smallLocalsIntervalNameFormat, MAX_FORMAT_CHARS, "%%c0%%-%dd", regColumnWidth - 3);
     sprintf_s(regNameFormat, MAX_FORMAT_CHARS, "%%-%ds", regColumnWidth);
 
     // Next, determine the width of the short RefPosition (see dumpRefPositionShort()).
@@ -10661,11 +10666,25 @@ void LinearScan::dumpIntervalName(Interval* interval)
 {
     if (interval->isLocalVar)
     {
-        printf(intervalNameFormat, 'V', interval->varNum);
+        if (interval->varNum < 10)
+        {
+            printf(smallLocalsIntervalNameFormat, 'V', interval->varNum);
+        }
+        else
+        {
+            printf(intervalNameFormat, 'V', interval->varNum);
+        }
     }
     else if (interval->IsUpperVector())
     {
-        printf(intervalNameFormat, 'U', interval->relatedInterval->varNum);
+        if (interval->relatedInterval->varNum < 10)
+        {
+            printf(smallLocalsIntervalNameFormat, 'U', interval->relatedInterval->varNum);
+        }
+        else
+        {
+            printf(intervalNameFormat, 'U', interval->relatedInterval->varNum);
+        }
     }
     else if (interval->isConstant)
     {
@@ -10862,6 +10881,7 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 //
 // Notes:
 //    If verbose is set, this will also dump a table of the final allocations.
+//
 void LinearScan::verifyFinalAllocation()
 {
     if (VERBOSE)
@@ -11251,7 +11271,7 @@ void LinearScan::verifyFinalAllocation()
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;
 
-                    // regRegcord could be null if the RefPosition does not require a register.
+                    // regRecord could be null if the RefPosition does not require a register.
                     if (regRecord != nullptr)
                     {
                         regRecord->assignedInterval = nullptr;
@@ -11268,7 +11288,7 @@ void LinearScan::verifyFinalAllocation()
                             assert((lclVarInterval->physReg == REG_NA) || lclVarInterval->isPartiallySpilled);
                         }
                     }
-#endif
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     else
                     {
                         assert(currentRefPosition.RegOptional());
