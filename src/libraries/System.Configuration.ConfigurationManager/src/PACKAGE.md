@@ -79,10 +79,6 @@ The main types provided by this library are:
 * [System.Configuration.Configuration](https://docs.microsoft.com/dotnet/api/system.configuration.configuration)
 * [System.Configuration.ConfigurationManager](https://docs.microsoft.com/dotnet/api/system.configuration.configurationmanager)
 
-## Related Packages
-
-<!-- The related packages associated with this package -->
-
 ## Feedback & Contributing
 
 <!-- How to provide feedback on this package and contribute to it -->
