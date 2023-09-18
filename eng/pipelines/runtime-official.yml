@@ -41,13 +41,13 @@ extends:
       # Localization build
       #
 
-      # disabled due to https://github.com/dotnet/runtime/issues/90466
-      #- ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-      #  - template: /eng/common/templates/job/onelocbuild.yml
-      #    parameters:
-      #      MirrorRepo: runtime
-      #      LclSource: lclFilesfromPackage
-      #      LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/8.0') }}:
+        - template: /eng/common/templates/job/onelocbuild.yml
+          parameters:
+            MirrorRepo: runtime
+            MirrorBranch: release/8.0
+            LclSource: lclFilesfromPackage
+            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
       #
       # Source Index Build

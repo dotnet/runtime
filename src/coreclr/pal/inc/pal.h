@@ -69,6 +69,7 @@ extern "C" {
 
 #include <pal_error.h>
 #include <pal_mstypes.h>
+#include <minipal/utils.h>
 
 // Native system libray handle.
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
@@ -2093,7 +2094,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_INTEGER (CONTEXT_LOONGARCH64 | 0x2)
 #define CONTEXT_FLOATING_POINT  (CONTEXT_LOONGARCH64 | 0x4)
 #define CONTEXT_DEBUG_REGISTERS (CONTEXT_LOONGARCH64 | 0x8)
-
 #define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
 
 #define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
@@ -2169,10 +2169,9 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 Pc;
 
     //
-    // Floating Point Registers
+    // Floating Point Registers: FPR64/LSX/LASX.
     //
-    // TODO-LoongArch64: support the SIMD.
-    ULONGLONG F[32];
+    ULONGLONG F[4*32];
     DWORD64 Fcc;
     DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
@@ -2679,12 +2678,6 @@ BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val);
 
-PALIMPORT
-size_t
-PALAPI
-PAL_GetLogicalProcessorCacheSizeFromOS();
-#define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
-
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
@@ -2833,20 +2826,13 @@ PALAPI
 UnmapViewOfFile(
         IN LPCVOID lpBaseAddress);
 
-
-PALIMPORT
-HMODULE
-PALAPI
-LoadLibraryW(
-        IN LPCWSTR lpLibFileName);
-
 PALIMPORT
 HMODULE
 PALAPI
 LoadLibraryExW(
         IN LPCWSTR lpLibFileName,
-        IN /*Reserved*/ HANDLE hFile,
-        IN DWORD dwFlags);
+        IN /*Reserved*/ HANDLE hFile = NULL,
+        IN DWORD dwFlags = 0);
 
 PALIMPORT
 NATIVE_LIBRARY_HANDLE
@@ -2925,14 +2911,6 @@ Return value:
 BOOL
 PALAPI
 PAL_LOADMarkSectionAsNotNeeded(void * ptr);
-
-#ifdef UNICODE
-#define LoadLibrary LoadLibraryW
-#define LoadLibraryEx LoadLibraryExW
-#else
-#define LoadLibrary LoadLibraryA
-#define LoadLibraryEx LoadLibraryExA
-#endif
 
 PALIMPORT
 FARPROC
@@ -3035,24 +3013,6 @@ VirtualProtect(
            IN SIZE_T dwSize,
            IN DWORD flNewProtect,
            OUT PDWORD lpflOldProtect);
-
-typedef struct _MEMORYSTATUSEX {
-  DWORD     dwLength;
-  DWORD     dwMemoryLoad;
-  DWORDLONG ullTotalPhys;
-  DWORDLONG ullAvailPhys;
-  DWORDLONG ullTotalPageFile;
-  DWORDLONG ullAvailPageFile;
-  DWORDLONG ullTotalVirtual;
-  DWORDLONG ullAvailVirtual;
-  DWORDLONG ullAvailExtendedVirtual;
-} MEMORYSTATUSEX, *LPMEMORYSTATUSEX;
-
-PALIMPORT
-BOOL
-PALAPI
-GlobalMemoryStatusEx(
-            IN OUT LPMEMORYSTATUSEX lpBuffer);
 
 typedef struct _MEMORY_BASIC_INFORMATION {
     PVOID BaseAddress;

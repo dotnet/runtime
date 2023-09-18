@@ -323,3 +323,19 @@ C_FUNC(\Name\()_End):
 // TODO RISCV NYI
     sw  ra, 0(zero)
 .endm
+
+//-----------------------------------------------------------------------------
+// Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
+// out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
+// before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
+// is misaligned.
+//
+.macro  CHECK_STACK_ALIGNMENT
+
+#ifdef _DEBUG
+        andi    t4, sp, 0xf
+        beq     t4, zero, 0f
+        EMIT_BREAKPOINT
+0:
+#endif
+.endm

@@ -30,12 +30,11 @@ public class RayTracer
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Ray r = GetRay();
         Consume(r.Direction);
         traceRay(r);
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

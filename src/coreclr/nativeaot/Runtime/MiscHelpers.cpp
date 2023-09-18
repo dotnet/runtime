@@ -35,7 +35,6 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
@@ -339,18 +338,6 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
 #endif
 
     return pCodeOrg;
-}
-
-extern CrstStatic g_ThunkPoolLock;
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
-{
-    g_ThunkPoolLock.Enter();
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
-{
-    g_ThunkPoolLock.Leave();
 }
 
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()

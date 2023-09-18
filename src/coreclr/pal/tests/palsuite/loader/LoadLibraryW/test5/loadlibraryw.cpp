@@ -41,15 +41,15 @@ PALTEST(loader_LoadLibraryW_test5_paltest_loadlibraryw_test5, "loader/LoadLibrar
     lpModuleName = convert(ModuleName);
 
     /* load a module */
-    ModuleHandle = LoadLibraryW(lpModuleName);
+    ModuleHandle = LoadLibraryExW(lpModuleName);
 
     /* free the memory */
     free(lpModuleName);
 
     if(NULL != ModuleHandle)
     {
-        Trace("Failed to call LoadLibraryW API for a negative test "
-            "call LoadLibraryW with module name which does not have "
+        Trace("Failed to call LoadLibraryExW API for a negative test "
+            "call LoadLibraryExW with module name which does not have "
             "extension except a trailing dot, a NULL module handle is"
             "expected, but no NULL module handle is returned, "
             "error code = %u\n", GetLastError());

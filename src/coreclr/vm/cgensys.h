@@ -22,7 +22,7 @@ class ComPlusCallMethodDesc;
 #include <cgencpu.h>
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 void ResumeAtJit(PT_CONTEXT pContext, LPVOID oldFP);
 #endif
 

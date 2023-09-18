@@ -651,6 +651,95 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
     return BasicBlockVisit::Continue;
 }
 
+//------------------------------------------------------------------------------
+// VisitRegularSuccs: Visit regular successors of this block.
+//
+// Arguments:
+//   comp  - Compiler instance
+//   func  - Callback
+//
+// Returns:
+//   Whether or not the visiting was aborted.
+//
+template <typename TFunc>
+BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
+{
+    switch (bbJumpKind)
+    {
+        case BBJ_EHFILTERRET:
+            RETURN_ON_ABORT(func(bbJumpDest));
+            break;
+
+        case BBJ_EHFINALLYRET:
+        {
+            EHblkDsc* ehDsc = comp->ehGetDsc(getHndIndex());
+            assert(ehDsc->HasFinallyHandler());
+
+            BasicBlock* begBlk;
+            BasicBlock* endBlk;
+            comp->ehGetCallFinallyBlockRange(getHndIndex(), &begBlk, &endBlk);
+
+            BasicBlock* finBeg = ehDsc->ebdHndBeg;
+
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            {
+                if ((bcall->bbJumpKind != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                {
+                    continue;
+                }
+
+                assert(bcall->isBBCallAlwaysPair());
+
+                RETURN_ON_ABORT(func(bcall->bbNext));
+            }
+
+            break;
+        }
+
+        case BBJ_CALLFINALLY:
+        case BBJ_EHCATCHRET:
+        case BBJ_LEAVE:
+        case BBJ_ALWAYS:
+            RETURN_ON_ABORT(func(bbJumpDest));
+            break;
+
+        case BBJ_NONE:
+            RETURN_ON_ABORT(func(bbNext));
+            break;
+
+        case BBJ_COND:
+            RETURN_ON_ABORT(func(bbNext));
+
+            if (bbJumpDest != bbNext)
+            {
+                RETURN_ON_ABORT(func(bbJumpDest));
+            }
+
+            break;
+
+        case BBJ_SWITCH:
+        {
+            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
+            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+            {
+                RETURN_ON_ABORT(func(sd.nonDuplicates[i]));
+            }
+
+            break;
+        }
+
+        case BBJ_THROW:
+        case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
+            break;
+
+        default:
+            unreached();
+    }
+
+    return BasicBlockVisit::Continue;
+}
+
 #undef RETURN_ON_ABORT
 
 //------------------------------------------------------------------------------
@@ -676,6 +765,8 @@ inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
         return false;
     }
 
+    // Throwing in a filter is the same as returning "continue search", which
+    // causes enclosed finally/fault handlers to be executed.
     return hndDesc->InFilterRegionBBRange(this);
 }
 
@@ -2687,6 +2778,12 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
                 return TYP_LONG;
             default:
                 break;
+        }
+
+        if (varTypeIsSIMD(type))
+        {
+            // Vectors also get passed in int registers. Use TYP_INT.
+            return TYP_INT;
         }
     }
 #endif // defined(TARGET_ARMARCH)

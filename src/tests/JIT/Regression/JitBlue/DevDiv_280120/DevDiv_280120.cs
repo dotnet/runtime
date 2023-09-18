@@ -15,10 +15,9 @@ public struct S
     int m_a, m_b, m_c, m_d;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S s;
         s.m_fld = 0;
-        return 100;
     }
 }

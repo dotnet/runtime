@@ -557,7 +557,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(null, $"Received event {connectionEvent->Type} while connection is already disposed");
+                NetEventSource.Error(null, $"Received event {connectionEvent->Type} for [conn][{(nint)connection:X11}] while connection is already disposed");
             }
             return QUIC_STATUS_INVALID_STATE;
         }
