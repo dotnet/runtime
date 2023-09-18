@@ -8,8 +8,9 @@ As of .NET Core 2.0 and .NET Standard 2.1, the C# language has support for math 
 
 * Enables the use of MathF on older .NET platforms
 
-
 ## How to Use
+
+<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
 
 ```C#
 using System;

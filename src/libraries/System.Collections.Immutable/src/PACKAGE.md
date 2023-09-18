@@ -6,14 +6,6 @@ This package provides collections that are thread safe and guaranteed to never c
 
 The `System.Collections.Immutable` library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.
 
-## Key Features
-
-<!-- The key features of this package -->
-
-*
-*
-*
-
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
