@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 Directory.CreateDirectory(WorkingDir);
 
-                // start with an empty global.json, it will be ignored, but prevent one lying on disk 
+                // start with an empty global.json, it will be ignored, but prevent one lying on disk
                 // on a given machine from impacting the test.
                 File.WriteAllText(GlobalJson, "{}");
 
@@ -117,12 +117,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 foreach ((string fwName, string[] fwVersions) in ProgramFilesGlobalFrameworks)
                 {
                     foreach (string fwVersion in fwVersions)
-                        Directory.CreateDirectory(Path.Combine(ProgramFilesGlobalFrameworksDir, fwName, fwVersion));
+                        AddFrameworkDirectory(ProgramFilesGlobalFrameworksDir, fwName, fwVersion);
                 }
                 foreach ((string fwName, string[] fwVersions) in LocalFrameworks)
                 {
                     foreach (string fwVersion in fwVersions)
-                        Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, fwVersion));
+                        AddFrameworkDirectory(LocalFrameworksDir, fwName, fwVersion);
+
+                    // Empty framework directory - this should not be recognized as a valid framework directory
+                    Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, "9.9.9"));
+                }
+
+                static void AddFrameworkDirectory(string frameworkDir, string name, string version)
+                {
+                    string versionDir = Path.Combine(frameworkDir, name, version);
+                    Directory.CreateDirectory(versionDir);
+                    File.WriteAllText(Path.Combine(versionDir, $"{name}.deps.json"), string.Empty);
                 }
             }
         }
@@ -230,7 +240,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Hostfxr_resolve_sdk2_with_global_json_and_disallowing_previews()
         {
-            // With global.json specifying a preview, roll forward to preview 
+            // With global.json specifying a preview, roll forward to preview
             // since flag has no impact if global.json specifies a preview.
             // Also check that global.json that impacted resolution is reported.
 
@@ -511,7 +521,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void Hostfxr_get_dotnet_environment_info_global_install_path()
         {
             var f = new SdkResolutionFixture(sharedTestState);
-            
+
             f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info" })
             .CaptureStdOut()
             .CaptureStdErr()
