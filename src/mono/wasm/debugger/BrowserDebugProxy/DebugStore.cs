@@ -453,7 +453,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
                 if (!isOptional)
                 {
-                    paramsInfo[i] = new ParameterInfo(paramName, methodSignature.ParameterTypes[i]);
+                    try
+                    {
+                        paramsInfo[i] = new ParameterInfo(paramName, methodSignature.ParameterTypes[i]);
+                    }
+                    catch (Exception)
+                    {
+                        // ToDo:
+                        // why do we get System.IndexOutOfRangeException: Index was outside the bounds of the array.
+                        // for provider param in method System.Enum.ToString(format, provider)?
+                        paramsInfo[i] = new ParameterInfo(paramName);
+                    }
                     continue;
                 }
                 var constantHandle = parameter.GetDefaultValue();
