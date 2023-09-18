@@ -4,7 +4,9 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- Type not supported; property on type not suppported -->
     <NoWarn>SYSLIB1100,SYSLIB1101</NoWarn>
+    <!-- TODO: Remove InterceptorsPreview feature after 8.0 RC2 SDK is used for build -->
     <Features>$(Features);InterceptorsPreview</Features>
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
