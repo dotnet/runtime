@@ -145,8 +145,8 @@ FCIMPL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread)
     // it out.
     printf("\nENTERING GETCOMPILEDMETHODCOUNT:");
     printf("%d\n", currentThread ? 1 : 0);
-    printf("%ld\n", t_cMethodsJittedForThread);
-    printf("%ld\n", AtomicLoad64WithoutTearing(&g_cMethodsJitted));
+    printf("%ld\n", (long) t_cMethodsJittedForThread);
+    printf("%ld\n", (long) AtomicLoad64WithoutTearing(&g_cMethodsJitted));
     printf(":EXITING GETCOMPILEDMETHODCOUNT\n");
     return currentThread ? t_cMethodsJittedForThread : AtomicLoad64WithoutTearing(&g_cMethodsJitted);
 }
