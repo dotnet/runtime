@@ -147,7 +147,6 @@ FILE* jitstdout()
     return jitstdoutInit();
 }
 
-#ifndef DEBUG
 void jitprintf(const char* fmt, ...)
 {
     va_list vl;
@@ -155,7 +154,6 @@ void jitprintf(const char* fmt, ...)
     vfprintf(jitstdout(), fmt, vl);
     va_end(vl);
 }
-#endif
 
 void jitShutdown(bool processIsTerminating)
 {

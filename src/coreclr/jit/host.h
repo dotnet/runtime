@@ -3,6 +3,10 @@
 
 /*****************************************************************************/
 
+// Like printf/logf, but only outputs to jitstdout -- skips call back into VM
+// in DEBUG builds.
+void jitprintf(const char* fmt, ...);
+
 #ifdef DEBUG
 
 #undef printf
@@ -44,7 +48,6 @@ extern "C" void ANALYZER_NORETURN __cdecl assertAbort(const char* why, const cha
 // Re-define printf in Release to use jitstdout (can be overwritten with DOTNET_JitStdOutFile=file)
 #undef printf
 #define printf jitprintf
-void jitprintf(const char* fmt, ...);
 
 #undef assert
 #define assert(p) (void)0
