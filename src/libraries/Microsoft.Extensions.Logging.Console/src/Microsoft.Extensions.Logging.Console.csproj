@@ -8,6 +8,7 @@
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <IsPackable>true</IsPackable>
     <Features>$(Features);InterceptorsPreview</Features>
+    <!-- TODO: Remove InterceptorsPreview feature after 8.0 RC2 SDK is used for build -->
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
