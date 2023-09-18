@@ -70,4 +70,4 @@ https://www.nuget.org/packages/System.Threading.Tasks.Dataflow/
 
 <!-- How to provide feedback on this package and contribute to it -->
 
-**System.Threading.Channels** is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
+System.Threading.Channels is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
