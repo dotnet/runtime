@@ -276,6 +276,10 @@ namespace System.Threading
         }
 
         /// <summary>Communicates a request for cancellation asynchronously.</summary>
+        /// <returns>
+        /// A task that will complete after cancelable operations and callbacks registered with the associated
+        /// <see cref="CancellationToken" /> have completed.
+        /// </returns>
         /// <remarks>
         /// <para>
         /// The associated <see cref="CancellationToken" /> will be notified of the cancellation
