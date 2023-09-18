@@ -13,9 +13,10 @@ This is a basic example of retrieving the results of a query using an [OleDbData
 ```cs
 using System.Data.OleDb;
 
+string connectionString = ""; // Fill in
 string queryString = "SELECT OrderID, CustomerID FROM Orders";
 
-using OleDbConnection connection = new OleDbConnection(queryString);
+using OleDbConnection connection = new OleDbConnection(connectionString);
 using OleDbCommand command = new OleDbCommand(queryString, connection);
 
 connection.Open();
