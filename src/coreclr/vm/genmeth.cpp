@@ -91,6 +91,7 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                      classification,
                                      TRUE /* fNonVtableSlot*/,
                                      fNativeCodeSlot,
+                                     pTemplateMD->IsAsyncThunkMethod(),
                                      pMT,
                                      pamTracker);
 
@@ -117,6 +118,10 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     {
         pMD->SetIsIntrinsic();
     }
+    if (pTemplateMD->IsAsyncThunkMethod())
+    {
+        pMD->SetIsAsyncThunkMethod();
+    }
 
 #ifdef FEATURE_METADATA_UPDATER
     if (pTemplateMD->IsEnCAddedMethod())
@@ -127,6 +132,11 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
 
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());
+
+    if (pTemplateMD->IsAsyncThunkMethod())
+    {
+        *pMD->GetAddrOfAsyncThunkData() = pTemplateMD->GetAsyncThunkData();
+    }
 
 #ifdef _DEBUG
     //<NICE> more info here</NICE>

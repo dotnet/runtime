@@ -679,6 +679,31 @@ private:
         // locating .ctor and .cctor methods.
         MethodSignature(
             Module *             pModule,
+            mdToken              tok,
+            Signature            sig,
+            const Substitution * pSubst)
+            : m_pModule(pModule),
+              m_tok(tok),
+              m_szName(NULL),
+              m_pSig(sig.GetRawSig()),
+              m_cSig(sig.GetRawSigLen()),
+              m_pSubst(pSubst),
+              m_nameHash(INVALID_NAME_HASH)
+            {
+                CONTRACTL {
+                    PRECONDITION(CheckPointer(pModule));
+                    PRECONDITION(TypeFromToken(tok) == mdtMethodDef ||
+                                 TypeFromToken(tok) == mdtMemberRef);
+                    PRECONDITION(CheckPointer(m_pSig));
+                    PRECONDITION(m_cSig != 0);
+                } CONTRACTL_END;
+            }
+
+        //-----------------------------------------------------------------------------------------
+        // This constructor can be used with hard-coded signatures that are used for
+        // locating .ctor and .cctor methods.
+        MethodSignature(
+            Module *             pModule,
             LPCUTF8              szName,
             PCCOR_SIGNATURE      pSig,
             size_t               cSig,
@@ -744,6 +769,11 @@ private:
         inline PCCOR_SIGNATURE
         GetSignature() const
             { WRAPPER_NO_CONTRACT; CheckGetMethodAttributes(); return m_pSig; }
+
+        //-----------------------------------------------------------------------------------------
+        // Returns the metadata signature for the method.
+        inline Signature GetSignatureClass() const
+            { WRAPPER_NO_CONTRACT; CheckGetMethodAttributes(); return Signature(m_pSig, (ULONG)m_cSig); }
 
         //-----------------------------------------------------------------------------------------
         // Returns the signature length.
@@ -917,6 +947,22 @@ private:
             METHOD_IMPL_TYPE implType);
 
         //-----------------------------------------------------------------------------------------
+        // Constructor. This takes all the information already extracted from metadata interface
+        // because the place that creates these types already has this data. Alternatively,
+        // a constructor could be written to take a token and metadata scope instead. Also,
+        // it might be interesting to move MethodClassification and METHOD_IMPL_TYPE to setter functions.
+        bmtMDMethod(
+            bmtMDType * pOwningType,
+            mdMethodDef tok,
+            DWORD dwDeclAttrs,
+            DWORD dwImplAttrs,
+            DWORD dwRVA,
+            Signature sig,
+            AsyncThunkType thunkType,
+            MethodClassification type,
+            METHOD_IMPL_TYPE implType);
+
+        //-----------------------------------------------------------------------------------------
         // Returns the type that owns the *declaration* of this method. This makes sure that a
         // method can be properly interpreted in the context of substitutions at any time.
         bmtMDType *
@@ -1016,6 +1062,12 @@ private:
         GetRVA() const
             { LIMITED_METHOD_CONTRACT; return m_dwRVA; }
 
+        AsyncThunkType GetAsyncThunkType() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_asyncThunkType;
+        }
+
     private:
         //-----------------------------------------------------------------------------------------
         bmtMDType *       m_pOwningType;
@@ -1024,6 +1076,7 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
+        AsyncThunkType m_asyncThunkType;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
 
@@ -2613,7 +2666,9 @@ private:
         BOOL                fEnC,
         DWORD               RVA,          // Only needed for NDirect case
         IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
-        LPCSTR              pMethodName // Only needed for mcEEImpl (Delegate) case
+        LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
+        Signature           sig, // Only needed for the async thunk (Async2 Thunk) case
+        AsyncThunkType      thunkType
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));

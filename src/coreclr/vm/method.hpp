@@ -51,10 +51,24 @@ GVAL_DECL(TADDR, g_MiniMetaDataBuffAddress);
 
 EXTERN_C VOID STDCALL NDirectImportThunk();
 
-#define METHOD_TOKEN_REMAINDER_BIT_COUNT 12
+#define METHOD_TOKEN_REMAINDER_BIT_COUNT 13
 #define METHOD_TOKEN_REMAINDER_MASK ((1 << METHOD_TOKEN_REMAINDER_BIT_COUNT) - 1)
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
+
+enum class AsyncThunkType
+{
+    NotAThunk,
+    TaskToAsync,
+    AsyncToTask
+};
+
+struct AsyncThunkData
+{
+    AsyncThunkType type;
+    Signature sig;
+};
+
 
 //=============================================================
 // Splits methoddef token into two pieces for
@@ -138,8 +152,8 @@ enum MethodDescClassification
     // Has slot for native code
     mdcHasNativeCodeSlot                = 0x0020,
 
-    // Method was added via Edit And Continue
-    mdcEnCAddedMethod                   = 0x0040,
+    // IsAsyncThunkMethod
+    mdcIsAsyncThunkMethod               = 0x0040,
 
     // Method is static
     mdcStatic                           = 0x0080,
@@ -1384,6 +1398,8 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
 
     PTR_PCODE GetAddrOfNativeCodeSlot();
+    AsyncThunkData *GetAddrOfAsyncThunkData();
+    const AsyncThunkData& GetAsyncThunkData() { _ASSERTE(IsAsyncThunkMethod()); return *GetAddrOfAsyncThunkData(); }
 
     BOOL MayHaveNativeCode();
 
@@ -1622,8 +1638,11 @@ protected:
     enum {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
-        enum_flag3_TokenRemainderMask                       = 0x0FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
+        enum_flag3_TokenRemainderMask                       = 0x07FF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
                                                                       // for this method.
+        // Method was added via Edit And Continue
+        enum_flag3_EnCAddedMethod                           = 0x0800,
+
         // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set.
         enum_flag3_HasStableEntryPoint                      = 0x1000,   // The method entrypoint is stable (either precode or actual code)
         enum_flag3_HasPrecode                               = 0x2000,   // Precode has been allocated for this method
@@ -1683,17 +1702,29 @@ public:
         m_wFlags |= mdcHasNativeCodeSlot;
     }
 
+    inline BOOL IsAsyncThunkMethod()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_wFlags & mdcIsAsyncThunkMethod) != 0;
+    }
+
+    inline void SetIsAsyncThunkMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_wFlags |= mdcIsAsyncThunkMethod;
+    }
+
 #ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcEnCAddedMethod) != 0;
+        return (m_wFlags3AndTokenRemainder & enum_flag3_EnCAddedMethod) != 0;
     }
 
     inline void SetIsEnCAddedMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcEnCAddedMethod;
+        m_wFlags3AndTokenRemainder |= enum_flag3_EnCAddedMethod;
     }
 #else
     inline BOOL IsEnCAddedMethod()
@@ -2143,6 +2174,7 @@ public:
                                         DWORD classification,
                                         BOOL fNonVtableSlot,
                                         BOOL fNativeCodeSlot,
+                                        BOOL fAsyncThunkData,
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker);
 

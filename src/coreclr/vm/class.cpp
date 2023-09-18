@@ -767,6 +767,7 @@ HRESULT EEClass::AddMethodDesc(
                                                             classification,
                                                             TRUE, // fNonVtableSlot
                                                             TRUE, // fNativeCodeSlot
+                                                            FALSE, /* IsAsyncThunkMethod */
                                                             pMT,
                                                             &dummyAmTracker);
 
@@ -814,7 +815,8 @@ HRESULT EEClass::AddMethodDesc(
                                 TRUE,   // fEnC
                                 0,      // RVA - non-zero only for NDirect
                                 pImport,
-                                NULL
+                                NULL,
+                                Signature()
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
