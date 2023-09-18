@@ -18,8 +18,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AttributesOnProperty.Test ();
 			AttributesOnField.Test ();
 			AttributesOnEvent.Test ();
-			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
-			typeof (AttributePropertyDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 			RecursivePropertyDataFlow.Test ();
 			RecursiveMethodDataFlow.Test ();
 			RecursiveEventDataFlow.Test ();
@@ -40,6 +38,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// Trimmer only for now - https://github.com/dotnet/linker/issues/2273
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public static void Test () {
+				typeof (AttributesOnMethod).GetMethod ("Test").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
+				typeof (AttributePropertyDataflow).GetMethod ("Test").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 			}
 
 			[Kept]
@@ -70,11 +70,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
-			static bool field;
+			public static bool field;
 
 			[Kept]
 			public static void Test ()
 			{
+				typeof (AttributesOnField).GetField ("field").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 				field = true;
 			}
 
@@ -96,11 +97,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
-			static bool Property { get; [Kept] set; }
+			public static bool Property { [Kept] get; [Kept] set; }
 
 			[Kept]
 			public static void Test ()
 			{
+				typeof (AttributesOnProperty).GetProperty ("Property").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 				Property = true;
 			}
 
@@ -124,7 +126,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
-			static event EventHandler Event_FieldSyntax;
+			public static event EventHandler Event_FieldSyntax;
 
 			[field: Kept]
 			[Kept]
@@ -133,7 +135,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
 			[KeepsPublicMethods (Type = typeof (ClassWithKeptPublicMethods))]
-			static event EventHandler Event_PropertySyntax {
+			public static event EventHandler Event_PropertySyntax {
 				add { }
 				remove { }
 			}
@@ -141,6 +143,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void Test ()
 			{
+				typeof (AttributesOnEvent).GetEvent ("Event_FieldSyntax").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+				typeof (AttributesOnEvent).GetEvent ("Event_PropertySyntax").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 				Event_FieldSyntax += (sender, args) => { };
 				Event_PropertySyntax += (sender, args) => { };
 			}
