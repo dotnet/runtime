@@ -756,7 +756,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 assert(regCount == 2);
 
-                GetEmitter()->emitIns_R_R(INS_st2, emitSize, op2Reg, op1Reg, opt);
+                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;
             }
 
