@@ -7,7 +7,7 @@
 using System;
 using Xunit;
 
-public class Test
+public class Test_341477
 {
     [Fact]
     public static void TestEntryPoint()

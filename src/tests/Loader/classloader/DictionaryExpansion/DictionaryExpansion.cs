@@ -278,7 +278,8 @@ public class Test_DictionaryExpansion
             Assert.Equal(GFunc<Test_DictionaryExpansion>(i).ToString(), i == 0 ? "Test_DictionaryExpansion" : $"TestType{i}`1[Test_DictionaryExpansion]");
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         GenBase deriv4 = new GenDerived4();
 

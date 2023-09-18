@@ -5,7 +5,7 @@
 .assembly extern xunit.core {}
 
 .assembly extern mscorlib {}
-.assembly test {}
+.assembly test_109968 {}
 
 
 // =============== CLASS MEMBERS DECLARATION ===================

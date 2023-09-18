@@ -9,7 +9,8 @@ namespace GetInterfaceMapWithStaticVirtualsAndConstraints
 {
     public static class Program
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Type i, s;
             InterfaceMapping imap;

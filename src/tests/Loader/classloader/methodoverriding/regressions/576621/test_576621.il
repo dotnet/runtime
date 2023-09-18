@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly test {}
+.assembly test_576621 {}
 .assembly extern mscorlib {}
 
 .class public C1

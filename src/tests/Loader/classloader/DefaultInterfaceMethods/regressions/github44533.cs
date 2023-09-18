@@ -3,12 +3,14 @@
 
 using System;
 using System.Linq;
+using Xunit;
 
 namespace BugInReflection
 {
     public class Program
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             // This tests the ability to load a type when
             // 1. The type implements an interface

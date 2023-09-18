@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace ClrIssueRepro
 {
@@ -33,7 +34,8 @@ namespace ClrIssueRepro
 
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // If you comment this line out, you get
             //    Unhandled exception. System.TypeLoadException: 

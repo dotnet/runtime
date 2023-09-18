@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // This regression test tracks the issue where implementation of a static virtual method
 // on a derived type is not found when there is a re-abstraction of the same method
@@ -10,7 +11,8 @@ using System;
 public class Test1 : I2
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string result = Test<Test1>();
         const string expectedResult = "Test1.M1";

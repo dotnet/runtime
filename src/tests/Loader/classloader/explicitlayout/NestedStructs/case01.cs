@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit, Size = 24)]
 public struct ComplexStruct
@@ -47,7 +48,8 @@ public class Test_NestedStructsWithExplicitLayout_Case01
         currentCount = x;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

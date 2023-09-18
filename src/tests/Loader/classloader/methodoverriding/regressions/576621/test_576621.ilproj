@@ -2,10 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
   </PropertyGroup>
-  <PropertyGroup>
-    <DebugType>Full</DebugType>
-  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GenericContextCommonAndImplementation.il" />
+    <Compile Include="test_576621.il" />
   </ItemGroup>
 </Project>

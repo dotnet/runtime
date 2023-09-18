@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit)]
 public struct FirstLevel
@@ -39,7 +40,8 @@ public class Test_NestedStructsWithExplicitLayout_Case07
         x.ConflictingObjectField = new object();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

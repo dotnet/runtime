@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit, Size = 153)]
 internal struct A
@@ -13,7 +14,8 @@ internal struct A
 
 public class Test
 {
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         int i = sizeof(A);
         int j = Marshal.SizeOf(typeof(A));

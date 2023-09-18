@@ -16,11 +16,13 @@ After the fix, the Whidbey behavior is correct as well.
 */
 
 using System; 
+using Xunit;
 
 
 public class Program 
 { 
-    public static int Main() 
+    [Fact]
+    public static int TestEntryPoint() 
     { 
         ITest test = new Level3(); 
 

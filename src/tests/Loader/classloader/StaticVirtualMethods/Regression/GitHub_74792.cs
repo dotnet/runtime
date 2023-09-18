@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // This regression test tracks an externally reported issue where this
 // code fails at runtime with a BadImageFormatException because the
@@ -16,7 +17,8 @@ using System;
 
 public class Program
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         new G<L1>().Test();
         new G<L2>().Test();

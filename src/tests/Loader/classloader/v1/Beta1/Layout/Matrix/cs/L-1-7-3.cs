@@ -13,10 +13,12 @@
 //
 
 using System;
+using Xunit;
 
 public class L171
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int mi_RetCode;
         mi_RetCode = Test();

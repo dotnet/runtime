@@ -11,7 +11,8 @@ namespace VariantStaticInterfaceDispatchRegressionTest
 {
     public class Test
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Console.WriteLine("Test cases");
 

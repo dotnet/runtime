@@ -13,10 +13,12 @@
 //@charp - C# will not allow illegal assembly access, so there is no negative testing for that in the L-*-*-3 suites
 
 using System;
+using Xunit;
 
 public class Test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int mi_RetCode;
         B b = new B();

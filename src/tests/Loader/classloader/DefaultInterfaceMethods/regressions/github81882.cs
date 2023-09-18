@@ -27,7 +27,8 @@ namespace LeaveAbstractMethodsNulInVTable
 
     public class Program
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             IDefault c = new ClassB();
 
