@@ -2265,15 +2265,14 @@ namespace Mono.Linker.Steps
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
 			if (Context.KeepMembersForDebugger) {
-
 				// Members referenced by the DebuggerDisplayAttribute are kept even if the attribute may not be.
 				// Record a logical dependency on the attribute so that we can blame it for the kept members below.
 				Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 
 				MarkTypeWithDebuggerDisplayAttributeValue(type, attribute, (string) attribute.ConstructorArguments[0].Value);
 				if (attribute.HasProperties) {
-					foreach(var  property in attribute.Properties) {
-						if(property.Name == "Name") {
+					foreach (var  property in attribute.Properties) {
+						if (property.Name == "Name") {
 							MarkTypeWithDebuggerDisplayAttributeValue (type, attribute, (string) property.Argument.Value);
 						}
 					}
