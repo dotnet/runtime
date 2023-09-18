@@ -215,7 +215,7 @@ unsigned emitter::emitInt32CnsCnt;
 unsigned emitter::emitNegCnsCnt;
 unsigned emitter::emitPow2CnsCnt;
 
-void emitterStaticStats(FILE* fout)
+void emitterStaticStats()
 {
     // The IG buffer size depends on whether we are storing a debug info pointer or not. For our purposes
     // here, do not include that.
@@ -226,6 +226,8 @@ void emitterStaticStats(FILE* fout)
     // insGroup members
 
     insGroup* igDummy = nullptr;
+
+    FILE* fout = jitstdout();
 
     fprintf(fout, "\n");
     fprintf(fout, "insGroup:\n");
