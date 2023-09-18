@@ -30,7 +30,9 @@
     <Compile Include="..\Common\ConfigurationBinderTests.Helpers.cs" Link="Common\ConfigurationBinderTests.Helpers.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.cs" Link="Common\ConfigurationBinderTests.TestClasses.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.Collections.cs" Link="Common\ConfigurationBinderTests.TestClasses.Collections.cs" />
+    <Compile Include="ConfigBindingGenDriver.cs" />
     <Compile Include="ConfigurationBinderTests.Generator.cs" />
+    <Compile Include="GeneratorTests.Incremental.cs" />
   </ItemGroup>
 
   <ItemGroup>

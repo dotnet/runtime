@@ -654,9 +654,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }"
             ;
 
-            var (d, r) = await RunGenerator(source);
-            Assert.Empty(r);
-            Assert.Empty(d);
+            ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.Empty(result.GeneratedSources);
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -766,7 +766,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, validateOutputCompDiags: false, assessDiagnostics: (d) =>
+            await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, validateOutputDiags: false, assessDiagnostics: (d) =>
             {
                 Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
                 Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
@@ -819,7 +819,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 {
                     Assert.Equal(2, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
                 },
-                validateOutputCompDiags: false);
+                validateOutputDiags: false);
         }
     }
 }

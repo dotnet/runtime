@@ -110,6 +110,11 @@ namespace SourceGenerators.Tests
             return result;
         }
 
+        public static Project WithDocument(this Project proj, string text)
+        {
+            return proj.AddDocument("src-0.cs", text).Project;
+        }
+
         public static Project WithDocument(this Project proj, string name, string text)
         {
             return proj.AddDocument(name, text).Project;
