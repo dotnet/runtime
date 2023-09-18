@@ -67,7 +67,16 @@ namespace System.Buffers.Text
 
                 if (maxSrcLength >= 16)
                 {
-                    byte* end = srcMax - 32;
+                    byte* end = srcMax - 64;
+                    if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && (end >= src))
+                    {
+                        Avx512Encode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+
+                        if (src == srcEnd)
+                            goto DoneExit;
+                    }
+
+                    end = srcMax - 64;
                     if (Avx2.IsSupported && (end >= src))
                     {
                         Avx2Encode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
@@ -224,6 +233,120 @@ namespace System.Buffers.Text
                 bytesWritten = 0;
                 return OperationStatus.DestinationTooSmall;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        private static unsafe void Avx512Encode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        {
+            // Reference for VBMI implementation : https://arxiv.org/pdf/1910.05109.pdf
+            // If we have AVX512 support, pick off 48 bytes at a time for as long as we can.
+            // But because we read 64 bytes at a time, ensure we have enough room to do a
+            // full 64-byte read without segfaulting.
+
+            byte* src = srcBytes;
+            byte* dest = destBytes;
+
+            // The JIT won't hoist these "constants", so help it
+            // JIT will remove the Non VBMI path constants when VBMI is available and vice-versa.
+
+            // VBMI path constants
+            Vector512<sbyte> shuffleVecVbmi = Vector512.Create(
+                0x01020001, 0x04050304, 0x07080607, 0x0a0b090a,
+                0x0d0e0c0d, 0x10110f10, 0x13141213, 0x16171516,
+                0x191a1819, 0x1c1d1b1c, 0x1f201e1f, 0x22232122,
+                0x25262425, 0x28292728, 0x2b2c2a2b, 0x2e2f2d2e).AsSByte();
+            Vector512<sbyte> vbmiLookup = Vector512.Create(
+                (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F', (byte)'G', (byte)'H', (byte)'I', (byte)'J', (byte)'K', (byte)'L', (byte)'M', (byte)'N', (byte)'O', (byte)'P',
+                (byte)'Q', (byte)'R', (byte)'S', (byte)'T', (byte)'U', (byte)'V', (byte)'W', (byte)'X', (byte)'Y', (byte)'Z', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f',
+                (byte)'g', (byte)'h', (byte)'i', (byte)'j', (byte)'k', (byte)'l', (byte)'m', (byte)'n', (byte)'o', (byte)'p', (byte)'q', (byte)'r', (byte)'s', (byte)'t', (byte)'u', (byte)'v',
+                (byte)'w', (byte)'x', (byte)'y', (byte)'z', (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'+', (byte)'/').AsSByte();
+
+            // Non VBMI path constants
+            Vector512<int> rearrangeVec = Vector512.Create(0, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8, -1, 9, 10, 11, -1);
+            Vector512<sbyte> shuffleVec = Vector512.Create(0x01020001, 0x04050304, 0x07080607, 0x0a0b090a, 0x01020001, 0x04050304, 0x07080607, 0x0a0b090a,
+                0x01020001, 0x04050304, 0x07080607, 0x0a0b090a, 0x01020001, 0x04050304, 0x07080607, 0x0a0b090a).AsSByte();
+            Vector512<sbyte> lut = Vector512.Create(
+                65, 71, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -19, -16, 0, 0,
+                65, 71, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -19, -16, 0, 0,
+                65, 71, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -19, -16, 0, 0,
+                65, 71, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -19, -16, 0, 0);
+            Vector512<byte> const51 = Vector512.Create((byte)51);
+            Vector512<sbyte> const25 = Vector512.Create((sbyte)25);
+
+            // Common constants
+            Vector512<ushort> maskAC = Vector512.Create((uint)0x0fc0fc00).AsUInt16();
+            Vector512<uint> maskBB = Vector512.Create((uint)0x3f003f00);
+            Vector512<ushort> shiftAC = Vector512.Create((uint)0x0006000a).AsUInt16();
+            Vector512<ushort> shiftBB = Vector512.Create((uint)0x00080004).AsUInt16();
+
+            AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
+            // The fastest version of this algorithm requires AVX512VBMI support.
+            // The fallback path uses AVX512BW and AVX512F instructions.
+            // Both versions work on the input data as four 128 byte lanes.
+            // str = [...|PONM|LKJI|HGFE|DCBA]
+            Vector512<sbyte> str = Vector512.Load(src).AsSByte();
+
+            while (true)
+            {
+                // Step 1 : Split 48 bytes into 64 bytes with each byte using 6-bits from input
+                if (Avx512Vbmi.IsSupported)
+                {
+                    // str = [...|KLJK|HIGH|EFDE|BCAB]
+                    str = Avx512Vbmi.PermuteVar64x8(str, shuffleVecVbmi);
+                }
+                else
+                {
+                    // shuf1 = [...|0000|LKJI|HGFE|DCBA]
+                    Vector512<sbyte> shuf1 = Avx512F.PermuteVar16x32(str.AsInt32(), rearrangeVec).AsSByte();
+                    // str = [...|KLJK|HIGH|EFDE|BCAB]
+                    str = Avx512BW.Shuffle(shuf1, shuffleVec);
+                }
+
+                // TO-DO- This can be achieved faster with multishift
+                // Consider the first 4 bytes - BCAB
+                // temp1    = [...|0000cccc|cc000000|aaaaaa00|00000000]
+                Vector512<ushort> temp1 = (str.AsUInt16() & maskAC);
+
+                // temp2    = [...|00000000|00cccccc|00000000|00aaaaaa]
+                Vector512<ushort> temp2 = Avx512BW.ShiftRightLogicalVariable(temp1, shiftAC).AsUInt16();
+
+                // temp3    = [...|ccdddddd|00000000|aabbbbbb|cccc0000]
+                Vector512<ushort> temp3 = Avx512BW.ShiftLeftLogicalVariable(str.AsUInt16(), shiftBB).AsUInt16();
+
+                // str      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
+                str = Vector512.ConditionalSelect(maskBB, temp3.AsUInt32(), temp2.AsUInt32()).AsSByte();
+
+                // Step 2: Now we have the indices calculated. Next step is to use these indices to translate.
+                if (Avx512Vbmi.IsSupported)
+                {
+                    str = Avx512Vbmi.PermuteVar64x8(vbmiLookup, str);
+                }
+                else
+                {
+                    Vector512<byte> indices = Avx512BW.SubtractSaturate(str.AsByte(), const51);
+                    Vector512<sbyte> mask = Vector512.GreaterThan(str, const25);
+                    Vector512<sbyte> tmp = Vector512.Subtract(indices.AsSByte(), mask);
+                    // Add offsets to input values:
+                    str = Vector512.Add(str, Avx512BW.Shuffle(lut, tmp));
+                }
+
+                AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
+                Vector512.Store(str.AsByte(), dest);
+
+                src += 48;
+                dest += 64;
+
+                if (src > srcEnd)
+                    break;
+
+                AssertRead<Vector512<sbyte>>(src, srcStart, sourceLength);
+                str = Vector512.Load(src).AsSByte();
+            }
+
+            srcBytes = src;
+            destBytes = dest;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
