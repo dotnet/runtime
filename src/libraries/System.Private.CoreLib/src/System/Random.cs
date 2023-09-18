@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -199,28 +200,34 @@ namespace System
             // The most expensive part of this operation is the call to get random data. We can
             // do so only once rather than per element in a common case:
             // - The number of choices is <= 256. This let's us get a single byte per choice.
-            // - The number of choices is a power of two. This let's us a byte and simply mask off
-            //   unnecessary bytes cheaply rather than needing to use rejection sampling.
-            // - The type of T doesn't contain any references. This let's us write random bytes into the
-            //   destination buffer rather than needing a scratch buffer. we can use a single RNG.Fill to get
-            //   all of the required randomness, and then walk backwards through the destination, filling in the
-            //   corresponding choice based on the random byte at that position when interpreted as bytes. By
-            //   walking backwards, we won't overrite any random bytes that we still need to read.
-            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>() &&
-                BitOperations.IsPow2(choices.Length) &&
-                choices.Length <= 256)
+            // - The number of choices is a power of two. This let's us use a byte and simply mask off
+            //   unnecessary bits cheaply rather than needing to use rejection sampling.
+            if (BitOperations.IsPow2(choices.Length) && choices.Length <= 256)
             {
-                // Reinterpret the bottom destination.Length bytes of the destination as our
-                // scratch buffer for randomness.
-                Span<byte> randomBytesInDestination = new Span<byte>(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)),
-                    destination.Length);
-                NextBytes(randomBytesInDestination);
+                const int StackAllocThreshold = 256;
+
+                // Get a scratch buffer to fill with random bytes, either stack space if the
+                // destination is small enough, or an array pool array if it's larger.
+                // If T is unmanaged, we _could_ use the destination buffer itself, reinterpreted
+                // as a byte buffer, to hold the scratch bytes, but then we'd potentially be temporarily
+                // writing invalid Ts into the destination, which is a risk.
+                byte[]? arrayPoolArray = null;
+                Span<byte> randomBytes = destination.Length <= StackAllocThreshold ?
+                    stackalloc byte[StackAllocThreshold] :
+                    (arrayPoolArray = ArrayPool<byte>.Shared.Rent(destination.Length));
+                randomBytes = randomBytes.Slice(0, destination.Length);
+
+                NextBytes(randomBytes);
 
                 int mask = choices.Length - 1;
-                for (int i = destination.Length - 1; i >= 0; i--)
+                for (int i = 0; i < destination.Length; i++)
                 {
-                    destination[i] = choices[randomBytesInDestination[i] & mask];
+                    destination[i] = choices[randomBytes[i] & mask];
+                }
+
+                if (arrayPoolArray is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(arrayPoolArray);
                 }
 
                 return;
