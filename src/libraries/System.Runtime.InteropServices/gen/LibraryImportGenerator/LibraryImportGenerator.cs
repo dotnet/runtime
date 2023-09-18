@@ -316,7 +316,7 @@ namespace Microsoft.Interop
             bool supportsTargetFramework = !pinvokeStub.LibraryImportData.SetLastError
                 || options.GenerateForwarders
                 || (pinvokeStub.GeneratorFactoryKey.Key.TargetFramework == TargetFramework.Net
-                    pinvokeStub.GeneratorFactoryKey.Key.Version.Major >= 6);
+                    && pinvokeStub.GeneratorFactoryKey.Key.Version.Major >= 6);
 
             foreach (TypePositionInfo typeInfo in pinvokeStub.SignatureContext.ElementTypeInformation)
             {
