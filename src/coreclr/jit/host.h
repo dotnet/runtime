@@ -3,8 +3,6 @@
 
 /*****************************************************************************/
 
-// Like printf/logf, but only outputs to jitstdout -- skips call back into VM
-// in DEBUG builds.
 void jitprintf(const char* fmt, ...);
 
 #ifdef DEBUG
