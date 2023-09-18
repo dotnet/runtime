@@ -3537,6 +3537,13 @@ namespace System.Runtime.Intrinsics.Arm
             public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw null; }
+            public unsafe static void StoreVector64x2(byte* address, (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) value) { throw null; }
+            public unsafe static void StoreVector64x2(sbyte* address, (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) value) { throw null; }
+            public unsafe static void StoreVector64x2(short* address, (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) value) { throw null; }
+            public unsafe static void StoreVector64x2(ushort* address, (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) value) { throw null; }
+            public unsafe static void StoreVector64x2(int* address, (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) value) { throw null; }
+            public unsafe static void StoreVector64x2(uint* address, (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) value) { throw null; }
+            public unsafe static void StoreVector64x2(float* address, (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) value) { throw null; }
             public unsafe static void StoreVector128x2(byte* address, (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) value) { throw null; }
             public unsafe static void StoreVector128x2(sbyte* address, (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) value) { throw null; }
             public unsafe static void StoreVector128x2(short* address, (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) value) { throw null; }
