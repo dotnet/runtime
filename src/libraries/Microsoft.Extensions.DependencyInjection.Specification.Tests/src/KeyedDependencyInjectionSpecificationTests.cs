@@ -476,5 +476,41 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             public IServiceProvider ServiceProvider { get; }
         }
+
+            [Fact]
+            public void SimpleServiceKeyedResolution()
+            {
+                // Arrange
+                var services = new ServiceCollection();
+                services.AddKeyedTransient<ISimpleService, SimpleService>("simple");
+                services.AddKeyedTransient<ISimpleService, AnotherSimpleService>("another");
+                services.AddTransient<SimpleParentWithDynamicKeyedService>();
+                var provider = CreateServiceProvider(services);
+                var sut = provider.GetService<SimpleParentWithDynamicKeyedService>();
+
+                // Act
+                var result = sut!.GetService("simple");
+
+                // Assert
+                Assert.True(result.GetType() == typeof(SimpleService));
+            }
+
+        public class SimpleParentWithDynamicKeyedService
+        {
+            private readonly IServiceProvider _serviceProvider;
+
+            public SimpleParentWithDynamicKeyedService(IServiceProvider serviceProvider)
+            {
+                _serviceProvider = serviceProvider;
+            }
+
+            public ISimpleService GetService(string name) => _serviceProvider.GetKeyedService<ISimpleService>(name)!;
+        }
+
+        public interface ISimpleService { }
+
+        public class SimpleService : ISimpleService { }
+
+        public class AnotherSimpleService : ISimpleService { }
     }
 }
