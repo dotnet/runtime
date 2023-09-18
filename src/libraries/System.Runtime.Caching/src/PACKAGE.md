@@ -12,13 +12,9 @@ Packaged set of simple caching API's derived from those of the same namespace av
 
 <!-- The key features of this package -->
 
-*
-*
-*
-
-## How to Use
-
-<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+* Use caching facilities like in ASP.NET, but without a dependency on the System.Web assembly.
+* Extensible caching mechanism
+* Possible to create custom caching providers
 
 ## Main Types
 

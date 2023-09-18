@@ -52,7 +52,6 @@ The main types provided by this library are:
 
 * [API documentation](https://learn.microsoft.com/dotnet/api/system.timeprovider)
 
-
 ## Feedback & Contributing
 
 Microsoft.Bcl.TimeProvider is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).

@@ -10,7 +10,6 @@
 * Allow logging to the console using the [Microsoft.Extensions.Logging](https://www.nuget.org/packages/Microsoft.Extensions.Logging/) package.
 * Provide extension methods for the [ILoggingBuilder](https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.iloggingbuilder) and [ILoggerProviderConfiguration](https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.configuration.iloggerproviderconfiguration-1) classes.
 
-
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->

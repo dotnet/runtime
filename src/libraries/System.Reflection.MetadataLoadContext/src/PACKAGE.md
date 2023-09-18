@@ -4,14 +4,6 @@
 
 Provides read-only reflection on assemblies in an isolated context with support for assemblies that target different processor architectures and runtimes. Using MetadataLoadContext enables you to inspect assemblies without loading them into the main execution context. Assemblies in MetadataLoadContext are treated only as metadata, that is, you can read information about their members, but cannot execute any code contained in them.
 
-## Key Features
-
-<!-- The key features of this package -->
-
-*
-*
-*
-
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
@@ -51,9 +43,8 @@ class Program
 
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `System.Reflection.MetadataLoadContext`
+* `System.Reflection.MetadataAssemblyResolver`
 
 ## Additional Documentation
 
@@ -62,10 +53,6 @@ The main types provided by this library are:
 * [How to: Inspect assembly contents using MetadataLoadContext](https://docs.microsoft.com/dotnet/standard/assembly/inspect-contents-using-metadataloadcontext)
 * [System.Reflection.MetadataLoadContext](https://docs.microsoft.com/dotnet/api/system.reflection.metadataloadcontext)
 * [System.Reflection.MetadataAssemblyResolver](https://docs.microsoft.com/dotnet/api/system.reflection.metadataassemblyresolver)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
 
 ## Feedback & Contributing
 

@@ -4,7 +4,6 @@
 
 Provides abstractions of key-value pair based configuration. Interfaces defined in this package are implemented by classes in [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/) and other configuration packages.
 
-
 ## Key Features
 
 <!-- The key features of this package -->
@@ -43,7 +42,6 @@ var config = new ConfigurationBuilder()
 var options = config.Get<MyClass>();
 Console.WriteLine(options.NamedProperty); // returns "value for named property"
 ```
-
 
 ## Main Types
 
