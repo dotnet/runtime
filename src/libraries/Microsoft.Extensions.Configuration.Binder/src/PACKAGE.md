@@ -116,7 +116,7 @@ The main types provided by this library are:
 <!-- Links to further documentation -->
 
 * [Configuration in .NET](https://learn.microsoft.com/dotnet/core/extensions/configuration)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.configuration)
+* [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration)
 
 ## Related Packages
 

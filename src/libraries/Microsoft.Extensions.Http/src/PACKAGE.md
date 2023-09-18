@@ -16,7 +16,7 @@
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
 
-Note that lifetime management of `HttpClient` instances created by `HttpClientFactory` is completely different from instances created manually. The strategies are to use either short-lived clients created by `HttpClientFactory` or long-lived clients with `PooledConnectionLifetime` set up. For more information, see the [HttpClient lifetime management section](https://learn.microsoft.com/en-us/dotnet/core/extensions/httpclient-factory#httpclient-lifetime-management) in the conceptual docs and [Guidelines for using HTTP clients](https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines).
+Note that lifetime management of `HttpClient` instances created by `HttpClientFactory` is completely different from instances created manually. The strategies are to use either short-lived clients created by `HttpClientFactory` or long-lived clients with `PooledConnectionLifetime` set up. For more information, see the [HttpClient lifetime management section](https://learn.microsoft.com/dotnet/core/extensions/httpclient-factory#httpclient-lifetime-management) in the conceptual docs and [Guidelines for using HTTP clients](https://learn.microsoft.com/dotnet/fundamentals/networking/http/httpclient-guidelines).
 
 ### Configuring HttpClient
 
@@ -61,10 +61,10 @@ The main types provided by this library are:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/httpclient-factory)
-    * Also see [HttpClient guidelines](https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines) conceptual doc
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.net.http?view=dotnet-plat-ext-7.0)
-    * Also see [`AddHttpClient` extension method](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.dependencyinjection.httpclientfactoryservicecollectionextensions?view=dotnet-plat-ext-7.0) API doc
+* [Conceptual documentation](https://learn.microsoft.com/dotnet/core/extensions/httpclient-factory)
+    * Also see [HttpClient guidelines](https://learn.microsoft.com/dotnet/fundamentals/networking/http/httpclient-guidelines) conceptual doc
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.net.http?view=dotnet-plat-ext-7.0)
+    * Also see [`AddHttpClient` extension method](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.httpclientfactoryservicecollectionextensions?view=dotnet-plat-ext-7.0) API doc
 
 ## Related Packages
 

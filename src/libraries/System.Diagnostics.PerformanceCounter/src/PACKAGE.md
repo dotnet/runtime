@@ -188,26 +188,26 @@ Notes:
 
 The main types provided by this library are:
 
-Under the [`System.Diagnostics`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics) namespace, the main types are:
+Under the [`System.Diagnostics`](https://learn.microsoft.com/dotnet/api/System.Diagnostics) namespace, the main types are:
 
-* [`System.Diagnostics.CounterCreationData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.CounterCreationData)
-* [`System.Diagnostics.CounterCreationDataCollection`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.CounterCreationDataCollection)
-* [`System.Diagnostics.PerformanceCounter`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceCounter)
+* [`System.Diagnostics.CounterCreationData`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.CounterCreationData)
+* [`System.Diagnostics.CounterCreationDataCollection`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.CounterCreationDataCollection)
+* [`System.Diagnostics.PerformanceCounter`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.PerformanceCounter)
 
-Under the [`System.Diagnostics.PerformanceData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData) namespace, the main types are:
+Under the [`System.Diagnostics.PerformanceData`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.PerformanceData) namespace, the main types are:
 
-* [`System.Diagnostics.PerformanceData.CounterData`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterData)
-* [`System.Diagnostics.PerformanceData.CounterSet`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterSet)
-* [`System.Diagnostics.PerformanceData.CounterType`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.PerformanceData.CounterType)
+* [`System.Diagnostics.PerformanceData.CounterData`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.PerformanceData.CounterData)
+* [`System.Diagnostics.PerformanceData.CounterSet`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.PerformanceData.CounterSet)
+* [`System.Diagnostics.PerformanceData.CounterType`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.PerformanceData.CounterType)
 
 ## Additional Documentation
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [Microsoft Learn - System.Diagnostics.PerformanceCounter API reference](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.performancecounter?view=dotnet-plat-ext-7.0)
-* [Windows App Development - Performance Counters](https://learn.microsoft.com/en-us/windows/win32/perfctrs/performance-counters-portal)
-* [Windows Performance and Reliability - Windows Performance Monitor](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2008-R2-and-2008/cc749249(v=ws.11))
-* [Windows Server - perfmon](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/perfmon)
+* [Microsoft Learn - System.Diagnostics.PerformanceCounter API reference](https://learn.microsoft.com/dotnet/api/system.diagnostics.performancecounter?view=dotnet-plat-ext-7.0)
+* [Windows App Development - Performance Counters](https://learn.microsoft.com/windows/win32/perfctrs/performance-counters-portal)
+* [Windows Performance and Reliability - Windows Performance Monitor](https://learn.microsoft.com/previous-versions/windows/it-pro/windows-server-2008-R2-and-2008/cc749249(v=ws.11))
+* [Windows Server - perfmon](https://learn.microsoft.com/windows-server/administration/windows-commands/perfmon)
 * [GitHub - Source code](https://github.com/dotnet/runtime/tree/main/src/libraries/System.Diagnostics.PerformanceCounter)
 
 ## Related Packages

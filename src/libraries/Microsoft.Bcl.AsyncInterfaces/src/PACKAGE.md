@@ -54,7 +54,7 @@ The main types provided by this library are:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [C# Feature Specification](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-8.0/async-streams)
+* [C# Feature Specification](https://learn.microsoft.com/dotnet/csharp/language-reference/proposals/csharp-8.0/async-streams)
 * [Walkthrough article](https://learn.microsoft.com/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8)
 
 ## Feedback & Contributing

@@ -4,7 +4,7 @@
 
 Packaged set of simple caching API's derived from those of the same namespace available in .NET Framework since 4.0. This package is intended for use as a bridge when porting .NET Framework applications to .NET.
 
-[Microsoft.Extensions.Caching.Memory](https://www.nuget.org/packages/Microsoft.Extensions.Caching.Memory/)/[IMemoryCache](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/memory?view=aspnetcore-7.0) is recommended over `System.Runtime.Caching`/`MemoryCache` because it's better integrated into ASP.NET Core. For example, `IMemoryCache` works natively with ASP.NET Core [dependency injection](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-7.0).
+[Microsoft.Extensions.Caching.Memory](https://www.nuget.org/packages/Microsoft.Extensions.Caching.Memory/)/[IMemoryCache](https://learn.microsoft.com/aspnet/core/performance/caching/memory?view=aspnetcore-7.0) is recommended over `System.Runtime.Caching`/`MemoryCache` because it's better integrated into ASP.NET Core. For example, `IMemoryCache` works natively with ASP.NET Core [dependency injection](https://learn.microsoft.com/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-7.0).
 
 > > [!IMPORTANT]
 >  Use `System.Runtime.Caching`/`MemoryCache` as a compatibility bridge when porting code from .NET 4.x to .NET Core.
@@ -34,10 +34,10 @@ The main types provided by this library are:
 
 <!-- Links to further documentation -->
 
-[MemoryCache.PhysicalMemoryLimit](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.caching.memorycache.physicalmemorylimit?view=dotnet-plat-ext-7.0) property is only supported on windows.
+[MemoryCache.PhysicalMemoryLimit](https://learn.microsoft.com/dotnet/api/system.runtime.caching.memorycache.physicalmemorylimit?view=dotnet-plat-ext-7.0) property is only supported on windows.
 
-* [Caching in .NET](https://learn.microsoft.com/en-us/dotnet/core/extensions/caching)
-* [Cache in-memory in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/memory?view=aspnetcore-7.0 )
+* [Caching in .NET](https://learn.microsoft.com/dotnet/core/extensions/caching)
+* [Cache in-memory in ASP.NET Core](https://learn.microsoft.com/aspnet/core/performance/caching/memory?view=aspnetcore-7.0 )
 
 ## Related Packages
 

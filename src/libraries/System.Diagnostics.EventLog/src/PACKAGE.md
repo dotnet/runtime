@@ -50,28 +50,28 @@ Notes:
 
 The main types provided by this library are:
 
-Under the [`System.Diagnostics`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics) namespace, the main types are:
+Under the [`System.Diagnostics`](https://learn.microsoft.com/dotnet/api/System.Diagnostics) namespace, the main types are:
 
-- [`System.Diagnostics.EventLog`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.EventLog)
-- [`System.Diagnostics.EventLogEntry`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.EventLogEntry)
-- [`System.Diagnostics.EventLogEntryCollection`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.EventLogEntryCollection)
-- [`System.Diagnostics.EventLogEntryType`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.EventLogEntryType)
+- [`System.Diagnostics.EventLog`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.EventLog)
+- [`System.Diagnostics.EventLogEntry`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.EventLogEntry)
+- [`System.Diagnostics.EventLogEntryCollection`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.EventLogEntryCollection)
+- [`System.Diagnostics.EventLogEntryType`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.EventLogEntryType)
 
-Under the [`System.Diagnostics.Eventing.Reader`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Eventing.Reader) namespace, the main types are:
+Under the [`System.Diagnostics.Eventing.Reader`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.Eventing.Reader) namespace, the main types are:
 
-- [`System.Diagnostics.Eventing.Reader.EventLogQuery`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogQuery)
-- [`System.Diagnostics.Eventing.Reader.EventLogReader`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogReader)
-- [`System.Diagnostics.Eventing.Reader.EventLogRecord`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogRecord)
-- [`System.Diagnostics.Eventing.Reader.EventLogSession`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogSession)
-- [`System.Diagnostics.Eventing.Reader.EventLogType`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogType)
-- [`System.Diagnostics.Eventing.Reader.EventRecord`](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Eventing.Reader.EventRecord)
+- [`System.Diagnostics.Eventing.Reader.EventLogQuery`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogQuery)
+- [`System.Diagnostics.Eventing.Reader.EventLogReader`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogReader)
+- [`System.Diagnostics.Eventing.Reader.EventLogRecord`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogRecord)
+- [`System.Diagnostics.Eventing.Reader.EventLogSession`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogSession)
+- [`System.Diagnostics.Eventing.Reader.EventLogType`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.Eventing.Reader.EventLogType)
+- [`System.Diagnostics.Eventing.Reader.EventRecord`](https://learn.microsoft.com/dotnet/api/System.Diagnostics.Eventing.Reader.EventRecord)
 
 ## Additional Documentation
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-- [Microsoft Learn - System.Diagnostics.EventLog API reference](https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.EventLog)
-- [Windows App Development - Event logging](https://learn.microsoft.com/en-us/windows/win32/eventlog/event-logging)
+- [Microsoft Learn - System.Diagnostics.EventLog API reference](https://learn.microsoft.com/dotnet/api/System.Diagnostics.EventLog)
+- [Windows App Development - Event logging](https://learn.microsoft.com/windows/win32/eventlog/event-logging)
 - [GitHub - Source code](https://github.com/dotnet/runtime/tree/main/src/libraries/System.Diagnostics.EventLog)
 
 ## Related Packages

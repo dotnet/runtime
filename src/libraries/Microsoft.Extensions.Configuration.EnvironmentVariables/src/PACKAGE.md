@@ -53,7 +53,7 @@ The main types provided by this library are:
 <!-- Links to further documentation -->
 
 * [Environment variable configuration provider](https://learn.microsoft.com/dotnet/core/extensions/configuration-providers#environment-variable-configuration-provider)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.configuration.environmentvariables)
+* [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.environmentvariables)
 
 ## Related Packages
 

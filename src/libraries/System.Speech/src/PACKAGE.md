@@ -1,7 +1,7 @@
 ## About
 
 <!-- A description of the package and where one can find more documentation -->
-Provides APIs for speech recognition and synthesis built on the [Microsoft Speech API](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ms723627(v=vs.85)) in Windows.  Not supported on other platforms.
+Provides APIs for speech recognition and synthesis built on the [Microsoft Speech API](https://learn.microsoft.com/previous-versions/windows/desktop/ms723627(v=vs.85)) in Windows.  Not supported on other platforms.
 
 This package is provided primarily for compatibility with code being ported from .NET Framework and is not accepting new features.
 
@@ -90,9 +90,9 @@ The main types provided by this library are:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [Conceptual documentation](https://learn.microsoft.com/en-us/previous-versions/office/developer/speech-technologies/hh361625(v%3doffice.14))
-* [Speech.Recognition API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.speech.recognition)
-* [Speech.Synthesis API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.speech.synthesis)
+* [Conceptual documentation](https://learn.microsoft.com/previous-versions/office/developer/speech-technologies/hh361625(v%3doffice.14))
+* [Speech.Recognition API documentation](https://learn.microsoft.com/dotnet/api/system.speech.recognition)
+* [Speech.Synthesis API documentation](https://learn.microsoft.com/dotnet/api/system.speech.synthesis)
 
 ## Feedback & Contributing
 
