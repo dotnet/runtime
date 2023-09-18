@@ -415,7 +415,13 @@ namespace System.Net.NetworkInformation
                         Span<Range> pieces = stackalloc Range[18]; // [0]-[16] used, +1 to ensure any additional segment goes into [17]
                         ReadOnlySpan<char> lineSpan = line;
                         pieces = pieces.Slice(0, lineSpan.SplitAny(pieces, " :", StringSplitOptions.RemoveEmptyEntries));
-                        if (!lineSpan[pieces[0]].SequenceEqual(name)) continue; // Ensure the adapter name 100% matching
+
+                        if (!lineSpan[pieces[0]].SequenceEqual(name))
+                        {
+                            // The adapter name doesn't exactly match.
+                            continue;
+                        }
+
                         return new IPInterfaceStatisticsTable()
                         {
                             BytesReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[1]]),
