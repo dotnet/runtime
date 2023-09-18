@@ -18,15 +18,49 @@ The `System.Collections.Immutable` library is built-in as part of the shared fra
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
 
+```C#
+using System.Collections.Immutable;
+
+// Create immutable set of strings
+ImmutableHashSet<string> colors = ImmutableHashSet.Create("Red", "Green", "Blue");
+
+// Create a new set by adding and removing items from the original set
+ImmutableHashSet<string> colorsModified = colors.Remove("Red").Add("Orange");
+
+foreach (string s in colorsModified)
+{
+    Console.WriteLine(s);
+}
+
+/* Example output:
+ Blue
+ Green
+ Orange
+ */
+ ```
+
 ## Main Types
 
 <!-- The main types provided in this library -->
 
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `System.Collections.Immutable.ImmutableArray`
+* `System.Collections.Immutable.ImmutableArray<T>`
+* `System.Collections.Immutable.ImmutableDictionary`
+* `System.Collections.Immutable.ImmutableDictionary<TKey,TValue>`
+* `System.Collections.Immutable.ImmutableHashSet`
+* `System.Collections.Immutable.ImmutableHashSet<T>`
+* `System.Collections.Immutable.ImmutableList`
+* `System.Collections.Immutable.ImmutableList<T>`
+* `System.Collections.Immutable.ImmutableQueue`
+* `System.Collections.Immutable.ImmutableQueue<T>`
+* `System.Collections.Immutable.ImmutableSortedDictionary`
+* `System.Collections.Immutable.ImmutableSortedDictionary<TKey,TValue>`
+* `System.Collections.Immutable.ImmutableSortedSet`
+* `System.Collections.Immutable.ImmutableSortedSet<T>`
+* `System.Collections.Immutable.ImmutableStack`
+* `System.Collections.Immutable.ImmutableStack<T>`
 
 ## Additional Documentation
 
@@ -34,10 +68,6 @@ The main types provided by this library are:
 
 - [Collections and Data Structures](https://docs.microsoft.com/dotnet/standard/collections/)
 - [API documentation](https://docs.microsoft.com/dotnet/api/system.collections.immutable)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
 
 ## Feedback & Contributing
 

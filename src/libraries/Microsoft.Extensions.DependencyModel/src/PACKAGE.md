@@ -6,14 +6,6 @@ Provides abstractions for reading `.deps` files. When a .NET application is comp
 
 By default, the dependency manifest contains information about the application's target framework and runtime dependencies. Set the [PreserveCompilationContext](https://docs.microsoft.com/dotnet/core/project-sdk/msbuild-props#preservecompilationcontext) project property to `true` to additionally include information about reference assemblies used during compilation.
 
-## Key Features
-
-<!-- The key features of this package -->
-
-*
-*
-*
-
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
@@ -42,16 +34,6 @@ class Program
 }
 ```
 
-## Main Types
-
-<!-- The main types provided in this library -->
-
-The main types provided by this library are:
-
-* ``
-* ``
-* ``
-
 ## Additional Documentation
 
 <!-- Links to further documentation -->
@@ -59,10 +41,6 @@ The main types provided by this library are:
 * [.deps.json file format](https://github.com/dotnet/sdk/blob/main/documentation/specs/runtime-configuration-file.md#appnamedepsjson)
 * [Microsoft.Extensions.DependencyModel namespace](https://docs.microsoft.com/dotnet/api/microsoft.extensions.dependencymodel)
 * [Microsoft.Extensions.DependencyModel.DependencyContext](https://docs.microsoft.com/dotnet/api/microsoft.extensions.dependencymodel.dependencycontext)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
 
 ## Feedback & Contributing
 

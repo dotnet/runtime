@@ -4,14 +4,6 @@
 
 JSON configuration provider implementation for [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/). This package enables you to read your application's settings from a JSON file. You can use [JsonConfigurationExtensions.AddJsonFile](https://docs.microsoft.com/dotnet/api/microsoft.extensions.configuration.jsonconfigurationextensions.addjsonfile) extension method on `IConfigurationBuilder` to add the JSON configuration provider to the configuration builder.
 
-## Key Features
-
-<!-- The key features of this package -->
-
-*
-*
-*
-
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
@@ -72,26 +64,12 @@ You can include a configuration file using a code like this in your `.csproj` fi
 </ItemGroup>
 ```
 
-## Main Types
-
-<!-- The main types provided in this library -->
-
-The main types provided by this library are:
-
-* ``
-* ``
-* ``
-
 ## Additional Documentation
 
 <!-- Links to further documentation -->
 
 * [JSON configuration provider](https://learn.microsoft.com/dotnet/core/extensions/configuration-providers#json-configuration-provider)
 * [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.json)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
 
 ## Feedback & Contributing
 

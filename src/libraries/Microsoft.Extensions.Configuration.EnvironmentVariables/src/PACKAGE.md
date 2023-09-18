@@ -4,14 +4,6 @@
 
 Environment variables configuration provider implementation for [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/). This package enables you to read configuration parameters from environment variables. You can use [EnvironmentVariablesExtensions.AddEnvironmentVariables](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.environmentvariablesextensions.addenvironmentvariables) extension method on `IConfigurationBuilder` to add the environment variables configuration provider to the configuration builder.
 
-## Key Features
-
-<!-- The key features of this package -->
-
-*
-*
-*
-
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
@@ -38,26 +30,12 @@ class Program
 }
 ```
 
-## Main Types
-
-<!-- The main types provided in this library -->
-
-The main types provided by this library are:
-
-* ``
-* ``
-* ``
-
 ## Additional Documentation
 
 <!-- Links to further documentation -->
 
 * [Environment variable configuration provider](https://learn.microsoft.com/dotnet/core/extensions/configuration-providers#environment-variable-configuration-provider)
 * [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.environmentvariables)
-
-## Related Packages
-
-<!-- The related packages associated with this package -->
 
 ## Feedback & Contributing
 

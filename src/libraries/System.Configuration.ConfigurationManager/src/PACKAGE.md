@@ -4,14 +4,6 @@
 
 Provides types that support using XML configuration files (`app.config`). This package exists only to support migrating existing .NET Framework code that already uses System.Configuration. When writing new code, use another configuration system instead, such as [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/).
 
-## Key Features
-
-<!-- The key features of this package -->
-
-*
-*
-*
-
 ## How to Use
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
@@ -75,9 +67,8 @@ To run this example, include an `app.config` file with the following content in 
 
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `System.Configuration.Configuration`
+* `System.Configuration.ConfigurationManager`
 
 ## Additional Documentation
 

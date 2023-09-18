@@ -1,12 +1,21 @@
 ## About
+
+<!-- A description of the package and where one can find more documentation -->
+
 Contains the .NET Generic Host `HostBuilder` which layers on the `Microsoft.Extensions.Hosting.Abstractions` package.
 
 ## Key Features
+
+<!-- The key features of this package -->
+
 * Contains the .NET Generic Host `HostBuilder`.
 
 ## How to Use
+
+<!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
+
 For a console app project:
-```cs
+```C#
     using (IHost host = new HostBuilder().Build())
     {
         var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
@@ -34,7 +43,11 @@ For a console app project:
 ```
 
 ## Main Types
+
+<!-- The main types provided in this library -->
+
 The main types provided by this library are:
+
 * `Microsoft.Extensions.Host`.
 * `Microsoft.Extensions.Hosting.HostApplicationBuilder`
 * `Microsoft.Extensions.Hosting.HostBuilder`
@@ -42,6 +55,9 @@ The main types provided by this library are:
 * `Microsoft.Extensions.Hosting.IHostedLifecycleService`
 
 ## Additional Documentation
+
+<!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
+
 * [Generic host](https://learn.microsoft.com/dotnet/core/extensions/generic-host)
 * API documentation
   - [Host](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.host)
@@ -49,6 +65,9 @@ The main types provided by this library are:
   - [HostBuilder](https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.hostbuilder)
 
 ## Related Packages
+
+<!-- The related packages associated with this package -->
+
 - `Microsoft.Extensions.Configuration`
 - `Microsoft.Extensions.DependencyInjection`
 - `Microsoft.Extensions.Hosting.Abstractions`
