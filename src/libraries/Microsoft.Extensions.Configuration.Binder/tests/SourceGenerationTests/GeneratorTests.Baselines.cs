@@ -15,10 +15,15 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         public async Task Bind() =>
             await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, extType: ExtensionClassType.ConfigurationBinder);
 
-        [Fact]
-        public async Task Bind_NamedParameters_OutOfOrder()
+        [Theory]
+        [InlineData("ConfigurationBinder.Bind(instance: configObj, configuration: config);")]
+        [InlineData("""ConfigurationBinder.Bind(key: "", instance: configObj, configuration: config);""")]
+        [InlineData("""ConfigurationBinder.Bind(instance: configObj, key: "", configuration: config);""")]
+        [InlineData("ConfigurationBinder.Bind(configureOptions: _ => { }, configuration: config, instance: configObj);")]
+        [InlineData("ConfigurationBinder.Bind(configuration: config, configureOptions: _ => { }, instance: configObj);")]
+        public async Task Bind_NamedParameters_OutOfOrder(string row)
         {
-            string source = """
+            string source = $$"""
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -30,11 +35,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 IConfigurationRoot config = configurationBuilder.Build();
 
                                 MyClass configObj = new();
-                                ConfigurationBinder.Bind(instance: configObj, configuration: config);
-                                ConfigurationBinder.Bind(key: "", instance: configObj, configuration: config);
-                                ConfigurationBinder.Bind(instance: configObj, key: "", configuration: config);
-                                ConfigurationBinder.Bind(configureOptions: _ => { }, configuration: config, instance: configObj);
-                                ConfigurationBinder.Bind(configuration: config, configureOptions: _ => { }, instance: configObj);
+                                {{row}}
                             }
 
                             public class MyClass
@@ -47,13 +48,17 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         }
                     """;
 
-            await VerifyThatSourceGenerated(source);
+            await VerifyThatSourceIsGenerated(source);
         }
 
-        [Fact]
-        public async Task Get_TypeOf_NamedParametersOutOfOrder()
+        [Theory]
+        [InlineData("var obj = ConfigurationBinder.Get(type: typeof(MyClass), configuration: config);")]
+        [InlineData("var obj = ConfigurationBinder.Get<MyClass>(configureOptions: _ => { }, configuration: config);")]
+        [InlineData("var obj = ConfigurationBinder.Get(configureOptions: _ => { }, type: typeof(MyClass), configuration: config);")]
+        [InlineData("var obj =  ConfigurationBinder.Get(type: typeof(MyClass), configureOptions: _ => { }, configuration: config);")]
+        public async Task Get_TypeOf_NamedParametersOutOfOrder(string row)
         {
-            string source = """
+            string source = $$"""
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -65,10 +70,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 IConfigurationRoot config = configurationBuilder.Build();
 
                                 MyClass configObj = new();
-                                var obj = ConfigurationBinder.Get(type: typeof(MyClass), configuration: config);
-                                obj = ConfigurationBinder.Get<MyClass>(configureOptions: _ => { }, configuration: config);
-                                obj = ConfigurationBinder.Get(configureOptions: _ => { }, type: typeof(MyClass), configuration: config);
-                                obj = ConfigurationBinder.Get(type: typeof(MyClass), configureOptions: _ => { }, configuration: config);
+                                {{row}}
                             }
 
                             public class MyClass
@@ -81,13 +83,19 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         }
                     """;
 
-            await VerifyThatSourceGenerated(source);
+            await VerifyThatSourceIsGenerated(source);
         }
 
-        [Fact]
-        public async Task GetValue_NamedParametersOutOfOrder()
+        [Theory]
+        [InlineData("""var str = ConfigurationBinder.GetValue(key: "key", configuration: config, type: typeof(string));""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue<string>(key: "key", configuration: config);""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue<string>(key: "key", defaultValue: "default", configuration: config);""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue<string>(configuration: config, key: "key", defaultValue: "default");""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue(defaultValue: "default", key: "key", configuration: config, type: typeof(string));""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue(defaultValue: "default", type: typeof(string), key: "key", configuration: config);""")]
+        public async Task GetValue_NamedParametersOutOfOrder(string row)
         {
-            string source = """
+            string source = $$"""
                         using System.Collections.Generic;
                         using Microsoft.Extensions.Configuration;
 
@@ -97,13 +105,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             {
                                 ConfigurationBuilder configurationBuilder = new();
                                 IConfigurationRoot config = configurationBuilder.Build();
-
-                                var str = ConfigurationBinder.GetValue(key: "key", configuration: config, type: typeof(string));
-                                str = ConfigurationBinder.GetValue<string>(key: "key", configuration: config);
-                                str = ConfigurationBinder.GetValue<string>(key: "key", defaultValue: "default", configuration: config);
-                                str = ConfigurationBinder.GetValue<string>(configuration: config, key: "key", defaultValue: "default");
-                                str = ConfigurationBinder.GetValue(defaultValue: "default", key: "key", configuration: config, type: typeof(string));
-                                str = ConfigurationBinder.GetValue(defaultValue: "default", type: typeof(string), key: "key", configuration: config);
+                                {{row}}
                             }
 
                             public class MyClass
@@ -116,7 +118,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         }
                     """;
 
-            await VerifyThatSourceGenerated(source);
+            await VerifyThatSourceIsGenerated(source);
         }
 
         [Fact]
