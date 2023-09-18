@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ServiceCollection,
         }
 
-        private static async Task VerifyThatSourceGenerated(string testSourceCode)
+        private static async Task VerifyThatSourceIsGenerated(string testSourceCode)
         {
             var (d, r) = await RunGenerator(testSourceCode);
             Assert.Equal(1, r.Length);

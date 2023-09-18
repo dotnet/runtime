@@ -60,10 +60,15 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         public async Task Configure_T_name_BinderOptions() =>
             await VerifyAgainstBaselineUsingFile("Configure_T_name_BinderOptions.generated.txt", GetConfigureSource(@""""", section, _ => { }"), extType: ExtensionClassType.ServiceCollection);
 
-        [Fact]
-        public async Task Configure_T_NamedParameters_OutOfOrder()
+        [Theory]
+        [InlineData("OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(config: section, services: services);")]
+        [InlineData("""OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(name: "", config: section, services: services);""")]
+        [InlineData("OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(configureBinder: _ => { }, config: section, services: services);")]
+        [InlineData("""OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(configureBinder: _ => { }, config: section, name: "", services: services);""")]
+        [InlineData("""OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(name: "", services: services, configureBinder: _ => { }, config: section);""")]
+        public async Task Configure_T_NamedParameters_OutOfOrder(string row)
         {
-            string source = """
+            string source = $$"""
                     using System.Collections.Generic;
                     using Microsoft.Extensions.Configuration;
                     using Microsoft.Extensions.DependencyInjection;
@@ -77,11 +82,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             IConfigurationSection section = config.GetSection("MySection");
                             ServiceCollection services = new();
 
-                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(config: section, services: services);
-                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(name: "", config: section, services: services);
-                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(configureBinder: _ => { }, config: section, services: services);
-                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(configureBinder: _ => { }, config: section, name: "", services: services);
-                            OptionsConfigurationServiceCollectionExtensions.Configure<MyClass>(name: "", services: services, configureBinder: _ => { }, config: section);
+                            {{row}}
                         }
                     
                         public class MyClass
@@ -94,13 +95,16 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     }
                     """;
 
-            await VerifyThatSourceGenerated(source);
+            await VerifyThatSourceIsGenerated(source);
         }
 
-        [Fact]
-        public async Task Bind_T_NamedParameters_OutOfOrder()
+        [Theory]
+        [InlineData("OptionsBuilderConfigurationExtensions.Bind(config: config, optionsBuilder: optionsBuilder);")]
+        [InlineData("OptionsBuilderConfigurationExtensions.Bind(configureBinder: _ => { }, config: config, optionsBuilder: optionsBuilder);")]
+        [InlineData("OptionsBuilderConfigurationExtensions.Bind(config: config, configureBinder: _ => { }, optionsBuilder: optionsBuilder);")]
+        public async Task Bind_T_NamedParameters_OutOfOrder(string row)
         {
-            string source = """
+            string source = $$"""
                     using System.Collections.Generic;
                     using Microsoft.Extensions.Configuration;
                     using Microsoft.Extensions.DependencyInjection;
@@ -115,9 +119,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             var services = new ServiceCollection();
                             OptionsBuilder<MyClass> optionsBuilder = new(services, "");
 
-                            OptionsBuilderConfigurationExtensions.Bind(config: config, optionsBuilder: optionsBuilder);
-                            OptionsBuilderConfigurationExtensions.Bind(configureBinder: _ => { }, config: config, optionsBuilder: optionsBuilder);
-                            OptionsBuilderConfigurationExtensions.Bind(config: config, configureBinder: _ => { }, optionsBuilder: optionsBuilder);
+                            {{row}}
                         }
                     
                         public class MyClass
@@ -130,7 +132,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     }
                     """;
 
-            await VerifyThatSourceGenerated(source);
+            await VerifyThatSourceIsGenerated(source);
         }
 
         private string GetBindSource(string? configureActions = null) => $$"""
